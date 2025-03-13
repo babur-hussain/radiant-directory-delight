@@ -1,9 +1,15 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, MapPin, Phone, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { businessesData } from '@/data/businessesData';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Get the first 6 businesses to display
 const featuredBusinesses = businessesData.filter(b => b.featured).slice(0, 6);
@@ -78,12 +84,79 @@ const BusinessCard = ({ business }: { business: typeof businessesData[0] }) => {
 
 const FeaturedBusinesses = () => {
   const [visibleCategory, setVisibleCategory] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedRating, setSelectedRating] = useState<string | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   
   const categories = Array.from(new Set(featuredBusinesses.map(b => b.category)));
   
-  const filteredBusinesses = visibleCategory
-    ? featuredBusinesses.filter(b => b.category === visibleCategory)
-    : featuredBusinesses;
+  // Extract unique locations (cities) from business addresses
+  const locations = Array.from(new Set(featuredBusinesses.map(b => {
+    const parts = b.address.split(',');
+    return parts.length > 1 ? parts[1].trim() : parts[0].trim();
+  })));
+  
+  // Filter businesses based on all selected filters
+  const filteredBusinesses = featuredBusinesses.filter(business => {
+    // Category filter
+    if (visibleCategory && business.category !== visibleCategory) {
+      return false;
+    }
+    
+    // Rating filter
+    if (selectedRating) {
+      const minRating = parseInt(selectedRating.replace('+', ''));
+      if (business.rating < minRating) {
+        return false;
+      }
+    }
+    
+    // Location filter
+    if (selectedLocation) {
+      const businessLocation = business.address.split(',');
+      const cityPart = businessLocation.length > 1 ? businessLocation[1].trim() : businessLocation[0].trim();
+      if (cityPart !== selectedLocation) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+
+  // Reset filters
+  const resetFilters = () => {
+    setVisibleCategory(null);
+    setSelectedRating(null);
+    setSelectedLocation(null);
+  };
+
+  // Update URL with filters when they change
+  useEffect(() => {
+    const searchParams = new URLSearchParams();
+    
+    if (visibleCategory) {
+      searchParams.set('category', visibleCategory);
+    }
+    
+    if (selectedRating) {
+      searchParams.set('rating', selectedRating);
+    }
+    
+    if (selectedLocation) {
+      searchParams.set('location', selectedLocation);
+    }
+    
+    // Only update if there are filters
+    if (searchParams.toString()) {
+      window.history.replaceState(
+        {},
+        '',
+        `${window.location.pathname}?${searchParams.toString()}`
+      );
+    } else {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [visibleCategory, selectedRating, selectedLocation]);
 
   return (
     <section className="py-20 bg-gray-50">
@@ -95,8 +168,9 @@ const FeaturedBusinesses = () => {
           </p>
         </div>
         
-        {/* Category Filters */}
-        <div className="flex flex-wrap justify-center gap-2 mb-12">
+        {/* Filter Controls */}
+        <div className="flex flex-wrap justify-center gap-3 mb-8">
+          {/* Category Filter Buttons */}
           <Button
             variant={visibleCategory === null ? "default" : "outline"}
             className="rounded-full text-sm transition-smooth"
@@ -114,13 +188,113 @@ const FeaturedBusinesses = () => {
               {category}
             </Button>
           ))}
+          
+          {/* Filter Button with Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="rounded-full ml-2">
+                More Filters {(selectedRating || selectedLocation) && '•'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {/* Rating Filter */}
+              <div className="px-2 py-1.5 text-sm font-medium">Rating</div>
+              <DropdownMenuItem 
+                className={!selectedRating ? "bg-accent/50" : ""}
+                onClick={() => setSelectedRating(null)}
+              >
+                Any Rating
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className={selectedRating === "4+" ? "bg-accent/50" : ""}
+                onClick={() => setSelectedRating("4+")}
+              >
+                4+ Stars
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className={selectedRating === "3+" ? "bg-accent/50" : ""}
+                onClick={() => setSelectedRating("3+")}
+              >
+                3+ Stars
+              </DropdownMenuItem>
+              
+              {/* Location Filter */}
+              <div className="px-2 py-1.5 text-sm font-medium mt-2">Location</div>
+              <DropdownMenuItem 
+                className={!selectedLocation ? "bg-accent/50" : ""}
+                onClick={() => setSelectedLocation(null)}
+              >
+                Any Location
+              </DropdownMenuItem>
+              {locations.map(location => (
+                <DropdownMenuItem
+                  key={location}
+                  className={selectedLocation === location ? "bg-accent/50" : ""}
+                  onClick={() => setSelectedLocation(location)}
+                >
+                  {location}
+                </DropdownMenuItem>
+              ))}
+              
+              {/* Reset Filters */}
+              <div className="border-t my-1"></div>
+              <DropdownMenuItem onClick={resetFilters}>
+                Reset All Filters
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+        
+        {/* Active Filters Display */}
+        {(selectedRating || selectedLocation) && (
+          <div className="flex flex-wrap justify-center gap-2 mb-8">
+            <div className="text-sm text-gray-500">Active filters:</div>
+            {selectedRating && (
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="h-7 text-xs rounded-full gap-1"
+                onClick={() => setSelectedRating(null)}
+              >
+                {selectedRating} Stars
+                <span className="ml-1">×</span>
+              </Button>
+            )}
+            {selectedLocation && (
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="h-7 text-xs rounded-full gap-1"
+                onClick={() => setSelectedLocation(null)}
+              >
+                {selectedLocation}
+                <span className="ml-1">×</span>
+              </Button>
+            )}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-7 text-xs"
+              onClick={resetFilters}
+            >
+              Clear all
+            </Button>
+          </div>
+        )}
         
         {/* Businesses Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
-          {filteredBusinesses.map(business => (
-            <BusinessCard key={business.id} business={business} />
-          ))}
+          {filteredBusinesses.length > 0 ? (
+            filteredBusinesses.map(business => (
+              <BusinessCard key={business.id} business={business} />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <h3 className="text-xl font-medium text-gray-900 mb-2">No businesses found</h3>
+              <p className="text-gray-600 mb-4">Try adjusting your filters or view all businesses</p>
+              <Button onClick={resetFilters}>Reset Filters</Button>
+            </div>
+          )}
         </div>
         
         {/* View More Button */}
@@ -130,7 +304,7 @@ const FeaturedBusinesses = () => {
             className="rounded-full transition-smooth"
             asChild
           >
-            <Link to="/businesses">View More Businesses</Link>
+            <Link to="/businesses">View All Businesses</Link>
           </Button>
         </div>
       </div>
