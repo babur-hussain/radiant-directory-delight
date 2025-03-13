@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, MapPin, Phone, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { businessesData } from '@/data/businessesData';
 
 // Get the first 6 businesses to display
@@ -66,7 +65,7 @@ const BusinessCard = ({ business }: { business: typeof businessesData[0] }) => {
       <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
         <span className="text-xs font-medium text-gray-500">{business.category}</span>
         <Link 
-          to={`/businesses`}
+          to={`/businesses?category=${encodeURIComponent(business.category)}`}
           className="flex items-center text-xs font-medium text-primary hover:text-primary/90 transition-smooth"
         >
           View Details
