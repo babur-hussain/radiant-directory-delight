@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { 
   Utensils, Hotel, ShoppingBag, Stethoscope, 
   GraduationCap, Car, Briefcase, HomeIcon, 
-  Scissors, Wrench, Theater, Gym 
+  Scissors, Wrench, Theater, Dumbbell 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -19,7 +19,7 @@ const categories = [
   { name: 'Beauty', icon: Scissors, color: 'bg-pink-50 text-pink-500' },
   { name: 'Repair', icon: Wrench, color: 'bg-teal-50 text-teal-500' },
   { name: 'Entertainment', icon: Theater, color: 'bg-cyan-50 text-cyan-500' },
-  { name: 'Fitness', icon: Gym, color: 'bg-lime-50 text-lime-500' },
+  { name: 'Fitness', icon: Dumbbell, color: 'bg-lime-50 text-lime-500' },
 ];
 
 const CategorySection = () => {
