@@ -1,13 +1,18 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, Search, Map, Phone, User } from 'lucide-react';
+import { Menu, X, Map, LogIn } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { cn } from '@/lib/utils';
+import AuthModal from './auth/AuthModal';
+import UserMenu from './UserMenu';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -58,10 +63,20 @@ const Header = () => {
               <Map className="h-4 w-4 mr-2" />
               Location
             </Button>
-            <Button variant="default" size="sm" className="rounded-full transition-smooth">
-              <User className="h-4 w-4 mr-2" />
-              Login
-            </Button>
+            
+            {isAuthenticated ? (
+              <UserMenu />
+            ) : (
+              <Button 
+                variant="default" 
+                size="sm" 
+                className="rounded-full transition-smooth"
+                onClick={() => setIsAuthModalOpen(true)}
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                Login / Register
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -99,13 +114,38 @@ const Header = () => {
               <Map className="h-4 w-4 mr-2" />
               Set Location
             </Button>
-            <Button variant="default" className="justify-start rounded-full w-full transition-smooth">
-              <User className="h-4 w-4 mr-2" />
-              Login / Sign Up
-            </Button>
+            
+            {isAuthenticated ? (
+              <Button 
+                variant="default" 
+                className="justify-start rounded-full w-full transition-smooth"
+                onClick={() => {
+                  const { logout } = useAuth();
+                  logout();
+                }}
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            ) : (
+              <Button 
+                variant="default" 
+                className="justify-start rounded-full w-full transition-smooth"
+                onClick={() => {
+                  setIsAuthModalOpen(true);
+                  setIsMobileMenuOpen(false);
+                }}
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                Login / Register
+              </Button>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal isOpen={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
     </header>
   );
 };
