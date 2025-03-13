@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import * as React from 'react';
 import { 
   Utensils, Hotel, ShoppingBag, Stethoscope, 
   GraduationCap, Car, Briefcase, HomeIcon, 
@@ -210,3 +211,4 @@ const AllCategories = ({ searchTerm }: AllCategoriesProps) => {
 };
 
 export default AllCategories;
+
