@@ -4,90 +4,12 @@ import { Link } from 'react-router-dom';
 import { Star, MapPin, Phone, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { businessesData } from '@/data/businessesData';
 
-// Sample business data
-const businesses = [
-  {
-    id: 1,
-    name: 'Skyline Restaurant',
-    category: 'Restaurants',
-    image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=500&h=350&auto=format&fit=crop',
-    rating: 4.8,
-    reviews: 243,
-    address: '123 Main St, New York, NY',
-    phone: '(212) 555-1234',
-    description: 'Upscale dining with panoramic city views and world-class cuisine.',
-    featured: true,
-    tags: ['Fine Dining', 'American', 'Cocktails']
-  },
-  {
-    id: 2,
-    name: 'Luxe Hotel & Spa',
-    category: 'Hotels',
-    image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=500&h=350&auto=format&fit=crop',
-    rating: 4.9,
-    reviews: 512,
-    address: '500 Fifth Ave, New York, NY',
-    phone: '(212) 555-5678',
-    description: 'Five-star luxury hotel with premium amenities and exceptional service.',
-    featured: true,
-    tags: ['Luxury', 'Spa', 'Restaurant']
-  },
-  {
-    id: 3,
-    name: 'Urban Styles',
-    category: 'Shopping',
-    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=500&h=350&auto=format&fit=crop',
-    rating: 4.6,
-    reviews: 187,
-    address: '890 Broadway, New York, NY',
-    phone: '(212) 555-9012',
-    description: 'Contemporary fashion boutique featuring designer brands and unique pieces.',
-    featured: true,
-    tags: ['Fashion', 'Accessories', 'Boutique']
-  },
-  {
-    id: 4,
-    name: 'Wellness Medical Center',
-    category: 'Healthcare',
-    image: 'https://images.unsplash.com/photo-1504439468489-c8920d796a29?q=80&w=500&h=350&auto=format&fit=crop',
-    rating: 4.7,
-    reviews: 326,
-    address: '425 Park Ave, New York, NY',
-    phone: '(212) 555-3456',
-    description: 'Comprehensive healthcare services with a focus on preventative medicine.',
-    featured: true,
-    tags: ['Medical', 'Family Practice', 'Specialists']
-  },
-  {
-    id: 5,
-    name: 'Elite Learning Academy',
-    category: 'Education',
-    image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=500&h=350&auto=format&fit=crop',
-    rating: 4.5,
-    reviews: 198,
-    address: '220 W 42nd St, New York, NY',
-    phone: '(212) 555-7890',
-    description: 'Premier educational institution with innovative teaching methods.',
-    featured: true,
-    tags: ['Private School', 'K-12', 'After School']
-  },
-  {
-    id: 6,
-    name: 'Precision Auto Care',
-    category: 'Automotive',
-    image: 'https://images.unsplash.com/photo-1504222490345-c075b6008014?q=80&w=500&h=350&auto=format&fit=crop',
-    rating: 4.4,
-    reviews: 156,
-    address: '785 8th Ave, New York, NY',
-    phone: '(212) 555-2345',
-    description: 'Expert auto repair and maintenance services with certified technicians.',
-    featured: true,
-    tags: ['Auto Repair', 'Maintenance', 'Diagnostics']
-  }
-];
+// Get the first 6 businesses to display
+const featuredBusinesses = businessesData.filter(b => b.featured).slice(0, 6);
 
-const BusinessCard = ({ business }: { business: typeof businesses[0] }) => {
+const BusinessCard = ({ business }: { business: typeof businessesData[0] }) => {
   return (
     <div className="group bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-smooth">
       {/* Image */}
@@ -144,7 +66,7 @@ const BusinessCard = ({ business }: { business: typeof businesses[0] }) => {
       <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
         <span className="text-xs font-medium text-gray-500">{business.category}</span>
         <Link 
-          to={`/business/${business.id}`}
+          to={`/businesses`}
           className="flex items-center text-xs font-medium text-primary hover:text-primary/90 transition-smooth"
         >
           View Details
@@ -158,11 +80,11 @@ const BusinessCard = ({ business }: { business: typeof businesses[0] }) => {
 const FeaturedBusinesses = () => {
   const [visibleCategory, setVisibleCategory] = useState<string | null>(null);
   
-  const categories = Array.from(new Set(businesses.map(b => b.category)));
+  const categories = Array.from(new Set(featuredBusinesses.map(b => b.category)));
   
   const filteredBusinesses = visibleCategory
-    ? businesses.filter(b => b.category === visibleCategory)
-    : businesses;
+    ? featuredBusinesses.filter(b => b.category === visibleCategory)
+    : featuredBusinesses;
 
   return (
     <section className="py-20 bg-gray-50">
@@ -207,9 +129,9 @@ const FeaturedBusinesses = () => {
           <Button
             variant="outline"
             className="rounded-full transition-smooth"
-            onClick={() => console.log('View more businesses')}
+            asChild
           >
-            View More Businesses
+            <Link to="/businesses">View More Businesses</Link>
           </Button>
         </div>
       </div>
