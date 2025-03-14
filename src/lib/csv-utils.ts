@@ -2,7 +2,7 @@
 import { businessesData } from '@/data/businessesData';
 
 // Define the business type based on the existing data structure
-interface Business {
+export interface Business {
   id: number;
   name: string;
   category: string;
@@ -20,6 +20,24 @@ interface Business {
 // This is a simple in-memory storage for demonstration
 // In a real app, this would be stored in a database
 export let uploadedBusinesses: Business[] = [];
+
+// Add event listeners for data updates
+const dataChangeListeners: (() => void)[] = [];
+
+export const addDataChangeListener = (listener: () => void) => {
+  dataChangeListeners.push(listener);
+};
+
+export const removeDataChangeListener = (listener: () => void) => {
+  const index = dataChangeListeners.indexOf(listener);
+  if (index !== -1) {
+    dataChangeListeners.splice(index, 1);
+  }
+};
+
+export const notifyDataChanged = () => {
+  dataChangeListeners.forEach(listener => listener());
+};
 
 export const getAllBusinesses = (): Business[] => {
   // Combine the original businesses with the uploaded ones
@@ -112,6 +130,9 @@ export const processCsvData = async (csvContent: string): Promise<{
     // Add businesses to the uploadedBusinesses array
     uploadedBusinesses = [...uploadedBusinesses, ...businesses];
     
+    // Notify listeners that data has changed
+    notifyDataChanged();
+    
     return { 
       success: true, 
       businesses, 
@@ -126,3 +147,4 @@ export const processCsvData = async (csvContent: string): Promise<{
     };
   }
 };
+

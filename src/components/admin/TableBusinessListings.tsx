@@ -17,21 +17,57 @@ import {
   PaginationPrevious 
 } from '@/components/ui/pagination';
 import { Input } from '@/components/ui/input';
-import { Search, Info } from 'lucide-react';
-import { getAllBusinesses } from '@/lib/csv-utils';
+import { Search, Info, RefreshCw } from 'lucide-react';
+import { getAllBusinesses, addDataChangeListener, removeDataChangeListener } from '@/lib/csv-utils';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
-export const TableBusinessListings = () => {
+interface TableBusinessListingsProps {
+  onRefresh?: () => void;
+}
+
+export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({ onRefresh }) => {
   const [businesses, setBusinesses] = useState(getAllBusinesses());
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBusiness, setSelectedBusiness] = useState<any>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { toast } = useToast();
   const itemsPerPage = 100;
   
-  // Re-fetch businesses when they might have changed (e.g., after a CSV upload)
-  useEffect(() => {
+  // Handle data changes and refreshes
+  const refreshData = () => {
+    setIsRefreshing(true);
+    // Get the latest data
     setBusinesses(getAllBusinesses());
+    
+    setTimeout(() => {
+      setIsRefreshing(false);
+      toast({
+        title: "Data refreshed",
+        description: "The business listings have been updated.",
+      });
+    }, 500); // small delay for visual feedback
+    
+    // Notify parent component if needed
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+  
+  // Listen for data changes
+  useEffect(() => {
+    // Initial data load
+    refreshData();
+    
+    // Add a listener for data changes
+    addDataChangeListener(refreshData);
+    
+    // Cleanup on unmount
+    return () => {
+      removeDataChangeListener(refreshData);
+    };
   }, []);
   
   // Filter businesses based on search term
@@ -103,17 +139,29 @@ export const TableBusinessListings = () => {
     <div className="space-y-4">
       {/* Search and stats bar */}
       <div className="flex flex-col sm:flex-row justify-between gap-2 md:items-center mb-6">
-        <div className="relative w-full sm:w-auto sm:min-w-[300px]">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search businesses..."
-            className="pl-8"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page on search
-            }}
-          />
+        <div className="flex gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:min-w-[300px]">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search businesses..."
+              className="pl-8"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // Reset to first page on search
+              }}
+            />
+          </div>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={refreshData}
+            disabled={isRefreshing}
+            className="flex-shrink-0"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span className="sr-only">Refresh data</span>
+          </Button>
         </div>
         
         <div className="text-sm text-muted-foreground">
@@ -261,3 +309,4 @@ export const TableBusinessListings = () => {
     </div>
   );
 };
+
