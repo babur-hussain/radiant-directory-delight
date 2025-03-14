@@ -56,43 +56,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         const isDefaultAdmin = firebaseUser.email === "baburhussain660@gmail.com";
         
-        const userData: User = {
-          id: firebaseUser.uid,
-          email: firebaseUser.email,
-          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-          role: isDefaultAdmin ? 'Admin' : userRole,
-          photoURL: firebaseUser.photoURL,
-          isAdmin: isDefaultAdmin || isAdmin
-        };
-        
         try {
           const userDoc = doc(db, "users", firebaseUser.uid);
           const userSnapshot = await getDoc(userDoc);
           
-          if (!userSnapshot.exists()) {
-            console.log("User not found in Firestore, creating:", firebaseUser.uid);
+          let firestoreData = null;
+          
+          if (userSnapshot.exists()) {
+            firestoreData = userSnapshot.data();
+            
             await setDoc(userDoc, {
+              lastLogin: serverTimestamp()
+            }, { merge: true });
+          } else {
+            console.log("User not found in Firestore, creating:", firebaseUser.uid);
+            const newUserData = {
               email: firebaseUser.email,
               name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-              role: isDefaultAdmin ? 'Admin' : userRole,
+              role: isDefaultAdmin ? 'Admin' : userRole || 'User',
               photoURL: firebaseUser.photoURL,
               isAdmin: isDefaultAdmin || isAdmin,
               createdAt: serverTimestamp(),
               lastLogin: serverTimestamp()
-            });
-          } else {
-            await setDoc(userDoc, {
-              lastLogin: serverTimestamp()
-            }, { merge: true });
+            };
+            
+            await setDoc(userDoc, newUserData);
+            console.log("Created new user document in Firestore:", firebaseUser.uid);
+            
+            firestoreData = newUserData;
           }
+          
+          const userData: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email,
+            name: firestoreData?.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+            role: isDefaultAdmin ? 'Admin' : firestoreData?.role || userRole || 'User',
+            photoURL: firestoreData?.photoURL || firebaseUser.photoURL,
+            isAdmin: isDefaultAdmin || firestoreData?.isAdmin || isAdmin
+          };
+          
+          if (firestoreData?.role) {
+            localStorage.setItem(roleKey, firestoreData.role);
+          }
+          
+          if (firestoreData?.isAdmin !== undefined) {
+            localStorage.setItem(adminKey, firestoreData.isAdmin ? 'true' : 'false');
+          }
+          
+          saveUserToAllUsersList(userData);
+          console.log("Auth state changed: User logged in", userData);
+          
+          setUser(userData);
         } catch (error) {
-          console.error("Error saving/updating user in Firestore:", error);
+          console.error("Error fetching/updating user in Firestore:", error);
+          
+          const userData: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email,
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+            role: isDefaultAdmin ? 'Admin' : userRole || 'User',
+            photoURL: firebaseUser.photoURL,
+            isAdmin: isDefaultAdmin || isAdmin
+          };
+          
+          saveUserToAllUsersList(userData);
+          setUser(userData);
         }
-        
-        saveUserToAllUsersList(userData);
-        console.log("Auth state changed: User logged in", userData);
-        
-        setUser(userData);
       } else {
         setUser(null);
         console.log("Auth state changed: User logged out");
