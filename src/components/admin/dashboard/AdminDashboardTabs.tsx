@@ -100,9 +100,11 @@ const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
           
           <BusinessesTab 
             businesses={businesses}
-            onViewDetails={onViewDetails}
-            onEdit={handleEditBusiness}
-            isLoading={isRefreshing}
+            onAddBusiness={handleAddBusiness}
+            onEditBusiness={handleEditBusiness}
+            isRefreshing={isRefreshing}
+            onRefresh={refreshBusinesses}
+            handlePermissionError={handlePermissionError}
           />
         </TabsContent>
 
@@ -127,21 +129,20 @@ const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
 
         <TabsContent value="business-dashboards">
           <h2 className="text-xl font-bold mb-4">Business Dashboards</h2>
-          <AdminBusinessDashboards 
-            onPermissionError={handlePermissionError}
-          />
+          <AdminBusinessDashboards />
         </TabsContent>
 
         <TabsContent value="influencer-dashboards">
           <h2 className="text-xl font-bold mb-4">Influencer Dashboards</h2>
           <AdminInfluencerDashboards 
-            onPermissionError={handlePermissionError} 
+            influencers={[]}
           />
         </TabsContent>
       </Tabs>
 
       {showBusinessFormDialog && (
         <BusinessFormDialog
+          show={showBusinessFormDialog}
           onClose={() => setShowBusinessFormDialog(false)}
           onSubmit={handleBusinessFormSubmit}
           business={currentBusinessToEdit}
@@ -151,6 +152,7 @@ const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
 
       {showUploadDialog && (
         <CSVUploadDialog
+          show={showUploadDialog}
           onClose={() => setShowUploadDialog(false)}
           onUploadComplete={handleUploadComplete}
         />
