@@ -1,6 +1,6 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { 
-  User as FirebaseUser,
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   signInWithPopup,
@@ -31,10 +31,24 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateUserRole: (role: UserRole) => Promise<void>;
   loading: boolean;
+  initialized: boolean;
 }
 
+// Create the auth context with default values
+const defaultContextValue: AuthContextType = {
+  user: null,
+  isAuthenticated: false,
+  login: async () => {},
+  loginWithGoogle: async () => {},
+  signup: async () => {},
+  logout: async () => {},
+  updateUserRole: async () => {},
+  loading: true,
+  initialized: false
+};
+
 // Create the auth context
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>(defaultContextValue);
 
 // Key for storing user roles in localStorage
 const getRoleKey = (userId: string) => `user_role_${userId}`;
@@ -43,6 +57,7 @@ const getRoleKey = (userId: string) => `user_role_${userId}`;
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   
   // Set up auth state listener on initial load
   useEffect(() => {
@@ -66,6 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
       }
       setLoading(false);
+      setInitialized(true);
     });
     
     // Clean up subscription
@@ -245,7 +261,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signup,
         logout,
         updateUserRole,
-        loading
+        loading,
+        initialized
       }}
     >
       {children}
@@ -255,9 +272,5 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 // Custom hook to use the auth context
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+  return useContext(AuthContext);
 };

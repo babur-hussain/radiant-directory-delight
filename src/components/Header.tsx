@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, Map, LogIn } from 'lucide-react';
@@ -12,16 +13,8 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   
-  let isAuthenticated = false;
-  let logout = async () => {};
-  
-  try {
-    const auth = useAuth();
-    isAuthenticated = auth.isAuthenticated;
-    logout = auth.logout;
-  } catch (error) {
-    console.error("Auth context not available yet:", error);
-  }
+  const auth = useAuth();
+  const { isAuthenticated, logout, initialized } = auth;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -36,6 +29,11 @@ const Header = () => {
     await logout();
     setIsMobileMenuOpen(false);
   };
+
+  // Don't render the header until auth is initialized
+  if (!initialized) {
+    return null;
+  }
 
   return (
     <header

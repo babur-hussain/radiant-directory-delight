@@ -15,17 +15,7 @@ import { LogOut, User, Settings, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const UserMenu = () => {
-  let user = null;
-  let logout = async () => {};
-  
-  try {
-    const auth = useAuth();
-    user = auth.user;
-    logout = auth.logout;
-  } catch (error) {
-    console.error("Auth context not available yet:", error);
-  }
-  
+  const { user, logout, initialized } = useAuth();
   const navigate = useNavigate();
   
   // Get first letter of name for avatar fallback
@@ -43,8 +33,9 @@ const UserMenu = () => {
     navigate("/subscription/details");
   };
 
-  if (!user) {
-    return null; // Don't render anything if user is not available
+  // Don't render until auth is initialized and we have a user
+  if (!initialized || !user) {
+    return null;
   }
 
   return (
