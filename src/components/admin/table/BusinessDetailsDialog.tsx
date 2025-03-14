@@ -44,14 +44,10 @@ const BusinessDetailsDialog: React.FC<BusinessDetailsDialogProps> = ({
               <h3 className="text-lg font-semibold mb-2">Business Details</h3>
               <div className="space-y-2">
                 <p><span className="font-medium">Category:</span> {business.category || "N/A"}</p>
-                <p><span className="font-medium">Status:</span> {
-                  business.status ? (
-                    <Badge className="ml-2 bg-green-500">{business.status}</Badge>
-                  ) : (
-                    <Badge className="ml-2" variant="outline">Not Set</Badge>
-                  )
-                }</p>
+                {/* Remove references to status as it doesn't exist in the Business type */}
                 <p><span className="font-medium">ID:</span> {business.id || "N/A"}</p>
+                <p><span className="font-medium">Rating:</span> {business.rating || "N/A"}</p>
+                <p><span className="font-medium">Reviews:</span> {business.reviews || "N/A"}</p>
               </div>
             </CardContent>
           </Card>
@@ -59,15 +55,7 @@ const BusinessDetailsDialog: React.FC<BusinessDetailsDialogProps> = ({
           <Card className="md:col-span-2">
             <CardContent className="pt-6">
               <h3 className="text-lg font-semibold mb-2">Address</h3>
-              <p>
-                {[
-                  business.address,
-                  business.city || "",
-                  business.state || "",
-                  business.zipCode || "",
-                  business.country || ""
-                ].filter(Boolean).join(", ") || "No address provided"}
-              </p>
+              <p>{business.address || "No address provided"}</p>
             </CardContent>
           </Card>
 
