@@ -44,10 +44,10 @@ export const saveUserToAllUsersList = (userData: User) => {
       // Update existing user
       allUsers[existingUserIndex] = {
         ...allUsers[existingUserIndex],
-        name: userData.name,
-        role: userData.role,
-        isAdmin: userData.isAdmin || false,
-        email: userData.email
+        name: userData.name || allUsers[existingUserIndex].name,
+        role: userData.role || allUsers[existingUserIndex].role,
+        isAdmin: userData.isAdmin || allUsers[existingUserIndex].isAdmin || false,
+        email: userData.email || allUsers[existingUserIndex].email
       };
     } else {
       // Add new user
@@ -62,8 +62,10 @@ export const saveUserToAllUsersList = (userData: User) => {
     
     localStorage.setItem(ALL_USERS_KEY, JSON.stringify(allUsers));
     console.log("Updated all users list:", allUsers);
+    return allUsers;
   } catch (error) {
     console.error("Error saving user to all users list:", error);
+    return [];
   }
 };
 
@@ -86,7 +88,42 @@ export const loadAllUsers = (): User[] => {
 // Debug function to force a refresh of users data
 export const debugRefreshUsers = () => {
   console.log("Forcing refresh of users data");
-  const allUsers = loadAllUsers();
-  console.log("Current users:", allUsers);
-  return allUsers.length;
+  try {
+    // Get all auth users from localStorage
+    const allUsers = JSON.parse(localStorage.getItem(ALL_USERS_KEY) || '[]');
+    
+    // Check for duplicate emails and merge data if needed
+    const uniqueUserMap = new Map();
+    
+    allUsers.forEach((user: User) => {
+      if (user.email) {
+        const key = user.email.toLowerCase();
+        
+        if (uniqueUserMap.has(key)) {
+          // Merge with existing user data
+          const existingUser = uniqueUserMap.get(key);
+          uniqueUserMap.set(key, {
+            ...existingUser,
+            ...user,
+            isAdmin: existingUser.isAdmin || user.isAdmin || false,
+            role: user.role || existingUser.role
+          });
+        } else {
+          uniqueUserMap.set(key, user);
+        }
+      }
+    });
+    
+    // Convert back to array
+    const dedupedUsers = Array.from(uniqueUserMap.values());
+    
+    // Save back to localStorage
+    localStorage.setItem(ALL_USERS_KEY, JSON.stringify(dedupedUsers));
+    
+    console.log("Current users after deduplication:", dedupedUsers);
+    return dedupedUsers.length;
+  } catch (error) {
+    console.error("Error refreshing users:", error);
+    return 0;
+  }
 };

@@ -61,19 +61,23 @@ const UserPermissionsTab = () => {
   // Load users from localStorage on component mount
   useEffect(() => {
     loadUsersData();
-  }, [toast]);
+  }, []);
 
   // Refresh users function
   const handleRefresh = () => {
     setRefreshing(true);
     // Force refresh the users data
     debugRefreshUsers();
-    loadUsersData();
     
-    toast({
-      title: "Refreshed",
-      description: "User data has been refreshed",
-    });
+    // Small delay to ensure localStorage is updated
+    setTimeout(() => {
+      loadUsersData();
+      
+      toast({
+        title: "Refreshed",
+        description: "User data has been refreshed",
+      });
+    }, 500);
   };
 
   const handleToggleAdmin = async (userId: string, isAdmin: boolean) => {
