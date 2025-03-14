@@ -24,12 +24,20 @@ const saveUserToFirestore = async (
     console.log(`Saving user to Firestore: ${userId}, ${email}, ${role}`);
     const userDoc = doc(db, "users", userId);
     
+    // Ensure name is a string
+    const displayName = typeof name === 'boolean' ? 'User' : (name || email?.split('@')[0] || 'User');
+    
+    // Ensure isAdmin is a boolean
+    const adminStatus = typeof isAdmin === 'string' 
+      ? isAdmin.toLowerCase() === 'true' 
+      : Boolean(isAdmin);
+    
     await setDoc(userDoc, {
       email: email,
-      name: name || email?.split('@')[0] || 'User',
+      name: displayName,
       role: role,
       photoURL: photoURL,
-      isAdmin: isAdmin,
+      isAdmin: adminStatus,
       createdAt: serverTimestamp(),
       lastLogin: serverTimestamp()
     }, { merge: true });

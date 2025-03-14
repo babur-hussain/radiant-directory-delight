@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -62,9 +61,11 @@ const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefresh }) =>
     return {
       id: user.id || "",
       email: user.email || null,
-      name: user.name || null,
+      name: typeof user.name === 'boolean' ? 'User' : (user.name || null),
       role: user.role || null,
-      isAdmin: user.isAdmin || false,
+      isAdmin: typeof user.isAdmin === 'string' 
+        ? user.isAdmin.toLowerCase() === 'true' 
+        : Boolean(user.isAdmin),
       createdAt: (user as any).createdAt || new Date().toISOString(),
     };
   };

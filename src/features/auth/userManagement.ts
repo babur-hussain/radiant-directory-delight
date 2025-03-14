@@ -130,12 +130,23 @@ export const getAllUsers = async (): Promise<User[]> => {
     const users = querySnapshot.docs.map(doc => {
       const data = doc.data();
       console.log("User data from Firebase:", doc.id, data);
+      
+      // Ensure name is a string
+      const displayName = typeof data.name === 'boolean' 
+        ? 'User' 
+        : (data.name || data.displayName || null);
+      
+      // Ensure isAdmin is a boolean
+      const adminStatus = typeof data.isAdmin === 'string' 
+        ? data.isAdmin.toLowerCase() === 'true' 
+        : Boolean(data.isAdmin);
+        
       return {
         id: doc.id,
         email: data.email || null,
-        name: data.name || data.displayName || null,
+        name: displayName,
         role: data.role || null,
-        isAdmin: data.isAdmin || false,
+        isAdmin: adminStatus,
         photoURL: data.photoURL || null,
         createdAt: data.createdAt || new Date().toISOString()
       };
