@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,13 +76,13 @@ const AdminBusinessListingsPage = () => {
       } else if (typeof values.priority === 'number') {
         priorityValue = values.priority;
       } else {
-        // Ensure we're parsing a string by explicitly converting to string first
-        const parsedValue = parseInt(String(values.priority), 10);
-        // Handle NaN case
-        if (isNaN(parsedValue)) {
+        // Convert string to number
+        const stringValue = String(values.priority).trim();
+        if (stringValue === '') {
           priorityValue = undefined;
         } else {
-          priorityValue = parsedValue;
+          const parsedValue = parseInt(stringValue, 10);
+          priorityValue = isNaN(parsedValue) ? undefined : parsedValue;
         }
       }
       
