@@ -12,6 +12,7 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const navigate = useNavigate();
   const auth = useAuth();
   const {
@@ -21,8 +22,26 @@ const Header = () => {
     user
   } = auth;
   const { getUserSubscription } = useSubscription();
-  const subscription = getUserSubscription();
-
+  
+  // Fetch subscription data when user changes
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      if (user?.id) {
+        try {
+          const subscription = await getUserSubscription();
+          setSubscriptionStatus(subscription?.status || null);
+        } catch (error) {
+          console.error("Failed to fetch subscription:", error);
+          setSubscriptionStatus(null);
+        }
+      } else {
+        setSubscriptionStatus(null);
+      }
+    };
+    
+    fetchSubscription();
+  }, [getUserSubscription, user?.id]);
+  
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -56,7 +75,7 @@ const Header = () => {
     if (user.role === "Admin" || user.isAdmin) return true;
     
     // Regular users need an active subscription
-    return subscription && subscription.status === "active";
+    return subscriptionStatus === "active";
   };
 
   // Make sure we don't show anything until auth is initialized

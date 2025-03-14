@@ -20,7 +20,7 @@ export const updateUserSubscription = async (userId: string, subscriptionData: a
     const userRef = doc(db, "users", userId);
     
     // Create the update data including both the main subscription object and legacy fields
-    const updateData = {
+    const updateData: any = {
       subscription: subscriptionData,
       subscriptionPackage: subscriptionData.packageId,
       subscriptionStatus: subscriptionData.status,

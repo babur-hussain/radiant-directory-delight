@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,14 +30,30 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
   const { toast } = useToast();
   const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "Influencer");
   const { getUserSubscription } = useSubscription();
-  const localSubscription = getUserSubscription();
+  
+  // Load subscription data when component mounts
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      try {
+        const subscription = await getUserSubscription();
+        setSubscriptionData(subscription);
+      } catch (error) {
+        console.error("Failed to fetch subscription:", error);
+      }
+    };
+    
+    fetchSubscription();
+  }, [getUserSubscription]);
   
   // Set up a Firestore listener for real-time subscription updates
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setIsLoading(false);
+      return;
+    }
     
     const userRef = doc(db, "users", userId);
-    const unsubscribe = onSnapshot(userRef, (docSnapshot) => {
+    const unsubscribe = onSnapshot(userRef, async (docSnapshot) => {
       if (docSnapshot.exists()) {
         const userData = docSnapshot.data();
         // Use subscription data from Firestore if available
@@ -46,12 +61,14 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
           console.log("✅ Got subscription from Firestore:", userData.subscription || userData.subscriptionPackage);
           setSubscriptionData(userData.subscription);
         } else {
-          console.log("No subscription found in Firestore, using local data");
-          setSubscriptionData(localSubscription);
+          console.log("No subscription found in Firestore, fetching again");
+          try {
+            const subscription = await getUserSubscription();
+            setSubscriptionData(subscription);
+          } catch (error) {
+            console.error("Error fetching subscription:", error);
+          }
         }
-      } else {
-        console.log("User document doesn't exist, using local subscription data");
-        setSubscriptionData(localSubscription);
       }
       
       // In any case, finish loading
@@ -59,12 +76,21 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
     }, (error) => {
       console.error("Error getting real-time subscription updates:", error);
       // Fall back to local subscription data if Firestore listener fails
-      setSubscriptionData(localSubscription);
+      fetchLocalSubscription();
       setIsLoading(false);
     });
     
+    const fetchLocalSubscription = async () => {
+      try {
+        const subscription = await getUserSubscription();
+        setSubscriptionData(subscription);
+      } catch (error) {
+        console.error("Error fetching local subscription:", error);
+      }
+    };
+    
     return () => unsubscribe();
-  }, [userId, localSubscription]);
+  }, [userId, getUserSubscription]);
   
   const handleExportData = (format: string) => {
     toast({
@@ -113,9 +139,7 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
     );
   }
 
-  const hasActiveSubscription = 
-    (subscriptionData && subscriptionData.status === "active") || 
-    (localSubscription && localSubscription.status === "active");
+  const hasActiveSubscription = subscriptionData && subscriptionData.status === "active";
 
   // If no active subscription
   if (!hasActiveSubscription) {

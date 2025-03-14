@@ -25,20 +25,27 @@ interface BusinessDashboardProps {
 
 const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ userId }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [subscriptionData, setSubscriptionData] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "Business");
   const { getUserSubscription } = useSubscription();
-  const subscription = getUserSubscription();
   
   useEffect(() => {
-    // Simulate loading data
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
+    const fetchSubscription = async () => {
+      try {
+        const subscription = await getUserSubscription();
+        setSubscriptionData(subscription);
+      } catch (error) {
+        console.error("Failed to fetch subscription:", error);
+        setSubscriptionData(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    return () => clearTimeout(timer);
-  }, []);
+    fetchSubscription();
+  }, [getUserSubscription]);
   
   const handleExportData = (format: string) => {
     toast({
@@ -88,7 +95,7 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ userId }) => {
   }
 
   // If no active subscription
-  if (!subscription || subscription.status !== "active") {
+  if (!subscriptionData || subscriptionData.status !== "active") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-xl mx-auto text-center">
         <div className="bg-primary/10 p-6 rounded-full mb-6">

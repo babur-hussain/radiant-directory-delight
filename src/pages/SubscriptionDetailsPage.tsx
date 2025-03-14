@@ -1,12 +1,12 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getPackageById } from "@/data/subscriptionData";
-import { ArrowLeft, Calendar, CheckCircle, Clock, CreditCard, XCircle } from "lucide-react";
+import { ArrowLeft, Calendar, CheckCircle, Clock, CreditCard, XCircle, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -14,9 +14,39 @@ const SubscriptionDetailsPage = () => {
   const { user, isAuthenticated } = useAuth();
   const { getUserSubscription, cancelSubscription } = useSubscription();
   const navigate = useNavigate();
+  const [subscription, setSubscription] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [packageDetails, setPackageDetails] = useState<any>(null);
   
-  const subscription = getUserSubscription();
-  const packageDetails = subscription ? getPackageById(subscription.packageId) : null;
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      if (isAuthenticated && user?.id) {
+        try {
+          const subscriptionData = await getUserSubscription();
+          setSubscription(subscriptionData);
+          
+          if (subscriptionData?.packageId) {
+            const pkgDetails = getPackageById(subscriptionData.packageId);
+            setPackageDetails(pkgDetails);
+          }
+        } catch (error) {
+          console.error("Error fetching subscription:", error);
+        }
+      }
+      setIsLoading(false);
+    };
+    
+    fetchSubscription();
+  }, [isAuthenticated, user, getUserSubscription]);
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-10 flex justify-center items-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
+        <span>Loading subscription details...</span>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -68,8 +98,8 @@ const SubscriptionDetailsPage = () => {
   }
 
   // Format dates
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -189,7 +219,7 @@ const SubscriptionDetailsPage = () => {
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
-                {packageDetails?.features.map((feature, index) => (
+                {packageDetails?.features.map((feature: string, index: number) => (
                   <li key={index} className="flex items-start">
                     <CheckCircle className="h-4 w-4 text-primary mr-2 mt-0.5" />
                     <span>{feature}</span>
