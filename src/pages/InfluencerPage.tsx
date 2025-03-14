@@ -1,6 +1,7 @@
-import { useState, useEffect, useNavigate } from 'react';
-import { Link } from 'react-router-dom';
-import { CheckCircle, Users, Star, TrendingUp, Award, Zap, CheckSquare, ArrowRight } from 'lucide-react';
+
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { CheckCircle, Users, Star, TrendingUp, Award, Zap, CheckSquare, ArrowRight, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { influencerPackages } from '@/data/subscriptionData';
@@ -50,11 +51,11 @@ const InfluencerPage = () => {
     },
   ];
 
+  const navigate = useNavigate();
+
   const handleSubscribe = (packageId: string) => {
     navigate(`/subscription/details/${packageId}`);
   };
-
-  const navigate = useNavigate();
 
   return (
     <div className="flex flex-col min-h-screen">
