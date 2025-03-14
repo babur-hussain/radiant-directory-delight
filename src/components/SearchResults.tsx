@@ -38,7 +38,6 @@ const SearchResults = ({ results, isLoading, visible, onResultClick, onClose }: 
         "fixed left-0 right-0 top-[70px] z-50 bg-white shadow-2xl max-h-[calc(100vh-70px)] transition-all duration-200 border-t border-gray-100",
         visible ? "opacity-100" : "opacity-0 pointer-events-none"
       )}
-      style={{ overflowY: 'auto' }}
     >
       <div className="container max-w-7xl mx-auto">
         <div className="max-w-3xl mx-auto">
