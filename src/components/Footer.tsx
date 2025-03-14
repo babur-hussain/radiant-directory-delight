@@ -1,3 +1,4 @@
+
 import { Link } from 'react-router-dom';
 import { Facebook, Twitter, Instagram, Linkedin, Youtube, Mail, Phone, MapPin } from 'lucide-react';
 
@@ -10,7 +11,7 @@ const Footer = () => {
           <div className="col-span-1 lg:col-span-2">
             <Link to="/" className="flex items-center space-x-2">
               <span className="font-bold text-2xl bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
-                DirectSpot
+                Grow Bharat Vyapaar
               </span>
             </Link>
             <p className="mt-4 text-sm text-gray-500 max-w-md">
