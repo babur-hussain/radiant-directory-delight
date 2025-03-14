@@ -26,11 +26,12 @@ header {
 /* Main content padding to avoid header overlap */
 main {
   padding-top: 64px; /* Match exact header height */
+  margin-top: 0; /* Ensure no extra margin */
 }
 
-/* Ensure proper spacing for content below header */
+/* Remove the extra padding in hero section */
 .hero-section {
-  padding-top: 2rem; /* Add space after the main padding */
+  padding-top: 0; /* Remove additional padding */
 }
 
 /* Other styles */
