@@ -1,4 +1,3 @@
-
 import { businessesData } from '@/data/businessesData';
 import { db } from '@/config/firebase';
 import { 
@@ -212,13 +211,34 @@ export const getAllBusinesses = (): Business[] => {
   
   // If businessesData has content, use it as the base
   if (businessesData.length > 0) {
-    // Combine the original businesses with the uploaded ones and sort by priority
+    // Combine the original businesses with the uploaded ones
     const allBusinesses = [...businessesData, ...uploadedBusinesses];
     
-    // Sort businesses by priority (lower numbers first), then keep default order
+    // Sort businesses by priority (lower numbers first)
     // Businesses without priority (undefined) will be after those with priority
     return allBusinesses.sort((a, b) => {
-      // If both have priority, compare them
+      // If both have priority, compare them (ASCENDING order - lower numbers first)
+      if (a.priority !== undefined && b.priority !== undefined) {
+        return a.priority - b.priority;
+      }
+      // If only a has priority, a comes first
+      if (a.priority !== undefined) {
+        return -1;
+      }
+      // If only b has priority, b comes first
+      if (b.priority !== undefined) {
+        return 1;
+      }
+      // If neither has priority, maintain the original order (featured businesses first)
+      return b.featured === a.featured ? 0 : b.featured ? 1 : -1;
+    });
+  }
+  
+  // If businessesData is empty but we have uploaded businesses, just return those
+  if (uploadedBusinesses.length > 0) {
+    // Sort uploaded businesses by priority
+    return uploadedBusinesses.sort((a, b) => {
+      // If both have priority, compare them (ASCENDING order - lower numbers first)
       if (a.priority !== undefined && b.priority !== undefined) {
         return a.priority - b.priority;
       }
@@ -233,11 +253,6 @@ export const getAllBusinesses = (): Business[] => {
       // If neither has priority, maintain the original order
       return 0;
     });
-  }
-  
-  // If businessesData is empty but we have uploaded businesses, just return those
-  if (uploadedBusinesses.length > 0) {
-    return uploadedBusinesses;
   }
   
   // If no data anywhere, return default data
@@ -277,7 +292,7 @@ export const addBusiness = async (business: Omit<Business, "id">): Promise<Busin
   }
 };
 
-// Edit an existing business
+// Update an existing business
 export const updateBusiness = async (updatedBusiness: Business): Promise<Business | null> => {
   try {
     // Check if it's in the uploadedBusinesses array
@@ -300,6 +315,7 @@ export const updateBusiness = async (updatedBusiness: Business): Promise<Busines
       uploadedBusinesses[index] = updatedBusiness;
       (uploadedBusinesses[index] as any).docId = docId;
       
+      // Force a re-sort by notifying data changed
       notifyDataChanged();
       return updatedBusiness;
     }
