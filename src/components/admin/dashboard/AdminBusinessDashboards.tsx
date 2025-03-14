@@ -1,275 +1,190 @@
 
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Search, ArrowRight, CheckCircle, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Progress } from "@/components/ui/progress";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { BarChart3, VideoIcon, PenTool, Star, Search, MapPin, TrendingUp, FileText, ExternalLink, Plus, Save, Trash2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+
+const mockBusinessDashboards = [
+  {
+    id: "bd1",
+    businessName: "Global Foods",
+    owner: "Rahul Sharma",
+    email: "rahul@globalfoods.com",
+    subscription: "Premium",
+    lastActive: "2023-10-15T10:30:00",
+    status: "active"
+  },
+  {
+    id: "bd2",
+    businessName: "Tech Solutions",
+    owner: "Priya Patel",
+    email: "priya@techsolutions.in",
+    subscription: "Standard",
+    lastActive: "2023-10-14T14:45:00",
+    status: "active"
+  },
+  {
+    id: "bd3",
+    businessName: "Sunrise Boutique",
+    owner: "Amit Kumar",
+    email: "amit@sunriseboutique.in",
+    subscription: "Basic",
+    lastActive: "2023-10-10T09:15:00",
+    status: "inactive"
+  },
+  {
+    id: "bd4",
+    businessName: "Urban Fitness",
+    owner: "Neha Singh",
+    email: "neha@urbanfitness.com",
+    subscription: "Premium",
+    lastActive: "2023-10-13T16:20:00",
+    status: "active"
+  },
+  {
+    id: "bd5",
+    businessName: "Fresh Grocers",
+    owner: "Vikram Reddy",
+    email: "vikram@freshgrocers.in",
+    subscription: "Standard",
+    lastActive: "2023-10-08T11:10:00",
+    status: "inactive"
+  }
+];
 
 const AdminBusinessDashboards = () => {
-  const { toast } = useToast();
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [activeServices, setActiveServices] = useState<Record<string, boolean>>({
-    marketing: true,
-    reels: true,
-    creatives: true,
-    ratings: true,
-    seo: false,
-    google_listing: false,
-    growth: false,
-    leads: false,
-    reach: false,
-  });
-  const [serviceProgress, setServiceProgress] = useState<Record<string, number>>({
-    marketing: 55,
-    reels: 70,
-    creatives: 80,
-    ratings: 65,
-    seo: 40,
-    google_listing: 30,
-    growth: 60,
-    leads: 45,
-    reach: 25,
-  });
+  const [dashboards, setDashboards] = useState(mockBusinessDashboards);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
   
-  // Mock users data
-  const mockUsers = [
-    { id: "1", name: "Rajesh Ventures", email: "rajesh@ventures.com", role: "Business", plan: "Premium" },
-    { id: "2", name: "Maya's Boutique", email: "maya@boutique.com", role: "Business", plan: "Standard" },
-    { id: "3", name: "Sharma Electronics", email: "info@sharma.com", role: "Business", plan: "Basic" },
-  ];
-  
-  const serviceDetails = [
-    { id: "marketing", name: "Marketing Campaigns", icon: <BarChart3 className="h-4 w-4" /> },
-    { id: "reels", name: "Reels & Video Ads", icon: <VideoIcon className="h-4 w-4" /> },
-    { id: "creatives", name: "Creative Designs", icon: <PenTool className="h-4 w-4" /> },
-    { id: "ratings", name: "Ratings & Reviews", icon: <Star className="h-4 w-4" /> },
-    { id: "seo", name: "SEO Optimization", icon: <Search className="h-4 w-4" /> },
-    { id: "google_listing", name: "Google Business Listing", icon: <MapPin className="h-4 w-4" /> },
-    { id: "growth", name: "Growth Analytics", icon: <TrendingUp className="h-4 w-4" /> },
-    { id: "leads", name: "Leads & Inquiries", icon: <FileText className="h-4 w-4" /> },
-    { id: "reach", name: "Reach & Visibility", icon: <ExternalLink className="h-4 w-4" /> },
-  ];
-  
-  const handleUserSelect = (userId: string) => {
-    setSelectedUser(userId);
-    // In a real app, we would fetch the user's services and progress here
-    // For now, we'll just simulate different services being active for different users
+  useEffect(() => {
+    // Simulate API call to fetch dashboards
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
     
-    const user = mockUsers.find(u => u.id === userId);
-    
-    if (user) {
-      if (user.plan === "Basic") {
-        setActiveServices({
-          marketing: true,
-          reels: true,
-          creatives: false,
-          ratings: true,
-          seo: false,
-          google_listing: false,
-          growth: false,
-          leads: false,
-          reach: false,
-        });
-      } else if (user.plan === "Standard") {
-        setActiveServices({
-          marketing: true,
-          reels: true,
-          creatives: true,
-          ratings: true,
-          seo: true,
-          google_listing: false,
-          growth: false,
-          leads: false,
-          reach: false,
-        });
-      } else {
-        // Premium
-        setActiveServices({
-          marketing: true,
-          reels: true,
-          creatives: true,
-          ratings: true,
-          seo: true,
-          google_listing: true,
-          growth: true,
-          leads: true,
-          reach: true,
-        });
-      }
-    }
-    
-    setIsEditing(false);
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // Filter dashboards based on search term
+  const filteredDashboards = dashboards.filter(
+    dashboard =>
+      dashboard.businessName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      dashboard.owner.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      dashboard.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  // Format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
   };
   
-  const handleToggleService = (serviceId: string) => {
-    setActiveServices(prev => ({
-      ...prev,
-      [serviceId]: !prev[serviceId]
-    }));
-  };
-  
-  const handleProgressChange = (serviceId: string, value: number) => {
-    setServiceProgress(prev => ({
-      ...prev,
-      [serviceId]: value
-    }));
-  };
-  
-  const handleSaveChanges = () => {
-    toast({
-      title: "Changes saved",
-      description: "The dashboard services have been updated",
-      variant: "success",
-    });
-    setIsEditing(false);
-  };
-  
-  const handleAddNewService = () => {
-    toast({
-      title: "Feature coming soon",
-      description: "Adding custom services will be available in the next update",
-      variant: "info",
-    });
+  // Handle search input change
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
   };
   
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Manage Business Dashboards</CardTitle>
-          <CardDescription>
-            Configure which services appear on business dashboards and update their progress
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div>
-            <Label htmlFor="select-user">Select Business</Label>
-            <Select onValueChange={handleUserSelect} value={selectedUser || undefined}>
-              <SelectTrigger id="select-user" className="mt-1">
-                <SelectValue placeholder="Select a business" />
-              </SelectTrigger>
-              <SelectContent>
-                {mockUsers.map(user => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.name} ({user.plan})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {selectedUser && (
-            <>
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Dashboard Services</h3>
-                <div className="flex gap-2">
-                  {isEditing ? (
-                    <Button onClick={handleSaveChanges}>
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Changes
-                    </Button>
-                  ) : (
-                    <Button variant="outline" onClick={() => setIsEditing(true)}>
-                      Edit Services
-                    </Button>
-                  )}
-                </div>
-              </div>
-              
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Service</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Progress</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+    <Card>
+      <CardHeader>
+        <CardTitle>Business Dashboards</CardTitle>
+        <CardDescription>
+          Monitor and manage business dashboards
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {/* Search Input */}
+        <div className="mb-4 relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by business name, owner, or email"
+            className="pl-8"
+            value={searchTerm}
+            onChange={handleSearch}
+          />
+        </div>
+        
+        {/* Dashboards Table */}
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Business</TableHead>
+                <TableHead>Owner</TableHead>
+                <TableHead>Subscription</TableHead>
+                <TableHead>Last Active</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    <div className="flex justify-center items-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : filteredDashboards.length > 0 ? (
+                filteredDashboards.map(dashboard => (
+                  <TableRow key={dashboard.id}>
+                    <TableCell>
+                      <div className="font-medium">{dashboard.businessName}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <p>{dashboard.owner}</p>
+                        <p className="text-sm text-muted-foreground">{dashboard.email}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{dashboard.subscription}</Badge>
+                    </TableCell>
+                    <TableCell>{formatDate(dashboard.lastActive)}</TableCell>
+                    <TableCell>
+                      {dashboard.status === "active" ? (
+                        <Badge className="bg-green-100 text-green-800">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Active
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-amber-100 text-amber-800">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          Inactive
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm">
+                        View
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {serviceDetails.map(service => (
-                    <TableRow key={service.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {service.icon}
-                          <span>{service.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {isEditing ? (
-                          <Switch 
-                            checked={activeServices[service.id] || false}
-                            onCheckedChange={() => handleToggleService(service.id)}
-                          />
-                        ) : (
-                          <span className={activeServices[service.id] ? "text-green-600" : "text-red-600"}>
-                            {activeServices[service.id] ? "Active" : "Inactive"}
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {activeServices[service.id] && (
-                          <div className="space-y-1">
-                            {isEditing ? (
-                              <Input 
-                                type="number" 
-                                min="0" 
-                                max="100" 
-                                value={serviceProgress[service.id]} 
-                                onChange={(e) => handleProgressChange(service.id, parseInt(e.target.value) || 0)}
-                              />
-                            ) : (
-                              <>
-                                <Progress value={serviceProgress[service.id]} className="h-2" />
-                                <span className="text-xs text-muted-foreground">{serviceProgress[service.id]}%</span>
-                              </>
-                            )}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {isEditing && (
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              
-              {isEditing && (
-                <Button variant="outline" onClick={handleAddNewService}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Service
-                </Button>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    <p className="text-muted-foreground">No dashboards found</p>
+                  </TableCell>
+                </TableRow>
               )}
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

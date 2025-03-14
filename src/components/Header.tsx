@@ -21,6 +21,7 @@ const Header = () => {
     user
   } = auth;
   const { getUserSubscription } = useSubscription();
+  const subscription = getUserSubscription();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -43,8 +44,19 @@ const Header = () => {
     } else if (user.role === "Influencer") {
       navigate("/influencer-dashboard");
     } else {
-      navigate("/profile");
+      navigate("/admin/dashboard");
     }
+  };
+
+  // Only show dashboard button for users with active subscription or admins
+  const shouldShowDashboard = () => {
+    if (!isAuthenticated || !user) return false;
+    
+    // Admins always see the dashboard button
+    if (user.role === "Admin" || user.isAdmin) return true;
+    
+    // Regular users need an active subscription
+    return subscription && subscription.status === "active";
   };
 
   // Make sure we don't show anything until auth is initialized
@@ -76,7 +88,7 @@ const Header = () => {
           </nav>
 
           <div className="hidden md:flex items-center space-x-4">
-            {isAuthenticated && (
+            {shouldShowDashboard() && (
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -122,7 +134,7 @@ const Header = () => {
             About
           </Link>
           <div className="pt-2 flex flex-col space-y-3">
-            {isAuthenticated && (
+            {shouldShowDashboard() && (
               <Button 
                 variant="outline" 
                 className="justify-start rounded-full w-full transition-smooth" 

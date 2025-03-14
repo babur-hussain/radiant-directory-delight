@@ -8,6 +8,9 @@ import UserPermissionsTab from "@/components/admin/UserPermissionsTab";
 import ManageCategoriesLocations from "@/components/admin/ManageCategoriesLocations";
 import { BusinessFormValues } from "@/components/admin/BusinessForm";
 import { Business } from "@/lib/csv-utils";
+import UserSubscriptionMapping from "@/components/admin/UserSubscriptionMapping";
+import AdminBusinessDashboards from "./AdminBusinessDashboards";
+import AdminInfluencerDashboards from "./AdminInfluencerDashboards";
 
 interface AdminDashboardTabsProps {
   activeTab: string;
@@ -44,12 +47,15 @@ const AdminDashboardTabs = ({
 }: AdminDashboardTabsProps) => {
   return (
     <Tabs defaultValue="businesses" value={activeTab} onValueChange={setActiveTab}>
-      <TabsList className="grid w-full grid-cols-5">
+      <TabsList className="grid w-full grid-cols-8">
         <TabsTrigger value="businesses">Businesses</TabsTrigger>
         <TabsTrigger value="categories-locations">Categories & Locations</TabsTrigger>
         <TabsTrigger value="subscription-packages">Subscription Packages</TabsTrigger>
         <TabsTrigger value="subscriptions">Active Subscriptions</TabsTrigger>
+        <TabsTrigger value="subscription-mapping">User Mapping</TabsTrigger>
         <TabsTrigger value="users">User Permissions</TabsTrigger>
+        <TabsTrigger value="business-dashboards">Business Dashboards</TabsTrigger>
+        <TabsTrigger value="influencer-dashboards">Influencer Dashboards</TabsTrigger>
       </TabsList>
       
       <TabsContent value="businesses" className="pt-6">
@@ -80,8 +86,20 @@ const AdminDashboardTabs = ({
         <SubscriptionManagement />
       </TabsContent>
       
+      <TabsContent value="subscription-mapping" className="pt-6">
+        <UserSubscriptionMapping onPermissionError={handlePermissionError} />
+      </TabsContent>
+      
       <TabsContent value="users" className="pt-6">
         <UserPermissionsTab />
+      </TabsContent>
+      
+      <TabsContent value="business-dashboards" className="pt-6">
+        <AdminBusinessDashboards />
+      </TabsContent>
+      
+      <TabsContent value="influencer-dashboards" className="pt-6">
+        <AdminInfluencerDashboards />
       </TabsContent>
     </Tabs>
   );
