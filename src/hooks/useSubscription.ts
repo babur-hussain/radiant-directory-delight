@@ -5,6 +5,7 @@ import { toast } from "@/hooks/use-toast";
 import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { syncUserData } from "@/features/auth/authStorage";
+import { updateUserSubscription, getUserSubscription as getSubscription } from "@/lib/subscription-utils";
 
 interface RazorpayOptions {
   key: string;
@@ -43,8 +44,12 @@ export const useSubscription = () => {
 
   useEffect(() => {
     if (user) {
-      const subscription = getUserSubscription();
-      setUserSubscription(subscription);
+      const fetchSubscription = async () => {
+        const subscription = await getUserSubscription();
+        setUserSubscription(subscription);
+      };
+      
+      fetchSubscription();
     } else {
       setUserSubscription(null);
     }
@@ -233,24 +238,23 @@ export const useSubscription = () => {
     };
 
     try {
-      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
-      userSubscriptions[user.id] = subscriptionData;
-      localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
+      console.log("⚡ Processing successful subscription:", subscriptionData);
       
-      await syncUserData(user.id, {
-        subscription: subscriptionData,
-        lastUpdated: new Date().toISOString()
-      });
+      // Update subscription in Firestore and localStorage
+      const updated = await updateUserSubscription(user.id, subscriptionData);
       
-      setUserSubscription(subscriptionData);
-      setIsProcessing(false);
-      
-      toast({
-        title: "Subscription Successful",
-        description: `You have successfully subscribed to the ${selectedPackage.title} plan.`,
-      });
-      
-      window.location.href = "/subscription/details";
+      if (updated) {
+        setUserSubscription(subscriptionData);
+        
+        toast({
+          title: "Subscription Successful",
+          description: `You have successfully subscribed to the ${selectedPackage.title} plan.`,
+        });
+        
+        window.location.href = "/subscription/details";
+      } else {
+        throw new Error("Failed to update subscription data");
+      }
     } catch (error) {
       console.error("Error saving subscription data:", error);
       toast({
@@ -258,31 +262,42 @@ export const useSubscription = () => {
         description: "Your payment was successful but we couldn't complete your subscription setup.",
         variant: "destructive",
       });
+    } finally {
       setIsProcessing(false);
     }
   };
 
-  const getUserSubscription = () => {
+  const getUserSubscription = async () => {
     if (!user) return null;
     
     try {
+      console.log("⚡ Getting subscription for user:", user.id);
+      
+      // First check if user object already has subscription
       if (user.subscription) {
-        console.log("Found subscription in user object:", user.subscription);
+        console.log("✅ Found subscription in user object:", user.subscription);
         return user.subscription;
       }
       
-      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
-      const subscription = userSubscriptions[user.id] || null;
+      // Otherwise query from Firestore and localStorage
+      const subscription = await getSubscription(user.id);
       
-      if (subscription && user.id) {
-        console.log("Found subscription in localStorage, syncing to user data:", subscription);
+      if (subscription) {
+        console.log("✅ Retrieved subscription:", subscription);
         
-        syncUserData(user.id, {
-          subscription: subscription,
-          subscriptionPackage: subscription.packageId,
-          subscriptionStatus: subscription.status,
-          lastUpdated: new Date().toISOString()
-        }).catch(err => console.error("Error syncing subscription to user data:", err));
+        // Sync to user data if found
+        if (user.id) {
+          console.log("Syncing subscription to user data");
+          
+          syncUserData(user.id, {
+            subscription: subscription,
+            subscriptionPackage: subscription.packageId,
+            subscriptionStatus: subscription.status,
+            lastUpdated: new Date().toISOString()
+          }).catch(err => console.error("Error syncing subscription to user data:", err));
+        }
+      } else {
+        console.log("❌ No subscription found for user", user.id);
       }
       
       return subscription;
@@ -298,7 +313,7 @@ export const useSubscription = () => {
     try {
       setIsProcessing(true);
       
-      const currentSubscription = getUserSubscription();
+      const currentSubscription = await getUserSubscription();
       
       if (!currentSubscription) {
         toast({
@@ -316,21 +331,21 @@ export const useSubscription = () => {
         cancelledAt: new Date().toISOString()
       };
       
-      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
-      userSubscriptions[user.id] = updatedSubscription;
-      localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
+      console.log("⚡ Cancelling subscription:", updatedSubscription);
       
-      await syncUserData(user.id, {
-        subscription: updatedSubscription,
-        lastUpdated: new Date().toISOString()
-      });
+      // Update subscription in Firestore and localStorage
+      const updated = await updateUserSubscription(user.id, updatedSubscription);
       
-      setUserSubscription(updatedSubscription);
-      
-      toast({
-        title: "Subscription Cancelled",
-        description: "Your subscription has been cancelled successfully.",
-      });
+      if (updated) {
+        setUserSubscription(updatedSubscription);
+        
+        toast({
+          title: "Subscription Cancelled",
+          description: "Your subscription has been cancelled successfully.",
+        });
+      } else {
+        throw new Error("Failed to update subscription data");
+      }
     } catch (error) {
       console.error("Error cancelling subscription:", error);
       toast({

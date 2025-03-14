@@ -8,7 +8,7 @@ import { SubscriptionPackage } from "@/data/subscriptionData";
 import { User } from "@/types/auth";
 import { syncUserData } from "@/features/auth/authStorage";
 import { db } from "@/config/firebase";
-import { doc, updateDoc, serverTimestamp, getDoc } from "firebase/firestore";
+import { doc, updateDoc, serverTimestamp, getDoc, setDoc } from "firebase/firestore";
 
 interface UserSubscriptionAssignmentProps {
   user: User;
@@ -123,34 +123,57 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         assignedAt: new Date().toISOString()
       };
       
-      // Update localStorage
-      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
-      userSubscriptions[user.id] = subscriptionData;
-      localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
+      console.log("⚡ Creating subscription data:", subscriptionData);
       
-      // Update in Firestore - use a more comprehensive update to ensure the data is properly saved
+      // Update in Firestore FIRST - using setDoc with merge to ensure reliable updates
       try {
         const userDoc = doc(db, "users", user.id);
         
-        // First, update the main subscription object
-        await updateDoc(userDoc, {
+        // First attempt: Use setDoc with merge to ensure full update works
+        await setDoc(userDoc, {
           subscription: subscriptionData,
-          lastUpdated: serverTimestamp()
-        });
-        
-        // Then, add the legacy fields to ensure backward compatibility
-        await updateDoc(userDoc, {
           subscriptionPackage: packageDetails.id,
           subscriptionStatus: "active",
-          subscriptionAssignedAt: serverTimestamp()
-        });
+          subscriptionAssignedAt: new Date().toISOString(),
+          lastUpdated: serverTimestamp()
+        }, { merge: true });
         
         console.log(`✅ Subscription assigned in Firestore: ${packageDetails.id} to ${user.id}`);
-        console.log("Full subscription data:", subscriptionData);
+        
+        // Verify update
+        const updatedDoc = await getDoc(userDoc);
+        if (updatedDoc.exists()) {
+          const updated = updatedDoc.data();
+          console.log("📊 Firestore after update:", {
+            subscription: updated.subscription,
+            subscriptionPackage: updated.subscriptionPackage,
+            subscriptionStatus: updated.subscriptionStatus
+          });
+        }
       } catch (firestoreError) {
         console.error("❌ Failed to assign subscription in Firestore:", firestoreError);
-        // Still continue with local storage as fallback
+        
+        // Second attempt: Try updateDoc as fallback
+        try {
+          const userDoc = doc(db, "users", user.id);
+          await updateDoc(userDoc, {
+            "subscription": subscriptionData,
+            "subscriptionPackage": packageDetails.id,
+            "subscriptionStatus": "active",
+            "subscriptionAssignedAt": new Date().toISOString(),
+            "lastUpdated": serverTimestamp()
+          });
+          console.log("✅ Fallback update successful");
+        } catch (fallbackError) {
+          console.error("❌ Fallback update also failed:", fallbackError);
+          // Continue with localStorage as last resort
+        }
       }
+      
+      // Update localStorage as backup
+      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
+      userSubscriptions[user.id] = subscriptionData;
+      localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
       
       // Also store subscription info in the user's local record to ensure persistence
       await syncUserData(user.id, {
@@ -198,32 +221,53 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         cancelledBy: "admin"
       };
       
-      // Update localStorage
-      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
-      userSubscriptions[user.id] = updatedSubscription;
-      localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
+      console.log("⚡ Cancelling subscription:", updatedSubscription);
       
-      // Update in Firestore - use a comprehensive update to ensure data is properly saved
+      // Update in Firestore FIRST - using setDoc with merge for reliability
       try {
         const userDoc = doc(db, "users", user.id);
         
-        // Update the main subscription object
-        await updateDoc(userDoc, {
+        await setDoc(userDoc, {
           subscription: updatedSubscription,
-          lastUpdated: serverTimestamp()
-        });
-        
-        // Also update legacy fields
-        await updateDoc(userDoc, {
           subscriptionStatus: "cancelled",
-          subscriptionCancelledAt: serverTimestamp()
-        });
+          subscriptionCancelledAt: new Date().toISOString(),
+          lastUpdated: serverTimestamp()
+        }, { merge: true });
         
         console.log(`✅ Subscription cancelled in Firestore for ${user.id}`);
+        
+        // Verify update
+        const updatedDoc = await getDoc(userDoc);
+        if (updatedDoc.exists()) {
+          const updated = updatedDoc.data();
+          console.log("📊 Firestore after cancellation:", {
+            subscription: updated.subscription,
+            subscriptionStatus: updated.subscriptionStatus
+          });
+        }
       } catch (firestoreError) {
         console.error("❌ Failed to cancel subscription in Firestore:", firestoreError);
-        // Continue with local storage as fallback
+        
+        // Try updateDoc as fallback
+        try {
+          const userDoc = doc(db, "users", user.id);
+          await updateDoc(userDoc, {
+            "subscription": updatedSubscription,
+            "subscriptionStatus": "cancelled",
+            "subscriptionCancelledAt": new Date().toISOString(),
+            "lastUpdated": serverTimestamp()
+          });
+          console.log("✅ Fallback cancellation successful");
+        } catch (fallbackError) {
+          console.error("❌ Fallback cancellation also failed:", fallbackError);
+          // Continue with localStorage as last resort
+        }
       }
+      
+      // Update localStorage as backup
+      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
+      userSubscriptions[user.id] = updatedSubscription;
+      localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
       
       // Also update in the user's record
       await syncUserData(user.id, {

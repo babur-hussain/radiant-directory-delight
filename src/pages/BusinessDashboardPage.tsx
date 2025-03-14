@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import BusinessDashboard from "@/components/dashboard/business/BusinessDashboard";
 import AccessDenied from "@/components/dashboard/AccessDenied";
-import { doc, onSnapshot, getDoc } from "firebase/firestore";
+import { doc, onSnapshot, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/config/firebase";
 
 const BusinessDashboardPage = () => {
@@ -14,7 +14,7 @@ const BusinessDashboardPage = () => {
   
   useEffect(() => {
     if (isAuthenticated && user?.id) {
-      console.log("Checking subscription for user:", user.id);
+      console.log("🔍 Checking subscription for user:", user.id);
       
       // Initial fetch to quickly get subscription data
       const fetchInitialData = async () => {
@@ -24,7 +24,7 @@ const BusinessDashboardPage = () => {
           
           if (docSnapshot.exists()) {
             const userData = docSnapshot.data();
-            console.log("Initial Firestore data:", userData);
+            console.log("📊 Initial Firestore user data:", userData);
             
             // Check for subscription status in different paths
             if (userData?.subscription?.status) {
@@ -33,10 +33,33 @@ const BusinessDashboardPage = () => {
             } else if (userData?.subscriptionStatus) {
               setSubscriptionStatus(userData.subscriptionStatus);
               console.log("✅ Initial legacy subscription status from Firestore:", userData.subscriptionStatus);
+            } else {
+              console.log("⚠️ No subscription status found in user document");
+              
+              // Try querying subscriptions collection as a fallback
+              try {
+                const subscriptionsQuery = query(
+                  collection(db, "subscriptions"), 
+                  where("userId", "==", user.id)
+                );
+                const subscriptionDocs = await getDocs(subscriptionsQuery);
+                
+                if (!subscriptionDocs.empty) {
+                  const latestSubscription = subscriptionDocs.docs[0].data();
+                  console.log("📊 Found subscription in subscriptions collection:", latestSubscription);
+                  setSubscriptionStatus(latestSubscription.status || null);
+                } else {
+                  console.log("⚠️ No subscription found in subscriptions collection");
+                }
+              } catch (subError) {
+                console.error("❌ Error querying subscriptions:", subError);
+              }
             }
+          } else {
+            console.log("⚠️ User document doesn't exist in Firestore");
           }
         } catch (error) {
-          console.error("Error getting initial data:", error);
+          console.error("❌ Error getting initial data:", error);
         }
       };
       
@@ -48,7 +71,8 @@ const BusinessDashboardPage = () => {
         setIsLoading(false);
         if (docSnapshot.exists()) {
           const userData = docSnapshot.data();
-          console.log("Firestore real-time update:", userData);
+          console.log("📊 Firestore real-time update for user:", user.id);
+          console.log("Full user data:", userData);
           
           // Check for subscription status in different paths
           if (userData?.subscription?.status) {
@@ -58,8 +82,8 @@ const BusinessDashboardPage = () => {
             setSubscriptionStatus(userData.subscriptionStatus);
             console.log("✅ Real-time legacy subscription status from Firestore:", userData.subscriptionStatus);
           } else {
+            console.log("⚠️ No subscription found in Firestore real-time update");
             // No subscription found in Firestore, check local storage as fallback
-            console.log("No subscription found in Firestore, checking localStorage");
             const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
             const subscription = userSubscriptions[user.id];
             
