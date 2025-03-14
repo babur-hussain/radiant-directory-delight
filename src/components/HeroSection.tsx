@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,13 +28,11 @@ const HeroSection = () => {
     'Dallas'
   ];
 
-  // Handle search
   useEffect(() => {
     const delaySearch = setTimeout(() => {
       if (searchQuery.trim()) {
         setIsSearching(true);
         
-        // Simulate API call with a delay
         setTimeout(() => {
           const results = businessesData.filter(business => 
             business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -56,7 +53,6 @@ const HeroSection = () => {
     return () => clearTimeout(delaySearch);
   }, [searchQuery]);
 
-  // Close results when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
@@ -69,12 +65,10 @@ const HeroSection = () => {
   }, []);
 
   const handleSearch = () => {
-    // Navigate to businesses page with search params
     navigate(`/businesses?search=${searchQuery}&location=${location}`);
   };
 
   const handleResultClick = (id: number) => {
-    // Navigate to business details page
     navigate(`/business?id=${id}`);
   };
 
@@ -92,7 +86,6 @@ const HeroSection = () => {
 
   return (
     <div className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
-      {/* Background with overlay */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-white"></div>
         <div 
@@ -104,7 +97,6 @@ const HeroSection = () => {
         ></div>
       </div>
 
-      {/* Content */}
       <div className="container max-w-7xl mx-auto px-4 sm:px-6 z-10 animate-fade-up">
         <div className="flex flex-col items-center text-center mb-12">
           <div className="inline-block mb-6">
@@ -121,12 +113,10 @@ const HeroSection = () => {
           </p>
         </div>
 
-        {/* Search Box */}
         <div className="max-w-3xl mx-auto">
           <div ref={searchContainerRef} className="relative">
             <div className="bg-white shadow-xl rounded-xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
               <div className="flex flex-col md:flex-row">
-                {/* Search Input */}
                 <div className="relative flex-grow border-b md:border-b-0 md:border-r border-gray-100">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <Search className="h-5 w-5 text-gray-400" />
@@ -149,7 +139,6 @@ const HeroSection = () => {
                   )}
                 </div>
 
-                {/* Location Selector */}
                 <div className="relative">
                   <div
                     className="flex items-center w-full md:w-52 px-4 py-5 cursor-pointer"
@@ -160,7 +149,6 @@ const HeroSection = () => {
                     <ChevronDown className="h-4 w-4 text-gray-400 ml-auto" />
                   </div>
 
-                  {/* Location Dropdown */}
                   <div
                     className={cn(
                       "absolute z-20 mt-1 w-full bg-white shadow-lg rounded-md py-1 transition-all duration-200 border border-gray-100",
@@ -182,7 +170,6 @@ const HeroSection = () => {
                   </div>
                 </div>
 
-                {/* Search Button */}
                 <Button
                   className="m-3 md:m-2 rounded-lg transition-smooth"
                   size="lg"
@@ -193,16 +180,15 @@ const HeroSection = () => {
               </div>
             </div>
 
-            {/* Search Results */}
             <SearchResults 
               results={searchResults}
               isLoading={isSearching}
               visible={showResults}
               onResultClick={handleResultClick}
+              onClose={handleClearSearch}
             />
           </div>
 
-          {/* Popular Searches */}
           <div className="mt-6 flex flex-wrap justify-center items-center gap-2 text-sm text-gray-500">
             <span>Popular:</span>
             {['Restaurants', 'Hotels', 'Coffee', 'Gyms', 'Doctors', 'Auto Services'].map((term) => (

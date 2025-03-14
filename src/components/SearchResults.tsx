@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Star, MapPin, ExternalLink } from 'lucide-react';
+import { Star, MapPin, ExternalLink, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
@@ -23,18 +23,40 @@ interface SearchResultsProps {
   isLoading: boolean;
   visible: boolean;
   onResultClick: (id: number) => void;
+  onClose: () => void;
 }
 
-const SearchResults = ({ results, isLoading, visible, onResultClick }: SearchResultsProps) => {
+const SearchResults = ({ results, isLoading, visible, onResultClick, onClose }: SearchResultsProps) => {
   const navigate = useNavigate();
 
   if (!visible) return null;
 
   return (
     <div className={cn(
-      "absolute top-full left-0 right-0 mt-2 z-50 bg-white rounded-lg shadow-2xl max-h-[60vh] overflow-y-auto transition-opacity duration-200",
+      "fixed left-0 right-0 mt-0 z-50 bg-white rounded-b-lg shadow-2xl max-h-[60vh] overflow-y-auto transition-opacity duration-200",
       visible ? "opacity-100" : "opacity-0 pointer-events-none"
     )}>
+      <div className="sticky top-0 z-10 flex justify-between items-center bg-white p-4 border-b">
+        <h3 className="font-medium text-gray-700">Search Results</h3>
+        <div className="flex gap-2">
+          <Button 
+            variant="link" 
+            size="sm" 
+            onClick={() => navigate('/businesses')}
+            className="text-sm"
+          >
+            View all <ExternalLink className="ml-1 h-3 w-3" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onClose}
+            className="h-8 w-8"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
       {isLoading ? (
         <div className="p-6 text-center">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
@@ -47,17 +69,6 @@ const SearchResults = ({ results, isLoading, visible, onResultClick }: SearchRes
         </div>
       ) : (
         <div className="p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-medium text-gray-700">Search Results</h3>
-            <Button 
-              variant="link" 
-              size="sm" 
-              onClick={() => navigate('/businesses')}
-              className="text-sm"
-            >
-              View all <ExternalLink className="ml-1 h-3 w-3" />
-            </Button>
-          </div>
           <div className="space-y-3">
             {results.map((result) => (
               <Card 
