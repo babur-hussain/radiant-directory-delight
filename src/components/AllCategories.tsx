@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import * as React from 'react';
@@ -72,17 +72,36 @@ type AllCategoriesProps = {
 const AllCategories = ({ searchTerm }: AllCategoriesProps) => {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   
-  // Filter categories based on search term
-  const filteredMainCategories = mainCategories.filter(category => 
-    category.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  
-  const filteredAdditionalCategories = additionalCategories.filter(category => 
-    category.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Combine all categories for search if needed
-  const allCategories = [...filteredMainCategories, ...filteredAdditionalCategories];
+  // Filter categories based on search term using useMemo for performance
+  const filteredCategories = useMemo(() => {
+    const normalizedSearchTerm = searchTerm.toLowerCase().trim();
+    
+    if (!normalizedSearchTerm) {
+      return { 
+        main: mainCategories,
+        additional: additionalCategories
+      };
+    }
+    
+    // Filter main categories
+    const filteredMain = mainCategories.filter(category => 
+      category.name.toLowerCase().includes(normalizedSearchTerm) ||
+      // Also check subcategories
+      (subcategories[category.name as keyof typeof subcategories]?.some(
+        sub => sub.toLowerCase().includes(normalizedSearchTerm)
+      ))
+    );
+    
+    // Filter additional categories
+    const filteredAdditional = additionalCategories.filter(category => 
+      category.name.toLowerCase().includes(normalizedSearchTerm)
+    );
+    
+    return { 
+      main: filteredMain,
+      additional: filteredAdditional
+    };
+  }, [searchTerm]);
   
   // Handle category expansion
   const toggleCategory = (categoryName: string) => {
@@ -100,21 +119,23 @@ const AllCategories = ({ searchTerm }: AllCategoriesProps) => {
         <div className="mb-16">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold text-gray-900">Featured Categories</h2>
-            <Link 
-              to="#all-categories" 
+            <a 
+              href="#all-categories" 
               className="text-sm font-medium text-primary hover:text-primary/90 transition-smooth"
             >
               View All Categories
-            </Link>
+            </a>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
-            {filteredMainCategories.length > 0 ? (
-              filteredMainCategories.map((category) => (
-                <div 
+            {filteredCategories.main.length > 0 ? (
+              filteredCategories.main.map((category) => (
+                <button 
                   key={category.name}
-                  className="group cursor-pointer"
+                  className="group text-left focus:outline-none"
                   onClick={() => toggleCategory(category.name)}
+                  aria-expanded={expandedCategory === category.name}
+                  aria-controls={`subcategories-${category.name}`}
                 >
                   <div className="flex flex-col items-center p-6 rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-smooth">
                     <div
@@ -129,7 +150,7 @@ const AllCategories = ({ searchTerm }: AllCategoriesProps) => {
                       {category.name}
                     </h3>
                   </div>
-                </div>
+                </button>
               ))
             ) : (
               <div className="col-span-full text-center py-8">
@@ -141,7 +162,7 @@ const AllCategories = ({ searchTerm }: AllCategoriesProps) => {
 
         {/* Expanded Category View */}
         {expandedCategory && subcategories[expandedCategory as keyof typeof subcategories] && (
-          <div className="mb-16 animate-fade-in">
+          <div className="mb-16 animate-fade-in" id={`subcategories-${expandedCategory}`}>
             <div className="bg-gray-50 rounded-xl p-6 border border-gray-100">
               <div className="flex items-center gap-3 mb-4">
                 {mainCategories.find(c => c.name === expandedCategory)?.icon && (
@@ -178,12 +199,13 @@ const AllCategories = ({ searchTerm }: AllCategoriesProps) => {
           <h2 className="text-2xl font-bold text-gray-900 mb-8">All Categories</h2>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
-            {allCategories.length > 0 ? (
-              allCategories.map((category) => (
+            {[...filteredCategories.main, ...filteredCategories.additional].length > 0 ? (
+              [...filteredCategories.main, ...filteredCategories.additional].map((category) => (
                 <Link
                   key={category.name}
                   to={`/category/${category.name.toLowerCase()}`}
                   className="group flex flex-col items-center p-6 rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-smooth"
+                  aria-label={`Browse ${category.name} category`}
                 >
                   <div
                     className={cn(
@@ -211,4 +233,3 @@ const AllCategories = ({ searchTerm }: AllCategoriesProps) => {
 };
 
 export default AllCategories;
-
