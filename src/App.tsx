@@ -15,9 +15,12 @@ import SubscriptionDetails from "./components/subscription/SubscriptionDetails";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminBusinessListingsPage from "./pages/AdminBusinessListingsPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
+import AdminDashboardServicePage from "./pages/AdminDashboardServicePage";
 import InfluencerPage from "./pages/InfluencerPage";
 import BusinessPage from "./pages/BusinessPage";
 import ProfilePage from "./pages/ProfilePage";
+import InfluencerDashboardPage from "./pages/InfluencerDashboardPage";
+import BusinessDashboardPage from "./pages/BusinessDashboardPage";
 import Header from "./components/Header";
 import "./App.css";
 
@@ -42,9 +45,12 @@ const AppContent = () => {
           <Route path="/admin" element={<AdminLoginPage />} />
           <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
           <Route path="/admin/businesses" element={<AdminBusinessListingsPage />} />
+          <Route path="/admin/dashboard-services" element={<AdminDashboardServicePage />} />
           <Route path="/influencer" element={<InfluencerPage />} />
           <Route path="/business" element={<BusinessPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/influencer-dashboard/*" element={<InfluencerDashboardPage />} />
+          <Route path="/business-dashboard/*" element={<BusinessDashboardPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
