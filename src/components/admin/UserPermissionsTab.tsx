@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -93,13 +94,14 @@ const UserPermissionsTab = () => {
     loadUsersFromFirebase();
   }, []);
 
+  // Set up real-time listener for user collection changes
   useEffect(() => {
     try {
-      loadUsersFromFirebase();
-      
       const usersCollection = collection(db, "users");
       const unsubscribe = onSnapshot(usersCollection, (snapshot) => {
         if (!snapshot.empty) {
+          console.log(`Real-time update: Received ${snapshot.docs.length} users from Firebase`);
+          
           const updatedUsers = snapshot.docs.map(doc => {
             const data = doc.data();
             return {
@@ -112,12 +114,14 @@ const UserPermissionsTab = () => {
             };
           });
           
+          console.log("Detailed user data from real-time listener:", updatedUsers);
           setUsers(updatedUsers);
-          console.log("Real-time user update:", updatedUsers);
           
           updatedUsers.forEach(user => {
             saveUserToAllUsersList(convertToUserData(user) as User);
           });
+        } else {
+          console.log("Real-time update: Firebase users collection is empty");
         }
       }, (error) => {
         console.error("Error in real-time user updates:", error);
@@ -131,12 +135,13 @@ const UserPermissionsTab = () => {
       return () => unsubscribe();
     } catch (error) {
       console.error("Error setting up real-time user updates:", error);
-      loadUsersFromFirebase();
     }
   }, []);
 
   useEffect(() => {
     let result = [...users];
+    
+    console.log("Filtering/sorting users:", users.length);
     
     if (roleFilter !== "all") {
       result = result.filter(user => 
@@ -178,6 +183,7 @@ const UserPermissionsTab = () => {
       return 0;
     });
     
+    console.log("Filtered/sorted users:", result.length);
     setFilteredUsers(result);
     setTotalPages(Math.ceil(result.length / USERS_PER_PAGE));
   }, [users, searchTerm, roleFilter, sortBy, sortDirection]);

@@ -2,7 +2,7 @@ import { User, UserRole } from "../../types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { saveUserToAllUsersList } from "./authStorage";
 import { db } from "../../config/firebase";
-import { doc, setDoc, getDoc, collection, query, getDocs } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, query, getDocs, where } from "firebase/firestore";
 
 export const updateUserRole = async (user: User, role: UserRole) => {
   if (!user) {
@@ -134,7 +134,7 @@ export const getAllUsers = async (): Promise<User[]> => {
   try {
     console.log("Fetching ALL users from Firebase collection");
     const usersCollection = collection(db, "users");
-    const querySnapshot = await getDocs(usersCollection);
+    const querySnapshot = await getDocs(query(usersCollection));
     
     if (querySnapshot.empty) {
       console.log("No users found in Firebase");
@@ -147,7 +147,7 @@ export const getAllUsers = async (): Promise<User[]> => {
       return {
         id: doc.id,
         email: data.email || null,
-        name: data.name || null,
+        name: data.name || data.displayName || null,
         role: data.role || null,
         isAdmin: data.isAdmin || false,
         photoURL: data.photoURL || null,
@@ -156,6 +156,17 @@ export const getAllUsers = async (): Promise<User[]> => {
     });
     
     console.log(`Successfully fetched ${users.length} users from Firebase`);
+    
+    // Log details of each user to help debug
+    users.forEach((user, index) => {
+      console.log(`User ${index + 1}:`, {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isAdmin: user.isAdmin
+      });
+    });
+    
     return users;
   } catch (error) {
     console.error("Error getting all users from Firebase:", error);
