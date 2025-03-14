@@ -56,7 +56,7 @@ const BusinessFormDialog: React.FC<BusinessFormDialogProps> = ({
         
         <ScrollArea className="px-6 py-4 max-h-[calc(90vh-140px)]">
           <BusinessForm
-            initialValues={currentBusinessToEdit || undefined}
+            currentBusiness={currentBusinessToEdit}
             onSubmit={onSubmit}
             onCancel={() => setShowDialog(false)}
             isSubmitting={isSubmitting}

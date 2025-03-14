@@ -1,24 +1,14 @@
 
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import UnauthorizedView from "@/components/admin/UnauthorizedView";
-import { SubscriptionManagement } from "@/components/admin/SubscriptionManagement";
-import { SubscriptionPackageManagement } from "@/components/admin/subscription/SubscriptionManagement";
-import UserPermissionsTab from "@/components/admin/UserPermissionsTab";
-import { TableBusinessListings } from "@/components/admin/TableBusinessListings";
-import ManageCategoriesLocations from "@/components/admin/ManageCategoriesLocations";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, ShieldAlert, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState as useReactState } from "react";
 import { useBusinessListings } from "@/hooks/useBusinessListings";
 import { Business } from "@/lib/csv-utils";
-import BusinessFormDialog from "@/components/admin/BusinessFormDialog";
 import { BusinessFormValues } from "@/components/admin/BusinessForm";
-import CSVUploadDialog from "@/components/admin/CSVUploadDialog";
+import AdminPermissionError from "@/components/admin/dashboard/AdminPermissionError";
+import AdminDashboardTabs from "@/components/admin/dashboard/AdminDashboardTabs";
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
@@ -97,8 +87,6 @@ const AdminDashboardPage = () => {
   };
   
   const handleBusinessFormSubmit = async (values: BusinessFormValues) => {
-    // This function would handle the business form submission
-    // The actual implementation would be similar to the one in AdminBusinessListingsPage
     setIsSubmitting(true);
     
     try {
@@ -130,100 +118,27 @@ const AdminDashboardPage = () => {
     <div className="container mx-auto px-4 py-10">
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
       
-      {permissionError && (
-        <Alert variant="destructive" className="mb-6">
-          <ShieldAlert className="h-5 w-5" />
-          <AlertTitle>Permission Error</AlertTitle>
-          <AlertDescription className="flex flex-col gap-2">
-            <p>{permissionError}</p>
-            <p className="text-sm">
-              This usually happens when your Firebase security rules do not allow the operation.
-              Please check your Firebase rules or contact your administrator.
-            </p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={dismissError} 
-              className="self-end mt-2"
-            >
-              Dismiss
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
+      <AdminPermissionError 
+        permissionError={permissionError} 
+        dismissError={dismissError} 
+      />
       
-      <Tabs defaultValue="businesses" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="businesses">Businesses</TabsTrigger>
-          <TabsTrigger value="categories-locations">Categories & Locations</TabsTrigger>
-          <TabsTrigger value="subscription-packages">Subscription Packages</TabsTrigger>
-          <TabsTrigger value="subscriptions">Active Subscriptions</TabsTrigger>
-          <TabsTrigger value="users">User Permissions</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="businesses" className="pt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Manage Business Listings</CardTitle>
-              <CardDescription>
-                View and manage all business listings. Total: {businessCount} businesses.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TableBusinessListings 
-                onAddBusiness={handleAddBusiness}
-                onEditBusiness={handleEditBusiness}
-              />
-            </CardContent>
-            <CardFooter className="flex justify-end gap-2 pt-4 border-t">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowBusinessFormDialog(true)}
-                type="button"
-              >
-                Add Business
-              </Button>
-              <Button 
-                onClick={() => setShowUploadDialog(true)}
-                type="button"
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Upload CSV
-              </Button>
-            </CardFooter>
-          </Card>
-          
-          <BusinessFormDialog 
-            showDialog={showBusinessFormDialog}
-            setShowDialog={setShowBusinessFormDialog}
-            currentBusinessToEdit={currentBusinessToEdit}
-            onSubmit={handleBusinessFormSubmit}
-            isSubmitting={isSubmitting}
-          />
-          
-          <CSVUploadDialog 
-            showUploadDialog={showUploadDialog}
-            setShowUploadDialog={setShowUploadDialog}
-            handleUploadComplete={handleUploadComplete}
-          />
-        </TabsContent>
-        
-        <TabsContent value="categories-locations" className="pt-6">
-          <ManageCategoriesLocations />
-        </TabsContent>
-        
-        <TabsContent value="subscription-packages" className="pt-6">
-          <SubscriptionPackageManagement onPermissionError={handlePermissionError} />
-        </TabsContent>
-        
-        <TabsContent value="subscriptions" className="pt-6">
-          <SubscriptionManagement />
-        </TabsContent>
-        
-        <TabsContent value="users" className="pt-6">
-          <UserPermissionsTab />
-        </TabsContent>
-      </Tabs>
+      <AdminDashboardTabs 
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        businessCount={businessCount}
+        showBusinessFormDialog={showBusinessFormDialog}
+        setShowBusinessFormDialog={setShowBusinessFormDialog}
+        showUploadDialog={showUploadDialog}
+        setShowUploadDialog={setShowUploadDialog}
+        currentBusinessToEdit={currentBusinessToEdit}
+        isSubmitting={isSubmitting}
+        handleBusinessFormSubmit={handleBusinessFormSubmit}
+        handleUploadComplete={handleUploadComplete}
+        handleAddBusiness={handleAddBusiness}
+        handleEditBusiness={handleEditBusiness}
+        handlePermissionError={handlePermissionError}
+      />
     </div>
   );
 };

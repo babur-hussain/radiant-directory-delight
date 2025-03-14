@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -22,26 +23,34 @@ const formSchema = z.object({
   phone: z.string().min(7, { message: "Phone number must be at least 7 characters" }),
   description: z.string().min(10, { message: "Description must be at least 10 characters" }),
   featured: z.boolean().default(false),
-  tags: z.string(),
+  tags: z.string(), // This will be used just for form validation, but we'll manage tags separately
   priority: z.coerce.number().min(0).max(100).optional(),
   website: z.string().url({ message: "Must be a valid URL" }).optional().or(z.literal("")),
   email: z.string().email({ message: "Must be a valid email" }).optional().or(z.literal("")),
 });
 
-export type BusinessFormValues = z.infer<typeof formSchema>;
+export type BusinessFormValues = z.infer<typeof formSchema> & { tags: string[] };
 
 interface BusinessFormProps {
   onSubmit: (values: BusinessFormValues) => void;
   currentBusiness?: Business | null;
   isSubmitting?: boolean;
+  hideButtons?: boolean;
+  onCancel?: () => void;
 }
 
-const BusinessForm = ({ onSubmit, currentBusiness, isSubmitting = false }: BusinessFormProps) => {
+const BusinessForm = ({ 
+  onSubmit, 
+  currentBusiness, 
+  isSubmitting = false,
+  hideButtons = false,
+  onCancel
+}: BusinessFormProps) => {
   const [tagInput, setTagInput] = useState("");
   const [formTags, setFormTags] = useState<string[]>([]);
   
   // Initialize the form with default values or current business data
-  const form = useForm<BusinessFormValues>({
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -120,7 +129,7 @@ const BusinessForm = ({ onSubmit, currentBusiness, isSubmitting = false }: Busin
   };
 
   // Handle form submission
-  const handleSubmit = (values: BusinessFormValues) => {
+  const handleSubmit = (values: z.infer<typeof formSchema>) => {
     // Combine form values with the tags array
     const submitValues = {
       ...values,
@@ -132,7 +141,7 @@ const BusinessForm = ({ onSubmit, currentBusiness, isSubmitting = false }: Busin
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6" id="business-form">
         {/* Basic Information */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Basic Information</h3>
@@ -367,18 +376,25 @@ const BusinessForm = ({ onSubmit, currentBusiness, isSubmitting = false }: Busin
             )}
           />
           
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save Business"
+          {!hideButtons && (
+            <div className="flex justify-end gap-2 pt-4">
+              {onCancel && (
+                <Button type="button" variant="outline" onClick={onCancel}>
+                  Cancel
+                </Button>
               )}
-            </Button>
-          </div>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Business"
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       </form>
     </Form>
