@@ -12,7 +12,8 @@ const InfluencerDashboardPage = () => {
     return <AccessDenied message="Please log in to access your dashboard" />;
   }
 
-  if (user?.role !== "Influencer") {
+  // Update this condition to allow both Influencer users and Admin users
+  if (user?.role !== "Influencer" && user?.role !== "Admin" && !user?.isAdmin) {
     return <AccessDenied message="This dashboard is only available for influencers" />;
   }
 
