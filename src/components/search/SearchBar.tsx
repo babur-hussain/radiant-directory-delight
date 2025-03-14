@@ -58,6 +58,7 @@ const SearchBar = ({
   const [searchResults, setSearchResults] = useState<BusinessResult[]>([]);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const locationDropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   // Update searchQuery when initialQuery changes
@@ -111,10 +112,16 @@ const SearchBar = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+      // Handle location dropdown close
+      if (locationDropdownRef.current && 
+          !locationDropdownRef.current.contains(event.target as Node) &&
+          !searchContainerRef.current?.querySelector('.location-selector')?.contains(event.target as Node)) {
         setShowLocationDropdown(false);
-        
-        // Only hide search results if user clicks outside both the search container and results
+      }
+      
+      // Handle search results close - only if clicking outside both search container and results
+      if (searchContainerRef.current && 
+          !searchContainerRef.current.contains(event.target as Node)) {
         const resultsElement = document.querySelector('.search-results-container');
         if (resultsElement && !resultsElement.contains(event.target as Node)) {
           setShowResults(false);
@@ -181,8 +188,13 @@ const SearchBar = ({
     }
   };
 
+  const toggleLocationDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowLocationDropdown(!showLocationDropdown);
+  };
+
   return (
-    <div ref={searchContainerRef} className="relative">
+    <div ref={searchContainerRef} className="relative z-20">
       <div className="bg-white shadow-xl rounded-xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
         <div className="flex flex-col md:flex-row">
           <div className="relative flex-grow border-b md:border-b-0 md:border-r border-gray-100">
@@ -212,25 +224,30 @@ const SearchBar = ({
 
           <div className="relative">
             <div
-              className="flex items-center w-full md:w-52 px-4 py-5 cursor-pointer"
-              onClick={() => setShowLocationDropdown(!showLocationDropdown)}
+              className="location-selector flex items-center w-full md:w-52 px-4 py-5 cursor-pointer"
+              onClick={toggleLocationDropdown}
             >
               <MapPin className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0" />
               <span className="text-gray-900 truncate">{location}</span>
-              <ChevronDown className="h-4 w-4 text-gray-400 ml-auto" />
+              <ChevronDown className={`h-4 w-4 text-gray-400 ml-auto transition-transform duration-200 ${showLocationDropdown ? 'rotate-180' : ''}`} />
             </div>
 
             <div
+              ref={locationDropdownRef}
               className={cn(
-                "absolute z-50 mt-1 w-full bg-white shadow-lg rounded-md py-1 transition-all duration-200 border border-gray-100 max-h-64 overflow-y-auto",
+                "absolute z-50 mt-1 w-full md:min-w-52 bg-white shadow-lg rounded-md py-1 transition-all duration-200 border border-gray-100 max-h-64 overflow-y-auto",
                 showLocationDropdown ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
               )}
             >
               {locations.map((loc) => (
                 <div
                   key={loc}
-                  className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-gray-700 text-sm"
-                  onClick={() => {
+                  className={cn(
+                    "px-4 py-2 hover:bg-gray-50 cursor-pointer text-gray-700 text-sm",
+                    location === loc && "bg-primary/10 text-primary"
+                  )}
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setLocation(loc);
                     setShowLocationDropdown(false);
                   }}
@@ -251,13 +268,16 @@ const SearchBar = ({
         </div>
       </div>
 
-      <SearchResults 
-        results={searchResults}
-        isLoading={isSearching}
-        visible={showResults}
-        onResultClick={handleResultClick}
-        onClose={() => setShowResults(false)}
-      />
+      {/* Position search results below search bar */}
+      <div className="relative">
+        <SearchResults 
+          results={searchResults}
+          isLoading={isSearching}
+          visible={showResults}
+          onResultClick={handleResultClick}
+          onClose={() => setShowResults(false)}
+        />
+      </div>
     </div>
   );
 };

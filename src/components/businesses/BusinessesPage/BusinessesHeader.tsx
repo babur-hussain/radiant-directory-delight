@@ -65,7 +65,7 @@ const BusinessesHeader: React.FC<BusinessesHeaderProps> = ({
             placeholder="Search businesses by name, description or tags..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 text-gray-900"
           />
         </div>
         
@@ -196,7 +196,7 @@ const MobileFilters: React.FC<MobileFiltersProps> = ({
         <select 
           value={selectedCategory} 
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="w-full p-2 border rounded"
+          className="w-full p-2 border rounded text-gray-900 bg-white"
         >
           <option value="">All Categories</option>
           {categories.map(category => (
@@ -212,7 +212,7 @@ const MobileFilters: React.FC<MobileFiltersProps> = ({
         <select 
           value={selectedLocation || ""} 
           onChange={(e) => setSelectedLocation(e.target.value || null)}
-          className="w-full p-2 border rounded"
+          className="w-full p-2 border rounded text-gray-900 bg-white"
         >
           <option value="">Any Location</option>
           {locations.map(location => (
@@ -228,7 +228,7 @@ const MobileFilters: React.FC<MobileFiltersProps> = ({
         <select 
           value={selectedRating} 
           onChange={(e) => setSelectedRating(e.target.value)}
-          className="w-full p-2 border rounded"
+          className="w-full p-2 border rounded text-gray-900 bg-white"
         >
           <option value="">Any Rating</option>
           <option value="4+">4+ Stars</option>
@@ -243,6 +243,7 @@ const MobileFilters: React.FC<MobileFiltersProps> = ({
           id="featured-mobile" 
           checked={featuredOnly}
           onChange={(e) => setFeaturedOnly(e.target.checked)}
+          className="text-primary border-gray-300 focus:ring-primary"
         />
         <label 
           htmlFor="featured-mobile"
@@ -282,7 +283,7 @@ const DesktopFilters: React.FC<DesktopFiltersProps> = ({
           <select 
             value={selectedCategory} 
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded text-gray-900 bg-white"
           >
             <option value="">All Categories</option>
             {categories.map(category => (
@@ -298,7 +299,7 @@ const DesktopFilters: React.FC<DesktopFiltersProps> = ({
           <select 
             value={selectedLocation || ""} 
             onChange={(e) => setSelectedLocation(e.target.value || null)}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded text-gray-900 bg-white"
           >
             <option value="">Any Location</option>
             {locations.map(location => (
@@ -314,7 +315,7 @@ const DesktopFilters: React.FC<DesktopFiltersProps> = ({
           <select 
             value={selectedRating} 
             onChange={(e) => setSelectedRating(e.target.value)}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded text-gray-900 bg-white"
           >
             <option value="">Any Rating</option>
             <option value="4+">4+ Stars</option>
