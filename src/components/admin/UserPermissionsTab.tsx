@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -59,20 +58,26 @@ const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefresh }) =>
   const { toast } = useToast();
 
   const convertToUserData = (user: User | Partial<User>): UserData => {
-    // Ensure name is properly handled
-    let userName = null;
-    if (typeof user.name === 'boolean') {
+    let userName: string | null = null;
+    
+    if (user.name === null) {
+      userName = null;
+    } else if (typeof user.name === 'boolean') {
       userName = 'User';
+    } else if (typeof user.name === 'string') {
+      userName = user.name;
     } else {
-      userName = user.name || null;
+      userName = user.name?.toString() || null;
     }
     
-    // Ensure isAdmin is properly handled
     let adminStatus = false;
-    if (typeof user.isAdmin === 'boolean') {
+    
+    if (user.isAdmin === null || user.isAdmin === undefined) {
+      adminStatus = false;
+    } else if (typeof user.isAdmin === 'boolean') {
       adminStatus = user.isAdmin;
     } else if (typeof user.isAdmin === 'string') {
-      adminStatus = user.isAdmin.toLowerCase() === 'true';
+      adminStatus = user.isAdmin === 'true' || user.isAdmin === 'TRUE';
     } else {
       adminStatus = Boolean(user.isAdmin);
     }
@@ -93,10 +98,8 @@ const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefresh }) =>
       setError(null);
       console.log("Fetching users directly from Firebase using getAllUsers()...");
       
-      // First ensure we have some test users
       await ensureTestUsers();
       
-      // Then fetch all users including the test ones
       const firebaseUsers = await getAllUsers();
       
       console.log("Users fetched from Firebase:", firebaseUsers.length, firebaseUsers);
@@ -176,7 +179,6 @@ const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefresh }) =>
             console.log("User data from real-time listener:", updatedUsers);
             setUsers(updatedUsers);
             
-            // Also update the localStorage cache
             updatedUsers.forEach(user => {
               saveUserToAllUsersList(convertToUserData(user) as User);
             });
@@ -268,7 +270,6 @@ const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefresh }) =>
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    // Call the parent refresh if available
     if (onRefresh) {
       onRefresh();
     } else {
@@ -354,7 +355,6 @@ const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefresh }) =>
       
       console.log("Test user created successfully:", newUser);
       
-      // Update the local users state immediately to show the new user
       setUsers(prevUsers => [convertToUserData(newUser), ...prevUsers]);
       
       setIsAddUserOpen(false);
@@ -366,7 +366,6 @@ const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefresh }) =>
         description: `Test user "${newUserName}" created successfully`,
       });
       
-      // Real-time updates should catch this, but let's refresh to be sure
       setTimeout(() => {
         handleRefresh();
       }, 1000);

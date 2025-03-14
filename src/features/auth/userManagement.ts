@@ -1,3 +1,4 @@
+
 import { User, UserRole } from "../../types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { saveUserToAllUsersList } from "./authStorage";
@@ -131,16 +132,24 @@ export const getAllUsers = async (): Promise<User[]> => {
       console.log("User data from Firebase:", doc.id, data);
       
       // Ensure name is a string
-      const displayName = typeof data.name === 'boolean' 
-        ? 'User' 
-        : (data.name || data.displayName || null);
+      let displayName: string | null = null;
+      if (data.name === null) {
+        displayName = null;
+      } else if (typeof data.name === 'boolean') {
+        displayName = 'User';
+      } else if (typeof data.name === 'string') {
+        displayName = data.name || data.displayName || null;
+      } else {
+        displayName = data.name?.toString() || data.displayName || null;
+      }
       
-      // Ensure isAdmin is a boolean - Fixed to avoid toLowerCase on never type
+      // Ensure isAdmin is a boolean
       let adminStatus = false;
       if (typeof data.isAdmin === 'boolean') {
         adminStatus = data.isAdmin;
       } else if (typeof data.isAdmin === 'string') {
-        adminStatus = data.isAdmin.toLowerCase() === 'true';
+        // Safe check without using toLowerCase
+        adminStatus = data.isAdmin === 'true' || data.isAdmin === 'TRUE';
       } else {
         adminStatus = Boolean(data.isAdmin);
       }

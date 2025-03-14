@@ -25,16 +25,20 @@ const saveUserToFirestore = async (
     const userDoc = doc(db, "users", userId);
     
     // Ensure name is a string
-    const displayName = typeof name === 'boolean' ? 'User' : (name || email?.split('@')[0] || 'User');
+    const displayName = name === null ? (email?.split('@')[0] || 'User') :
+                         typeof name === 'boolean' ? 'User' : 
+                         name || 'User';
     
-    // Ensure isAdmin is a boolean - fix the type error by checking if it's a string first
-    let adminStatus = isAdmin;
-    if (typeof isAdmin !== 'boolean') {
-      if (typeof isAdmin === 'string') {
-        adminStatus = isAdmin.toLowerCase() === 'true';
-      } else {
-        adminStatus = Boolean(isAdmin);
-      }
+    // Ensure isAdmin is a boolean
+    let adminStatus = false;
+    if (typeof isAdmin === 'boolean') {
+      adminStatus = isAdmin;
+    } else if (typeof isAdmin === 'string') {
+      // Safely convert string to boolean
+      adminStatus = isAdmin === 'true';
+    } else {
+      // For any other type, use Boolean conversion
+      adminStatus = Boolean(isAdmin);
     }
     
     await setDoc(userDoc, {
