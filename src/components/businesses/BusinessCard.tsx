@@ -2,21 +2,10 @@
 import { Link } from 'react-router-dom';
 import { Star, MapPin, Phone, ExternalLink } from 'lucide-react';
 import BusinessImage from '@/components/BusinessImage';
+import { Business } from '@/lib/csv-utils';
 
 interface BusinessCardProps {
-  business: {
-    id: string;
-    name: string;
-    description: string;
-    address: string;
-    category: string;
-    phone: string;
-    rating: number;
-    reviews: number;
-    image: string;
-    featured: boolean;
-    tags: string[];
-  }
+  business: Business;
 }
 
 const BusinessCard = ({ business }: BusinessCardProps) => {

@@ -2,20 +2,7 @@
 import { Button } from '@/components/ui/button';
 import BusinessCard from './BusinessCard';
 import { Link } from 'react-router-dom';
-
-interface Business {
-  id: string;
-  name: string;
-  description: string;
-  address: string;
-  category: string;
-  phone: string;
-  rating: number;
-  reviews: number;
-  image: string;
-  featured: boolean;
-  tags: string[];
-}
+import { Business } from '@/lib/csv-utils';
 
 interface BusinessGridProps {
   businesses: Business[];
