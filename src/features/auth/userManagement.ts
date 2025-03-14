@@ -135,12 +135,15 @@ export const getAllUsers = async (): Promise<User[]> => {
         ? 'User' 
         : (data.name || data.displayName || null);
       
-      // Ensure isAdmin is a boolean
-      const adminStatus = typeof data.isAdmin === 'boolean'
-        ? data.isAdmin
-        : (typeof data.isAdmin === 'string'
-          ? data.isAdmin.toLowerCase() === 'true'
-          : Boolean(data.isAdmin));
+      // Ensure isAdmin is a boolean - Fixed to avoid toLowerCase on never type
+      let adminStatus = false;
+      if (typeof data.isAdmin === 'boolean') {
+        adminStatus = data.isAdmin;
+      } else if (typeof data.isAdmin === 'string') {
+        adminStatus = data.isAdmin.toLowerCase() === 'true';
+      } else {
+        adminStatus = Boolean(data.isAdmin);
+      }
         
       return {
         id: doc.id,

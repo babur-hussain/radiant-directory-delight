@@ -59,16 +59,30 @@ const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefresh }) =>
   const { toast } = useToast();
 
   const convertToUserData = (user: User | Partial<User>): UserData => {
+    // Ensure name is properly handled
+    let userName = null;
+    if (typeof user.name === 'boolean') {
+      userName = 'User';
+    } else {
+      userName = user.name || null;
+    }
+    
+    // Ensure isAdmin is properly handled
+    let adminStatus = false;
+    if (typeof user.isAdmin === 'boolean') {
+      adminStatus = user.isAdmin;
+    } else if (typeof user.isAdmin === 'string') {
+      adminStatus = user.isAdmin.toLowerCase() === 'true';
+    } else {
+      adminStatus = Boolean(user.isAdmin);
+    }
+    
     return {
       id: user.id || "",
       email: user.email || null,
-      name: typeof user.name === 'boolean' ? 'User' : (user.name || null),
+      name: userName,
       role: user.role || null,
-      isAdmin: typeof user.isAdmin === 'boolean' 
-        ? user.isAdmin 
-        : (typeof user.isAdmin === 'string' 
-          ? user.isAdmin.toLowerCase() === 'true' 
-          : Boolean(user.isAdmin)),
+      isAdmin: adminStatus,
       createdAt: (user as any).createdAt || new Date().toISOString(),
     };
   };
