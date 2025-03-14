@@ -20,18 +20,19 @@ header {
   background-color: #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   z-index: 1000;
-  height: 64px; /* Set explicit height for the header */
+  height: 64px;
 }
 
 /* Main content padding to avoid header overlap */
 main {
-  padding-top: 64px; /* Match exact header height */
-  margin-top: 0; /* Ensure no extra margin */
+  padding-top: 0; /* Remove default padding */
+  margin-top: 0;
 }
 
-/* Remove the extra padding in hero section */
+/* Hero section styling to align with header */
 .hero-section {
-  padding-top: 0; /* Remove additional padding */
+  padding-top: 64px; /* Match header height exactly */
+  margin-top: 0;
 }
 
 /* Other styles */
