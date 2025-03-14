@@ -14,6 +14,7 @@ import SubscriptionDetailsPage from "./pages/SubscriptionDetailsPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import InfluencerPage from "./pages/InfluencerPage";
 import BusinessPage from "./pages/BusinessPage";
+import ProfilePage from "./pages/ProfilePage";
 import Header from "./components/Header";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
               <Route path="/influencer" element={<InfluencerPage />} />
               <Route path="/business" element={<BusinessPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
