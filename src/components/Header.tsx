@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, Map, LogIn } from 'lucide-react';
@@ -7,24 +6,23 @@ import { cn } from '@/lib/utils';
 import AuthModal from './auth/AuthModal';
 import UserMenu from './UserMenu';
 import { useAuth } from '@/contexts/AuthContext';
-
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  
   const auth = useAuth();
-  const { isAuthenticated, logout, initialized } = auth;
-
+  const {
+    isAuthenticated,
+    logout,
+    initialized
+  } = auth;
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
-    
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
   const handleMobileLogout = async () => {
     await logout();
     setIsMobileMenuOpen(false);
@@ -34,22 +32,11 @@ const Header = () => {
   if (!initialized) {
     return null;
   }
-
-  return (
-    <header
-      className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-4",
-        isScrolled 
-          ? "bg-white/90 backdrop-blur-md shadow-sm" 
-          : "bg-transparent"
-      )}
-    >
+  return <header className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-4", isScrolled ? "bg-white/90 backdrop-blur-md shadow-sm" : "bg-transparent")}>
       <div className="container max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
-            <span className="font-bold text-2xl bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
-              DirectSpot
-            </span>
+            <span className="font-bold text-2xl bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">Grow Bharat Vyapaar</span>
           </Link>
 
           <nav className="hidden md:flex items-center space-x-8">
@@ -73,36 +60,19 @@ const Header = () => {
               Location
             </Button>
             
-            {isAuthenticated ? (
-              <UserMenu />
-            ) : (
-              <Button 
-                variant="default" 
-                size="sm" 
-                className="rounded-full transition-smooth"
-                onClick={() => setIsAuthModalOpen(true)}
-              >
+            {isAuthenticated ? <UserMenu /> : <Button variant="default" size="sm" className="rounded-full transition-smooth" onClick={() => setIsAuthModalOpen(true)}>
                 <LogIn className="h-4 w-4 mr-2" />
                 Login / Register
-              </Button>
-            )}
+              </Button>}
           </div>
 
-          <button 
-            className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-smooth"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
+          <button className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-smooth" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
             {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>
 
-      <div 
-        className={cn(
-          "md:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm transition-all duration-300 overflow-hidden",
-          isMobileMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
-        )}
-      >
+      <div className={cn("md:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm transition-all duration-300 overflow-hidden", isMobileMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0")}>
         <div className="container max-w-7xl mx-auto px-4 py-4 flex flex-col space-y-4">
           <Link to="/" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
             Home
@@ -122,35 +92,21 @@ const Header = () => {
               Set Location
             </Button>
             
-            {isAuthenticated ? (
-              <Button 
-                variant="default" 
-                className="justify-start rounded-full w-full transition-smooth"
-                onClick={handleMobileLogout}
-              >
+            {isAuthenticated ? <Button variant="default" className="justify-start rounded-full w-full transition-smooth" onClick={handleMobileLogout}>
                 <LogIn className="h-4 w-4 mr-2" />
                 Logout
-              </Button>
-            ) : (
-              <Button 
-                variant="default" 
-                className="justify-start rounded-full w-full transition-smooth"
-                onClick={() => {
-                  setIsAuthModalOpen(true);
-                  setIsMobileMenuOpen(false);
-                }}
-              >
+              </Button> : <Button variant="default" className="justify-start rounded-full w-full transition-smooth" onClick={() => {
+            setIsAuthModalOpen(true);
+            setIsMobileMenuOpen(false);
+          }}>
                 <LogIn className="h-4 w-4 mr-2" />
                 Login / Register
-              </Button>
-            )}
+              </Button>}
           </div>
         </div>
       </div>
 
       <AuthModal isOpen={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
-    </header>
-  );
+    </header>;
 };
-
 export default Header;
