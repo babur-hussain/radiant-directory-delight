@@ -145,7 +145,7 @@ const Footer = () => {
               <li className="flex items-center">
                 <Mail className="h-5 w-5 text-gray-400 mr-2" />
                 <span className="text-sm text-gray-500">
-                  info@directspot.com
+                  support@growbharatvyapaar.com
                 </span>
               </li>
             </ul>
