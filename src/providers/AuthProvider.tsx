@@ -1,22 +1,25 @@
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged,
-  updateProfile
-} from "firebase/auth";
-import { auth, googleProvider } from "../config/firebase";
+import React, { createContext, useState, useEffect } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../config/firebase";
 import { toast } from "@/hooks/use-toast";
 import { User, UserRole, AuthContextType } from "../types/auth";
 import { 
   getRoleKey, 
   getAdminKey, 
-  initializeDefaultAdmin,
-  saveUserToAllUsersList
-} from "../utils/authStorage";
+  initializeDefaultAdmin, 
+  saveUserToAllUsersList 
+} from "../features/auth/authStorage";
+import { 
+  login, 
+  loginWithGoogle, 
+  signup, 
+  logoutUser 
+} from "../features/auth/authService";
+import { 
+  updateUserRole as updateRole, 
+  updateUserPermission as updatePermission 
+} from "../features/auth/userManagement";
 
 // Create the auth context with default values
 const defaultContextValue: AuthContextType = {
@@ -86,10 +89,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  // Login with email and password
+  const handleLogin = async (email: string, password: string) => {
     try {
       setLoading(true);
-      await signInWithEmailAndPassword(auth, email, password);
+      await login(email, password);
       toast({
         title: "Login successful",
         description: "Welcome back!",
@@ -120,11 +124,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithGoogle = async () => {
+  // Login with Google
+  const handleLoginWithGoogle = async () => {
     try {
       setLoading(true);
-      await signInWithPopup(auth, googleProvider);
-      // No need to save role here as it's already handled in the signup process
+      await loginWithGoogle();
       toast({
         title: "Login successful",
         description: "Welcome back!",
@@ -154,23 +158,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signup = async (email: string, password: string, name: string, role: UserRole) => {
+  // Sign up new user
+  const handleSignup = async (email: string, password: string, name: string, role: UserRole) => {
     try {
       setLoading(true);
-      const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Set display name
-      if (firebaseUser) {
-        await updateProfile(firebaseUser, {
-          displayName: name
-        });
-      }
-      
-      // Store role information in localStorage
-      if (role && firebaseUser) {
-        localStorage.setItem(getRoleKey(firebaseUser.uid), role as string);
-      }
-      
+      await signup(email, password, name, role);
       toast({
         title: "Registration successful",
         description: `You have successfully registered as a ${role}.`,
@@ -200,9 +192,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = async () => {
+  // Logout user
+  const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await logoutUser();
       toast({
         title: "Logged out",
         description: "You have been successfully logged out.",
@@ -217,29 +210,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateUserRole = async (role: UserRole) => {
+  // Update user role
+  const handleUpdateUserRole = async (role: UserRole) => {
     try {
       if (!user) {
         throw new Error("User not authenticated");
       }
       
-      // Store the updated role in localStorage
-      localStorage.setItem(getRoleKey(user.id), role as string);
-      
-      // Update all users list
-      const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
-      const userIndex = allUsers.findIndex((u: any) => u.id === user.id);
-      
-      if (userIndex >= 0) {
-        allUsers[userIndex].role = role;
-        localStorage.setItem('all_users_data', JSON.stringify(allUsers));
-      }
-      
-      // Update the user object in state
-      setUser({
-        ...user,
-        role
-      });
+      const updatedUser = await updateRole(user, role);
+      setUser(updatedUser);
       
       toast({
         title: "Role updated",
@@ -258,19 +237,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateUserPermission = async (userId: string, isAdmin: boolean) => {
+  // Update user permissions
+  const handleUpdateUserPermission = async (userId: string, isAdmin: boolean) => {
     try {
-      // Store the admin status in localStorage
-      localStorage.setItem(getAdminKey(userId), isAdmin ? 'true' : 'false');
-      
-      // Update all users list
-      const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
-      const userIndex = allUsers.findIndex((u: any) => u.id === userId);
-      
-      if (userIndex >= 0) {
-        allUsers[userIndex].isAdmin = isAdmin;
-        localStorage.setItem('all_users_data', JSON.stringify(allUsers));
-      }
+      await updatePermission(userId, isAdmin);
       
       // If the user being updated is the current user, update the state
       if (user && user.id === userId) {
@@ -302,12 +272,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         isAuthenticated: !!user,
-        login,
-        loginWithGoogle,
-        signup,
-        logout,
-        updateUserRole,
-        updateUserPermission,
+        login: handleLogin,
+        loginWithGoogle: handleLoginWithGoogle,
+        signup: handleSignup,
+        logout: handleLogout,
+        updateUserRole: handleUpdateUserRole,
+        updateUserPermission: handleUpdateUserPermission,
         loading,
         initialized
       }}
@@ -316,6 +286,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
+
+// Export the auth context
+export { AuthContext };
 
 // Export provider for use in App.tsx
 export default AuthProvider;
