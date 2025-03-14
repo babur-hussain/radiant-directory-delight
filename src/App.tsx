@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CategoriesPage from "./pages/CategoriesPage";
 import BusinessesPage from "./pages/BusinessesPage";
+import Header from "./components/Header";
 
 const queryClient = new QueryClient();
 
@@ -19,13 +20,16 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/categories" element={<CategoriesPage />} />
-            <Route path="/businesses" element={<BusinessesPage />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Header />
+          <div className="pt-20"> {/* Add padding to account for fixed header */}
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/categories" element={<CategoriesPage />} />
+              <Route path="/businesses" element={<BusinessesPage />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </div>
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
