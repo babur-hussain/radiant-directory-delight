@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, Building, Users, TrendingUp } from 'lucide-react';
+import GetListedForm from './GetListedForm';
 
 const stats = [
   { 
@@ -32,6 +33,7 @@ const stats = [
 
 const CallToAction = () => {
   const [email, setEmail] = useState('');
+  const [isListingFormOpen, setIsListingFormOpen] = useState(false);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,13 +107,20 @@ const CallToAction = () => {
               <Button 
                 variant="outline" 
                 className="w-full justify-center rounded-lg border-primary/20 text-primary hover:text-primary-foreground transition-smooth"
+                onClick={() => setIsListingFormOpen(true)}
               >
+                <Building className="mr-2 h-4 w-4" />
                 Get Listed Now
               </Button>
             </div>
           </div>
         </div>
       </div>
+      
+      <GetListedForm 
+        isOpen={isListingFormOpen}
+        setIsOpen={setIsListingFormOpen}
+      />
     </section>
   );
 };

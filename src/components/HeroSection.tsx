@@ -1,11 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import SearchBar from './search/SearchBar';
 import PopularSearchTerms from './search/PopularSearchTerms';
 import HeroContent from './hero/HeroContent';
 import GetListedForm from './GetListedForm';
-import { Button } from './ui/button';
-import { Building } from 'lucide-react';
 
 const HeroSection = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -51,17 +48,6 @@ const HeroSection = () => {
             onResultsVisibilityChange={setIsSearchResultsVisible}
           />
           <PopularSearchTerms onTermClick={handlePopularTermClick} />
-        </div>
-        
-        <div className="flex justify-center mt-8">
-          <Button 
-            onClick={() => setIsListingFormOpen(true)}
-            size="lg" 
-            className="text-white bg-primary hover:bg-primary/90 shadow-lg"
-          >
-            <Building className="mr-2 h-5 w-5" />
-            Get Listed Now
-          </Button>
         </div>
       </div>
       
