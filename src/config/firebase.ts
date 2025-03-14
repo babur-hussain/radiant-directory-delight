@@ -2,6 +2,7 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
+import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -17,6 +18,7 @@ const firebaseConfig = {
 // Initialize Firebase only if no apps exist
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 const auth = getAuth(app);
+const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
 // Add custom parameters for Google sign-in
@@ -39,4 +41,4 @@ const initializeAnalytics = async () => {
 
 const analyticsPromise = initializeAnalytics();
 
-export { auth, googleProvider, analyticsPromise as analytics };
+export { auth, db, googleProvider, analyticsPromise as analytics };

@@ -68,7 +68,7 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
             const { success, businesses, message } = await processCsvData(csvContent);
             
             if (success) {
-              onUploadComplete(true, "CSV processed successfully", businesses.length);
+              onUploadComplete(true, "CSV processed and saved to Firestore successfully", businesses.length);
             } else {
               onUploadComplete(false, message);
             }

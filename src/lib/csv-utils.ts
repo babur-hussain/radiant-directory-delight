@@ -1,5 +1,18 @@
 
 import { businessesData } from '@/data/businessesData';
+import { db } from '@/config/firebase';
+import { 
+  collection, 
+  getDocs, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  query, 
+  orderBy, 
+  where,
+  writeBatch
+} from 'firebase/firestore';
 
 // Define the business type based on the existing data structure
 export interface Business {
@@ -16,34 +29,11 @@ export interface Business {
   tags: string[];
 }
 
-// LOCAL STORAGE KEY
-const UPLOADED_BUSINESSES_STORAGE_KEY = 'uploadedBusinesses';
+// Firestore collection name
+const BUSINESSES_COLLECTION = 'businesses';
 
-// Load businesses from localStorage on initialization
-const loadUploadedBusinesses = (): Business[] => {
-  try {
-    const savedData = localStorage.getItem(UPLOADED_BUSINESSES_STORAGE_KEY);
-    if (savedData) {
-      return JSON.parse(savedData);
-    }
-  } catch (error) {
-    console.error('Error loading businesses from localStorage:', error);
-  }
-  return [];
-};
-
-// Store the uploaded businesses in this array
-// This is now backed by localStorage for persistence
-export let uploadedBusinesses: Business[] = loadUploadedBusinesses();
-
-// Save businesses to localStorage
-const saveUploadedBusinesses = () => {
-  try {
-    localStorage.setItem(UPLOADED_BUSINESSES_STORAGE_KEY, JSON.stringify(uploadedBusinesses));
-  } catch (error) {
-    console.error('Error saving businesses to localStorage:', error);
-  }
-};
+// Store the uploaded businesses in this array (in-memory cache)
+export let uploadedBusinesses: Business[] = [];
 
 // Default image to use when business image is unavailable
 export const DEFAULT_BUSINESS_IMAGE = "https://source.unsplash.com/photo-1518770660439-4636190af475";
@@ -66,63 +56,143 @@ export const notifyDataChanged = () => {
   dataChangeListeners.forEach(listener => listener());
 };
 
+// Initialize data by loading from Firestore
+export const initializeData = async (): Promise<void> => {
+  try {
+    const businessesCollection = collection(db, BUSINESSES_COLLECTION);
+    const businessesQuery = query(businessesCollection, orderBy('id', 'asc'));
+    const snapshot = await getDocs(businessesQuery);
+    
+    // Clear the current array
+    uploadedBusinesses = [];
+    
+    // Add each business from Firestore to the array
+    snapshot.forEach(doc => {
+      const businessData = doc.data() as Business;
+      businessData.id = Number(businessData.id); // Ensure ID is a number
+      
+      // Add the Firestore document ID as a property for later use
+      (businessData as any).docId = doc.id;
+      
+      uploadedBusinesses.push(businessData);
+    });
+    
+    notifyDataChanged();
+  } catch (error) {
+    console.error("Error initializing data from Firestore:", error);
+  }
+};
+
+// Call initialize immediately to load data
+initializeData();
+
 export const getAllBusinesses = (): Business[] => {
   // Combine the original businesses with the uploaded ones
   return [...businessesData, ...uploadedBusinesses];
 };
 
 // Add a new business manually
-export const addBusiness = (business: Omit<Business, "id">): Business => {
-  // Generate a new ID
-  const lastBusinessId = Math.max(
-    ...businessesData.map(b => b.id), 
-    ...uploadedBusinesses.map(b => b.id), 
-    0
-  );
-  
-  const newBusiness: Business = {
-    ...business,
-    id: lastBusinessId + 1
-  };
-  
-  uploadedBusinesses.push(newBusiness);
-  saveUploadedBusinesses(); // Save to localStorage
-  notifyDataChanged();
-  
-  return newBusiness;
+export const addBusiness = async (business: Omit<Business, "id">): Promise<Business> => {
+  try {
+    // Generate a new ID
+    const lastBusinessId = Math.max(
+      ...businessesData.map(b => b.id), 
+      ...uploadedBusinesses.map(b => b.id), 
+      0
+    );
+    
+    const newBusiness: Business = {
+      ...business,
+      id: lastBusinessId + 1
+    };
+    
+    // Add to Firestore
+    const businessesCollection = collection(db, BUSINESSES_COLLECTION);
+    const docRef = await addDoc(businessesCollection, newBusiness);
+    
+    // Add docId for later reference
+    (newBusiness as any).docId = docRef.id;
+    
+    // Add to local array
+    uploadedBusinesses.push(newBusiness);
+    notifyDataChanged();
+    
+    return newBusiness;
+  } catch (error) {
+    console.error("Error adding business to Firestore:", error);
+    throw error;
+  }
 };
 
 // Edit an existing business
-export const updateBusiness = (updatedBusiness: Business): Business | null => {
-  // Check if it's in the uploadedBusinesses array
-  const index = uploadedBusinesses.findIndex(b => b.id === updatedBusiness.id);
-  
-  if (index !== -1) {
-    // Update the business in the uploaded businesses array
-    uploadedBusinesses[index] = updatedBusiness;
-    saveUploadedBusinesses(); // Save to localStorage
-    notifyDataChanged();
-    return updatedBusiness;
+export const updateBusiness = async (updatedBusiness: Business): Promise<Business | null> => {
+  try {
+    // Check if it's in the uploadedBusinesses array
+    const index = uploadedBusinesses.findIndex(b => b.id === updatedBusiness.id);
+    
+    if (index !== -1) {
+      // Get the document ID
+      const docId = (uploadedBusinesses[index] as any).docId;
+      
+      if (!docId) {
+        console.error("No document ID found for business:", updatedBusiness);
+        return null;
+      }
+      
+      // Update in Firestore
+      const businessRef = doc(db, BUSINESSES_COLLECTION, docId);
+      await updateDoc(businessRef, { ...updatedBusiness });
+      
+      // Update the business in the uploaded businesses array
+      uploadedBusinesses[index] = updatedBusiness;
+      (uploadedBusinesses[index] as any).docId = docId;
+      
+      notifyDataChanged();
+      return updatedBusiness;
+    }
+    
+    // We can't update businesses from the original dataset in this demo
+    // In a real app with a database, you would update any business
+    return null;
+  } catch (error) {
+    console.error("Error updating business in Firestore:", error);
+    return null;
   }
-  
-  // We can't update businesses from the original dataset in this demo
-  // In a real app with a database, you would update any business
-  return null;
 };
 
 // Delete a business
-export const deleteBusiness = (id: number): boolean => {
-  const initialLength = uploadedBusinesses.length;
-  uploadedBusinesses = uploadedBusinesses.filter(b => b.id !== id);
-  
-  const deleted = initialLength > uploadedBusinesses.length;
-  
-  if (deleted) {
-    saveUploadedBusinesses(); // Save to localStorage
-    notifyDataChanged();
+export const deleteBusiness = async (id: number): Promise<boolean> => {
+  try {
+    const initialLength = uploadedBusinesses.length;
+    const businessToDelete = uploadedBusinesses.find(b => b.id === id);
+    
+    if (businessToDelete) {
+      const docId = (businessToDelete as any).docId;
+      
+      if (!docId) {
+        console.error("No document ID found for business with ID:", id);
+        return false;
+      }
+      
+      // Delete from Firestore
+      const businessRef = doc(db, BUSINESSES_COLLECTION, docId);
+      await deleteDoc(businessRef);
+    }
+    
+    // Update local array
+    uploadedBusinesses = uploadedBusinesses.filter(b => b.id !== id);
+    
+    const deleted = initialLength > uploadedBusinesses.length;
+    
+    if (deleted) {
+      notifyDataChanged();
+    }
+    
+    return deleted;
+  } catch (error) {
+    console.error("Error deleting business from Firestore:", error);
+    return false;
   }
-  
-  return deleted;
 };
 
 export const processCsvData = async (csvContent: string): Promise<{ 
@@ -208,18 +278,42 @@ export const processCsvData = async (csvContent: string): Promise<{
       businesses.push(business);
     }
     
-    // Add businesses to the uploadedBusinesses array
-    uploadedBusinesses = [...uploadedBusinesses, ...businesses];
-    saveUploadedBusinesses(); // Save to localStorage
-    
-    // Notify listeners that data has changed
-    notifyDataChanged();
-    
-    return { 
-      success: true, 
-      businesses, 
-      message: `Successfully processed ${businesses.length} businesses.` 
-    };
+    try {
+      // Batch write to Firestore for better performance
+      const batch = writeBatch(db);
+      const businessesCollection = collection(db, BUSINESSES_COLLECTION);
+      
+      // Add each business to the batch
+      for (const business of businesses) {
+        const docRef = doc(businessesCollection);
+        batch.set(docRef, business);
+        
+        // Store the document ID for later reference
+        (business as any).docId = docRef.id;
+      }
+      
+      // Commit the batch
+      await batch.commit();
+      
+      // Update the local array after successful Firestore write
+      uploadedBusinesses = [...uploadedBusinesses, ...businesses];
+      
+      // Notify listeners that data has changed
+      notifyDataChanged();
+      
+      return { 
+        success: true, 
+        businesses, 
+        message: `Successfully processed ${businesses.length} businesses.` 
+      };
+    } catch (firestoreError) {
+      console.error("Error saving to Firestore:", firestoreError);
+      return { 
+        success: false, 
+        businesses: [], 
+        message: `Error saving to database: ${firestoreError instanceof Error ? firestoreError.message : String(firestoreError)}` 
+      };
+    }
   } catch (error) {
     console.error("CSV processing error:", error);
     return { 

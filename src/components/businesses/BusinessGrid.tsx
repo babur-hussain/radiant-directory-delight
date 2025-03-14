@@ -7,9 +7,19 @@ import { Business } from '@/lib/csv-utils';
 interface BusinessGridProps {
   businesses: Business[];
   resetFilters: () => void;
+  loading?: boolean;
 }
 
-const BusinessGrid = ({ businesses, resetFilters }: BusinessGridProps) => {
+const BusinessGrid = ({ businesses, resetFilters, loading = false }: BusinessGridProps) => {
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <span className="ml-3 text-lg">Loading businesses...</span>
+      </div>
+    );
+  }
+  
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">

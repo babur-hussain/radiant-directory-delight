@@ -21,6 +21,12 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { businessesData } from "@/data/businessesData";
 import { 
+  getAllBusinesses,
+  addDataChangeListener,
+  removeDataChangeListener,
+  initializeData
+} from "@/lib/csv-utils";
+import { 
   Sheet,
   SheetContent,
   SheetHeader,
@@ -36,6 +42,8 @@ type LocationFilter = string | null;
 type SortOption = "relevance" | "rating" | "reviews";
 
 const BusinessesPage = () => {
+  const [loading, setLoading] = useState(true);
+  const [businesses, setBusinesses] = useState(businessesData);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedRating, setSelectedRating] = useState<string>("");
@@ -48,28 +56,57 @@ const BusinessesPage = () => {
   
   const itemsPerPage = 6;
   
+  // Load data from Firestore on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        await initializeData();
+        setBusinesses(getAllBusinesses());
+      } catch (error) {
+        console.error("Error loading businesses:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+    
+    // Add listener for data changes
+    const handleDataChanged = () => {
+      setBusinesses(getAllBusinesses());
+    };
+    
+    addDataChangeListener(handleDataChanged);
+    
+    // Clean up on unmount
+    return () => {
+      removeDataChangeListener(handleDataChanged);
+    };
+  }, []);
+  
   // Get unique categories for filter dropdown
   const categories = useMemo(() => {
-    return Array.from(new Set(businessesData.map(b => b.category)));
-  }, []);
+    return Array.from(new Set(businesses.map(b => b.category)));
+  }, [businesses]);
   
   // Get unique locations for filter dropdown
   const locations = useMemo(() => {
     // Extract city from address (simplified version - in real app would be more sophisticated)
-    return Array.from(new Set(businessesData.map(b => {
+    return Array.from(new Set(businesses.map(b => {
       const parts = b.address.split(',');
       return parts.length > 1 ? parts[1].trim() : parts[0].trim();
     })));
-  }, []);
+  }, [businesses]);
 
   // Get unique tags across all businesses
   const allTags = useMemo(() => {
     const tags = new Set<string>();
-    businessesData.forEach(business => {
+    businesses.forEach(business => {
       business.tags.forEach(tag => tags.add(tag));
     });
     return Array.from(tags);
-  }, []);
+  }, [businesses]);
   
   // Toggle a tag in the active tags list
   const toggleTag = (tag: string) => {
@@ -83,7 +120,7 @@ const BusinessesPage = () => {
   
   // Filter businesses based on all filters
   const filteredBusinesses = useMemo(() => {
-    let results = businessesData.filter(business => {
+    let results = businesses.filter(business => {
       // Check search query
       const matchesSearch = searchQuery === "" || 
         business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -124,6 +161,7 @@ const BusinessesPage = () => {
       return b.featured ? 1 : -1;
     });
   }, [
+    businesses,
     searchQuery, 
     selectedCategory, 
     selectedRating, 
@@ -177,448 +215,455 @@ const BusinessesPage = () => {
         </p>
       </div>
       
-      {/* Search and Filter Bar */}
-      <div className="bg-white rounded-xl shadow-md p-6 mb-12">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-grow">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search businesses by name, description or tags..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
-          <div className="flex gap-2">
-            {/* Mobile Filter Sheet */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="flex items-center gap-2 md:hidden"
-                >
-                  <Filter className="h-4 w-4" />
-                  Filters
-                  {activeFilterCount > 0 && (
-                    <Badge variant="secondary" className="ml-1">
-                      {activeFilterCount}
-                    </Badge>
-                  )}
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="w-full sm:max-w-md overflow-y-auto">
-                <SheetHeader>
-                  <SheetTitle>Filter Businesses</SheetTitle>
-                </SheetHeader>
-                <div className="py-4 space-y-6">
-                  {/* Category Filter */}
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Category</h3>
-                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="All Categories" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">All Categories</SelectItem>
-                        {categories.map(category => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <span className="ml-3 text-lg">Loading businesses...</span>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-md p-6 mb-12">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search businesses by name, description or tags..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              {/* Mobile Filter Sheet */}
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2 md:hidden"
+                  >
+                    <Filter className="h-4 w-4" />
+                    Filters
+                    {activeFilterCount > 0 && (
+                      <Badge variant="secondary" className="ml-1">
+                        {activeFilterCount}
+                      </Badge>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+                  <SheetHeader>
+                    <SheetTitle>Filter Businesses</SheetTitle>
+                  </SheetHeader>
+                  <div className="py-4 space-y-6">
+                    {/* Category Filter */}
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Category</h3>
+                      <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="All Categories" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">All Categories</SelectItem>
+                          {categories.map(category => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Location Filter */}
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Location</h3>
+                      <Select 
+                        value={selectedLocation || ""} 
+                        onValueChange={val => setSelectedLocation(val || null)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Any Location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Any Location</SelectItem>
+                          {locations.map(location => (
+                            <SelectItem key={location} value={location}>
+                              {location}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Rating Filter */}
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Rating</h3>
+                      <Select value={selectedRating} onValueChange={setSelectedRating}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Any Rating" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Any Rating</SelectItem>
+                          <SelectItem value="4+">4+ Stars</SelectItem>
+                          <SelectItem value="3+">3+ Stars</SelectItem>
+                          <SelectItem value="2+">2+ Stars</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Featured Checkbox */}
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="featured-mobile" 
+                        checked={featuredOnly}
+                        onCheckedChange={(checked) => 
+                          setFeaturedOnly(checked === true)
+                        }
+                      />
+                      <label 
+                        htmlFor="featured-mobile"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Featured Only
+                      </label>
+                    </div>
+                    
+                    {/* Tag Filters */}
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Tags</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {allTags.map(tag => (
+                          <Badge 
+                            key={tag}
+                            variant={activeTags.includes(tag) ? "default" : "outline"}
+                            className="cursor-pointer"
+                            onClick={() => toggleTag(tag)}
+                          >
+                            {tag}
+                          </Badge>
                         ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Location Filter */}
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Location</h3>
-                    <Select 
-                      value={selectedLocation || ""} 
-                      onValueChange={val => setSelectedLocation(val || null)}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Any Location" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">Any Location</SelectItem>
-                        {locations.map(location => (
-                          <SelectItem key={location} value={location}>
-                            {location}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Rating Filter */}
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Rating</h3>
-                    <Select value={selectedRating} onValueChange={setSelectedRating}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Any Rating" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">Any Rating</SelectItem>
-                        <SelectItem value="4+">4+ Stars</SelectItem>
-                        <SelectItem value="3+">3+ Stars</SelectItem>
-                        <SelectItem value="2+">2+ Stars</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Featured Checkbox */}
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="featured-mobile" 
-                      checked={featuredOnly}
-                      onCheckedChange={(checked) => 
-                        setFeaturedOnly(checked === true)
-                      }
-                    />
-                    <label 
-                      htmlFor="featured-mobile"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Featured Only
-                    </label>
-                  </div>
-                  
-                  {/* Tag Filters */}
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Tags</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {allTags.map(tag => (
-                        <Badge 
-                          key={tag}
-                          variant={activeTags.includes(tag) ? "default" : "outline"}
-                          className="cursor-pointer"
-                          onClick={() => toggleTag(tag)}
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <SheetFooter>
-                  <SheetClose asChild>
-                    <Button variant="secondary" onClick={clearAllFilters}>Clear All</Button>
-                  </SheetClose>
-                  <SheetClose asChild>
-                    <Button>Apply Filters</Button>
-                  </SheetClose>
-                </SheetFooter>
-              </SheetContent>
-            </Sheet>
-            
-            {/* Desktop Filter Button */}
-            <Button
-              variant="outline"
-              className="items-center gap-2 hidden md:flex"
-              onClick={() => setOpenFilters(!openFilters)}
-            >
-              <Filter className="h-4 w-4" />
-              Filters
-              {activeFilterCount > 0 && (
-                <Badge variant="secondary" className="ml-1">
-                  {activeFilterCount}
-                </Badge>
-              )}
-            </Button>
-            
-            <Button
-              variant={featuredOnly ? "default" : "outline"}
-              onClick={() => setFeaturedOnly(!featuredOnly)}
-            >
-              Featured
-            </Button>
-          </div>
-        </div>
-        
-        {/* Expanded Filters - Desktop */}
-        {openFilters && (
-          <div className="hidden md:block border-t mt-4 pt-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-1 block">Category</label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All Categories</SelectItem>
-                    {categories.map(category => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <SheetFooter>
+                    <SheetClose asChild>
+                      <Button variant="secondary" onClick={clearAllFilters}>Clear All</Button>
+                    </SheetClose>
+                    <SheetClose asChild>
+                      <Button>Apply Filters</Button>
+                    </SheetClose>
+                  </SheetFooter>
+                </SheetContent>
+              </Sheet>
               
-              <div>
-                <label className="text-sm font-medium mb-1 block">Location</label>
-                <Select 
-                  value={selectedLocation || ""} 
-                  onValueChange={val => setSelectedLocation(val || null)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Any Location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Any Location</SelectItem>
-                    {locations.map(location => (
-                      <SelectItem key={location} value={location}>
-                        {location}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium mb-1 block">Rating</label>
-                <Select value={selectedRating} onValueChange={setSelectedRating}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Any Rating" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Any Rating</SelectItem>
-                    <SelectItem value="4+">4+ Stars</SelectItem>
-                    <SelectItem value="3+">3+ Stars</SelectItem>
-                    <SelectItem value="2+">2+ Stars</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            {/* Tags */}
-            <div className="mt-4">
-              <label className="text-sm font-medium mb-2 block">Tags</label>
-              <div className="flex flex-wrap gap-2">
-                {allTags.map(tag => (
-                  <Badge 
-                    key={tag}
-                    variant={activeTags.includes(tag) ? "default" : "outline"}
-                    className="cursor-pointer"
-                    onClick={() => toggleTag(tag)}
-                  >
-                    {tag}
+              {/* Desktop Filter Button */}
+              <Button
+                variant="outline"
+                className="items-center gap-2 hidden md:flex"
+                onClick={() => setOpenFilters(!openFilters)}
+              >
+                <Filter className="h-4 w-4" />
+                Filters
+                {activeFilterCount > 0 && (
+                  <Badge variant="secondary" className="ml-1">
+                    {activeFilterCount}
                   </Badge>
-                ))}
-              </div>
-            </div>
-            
-            <div className="flex justify-end mt-4">
-              <Button variant="outline" onClick={clearAllFilters}>
-                Clear All
+                )}
+              </Button>
+              
+              <Button
+                variant={featuredOnly ? "default" : "outline"}
+                onClick={() => setFeaturedOnly(!featuredOnly)}
+              >
+                Featured
               </Button>
             </div>
           </div>
-        )}
-      </div>
-      
-      {/* Results Info and Sort */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <p className="text-gray-600">
-          Showing {currentBusinesses.length} of {filteredBusinesses.length} businesses
-        </p>
-        
-        <Select value={sortBy} onValueChange={(val: SortOption) => setSortBy(val)}>
-          <SelectTrigger className="w-[180px]">
-            <div className="flex items-center">
-              <ArrowUpDown className="mr-2 h-4 w-4" />
-              <span>Sort by</span>
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="relevance">Relevance</SelectItem>
-            <SelectItem value="rating">Highest Rating</SelectItem>
-            <SelectItem value="reviews">Most Reviews</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      
-      {/* Active Filters Display */}
-      {activeFilterCount > 0 && (
-        <div className="mb-6 flex flex-wrap items-center gap-2">
-          <span className="text-sm text-gray-500">Active filters:</span>
           
-          {selectedCategory && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              Category: {selectedCategory}
-              <button 
-                className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
-                onClick={() => setSelectedCategory("")}
-              >
-                ×
-              </button>
-            </Badge>
-          )}
-          
-          {selectedLocation && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              Location: {selectedLocation}
-              <button 
-                className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
-                onClick={() => setSelectedLocation(null)}
-              >
-                ×
-              </button>
-            </Badge>
-          )}
-          
-          {selectedRating && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              Rating: {selectedRating}
-              <button 
-                className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
-                onClick={() => setSelectedRating("")}
-              >
-                ×
-              </button>
-            </Badge>
-          )}
-          
-          {featuredOnly && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              Featured Only
-              <button 
-                className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
-                onClick={() => setFeaturedOnly(false)}
-              >
-                ×
-              </button>
-            </Badge>
-          )}
-          
-          {activeTags.map(tag => (
-            <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-              {tag}
-              <button 
-                className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
-                onClick={() => toggleTag(tag)}
-              >
-                ×
-              </button>
-            </Badge>
-          ))}
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-8 text-xs"
-            onClick={clearAllFilters}
-          >
-            Clear all
-          </Button>
-        </div>
-      )}
-      
-      {/* Businesses Grid */}
-      {currentBusinesses.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {currentBusinesses.map(business => (
-            <Card key={business.id} className="group overflow-hidden hover:shadow-lg transition-shadow duration-300">
-              <div className="relative h-48 overflow-hidden">
-                <img 
-                  src={business.image} 
-                  alt={business.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                {business.featured && (
-                  <span className="absolute top-3 left-3 bg-primary text-white text-xs px-2 py-1 rounded">
-                    Featured
-                  </span>
-                )}
-                <div className="absolute top-3 right-3 flex flex-wrap gap-1 max-w-[70%] justify-end">
-                  {business.tags.slice(0, 2).map((tag, i) => (
-                    <span key={i} className="bg-white/90 text-gray-700 text-xs px-2 py-1 rounded">
+          {/* Expanded Filters - Desktop */}
+          {openFilters && (
+            <div className="hidden md:block border-t mt-4 pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Category</label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Categories</SelectItem>
+                      {categories.map(category => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Location</label>
+                  <Select 
+                    value={selectedLocation || ""} 
+                    onValueChange={val => setSelectedLocation(val || null)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Any Location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Any Location</SelectItem>
+                      {locations.map(location => (
+                        <SelectItem key={location} value={location}>
+                          {location}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Rating</label>
+                  <Select value={selectedRating} onValueChange={setSelectedRating}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Any Rating" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Any Rating</SelectItem>
+                      <SelectItem value="4+">4+ Stars</SelectItem>
+                      <SelectItem value="3+">3+ Stars</SelectItem>
+                      <SelectItem value="2+">2+ Stars</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              {/* Tags */}
+              <div className="mt-4">
+                <label className="text-sm font-medium mb-2 block">Tags</label>
+                <div className="flex flex-wrap gap-2">
+                  {allTags.map(tag => (
+                    <Badge 
+                      key={tag}
+                      variant={activeTags.includes(tag) ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() => toggleTag(tag)}
+                    >
                       {tag}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
               </div>
               
-              <CardHeader className="pb-2">
-                <div className="flex justify-between">
-                  <h3 className="font-semibold text-xl text-gray-900 group-hover:text-primary transition-colors">
-                    {business.name}
-                  </h3>
-                  <div className="flex items-center">
-                    <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                    <span className="text-sm ml-1">{business.rating}</span>
-                    <span className="text-xs text-gray-500 ml-1">({business.reviews})</span>
-                  </div>
-                </div>
-                <span className="text-sm text-gray-500">{business.category}</span>
-              </CardHeader>
-              
-              <CardContent className="pb-2">
-                <p className="text-gray-600 text-sm line-clamp-2 mb-3">{business.description}</p>
-                <div className="flex items-center text-sm text-gray-500 mb-2">
-                  <MapPin className="h-4 w-4 mr-1 shrink-0" />
-                  <span className="truncate">{business.address}</span>
-                </div>
-                <div className="flex items-center text-sm text-gray-500">
-                  <Phone className="h-4 w-4 mr-1 shrink-0" />
-                  <span>{business.phone}</span>
-                </div>
-              </CardContent>
-              
-              <CardFooter className="pt-2">
-                <Button variant="outline" className="w-full" asChild>
-                  <a href={`/business/${business.id}`}>View Details</a>
+              <div className="flex justify-end mt-4">
+                <Button variant="outline" onClick={clearAllFilters}>
+                  Clear All
                 </Button>
-              </CardFooter>
-            </Card>
-          ))}
+              </div>
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="text-center py-12 bg-gray-50 rounded-lg mb-12">
-          <h3 className="text-xl font-medium text-gray-900 mb-2">No businesses found</h3>
-          <p className="text-gray-600">Try adjusting your search or filters to find what you're looking for.</p>
-          <Button 
-            variant="outline" 
-            className="mt-4"
-            onClick={clearAllFilters}
-          >
-            Clear All Filters
-          </Button>
+        
+        {/* Results Info and Sort */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <p className="text-gray-600">
+            Showing {currentBusinesses.length} of {filteredBusinesses.length} businesses
+          </p>
+          
+          <Select value={sortBy} onValueChange={(val: SortOption) => setSortBy(val)}>
+            <SelectTrigger className="w-[180px]">
+              <div className="flex items-center">
+                <ArrowUpDown className="mr-2 h-4 w-4" />
+                <span>Sort by</span>
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="relevance">Relevance</SelectItem>
+              <SelectItem value="rating">Highest Rating</SelectItem>
+              <SelectItem value="reviews">Most Reviews</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-      )}
-      
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious 
-                onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} 
-                className={currentPage === 1 ? "opacity-50 pointer-events-none" : ""}
-              />
-            </PaginationItem>
+        
+        {/* Active Filters Display */}
+        {activeFilterCount > 0 && (
+          <div className="mb-6 flex flex-wrap items-center gap-2">
+            <span className="text-sm text-gray-500">Active filters:</span>
             
-            {[...Array(totalPages)].map((_, i) => (
-              <PaginationItem key={i}>
-                <PaginationLink 
-                  isActive={currentPage === i + 1}
-                  onClick={() => setCurrentPage(i + 1)}
+            {selectedCategory && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                Category: {selectedCategory}
+                <button 
+                  className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
+                  onClick={() => setSelectedCategory("")}
                 >
-                  {i + 1}
-                </PaginationLink>
-              </PaginationItem>
+                  ×
+                </button>
+              </Badge>
+            )}
+            
+            {selectedLocation && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                Location: {selectedLocation}
+                <button 
+                  className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
+                  onClick={() => setSelectedLocation(null)}
+                >
+                  ×
+                </button>
+              </Badge>
+            )}
+            
+            {selectedRating && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                Rating: {selectedRating}
+                <button 
+                  className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
+                  onClick={() => setSelectedRating("")}
+                >
+                  ×
+                </button>
+              </Badge>
+            )}
+            
+            {featuredOnly && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                Featured Only
+                <button 
+                  className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
+                  onClick={() => setFeaturedOnly(false)}
+                >
+                  ×
+                </button>
+              </Badge>
+            )}
+            
+            {activeTags.map(tag => (
+              <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                {tag}
+                <button 
+                  className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
+                  onClick={() => toggleTag(tag)}
+                >
+                  ×
+                </button>
+              </Badge>
             ))}
             
-            <PaginationItem>
-              <PaginationNext 
-                onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} 
-                className={currentPage === totalPages ? "opacity-50 pointer-events-none" : ""}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 text-xs"
+              onClick={clearAllFilters}
+            >
+              Clear all
+            </Button>
+          </div>
+        )}
+        
+        {/* Businesses Grid */}
+        {currentBusinesses.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {currentBusinesses.map(business => (
+              <Card key={business.id} className="group overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <div className="relative h-48 overflow-hidden">
+                  <img 
+                    src={business.image} 
+                    alt={business.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  {business.featured && (
+                    <span className="absolute top-3 left-3 bg-primary text-white text-xs px-2 py-1 rounded">
+                      Featured
+                    </span>
+                  )}
+                  <div className="absolute top-3 right-3 flex flex-wrap gap-1 max-w-[70%] justify-end">
+                    {business.tags.slice(0, 2).map((tag, i) => (
+                      <span key={i} className="bg-white/90 text-gray-700 text-xs px-2 py-1 rounded">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between">
+                    <h3 className="font-semibold text-xl text-gray-900 group-hover:text-primary transition-colors">
+                      {business.name}
+                    </h3>
+                    <div className="flex items-center">
+                      <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                      <span className="text-sm ml-1">{business.rating}</span>
+                      <span className="text-xs text-gray-500 ml-1">({business.reviews})</span>
+                    </div>
+                  </div>
+                  <span className="text-sm text-gray-500">{business.category}</span>
+                </CardHeader>
+                
+                <CardContent className="pb-2">
+                  <p className="text-gray-600 text-sm line-clamp-2 mb-3">{business.description}</p>
+                  <div className="flex items-center text-sm text-gray-500 mb-2">
+                    <MapPin className="h-4 w-4 mr-1 shrink-0" />
+                    <span className="truncate">{business.address}</span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-500">
+                    <Phone className="h-4 w-4 mr-1 shrink-0" />
+                    <span>{business.phone}</span>
+                  </div>
+                </CardContent>
+                
+                <CardFooter className="pt-2">
+                  <Button variant="outline" className="w-full" asChild>
+                    <a href={`/business/${business.id}`}>View Details</a>
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 bg-gray-50 rounded-lg mb-12">
+            <h3 className="text-xl font-medium text-gray-900 mb-2">No businesses found</h3>
+            <p className="text-gray-600">Try adjusting your search or filters to find what you're looking for.</p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={clearAllFilters}
+            >
+              Clear All Filters
+            </Button>
+          </div>
+        )}
+        
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} 
+                  className={currentPage === 1 ? "opacity-50 pointer-events-none" : ""}
+                />
+              </PaginationItem>
+              
+              {[...Array(totalPages)].map((_, i) => (
+                <PaginationItem key={i}>
+                  <PaginationLink 
+                    isActive={currentPage === i + 1}
+                    onClick={() => setCurrentPage(i + 1)}
+                  >
+                    {i + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} 
+                  className={currentPage === totalPages ? "opacity-50 pointer-events-none" : ""}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        )}
       )}
     </div>
   );

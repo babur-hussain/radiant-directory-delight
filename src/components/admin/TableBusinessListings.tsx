@@ -5,7 +5,8 @@ import {
   addDataChangeListener, 
   removeDataChangeListener,
   deleteBusiness,
-  Business 
+  Business,
+  initializeData
 } from '@/lib/csv-utils';
 import { useToast } from '@/hooks/use-toast';
 import BusinessTable from './table/BusinessTable';
@@ -25,7 +26,7 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
   onAddBusiness,
   onEditBusiness
 }) => {
-  const [businesses, setBusinesses] = useState(getAllBusinesses());
+  const [businesses, setBusinesses] = useState<Business[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
@@ -33,64 +34,109 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const itemsPerPage = 100;
   
   // Handle data changes and refreshes
-  const refreshData = () => {
+  const refreshData = async () => {
     setIsRefreshing(true);
-    // Get the latest data
-    setBusinesses(getAllBusinesses());
     
-    setTimeout(() => {
-      setIsRefreshing(false);
+    try {
+      // Initialize data from Firestore
+      await initializeData();
+      
+      // Get the latest data
+      setBusinesses(getAllBusinesses());
+      
       toast({
         title: "Data refreshed",
-        description: "The business listings have been updated.",
+        description: "The business listings have been updated from the database.",
       });
-    }, 500); // small delay for visual feedback
-    
-    // Notify parent component if needed
-    if (onRefresh) {
-      onRefresh();
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      toast({
+        title: "Refresh failed",
+        description: "There was an error refreshing the business data.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+      
+      // Notify parent component if needed
+      if (onRefresh) {
+        onRefresh();
+      }
     }
   };
   
   // Listen for data changes
   useEffect(() => {
     // Initial data load
-    refreshData();
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        await initializeData();
+        setBusinesses(getAllBusinesses());
+      } catch (error) {
+        console.error("Error loading businesses:", error);
+        toast({
+          title: "Loading failed",
+          description: "There was an error loading the business data.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
     
     // Add a listener for data changes
-    addDataChangeListener(refreshData);
+    const handleDataChanged = () => {
+      setBusinesses(getAllBusinesses());
+    };
+    
+    addDataChangeListener(handleDataChanged);
     
     // Cleanup on unmount
     return () => {
-      removeDataChangeListener(refreshData);
+      removeDataChangeListener(handleDataChanged);
     };
   }, []);
   
   // Handle delete business
-  const handleDeleteBusiness = () => {
+  const handleDeleteBusiness = async () => {
     if (businessToDelete) {
       // Check if it's from the original data set or uploaded
       const isUploaded = businessToDelete.id > 20;
       
       if (isUploaded) {
-        const deleted = deleteBusiness(businessToDelete.id);
-        
-        if (deleted) {
-          toast({
-            title: "Business deleted",
-            description: `${businessToDelete.name} has been removed.`,
-          });
-          refreshData();
-        } else {
+        setIsRefreshing(true);
+        try {
+          const deleted = await deleteBusiness(businessToDelete.id);
+          
+          if (deleted) {
+            toast({
+              title: "Business deleted",
+              description: `${businessToDelete.name} has been removed.`,
+            });
+          } else {
+            toast({
+              title: "Delete failed",
+              description: "The business could not be deleted.",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error("Error deleting business:", error);
           toast({
             title: "Delete failed",
-            description: "The business could not be deleted.",
+            description: "There was an error deleting the business.",
             variant: "destructive",
           });
+        } finally {
+          setIsRefreshing(false);
         }
       } else {
         toast({
@@ -157,26 +203,36 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
         totalBusinesses={filteredBusinesses.length}
       />
       
-      {/* Table */}
-      <BusinessTable 
-        businesses={currentBusinesses}
-        onViewDetails={(business) => {
-          setSelectedBusiness(business);
-          setShowDetailsDialog(true);
-        }}
-        onEditBusiness={handleEditClick}
-        onDeleteBusiness={(business) => {
-          setBusinessToDelete(business);
-          setShowDeleteDialog(true);
-        }}
-      />
-      
-      {/* Pagination */}
-      <TablePagination 
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-      />
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <span className="ml-3 text-lg">Loading businesses...</span>
+        </div>
+      ) : (
+        <>
+          {/* Table */}
+          <BusinessTable 
+            businesses={currentBusinesses}
+            onViewDetails={(business) => {
+              setSelectedBusiness(business);
+              setShowDetailsDialog(true);
+            }}
+            onEditBusiness={handleEditClick}
+            onDeleteBusiness={(business) => {
+              setBusinessToDelete(business);
+              setShowDeleteDialog(true);
+            }}
+          />
+          
+          {/* Pagination */}
+          <TablePagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </>
+      )}
       
       {/* Business Details Dialog */}
       <BusinessDetailsDialog 
