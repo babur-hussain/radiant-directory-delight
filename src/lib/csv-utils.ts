@@ -1,0 +1,128 @@
+
+import { businessesData } from '@/data/businessesData';
+
+// Define the business type based on the existing data structure
+interface Business {
+  id: number;
+  name: string;
+  category: string;
+  image: string;
+  rating: number;
+  reviews: number;
+  address: string;
+  phone: string;
+  description: string;
+  featured: boolean;
+  tags: string[];
+}
+
+// Store the uploaded businesses in this array
+// This is a simple in-memory storage for demonstration
+// In a real app, this would be stored in a database
+export let uploadedBusinesses: Business[] = [];
+
+export const getAllBusinesses = (): Business[] => {
+  // Combine the original businesses with the uploaded ones
+  return [...businessesData, ...uploadedBusinesses];
+};
+
+export const processCsvData = async (csvContent: string): Promise<{ 
+  success: boolean; 
+  businesses: Business[]; 
+  message: string;
+}> => {
+  try {
+    // Parse CSV content
+    const lines = csvContent.split('\n');
+    
+    // Check if file is empty
+    if (lines.length <= 1) {
+      return { 
+        success: false, 
+        businesses: [], 
+        message: "The CSV file is empty or contains only headers." 
+      };
+    }
+    
+    // Get headers
+    const headers = lines[0].split(',').map(header => header.trim().toLowerCase());
+    
+    // Validate required headers
+    const requiredHeaders = ['name', 'category', 'address', 'review', 'mobile'];
+    const missingHeaders = requiredHeaders.filter(required => 
+      !headers.some(header => header.includes(required))
+    );
+    
+    if (missingHeaders.length > 0) {
+      return { 
+        success: false, 
+        businesses: [], 
+        message: `Missing required columns: ${missingHeaders.join(', ')}. Please ensure your CSV includes columns for Business Name, Category, Address, Review, and Mobile Number.` 
+      };
+    }
+    
+    // Process rows
+    const businesses: Business[] = [];
+    let lastBusinessId = Math.max(...businessesData.map(b => b.id), ...uploadedBusinesses.map(b => b.id), 0);
+    
+    // Start from index 1 to skip headers
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue; // Skip empty lines
+      
+      // Split the line into values
+      // This is a simple split by comma, but in a real app,
+      // you'd need to handle more complex CSV parsing (quotes, commas in values, etc.)
+      const values = line.split(',').map(value => value.trim());
+      
+      // Get the index for each required field based on headers
+      const nameIndex = headers.findIndex(h => h.includes('name'));
+      const categoryIndex = headers.findIndex(h => h.includes('category'));
+      const addressIndex = headers.findIndex(h => h.includes('address'));
+      const reviewIndex = headers.findIndex(h => h.includes('review'));
+      const mobileIndex = headers.findIndex(h => h.includes('mobile'));
+      
+      // Validate if all fields are present in this row
+      if (values.length < Math.max(nameIndex, categoryIndex, addressIndex, reviewIndex, mobileIndex) + 1) {
+        return { 
+          success: false, 
+          businesses: [], 
+          message: `Row ${i} is missing one or more required fields. Please check your CSV format.` 
+        };
+      }
+      
+      // Create a business object
+      const business: Business = {
+        id: ++lastBusinessId,
+        name: values[nameIndex],
+        category: values[categoryIndex],
+        address: values[addressIndex],
+        phone: values[mobileIndex],
+        rating: parseFloat(values[reviewIndex]) || 0,
+        reviews: Math.floor(Math.random() * 500) + 50, // Random number for demonstration
+        image: `https://source.unsplash.com/random/500x350/?${values[categoryIndex].toLowerCase().replace(/\s+/g, ',')}`,
+        description: `${values[nameIndex]} is a ${values[categoryIndex]} business located in ${values[addressIndex]}.`,
+        featured: Math.random() > 0.8, // 20% chance of being featured
+        tags: [values[categoryIndex], "New", "Imported"]
+      };
+      
+      businesses.push(business);
+    }
+    
+    // Add businesses to the uploadedBusinesses array
+    uploadedBusinesses = [...uploadedBusinesses, ...businesses];
+    
+    return { 
+      success: true, 
+      businesses, 
+      message: `Successfully processed ${businesses.length} businesses.` 
+    };
+  } catch (error) {
+    console.error("CSV processing error:", error);
+    return { 
+      success: false, 
+      businesses: [], 
+      message: `Error processing CSV: ${error instanceof Error ? error.message : String(error)}` 
+    };
+  }
+};

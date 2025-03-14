@@ -1,10 +1,11 @@
 
 import React from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { SubscriptionManagement } from "@/components/admin/SubscriptionManagement";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserIcon, CreditCard, Users, Package } from "lucide-react";
+import { UserIcon, CreditCard, Users, Package, Building, Database } from "lucide-react";
 
 const AdminDashboardPage = () => {
   const { user, isAuthenticated } = useAuth();
@@ -75,6 +76,71 @@ const AdminDashboardPage = () => {
             <p className="text-xs text-muted-foreground">+18% from last month</p>
           </CardContent>
         </Card>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Link to="/admin/businesses">
+          <Card className="hover:border-primary hover:shadow-md transition-all cursor-pointer">
+            <CardHeader className="flex flex-row items-center gap-4">
+              <div className="bg-primary/10 rounded-full p-3">
+                <Building className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-xl">Business Listings</CardTitle>
+                <CardDescription>
+                  Upload and manage business data
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Upload CSV files to bulk import businesses, view and edit listings.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+        
+        <Link to="/admin/dashboard?tab=subscriptions">
+          <Card className="hover:border-primary hover:shadow-md transition-all cursor-pointer">
+            <CardHeader className="flex flex-row items-center gap-4">
+              <div className="bg-primary/10 rounded-full p-3">
+                <CreditCard className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-xl">Subscriptions</CardTitle>
+                <CardDescription>
+                  Manage user subscriptions
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                View and manage user subscription data, payments, and renewals.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+        
+        <Link to="/admin/dashboard?tab=users">
+          <Card className="hover:border-primary hover:shadow-md transition-all cursor-pointer">
+            <CardHeader className="flex flex-row items-center gap-4">
+              <div className="bg-primary/10 rounded-full p-3">
+                <Users className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-xl">User Management</CardTitle>
+                <CardDescription>
+                  Manage user accounts
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Add, edit, or remove user accounts, manage permissions.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
       
       <Tabs defaultValue="subscriptions">
