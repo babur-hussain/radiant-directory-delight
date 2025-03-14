@@ -40,7 +40,7 @@ const BusinessTable: React.FC<BusinessTableProps> = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {businesses.length === 0 ? (
+          {!businesses || businesses.length === 0 ? (
             <TableRow>
               <TableCell colSpan={7} className="h-24 text-center">
                 No businesses found.

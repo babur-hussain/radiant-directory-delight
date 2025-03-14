@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Business } from "@/lib/csv-utils";
@@ -25,20 +26,18 @@ interface AdminDashboardTabsProps {
   handleEditBusiness: (business: Business) => void;
   handlePermissionError: (error: any) => void;
   onViewDetails: (business: Business) => void;
+  businesses: Business[];
+  isRefreshing: boolean;
+  refreshBusinesses: () => Promise<void>;
 }
 
 const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
   activeTab,
   setActiveTab,
   businessCount,
-  showBusinessFormDialog,
-  setShowBusinessFormDialog,
-  showUploadDialog,
-  setShowUploadDialog,
-  currentBusinessToEdit,
-  isSubmitting,
-  handleBusinessFormSubmit,
-  handleUploadComplete,
+  businesses,
+  isRefreshing,
+  refreshBusinesses,
   handleAddBusiness,
   handleEditBusiness,
   handlePermissionError,
@@ -74,18 +73,12 @@ const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
 
       <TabsContent value="businesses" className="space-y-4">
         <BusinessesTab 
-          businessCount={businessCount}
-          showBusinessFormDialog={showBusinessFormDialog}
-          setShowBusinessFormDialog={setShowBusinessFormDialog}
-          showUploadDialog={showUploadDialog}
-          setShowUploadDialog={setShowUploadDialog}
-          currentBusinessToEdit={currentBusinessToEdit}
-          isSubmitting={isSubmitting}
-          handleBusinessFormSubmit={handleBusinessFormSubmit}
-          handleUploadComplete={handleUploadComplete}
-          handleAddBusiness={handleAddBusiness}
-          handleEditBusiness={handleEditBusiness}
-          onViewDetails={onViewDetails}
+          businesses={businesses}
+          onAddBusiness={handleAddBusiness}
+          onEditBusiness={handleEditBusiness}
+          isRefreshing={isRefreshing}
+          onRefresh={refreshBusinesses}
+          handlePermissionError={handlePermissionError}
         />
       </TabsContent>
       
@@ -106,7 +99,10 @@ const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
       </TabsContent>
       
       <TabsContent value="influencer_dashboards" className="space-y-4">
-        <AdminInfluencerDashboards />
+        <AdminInfluencerDashboards 
+          influencers={businesses.filter(b => b.category === "Influencer")}
+          onEdit={handleEditBusiness}
+        />
       </TabsContent>
     </Tabs>
   );

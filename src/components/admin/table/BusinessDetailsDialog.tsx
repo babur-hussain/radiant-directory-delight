@@ -62,10 +62,10 @@ const BusinessDetailsDialog: React.FC<BusinessDetailsDialogProps> = ({
               <p>
                 {[
                   business.address,
-                  business.city,
-                  business.state,
-                  business.zipCode,
-                  business.country
+                  business.city || "",
+                  business.state || "",
+                  business.zipCode || "",
+                  business.country || ""
                 ].filter(Boolean).join(", ") || "No address provided"}
               </p>
             </CardContent>

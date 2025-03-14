@@ -1,15 +1,20 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AdminInfluencerDashboards from "@/components/admin/dashboard/AdminInfluencerDashboards";
 import AdminBusinessDashboards from "@/components/admin/dashboard/AdminBusinessDashboards";
 import AccessDenied from "@/components/dashboard/AccessDenied";
+import { useBusinessListings } from "@/hooks/useBusinessListings";
 
 const AdminDashboardServicePage = () => {
   const { user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState("influencers");
+  const { businesses } = useBusinessListings();
+  
+  // Filter businesses to find influencers
+  const influencers = businesses.filter(b => b.category === "Influencer");
   
   if (!isAuthenticated || !user?.isAdmin) {
     return <AccessDenied message="You need admin privileges to access this page" />;
@@ -35,7 +40,7 @@ const AdminDashboardServicePage = () => {
         </TabsList>
         
         <TabsContent value="influencers">
-          <AdminInfluencerDashboards />
+          <AdminInfluencerDashboards influencers={influencers} />
         </TabsContent>
         
         <TabsContent value="businesses">

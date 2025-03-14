@@ -40,7 +40,7 @@ const AdminInfluencerDashboards: React.FC<AdminInfluencerDashboardsProps> = ({
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Category</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -49,7 +49,7 @@ const AdminInfluencerDashboards: React.FC<AdminInfluencerDashboardsProps> = ({
                   <TableRow key={influencer.id || influencer.email}>
                     <TableCell className="font-medium">{influencer.name}</TableCell>
                     <TableCell>{influencer.email}</TableCell>
-                    <TableCell>{influencer.status || "Not set"}</TableCell>
+                    <TableCell>{influencer.category}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"

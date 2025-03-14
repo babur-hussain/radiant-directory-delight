@@ -35,14 +35,9 @@ const BusinessesTab: React.FC<BusinessesTabProps> = ({
     <div className="space-y-4">
       <BusinessTable
         businesses={businesses}
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        onAddBusiness={onAddBusiness}
-        onEditBusiness={onEditBusiness}
         onViewDetails={handleViewDetails}
-        isRefreshing={isRefreshing}
-        onRefresh={onRefresh}
-        onError={handlePermissionError}
+        onEditBusiness={onEditBusiness}
+        onDeleteBusiness={() => {}}
       />
       
       {selectedBusiness && (

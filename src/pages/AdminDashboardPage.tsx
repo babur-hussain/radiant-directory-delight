@@ -21,12 +21,11 @@ const AdminDashboardPage = () => {
   const [showUploadDialog, setShowUploadDialog] = useReactState(false);
   const [showBusinessFormDialog, setShowBusinessFormDialog] = useReactState(false);
   const [businessCount, setBusinessCount] = useReactState(0);
-  const [isRefreshing, setIsRefreshing] = useReactState(false);
   const [currentBusinessToEdit, setCurrentBusinessToEdit] = useReactState<Business | null>(null);
   const [isSubmitting, setIsSubmitting] = useReactState(false);
   const [selectedBusiness, setSelectedBusiness] = useReactState<Business | null>(null);
   
-  const { businesses } = useBusinessListings();
+  const { businesses, isRefreshing, refreshData } = useBusinessListings();
 
   // Check if user is authorized (admin or staff)
   const isAuthorized = user && (user.role === "Admin" || user.role === "staff" || user.isAdmin);
@@ -154,6 +153,9 @@ const AdminDashboardPage = () => {
         handleEditBusiness={handleEditBusiness}
         handlePermissionError={handlePermissionError}
         onViewDetails={handleViewBusinessDetails}
+        businesses={businesses}
+        isRefreshing={isRefreshing}
+        refreshBusinesses={refreshData}
       />
     </div>
   );
