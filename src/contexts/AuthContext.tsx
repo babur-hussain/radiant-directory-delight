@@ -8,7 +8,7 @@ import {
   signOut,
   onAuthStateChanged
 } from "firebase/auth";
-import { auth, googleProvider, facebookProvider } from "../config/firebase";
+import { auth, googleProvider } from "../config/firebase";
 import { toast } from "@/hooks/use-toast";
 
 // Define types for our auth context
@@ -27,7 +27,6 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
-  loginWithFacebook: () => Promise<void>;
   signup: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
@@ -46,7 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         // Check if we have role information in localStorage
-        const roleKey = `role_${firebaseUser.uid}`; // Use UID instead of email for consistency
+        const roleKey = `role_${firebaseUser.uid}`;
         const userRole = localStorage.getItem(roleKey) as UserRole || null;
         
         // Create user object from Firebase user
@@ -121,37 +120,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithFacebook = async () => {
-    try {
-      setLoading(true);
-      const result = await signInWithPopup(auth, facebookProvider);
-      // Save user role if needed
-      const user = result.user;
-      if (user && user.email) {
-        // Check if we already have a role for this user
-        const roleKey = `role_${user.uid}`;
-        if (!localStorage.getItem(roleKey)) {
-          // Default to a role if needed
-          // localStorage.setItem(roleKey, "Business"); // Uncomment if you want to set a default
-        }
-      }
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
-    } catch (error: any) {
-      console.error("Facebook login error:", error.code, error.message);
-      toast({
-        title: "Facebook login failed",
-        description: error.message || "There was an error signing in with Facebook.",
-        variant: "destructive",
-      });
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const signup = async (email: string, password: string, name: string, role: UserRole) => {
     try {
       setLoading(true);
@@ -203,7 +171,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         login,
         loginWithGoogle,
-        loginWithFacebook,
         signup,
         logout,
         loading
