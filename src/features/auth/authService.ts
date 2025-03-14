@@ -26,16 +26,17 @@ const saveUserToFirestore = async (
     
     // Ensure name is a string
     const displayName = name === null ? (email?.split('@')[0] || 'User') :
+                         typeof name === 'string' ? name : 
                          typeof name === 'boolean' ? 'User' : 
-                         name || 'User';
+                         name?.toString() || 'User';
     
     // Ensure isAdmin is a boolean
     let adminStatus = false;
     if (typeof isAdmin === 'boolean') {
       adminStatus = isAdmin;
     } else if (typeof isAdmin === 'string') {
-      // Safely convert string to boolean
-      adminStatus = isAdmin === 'true';
+      // Safely convert string to boolean without using toLowerCase
+      adminStatus = isAdmin === 'true' || isAdmin === 'TRUE';
     } else {
       // For any other type, use Boolean conversion
       adminStatus = Boolean(isAdmin);
@@ -144,6 +145,7 @@ export const signup = async (email: string, password: string, name: string, role
         null,
         false
       );
+      console.log(`User ${firebaseUser.uid} added to Firestore during signup`);
     } catch (error) {
       console.error("Error saving user to Firestore:", error);
       throw new Error(`Failed to save user data: ${error instanceof Error ? error.message : String(error)}`);

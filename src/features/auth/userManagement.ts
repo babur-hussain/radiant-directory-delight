@@ -140,7 +140,7 @@ export const getAllUsers = async (): Promise<User[]> => {
       } else if (typeof data.name === 'string') {
         displayName = data.name || data.displayName || null;
       } else {
-        displayName = data.name?.toString() || data.displayName || null;
+        displayName = String(data.name) || data.displayName || null;
       }
       
       // Ensure isAdmin is a boolean
