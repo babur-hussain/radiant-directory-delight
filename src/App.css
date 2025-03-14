@@ -23,15 +23,15 @@ header {
   height: 64px;
 }
 
-/* Main content padding to avoid header overlap */
+/* Main content styling with proper padding to avoid header overlap */
 main {
-  padding-top: 0; /* Remove default padding */
+  padding-top: 64px; /* Add padding equal to header height */
   margin-top: 0;
 }
 
-/* Hero section styling to align with header */
+/* Hero section styling to align properly */
 .hero-section {
-  padding-top: 64px; /* Match header height exactly */
+  padding-top: 0; /* Remove the padding from hero as main already has padding */
   margin-top: 0;
 }
 

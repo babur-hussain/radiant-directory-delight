@@ -23,8 +23,8 @@ const CategoriesPage = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <main className="flex-grow">
-        {/* Hero Section */}
-        <section className="bg-gradient-to-b from-blue-50 to-white py-8 hero-section">
+        {/* Hero Section - removed hero-section class as we're handling padding in main */}
+        <section className="bg-gradient-to-b from-blue-50 to-white py-8">
           <div className="container max-w-7xl mx-auto px-4 sm:px-6">
             <div className="flex flex-col items-center text-center">
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
