@@ -1,30 +1,49 @@
 
 import { useState, useEffect } from 'react';
-import { businessesData } from '@/data/businessesData';
+import { getAllBusinesses } from '@/lib/csv-utils';
 import CategoryFilter from './businesses/CategoryFilter';
 import AdvancedFilters from './businesses/AdvancedFilters';
 import ActiveFilters from './businesses/ActiveFilters';
 import BusinessGrid from './businesses/BusinessGrid';
 
-// Get the first 6 businesses to display
-const featuredBusinesses = businessesData.filter(b => b.featured).slice(0, 6);
-
 const FeaturedBusinesses = () => {
+  const [businesses, setBusinesses] = useState([]);
   const [visibleCategory, setVisibleCategory] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedRating, setSelectedRating] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   
-  const categories = Array.from(new Set(featuredBusinesses.map(b => b.category)));
+  // Load businesses data
+  useEffect(() => {
+    const loadBusinesses = () => {
+      setLoading(true);
+      try {
+        // Get businesses from the utility function that combines original and uploaded businesses
+        const allBusinesses = getAllBusinesses();
+        // Filter to featured businesses and take the first 6
+        const featuredBusinesses = allBusinesses.filter(b => b.featured).slice(0, 6);
+        setBusinesses(featuredBusinesses);
+      } catch (error) {
+        console.error("Error loading businesses:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadBusinesses();
+  }, []);
+  
+  const categories = Array.from(new Set(businesses.map(b => b.category)));
   
   // Extract unique locations (cities) from business addresses
-  const locations = Array.from(new Set(featuredBusinesses.map(b => {
+  const locations = Array.from(new Set(businesses.map(b => {
     const parts = b.address.split(',');
     return parts.length > 1 ? parts[1].trim() : parts[0].trim();
   })));
   
   // Filter businesses based on all selected filters
-  const filteredBusinesses = featuredBusinesses.filter(business => {
+  const filteredBusinesses = businesses.filter(business => {
     // Category filter
     if (visibleCategory && business.category !== visibleCategory) {
       return false;
@@ -126,7 +145,11 @@ const FeaturedBusinesses = () => {
         />
         
         {/* Businesses Grid */}
-        <BusinessGrid businesses={filteredBusinesses} resetFilters={resetFilters} />
+        <BusinessGrid 
+          businesses={filteredBusinesses} 
+          resetFilters={resetFilters} 
+          loading={loading} 
+        />
       </div>
     </section>
   );
