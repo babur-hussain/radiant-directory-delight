@@ -1,22 +1,26 @@
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu, X, Map, LogIn } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Menu, X, LogIn, LayoutDashboard } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import AuthModal from './auth/AuthModal';
 import UserMenu from './UserMenu';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const navigate = useNavigate();
   const auth = useAuth();
   const {
     isAuthenticated,
     logout,
-    initialized
+    initialized,
+    user
   } = auth;
+  const { getUserSubscription } = useSubscription();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,6 +33,18 @@ const Header = () => {
   const handleMobileLogout = async () => {
     await logout();
     setIsMobileMenuOpen(false);
+  };
+
+  const handleDashboardClick = () => {
+    if (!isAuthenticated || !user) return;
+    
+    if (user.role === "Business") {
+      navigate("/business-dashboard");
+    } else if (user.role === "Influencer") {
+      navigate("/influencer-dashboard");
+    } else {
+      navigate("/profile");
+    }
   };
 
   // Make sure we don't show anything until auth is initialized
@@ -60,10 +76,17 @@ const Header = () => {
           </nav>
 
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="outline" size="sm" className="rounded-full transition-smooth">
-              <Map className="h-4 w-4 mr-2" />
-              Location
-            </Button>
+            {isAuthenticated && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-full transition-smooth" 
+                onClick={handleDashboardClick}
+              >
+                <LayoutDashboard className="h-4 w-4 mr-2" />
+                Dashboard
+              </Button>
+            )}
             
             {isAuthenticated ? <UserMenu /> : <Button variant="default" size="sm" className="rounded-full transition-smooth" onClick={() => setIsAuthModalOpen(true)}>
                 <LogIn className="h-4 w-4 mr-2" />
@@ -99,10 +122,16 @@ const Header = () => {
             About
           </Link>
           <div className="pt-2 flex flex-col space-y-3">
-            <Button variant="outline" className="justify-start rounded-full w-full transition-smooth">
-              <Map className="h-4 w-4 mr-2" />
-              Set Location
-            </Button>
+            {isAuthenticated && (
+              <Button 
+                variant="outline" 
+                className="justify-start rounded-full w-full transition-smooth" 
+                onClick={handleDashboardClick}
+              >
+                <LayoutDashboard className="h-4 w-4 mr-2" />
+                Dashboard
+              </Button>
+            )}
             
             {isAuthenticated ? <Button variant="default" className="justify-start rounded-full w-full transition-smooth" onClick={handleMobileLogout}>
                 <LogIn className="h-4 w-4 mr-2" />

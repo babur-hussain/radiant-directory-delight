@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Download, BarChart, PieChart, RefreshCw } from "lucide-react";
+import { Loader2, Download, BarChart, PieChart, RefreshCw, ExternalLink } from "lucide-react";
 import DashboardWelcome from "../DashboardWelcome";
 import ReelsProgress from "./widgets/ReelsProgress";
 import CreativesTracker from "./widgets/CreativesTracker";
@@ -14,6 +15,7 @@ import PerformanceMetrics from "./widgets/PerformanceMetrics";
 import LeadsGenerated from "./widgets/LeadsGenerated";
 import InfluencerRank from "./widgets/InfluencerRank";
 import { useDashboardServices } from "@/hooks/useDashboardServices";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useToast } from "@/hooks/use-toast";
 
 interface InfluencerDashboardProps {
@@ -22,8 +24,11 @@ interface InfluencerDashboardProps {
 
 const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "Influencer");
+  const { getUserSubscription } = useSubscription();
+  const subscription = getUserSubscription();
   
   useEffect(() => {
     // Simulate loading data
@@ -53,6 +58,10 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
       });
     }, 1000);
   };
+
+  const handleGetSubscription = () => {
+    navigate("/subscription");
+  };
   
   if (isLoading || servicesLoading) {
     return (
@@ -73,6 +82,31 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
         <h3 className="text-xl font-medium">Error loading dashboard</h3>
         <p className="text-muted-foreground mb-4">{error}</p>
         <Button onClick={handleRefreshData}>Try Again</Button>
+      </div>
+    );
+  }
+
+  // If no active subscription
+  if (!subscription || subscription.status !== "active") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-xl mx-auto text-center">
+        <div className="bg-primary/10 p-6 rounded-full mb-6">
+          <ExternalLink className="h-16 w-16 text-primary" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">You don't have any active subscriptions</h2>
+        <p className="text-muted-foreground mb-8">
+          Subscribe to our Influencer Program to access your personalized dashboard and start earning.
+        </p>
+        <div className="animate-pulse">
+          <Button 
+            size="lg" 
+            className="rounded-full px-8 py-6 text-lg font-medium"
+            onClick={handleGetSubscription}
+          >
+            Get Now
+            <ExternalLink className="h-5 w-5 ml-2" />
+          </Button>
+        </div>
       </div>
     );
   }
@@ -123,7 +157,7 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
               <CardDescription>You don't have any active services in your current plan</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => window.location.href = "/subscription"}>
+              <Button onClick={() => navigate("/subscription")}>
                 Upgrade Your Plan
               </Button>
             </CardContent>

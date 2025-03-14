@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Download, BarChart, PieChart, RefreshCw } from "lucide-react";
+import { Loader2, Download, BarChart, PieChart, RefreshCw, ExternalLink } from "lucide-react";
 import DashboardWelcome from "../DashboardWelcome";
-import MarketingCampaigns from "./widgets/MarketingCampaigns";
 import ReelsAndAds from "./widgets/ReelsAndAds";
 import CreativeDesigns from "./widgets/CreativeDesigns";
 import BusinessRatings from "./widgets/BusinessRatings";
@@ -14,7 +14,9 @@ import GoogleBusinessListing from "./widgets/GoogleBusinessListing";
 import GrowthAnalytics from "./widgets/GrowthAnalytics";
 import LeadsAndInquiries from "./widgets/LeadsAndInquiries";
 import ReachAndVisibility from "./widgets/ReachAndVisibility";
+import MarketingCampaigns from "./widgets/MarketingCampaigns";
 import { useDashboardServices } from "@/hooks/useDashboardServices";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useToast } from "@/hooks/use-toast";
 
 interface BusinessDashboardProps {
@@ -23,8 +25,11 @@ interface BusinessDashboardProps {
 
 const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ userId }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "Business");
+  const { getUserSubscription } = useSubscription();
+  const subscription = getUserSubscription();
   
   useEffect(() => {
     // Simulate loading data
@@ -54,6 +59,10 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ userId }) => {
       });
     }, 1000);
   };
+
+  const handleGetSubscription = () => {
+    navigate("/subscription");
+  };
   
   if (isLoading || servicesLoading) {
     return (
@@ -74,6 +83,31 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ userId }) => {
         <h3 className="text-xl font-medium">Error loading dashboard</h3>
         <p className="text-muted-foreground mb-4">{error}</p>
         <Button onClick={handleRefreshData}>Try Again</Button>
+      </div>
+    );
+  }
+
+  // If no active subscription
+  if (!subscription || subscription.status !== "active") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-xl mx-auto text-center">
+        <div className="bg-primary/10 p-6 rounded-full mb-6">
+          <ExternalLink className="h-16 w-16 text-primary" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">You don't have any active subscriptions</h2>
+        <p className="text-muted-foreground mb-8">
+          Subscribe to our Business Growth services to access your personalized dashboard and start growing your business.
+        </p>
+        <div className="animate-pulse">
+          <Button 
+            size="lg" 
+            className="rounded-full px-8 py-6 text-lg font-medium"
+            onClick={handleGetSubscription}
+          >
+            Get Now
+            <ExternalLink className="h-5 w-5 ml-2" />
+          </Button>
+        </div>
       </div>
     );
   }
@@ -125,7 +159,7 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ userId }) => {
               <CardDescription>You don't have any active services in your current plan</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => window.location.href = "/subscription"}>
+              <Button onClick={() => navigate("/subscription")}>
                 Upgrade Your Plan
               </Button>
             </CardContent>
