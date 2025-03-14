@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { Search, Filter, MapPin, Star, Phone, ArrowUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -462,208 +463,208 @@ const BusinessesPage = () => {
             </div>
           )}
         </div>
+      )}
+      
+      {/* Results Info and Sort */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <p className="text-gray-600">
+          Showing {currentBusinesses.length} of {filteredBusinesses.length} businesses
+        </p>
         
-        {/* Results Info and Sort */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <p className="text-gray-600">
-            Showing {currentBusinesses.length} of {filteredBusinesses.length} businesses
-          </p>
+        <Select value={sortBy} onValueChange={(val: SortOption) => setSortBy(val)}>
+          <SelectTrigger className="w-[180px]">
+            <div className="flex items-center">
+              <ArrowUpDown className="mr-2 h-4 w-4" />
+              <span>Sort by</span>
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="relevance">Relevance</SelectItem>
+            <SelectItem value="rating">Highest Rating</SelectItem>
+            <SelectItem value="reviews">Most Reviews</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      {/* Active Filters Display */}
+      {activeFilterCount > 0 && (
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          <span className="text-sm text-gray-500">Active filters:</span>
           
-          <Select value={sortBy} onValueChange={(val: SortOption) => setSortBy(val)}>
-            <SelectTrigger className="w-[180px]">
-              <div className="flex items-center">
-                <ArrowUpDown className="mr-2 h-4 w-4" />
-                <span>Sort by</span>
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="relevance">Relevance</SelectItem>
-              <SelectItem value="rating">Highest Rating</SelectItem>
-              <SelectItem value="reviews">Most Reviews</SelectItem>
-            </SelectContent>
-          </Select>
+          {selectedCategory && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              Category: {selectedCategory}
+              <button 
+                className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
+                onClick={() => setSelectedCategory("")}
+              >
+                ×
+              </button>
+            </Badge>
+          )}
+          
+          {selectedLocation && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              Location: {selectedLocation}
+              <button 
+                className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
+                onClick={() => setSelectedLocation(null)}
+              >
+                ×
+              </button>
+            </Badge>
+          )}
+          
+          {selectedRating && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              Rating: {selectedRating}
+              <button 
+                className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
+                onClick={() => setSelectedRating("")}
+              >
+                ×
+              </button>
+            </Badge>
+          )}
+          
+          {featuredOnly && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              Featured Only
+              <button 
+                className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
+                onClick={() => setFeaturedOnly(false)}
+              >
+                ×
+              </button>
+            </Badge>
+          )}
+          
+          {activeTags.map(tag => (
+            <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+              {tag}
+              <button 
+                className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
+                onClick={() => toggleTag(tag)}
+              >
+                ×
+              </button>
+            </Badge>
+          ))}
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 text-xs"
+            onClick={clearAllFilters}
+          >
+            Clear all
+          </Button>
         </div>
-        
-        {/* Active Filters Display */}
-        {activeFilterCount > 0 && (
-          <div className="mb-6 flex flex-wrap items-center gap-2">
-            <span className="text-sm text-gray-500">Active filters:</span>
-            
-            {selectedCategory && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                Category: {selectedCategory}
-                <button 
-                  className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
-                  onClick={() => setSelectedCategory("")}
-                >
-                  ×
-                </button>
-              </Badge>
-            )}
-            
-            {selectedLocation && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                Location: {selectedLocation}
-                <button 
-                  className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
-                  onClick={() => setSelectedLocation(null)}
-                >
-                  ×
-                </button>
-              </Badge>
-            )}
-            
-            {selectedRating && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                Rating: {selectedRating}
-                <button 
-                  className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
-                  onClick={() => setSelectedRating("")}
-                >
-                  ×
-                </button>
-              </Badge>
-            )}
-            
-            {featuredOnly && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                Featured Only
-                <button 
-                  className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
-                  onClick={() => setFeaturedOnly(false)}
-                >
-                  ×
-                </button>
-              </Badge>
-            )}
-            
-            {activeTags.map(tag => (
-              <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                {tag}
-                <button 
-                  className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
-                  onClick={() => toggleTag(tag)}
-                >
-                  ×
-                </button>
-              </Badge>
-            ))}
-            
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 text-xs"
-              onClick={clearAllFilters}
-            >
-              Clear all
-            </Button>
-          </div>
-        )}
-        
-        {/* Businesses Grid */}
-        {currentBusinesses.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {currentBusinesses.map(business => (
-              <Card key={business.id} className="group overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                <div className="relative h-48 overflow-hidden">
-                  <img 
-                    src={business.image} 
-                    alt={business.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  {business.featured && (
-                    <span className="absolute top-3 left-3 bg-primary text-white text-xs px-2 py-1 rounded">
-                      Featured
+      )}
+      
+      {/* Businesses Grid */}
+      {currentBusinesses.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          {currentBusinesses.map(business => (
+            <Card key={business.id} className="group overflow-hidden hover:shadow-lg transition-shadow duration-300">
+              <div className="relative h-48 overflow-hidden">
+                <img 
+                  src={business.image} 
+                  alt={business.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                {business.featured && (
+                  <span className="absolute top-3 left-3 bg-primary text-white text-xs px-2 py-1 rounded">
+                    Featured
+                  </span>
+                )}
+                <div className="absolute top-3 right-3 flex flex-wrap gap-1 max-w-[70%] justify-end">
+                  {business.tags.slice(0, 2).map((tag, i) => (
+                    <span key={i} className="bg-white/90 text-gray-700 text-xs px-2 py-1 rounded">
+                      {tag}
                     </span>
-                  )}
-                  <div className="absolute top-3 right-3 flex flex-wrap gap-1 max-w-[70%] justify-end">
-                    {business.tags.slice(0, 2).map((tag, i) => (
-                      <span key={i} className="bg-white/90 text-gray-700 text-xs px-2 py-1 rounded">
-                        {tag}
-                      </span>
-                    ))}
+                  ))}
+                </div>
+              </div>
+              
+              <CardHeader className="pb-2">
+                <div className="flex justify-between">
+                  <h3 className="font-semibold text-xl text-gray-900 group-hover:text-primary transition-colors">
+                    {business.name}
+                  </h3>
+                  <div className="flex items-center">
+                    <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                    <span className="text-sm ml-1">{business.rating}</span>
+                    <span className="text-xs text-gray-500 ml-1">({business.reviews})</span>
                   </div>
                 </div>
-                
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between">
-                    <h3 className="font-semibold text-xl text-gray-900 group-hover:text-primary transition-colors">
-                      {business.name}
-                    </h3>
-                    <div className="flex items-center">
-                      <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                      <span className="text-sm ml-1">{business.rating}</span>
-                      <span className="text-xs text-gray-500 ml-1">({business.reviews})</span>
-                    </div>
-                  </div>
-                  <span className="text-sm text-gray-500">{business.category}</span>
-                </CardHeader>
-                
-                <CardContent className="pb-2">
-                  <p className="text-gray-600 text-sm line-clamp-2 mb-3">{business.description}</p>
-                  <div className="flex items-center text-sm text-gray-500 mb-2">
-                    <MapPin className="h-4 w-4 mr-1 shrink-0" />
-                    <span className="truncate">{business.address}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Phone className="h-4 w-4 mr-1 shrink-0" />
-                    <span>{business.phone}</span>
-                  </div>
-                </CardContent>
-                
-                <CardFooter className="pt-2">
-                  <Button variant="outline" className="w-full" asChild>
-                    <a href={`/business/${business.id}`}>View Details</a>
-                  </Button>
-                </CardFooter>
-              </Card>
+                <span className="text-sm text-gray-500">{business.category}</span>
+              </CardHeader>
+              
+              <CardContent className="pb-2">
+                <p className="text-gray-600 text-sm line-clamp-2 mb-3">{business.description}</p>
+                <div className="flex items-center text-sm text-gray-500 mb-2">
+                  <MapPin className="h-4 w-4 mr-1 shrink-0" />
+                  <span className="truncate">{business.address}</span>
+                </div>
+                <div className="flex items-center text-sm text-gray-500">
+                  <Phone className="h-4 w-4 mr-1 shrink-0" />
+                  <span>{business.phone}</span>
+                </div>
+              </CardContent>
+              
+              <CardFooter className="pt-2">
+                <Button variant="outline" className="w-full" asChild>
+                  <a href={`/business/${business.id}`}>View Details</a>
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12 bg-gray-50 rounded-lg mb-12">
+          <h3 className="text-xl font-medium text-gray-900 mb-2">No businesses found</h3>
+          <p className="text-gray-600">Try adjusting your search or filters to find what you're looking for.</p>
+          <Button 
+            variant="outline" 
+            className="mt-4"
+            onClick={clearAllFilters}
+          >
+            Clear All Filters
+          </Button>
+        </div>
+      )}
+      
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious 
+                onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} 
+                className={currentPage === 1 ? "opacity-50 pointer-events-none" : ""}
+              />
+            </PaginationItem>
+            
+            {[...Array(totalPages)].map((_, i) => (
+              <PaginationItem key={i}>
+                <PaginationLink 
+                  isActive={currentPage === i + 1}
+                  onClick={() => setCurrentPage(i + 1)}
+                >
+                  {i + 1}
+                </PaginationLink>
+              </PaginationItem>
             ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 bg-gray-50 rounded-lg mb-12">
-            <h3 className="text-xl font-medium text-gray-900 mb-2">No businesses found</h3>
-            <p className="text-gray-600">Try adjusting your search or filters to find what you're looking for.</p>
-            <Button 
-              variant="outline" 
-              className="mt-4"
-              onClick={clearAllFilters}
-            >
-              Clear All Filters
-            </Button>
-          </div>
-        )}
-        
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious 
-                  onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} 
-                  className={currentPage === 1 ? "opacity-50 pointer-events-none" : ""}
-                />
-              </PaginationItem>
-              
-              {[...Array(totalPages)].map((_, i) => (
-                <PaginationItem key={i}>
-                  <PaginationLink 
-                    isActive={currentPage === i + 1}
-                    onClick={() => setCurrentPage(i + 1)}
-                  >
-                    {i + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-              
-              <PaginationItem>
-                <PaginationNext 
-                  onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} 
-                  className={currentPage === totalPages ? "opacity-50 pointer-events-none" : ""}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        )}
+            
+            <PaginationItem>
+              <PaginationNext 
+                onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} 
+                className={currentPage === totalPages ? "opacity-50 pointer-events-none" : ""}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       )}
     </div>
   );
