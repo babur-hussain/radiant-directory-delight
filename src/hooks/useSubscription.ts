@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { getPackageById, businessPackages, influencerPackages } from "@/data/subscriptionData";
@@ -42,7 +41,6 @@ export const useSubscription = () => {
   const [userSubscription, setUserSubscription] = useState<any>(null);
   const { user } = useAuth();
 
-  // Fetch user's subscription data whenever the user changes
   useEffect(() => {
     if (user) {
       const subscription = getUserSubscription();
@@ -72,7 +70,6 @@ export const useSubscription = () => {
 
   const getPackageDetails = async (packageId: string): Promise<SubscriptionPackage | null> => {
     try {
-      // First try to fetch from Firebase
       const allPackages = await fetchSubscriptionPackages();
       const foundPackage = allPackages.find(pkg => pkg.id === packageId);
       
@@ -80,7 +77,6 @@ export const useSubscription = () => {
         return foundPackage;
       }
       
-      // Fallback to local packages if not found in Firebase
       const localPackage = getPackageById(packageId);
       if (localPackage) {
         return localPackage;
@@ -90,7 +86,6 @@ export const useSubscription = () => {
     } catch (error) {
       console.error("Error fetching package details:", error);
       
-      // Try local packages as final fallback
       const localPackage = getPackageById(packageId);
       if (localPackage) {
         return localPackage;
@@ -113,14 +108,12 @@ export const useSubscription = () => {
     setIsProcessing(true);
 
     try {
-      // Load Razorpay script
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
         setIsProcessing(false);
         return;
       }
 
-      // Get package details
       const selectedPackage = await getPackageDetails(packageId);
       if (!selectedPackage) {
         toast({
@@ -132,7 +125,6 @@ export const useSubscription = () => {
         return;
       }
 
-      // First, handle the signup fee payment
       handleSignupFeePayment(selectedPackage);
     } catch (error) {
       console.error("Subscription error:", error);
@@ -146,12 +138,9 @@ export const useSubscription = () => {
   };
 
   const handleSignupFeePayment = (selectedPackage: any) => {
-    // In a real implementation, you would call your backend to create an order
-    // For demo purposes, we'll simulate the order creation
-    
     const options: RazorpayOptions = {
-      key: "rzp_live_8PGS0Ug3QeCb2I", // Razorpay Key ID
-      amount: selectedPackage.setupFee * 100, // Amount in paise
+      key: "rzp_live_8PGS0Ug3QeCb2I",
+      amount: selectedPackage.setupFee * 100,
       currency: "INR",
       name: "Influencer Platform",
       description: `Signup fee for ${selectedPackage.title}`,
@@ -166,7 +155,6 @@ export const useSubscription = () => {
         color: "#6366F1",
       },
       handler: function (response: any) {
-        // After successful signup fee payment, set up the subscription
         handleSubscriptionSetup(selectedPackage, response.razorpay_payment_id);
       },
       modal: {
@@ -185,12 +173,9 @@ export const useSubscription = () => {
   };
 
   const handleSubscriptionSetup = (selectedPackage: any, signupPaymentId: string) => {
-    // In a real implementation, you would call your backend to create a subscription
-    // For demo purposes, we'll simulate the subscription creation
-    
     const subscriptionOptions: RazorpayOptions = {
-      key: "rzp_live_8PGS0Ug3QeCb2I", // Razorpay Key ID
-      amount: selectedPackage.price * 100, // Amount in paise
+      key: "rzp_live_8PGS0Ug3QeCb2I",
+      amount: selectedPackage.price * 100,
       currency: "INR",
       name: "Influencer Platform",
       description: `Subscription to ${selectedPackage.title} (₹${selectedPackage.price}/year)`,
@@ -206,7 +191,6 @@ export const useSubscription = () => {
         color: "#6366F1",
       },
       handler: function (response: any) {
-        // Process successful subscription setup
         processSuccessfulSubscription(selectedPackage, response.razorpay_payment_id);
       },
       modal: {
@@ -235,10 +219,6 @@ export const useSubscription = () => {
       return;
     }
     
-    // In a real implementation, you would call your backend to verify and store the subscription
-    // For demo purposes, we'll simulate a successful subscription
-    
-    // Store subscription details 
     const subscriptionData = {
       id: subscriptionPaymentId,
       userId: user.id,
@@ -253,12 +233,10 @@ export const useSubscription = () => {
     };
 
     try {
-      // Store in localStorage for demo purposes
       const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
       userSubscriptions[user.id] = subscriptionData;
       localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
       
-      // Also store in user data for better persistence
       await syncUserData(user.id, {
         subscription: subscriptionData,
         lastUpdated: new Date().toISOString()
@@ -272,7 +250,6 @@ export const useSubscription = () => {
         description: `You have successfully subscribed to the ${selectedPackage.title} plan.`,
       });
       
-      // Redirect to dashboard or subscription details page
       window.location.href = "/subscription/details";
     } catch (error) {
       console.error("Error saving subscription data:", error);
@@ -289,19 +266,21 @@ export const useSubscription = () => {
     if (!user) return null;
     
     try {
-      // First try to get from user data (if available)
       if (user.subscription) {
+        console.log("Found subscription in user object:", user.subscription);
         return user.subscription;
       }
       
-      // Get subscription from localStorage as fallback
       const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
       const subscription = userSubscriptions[user.id] || null;
       
-      // If found, update user data for future persistence
       if (subscription && user.id) {
+        console.log("Found subscription in localStorage, syncing to user data:", subscription);
+        
         syncUserData(user.id, {
           subscription: subscription,
+          subscriptionPackage: subscription.packageId,
+          subscriptionStatus: subscription.status,
           lastUpdated: new Date().toISOString()
         }).catch(err => console.error("Error syncing subscription to user data:", err));
       }
@@ -319,7 +298,6 @@ export const useSubscription = () => {
     try {
       setIsProcessing(true);
       
-      // Get current subscription
       const currentSubscription = getUserSubscription();
       
       if (!currentSubscription) {
@@ -332,19 +310,16 @@ export const useSubscription = () => {
         return;
       }
       
-      // Update subscription status
       const updatedSubscription = {
         ...currentSubscription,
         status: "cancelled",
         cancelledAt: new Date().toISOString()
       };
       
-      // Update in localStorage
       const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
       userSubscriptions[user.id] = updatedSubscription;
       localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
       
-      // Update in user data
       await syncUserData(user.id, {
         subscription: updatedSubscription,
         lastUpdated: new Date().toISOString()

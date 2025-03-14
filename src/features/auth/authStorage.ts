@@ -1,4 +1,3 @@
-
 import { User, UserRole } from "../../types/auth";
 import { db } from "../../config/firebase";
 import { collection, getDocs, doc, setDoc } from "firebase/firestore";
@@ -291,10 +290,25 @@ export const syncUserData = async (userId: string, userData: any) => {
     
     // Then sync to Firebase
     const userDoc = doc(db, "users", userId);
+    
+    // First apply the original update
     await setDoc(userDoc, updatedUserData, { merge: true });
     
-    // If there's subscription data, update the userSubscriptions collection too
+    // If there's subscription data, ensure it's properly stored with all possible paths
     if (userData.subscription) {
+      console.log("Syncing subscription data to Firestore:", userData.subscription);
+      
+      // Explicitly update subscription field to make sure it's not getting lost
+      await setDoc(userDoc, {
+        subscription: userData.subscription,
+        // Also add these fields for backward compatibility
+        subscriptionPackage: userData.subscription.packageId,
+        subscriptionStatus: userData.subscription.status,
+        subscriptionAssignedAt: userData.subscription.startDate || userData.subscription.assignedAt || new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      }, { merge: true });
+      
+      // Update userSubscriptions in localStorage too
       const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
       userSubscriptions[userId] = userData.subscription;
       localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));

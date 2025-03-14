@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import BusinessDashboard from "@/components/dashboard/business/BusinessDashboard";
 import AccessDenied from "@/components/dashboard/AccessDenied";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, getDoc } from "firebase/firestore";
 import { db } from "@/config/firebase";
 
 const BusinessDashboardPage = () => {
@@ -14,29 +14,71 @@ const BusinessDashboardPage = () => {
   
   useEffect(() => {
     if (isAuthenticated && user?.id) {
+      console.log("Checking subscription for user:", user.id);
+      
+      // Initial fetch to quickly get subscription data
+      const fetchInitialData = async () => {
+        try {
+          const userRef = doc(db, "users", user.id);
+          const docSnapshot = await getDoc(userRef);
+          
+          if (docSnapshot.exists()) {
+            const userData = docSnapshot.data();
+            console.log("Initial Firestore data:", userData);
+            
+            // Check for subscription status in different paths
+            if (userData?.subscription?.status) {
+              setSubscriptionStatus(userData.subscription.status);
+              console.log("✅ Initial subscription status from Firestore:", userData.subscription.status);
+            } else if (userData?.subscriptionStatus) {
+              setSubscriptionStatus(userData.subscriptionStatus);
+              console.log("✅ Initial legacy subscription status from Firestore:", userData.subscriptionStatus);
+            }
+          }
+        } catch (error) {
+          console.error("Error getting initial data:", error);
+        }
+      };
+      
+      fetchInitialData();
+      
       // Set up a Firestore listener for subscription updates
       const userRef = doc(db, "users", user.id);
       const unsubscribe = onSnapshot(userRef, (docSnapshot) => {
         setIsLoading(false);
         if (docSnapshot.exists()) {
           const userData = docSnapshot.data();
-          // Check for subscription status
+          console.log("Firestore real-time update:", userData);
+          
+          // Check for subscription status in different paths
           if (userData?.subscription?.status) {
             setSubscriptionStatus(userData.subscription.status);
-            console.log("✅ Got subscription status from Firestore:", userData.subscription.status);
+            console.log("✅ Real-time subscription status from Firestore:", userData.subscription.status);
           } else if (userData?.subscriptionStatus) {
             setSubscriptionStatus(userData.subscriptionStatus);
-            console.log("✅ Got subscription status from Firestore:", userData.subscriptionStatus);
+            console.log("✅ Real-time legacy subscription status from Firestore:", userData.subscriptionStatus);
           } else {
-            // Check local storage as fallback
+            // No subscription found in Firestore, check local storage as fallback
+            console.log("No subscription found in Firestore, checking localStorage");
             const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
             const subscription = userSubscriptions[user.id];
-            setSubscriptionStatus(subscription?.status || null);
+            
+            if (subscription?.status) {
+              setSubscriptionStatus(subscription.status);
+              console.log("✅ Subscription status from localStorage:", subscription.status);
+            } else {
+              console.log("❌ No subscription found in localStorage either");
+              setSubscriptionStatus(null);
+            }
           }
+        } else {
+          console.log("User document doesn't exist in Firestore");
+          setSubscriptionStatus(null);
         }
       }, (error) => {
         console.error("Error getting real-time subscription updates:", error);
         setIsLoading(false);
+        
         // Fall back to localStorage
         const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
         const subscription = userSubscriptions[user.id];

@@ -8,7 +8,7 @@ import { SubscriptionPackage } from "@/data/subscriptionData";
 import { User } from "@/types/auth";
 import { syncUserData } from "@/features/auth/authStorage";
 import { db } from "@/config/firebase";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, updateDoc, serverTimestamp, getDoc } from "firebase/firestore";
 
 interface UserSubscriptionAssignmentProps {
   user: User;
@@ -29,7 +29,39 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         const allPackages = await fetchSubscriptionPackages();
         setPackages(allPackages);
 
-        // Get current user subscription
+        // Check Firestore first for user subscription
+        try {
+          const userDoc = doc(db, "users", user.id);
+          const userSnapshot = await getDoc(userDoc);
+          
+          if (userSnapshot.exists()) {
+            const userData = userSnapshot.data();
+            // Check different possible subscription paths in the data
+            if (userData?.subscription) {
+              setUserCurrentSubscription(userData.subscription);
+              if (userData.subscription.packageId) {
+                setSelectedPackage(userData.subscription.packageId);
+              }
+              console.log("✅ Found subscription in Firestore:", userData.subscription);
+              return;
+            } else if (userData?.subscriptionPackage) {
+              // Handle legacy format
+              const basicSubscription = {
+                packageId: userData.subscriptionPackage,
+                status: userData.subscriptionStatus || 'active',
+                startDate: userData.subscriptionAssignedAt || new Date().toISOString()
+              };
+              setUserCurrentSubscription(basicSubscription);
+              setSelectedPackage(userData.subscriptionPackage);
+              console.log("✅ Found legacy subscription in Firestore:", basicSubscription);
+              return;
+            }
+          }
+        } catch (firestoreError) {
+          console.error("❌ Error fetching subscription from Firestore:", firestoreError);
+        }
+
+        // Fall back to localStorage if Firestore doesn't have the data
         const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
         const currentSubscription = userSubscriptions[user.id] || null;
         
@@ -96,23 +128,36 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       userSubscriptions[user.id] = subscriptionData;
       localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
       
-      // Update in Firestore
+      // Update in Firestore - use a more comprehensive update to ensure the data is properly saved
       try {
         const userDoc = doc(db, "users", user.id);
+        
+        // First, update the main subscription object
         await updateDoc(userDoc, {
           subscription: subscriptionData,
-          subscriptionPackage: packageDetails.id,
-          subscriptionAssignedAt: serverTimestamp(),
           lastUpdated: serverTimestamp()
         });
+        
+        // Then, add the legacy fields to ensure backward compatibility
+        await updateDoc(userDoc, {
+          subscriptionPackage: packageDetails.id,
+          subscriptionStatus: "active",
+          subscriptionAssignedAt: serverTimestamp()
+        });
+        
         console.log(`✅ Subscription assigned in Firestore: ${packageDetails.id} to ${user.id}`);
+        console.log("Full subscription data:", subscriptionData);
       } catch (firestoreError) {
         console.error("❌ Failed to assign subscription in Firestore:", firestoreError);
+        // Still continue with local storage as fallback
       }
       
       // Also store subscription info in the user's local record to ensure persistence
       await syncUserData(user.id, {
         subscription: subscriptionData,
+        subscriptionPackage: packageDetails.id,
+        subscriptionStatus: "active",
+        subscriptionAssignedAt: new Date().toISOString(),
         lastUpdated: new Date().toISOString()
       });
       
@@ -158,23 +203,33 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       userSubscriptions[user.id] = updatedSubscription;
       localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
       
-      // Update in Firestore
+      // Update in Firestore - use a comprehensive update to ensure data is properly saved
       try {
         const userDoc = doc(db, "users", user.id);
+        
+        // Update the main subscription object
         await updateDoc(userDoc, {
           subscription: updatedSubscription,
-          subscriptionStatus: "cancelled",
-          subscriptionCancelledAt: serverTimestamp(),
           lastUpdated: serverTimestamp()
         });
+        
+        // Also update legacy fields
+        await updateDoc(userDoc, {
+          subscriptionStatus: "cancelled",
+          subscriptionCancelledAt: serverTimestamp()
+        });
+        
         console.log(`✅ Subscription cancelled in Firestore for ${user.id}`);
       } catch (firestoreError) {
         console.error("❌ Failed to cancel subscription in Firestore:", firestoreError);
+        // Continue with local storage as fallback
       }
       
       // Also update in the user's record
       await syncUserData(user.id, {
         subscription: updatedSubscription,
+        subscriptionStatus: "cancelled",
+        subscriptionCancelledAt: new Date().toISOString(),
         lastUpdated: new Date().toISOString()
       });
       
