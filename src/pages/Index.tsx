@@ -7,6 +7,7 @@ import CategorySection from '@/components/CategorySection';
 import FeaturedBusinesses from '@/components/FeaturedBusinesses';
 import TestimonialSection from '@/components/TestimonialSection';
 import CallToAction from '@/components/CallToAction';
+import CtaSection from '@/components/CtaSection';
 
 const Index = () => {
   // Smooth scroll to top on page load
@@ -19,9 +20,9 @@ const Index = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-grow pt-16">
+      <main className="flex-grow">
         <HeroSection />
+        <CtaSection />
         <CategorySection />
         <FeaturedBusinesses />
         <TestimonialSection />
