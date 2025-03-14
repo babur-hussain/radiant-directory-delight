@@ -1,3 +1,4 @@
+
 import { businessesData } from '@/data/businessesData';
 import { db } from '@/config/firebase';
 import { 
@@ -28,6 +29,11 @@ export interface Business {
   featured: boolean;
   tags: string[];
   priority?: number; // Added priority field (optional)
+  latitude?: number; // Added latitude field
+  longitude?: number; // Added longitude field
+  email?: string; // Added email field
+  website?: string; // Added website field
+  hours?: Record<string, any>; // Added hours field
 }
 
 // Default business data to use when Firebase data is unavailable

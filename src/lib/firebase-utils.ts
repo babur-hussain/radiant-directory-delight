@@ -264,8 +264,8 @@ export async function saveBusiness(business: Business): Promise<void> {
       // Ensure numeric fields are stored as numbers
       rating: Number(business.rating),
       reviews: Number(business.reviews),
-      latitude: Number(business.latitude),
-      longitude: Number(business.longitude),
+      latitude: Number(business.latitude || 0),
+      longitude: Number(business.longitude || 0),
       // Ensure boolean fields are stored as booleans
       featured: Boolean(business.featured)
     });
