@@ -4,16 +4,16 @@ import { Check } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserRole } from "@/contexts/AuthContext";
-import { useSubscription } from "@/hooks/useSubscription";
 import { Badge } from "@/components/ui/badge";
 import { businessPackages, influencerPackages } from "@/data/subscriptionData";
+import { useNavigate } from "react-router-dom";
 
 interface SubscriptionPackagesProps {
   userRole: UserRole;
 }
 
 export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ userRole }) => {
-  const { initiateSubscription, isProcessing } = useSubscription();
+  const navigate = useNavigate();
   
   const packages = userRole === "Business" ? businessPackages : influencerPackages;
 
@@ -25,6 +25,10 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
       </div>
     );
   }
+
+  const handleSubscribe = (packageId: string) => {
+    navigate(`/subscription/details/${packageId}`);
+  };
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -51,9 +55,8 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
           </CardContent>
           <CardFooter>
             <Button 
-              onClick={() => initiateSubscription(pkg.id)} 
+              onClick={() => handleSubscribe(pkg.id)} 
               className="w-full" 
-              disabled={isProcessing}
               variant={pkg.popular ? 'default' : 'outline'}
             >
               Subscribe Now

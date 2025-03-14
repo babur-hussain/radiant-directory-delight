@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useNavigate } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle, Users, Star, TrendingUp, Award, Zap, CheckSquare, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,6 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
 const InfluencerPage = () => {
-  // Smooth scroll to top on page load
   useEffect(() => {
     window.scrollTo({
       top: 0,
@@ -52,10 +50,15 @@ const InfluencerPage = () => {
     },
   ];
 
+  const handleSubscribe = (packageId: string) => {
+    navigate(`/subscription/details/${packageId}`);
+  };
+
+  const navigate = useNavigate();
+
   return (
     <div className="flex flex-col min-h-screen">
       <main className="flex-grow">
-        {/* Hero Section */}
         <section className="relative py-20 md:py-28 bg-gradient-to-br from-primary/10 to-blue-400/10 overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-50"></div>
           
@@ -74,7 +77,6 @@ const InfluencerPage = () => {
           </div>
         </section>
 
-        {/* Benefits Section */}
         <section className="py-20 bg-white">
           <div className="container px-4 mx-auto">
             <div className="text-center mb-16">
@@ -98,7 +100,6 @@ const InfluencerPage = () => {
           </div>
         </section>
 
-        {/* Packages Section */}
         <section className="py-20 bg-gray-50">
           <div className="container px-4 mx-auto">
             <div className="text-center mb-16">
@@ -135,21 +136,20 @@ const InfluencerPage = () => {
                     <ul className="space-y-2 mb-4">
                       {pkg.features.map((feature, i) => (
                         <li key={i} className="flex items-start">
-                          <CheckCircle className="mr-2 h-4 w-4 text-primary mt-1 flex-shrink-0" />
+                          <Check className="mr-2 h-4 w-4 text-primary mt-1 flex-shrink-0" />
                           <span className="text-sm">{feature}</span>
                         </li>
                       ))}
                     </ul>
                   </CardContent>
                   <CardFooter>
-                    <Link to="/subscription" className="w-full">
-                      <Button 
-                        className="w-full" 
-                        variant={pkg.popular ? 'default' : 'outline'}
-                      >
-                        Subscribe Now
-                      </Button>
-                    </Link>
+                    <Button 
+                      className="w-full" 
+                      variant={pkg.popular ? 'default' : 'outline'}
+                      onClick={() => handleSubscribe(pkg.id)}
+                    >
+                      Subscribe Now
+                    </Button>
                   </CardFooter>
                 </Card>
               ))}
@@ -157,22 +157,20 @@ const InfluencerPage = () => {
           </div>
         </section>
 
-        {/* CTA Section */}
         <section className="py-16 bg-primary text-white">
           <div className="container px-4 mx-auto text-center">
             <h2 className="text-3xl font-bold mb-6">Ready to Start Your Influencer Journey?</h2>
             <p className="text-lg mb-8 max-w-2xl mx-auto text-white/80">
               Join thousands of successful influencers who are growing their audience and income with our platform.
             </p>
-            <Link to="/subscription">
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="bg-white text-primary hover:bg-white/90 border-white"
-              >
-                Join Now <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="bg-white text-primary hover:bg-white/90 border-white"
+              onClick={() => navigate("/subscription")}
+            >
+              Join Now <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
         </section>
       </main>

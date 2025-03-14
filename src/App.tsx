@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CategoriesPage from "./pages/CategoriesPage";
@@ -16,6 +16,7 @@ import InfluencerPage from "./pages/InfluencerPage";
 import BusinessPage from "./pages/BusinessPage";
 import ProfilePage from "./pages/ProfilePage";
 import Header from "./components/Header";
+import SubscriptionDetails from "./components/subscription/SubscriptionDetails";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const AppContent = () => {
           <Route path="/businesses" element={<BusinessesPage />} />
           <Route path="/subscription" element={<SubscriptionPage />} />
           <Route path="/subscription/details" element={<SubscriptionDetailsPage />} />
+          <Route path="/subscription/details/:packageId" element={<SubscriptionDetails />} />
           <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
           <Route path="/influencer" element={<InfluencerPage />} />
           <Route path="/business" element={<BusinessPage />} />
