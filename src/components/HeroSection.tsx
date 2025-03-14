@@ -26,7 +26,7 @@ const HeroSection = () => {
   }, [isSearchResultsVisible]);
   
   return (
-    <div className="relative min-h-[85vh] flex items-center justify-center overflow-hidden mt-16">
+    <div className="relative min-h-[85vh] flex items-center justify-center overflow-hidden mt-20">
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-white"></div>
         <div 

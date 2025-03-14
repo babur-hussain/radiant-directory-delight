@@ -20,6 +20,32 @@ header a, header button {
   display: inline-flex;
 }
 
+header .container, header .flex {
+  display: flex !important;
+}
+
+header .md\:flex {
+  display: flex !important;
+}
+
+header .hidden {
+  display: none !important;
+}
+
+header .md\:hidden {
+  display: none !important;
+}
+
+@media (min-width: 768px) {
+  header .md\:flex {
+    display: flex !important;
+  }
+  
+  header .md\:hidden {
+    display: none !important;
+  }
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
