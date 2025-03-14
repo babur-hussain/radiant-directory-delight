@@ -1,4 +1,3 @@
-
 import { User, UserRole } from "../../types/auth";
 import { db } from "../../config/firebase";
 import { collection, getDocs, doc, setDoc } from "firebase/firestore";
@@ -57,6 +56,11 @@ export const saveUserToAllUsersList = (userData: User) => {
     const allUsers = JSON.parse(localStorage.getItem(ALL_USERS_KEY) || '[]');
     const existingUserIndex = allUsers.findIndex((u: any) => u.id === userData.id);
     
+    // Get the createdAt timestamp, either from the User object or existing data
+    const createdAtTimestamp = (userData as any).createdAt || 
+                               (existingUserIndex >= 0 ? allUsers[existingUserIndex].createdAt : null) ||
+                               new Date().toISOString();
+    
     if (existingUserIndex >= 0) {
       // Update existing user
       allUsers[existingUserIndex] = {
@@ -65,7 +69,7 @@ export const saveUserToAllUsersList = (userData: User) => {
         role: userData.role || allUsers[existingUserIndex].role,
         isAdmin: userData.isAdmin || allUsers[existingUserIndex].isAdmin || false,
         email: userData.email || allUsers[existingUserIndex].email,
-        createdAt: allUsers[existingUserIndex].createdAt || new Date().toISOString()
+        createdAt: createdAtTimestamp
       };
     } else {
       // Add new user
@@ -75,7 +79,7 @@ export const saveUserToAllUsersList = (userData: User) => {
         name: userData.name,
         role: userData.role,
         isAdmin: userData.isAdmin || false,
-        createdAt: new Date().toISOString()
+        createdAt: createdAtTimestamp
       });
     }
     
@@ -90,7 +94,7 @@ export const saveUserToAllUsersList = (userData: User) => {
         name: userData.name,
         role: userData.role,
         isAdmin: userData.isAdmin || false,
-        createdAt: new Date().toISOString()
+        createdAt: createdAtTimestamp
       }, { merge: true }).catch(err => console.error("Could not save user to Firebase:", err));
     } catch (error) {
       console.error("Error saving user to Firebase:", error);
@@ -150,7 +154,6 @@ export const debugRefreshUsers = async () => {
       console.error("Error fetching users from Firebase:", error);
     }
     
-    // If Firebase fails or returns no users, fall back to localStorage
     // Get all auth users from localStorage
     const allUsers = JSON.parse(localStorage.getItem(ALL_USERS_KEY) || '[]');
     
@@ -219,17 +222,29 @@ export const syncUserData = async (userId: string, userData: Partial<User>) => {
     const allUsers = JSON.parse(localStorage.getItem(ALL_USERS_KEY) || '[]');
     const userIndex = allUsers.findIndex((u: any) => u.id === userId);
     
+    // Get the createdAt timestamp, either from existing data or generate new one
+    const createdAtTimestamp = (userIndex >= 0 ? allUsers[userIndex].createdAt : null) || 
+                               new Date().toISOString();
+    
     if (userIndex >= 0) {
       allUsers[userIndex] = { ...allUsers[userIndex], ...userData };
     } else {
-      allUsers.push({ id: userId, ...userData, createdAt: new Date().toISOString() });
+      allUsers.push({ 
+        id: userId, 
+        ...userData, 
+        createdAt: createdAtTimestamp
+      });
     }
     
     localStorage.setItem(ALL_USERS_KEY, JSON.stringify(allUsers));
     
     // Then sync to Firebase
     const userDoc = doc(db, "users", userId);
-    await setDoc(userDoc, { ...userData, updatedAt: new Date().toISOString() }, { merge: true });
+    await setDoc(userDoc, { 
+      ...userData, 
+      updatedAt: new Date().toISOString(),
+      createdAt: createdAtTimestamp
+    }, { merge: true });
     
     return true;
   } catch (error) {

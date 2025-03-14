@@ -3,7 +3,7 @@ import { User, UserRole } from "../../types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { saveUserToAllUsersList } from "./authStorage";
 import { db } from "../../config/firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, query, getDocs } from "firebase/firestore";
 
 export const updateUserRole = async (user: User, role: UserRole) => {
   if (!user) {
@@ -101,7 +101,8 @@ export const getUserById = async (userId: string): Promise<User | null> => {
         name: data.name || null,
         role: data.role || null,
         isAdmin: data.isAdmin || false,
-        photoURL: data.photoURL || null
+        photoURL: data.photoURL || null,
+        createdAt: data.createdAt || new Date().toISOString()
       };
     }
     
@@ -126,5 +127,33 @@ export const getUserById = async (userId: string): Promise<User | null> => {
     }
     
     return null;
+  }
+};
+
+// Get all users from Firebase
+export const getAllUsers = async (): Promise<User[]> => {
+  try {
+    const usersCollection = collection(db, "users");
+    const querySnapshot = await getDocs(query(usersCollection));
+    
+    if (querySnapshot.empty) {
+      return [];
+    }
+    
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        email: data.email || null,
+        name: data.name || null,
+        role: data.role || null,
+        isAdmin: data.isAdmin || false,
+        photoURL: data.photoURL || null,
+        createdAt: data.createdAt || new Date().toISOString()
+      };
+    });
+  } catch (error) {
+    console.error("Error getting all users:", error);
+    return [];
   }
 };

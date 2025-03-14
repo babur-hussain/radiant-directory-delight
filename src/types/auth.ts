@@ -21,6 +21,7 @@ export interface User {
   photoURL?: string | null;
   isAdmin?: boolean;
   subscription?: Subscription | null;
+  createdAt?: string; // Add createdAt property to User type
 }
 
 export interface AuthContextType {

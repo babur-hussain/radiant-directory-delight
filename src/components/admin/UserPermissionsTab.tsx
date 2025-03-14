@@ -43,6 +43,18 @@ const UserPermissionsTab = () => {
   const { updateUserPermission } = useAuth();
   const { toast } = useToast();
 
+  // Function to convert User to UserData
+  const convertToUserData = (user: User | Partial<User>): UserData => {
+    return {
+      id: user.id || "",
+      email: user.email || null,
+      name: user.name || null,
+      role: user.role || null,
+      isAdmin: user.isAdmin || false,
+      createdAt: (user as any).createdAt || new Date().toISOString(),
+    };
+  };
+
   // Function to load users from Firebase
   const loadUsersFromFirebase = async () => {
     try {
@@ -51,7 +63,8 @@ const UserPermissionsTab = () => {
       
       // First try to fetch from Firebase collection
       const usersCollection = collection(db, "users");
-      const usersQuery = query(usersCollection, orderBy("name", "asc"), limit(USERS_PER_PAGE));
+      // Don't limit the number of users initially to get all of them
+      const usersQuery = query(usersCollection);
       
       const snapshot = await getDocs(usersQuery);
       
@@ -69,24 +82,23 @@ const UserPermissionsTab = () => {
           };
         });
         
-        setUsers(firebaseUsers);
-        setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
         console.log("Fetched users from Firebase:", firebaseUsers);
+        setUsers(firebaseUsers);
         
         // Save to localStorage for backup
         firebaseUsers.forEach(user => {
-          saveUserToAllUsersList(user as User);
+          saveUserToAllUsersList(convertToUserData(user) as User);
         });
       } else {
         // Fallback to localStorage if Firebase is empty
-        const localUsers = loadAllUsers();
+        const localUsers = loadAllUsers().map(convertToUserData);
         setUsers(localUsers);
         console.log("Falling back to localStorage users:", localUsers);
       }
     } catch (error) {
       console.error("Error fetching users from Firebase:", error);
       // Fallback to localStorage
-      const localUsers = loadAllUsers();
+      const localUsers = loadAllUsers().map(convertToUserData);
       setUsers(localUsers);
       toast({
         title: "Warning",
@@ -127,7 +139,7 @@ const UserPermissionsTab = () => {
           
           // Also update localStorage
           updatedUsers.forEach(user => {
-            saveUserToAllUsersList(user as User);
+            saveUserToAllUsersList(convertToUserData(user) as User);
           });
         }
       }, (error) => {
