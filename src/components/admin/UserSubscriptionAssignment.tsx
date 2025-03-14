@@ -7,10 +7,12 @@ import { toast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { User } from "@/types/auth";
 import { syncUserData } from "@/features/auth/authStorage";
+import { db } from "@/config/firebase";
+import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 
 interface UserSubscriptionAssignmentProps {
   user: User;
-  onAssigned: () => void;
+  onAssigned: (packageId: string) => void;
 }
 
 const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({ user, onAssigned }) => {
@@ -30,10 +32,17 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         // Get current user subscription
         const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
         const currentSubscription = userSubscriptions[user.id] || null;
-        setUserCurrentSubscription(currentSubscription);
         
-        if (currentSubscription?.packageId) {
-          setSelectedPackage(currentSubscription.packageId);
+        // Also check if the user has a subscription in their data
+        const userSubscription = user.subscription || null;
+        
+        // Use Firebase data if available, otherwise use localStorage
+        const effectiveSubscription = userSubscription || currentSubscription;
+        
+        setUserCurrentSubscription(effectiveSubscription);
+        
+        if (effectiveSubscription?.packageId) {
+          setSelectedPackage(effectiveSubscription.packageId);
         }
       } catch (error) {
         console.error("Error loading subscription data:", error);
@@ -46,7 +55,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
     };
 
     loadData();
-  }, [user.id]);
+  }, [user.id, user.subscription]);
 
   const handleAssignPackage = async () => {
     if (!selectedPackage) {
@@ -75,10 +84,10 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         packageId: packageDetails.id,
         packageName: packageDetails.title,
         amount: packageDetails.price,
-        startDate: new Date().toISOString(), // Store as ISO string for better persistence
+        startDate: new Date().toISOString(),
         endDate: new Date(Date.now() + packageDetails.durationMonths * 30 * 24 * 60 * 60 * 1000).toISOString(),
         status: "active",
-        assignedBy: "admin", // Mark as assigned by admin
+        assignedBy: "admin",
         assignedAt: new Date().toISOString()
       };
       
@@ -87,7 +96,21 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       userSubscriptions[user.id] = subscriptionData;
       localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
       
-      // Also store subscription info in the user's record to ensure persistence
+      // Update in Firestore
+      try {
+        const userDoc = doc(db, "users", user.id);
+        await updateDoc(userDoc, {
+          subscription: subscriptionData,
+          subscriptionPackage: packageDetails.id,
+          subscriptionAssignedAt: serverTimestamp(),
+          lastUpdated: serverTimestamp()
+        });
+        console.log(`✅ Subscription assigned in Firestore: ${packageDetails.id} to ${user.id}`);
+      } catch (firestoreError) {
+        console.error("❌ Failed to assign subscription in Firestore:", firestoreError);
+      }
+      
+      // Also store subscription info in the user's local record to ensure persistence
       await syncUserData(user.id, {
         subscription: subscriptionData,
         lastUpdated: new Date().toISOString()
@@ -102,7 +125,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       });
       
       // Call the callback to notify parent component
-      onAssigned();
+      onAssigned(packageDetails.id);
     } catch (error) {
       console.error("Error assigning subscription:", error);
       toast({
@@ -135,6 +158,20 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       userSubscriptions[user.id] = updatedSubscription;
       localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
       
+      // Update in Firestore
+      try {
+        const userDoc = doc(db, "users", user.id);
+        await updateDoc(userDoc, {
+          subscription: updatedSubscription,
+          subscriptionStatus: "cancelled",
+          subscriptionCancelledAt: serverTimestamp(),
+          lastUpdated: serverTimestamp()
+        });
+        console.log(`✅ Subscription cancelled in Firestore for ${user.id}`);
+      } catch (firestoreError) {
+        console.error("❌ Failed to cancel subscription in Firestore:", firestoreError);
+      }
+      
       // Also update in the user's record
       await syncUserData(user.id, {
         subscription: updatedSubscription,
@@ -150,7 +187,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       });
       
       // Notify parent component
-      onAssigned();
+      onAssigned("");
     } catch (error) {
       console.error("Error cancelling subscription:", error);
       toast({
@@ -160,6 +197,20 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Helper function to get subscription status color
+  const getStatusBadgeClass = (status: string) => {
+    switch (status) {
+      case "active":
+        return "text-green-800 bg-green-100";
+      case "cancelled":
+        return "text-red-800 bg-red-100";
+      case "expired":
+        return "text-orange-800 bg-orange-100";
+      default:
+        return "text-gray-800 bg-gray-100";
     }
   };
 
@@ -204,8 +255,10 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       </div>
       
       {userCurrentSubscription && (
-        <div className="text-sm text-muted-foreground">
-          Current: {userCurrentSubscription.packageName} ({userCurrentSubscription.status})
+        <div className="text-sm">
+          <span className={`px-2 py-0.5 rounded-full ${getStatusBadgeClass(userCurrentSubscription.status)}`}>
+            {userCurrentSubscription.packageName} ({userCurrentSubscription.status})
+          </span>
         </div>
       )}
     </div>

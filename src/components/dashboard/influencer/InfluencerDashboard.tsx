@@ -17,6 +17,8 @@ import InfluencerRank from "./widgets/InfluencerRank";
 import { useDashboardServices } from "@/hooks/useDashboardServices";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useToast } from "@/hooks/use-toast";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/config/firebase";
 
 interface InfluencerDashboardProps {
   userId: string;
@@ -24,20 +26,45 @@ interface InfluencerDashboardProps {
 
 const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [subscriptionData, setSubscriptionData] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "Influencer");
   const { getUserSubscription } = useSubscription();
-  const subscription = getUserSubscription();
+  const localSubscription = getUserSubscription();
   
+  // Set up a Firestore listener for real-time subscription updates
   useEffect(() => {
-    // Simulate loading data
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
+    if (!userId) return;
     
-    return () => clearTimeout(timer);
-  }, []);
+    const userRef = doc(db, "users", userId);
+    const unsubscribe = onSnapshot(userRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const userData = docSnapshot.data();
+        // Use subscription data from Firestore if available
+        if (userData?.subscription || userData?.subscriptionPackage) {
+          console.log("✅ Got subscription from Firestore:", userData.subscription || userData.subscriptionPackage);
+          setSubscriptionData(userData.subscription);
+        } else {
+          console.log("No subscription found in Firestore, using local data");
+          setSubscriptionData(localSubscription);
+        }
+      } else {
+        console.log("User document doesn't exist, using local subscription data");
+        setSubscriptionData(localSubscription);
+      }
+      
+      // In any case, finish loading
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error getting real-time subscription updates:", error);
+      // Fall back to local subscription data if Firestore listener fails
+      setSubscriptionData(localSubscription);
+      setIsLoading(false);
+    });
+    
+    return () => unsubscribe();
+  }, [userId, localSubscription]);
   
   const handleExportData = (format: string) => {
     toast({
@@ -86,8 +113,12 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
     );
   }
 
+  const hasActiveSubscription = 
+    (subscriptionData && subscriptionData.status === "active") || 
+    (localSubscription && localSubscription.status === "active");
+
   // If no active subscription
-  if (!subscription || subscription.status !== "active") {
+  if (!hasActiveSubscription) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-xl mx-auto text-center">
         <div className="bg-primary/10 p-6 rounded-full mb-6">

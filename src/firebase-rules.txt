@@ -19,12 +19,21 @@ service cloud.firestore {
     }
     
     // User profiles can be read/written by the owner or admins
+    // Updated to allow subscription field updates
     match /users/{userId} {
       allow read: if request.auth != null;
+      
+      // Allow users to read/write their own data, admins can write to all users
       allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
       
       // IMPORTANT: Allow creating new user documents
       allow create: if request.auth != null;
+      
+      // Allow admins to update subscription fields for any user
+      allow update: if request.auth != null && isAdmin() && 
+                   (request.resource.data.diff(resource.data).affectedKeys()
+                   .hasAny(['subscription', 'subscriptionPackage', 'subscriptionStatus', 
+                           'subscriptionAssignedAt', 'subscriptionCancelledAt']));
     }
     
     // ENHANCED RULES: Allow admins to read/write ALL users collection

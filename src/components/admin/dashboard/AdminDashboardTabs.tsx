@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserPlus, Upload, RefreshCw } from "lucide-react";
 import { UserPermissionsTab } from "@/components/admin/UserPermissionsTab";
-import { BusinessesTab } from "./BusinessesTab";
+import BusinessesTab from "./BusinessesTab";
 import { SubscriptionManagement } from "@/components/admin/SubscriptionManagement";
 import BusinessFormDialog from "@/components/admin/BusinessFormDialog";
 import CSVUploadDialog from "@/components/admin/CSVUploadDialog";
-import { AdminBusinessDashboards } from "./AdminBusinessDashboards";
-import { AdminInfluencerDashboards } from "./AdminInfluencerDashboards";
+import AdminBusinessDashboards from "./AdminBusinessDashboards";
+import AdminInfluencerDashboards from "./AdminInfluencerDashboards";
 import { Business } from "@/lib/csv-utils";
 import { BusinessFormValues } from "@/components/admin/BusinessForm";
 
@@ -142,7 +142,6 @@ const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
 
       {showBusinessFormDialog && (
         <BusinessFormDialog
-          isOpen={showBusinessFormDialog}
           onClose={() => setShowBusinessFormDialog(false)}
           onSubmit={handleBusinessFormSubmit}
           business={currentBusinessToEdit}
@@ -152,7 +151,6 @@ const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
 
       {showUploadDialog && (
         <CSVUploadDialog
-          isOpen={showUploadDialog}
           onClose={() => setShowUploadDialog(false)}
           onUploadComplete={handleUploadComplete}
         />

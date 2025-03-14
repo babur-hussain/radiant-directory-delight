@@ -21,6 +21,9 @@ import { toast } from "@/hooks/use-toast";
 import { updateUserRole, updateUserPermission } from "@/features/auth/userManagement";
 import { loadAllUsers } from "@/features/auth/authStorage";
 import UserSubscriptionAssignment from "./UserSubscriptionAssignment";
+import { db } from "@/config/firebase";
+import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { UserRole } from "@/types/auth";
 
 interface UserPermissionsTabProps {
   onRefresh?: () => void;
@@ -35,11 +38,21 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
     loadUsers();
   }, []);
 
-  const loadUsers = () => {
+  const loadUsers = async () => {
     setIsLoading(true);
-    const allUsers = loadAllUsers();
-    setUsers(allUsers);
-    setIsLoading(false);
+    try {
+      const allUsers = await loadAllUsers();
+      setUsers(allUsers);
+    } catch (error) {
+      console.error("Error loading users:", error);
+      toast({
+        title: "Error Loading Users",
+        description: "Failed to load user data. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRoleChange = async (userId: string, newRole: string) => {
@@ -51,14 +64,29 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
         throw new Error("User not found");
       }
       
-      await updateUserRole(user, newRole);
+      // Convert string to UserRole type
+      const typedRole = newRole as UserRole;
+      
+      await updateUserRole(user, typedRole);
       
       // Update the local state
       const updatedUsers = users.map(u => 
-        u.id === userId ? { ...u, role: newRole } : u
+        u.id === userId ? { ...u, role: typedRole } : u
       );
       
       setUsers(updatedUsers);
+      
+      // Update user in Firestore
+      try {
+        const userDoc = doc(db, "users", userId);
+        await updateDoc(userDoc, { 
+          role: typedRole,
+          lastUpdated: serverTimestamp()
+        });
+        console.log(`✅ User role updated in Firestore: ${typedRole} for ${userId}`);
+      } catch (firestoreError) {
+        console.error("❌ Firestore update failed:", firestoreError);
+      }
       
       toast({
         title: "Role Updated",
@@ -94,6 +122,18 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
       
       setUsers(updatedUsers);
       
+      // Update user in Firestore
+      try {
+        const userDoc = doc(db, "users", userId);
+        await updateDoc(userDoc, { 
+          isAdmin: isAdmin,
+          lastUpdated: serverTimestamp()
+        });
+        console.log(`✅ Admin status updated in Firestore: ${isAdmin} for ${userId}`);
+      } catch (firestoreError) {
+        console.error("❌ Firestore update failed:", firestoreError);
+      }
+      
       toast({
         title: "Admin Status Updated",
         description: `User admin status has been ${isAdmin ? 'granted' : 'revoked'}`
@@ -115,9 +155,22 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
     }
   };
 
-  const handleSubscriptionAssigned = () => {
+  const handleSubscriptionAssigned = async (userId: string, packageId: string) => {
     // Refresh the users list to get updated subscription data
-    loadUsers();
+    await loadUsers();
+    
+    // Update user subscription in Firestore
+    try {
+      const userDoc = doc(db, "users", userId);
+      await updateDoc(userDoc, {
+        subscriptionPackage: packageId,
+        subscriptionAssignedAt: serverTimestamp(),
+        lastUpdated: serverTimestamp()
+      });
+      console.log(`✅ Subscription assigned in Firestore: ${packageId} to ${userId}`);
+    } catch (firestoreError) {
+      console.error("❌ Failed to assign subscription in Firestore:", firestoreError);
+    }
     
     // Call onRefresh if provided
     if (onRefresh) {
@@ -188,7 +241,7 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
                   <TableCell>
                     <UserSubscriptionAssignment 
                       user={user} 
-                      onAssigned={handleSubscriptionAssigned} 
+                      onAssigned={(packageId) => handleSubscriptionAssigned(user.id, packageId)} 
                     />
                   </TableCell>
                 </TableRow>
