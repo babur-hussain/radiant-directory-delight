@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,10 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { db } from "@/config/firebase";
-import { collection, getDocs, onSnapshot, query, orderBy, where, limit, startAfter, DocumentData } from "firebase/firestore";
 import { User, UserRole } from "@/types/auth";
 import { loadAllUsers, saveUserToAllUsersList } from "@/features/auth/authStorage";
+import { getAllUsers } from "@/features/auth/userManagement";
 
 interface UserData {
   id: string;
@@ -38,7 +36,6 @@ const UserPermissionsTab = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [lastVisible, setLastVisible] = useState<DocumentData | null>(null);
   
   const { updateUserPermission } = useAuth();
   const { toast } = useToast();
@@ -55,48 +52,34 @@ const UserPermissionsTab = () => {
     };
   };
 
-  // Function to load users from Firebase
+  // Function to load users directly from Firebase using userManagement.ts
   const loadUsersFromFirebase = async () => {
     try {
       setLoading(true);
-      console.log("Fetching users from Firebase...");
+      console.log("Fetching users directly from Firebase using getAllUsers()...");
       
-      // First try to fetch from Firebase collection
-      const usersCollection = collection(db, "users");
-      // Don't limit the number of users initially to get all of them
-      const usersQuery = query(usersCollection);
+      // Use the enhanced getAllUsers function
+      const firebaseUsers = await getAllUsers();
       
-      const snapshot = await getDocs(usersQuery);
+      console.log("Users fetched from Firebase:", firebaseUsers.length, firebaseUsers);
       
-      if (!snapshot.empty) {
+      if (firebaseUsers.length > 0) {
         // We found users in Firebase
-        const firebaseUsers = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            email: data.email || null,
-            name: data.name || data.displayName || null,
-            role: data.role || null,
-            isAdmin: data.isAdmin || false,
-            createdAt: data.createdAt || new Date().toISOString(),
-          };
-        });
-        
-        console.log("Fetched users from Firebase:", firebaseUsers);
-        setUsers(firebaseUsers);
+        setUsers(firebaseUsers.map(convertToUserData));
         
         // Save to localStorage for backup
         firebaseUsers.forEach(user => {
-          saveUserToAllUsersList(convertToUserData(user) as User);
+          saveUserToAllUsersList(user);
         });
       } else {
         // Fallback to localStorage if Firebase is empty
+        console.log("Firebase returned no users, falling back to localStorage");
         const localUsers = loadAllUsers().map(convertToUserData);
         setUsers(localUsers);
-        console.log("Falling back to localStorage users:", localUsers);
+        console.log("Local users loaded:", localUsers.length);
       }
     } catch (error) {
-      console.error("Error fetching users from Firebase:", error);
+      console.error("Error fetching users:", error);
       // Fallback to localStorage
       const localUsers = loadAllUsers().map(convertToUserData);
       setUsers(localUsers);
@@ -111,7 +94,12 @@ const UserPermissionsTab = () => {
     }
   };
 
-  // Set up real-time listener for users
+  // Load users on component mount
+  useEffect(() => {
+    loadUsersFromFirebase();
+  }, []);
+
+  // Set up real-time listener for users collection
   useEffect(() => {
     try {
       // First, load initial data
@@ -299,7 +287,7 @@ const UserPermissionsTab = () => {
         <div>
           <CardTitle>User Permissions</CardTitle>
           <CardDescription>
-            Manage access and roles for users
+            Manage access and roles for users ({filteredUsers.length} users)
           </CardDescription>
         </div>
         <Button 

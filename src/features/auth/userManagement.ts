@@ -1,4 +1,3 @@
-
 import { User, UserRole } from "../../types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { saveUserToAllUsersList } from "./authStorage";
@@ -130,18 +129,21 @@ export const getUserById = async (userId: string): Promise<User | null> => {
   }
 };
 
-// Get all users from Firebase
+// Get all users from Firebase - Improved to ensure all users are fetched
 export const getAllUsers = async (): Promise<User[]> => {
   try {
+    console.log("Fetching ALL users from Firebase collection");
     const usersCollection = collection(db, "users");
-    const querySnapshot = await getDocs(query(usersCollection));
+    const querySnapshot = await getDocs(usersCollection);
     
     if (querySnapshot.empty) {
+      console.log("No users found in Firebase");
       return [];
     }
     
-    return querySnapshot.docs.map(doc => {
+    const users = querySnapshot.docs.map(doc => {
       const data = doc.data();
+      console.log("User data from Firebase:", doc.id, data);
       return {
         id: doc.id,
         email: data.email || null,
@@ -152,8 +154,11 @@ export const getAllUsers = async (): Promise<User[]> => {
         createdAt: data.createdAt || new Date().toISOString()
       };
     });
+    
+    console.log(`Successfully fetched ${users.length} users from Firebase`);
+    return users;
   } catch (error) {
-    console.error("Error getting all users:", error);
+    console.error("Error getting all users from Firebase:", error);
     return [];
   }
 };
