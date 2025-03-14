@@ -8,13 +8,10 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 
 interface BusinessesFiltersProps {
   categories: string[];
   locations: string[];
-  allTags: string[];
-  activeTags: string[];
   selectedCategory: string;
   setSelectedCategory: (category: string) => void;
   selectedLocation: string | null;
@@ -23,14 +20,11 @@ interface BusinessesFiltersProps {
   setSelectedRating: (rating: string) => void;
   featuredOnly: boolean;
   setFeaturedOnly: (featured: boolean) => void;
-  toggleTag: (tag: string) => void;
 }
 
 const BusinessesFilters: React.FC<BusinessesFiltersProps> = ({
   categories,
   locations,
-  allTags,
-  activeTags,
   selectedCategory,
   setSelectedCategory,
   selectedLocation,
@@ -38,8 +32,7 @@ const BusinessesFilters: React.FC<BusinessesFiltersProps> = ({
   selectedRating,
   setSelectedRating,
   featuredOnly,
-  setFeaturedOnly,
-  toggleTag
+  setFeaturedOnly
 }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
@@ -112,22 +105,6 @@ const BusinessesFilters: React.FC<BusinessesFiltersProps> = ({
           >
             Featured Only
           </label>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-2">Tags</label>
-          <div className="flex flex-wrap gap-2">
-            {allTags.map(tag => (
-              <Badge 
-                key={tag}
-                variant={activeTags.includes(tag) ? "default" : "outline"}
-                className="cursor-pointer"
-                onClick={() => toggleTag(tag)}
-              >
-                {tag}
-              </Badge>
-            ))}
-          </div>
         </div>
       </div>
     </div>

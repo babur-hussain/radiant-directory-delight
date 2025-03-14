@@ -99,9 +99,6 @@ const BusinessesHeader: React.FC<BusinessesHeaderProps> = ({
                 setSelectedRating={setSelectedRating}
                 featuredOnly={featuredOnly}
                 setFeaturedOnly={setFeaturedOnly}
-                allTags={allTags}
-                activeTags={activeTags}
-                toggleTag={toggleTag}
               />
               <SheetFooter>
                 <SheetClose asChild>
@@ -146,9 +143,6 @@ const BusinessesHeader: React.FC<BusinessesHeaderProps> = ({
           locations={locations}
           selectedRating={selectedRating}
           setSelectedRating={setSelectedRating}
-          allTags={allTags}
-          activeTags={activeTags}
-          toggleTag={toggleTag}
           clearAllFilters={clearAllFilters}
         />
       </div>
@@ -164,9 +158,6 @@ interface FiltersProps {
   locations: string[];
   selectedRating: string;
   setSelectedRating: (rating: string) => void;
-  allTags: string[];
-  activeTags: string[];
-  toggleTag: (tag: string) => void;
 }
 
 interface MobileFiltersProps extends FiltersProps {
@@ -187,10 +178,7 @@ const MobileFilters: React.FC<MobileFiltersProps> = ({
   selectedRating,
   setSelectedRating,
   featuredOnly,
-  setFeaturedOnly,
-  allTags,
-  activeTags,
-  toggleTag
+  setFeaturedOnly
 }) => {
   return (
     <div className="py-4 space-y-6">
@@ -250,22 +238,6 @@ const MobileFilters: React.FC<MobileFiltersProps> = ({
           Featured Only
         </label>
       </div>
-      
-      <div>
-        <h3 className="text-sm font-medium mb-2">Tags</h3>
-        <div className="flex flex-wrap gap-2">
-          {allTags.map(tag => (
-            <Badge 
-              key={tag}
-              variant={activeTags.includes(tag) ? "default" : "outline"}
-              className="cursor-pointer"
-              onClick={() => toggleTag(tag)}
-            >
-              {tag}
-            </Badge>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };
@@ -278,9 +250,6 @@ const DesktopFilters: React.FC<DesktopFiltersProps> = ({
   locations,
   selectedRating,
   setSelectedRating,
-  allTags,
-  activeTags,
-  toggleTag,
   clearAllFilters
 }) => {
   return (
@@ -326,22 +295,6 @@ const DesktopFilters: React.FC<DesktopFiltersProps> = ({
             <option value="3+">3+ Stars</option>
             <option value="2+">2+ Stars</option>
           </select>
-        </div>
-      </div>
-      
-      <div className="mt-4">
-        <label className="text-sm font-medium mb-2 block">Tags</label>
-        <div className="flex flex-wrap gap-2">
-          {allTags.map(tag => (
-            <Badge 
-              key={tag}
-              variant={activeTags.includes(tag) ? "default" : "outline"}
-              className="cursor-pointer"
-              onClick={() => toggleTag(tag)}
-            >
-              {tag}
-            </Badge>
-          ))}
         </div>
       </div>
       
