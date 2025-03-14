@@ -29,7 +29,7 @@ const BusinessFormDialog: React.FC<BusinessFormDialogProps> = ({
         </DialogHeader>
         
         <BusinessForm 
-          business={business}
+          currentBusiness={business}
           onSubmit={onSubmit}
           isSubmitting={isSubmitting}
         />

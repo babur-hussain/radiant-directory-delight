@@ -1,4 +1,7 @@
 
+// Import the User type directly from the types file
+import { User, UserRole, AuthContextType } from "../../types/auth";
+
 // Re-export the types from the main types file for better organization
 export type { User, UserRole, AuthContextType } from "../../types/auth";
 
