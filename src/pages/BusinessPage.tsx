@@ -4,9 +4,12 @@ import { Link } from 'react-router-dom';
 import { CheckCircle, Users, TrendingUp, BarChart3, Globe, Target, Megaphone, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { fetchSubscriptionPackagesByType } from '@/lib/firebase-utils';
 import { businessPackages } from '@/data/subscriptionData';
+import { SubscriptionPackage } from '@/data/subscriptionData';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const BusinessPage = () => {
   // Smooth scroll to top on page load
@@ -18,6 +21,41 @@ const BusinessPage = () => {
   }, []);
 
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+  const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch the business packages from Firebase
+  useEffect(() => {
+    const loadPackages = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        console.log("Fetching business subscription packages for landing page");
+        const fetchedPackages = await fetchSubscriptionPackagesByType("Business");
+        console.log(`Fetched ${fetchedPackages.length} Business packages from Firebase`);
+        
+        // If no packages found, use default packages
+        if (fetchedPackages.length === 0) {
+          console.log("No business packages found, using default packages");
+          setPackages(businessPackages);
+        } else {
+          setPackages(fetchedPackages);
+        }
+      } catch (err) {
+        console.error("Error fetching business packages:", err);
+        setError("Failed to load packages. Using default packages instead.");
+        
+        // Use default packages as fallback
+        setPackages(businessPackages);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPackages();
+  }, []);
 
   const benefits = [
     {
@@ -51,6 +89,30 @@ const BusinessPage = () => {
       description: "Track campaign performance with detailed analytics to maximize your return on investment."
     },
   ];
+
+  // Package skeleton loader component
+  const PackageSkeleton = () => (
+    <Card className="flex flex-col transition-all duration-300">
+      <CardHeader className="pb-1">
+        <Skeleton className="h-6 w-32 mb-2" />
+        <Skeleton className="h-8 w-24 mb-2" />
+        <Skeleton className="h-4 w-full" />
+      </CardHeader>
+      <CardContent className="flex-grow">
+        <ul className="space-y-2 mb-4">
+          {[1, 2, 3, 4].map((_, i) => (
+            <li key={i} className="flex items-start">
+              <Skeleton className="mr-2 h-4 w-4 mt-1 flex-shrink-0" />
+              <Skeleton className="h-4 w-full" />
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+      <CardFooter>
+        <Skeleton className="h-10 w-full" />
+      </CardFooter>
+    </Card>
+  );
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -109,50 +171,63 @@ const BusinessPage = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-              {businessPackages.map((pkg) => (
-                <Card 
-                  key={pkg.id} 
-                  className={`flex flex-col transition-all duration-300 ${
-                    pkg.popular ? 'border-blue-500 shadow-lg relative' : 
-                    selectedPackage === pkg.id ? 'border-blue-500/50 shadow-md' : ''
-                  }`}
-                  onClick={() => setSelectedPackage(pkg.id)}
-                >
-                  {pkg.popular && (
-                    <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
-                      MOST POPULAR
-                    </div>
-                  )}
-                  <CardHeader className="pb-1">
-                    <CardTitle className="text-xl">{pkg.title}</CardTitle>
-                    <div className="flex items-end gap-1">
-                      <span className="text-3xl font-bold">₹{pkg.price}</span>
-                      <span className="text-muted-foreground mb-1">/year</span>
-                    </div>
-                    <CardDescription>{pkg.shortDescription}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex-grow">
-                    <ul className="space-y-2 mb-4">
-                      {pkg.features.map((feature, i) => (
-                        <li key={i} className="flex items-start">
-                          <CheckCircle className="mr-2 h-4 w-4 text-blue-500 mt-1 flex-shrink-0" />
-                          <span className="text-sm">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                  <CardFooter>
-                    <Link to="/subscription" className="w-full">
-                      <Button 
-                        className="w-full bg-blue-500 hover:bg-blue-600" 
-                        variant={pkg.popular ? 'default' : 'outline'}
-                      >
-                        Subscribe Now
-                      </Button>
-                    </Link>
-                  </CardFooter>
-                </Card>
-              ))}
+              {isLoading ? (
+                // Show skeletons while loading
+                Array(4).fill(0).map((_, index) => (
+                  <PackageSkeleton key={index} />
+                ))
+              ) : packages.length > 0 ? (
+                // Show actual packages
+                packages.map((pkg) => (
+                  <Card 
+                    key={pkg.id} 
+                    className={`flex flex-col transition-all duration-300 ${
+                      pkg.popular ? 'border-blue-500 shadow-lg relative' : 
+                      selectedPackage === pkg.id ? 'border-blue-500/50 shadow-md' : ''
+                    }`}
+                    onClick={() => setSelectedPackage(pkg.id)}
+                  >
+                    {pkg.popular && (
+                      <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
+                        MOST POPULAR
+                      </div>
+                    )}
+                    <CardHeader className="pb-1">
+                      <CardTitle className="text-xl">{pkg.title}</CardTitle>
+                      <div className="flex items-end gap-1">
+                        <span className="text-3xl font-bold">₹{pkg.price}</span>
+                        <span className="text-muted-foreground mb-1">/year</span>
+                      </div>
+                      <CardDescription>{pkg.shortDescription}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-grow">
+                      <ul className="space-y-2 mb-4">
+                        {pkg.features.map((feature, i) => (
+                          <li key={i} className="flex items-start">
+                            <CheckCircle className="mr-2 h-4 w-4 text-blue-500 mt-1 flex-shrink-0" />
+                            <span className="text-sm">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                    <CardFooter>
+                      <Link to="/subscription" className="w-full">
+                        <Button 
+                          className="w-full bg-blue-500 hover:bg-blue-600" 
+                          variant={pkg.popular ? 'default' : 'outline'}
+                        >
+                          Subscribe Now
+                        </Button>
+                      </Link>
+                    </CardFooter>
+                  </Card>
+                ))
+              ) : (
+                // Show error state if no packages
+                <div className="col-span-4 text-center p-8 bg-gray-100 rounded-lg">
+                  <p className="text-gray-600">No subscription packages available at the moment.</p>
+                </div>
+              )}
             </div>
           </div>
         </section>
