@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -29,7 +28,8 @@ const formSchema = z.object({
   email: z.string().email({ message: "Must be a valid email" }).optional().or(z.literal("")),
 });
 
-export type BusinessFormValues = z.infer<typeof formSchema> & { tags: string[] };
+// Update the type to match how we use tags in the application
+export type BusinessFormValues = Omit<z.infer<typeof formSchema>, 'tags'> & { tags: string[] | string };
 
 interface BusinessFormProps {
   onSubmit: (values: BusinessFormValues) => void;
