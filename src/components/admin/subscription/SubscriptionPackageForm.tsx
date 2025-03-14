@@ -70,9 +70,19 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   });
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
+    // Ensure all required properties are present
     const packageData: SubscriptionPackage = {
-      ...values,
-      id: values.id || nanoid()
+      id: values.id || nanoid(),
+      title: values.title,
+      price: values.price,
+      setupFee: values.setupFee,
+      durationMonths: values.durationMonths,
+      shortDescription: values.shortDescription,
+      fullDescription: values.fullDescription,
+      features: values.features,
+      popular: values.popular,
+      type: values.type,
+      termsAndConditions: values.termsAndConditions || ""
     };
     onSubmit(packageData);
   };
