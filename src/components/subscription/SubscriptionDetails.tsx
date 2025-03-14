@@ -1,11 +1,14 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Check, ShieldCheck, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { getPackageById } from "@/data/subscriptionData";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { getPackageById, businessPackages, influencerPackages } from "@/data/subscriptionData";
+import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
+import { SubscriptionPackage } from "@/data/subscriptionData";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "@/hooks/use-toast";
 
@@ -14,11 +17,82 @@ const SubscriptionDetails = () => {
   const navigate = useNavigate();
   const [termsAccepted, setTermsAccepted] = useState(false);
   const { initiateSubscription, isProcessing } = useSubscription();
+  const [selectedPackage, setSelectedPackage] = useState<SubscriptionPackage | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  // Get package details
-  const selectedPackage = packageId ? getPackageById(packageId) : null;
-  
-  if (!selectedPackage) {
+  useEffect(() => {
+    const loadPackage = async () => {
+      if (!packageId) return;
+      
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        // Try to fetch packages from Firebase first
+        const allPackages = await fetchSubscriptionPackages();
+        const foundPackage = allPackages.find(pkg => pkg.id === packageId);
+        
+        if (foundPackage) {
+          setSelectedPackage(foundPackage);
+        } else {
+          // Fallback to default packages if not found in Firebase
+          const defaultPackage = getPackageById(packageId);
+          
+          if (defaultPackage) {
+            setSelectedPackage(defaultPackage);
+          } else {
+            setError("Package not found");
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching package:", err);
+        
+        // Fallback to default packages
+        const defaultPackage = getPackageById(packageId);
+        
+        if (defaultPackage) {
+          setSelectedPackage(defaultPackage);
+          toast({
+            title: "Using Default Package",
+            description: "Could not load the package from server. Using default data.",
+          });
+        } else {
+          setError("Package not found");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadPackage();
+  }, [packageId]);
+
+  const handleSubscribe = () => {
+    if (!termsAccepted) {
+      toast({
+        title: "Terms Required",
+        description: "Please accept the terms and conditions to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (selectedPackage) {
+      initiateSubscription(selectedPackage.id);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-10 flex justify-center items-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading package details...</span>
+      </div>
+    );
+  }
+
+  if (error || !selectedPackage) {
     return (
       <div className="container mx-auto px-4 py-10">
         <Card>
@@ -40,19 +114,6 @@ const SubscriptionDetails = () => {
       </div>
     );
   }
-
-  const handleSubscribe = () => {
-    if (!termsAccepted) {
-      toast({
-        title: "Terms Required",
-        description: "Please accept the terms and conditions to continue.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    initiateSubscription(selectedPackage.id);
-  };
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-4xl">

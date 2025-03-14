@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { SubscriptionPackage, businessPackages, influencerPackages } from "@/data/subscriptionData";
-import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
+import { fetchSubscriptionPackagesByType } from "@/lib/firebase-utils";
 import { UserRole } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,17 +18,16 @@ export const useSubscriptionPackages = (role: UserRole) => {
       
       try {
         console.log("Fetching subscription packages for role:", role);
-        // Fetch packages from Firebase
-        const allPackages = await fetchSubscriptionPackages();
-        console.log("Fetched packages:", allPackages);
         
-        // Filter packages by role
-        const roleType = role === "Business" ? "Business" : "Influencer";
-        const filteredPackages = allPackages.filter(pkg => pkg.type === roleType);
-        console.log("Filtered packages for role", roleType, ":", filteredPackages);
+        // Determine package type based on user role
+        const packageType = role === "Business" ? "Business" : "Influencer";
+        
+        // Fetch packages by type directly from Firebase
+        const fetchedPackages = await fetchSubscriptionPackagesByType(packageType);
+        console.log(`Fetched ${fetchedPackages.length} ${packageType} packages from Firebase`);
         
         // If no packages found for the role, use default packages
-        if (filteredPackages.length === 0) {
+        if (fetchedPackages.length === 0) {
           console.log("No packages found for role, using default packages");
           setPackages(role === "Business" ? businessPackages : influencerPackages);
           
@@ -38,7 +37,7 @@ export const useSubscriptionPackages = (role: UserRole) => {
             description: "No custom packages found. Showing default packages.",
           });
         } else {
-          setPackages(filteredPackages);
+          setPackages(fetchedPackages);
         }
       } catch (err) {
         console.error("Error fetching subscription packages:", err);

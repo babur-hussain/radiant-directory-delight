@@ -71,10 +71,12 @@ const AdminBusinessListingsPage = () => {
     setPermissionError(null);
     
     try {
+      // Fix for the type comparison error - properly handle type conversion for priority
       let priorityValue: number | undefined = undefined;
+      
       if (values.priority !== undefined && values.priority !== null && values.priority !== "") {
-        priorityValue = Number(values.priority);
-        if (isNaN(priorityValue)) priorityValue = undefined;
+        const numValue = Number(values.priority);
+        priorityValue = isNaN(numValue) ? undefined : numValue;
       }
       
       if (currentBusinessToEdit) {
