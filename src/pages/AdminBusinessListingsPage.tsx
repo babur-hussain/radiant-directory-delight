@@ -68,10 +68,13 @@ const AdminBusinessListingsPage = () => {
     setIsSubmitting(true);
     
     try {
+      // Fix the priority value conversion to avoid type comparison issues
       // Convert the priority value to a number or undefined
-      const priorityValue = values.priority === undefined || values.priority === '' ? undefined : 
-                            typeof values.priority === 'string' ? parseInt(values.priority, 10) : 
-                            values.priority;
+      const priorityValue = values.priority === undefined || values.priority === '' ? 
+                           undefined : 
+                           typeof values.priority === 'number' ? 
+                           values.priority : 
+                           parseInt(String(values.priority), 10);
       
       if (currentBusinessToEdit) {
         const updated = updateBusiness({
