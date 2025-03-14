@@ -1,4 +1,3 @@
-
 import { User, UserRole } from "../../types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { saveUserToAllUsersList } from "./authStorage";
@@ -137,9 +136,11 @@ export const getAllUsers = async (): Promise<User[]> => {
         : (data.name || data.displayName || null);
       
       // Ensure isAdmin is a boolean
-      const adminStatus = typeof data.isAdmin === 'string' 
-        ? data.isAdmin.toLowerCase() === 'true' 
-        : Boolean(data.isAdmin);
+      const adminStatus = typeof data.isAdmin === 'boolean'
+        ? data.isAdmin
+        : (typeof data.isAdmin === 'string'
+          ? data.isAdmin.toLowerCase() === 'true'
+          : Boolean(data.isAdmin));
         
       return {
         id: doc.id,

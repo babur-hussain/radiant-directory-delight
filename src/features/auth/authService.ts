@@ -27,10 +27,12 @@ const saveUserToFirestore = async (
     // Ensure name is a string
     const displayName = typeof name === 'boolean' ? 'User' : (name || email?.split('@')[0] || 'User');
     
-    // Ensure isAdmin is a boolean
-    const adminStatus = typeof isAdmin === 'string' 
-      ? isAdmin.toLowerCase() === 'true' 
-      : Boolean(isAdmin);
+    // Ensure isAdmin is a boolean - fix the type error by checking if it's a string first
+    const adminStatus = typeof isAdmin === 'boolean' 
+      ? isAdmin 
+      : (typeof isAdmin === 'string' 
+        ? isAdmin.toLowerCase() === 'true' 
+        : Boolean(isAdmin));
     
     await setDoc(userDoc, {
       email: email,
