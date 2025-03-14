@@ -90,7 +90,7 @@ const AdminBusinessListingsPage = () => {
         const randomReviews = Math.floor(Math.random() * 500) + 50;
         
         // Make sure we're passing all required fields
-        const newBusiness = addBusiness({
+        const newBusinessPromise = addBusiness({
           name: values.name,
           category: values.category,
           address: values.address,
@@ -102,6 +102,9 @@ const AdminBusinessListingsPage = () => {
           reviews: randomReviews,
           image: values.image || `https://source.unsplash.com/random/500x350/?${values.category.toLowerCase().replace(/\s+/g, ',')}`
         });
+        
+        // Wait for the Promise to resolve
+        const newBusiness = await newBusinessPromise;
         
         toast({
           title: "Business Added",
