@@ -51,7 +51,17 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ registerType, onBack, onClo
   const handleGoogleLogin = async () => {
     setIsSubmitting(true);
     try {
-      await loginWithGoogle();
+      // When using Google login, we still need to set the role
+      const result = await loginWithGoogle();
+      
+      // The Google login doesn't directly accept a role, so we need to handle it
+      // Get the current user
+      const user = useAuth().user;
+      if (user && !user.role) {
+        // Set the role in localStorage
+        localStorage.setItem(`user_role_${user.id}`, registerType as string);
+      }
+      
       onClose();
     } catch (error) {
       // Error handling is in the context

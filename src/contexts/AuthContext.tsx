@@ -6,7 +6,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithPopup,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  updateProfile
 } from "firebase/auth";
 import { auth, googleProvider } from "../config/firebase";
 import { toast } from "@/hooks/use-toast";
@@ -35,6 +36,9 @@ interface AuthContextType {
 // Create the auth context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Key for storing user roles in localStorage
+const getRoleKey = (userId: string) => `user_role_${userId}`;
+
 // Firebase authentication implementation
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -44,8 +48,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
-        // Check if we have role information in localStorage
-        const roleKey = `role_${firebaseUser.uid}`;
+        // Get role from localStorage
+        const roleKey = getRoleKey(firebaseUser.uid);
         const userRole = localStorage.getItem(roleKey) as UserRole || null;
         
         // Create user object from Firebase user
@@ -106,16 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       const result = await signInWithPopup(auth, googleProvider);
-      // Save user role if needed
-      const user = result.user;
-      if (user && user.email) {
-        // Check if we already have a role for this user
-        const roleKey = `role_${user.uid}`;
-        if (!localStorage.getItem(roleKey)) {
-          // Default to a role if needed, or let user select later
-          // localStorage.setItem(roleKey, "Business"); // Uncomment if you want to set a default
-        }
-      }
+      // No need to save role here as it's already handled in the signup process
       toast({
         title: "Login successful",
         description: "Welcome back!",
@@ -150,9 +145,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
       
+      // Set display name
+      if (firebaseUser) {
+        await updateProfile(firebaseUser, {
+          displayName: name
+        });
+      }
+      
       // Store role information in localStorage
       if (role && firebaseUser) {
-        localStorage.setItem(`role_${firebaseUser.uid}`, role as string);
+        localStorage.setItem(getRoleKey(firebaseUser.uid), role as string);
       }
       
       toast({

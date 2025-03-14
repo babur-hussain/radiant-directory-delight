@@ -1,5 +1,6 @@
 
 import React from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,20 +15,35 @@ import { LogOut, User, Settings } from "lucide-react";
 
 const UserMenu = () => {
   const { user, logout } = useAuth();
+  
+  // Get first letter of name for avatar fallback
+  const getInitials = () => {
+    return user?.name ? user.name.charAt(0).toUpperCase() : "U";
+  };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="rounded-full transition-smooth">
-          <User className="h-4 w-4 mr-2" />
-          {user?.name || "Account"}
+        <Button variant="ghost" size="sm" className="relative h-9 w-9 rounded-full">
+          <Avatar className="h-9 w-9">
+            {user?.photoURL ? (
+              <AvatarImage src={user.photoURL} alt={user?.name || "User"} />
+            ) : (
+              <AvatarFallback>{getInitials()}</AvatarFallback>
+            )}
+          </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-56 bg-white">
         <DropdownMenuLabel>
           <div className="flex flex-col">
             <span>{user?.name}</span>
             <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
+            {user?.role && (
+              <span className="text-xs font-medium mt-1 bg-primary/10 text-primary rounded-full px-2 py-0.5 inline-block w-fit">
+                {user.role}
+              </span>
+            )}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
