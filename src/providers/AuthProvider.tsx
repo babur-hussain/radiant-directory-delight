@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../config/firebase";
+import { auth, db } from "../config/firebase";
 import { toast } from "@/hooks/use-toast";
 import { User, UserRole, AuthContextType } from "../types/auth";
 import { 
@@ -19,6 +19,7 @@ import {
   updateUserRole as updateRole, 
   updateUserPermission as updatePermission 
 } from "../features/auth/userManagement";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 const defaultContextValue: AuthContextType = {
   user: null,
@@ -63,6 +64,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           photoURL: firebaseUser.photoURL,
           isAdmin: isDefaultAdmin || isAdmin
         };
+        
+        try {
+          const userDoc = doc(db, "users", firebaseUser.uid);
+          setDoc(userDoc, {
+            email: firebaseUser.email,
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+            role: isDefaultAdmin ? 'Admin' : userRole,
+            photoURL: firebaseUser.photoURL,
+            isAdmin: isDefaultAdmin || isAdmin,
+            lastLogin: serverTimestamp()
+          }, { merge: true });
+        } catch (error) {
+          console.error("Error saving user to Firebase:", error);
+        }
         
         saveUserToAllUsersList(userData);
         console.log("Auth state changed: User logged in", userData);
@@ -159,6 +174,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           photoURL: null,
           isAdmin: false
         };
+        
+        try {
+          const userDoc = doc(db, "users", firebaseUser.uid);
+          await setDoc(userDoc, {
+            email: firebaseUser.email,
+            name: name || firebaseUser.email?.split('@')[0] || 'User',
+            role: role,
+            photoURL: null,
+            isAdmin: false,
+            createdAt: serverTimestamp(),
+            lastLogin: serverTimestamp()
+          });
+        } catch (error) {
+          console.error("Error saving new user to Firebase:", error);
+        }
         
         saveUserToAllUsersList(userData);
         console.log("Saving new registered user to all users list:", userData);

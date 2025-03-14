@@ -24,6 +24,11 @@ service cloud.firestore {
       allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
     
+    // Allow admins to read all users
+    match /users/{userId} {
+      allow read: if request.auth != null && isAdmin();
+    }
+    
     // Subscriptions can be read by the owner or admins, but only created/updated by admins
     match /subscriptions/{subscriptionId} {
       allow read: if request.auth != null && 
@@ -55,7 +60,9 @@ service cloud.firestore {
     
     // Helper function to check if the current user is an admin
     function isAdmin() {
-      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
   }
 }
