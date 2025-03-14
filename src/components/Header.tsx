@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from '@/lib/utils';
 import AuthModal from './auth/AuthModal';
 import UserMenu from './UserMenu';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
+
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -16,6 +17,7 @@ const Header = () => {
     logout,
     initialized
   } = auth;
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -23,15 +25,16 @@ const Header = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
   const handleMobileLogout = async () => {
     await logout();
     setIsMobileMenuOpen(false);
   };
 
-  // Don't render the header until auth is initialized
   if (!initialized) {
     return null;
   }
+
   return <header className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-4", isScrolled ? "bg-white/90 backdrop-blur-md shadow-sm" : "bg-transparent")}>
       <div className="container max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between">
@@ -109,4 +112,5 @@ const Header = () => {
       <AuthModal isOpen={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
     </header>;
 };
+
 export default Header;

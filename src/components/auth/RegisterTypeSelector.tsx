@@ -1,8 +1,7 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Store, Users } from "lucide-react";
-import { UserRole } from "@/contexts/AuthContext";
+import { UserRole } from "@/types/auth";
 
 interface RegisterTypeSelectorProps {
   onSelectType: (type: UserRole) => void;

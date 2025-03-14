@@ -1,6 +1,5 @@
-
 import React, { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { UserRole } from "@/contexts/AuthContext";
+import { UserRole } from "@/types/auth";
 
 const ProfilePage = () => {
   const { user, isAuthenticated, logout, updateUserRole } = useAuth();
@@ -35,14 +34,12 @@ const ProfilePage = () => {
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   
-  // If not authenticated, redirect to home
   React.useEffect(() => {
     if (!isAuthenticated) {
       navigate("/");
     }
   }, [isAuthenticated, navigate]);
 
-  // Profile update form schema
   const profileFormSchema = z.object({
     name: z.string().min(2, {
       message: "Name must be at least 2 characters.",
@@ -50,12 +47,11 @@ const ProfilePage = () => {
     email: z.string().email({
       message: "Please enter a valid email address.",
     }),
-    role: z.enum(["Business", "Influencer"], {
+    role: z.enum(["Business", "Influencer", "Admin"] as const, {
       required_error: "Please select a role.",
     }),
   });
 
-  // Password change form schema
   const passwordFormSchema = z.object({
     currentPassword: z.string().min(6, {
       message: "Current password must be at least 6 characters.",
@@ -70,8 +66,7 @@ const ProfilePage = () => {
     message: "Passwords don't match",
     path: ["confirmPassword"],
   });
-  
-  // Profile form
+
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -81,7 +76,6 @@ const ProfilePage = () => {
     },
   });
 
-  // Password form
   const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: {
@@ -91,20 +85,16 @@ const ProfilePage = () => {
     },
   });
 
-  // Handle profile update
   const onProfileSubmit = async (values: z.infer<typeof profileFormSchema>) => {
     setIsUpdating(true);
     
     try {
-      // Update role if it has changed
       if (values.role !== user?.role) {
         await updateUserRole(values.role);
       }
       
-      // In a real app, you would update the user's name here too
       console.log("Updating profile:", values);
       
-      // Show success toast
       toast({
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
@@ -120,20 +110,16 @@ const ProfilePage = () => {
     }
   };
 
-  // Handle password change
   const onPasswordSubmit = (values: z.infer<typeof passwordFormSchema>) => {
     setIsUpdating(true);
     
-    // In a real app, you would update the user's password here
     console.log("Changing password:", values);
     
-    // Show success toast
     toast({
       title: "Password changed",
       description: "Your password has been changed successfully.",
     });
     
-    // Reset form
     passwordForm.reset({
       currentPassword: "",
       newPassword: "",
@@ -144,7 +130,7 @@ const ProfilePage = () => {
   };
 
   if (!isAuthenticated || !user) {
-    return null; // Let the useEffect handle the redirect
+    return null;
   }
 
   return (
@@ -158,7 +144,6 @@ const ProfilePage = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Sidebar with user info */}
         <div className="md:col-span-1">
           <Card>
             <CardHeader>
@@ -193,7 +178,6 @@ const ProfilePage = () => {
             </CardContent>
           </Card>
           
-          {/* Subscription card */}
           <Card className="mt-4">
             <CardHeader>
               <CardTitle className="text-lg">Subscription</CardTitle>
@@ -215,7 +199,6 @@ const ProfilePage = () => {
           </Card>
         </div>
         
-        {/* Main content */}
         <div className="md:col-span-2">
           <Tabs defaultValue="profile">
             <TabsList className="grid w-full grid-cols-2">
@@ -229,7 +212,6 @@ const ProfilePage = () => {
               </TabsTrigger>
             </TabsList>
             
-            {/* Profile Tab */}
             <TabsContent value="profile">
               <Card>
                 <CardHeader>
@@ -300,11 +282,12 @@ const ProfilePage = () => {
                                 <SelectContent className="bg-white">
                                   <SelectItem value="Business">Business</SelectItem>
                                   <SelectItem value="Influencer">Influencer</SelectItem>
+                                  <SelectItem value="Admin">Admin</SelectItem>
                                 </SelectContent>
                               </Select>
                             </FormControl>
                             <FormDescription>
-                              Choose whether you want to use the platform as a Business or an Influencer.
+                              Choose whether you want to use the platform as a Business, Influencer, or Admin.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -331,7 +314,6 @@ const ProfilePage = () => {
               </Card>
             </TabsContent>
             
-            {/* Security Tab */}
             <TabsContent value="security">
               <Card>
                 <CardHeader>

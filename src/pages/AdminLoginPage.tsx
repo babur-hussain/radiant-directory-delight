@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,6 @@ const AdminLoginPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // If already logged in as admin, redirect to admin dashboard
   useEffect(() => {
     if (isAuthenticated && user?.isAdmin) {
       navigate("/admin/dashboard");
@@ -31,7 +29,6 @@ const AdminLoginPage = () => {
     try {
       await login(email, password);
       
-      // Check if the logged in user is an admin
       if (user?.isAdmin || email === "baburhussain660@gmail.com") {
         navigate("/admin/dashboard");
       } else {
@@ -42,7 +39,6 @@ const AdminLoginPage = () => {
         });
       }
     } catch (error) {
-      // Error is handled in the auth context
     } finally {
       setIsLoading(false);
     }
