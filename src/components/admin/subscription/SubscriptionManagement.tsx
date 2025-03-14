@@ -28,6 +28,7 @@ import { SubscriptionPackage } from "@/data/subscriptionData";
 import { fetchSubscriptionPackages, saveSubscriptionPackage, deleteSubscriptionPackage } from "@/lib/firebase-utils";
 import SubscriptionPackageForm from "./SubscriptionPackageForm";
 import { useToast } from "@/hooks/use-toast";
+import AdminPermissionError from "../dashboard/AdminPermissionError";
 
 interface SubscriptionPackageManagementProps {
   onPermissionError?: (error: any) => void;
@@ -43,6 +44,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
   const [selectedPackage, setSelectedPackage] = useState<SubscriptionPackage | null>(null);
   const [packageToDelete, setPackageToDelete] = useState<SubscriptionPackage | null>(null);
   const [activeTab, setActiveTab] = useState("business");
+  const [permissionError, setPermissionError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -59,6 +61,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
 
   const loadPackages = async () => {
     setIsLoading(true);
+    setPermissionError(null);
     try {
       const data = await fetchSubscriptionPackages();
       setPackages(data);
@@ -67,10 +70,14 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
       console.error("Error loading packages:", error);
       
       // Handle permission error
-      if (onPermissionError && error instanceof Error && 
+      if (error instanceof Error && 
           (error.message.includes("Permission denied") || 
            error.message.includes("Missing or insufficient permissions"))) {
-        onPermissionError(error);
+        const errorMessage = "You don't have admin rights to view subscription packages.";
+        setPermissionError(errorMessage);
+        if (onPermissionError) {
+          onPermissionError(error);
+        }
       } else {
         toast({
           title: "Error",
@@ -110,6 +117,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     if (!packageToDelete) return;
     
     setIsLoading(true);
+    setPermissionError(null);
     try {
       await deleteSubscriptionPackage(packageToDelete.id);
       
@@ -124,10 +132,14 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
       console.error("Error deleting package:", error);
       
       // Handle permission error
-      if (onPermissionError && error instanceof Error && 
+      if (error instanceof Error && 
           (error.message.includes("Permission denied") || 
            error.message.includes("Missing or insufficient permissions"))) {
-        onPermissionError(error);
+        const errorMessage = "You don't have admin rights to delete subscription packages.";
+        setPermissionError(errorMessage);
+        if (onPermissionError) {
+          onPermissionError(error);
+        }
       } else {
         toast({
           title: "Error",
@@ -143,6 +155,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
 
   const handleSavePackage = async (packageData: SubscriptionPackage) => {
     setIsLoading(true);
+    setPermissionError(null);
     try {
       console.log("Attempting to save package:", packageData);
       
@@ -178,10 +191,14 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
       console.error("Error saving package:", error);
       
       // Handle permission error
-      if (onPermissionError && error instanceof Error && 
+      if (error instanceof Error && 
           (error.message.includes("Permission denied") || 
            error.message.includes("Missing or insufficient permissions"))) {
-        onPermissionError(error);
+        const errorMessage = "You don't have admin rights to create or update subscription packages.";
+        setPermissionError(errorMessage);
+        if (onPermissionError) {
+          onPermissionError(error);
+        }
       } else {
         let errorMessage = "Failed to save package. Please try again later.";
         
@@ -200,6 +217,10 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     }
   };
 
+  const dismissError = () => {
+    setPermissionError(null);
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -215,6 +236,13 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
         </Button>
       </CardHeader>
       <CardContent>
+        {permissionError && (
+          <AdminPermissionError 
+            permissionError={permissionError} 
+            dismissError={dismissError} 
+          />
+        )}
+        
         <Tabs
           value={activeTab}
           onValueChange={setActiveTab}

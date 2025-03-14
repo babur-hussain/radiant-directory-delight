@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,12 +68,17 @@ const AdminBusinessListingsPage = () => {
     setIsSubmitting(true);
     
     try {
-      const priorityValue = values.priority === '' ? undefined : values.priority;
+      // Convert the priority value to a number or undefined
+      const priorityValue = values.priority === '' ? undefined : 
+                            typeof values.priority === 'string' ? parseInt(values.priority, 10) : 
+                            values.priority;
       
       if (currentBusinessToEdit) {
         const updated = updateBusiness({
           ...currentBusinessToEdit,
           ...values,
+          // Convert tags back to an array if it's a string
+          tags: typeof values.tags === 'string' ? values.tags.split(',').map(tag => tag.trim()) : values.tags,
           priority: priorityValue
         });
         
@@ -99,7 +105,8 @@ const AdminBusinessListingsPage = () => {
           rating: values.rating,
           description: values.description,
           featured: values.featured,
-          tags: values.tags,
+          // Convert tags to an array if it's a string
+          tags: typeof values.tags === 'string' ? values.tags.split(',').map(tag => tag.trim()) : values.tags,
           reviews: randomReviews,
           priority: priorityValue,
           image: values.image || `https://source.unsplash.com/random/500x350/?${values.category.toLowerCase().replace(/\s+/g, ',')}`
