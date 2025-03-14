@@ -6,6 +6,7 @@ import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { toast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { User } from "@/types/auth";
+import { syncUserData } from "@/features/auth/authStorage";
 
 interface UserSubscriptionAssignmentProps {
   user: User;
@@ -16,24 +17,36 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
   const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<string>("");
+  const [userCurrentSubscription, setUserCurrentSubscription] = useState<any>(null);
 
+  // Load subscription packages and current user subscription
   useEffect(() => {
-    const loadPackages = async () => {
+    const loadData = async () => {
       try {
+        // Load subscription packages
         const allPackages = await fetchSubscriptionPackages();
         setPackages(allPackages);
+
+        // Get current user subscription
+        const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
+        const currentSubscription = userSubscriptions[user.id] || null;
+        setUserCurrentSubscription(currentSubscription);
+        
+        if (currentSubscription?.packageId) {
+          setSelectedPackage(currentSubscription.packageId);
+        }
       } catch (error) {
-        console.error("Error loading subscription packages:", error);
+        console.error("Error loading subscription data:", error);
         toast({
           title: "Error",
-          description: "Failed to load subscription packages",
+          description: "Failed to load subscription data",
           variant: "destructive"
         });
       }
     };
 
-    loadPackages();
-  }, []);
+    loadData();
+  }, [user.id]);
 
   const handleAssignPackage = async () => {
     if (!selectedPackage) {
@@ -62,15 +75,26 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         packageId: packageDetails.id,
         packageName: packageDetails.title,
         amount: packageDetails.price,
-        startDate: new Date(),
-        endDate: new Date(Date.now() + packageDetails.durationMonths * 30 * 24 * 60 * 60 * 1000),
+        startDate: new Date().toISOString(), // Store as ISO string for better persistence
+        endDate: new Date(Date.now() + packageDetails.durationMonths * 30 * 24 * 60 * 60 * 1000).toISOString(),
         status: "active",
+        assignedBy: "admin", // Mark as assigned by admin
+        assignedAt: new Date().toISOString()
       };
       
       // Update localStorage
       const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
       userSubscriptions[user.id] = subscriptionData;
       localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
+      
+      // Also store subscription info in the user's record to ensure persistence
+      await syncUserData(user.id, {
+        subscription: subscriptionData,
+        lastUpdated: new Date().toISOString()
+      });
+      
+      // Update the current state
+      setUserCurrentSubscription(subscriptionData);
       
       toast({
         title: "Subscription Assigned",
@@ -84,6 +108,54 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       toast({
         title: "Assignment Failed",
         description: "Failed to assign subscription",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    setIsLoading(true);
+    try {
+      if (!userCurrentSubscription) {
+        throw new Error("No active subscription found");
+      }
+      
+      // Update the subscription status to cancelled
+      const updatedSubscription = {
+        ...userCurrentSubscription,
+        status: "cancelled",
+        cancelledAt: new Date().toISOString(),
+        cancelledBy: "admin"
+      };
+      
+      // Update localStorage
+      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
+      userSubscriptions[user.id] = updatedSubscription;
+      localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
+      
+      // Also update in the user's record
+      await syncUserData(user.id, {
+        subscription: updatedSubscription,
+        lastUpdated: new Date().toISOString()
+      });
+      
+      // Update local state
+      setUserCurrentSubscription(updatedSubscription);
+      
+      toast({
+        title: "Subscription Cancelled",
+        description: "Subscription has been cancelled successfully"
+      });
+      
+      // Notify parent component
+      onAssigned();
+    } catch (error) {
+      console.error("Error cancelling subscription:", error);
+      toast({
+        title: "Cancellation Failed",
+        description: "Failed to cancel subscription",
         variant: "destructive"
       });
     } finally {
@@ -110,14 +182,32 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
             ))}
           </SelectContent>
         </Select>
-        <Button 
-          onClick={handleAssignPackage} 
-          disabled={!selectedPackage || isLoading}
-          size="sm"
-        >
-          {isLoading ? "Assigning..." : "Assign"}
-        </Button>
+        
+        {userCurrentSubscription?.status === 'active' ? (
+          <Button 
+            onClick={handleCancelSubscription} 
+            disabled={isLoading}
+            variant="destructive"
+            size="sm"
+          >
+            {isLoading ? "Processing..." : "Cancel"}
+          </Button>
+        ) : (
+          <Button 
+            onClick={handleAssignPackage} 
+            disabled={!selectedPackage || isLoading}
+            size="sm"
+          >
+            {isLoading ? "Assigning..." : "Assign"}
+          </Button>
+        )}
       </div>
+      
+      {userCurrentSubscription && (
+        <div className="text-sm text-muted-foreground">
+          Current: {userCurrentSubscription.packageName} ({userCurrentSubscription.status})
+        </div>
+      )}
     </div>
   );
 };

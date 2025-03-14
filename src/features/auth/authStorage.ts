@@ -1,3 +1,4 @@
+
 import { User, UserRole } from "../../types/auth";
 import { db } from "../../config/firebase";
 import { collection, getDocs, doc, setDoc } from "firebase/firestore";
@@ -61,6 +62,10 @@ export const saveUserToAllUsersList = (userData: User) => {
                                (existingUserIndex >= 0 ? allUsers[existingUserIndex].createdAt : null) ||
                                new Date().toISOString();
     
+    // Check for existing subscriptions
+    const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
+    const existingSubscription = userSubscriptions[userData.id] || null;
+    
     if (existingUserIndex >= 0) {
       // Update existing user
       allUsers[existingUserIndex] = {
@@ -69,7 +74,9 @@ export const saveUserToAllUsersList = (userData: User) => {
         role: userData.role || allUsers[existingUserIndex].role,
         isAdmin: userData.isAdmin || allUsers[existingUserIndex].isAdmin || false,
         email: userData.email || allUsers[existingUserIndex].email,
-        createdAt: createdAtTimestamp
+        createdAt: createdAtTimestamp,
+        subscription: existingSubscription || allUsers[existingUserIndex].subscription || null,
+        lastUpdated: new Date().toISOString()
       };
     } else {
       // Add new user
@@ -79,7 +86,9 @@ export const saveUserToAllUsersList = (userData: User) => {
         name: userData.name,
         role: userData.role,
         isAdmin: userData.isAdmin || false,
-        createdAt: createdAtTimestamp
+        createdAt: createdAtTimestamp,
+        subscription: existingSubscription || null,
+        lastUpdated: new Date().toISOString()
       });
     }
     
@@ -94,7 +103,9 @@ export const saveUserToAllUsersList = (userData: User) => {
         name: userData.name,
         role: userData.role,
         isAdmin: userData.isAdmin || false,
-        createdAt: createdAtTimestamp
+        createdAt: createdAtTimestamp,
+        subscription: existingSubscription || null,
+        lastUpdated: new Date().toISOString()
       }, { merge: true }).catch(err => console.error("Could not save user to Firebase:", err));
     } catch (error) {
       console.error("Error saving user to Firebase:", error);
@@ -115,7 +126,18 @@ export const loadAllUsers = (): User[] => {
     if (allUsersJson) {
       const parsedUsers = JSON.parse(allUsersJson);
       console.log("Loaded users count:", parsedUsers.length);
-      return parsedUsers;
+      
+      // Also load subscription data and merge with users
+      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
+      
+      const usersWithSubscriptions = parsedUsers.map((user: any) => {
+        return {
+          ...user,
+          subscription: userSubscriptions[user.id] || user.subscription || null
+        };
+      });
+      
+      return usersWithSubscriptions;
     }
   } catch (error) {
     console.error("Error loading users:", error);
@@ -141,21 +163,35 @@ export const debugRefreshUsers = async () => {
             name: data.name || data.displayName || null,
             role: data.role || null,
             isAdmin: data.isAdmin || false,
-            createdAt: data.createdAt || new Date().toISOString()
+            createdAt: data.createdAt || new Date().toISOString(),
+            subscription: data.subscription || null,
+            lastUpdated: data.lastUpdated || new Date().toISOString()
+          };
+        });
+        
+        // Get subscription data
+        const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
+        
+        // Merge subscription data with users
+        const usersWithSubscriptions = firebaseUsers.map(user => {
+          return {
+            ...user,
+            subscription: userSubscriptions[user.id] || user.subscription || null
           };
         });
         
         // Save Firebase users to localStorage
-        localStorage.setItem(ALL_USERS_KEY, JSON.stringify(firebaseUsers));
-        console.log("Updated all users list from Firebase:", firebaseUsers);
-        return firebaseUsers.length;
+        localStorage.setItem(ALL_USERS_KEY, JSON.stringify(usersWithSubscriptions));
+        console.log("Updated all users list from Firebase:", usersWithSubscriptions);
+        return usersWithSubscriptions.length;
       }
     } catch (error) {
       console.error("Error fetching users from Firebase:", error);
     }
     
-    // Get all auth users from localStorage
+    // Get all auth users from localStorage and merge with subscription data
     const allUsers = JSON.parse(localStorage.getItem(ALL_USERS_KEY) || '[]');
+    const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
     
     // Check for duplicate emails and merge data if needed
     const uniqueUserMap = new Map();
@@ -172,12 +208,16 @@ export const debugRefreshUsers = async () => {
             ...user,
             isAdmin: existingUser.isAdmin || user.isAdmin || false,
             role: user.role || existingUser.role,
-            createdAt: existingUser.createdAt || user.createdAt || new Date().toISOString()
+            createdAt: existingUser.createdAt || user.createdAt || new Date().toISOString(),
+            subscription: userSubscriptions[user.id] || existingUser.subscription || null,
+            lastUpdated: new Date().toISOString()
           });
         } else {
           uniqueUserMap.set(key, {
             ...user,
-            createdAt: user.createdAt || new Date().toISOString()
+            createdAt: user.createdAt || new Date().toISOString(),
+            subscription: userSubscriptions[user.id] || user.subscription || null,
+            lastUpdated: new Date().toISOString()
           });
         }
       }
@@ -191,7 +231,7 @@ export const debugRefreshUsers = async () => {
     
     // Try to sync with Firebase
     try {
-      dedupedUsers.forEach(async (user: User) => {
+      dedupedUsers.forEach(async (user: any) => {
         if (user.id) {
           const userDoc = doc(db, "users", user.id);
           await setDoc(userDoc, {
@@ -199,7 +239,9 @@ export const debugRefreshUsers = async () => {
             name: user.name,
             role: user.role,
             isAdmin: user.isAdmin || false,
-            createdAt: user.createdAt || new Date().toISOString()
+            createdAt: user.createdAt || new Date().toISOString(),
+            subscription: user.subscription || null,
+            lastUpdated: new Date().toISOString()
           }, { merge: true });
         }
       });
@@ -216,7 +258,7 @@ export const debugRefreshUsers = async () => {
 };
 
 // Function to sync a specific user across localStorage and Firebase
-export const syncUserData = async (userId: string, userData: Partial<User>) => {
+export const syncUserData = async (userId: string, userData: any) => {
   try {
     // First update in localStorage
     const allUsers = JSON.parse(localStorage.getItem(ALL_USERS_KEY) || '[]');
@@ -226,25 +268,37 @@ export const syncUserData = async (userId: string, userData: Partial<User>) => {
     const createdAtTimestamp = (userIndex >= 0 ? allUsers[userIndex].createdAt : null) || 
                                new Date().toISOString();
     
+    // Get current user record or create new one                           
+    const currentUserData = userIndex >= 0 ? allUsers[userIndex] : { id: userId };
+    
+    // Create updated user record with merged data
+    const updatedUserData = {
+      ...currentUserData,
+      ...userData,
+      lastUpdated: new Date().toISOString(),
+      createdAt: createdAtTimestamp
+    };
+    
+    // Update the users array
     if (userIndex >= 0) {
-      allUsers[userIndex] = { ...allUsers[userIndex], ...userData };
+      allUsers[userIndex] = updatedUserData;
     } else {
-      allUsers.push({ 
-        id: userId, 
-        ...userData, 
-        createdAt: createdAtTimestamp
-      });
+      allUsers.push(updatedUserData);
     }
     
+    // Save updated users to localStorage
     localStorage.setItem(ALL_USERS_KEY, JSON.stringify(allUsers));
     
     // Then sync to Firebase
     const userDoc = doc(db, "users", userId);
-    await setDoc(userDoc, { 
-      ...userData, 
-      updatedAt: new Date().toISOString(),
-      createdAt: createdAtTimestamp
-    }, { merge: true });
+    await setDoc(userDoc, updatedUserData, { merge: true });
+    
+    // If there's subscription data, update the userSubscriptions collection too
+    if (userData.subscription) {
+      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
+      userSubscriptions[userId] = userData.subscription;
+      localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
+    }
     
     return true;
   } catch (error) {

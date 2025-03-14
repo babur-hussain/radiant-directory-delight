@@ -1,10 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { getPackageById, businessPackages, influencerPackages } from "@/data/subscriptionData";
 import { toast } from "@/hooks/use-toast";
 import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { SubscriptionPackage } from "@/data/subscriptionData";
+import { syncUserData } from "@/features/auth/authStorage";
 
 interface RazorpayOptions {
   key: string;
@@ -38,7 +39,18 @@ declare global {
 
 export const useSubscription = () => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [userSubscription, setUserSubscription] = useState<any>(null);
   const { user } = useAuth();
+
+  // Fetch user's subscription data whenever the user changes
+  useEffect(() => {
+    if (user) {
+      const subscription = getUserSubscription();
+      setUserSubscription(subscription);
+    } else {
+      setUserSubscription(null);
+    }
+  }, [user]);
 
   const loadRazorpayScript = (): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -212,66 +224,153 @@ export const useSubscription = () => {
     razorpayInstance.open();
   };
 
-  const processSuccessfulSubscription = (selectedPackage: any, subscriptionPaymentId: string) => {
+  const processSuccessfulSubscription = async (selectedPackage: any, subscriptionPaymentId: string) => {
+    if (!user?.id) {
+      setIsProcessing(false);
+      toast({
+        title: "Error",
+        description: "User information is missing",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // In a real implementation, you would call your backend to verify and store the subscription
     // For demo purposes, we'll simulate a successful subscription
     
-    // Store subscription details locally (in a real app, this would be in the backend)
+    // Store subscription details 
     const subscriptionData = {
       id: subscriptionPaymentId,
-      userId: user?.id,
+      userId: user.id,
       packageId: selectedPackage.id,
       packageName: selectedPackage.title,
       amount: selectedPackage.price,
-      startDate: new Date(),
-      endDate: new Date(Date.now() + selectedPackage.durationMonths * 30 * 24 * 60 * 60 * 1000),
+      startDate: new Date().toISOString(),
+      endDate: new Date(Date.now() + selectedPackage.durationMonths * 30 * 24 * 60 * 60 * 1000).toISOString(),
       status: "active",
+      paymentMethod: "razorpay",
+      paymentId: subscriptionPaymentId
     };
 
-    // Store in localStorage for demo purposes
-    const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
-    userSubscriptions[user?.id as string] = subscriptionData;
-    localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
-
-    setIsProcessing(false);
-    
-    toast({
-      title: "Subscription Successful",
-      description: `You have successfully subscribed to the ${selectedPackage.title} plan.`,
-    });
-    
-    // Redirect to dashboard or subscription details page
-    window.location.href = "/subscription/details";
+    try {
+      // Store in localStorage for demo purposes
+      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
+      userSubscriptions[user.id] = subscriptionData;
+      localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
+      
+      // Also store in user data for better persistence
+      await syncUserData(user.id, {
+        subscription: subscriptionData,
+        lastUpdated: new Date().toISOString()
+      });
+      
+      setUserSubscription(subscriptionData);
+      setIsProcessing(false);
+      
+      toast({
+        title: "Subscription Successful",
+        description: `You have successfully subscribed to the ${selectedPackage.title} plan.`,
+      });
+      
+      // Redirect to dashboard or subscription details page
+      window.location.href = "/subscription/details";
+    } catch (error) {
+      console.error("Error saving subscription data:", error);
+      toast({
+        title: "Error",
+        description: "Your payment was successful but we couldn't complete your subscription setup.",
+        variant: "destructive",
+      });
+      setIsProcessing(false);
+    }
   };
 
   const getUserSubscription = () => {
     if (!user) return null;
     
-    // Get subscription from localStorage (in a real app, this would come from the backend)
-    const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
-    return userSubscriptions[user.id] || null;
+    try {
+      // First try to get from user data (if available)
+      if (user.subscription) {
+        return user.subscription;
+      }
+      
+      // Get subscription from localStorage as fallback
+      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
+      const subscription = userSubscriptions[user.id] || null;
+      
+      // If found, update user data for future persistence
+      if (subscription && user.id) {
+        syncUserData(user.id, {
+          subscription: subscription,
+          lastUpdated: new Date().toISOString()
+        }).catch(err => console.error("Error syncing subscription to user data:", err));
+      }
+      
+      return subscription;
+    } catch (error) {
+      console.error("Error getting user subscription:", error);
+      return null;
+    }
   };
 
-  const cancelSubscription = () => {
+  const cancelSubscription = async () => {
     if (!user) return;
     
-    // In a real implementation, you would call your backend to cancel the subscription with Razorpay
-    // For demo purposes, we'll just update the local storage
-    
-    const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
-    if (userSubscriptions[user.id]) {
-      userSubscriptions[user.id].status = "cancelled";
+    try {
+      setIsProcessing(true);
+      
+      // Get current subscription
+      const currentSubscription = getUserSubscription();
+      
+      if (!currentSubscription) {
+        toast({
+          title: "No Active Subscription",
+          description: "You don't have an active subscription to cancel.",
+          variant: "destructive",
+        });
+        setIsProcessing(false);
+        return;
+      }
+      
+      // Update subscription status
+      const updatedSubscription = {
+        ...currentSubscription,
+        status: "cancelled",
+        cancelledAt: new Date().toISOString()
+      };
+      
+      // Update in localStorage
+      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
+      userSubscriptions[user.id] = updatedSubscription;
       localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
+      
+      // Update in user data
+      await syncUserData(user.id, {
+        subscription: updatedSubscription,
+        lastUpdated: new Date().toISOString()
+      });
+      
+      setUserSubscription(updatedSubscription);
       
       toast({
         title: "Subscription Cancelled",
         description: "Your subscription has been cancelled successfully.",
       });
+    } catch (error) {
+      console.error("Error cancelling subscription:", error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel subscription.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   return {
     isProcessing,
+    userSubscription,
     initiateSubscription,
     getUserSubscription,
     cancelSubscription
