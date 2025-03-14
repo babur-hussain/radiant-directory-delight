@@ -156,3 +156,5 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
     </div>
   );
 };
+
+export default CSVUploader;

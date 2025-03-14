@@ -28,7 +28,7 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
-  signup: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
+  signup: (email: string, password: string, name: string, role: UserRole) => Promise<any>;
   logout: () => Promise<void>;
   updateUserRole: (role: UserRole) => Promise<void>;
   updateUserPermission: (userId: string, isAdmin: boolean) => Promise<void>;

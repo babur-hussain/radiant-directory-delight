@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Business } from "@/lib/csv-utils";
@@ -95,7 +94,7 @@ const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
       </TabsContent>
       
       <TabsContent value="subscriptions" className="space-y-4">
-        <SubscriptionManagement onError={handlePermissionError} />
+        <SubscriptionManagement onPermissionError={handlePermissionError} />
       </TabsContent>
       
       <TabsContent value="categories" className="space-y-4">

@@ -68,9 +68,9 @@ const BusinessListingsHeader: React.FC<BusinessListingsHeaderProps> = ({
       </div>
       
       <CSVUploadDialog 
-        showUploadDialog={showUploadDialog}
-        setShowUploadDialog={setShowUploadDialog}
-        handleUploadComplete={handleUploadComplete}
+        show={showUploadDialog}
+        onClose={() => setShowUploadDialog(false)}
+        onUploadComplete={handleUploadComplete}
       />
     </div>
   );

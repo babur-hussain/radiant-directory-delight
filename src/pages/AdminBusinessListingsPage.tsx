@@ -159,9 +159,9 @@ const AdminBusinessListingsPage = () => {
       </Card>
       
       <BusinessFormDialog 
-        showDialog={showBusinessFormDialog}
-        setShowDialog={setShowBusinessFormDialog}
-        currentBusinessToEdit={currentBusinessToEdit}
+        show={showBusinessFormDialog}
+        onClose={() => setShowBusinessFormDialog(false)}
+        business={currentBusinessToEdit}
         onSubmit={handleBusinessFormSubmit}
         isSubmitting={isSubmitting}
       />

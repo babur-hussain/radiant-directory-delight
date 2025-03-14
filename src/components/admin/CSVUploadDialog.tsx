@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import CSVUploader from './CSVUploader';
+import { CSVUploader } from './CSVUploader';
 
 export interface CSVUploadDialogProps {
   show: boolean;
@@ -14,6 +14,11 @@ const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({
   onClose,
   onUploadComplete
 }) => {
+  const handleUploadStart = () => {
+    // Any pre-upload logic can go here
+    console.log("Upload started");
+  };
+
   return (
     <Dialog open={show} onOpenChange={(open) => {
       if (!open) onClose();
@@ -23,7 +28,10 @@ const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({
           <DialogTitle>Upload CSV File</DialogTitle>
         </DialogHeader>
         
-        <CSVUploader onUploadComplete={onUploadComplete} />
+        <CSVUploader 
+          onUploadStart={handleUploadStart}
+          onUploadComplete={onUploadComplete} 
+        />
       </DialogContent>
     </Dialog>
   );
