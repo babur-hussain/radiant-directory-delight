@@ -28,7 +28,7 @@ import { nanoid } from "nanoid";
 
 // Form schema validation
 const formSchema = z.object({
-  id: z.string().optional(),
+  id: z.string().min(1, "ID is required"),
   title: z.string().min(1, "Title is required"),
   price: z.coerce.number().min(0, "Price must be a positive number"),
   setupFee: z.coerce.number().min(0, "Setup fee must be a positive number"),
@@ -70,13 +70,13 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   });
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    // Ensure all required properties are present
+    // Ensure all required properties are present with proper types
     const packageData: SubscriptionPackage = {
-      id: values.id || nanoid(),
+      id: values.id,
       title: values.title,
-      price: values.price,
-      setupFee: values.setupFee,
-      durationMonths: values.durationMonths,
+      price: Number(values.price),
+      setupFee: Number(values.setupFee),
+      durationMonths: Number(values.durationMonths),
       shortDescription: values.shortDescription,
       fullDescription: values.fullDescription,
       features: values.features,
@@ -84,6 +84,8 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
       type: values.type,
       termsAndConditions: values.termsAndConditions || ""
     };
+    
+    console.log("Form submitted with data:", packageData);
     onSubmit(packageData);
   };
 

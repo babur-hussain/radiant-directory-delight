@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +54,7 @@ export const SubscriptionPackageManagement = () => {
       setPackages(data);
       setFilteredPackages(data.filter(pkg => pkg.type.toLowerCase() === activeTab));
     } catch (error) {
+      console.error("Error loading packages:", error);
       toast({
         title: "Error",
         description: "Failed to load subscription packages. Please try again later.",
@@ -117,6 +117,13 @@ export const SubscriptionPackageManagement = () => {
   const handleSavePackage = async (packageData: SubscriptionPackage) => {
     setIsLoading(true);
     try {
+      console.log("Attempting to save package:", packageData);
+      
+      // Validate required fields
+      if (!packageData.title || packageData.title.trim() === '') {
+        throw new Error("Package title is required");
+      }
+      
       await saveSubscriptionPackage(packageData);
       
       // Update local state
@@ -136,9 +143,16 @@ export const SubscriptionPackageManagement = () => {
       setIsFormOpen(false);
       setSelectedPackage(null);
     } catch (error) {
+      console.error("Error saving package:", error);
+      let errorMessage = "Failed to save package. Please try again later.";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      }
+      
       toast({
         title: "Error",
-        description: `Failed to ${selectedPackage ? 'update' : 'create'} package. Please try again later.`,
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

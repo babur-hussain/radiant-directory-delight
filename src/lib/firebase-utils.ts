@@ -57,11 +57,37 @@ export async function fetchSubscriptionPackages(): Promise<SubscriptionPackage[]
 export async function saveSubscriptionPackage(packageData: SubscriptionPackage): Promise<void> {
   try {
     console.log("Saving subscription package:", packageData);
+    
+    // Validate required fields before saving
+    if (!packageData.id) {
+      throw new Error("Package ID is required");
+    }
+    
+    if (!packageData.title) {
+      throw new Error("Package title is required");
+    }
+    
+    // Make sure we have proper type conversion for numeric fields
+    const sanitizedPackage = {
+      ...packageData,
+      price: Number(packageData.price),
+      setupFee: Number(packageData.setupFee),
+      durationMonths: Number(packageData.durationMonths),
+      popular: Boolean(packageData.popular)
+    };
+    
+    // Create a reference to the document
     const packageRef = doc(db, SUBSCRIPTION_COLLECTION, packageData.id);
-    await setDoc(packageRef, packageData);
-    console.log("Subscription package saved successfully");
+    
+    // Save the document
+    await setDoc(packageRef, sanitizedPackage);
+    console.log("Subscription package saved successfully with ID:", packageData.id);
   } catch (error) {
     console.error("Error saving subscription package:", error);
+    console.error("Package data that failed:", JSON.stringify(packageData, null, 2));
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+    }
     throw error;
   }
 }
