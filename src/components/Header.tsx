@@ -37,9 +37,9 @@ const Header = () => {
   }
 
   return (
-    <header className="fixed top-0 left-0 w-full z-[1000] bg-white shadow-sm">
-      <div className="container max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between w-full h-16">
+    <header className="fixed top-0 left-0 w-full z-[1000] bg-white shadow-sm h-16">
+      <div className="container max-w-7xl mx-auto px-4 sm:px-6 h-full">
+        <div className="flex items-center justify-between w-full h-full">
           <Link to="/" className="flex items-center space-x-2">
             <span className="logo-text font-bold text-2xl bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">Grow Bharat Vyapaar</span>
           </Link>

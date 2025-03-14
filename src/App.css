@@ -20,16 +20,17 @@ header {
   background-color: #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   z-index: 1000;
+  height: 64px; /* Set explicit height for the header */
 }
 
 /* Main content padding to avoid header overlap */
 main {
-  padding-top: 4rem; /* 64px to match header height */
+  padding-top: 64px; /* Match exact header height */
 }
 
 /* Ensure proper spacing for content below header */
 .hero-section {
-  padding-top: 100px;
+  padding-top: 2rem; /* Add space after the main padding */
 }
 
 /* Other styles */
