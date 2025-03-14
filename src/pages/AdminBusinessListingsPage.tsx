@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,18 +70,11 @@ const AdminBusinessListingsPage = () => {
     setPermissionError(null);
     
     try {
-      let priorityValue: number | undefined = undefined;
-      
-      if (values.priority !== undefined && values.priority !== null && values.priority !== "") {
-        priorityValue = Number(values.priority);
-      }
-      
       if (currentBusinessToEdit) {
         const updated = updateBusiness({
           ...currentBusinessToEdit,
           ...values,
           tags: typeof values.tags === "string" ? values.tags.split(",").map(tag => tag.trim()) : values.tags,
-          priority: priorityValue,
         });
         
         if (updated) {
@@ -102,7 +94,6 @@ const AdminBusinessListingsPage = () => {
           featured: values.featured,
           tags: typeof values.tags === "string" ? values.tags.split(",").map(tag => tag.trim()) : values.tags,
           reviews: randomReviews,
-          priority: priorityValue,
           image: values.image || `https://source.unsplash.com/random/500x350/?${values.category.toLowerCase().replace(/\s+/g, ",")}`
         });
         
@@ -115,7 +106,6 @@ const AdminBusinessListingsPage = () => {
     } catch (error) {
       console.error("Error saving business:", error);
       
-      // Check for permission-related errors
       const errorMessage = error instanceof Error ? error.message : String(error);
       
       if (errorMessage.includes("permission-denied") || 

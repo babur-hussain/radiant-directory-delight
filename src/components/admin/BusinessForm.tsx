@@ -11,7 +11,7 @@ import { Business } from "@/lib/csv-utils";
 import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 
-// Form schema with validation
+// Form schema with validation - removed priority field
 const formSchema = z.object({
   name: z.string().min(2, { message: "Business name must be at least 2 characters" }),
   category: z.string().min(1, { message: "Category is required" }),
@@ -23,7 +23,6 @@ const formSchema = z.object({
   description: z.string().min(10, { message: "Description must be at least 10 characters" }),
   featured: z.boolean().default(false),
   tags: z.string(), // This will be used just for form validation, but we'll manage tags separately
-  priority: z.coerce.number().min(0).max(100).optional(),
   website: z.string().url({ message: "Must be a valid URL" }).optional().or(z.literal("")),
   email: z.string().email({ message: "Must be a valid email" }).optional().or(z.literal("")),
 });
@@ -63,7 +62,6 @@ const BusinessForm = ({
       description: "",
       featured: false,
       tags: "",
-      priority: 0,
       website: "",
       email: "",
     }
@@ -83,7 +81,6 @@ const BusinessForm = ({
         description: currentBusiness.description,
         featured: currentBusiness.featured,
         tags: currentBusiness.tags.join(", "),
-        priority: currentBusiness.priority || 0,
         website: currentBusiness.website || "",
         email: currentBusiness.email || "",
       });
@@ -101,7 +98,6 @@ const BusinessForm = ({
         description: "",
         featured: false,
         tags: "",
-        priority: 0,
         website: "",
         email: "",
       });
@@ -168,20 +164,6 @@ const BusinessForm = ({
                   <FormLabel>Category</FormLabel>
                   <FormControl>
                     <Input placeholder="Business category" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="priority"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Priority (0-100, lower shows first)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="Priority" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
