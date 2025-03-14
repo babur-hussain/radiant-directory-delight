@@ -38,7 +38,8 @@ const CtaSection = () => {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            variants={{...fadeInUp, transition: { delay: 0.2, duration: 0.6 }}}
+            variants={fadeInUp}
+            transition={{ delay: 0.2, duration: 0.6 }}
           >
             Whether you're an influencer looking to monetize your audience or a business wanting to expand your reach, we have the perfect solution for you.
           </motion.p>
@@ -50,7 +51,8 @@ const CtaSection = () => {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            variants={{...fadeInUp, transition: { delay: 0.3, duration: 0.6 }}}
+            variants={fadeInUp}
+            transition={{ delay: 0.3, duration: 0.6 }}
             animate={hoveredInfluencer ? pulse : {}}
           >
             <Card 
@@ -104,7 +106,8 @@ const CtaSection = () => {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            variants={{...fadeInUp, transition: { delay: 0.4, duration: 0.6 }}}
+            variants={fadeInUp}
+            transition={{ delay: 0.4, duration: 0.6 }}
             animate={hoveredBusiness ? pulse : {}}
           >
             <Card 
