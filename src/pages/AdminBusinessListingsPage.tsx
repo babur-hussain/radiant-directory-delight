@@ -75,6 +75,7 @@ const AdminBusinessListingsPage = () => {
       let priorityValue: number | undefined = undefined;
       
       if (values.priority !== undefined && values.priority !== null && values.priority !== "") {
+        // Ensure we're working with a number for comparison
         const numValue = Number(values.priority);
         priorityValue = isNaN(numValue) ? undefined : numValue;
       }
@@ -182,4 +183,3 @@ const AdminBusinessListingsPage = () => {
 };
 
 export default AdminBusinessListingsPage;
-
