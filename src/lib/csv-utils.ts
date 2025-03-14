@@ -16,10 +16,34 @@ export interface Business {
   tags: string[];
 }
 
+// LOCAL STORAGE KEY
+const UPLOADED_BUSINESSES_STORAGE_KEY = 'uploadedBusinesses';
+
+// Load businesses from localStorage on initialization
+const loadUploadedBusinesses = (): Business[] => {
+  try {
+    const savedData = localStorage.getItem(UPLOADED_BUSINESSES_STORAGE_KEY);
+    if (savedData) {
+      return JSON.parse(savedData);
+    }
+  } catch (error) {
+    console.error('Error loading businesses from localStorage:', error);
+  }
+  return [];
+};
+
 // Store the uploaded businesses in this array
-// This is a simple in-memory storage for demonstration
-// In a real app, this would be stored in a database
-export let uploadedBusinesses: Business[] = [];
+// This is now backed by localStorage for persistence
+export let uploadedBusinesses: Business[] = loadUploadedBusinesses();
+
+// Save businesses to localStorage
+const saveUploadedBusinesses = () => {
+  try {
+    localStorage.setItem(UPLOADED_BUSINESSES_STORAGE_KEY, JSON.stringify(uploadedBusinesses));
+  } catch (error) {
+    console.error('Error saving businesses to localStorage:', error);
+  }
+};
 
 // Default image to use when business image is unavailable
 export const DEFAULT_BUSINESS_IMAGE = "https://source.unsplash.com/photo-1518770660439-4636190af475";
@@ -62,6 +86,7 @@ export const addBusiness = (business: Omit<Business, "id">): Business => {
   };
   
   uploadedBusinesses.push(newBusiness);
+  saveUploadedBusinesses(); // Save to localStorage
   notifyDataChanged();
   
   return newBusiness;
@@ -75,6 +100,7 @@ export const updateBusiness = (updatedBusiness: Business): Business | null => {
   if (index !== -1) {
     // Update the business in the uploaded businesses array
     uploadedBusinesses[index] = updatedBusiness;
+    saveUploadedBusinesses(); // Save to localStorage
     notifyDataChanged();
     return updatedBusiness;
   }
@@ -92,6 +118,7 @@ export const deleteBusiness = (id: number): boolean => {
   const deleted = initialLength > uploadedBusinesses.length;
   
   if (deleted) {
+    saveUploadedBusinesses(); // Save to localStorage
     notifyDataChanged();
   }
   
@@ -183,6 +210,7 @@ export const processCsvData = async (csvContent: string): Promise<{
     
     // Add businesses to the uploadedBusinesses array
     uploadedBusinesses = [...uploadedBusinesses, ...businesses];
+    saveUploadedBusinesses(); // Save to localStorage
     
     // Notify listeners that data has changed
     notifyDataChanged();
