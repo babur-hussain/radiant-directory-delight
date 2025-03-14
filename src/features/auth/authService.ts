@@ -6,9 +6,10 @@ import {
   signOut,
   updateProfile
 } from "firebase/auth";
-import { auth, googleProvider } from "../../config/firebase";
+import { auth, db, googleProvider } from "../../config/firebase";
 import { UserRole } from "../../types/auth";
 import { getRoleKey, saveUserToAllUsersList } from "./authStorage";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 export const login = async (email: string, password: string) => {
   return await signInWithEmailAndPassword(auth, email, password);
@@ -19,6 +20,7 @@ export const loginWithGoogle = async () => {
 };
 
 export const signup = async (email: string, password: string, name: string, role: UserRole) => {
+  // Create the user in Firebase Authentication
   const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
   
   // Set display name
@@ -26,6 +28,23 @@ export const signup = async (email: string, password: string, name: string, role
     await updateProfile(firebaseUser, {
       displayName: name
     });
+    
+    // Store user data in Firestore
+    try {
+      const userDoc = doc(db, "users", firebaseUser.uid);
+      await setDoc(userDoc, {
+        email: firebaseUser.email,
+        name: name || firebaseUser.email?.split('@')[0] || 'User',
+        role: role,
+        photoURL: null,
+        isAdmin: false,
+        createdAt: serverTimestamp(),
+        lastLogin: serverTimestamp()
+      });
+      console.log("User successfully saved to Firestore:", firebaseUser.uid);
+    } catch (error) {
+      console.error("Error saving user to Firestore:", error);
+    }
   }
   
   // Store role information in localStorage
