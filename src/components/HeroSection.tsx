@@ -1,15 +1,29 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import SearchBar from './search/SearchBar';
 import PopularSearchTerms from './search/PopularSearchTerms';
 import HeroContent from './hero/HeroContent';
 
 const HeroSection = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchResultsVisible, setIsSearchResultsVisible] = useState(false);
 
   const handlePopularTermClick = (term: string) => {
     setSearchTerm(term);
   };
+  
+  // Lock body scroll when search results are visible
+  useEffect(() => {
+    if (isSearchResultsVisible) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isSearchResultsVisible]);
   
   return (
     <div className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
@@ -28,7 +42,10 @@ const HeroSection = () => {
         <HeroContent />
 
         <div className="max-w-3xl mx-auto relative">
-          <SearchBar initialQuery={searchTerm} />
+          <SearchBar 
+            initialQuery={searchTerm} 
+            onResultsVisibilityChange={setIsSearchResultsVisible}
+          />
           <PopularSearchTerms onTermClick={handlePopularTermClick} />
         </div>
       </div>

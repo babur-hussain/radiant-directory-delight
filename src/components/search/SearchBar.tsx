@@ -22,9 +22,13 @@ const locations = [
 
 interface SearchBarProps {
   initialQuery?: string;
+  onResultsVisibilityChange?: (isVisible: boolean) => void;
 }
 
-const SearchBar = ({ initialQuery = '' }: SearchBarProps) => {
+const SearchBar = ({ 
+  initialQuery = '', 
+  onResultsVisibilityChange 
+}: SearchBarProps) => {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [location, setLocation] = useState('New York');
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
@@ -40,6 +44,13 @@ const SearchBar = ({ initialQuery = '' }: SearchBarProps) => {
       setSearchQuery(initialQuery);
     }
   }, [initialQuery]);
+
+  // Notify parent component when results visibility changes
+  useEffect(() => {
+    if (onResultsVisibilityChange) {
+      onResultsVisibilityChange(showResults);
+    }
+  }, [showResults, onResultsVisibilityChange]);
 
   useEffect(() => {
     const delaySearch = setTimeout(() => {

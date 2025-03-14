@@ -33,13 +33,16 @@ const SearchResults = ({ results, isLoading, visible, onResultClick, onClose }: 
   if (!visible) return null;
 
   return (
-    <div className={cn(
-      "fixed left-0 right-0 top-[70px] z-50 bg-white/95 backdrop-blur-sm shadow-2xl max-h-[calc(100vh-70px)] transition-all duration-200 border-t border-gray-100",
-      visible ? "opacity-100" : "opacity-0 pointer-events-none"
-    )}>
+    <div 
+      className={cn(
+        "fixed left-0 right-0 top-[70px] z-50 bg-white shadow-2xl max-h-[calc(100vh-70px)] transition-all duration-200 border-t border-gray-100",
+        visible ? "opacity-100" : "opacity-0 pointer-events-none"
+      )}
+      style={{ overflowY: 'auto' }}
+    >
       <div className="container max-w-7xl mx-auto">
         <div className="max-w-3xl mx-auto">
-          <div className="sticky top-0 z-10 flex justify-between items-center bg-white/95 backdrop-blur-sm p-4 border-b">
+          <div className="sticky top-0 z-10 flex justify-between items-center bg-white p-4 border-b">
             <div className="flex items-center gap-2">
               <h3 className="font-medium text-gray-700">Search Results</h3>
               {!isLoading && results.length > 0 && (
