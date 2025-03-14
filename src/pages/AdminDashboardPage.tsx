@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import UnauthorizedView from "@/components/admin/UnauthorizedView";
 import { SubscriptionManagement } from "@/components/admin/SubscriptionManagement";
+import { SubscriptionPackageManagement } from "@/components/admin/subscription/SubscriptionManagement";
 import UserPermissionsTab from "@/components/admin/UserPermissionsTab";
 import { TableBusinessListings } from "@/components/admin/TableBusinessListings";
 import ManageCategoriesLocations from "@/components/admin/ManageCategoriesLocations";
@@ -24,10 +25,11 @@ const AdminDashboardPage = () => {
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
       
       <Tabs defaultValue="businesses" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="businesses">Businesses</TabsTrigger>
           <TabsTrigger value="categories-locations">Categories & Locations</TabsTrigger>
-          <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+          <TabsTrigger value="subscription-packages">Subscription Packages</TabsTrigger>
+          <TabsTrigger value="subscriptions">Active Subscriptions</TabsTrigger>
           <TabsTrigger value="users">User Permissions</TabsTrigger>
         </TabsList>
         
@@ -37,6 +39,10 @@ const AdminDashboardPage = () => {
         
         <TabsContent value="categories-locations" className="pt-6">
           <ManageCategoriesLocations />
+        </TabsContent>
+        
+        <TabsContent value="subscription-packages" className="pt-6">
+          <SubscriptionPackageManagement />
         </TabsContent>
         
         <TabsContent value="subscriptions" className="pt-6">

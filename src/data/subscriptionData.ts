@@ -1,4 +1,3 @@
-
 export interface SubscriptionPackage {
   id: string;
   title: string;
@@ -9,9 +8,11 @@ export interface SubscriptionPackage {
   popular: boolean;
   setupFee: number;
   durationMonths: number;
+  termsAndConditions?: string;
+  type: "Business" | "Influencer";
 }
 
-// Business subscription packages
+// Default business subscription packages (used as fallback if Firebase fetch fails)
 export const businessPackages: SubscriptionPackage[] = [
   {
     id: "business-basic",
@@ -83,9 +84,9 @@ export const businessPackages: SubscriptionPackage[] = [
     ],
     popular: false
   }
-];
+].map(pkg => ({ ...pkg, type: "Business" }));
 
-// Influencer subscription packages
+// Default influencer subscription packages (used as fallback if Firebase fetch fails)
 export const influencerPackages: SubscriptionPackage[] = [
   {
     id: "influencer-starter",
@@ -160,9 +161,12 @@ export const influencerPackages: SubscriptionPackage[] = [
     ],
     popular: false
   }
-];
+].map(pkg => ({ ...pkg, type: "Influencer" }));
 
 // Function to get package by ID
-export const getPackageById = (packageId: string): SubscriptionPackage | undefined => {
+export const getPackageById = (packageId: string, packages?: SubscriptionPackage[]): SubscriptionPackage | undefined => {
+  if (packages) {
+    return packages.find(pkg => pkg.id === packageId);
+  }
   return [...businessPackages, ...influencerPackages].find(pkg => pkg.id === packageId);
 };
