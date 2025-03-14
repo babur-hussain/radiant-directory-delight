@@ -2,7 +2,7 @@ import { User, UserRole } from "../../types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { saveUserToAllUsersList } from "./authStorage";
 import { db } from "../../config/firebase";
-import { doc, setDoc, getDoc, collection, query, getDocs, where } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, query, getDocs, where, serverTimestamp } from "firebase/firestore";
 
 export const updateUserRole = async (user: User, role: UserRole) => {
   if (!user) {
@@ -10,17 +10,13 @@ export const updateUserRole = async (user: User, role: UserRole) => {
   }
   
   try {
-    // Store the updated role in localStorage
     localStorage.setItem(getRoleKey(user.id), role as string);
     
-    // Update in Firebase
     const userDoc = doc(db, "users", user.id);
     await setDoc(userDoc, { role }, { merge: true });
     
-    // Sync with all users list (also updates Firebase)
     await syncUserData(user.id, { role });
     
-    // Return updated user object
     return {
       ...user,
       role
@@ -28,13 +24,10 @@ export const updateUserRole = async (user: User, role: UserRole) => {
   } catch (error) {
     console.error("Error updating user role:", error);
     
-    // Fallback to localStorage-only update
     console.log("Falling back to localStorage-only update for role");
     
-    // Store the updated role in localStorage
     localStorage.setItem(getRoleKey(user.id), role as string);
     
-    // Update all users list
     const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
     const userIndex = allUsers.findIndex((u: any) => u.id === user.id);
     
@@ -43,7 +36,6 @@ export const updateUserRole = async (user: User, role: UserRole) => {
       localStorage.setItem('all_users_data', JSON.stringify(allUsers));
     }
     
-    // Return updated user object
     return {
       ...user,
       role
@@ -53,27 +45,21 @@ export const updateUserRole = async (user: User, role: UserRole) => {
 
 export const updateUserPermission = async (userId: string, isAdmin: boolean) => {
   try {
-    // Store the admin status in localStorage
     localStorage.setItem(getAdminKey(userId), isAdmin ? 'true' : 'false');
     
-    // Update in Firebase
     const userDoc = doc(db, "users", userId);
     await setDoc(userDoc, { isAdmin }, { merge: true });
     
-    // Sync with all users list (also updates Firebase)
     await syncUserData(userId, { isAdmin });
     
     return { userId, isAdmin };
   } catch (error) {
     console.error("Error updating user permission:", error);
     
-    // Fallback to localStorage-only update
     console.log("Falling back to localStorage-only update for permission");
     
-    // Store the admin status in localStorage
     localStorage.setItem(getAdminKey(userId), isAdmin ? 'true' : 'false');
     
-    // Update all users list
     const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
     const userIndex = allUsers.findIndex((u: any) => u.id === userId);
     
@@ -88,7 +74,6 @@ export const updateUserPermission = async (userId: string, isAdmin: boolean) => 
 
 export const getUserById = async (userId: string): Promise<User | null> => {
   try {
-    // First try to get from Firebase
     const userDoc = doc(db, "users", userId);
     const docSnap = await getDoc(userDoc);
     
@@ -105,7 +90,6 @@ export const getUserById = async (userId: string): Promise<User | null> => {
       };
     }
     
-    // If not found in Firebase, try localStorage
     const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
     const user = allUsers.find((u: any) => u.id === userId);
     
@@ -117,7 +101,6 @@ export const getUserById = async (userId: string): Promise<User | null> => {
   } catch (error) {
     console.error("Error getting user by ID:", error);
     
-    // Fallback to localStorage
     const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
     const user = allUsers.find((u: any) => u.id === userId);
     
@@ -129,7 +112,6 @@ export const getUserById = async (userId: string): Promise<User | null> => {
   }
 };
 
-// Get all users from Firebase - Improved to ensure all users are fetched
 export const getAllUsers = async (): Promise<User[]> => {
   try {
     console.log("Fetching ALL users from Firebase collection");
@@ -157,7 +139,6 @@ export const getAllUsers = async (): Promise<User[]> => {
     
     console.log(`Successfully fetched ${users.length} users from Firebase`);
     
-    // Log details of each user to help debug
     users.forEach((user, index) => {
       console.log(`User ${index + 1}:`, {
         id: user.id,
@@ -171,5 +152,48 @@ export const getAllUsers = async (): Promise<User[]> => {
   } catch (error) {
     console.error("Error getting all users from Firebase:", error);
     return [];
+  }
+};
+
+export interface TestUserData {
+  email: string;
+  name: string;
+  role: UserRole;
+  isAdmin: boolean;
+}
+
+export const createTestUser = async (userData: TestUserData): Promise<User> => {
+  try {
+    console.log("Creating test user:", userData);
+    
+    const userId = `test_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    
+    const user = {
+      id: userId,
+      email: userData.email,
+      name: userData.name,
+      role: userData.role,
+      isAdmin: userData.isAdmin,
+      photoURL: null,
+      createdAt: new Date().toISOString()
+    };
+    
+    const userDoc = doc(db, "users", userId);
+    await setDoc(userDoc, {
+      email: userData.email,
+      name: userData.name,
+      role: userData.role,
+      isAdmin: userData.isAdmin,
+      createdAt: new Date().toISOString(),
+      lastLogin: serverTimestamp()
+    });
+    
+    saveUserToAllUsersList(user);
+    
+    console.log("Test user created successfully:", userId);
+    return user;
+  } catch (error) {
+    console.error("Error creating test user:", error);
+    throw new Error(`Failed to create test user: ${error}`);
   }
 };

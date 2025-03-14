@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -6,16 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, RefreshCw, Users, Filter } from "lucide-react";
+import { Loader2, Search, RefreshCw, Users, Filter, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { User, UserRole } from "@/types/auth";
 import { loadAllUsers, saveUserToAllUsersList } from "@/features/auth/authStorage";
-import { getAllUsers } from "@/features/auth/userManagement";
+import { getAllUsers, createTestUser } from "@/features/auth/userManagement";
 import { db } from "@/config/firebase";
 import { collection, onSnapshot } from "firebase/firestore";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 interface UserData {
   id: string;
@@ -39,6 +40,11 @@ const UserPermissionsTab = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserRole, setNewUserRole] = useState<UserRole>("Business");
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
   
   const { updateUserPermission } = useAuth();
   const { toast } = useToast();
@@ -94,7 +100,6 @@ const UserPermissionsTab = () => {
     loadUsersFromFirebase();
   }, []);
 
-  // Set up real-time listener for user collection changes
   useEffect(() => {
     try {
       const usersCollection = collection(db, "users");
@@ -242,6 +247,47 @@ const UserPermissionsTab = () => {
     }
   };
 
+  const handleCreateTestUser = async () => {
+    if (!newUserEmail || !newUserName) {
+      toast({
+        title: "Error",
+        description: "Please provide both email and name",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      setIsCreatingUser(true);
+      await createTestUser({
+        email: newUserEmail,
+        name: newUserName,
+        role: newUserRole,
+        isAdmin: false
+      });
+      
+      setIsAddUserOpen(false);
+      setNewUserEmail("");
+      setNewUserName("");
+      
+      toast({
+        title: "Success",
+        description: "Test user created successfully",
+      });
+      
+      await loadUsersFromFirebase();
+    } catch (error) {
+      console.error("Error creating test user:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create test user",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
   const getCurrentPageUsers = () => {
     const startIndex = (currentPage - 1) * USERS_PER_PAGE;
     return filteredUsers.slice(startIndex, startIndex + USERS_PER_PAGE);
@@ -267,15 +313,93 @@ const UserPermissionsTab = () => {
             Manage access and roles for users ({filteredUsers.length} users)
           </CardDescription>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefresh}
-          disabled={refreshing}
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          
+          <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add Test User
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Test User</DialogTitle>
+                <DialogDescription>
+                  Create a test user for development purposes.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="name" className="text-right">
+                    Name
+                  </Label>
+                  <Input
+                    id="name"
+                    placeholder="John Doe"
+                    className="col-span-3"
+                    value={newUserName}
+                    onChange={e => setNewUserName(e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="email" className="text-right">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    placeholder="john@example.com"
+                    className="col-span-3"
+                    value={newUserEmail}
+                    onChange={e => setNewUserEmail(e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="role" className="text-right">
+                    Role
+                  </Label>
+                  <Select 
+                    value={newUserRole} 
+                    onValueChange={(value) => setNewUserRole(value as UserRole)}
+                  >
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Business">Business</SelectItem>
+                      <SelectItem value="Influencer">Influencer</SelectItem>
+                      <SelectItem value="Admin">Admin</SelectItem>
+                      <SelectItem value="staff">Staff</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddUserOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleCreateTestUser}
+                  disabled={isCreatingUser || !newUserEmail || !newUserName}
+                >
+                  {isCreatingUser && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Create User
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col md:flex-row gap-4 mb-4">
