@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, Map, LogIn } from 'lucide-react';
@@ -35,7 +36,9 @@ const Header = () => {
     return null;
   }
 
-  return <header className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-4", isScrolled ? "bg-white/90 backdrop-blur-md shadow-sm" : "bg-transparent")}>
+  return (
+    <header className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-4", 
+      isScrolled ? "bg-white/90 backdrop-blur-md shadow-sm" : "bg-white/80 backdrop-blur-sm")}>
       <div className="container max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
@@ -110,7 +113,8 @@ const Header = () => {
       </div>
 
       <AuthModal isOpen={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
-    </header>;
+    </header>
+  );
 };
 
 export default Header;
