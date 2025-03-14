@@ -1,9 +1,11 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Star, MapPin, Phone } from "lucide-react";
+import { Star, MapPin, Phone, ChevronDown, ChevronUp } from "lucide-react";
 import { Business } from "@/lib/csv-utils";
+import BusinessImage from "@/components/BusinessImage";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface BusinessesGridProps {
   businesses: Business[];
@@ -32,7 +34,7 @@ const BusinessesGrid: React.FC<BusinessesGridProps> = ({ businesses, clearAllFil
       {businesses.map(business => (
         <Card key={business.id} className="group overflow-hidden hover:shadow-lg transition-shadow duration-300">
           <div className="relative h-48 overflow-hidden">
-            <img 
+            <BusinessImage 
               src={business.image} 
               alt={business.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -75,6 +77,11 @@ const BusinessesGrid: React.FC<BusinessesGridProps> = ({ businesses, clearAllFil
               <Phone className="h-4 w-4 mr-1 shrink-0" />
               <span>{business.phone}</span>
             </div>
+            
+            {/* Collapsible Tags Section */}
+            {business.tags.length > 0 && (
+              <CollapsibleTagsSection tags={business.tags} />
+            )}
           </CardContent>
           
           <CardFooter className="pt-2">
@@ -84,6 +91,52 @@ const BusinessesGrid: React.FC<BusinessesGridProps> = ({ businesses, clearAllFil
           </CardFooter>
         </Card>
       ))}
+    </div>
+  );
+};
+
+interface CollapsibleTagsSectionProps {
+  tags: string[];
+}
+
+const CollapsibleTagsSection: React.FC<CollapsibleTagsSectionProps> = ({ tags }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const maxVisibleTags = 3;
+  const hasMoreTags = tags.length > maxVisibleTags;
+
+  return (
+    <div className="mt-3">
+      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-2">
+        <div className="flex flex-wrap gap-1">
+          {tags.slice(0, maxVisibleTags).map((tag, index) => (
+            <span key={index} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+              {tag}
+            </span>
+          ))}
+          
+          {hasMoreTags && (
+            <CollapsibleTrigger asChild>
+              <button className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 underline">
+                {isOpen ? (
+                  <>Show Less <ChevronUp className="h-3 w-3" /></>
+                ) : (
+                  <>Show All ({tags.length}) <ChevronDown className="h-3 w-3" /></>
+                )}
+              </button>
+            </CollapsibleTrigger>
+          )}
+        </div>
+        
+        <CollapsibleContent>
+          <div className="flex flex-wrap gap-1 pt-1">
+            {tags.slice(maxVisibleTags).map((tag, index) => (
+              <span key={index} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 };

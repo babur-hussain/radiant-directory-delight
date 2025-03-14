@@ -1,7 +1,9 @@
 
 import React, { useState } from 'react';
-import { DEFAULT_BUSINESS_IMAGE } from '@/lib/csv-utils';
 import { ImageOff } from 'lucide-react';
+
+// Default business image - a placeholder image for businesses without images
+export const DEFAULT_BUSINESS_IMAGE = "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=500&h=350&auto=format&fit=crop";
 
 interface BusinessImageProps {
   src: string;

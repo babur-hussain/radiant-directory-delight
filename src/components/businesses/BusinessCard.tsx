@@ -1,14 +1,20 @@
 
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, MapPin, Phone, ExternalLink } from 'lucide-react';
+import { Star, MapPin, Phone, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import BusinessImage from '@/components/BusinessImage';
 import { Business } from '@/lib/csv-utils';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface BusinessCardProps {
   business: Business;
 }
 
 const BusinessCard = ({ business }: BusinessCardProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const maxVisibleTags = 2;
+  const hasMoreTags = business.tags.length > maxVisibleTags;
+
   return (
     <div className="group bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-smooth">
       {/* Image */}
@@ -59,6 +65,43 @@ const BusinessCard = ({ business }: BusinessCardProps) => {
           <Phone className="h-4 w-4 mr-1 flex-shrink-0" />
           <span>{business.phone}</span>
         </div>
+        
+        {/* Collapsible Tags Section */}
+        {business.tags.length > 0 && (
+          <div className="mt-3">
+            <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-2">
+              <div className="flex flex-wrap gap-1">
+                {business.tags.slice(0, maxVisibleTags).map((tag, index) => (
+                  <span key={index} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                    {tag}
+                  </span>
+                ))}
+                
+                {hasMoreTags && (
+                  <CollapsibleTrigger asChild>
+                    <button className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 underline">
+                      {isOpen ? (
+                        <>Show Less <ChevronUp className="h-3 w-3" /></>
+                      ) : (
+                        <>Show All ({business.tags.length}) <ChevronDown className="h-3 w-3" /></>
+                      )}
+                    </button>
+                  </CollapsibleTrigger>
+                )}
+              </div>
+              
+              <CollapsibleContent>
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {business.tags.slice(maxVisibleTags).map((tag, index) => (
+                    <span key={index} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+        )}
       </div>
       
       {/* Footer */}
