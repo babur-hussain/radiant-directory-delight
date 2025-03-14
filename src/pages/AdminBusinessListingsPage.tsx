@@ -95,10 +95,8 @@ const AdminBusinessListingsPage = () => {
       if (currentBusinessToEdit) {
         // We're editing an existing business
         const updated = updateBusiness({
-          ...values,
-          id: currentBusinessToEdit.id,
-          // Keep the reviews count
-          reviews: currentBusinessToEdit.reviews
+          ...currentBusinessToEdit,
+          ...values
         });
         
         if (updated) {
