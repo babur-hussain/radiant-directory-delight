@@ -9,15 +9,16 @@ import UserPermissionsTab from "@/components/admin/UserPermissionsTab";
 import { TableBusinessListings } from "@/components/admin/TableBusinessListings";
 import ManageCategoriesLocations from "@/components/admin/ManageCategoriesLocations";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, ShieldAlert } from "lucide-react";
+import { AlertCircle, ShieldAlert, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState as useReactState } from "react";
 import { useBusinessListings } from "@/hooks/useBusinessListings";
 import { Business } from "@/lib/csv-utils";
 import BusinessFormDialog from "@/components/admin/BusinessFormDialog";
 import { BusinessFormValues } from "@/components/admin/BusinessForm";
+import CSVUploadDialog from "@/components/admin/CSVUploadDialog";
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
@@ -174,6 +175,22 @@ const AdminDashboardPage = () => {
                 onEditBusiness={handleEditBusiness}
               />
             </CardContent>
+            <CardFooter className="flex justify-end gap-2 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowBusinessFormDialog(true)}
+                type="button"
+              >
+                Add Business
+              </Button>
+              <Button 
+                onClick={() => setShowUploadDialog(true)}
+                type="button"
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Upload CSV
+              </Button>
+            </CardFooter>
           </Card>
           
           <BusinessFormDialog 
@@ -182,6 +199,12 @@ const AdminDashboardPage = () => {
             currentBusinessToEdit={currentBusinessToEdit}
             onSubmit={handleBusinessFormSubmit}
             isSubmitting={isSubmitting}
+          />
+          
+          <CSVUploadDialog 
+            showUploadDialog={showUploadDialog}
+            setShowUploadDialog={setShowUploadDialog}
+            handleUploadComplete={handleUploadComplete}
           />
         </TabsContent>
         
