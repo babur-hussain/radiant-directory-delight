@@ -50,6 +50,7 @@ const AdminBusinessListingsPage = () => {
   };
   
   const handleAddBusiness = () => {
+    console.log("Add business button clicked");
     setCurrentBusinessToEdit(null);
     setShowBusinessFormDialog(true);
   };

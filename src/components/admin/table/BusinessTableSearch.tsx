@@ -43,6 +43,7 @@ const BusinessTableSearch: React.FC<BusinessTableSearchProps> = ({
           onClick={onRefresh}
           disabled={isRefreshing}
           className="flex-shrink-0"
+          type="button"
         >
           <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           <span className="sr-only">Refresh data</span>
@@ -51,8 +52,9 @@ const BusinessTableSearch: React.FC<BusinessTableSearchProps> = ({
       
       <div className="flex items-center gap-2">
         <Button 
-          onClick={onAddBusiness}
+          onClick={() => onAddBusiness()}
           className="whitespace-nowrap"
+          type="button"
         >
           <Plus className="h-4 w-4 mr-1" />
           Add Business

@@ -31,12 +31,19 @@ const BusinessListingsHeader: React.FC<BusinessListingsHeaderProps> = ({
           Refresh
         </Button>
         
-        <Button variant="outline" onClick={handleAddBusiness}>
+        <Button 
+          variant="outline" 
+          onClick={() => handleAddBusiness()}
+          type="button"
+        >
           <Plus className="mr-2 h-4 w-4" />
           Add Business
         </Button>
         
-        <Button onClick={() => setShowUploadDialog(true)}>
+        <Button 
+          onClick={() => setShowUploadDialog(true)}
+          type="button"
+        >
           <Upload className="mr-2 h-4 w-4" />
           Upload CSV
         </Button>

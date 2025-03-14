@@ -21,7 +21,13 @@ const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   return (
-    <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+    <Dialog open={showUploadDialog} onOpenChange={(open) => {
+      setShowUploadDialog(open);
+      if (!open) {
+        setUploadSuccess(false);
+        setUploadError(null);
+      }
+    }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Upload Business Listings</DialogTitle>
