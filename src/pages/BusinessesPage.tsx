@@ -1,35 +1,17 @@
+
 import { useState, useEffect, useMemo } from "react";
-import { Search, Filter, MapPin, Star, Phone, ArrowUpDown } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { businessesData } from "@/data/businessesData";
 import { 
   getAllBusinesses,
   addDataChangeListener,
   removeDataChangeListener,
   initializeData
 } from "@/lib/csv-utils";
-import { 
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-  SheetFooter,
-  SheetClose
-} from "@/components/ui/sheet";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+import { businessesData } from "@/data/businessesData";
 import TablePagination from "@/components/admin/table/TablePagination";
+import BusinessesHeader from "@/components/businesses/BusinessesPage/BusinessesHeader";
+import ActiveFiltersDisplay from "@/components/businesses/BusinessesPage/ActiveFiltersDisplay";
+import BusinessesSorting from "@/components/businesses/BusinessesPage/BusinessesSorting";
+import BusinessesGrid from "@/components/businesses/BusinessesPage/BusinessesGrid";
 
 type LocationFilter = string | null;
 type SortOption = "relevance" | "rating" | "reviews";
@@ -177,6 +159,23 @@ const BusinessesPage = () => {
     return count;
   }, [selectedCategory, selectedRating, featuredOnly, selectedLocation, activeTags]);
   
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-12 max-w-7xl">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-4">Discover Local Businesses</h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Find the best businesses in your area. Use the search and filters to narrow down your options.
+          </p>
+        </div>
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <span className="ml-3 text-lg">Loading businesses...</span>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="container mx-auto px-4 py-12 max-w-7xl">
       <div className="text-center mb-12">
@@ -186,409 +185,53 @@ const BusinessesPage = () => {
         </p>
       </div>
       
-      {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <span className="ml-3 text-lg">Loading businesses...</span>
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl shadow-md p-6 mb-12">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-grow">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search businesses by name, description or tags..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <div className="flex gap-2">
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="flex items-center gap-2 md:hidden"
-                  >
-                    <Filter className="h-4 w-4" />
-                    Filters
-                    {activeFilterCount > 0 && (
-                      <Badge variant="secondary" className="ml-1">
-                        {activeFilterCount}
-                      </Badge>
-                    )}
-                  </Button>
-                </SheetTrigger>
-                <SheetContent className="w-full sm:max-w-md overflow-y-auto">
-                  <SheetHeader>
-                    <SheetTitle>Filter Businesses</SheetTitle>
-                  </SheetHeader>
-                  <div className="py-4 space-y-6">
-                    <div>
-                      <h3 className="text-sm font-medium mb-2">Category</h3>
-                      <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="All Categories" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">All Categories</SelectItem>
-                          {categories.map(category => (
-                            <SelectItem key={category} value={category}>
-                              {category}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium mb-2">Location</h3>
-                      <Select 
-                        value={selectedLocation || ""} 
-                        onValueChange={val => setSelectedLocation(val || null)}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Any Location" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">Any Location</SelectItem>
-                          {locations.map(location => (
-                            <SelectItem key={location} value={location}>
-                              {location}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium mb-2">Rating</h3>
-                      <Select value={selectedRating} onValueChange={setSelectedRating}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Any Rating" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">Any Rating</SelectItem>
-                          <SelectItem value="4+">4+ Stars</SelectItem>
-                          <SelectItem value="3+">3+ Stars</SelectItem>
-                          <SelectItem value="2+">2+ Stars</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="featured-mobile" 
-                        checked={featuredOnly}
-                        onCheckedChange={(checked) => 
-                          setFeaturedOnly(checked === true)
-                        }
-                      />
-                      <label 
-                        htmlFor="featured-mobile"
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        Featured Only
-                      </label>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium mb-2">Tags</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {allTags.map(tag => (
-                          <Badge 
-                            key={tag}
-                            variant={activeTags.includes(tag) ? "default" : "outline"}
-                            className="cursor-pointer"
-                            onClick={() => toggleTag(tag)}
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <SheetFooter>
-                    <SheetClose asChild>
-                      <Button variant="secondary" onClick={clearAllFilters}>Clear All</Button>
-                    </SheetClose>
-                    <SheetClose asChild>
-                      <Button>Apply Filters</Button>
-                    </SheetClose>
-                  </SheetFooter>
-                </SheetContent>
-              </Sheet>
-              
-              <Button
-                variant="outline"
-                className="items-center gap-2 hidden md:flex"
-                onClick={() => setOpenFilters(!openFilters)}
-              >
-                <Filter className="h-4 w-4" />
-                Filters
-                {activeFilterCount > 0 && (
-                  <Badge variant="secondary" className="ml-1">
-                    {activeFilterCount}
-                  </Badge>
-                )}
-              </Button>
-              
-              <Button
-                variant={featuredOnly ? "default" : "outline"}
-                onClick={() => setFeaturedOnly(!featuredOnly)}
-              >
-                Featured
-              </Button>
-            </div>
-          </div>
-          
-          <div className="hidden md:block border-t mt-4 pt-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-1 block">Category</label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All Categories</SelectItem>
-                    {categories.map(category => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium mb-1 block">Location</label>
-                <Select 
-                  value={selectedLocation || ""} 
-                  onValueChange={val => setSelectedLocation(val || null)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Any Location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Any Location</SelectItem>
-                    {locations.map(location => (
-                      <SelectItem key={location} value={location}>
-                        {location}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium mb-1 block">Rating</label>
-                <Select value={selectedRating} onValueChange={setSelectedRating}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Any Rating" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Any Rating</SelectItem>
-                    <SelectItem value="4+">4+ Stars</SelectItem>
-                    <SelectItem value="3+">3+ Stars</SelectItem>
-                    <SelectItem value="2+">2+ Stars</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="mt-4">
-              <label className="text-sm font-medium mb-2 block">Tags</label>
-              <div className="flex flex-wrap gap-2">
-                {allTags.map(tag => (
-                  <Badge 
-                    key={tag}
-                    variant={activeTags.includes(tag) ? "default" : "outline"}
-                    className="cursor-pointer"
-                    onClick={() => toggleTag(tag)}
-                  >
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-            
-            <div className="flex justify-end mt-4">
-              <Button variant="outline" onClick={clearAllFilters}>
-                Clear All
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <BusinessesHeader 
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        activeFilterCount={activeFilterCount}
+        setOpenFilters={setOpenFilters}
+        openFilters={openFilters}
+        featuredOnly={featuredOnly}
+        setFeaturedOnly={setFeaturedOnly}
+        clearAllFilters={clearAllFilters}
+        allTags={allTags}
+        activeTags={activeTags}
+        toggleTag={toggleTag}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        selectedLocation={selectedLocation}
+        setSelectedLocation={setSelectedLocation}
+        locations={locations}
+        selectedRating={selectedRating}
+        setSelectedRating={setSelectedRating}
+      />
       
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <p className="text-gray-600">
-          Showing {currentBusinesses.length} of {filteredBusinesses.length} businesses
-        </p>
-        
-        <Select value={sortBy} onValueChange={(val: SortOption) => setSortBy(val)}>
-          <SelectTrigger className="w-[180px]">
-            <div className="flex items-center">
-              <ArrowUpDown className="mr-2 h-4 w-4" />
-              <span>Sort by</span>
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="relevance">Relevance</SelectItem>
-            <SelectItem value="rating">Highest Rating</SelectItem>
-            <SelectItem value="reviews">Most Reviews</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <BusinessesSorting 
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        filteredCount={currentBusinesses.length}
+        totalCount={filteredBusinesses.length}
+      />
       
-      {activeFilterCount > 0 && (
-        <div className="mb-6 flex flex-wrap items-center gap-2">
-          <span className="text-sm text-gray-500">Active filters:</span>
-          
-          {selectedCategory && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              Category: {selectedCategory}
-              <button 
-                className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
-                onClick={() => setSelectedCategory("")}
-              >
-                ×
-              </button>
-            </Badge>
-          )}
-          
-          {selectedLocation && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              Location: {selectedLocation}
-              <button 
-                className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
-                onClick={() => setSelectedLocation(null)}
-              >
-                ×
-              </button>
-            </Badge>
-          )}
-          
-          {selectedRating && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              Rating: {selectedRating}
-              <button 
-                className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
-                onClick={() => setSelectedRating("")}
-              >
-                ×
-              </button>
-            </Badge>
-          )}
-          
-          {featuredOnly && (
-            <Badge variant="secondary" className="flex items-center gap-1">
-              Featured Only
-              <button 
-                className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
-                onClick={() => setFeaturedOnly(false)}
-              >
-                ×
-              </button>
-            </Badge>
-          )}
-          
-          {activeTags.map(tag => (
-            <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-              {tag}
-              <button 
-                className="ml-1 h-4 w-4 rounded-full bg-gray-200 inline-flex items-center justify-center text-gray-500"
-                onClick={() => toggleTag(tag)}
-              >
-                ×
-              </button>
-            </Badge>
-          ))}
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-8 text-xs"
-            onClick={clearAllFilters}
-          >
-            Clear all
-          </Button>
-        </div>
-      )}
+      <ActiveFiltersDisplay 
+        selectedCategory={selectedCategory}
+        selectedLocation={selectedLocation}
+        selectedRating={selectedRating}
+        featuredOnly={featuredOnly}
+        activeTags={activeTags}
+        setSelectedCategory={setSelectedCategory}
+        setSelectedLocation={setSelectedLocation}
+        setSelectedRating={setSelectedRating}
+        setFeaturedOnly={setFeaturedOnly}
+        toggleTag={toggleTag}
+        clearAllFilters={clearAllFilters}
+        activeFilterCount={activeFilterCount}
+      />
       
-      {currentBusinesses.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {currentBusinesses.map(business => (
-            <Card key={business.id} className="group overflow-hidden hover:shadow-lg transition-shadow duration-300">
-              <div className="relative h-48 overflow-hidden">
-                <img 
-                  src={business.image} 
-                  alt={business.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                {business.featured && (
-                  <span className="absolute top-3 left-3 bg-primary text-white text-xs px-2 py-1 rounded">
-                    Featured
-                  </span>
-                )}
-                <div className="absolute top-3 right-3 flex flex-wrap gap-1 max-w-[70%] justify-end">
-                  {business.tags.slice(0, 2).map((tag, i) => (
-                    <span key={i} className="bg-white/90 text-gray-700 text-xs px-2 py-1 rounded">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              
-              <CardHeader className="pb-2">
-                <div className="flex justify-between">
-                  <h3 className="font-semibold text-xl text-gray-900 group-hover:text-primary transition-colors">
-                    {business.name}
-                  </h3>
-                  <div className="flex items-center">
-                    <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                    <span className="text-sm ml-1">{business.rating}</span>
-                    <span className="text-xs text-gray-500 ml-1">({business.reviews})</span>
-                  </div>
-                </div>
-                <span className="text-sm text-gray-500">{business.category}</span>
-              </CardHeader>
-              
-              <CardContent className="pb-2">
-                <p className="text-gray-600 text-sm line-clamp-2 mb-3">{business.description}</p>
-                <div className="flex items-center text-sm text-gray-500 mb-2">
-                  <MapPin className="h-4 w-4 mr-1 shrink-0" />
-                  <span className="truncate">{business.address}</span>
-                </div>
-                <div className="flex items-center text-sm text-gray-500">
-                  <Phone className="h-4 w-4 mr-1 shrink-0" />
-                  <span>{business.phone}</span>
-                </div>
-              </CardContent>
-              
-              <CardFooter className="pt-2">
-                <Button variant="outline" className="w-full" asChild>
-                  <a href={`/business/${business.id}`}>View Details</a>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12 bg-gray-50 rounded-lg mb-12">
-          <h3 className="text-xl font-medium text-gray-900 mb-2">No businesses found</h3>
-          <p className="text-gray-600">Try adjusting your search or filters to find what you're looking for.</p>
-          <Button 
-            variant="outline" 
-            className="mt-4"
-            onClick={clearAllFilters}
-          >
-            Clear All Filters
-          </Button>
-        </div>
-      )}
+      <BusinessesGrid 
+        businesses={currentBusinesses}
+        clearAllFilters={clearAllFilters}
+      />
       
       {totalPages > 1 && (
         <div className="flex justify-center my-8">
