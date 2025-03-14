@@ -24,7 +24,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ registerType, onBack, onClo
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { toast } = useToast();
-  const { signup, loginWithGoogle, loading } = useAuth();
+  const { signup, loginWithGoogle, loading, user } = useAuth();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,18 +41,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ registerType, onBack, onClo
     setIsSubmitting(true);
 
     try {
-      const user = await signup(registerEmail, registerPassword, registerName, registerType);
+      await signup(registerEmail, registerPassword, registerName, registerType);
       
-      // Ensure new user is added to the admin dashboard list
-      if (user) {
-        saveUserToAllUsersList({
-          id: user.id,
-          email: registerEmail,
-          name: registerName,
-          role: registerType,
-          isAdmin: false
-        });
-      }
+      // Add user to admin dashboard list
+      // This will be handled in the AuthProvider after signup
       
       onClose();
     } catch (error) {
@@ -65,25 +57,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ registerType, onBack, onClo
   const handleGoogleLogin = async () => {
     setIsSubmitting(true);
     try {
-      // When using Google login, we still need to set the role
-      const result = await loginWithGoogle();
+      await loginWithGoogle();
       
-      // The Google login doesn't directly accept a role, so we need to handle it
-      // Get the current user
-      const user = useAuth().user;
-      if (user && !user.role) {
-        // Set the role in localStorage
-        localStorage.setItem(`user_role_${user.id}`, registerType as string);
-        
-        // Save to all users list for admin dashboard
-        saveUserToAllUsersList({
-          id: user.id,
-          email: user.email,
-          name: user.name || "Google User",
-          role: registerType,
-          isAdmin: false
-        });
-      }
+      // When using Google login, we still need to set the role
+      // This will be handled by the authProvider
       
       onClose();
     } catch (error) {

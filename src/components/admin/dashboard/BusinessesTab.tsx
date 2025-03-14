@@ -12,6 +12,7 @@ import BusinessTableLoading from "../table/BusinessTableLoading";
 import { Business } from "@/lib/csv-utils";
 import { BusinessFormValues } from "../BusinessForm";
 import DeleteBusinessDialog from "../table/DeleteBusinessDialog";
+import BusinessDetailsDialog from "../table/BusinessDetailsDialog";
 
 interface BusinessesTabProps {
   businessCount: number;
@@ -42,12 +43,14 @@ const BusinessesTab = ({
   handleEditBusiness,
   onViewDetails
 }: BusinessesTabProps) => {
-  const { businesses, isLoading } = useBusinessListings();
+  const { businesses, loading: isLoading } = useBusinessListings();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(40);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [businessToDelete, setBusinessToDelete] = useState<Business | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
 
   // Filter businesses by search term
   const filteredBusinesses = businesses.filter(business => 
@@ -66,6 +69,12 @@ const BusinessesTab = ({
     console.log("Delete business:", businessToDelete);
     setShowDeleteDialog(false);
   };
+  
+  const handleViewBusinessDetails = (business: Business) => {
+    console.log("Viewing business details:", business);
+    setSelectedBusiness(business);
+    setShowDetailsDialog(true);
+  };
 
   return (
     <Card className="w-full">
@@ -73,8 +82,10 @@ const BusinessesTab = ({
         <div className="mb-6 flex flex-col sm:flex-row justify-between gap-4">
           <BusinessTableSearch 
             searchTerm={searchTerm} 
-            setSearchTerm={setSearchTerm}
-            setCurrentPage={setCurrentPage}
+            onSearchChange={(value) => {
+              setSearchTerm(value);
+              setCurrentPage(1);
+            }}
           />
           
           <div className="flex gap-2">
@@ -102,7 +113,7 @@ const BusinessesTab = ({
             currentPage={currentPage}
             setCurrentPage={setCurrentPage}
             itemsPerPage={itemsPerPage}
-            onViewDetails={onViewDetails}
+            onViewDetails={handleViewBusinessDetails}
             onEditBusiness={handleEditBusiness}
             onDeleteBusiness={handleDeleteBusiness}
           />
@@ -111,8 +122,8 @@ const BusinessesTab = ({
       
       {/* Business Form Dialog for Add/Edit */}
       <BusinessFormDialog 
-        open={showBusinessFormDialog}
-        onOpenChange={setShowBusinessFormDialog}
+        show={showBusinessFormDialog}
+        onClose={() => setShowBusinessFormDialog(false)}
         business={currentBusinessToEdit}
         onSubmit={handleBusinessFormSubmit}
         isSubmitting={isSubmitting}
@@ -120,8 +131,8 @@ const BusinessesTab = ({
       
       {/* CSV Upload Dialog */}
       <CSVUploadDialog 
-        open={showUploadDialog}
-        onOpenChange={setShowUploadDialog}
+        show={showUploadDialog}
+        onClose={() => setShowUploadDialog(false)}
         onUploadComplete={handleUploadComplete}
       />
       
@@ -131,6 +142,13 @@ const BusinessesTab = ({
         onOpenChange={setShowDeleteDialog}
         business={businessToDelete}
         onConfirmDelete={handleConfirmDelete}
+      />
+      
+      {/* Business Details Dialog */}
+      <BusinessDetailsDialog
+        open={showDetailsDialog}
+        onOpenChange={setShowDetailsDialog}
+        business={selectedBusiness}
       />
     </Card>
   );

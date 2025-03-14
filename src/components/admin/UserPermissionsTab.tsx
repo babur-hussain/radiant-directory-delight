@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { loadAllUsers } from "@/features/auth/authStorage";
+import { User } from "@/types/auth";
 
 interface UserData {
   id: string;
@@ -31,7 +32,18 @@ const UserPermissionsTab = () => {
       try {
         setLoading(true);
         const allUsers = loadAllUsers();
-        setUsers(allUsers);
+        
+        // Map User[] to UserData[] to ensure isAdmin is always defined
+        const formattedUsers: UserData[] = allUsers.map(user => ({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          isAdmin: user.isAdmin || false
+        }));
+        
+        setUsers(formattedUsers);
+        console.log("Loaded users data:", formattedUsers);
       } catch (error) {
         console.error("Error loading users:", error);
         toast({

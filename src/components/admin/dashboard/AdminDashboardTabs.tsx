@@ -1,16 +1,14 @@
-import React, { useState } from "react";
+
+import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import BusinessesTab from "./BusinessesTab";
-import { SubscriptionManagement } from "@/components/admin/SubscriptionManagement";
-import { SubscriptionPackageManagement } from "@/components/admin/subscription/SubscriptionManagement";
-import UserPermissionsTab from "@/components/admin/UserPermissionsTab";
-import ManageCategoriesLocations from "@/components/admin/ManageCategoriesLocations";
-import { BusinessFormValues } from "@/components/admin/BusinessForm";
 import { Business } from "@/lib/csv-utils";
-import UserSubscriptionMapping from "@/components/admin/UserSubscriptionMapping";
+import { BusinessFormValues } from "@/components/admin/BusinessForm";
+import BusinessesTab from "./BusinessesTab";
+import UserPermissionsTab from "../UserPermissionsTab";
+import SubscriptionManagement from "../subscription/SubscriptionManagement";
+import ManageCategoriesLocations from "../ManageCategoriesLocations";
 import AdminBusinessDashboards from "./AdminBusinessDashboards";
 import AdminInfluencerDashboards from "./AdminInfluencerDashboards";
-import BusinessDetailsDialog from "../table/BusinessDetailsDialog";
 
 interface AdminDashboardTabsProps {
   activeTab: string;
@@ -27,9 +25,10 @@ interface AdminDashboardTabsProps {
   handleAddBusiness: () => void;
   handleEditBusiness: (business: Business) => void;
   handlePermissionError: (error: any) => void;
+  onViewDetails: (business: Business) => void;
 }
 
-const AdminDashboardTabs = ({
+const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
   activeTab,
   setActiveTab,
   businessCount,
@@ -43,82 +42,74 @@ const AdminDashboardTabs = ({
   handleUploadComplete,
   handleAddBusiness,
   handleEditBusiness,
-  handlePermissionError
-}: AdminDashboardTabsProps) => {
-  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
-  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-
-  const handleViewDetails = (business: Business) => {
-    setSelectedBusiness(business);
-    setShowDetailsDialog(true);
-  };
-
+  handlePermissionError,
+  onViewDetails
+}) => {
   return (
-    <>
-      <Tabs defaultValue="businesses" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-8">
-          <TabsTrigger value="businesses">Businesses</TabsTrigger>
-          <TabsTrigger value="categories-locations">Categories & Locations</TabsTrigger>
-          <TabsTrigger value="subscription-packages">Subscription Packages</TabsTrigger>
-          <TabsTrigger value="subscriptions">Active Subscriptions</TabsTrigger>
-          <TabsTrigger value="subscription-mapping">User Mapping</TabsTrigger>
-          <TabsTrigger value="users">User Permissions</TabsTrigger>
-          <TabsTrigger value="business-dashboards">Business Dashboards</TabsTrigger>
-          <TabsTrigger value="influencer-dashboards">Influencer Dashboards</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="businesses" className="pt-6">
-          <BusinessesTab 
-            businessCount={businessCount}
-            showBusinessFormDialog={showBusinessFormDialog}
-            setShowBusinessFormDialog={setShowBusinessFormDialog}
-            showUploadDialog={showUploadDialog}
-            setShowUploadDialog={setShowUploadDialog}
-            currentBusinessToEdit={currentBusinessToEdit}
-            isSubmitting={isSubmitting}
-            handleBusinessFormSubmit={handleBusinessFormSubmit}
-            handleUploadComplete={handleUploadComplete}
-            handleAddBusiness={handleAddBusiness}
-            handleEditBusiness={handleEditBusiness}
-            onViewDetails={handleViewDetails}
-          />
-        </TabsContent>
-        
-        <TabsContent value="categories-locations" className="pt-6">
-          <ManageCategoriesLocations />
-        </TabsContent>
-        
-        <TabsContent value="subscription-packages" className="pt-6">
-          <SubscriptionPackageManagement onPermissionError={handlePermissionError} />
-        </TabsContent>
-        
-        <TabsContent value="subscriptions" className="pt-6">
-          <SubscriptionManagement />
-        </TabsContent>
-        
-        <TabsContent value="subscription-mapping" className="pt-6">
-          <UserSubscriptionMapping onPermissionError={handlePermissionError} />
-        </TabsContent>
-        
-        <TabsContent value="users" className="pt-6">
-          <UserPermissionsTab />
-        </TabsContent>
-        
-        <TabsContent value="business-dashboards" className="pt-6">
-          <AdminBusinessDashboards />
-        </TabsContent>
-        
-        <TabsContent value="influencer-dashboards" className="pt-6">
-          <AdminInfluencerDashboards />
-        </TabsContent>
-      </Tabs>
+    <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <TabsList className="flex flex-wrap h-auto gap-2 p-2">
+        <TabsTrigger value="businesses" className="flex-grow sm:flex-initial">
+          Businesses
+          {businessCount > 0 && (
+            <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium">
+              {businessCount}
+            </span>
+          )}
+        </TabsTrigger>
+        <TabsTrigger value="users" className="flex-grow sm:flex-initial">
+          Users & Permissions
+        </TabsTrigger>
+        <TabsTrigger value="subscriptions" className="flex-grow sm:flex-initial">
+          Subscription Packages
+        </TabsTrigger>
+        <TabsTrigger value="categories" className="flex-grow sm:flex-initial">
+          Categories & Locations
+        </TabsTrigger>
+        <TabsTrigger value="business_dashboards" className="flex-grow sm:flex-initial">
+          Business Dashboards
+        </TabsTrigger>
+        <TabsTrigger value="influencer_dashboards" className="flex-grow sm:flex-initial">
+          Influencer Dashboards
+        </TabsTrigger>
+      </TabsList>
 
-      <BusinessDetailsDialog 
-        business={selectedBusiness}
-        open={showDetailsDialog}
-        onOpenChange={setShowDetailsDialog}
-      />
-    </>
+      <TabsContent value="businesses" className="space-y-4">
+        <BusinessesTab 
+          businessCount={businessCount}
+          showBusinessFormDialog={showBusinessFormDialog}
+          setShowBusinessFormDialog={setShowBusinessFormDialog}
+          showUploadDialog={showUploadDialog}
+          setShowUploadDialog={setShowUploadDialog}
+          currentBusinessToEdit={currentBusinessToEdit}
+          isSubmitting={isSubmitting}
+          handleBusinessFormSubmit={handleBusinessFormSubmit}
+          handleUploadComplete={handleUploadComplete}
+          handleAddBusiness={handleAddBusiness}
+          handleEditBusiness={handleEditBusiness}
+          onViewDetails={onViewDetails}
+        />
+      </TabsContent>
+      
+      <TabsContent value="users" className="space-y-4">
+        <UserPermissionsTab />
+      </TabsContent>
+      
+      <TabsContent value="subscriptions" className="space-y-4">
+        <SubscriptionManagement onError={handlePermissionError} />
+      </TabsContent>
+      
+      <TabsContent value="categories" className="space-y-4">
+        <ManageCategoriesLocations />
+      </TabsContent>
+      
+      <TabsContent value="business_dashboards" className="space-y-4">
+        <AdminBusinessDashboards />
+      </TabsContent>
+      
+      <TabsContent value="influencer_dashboards" className="space-y-4">
+        <AdminInfluencerDashboards />
+      </TabsContent>
+    </Tabs>
   );
 };
 

@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../config/firebase";
@@ -21,7 +20,6 @@ import {
   updateUserPermission as updatePermission 
 } from "../features/auth/userManagement";
 
-// Create the auth context with default values
 const defaultContextValue: AuthContextType = {
   user: null,
   isAuthenticated: false,
@@ -35,36 +33,28 @@ const defaultContextValue: AuthContextType = {
   initialized: false
 };
 
-// Create the auth context
 const AuthContext = createContext<AuthContextType>(defaultContextValue);
 
-// Firebase authentication implementation
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   
-  // Initialize default admin on first load
   useEffect(() => {
     initializeDefaultAdmin();
   }, []);
   
-  // Set up auth state listener on initial load
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
-        // Get role from localStorage
         const roleKey = getRoleKey(firebaseUser.uid);
         const userRole = localStorage.getItem(roleKey) as UserRole || null;
         
-        // Check if user is admin
         const adminKey = getAdminKey(firebaseUser.uid);
         const isAdmin = localStorage.getItem(adminKey) === 'true';
         
-        // For the default admin account
         const isDefaultAdmin = firebaseUser.email === "baburhussain660@gmail.com";
         
-        // Create user object from Firebase user
         const userData: User = {
           id: firebaseUser.uid,
           email: firebaseUser.email,
@@ -74,22 +64,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isAdmin: isDefaultAdmin || isAdmin
         };
         
-        // Store user in all users list for admin panel
         saveUserToAllUsersList(userData);
+        console.log("Auth state changed: User logged in", userData);
         
         setUser(userData);
       } else {
         setUser(null);
+        console.log("Auth state changed: User logged out");
       }
       setLoading(false);
       setInitialized(true);
     });
     
-    // Clean up subscription
     return () => unsubscribe();
   }, []);
 
-  // Login with email and password
   const handleLogin = async (email: string, password: string) => {
     try {
       setLoading(true);
@@ -101,7 +90,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error("Login error:", error.code, error.message);
       
-      // Handle specific error codes
       let errorMessage = "Please check your credentials and try again.";
       if (error.code === 'auth/unauthorized-domain') {
         errorMessage = "This domain is not authorized for authentication. Please try again later or contact support.";
@@ -124,7 +112,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Login with Google
   const handleLoginWithGoogle = async () => {
     try {
       setLoading(true);
@@ -158,15 +145,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Sign up new user
   const handleSignup = async (email: string, password: string, name: string, role: UserRole) => {
     try {
       setLoading(true);
-      await signup(email, password, name, role);
+      const firebaseUser = await signup(email, password, name, role);
+      
+      if (firebaseUser) {
+        const userData: User = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email,
+          name: name || firebaseUser.email?.split('@')[0] || 'User',
+          role: role,
+          photoURL: null,
+          isAdmin: false
+        };
+        
+        saveUserToAllUsersList(userData);
+        console.log("Saving new registered user to all users list:", userData);
+      }
+      
       toast({
         title: "Registration successful",
         description: `You have successfully registered as a ${role}.`,
       });
+      
+      return firebaseUser;
     } catch (error: any) {
       console.error("Registration error:", error.code, error.message);
       
@@ -192,7 +195,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Logout user
   const handleLogout = async () => {
     try {
       await logoutUser();
@@ -210,7 +212,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Update user role
   const handleUpdateUserRole = async (role: UserRole) => {
     try {
       if (!user) {
@@ -237,12 +238,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Update user permissions
   const handleUpdateUserPermission = async (userId: string, isAdmin: boolean) => {
     try {
       await updatePermission(userId, isAdmin);
       
-      // If the user being updated is the current user, update the state
       if (user && user.id === userId) {
         setUser({
           ...user,
@@ -287,8 +286,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-// Export the auth context
 export { AuthContext };
 
-// Export provider for use in App.tsx
 export default AuthProvider;

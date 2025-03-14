@@ -9,7 +9,7 @@ import { Business } from "@/lib/csv-utils";
 import { BusinessFormValues } from "@/components/admin/BusinessForm";
 import AdminPermissionError from "@/components/admin/dashboard/AdminPermissionError";
 import AdminDashboardTabs from "@/components/admin/dashboard/AdminDashboardTabs";
-import { loadAllUsers } from "@/features/auth/authStorage";
+import { loadAllUsers, debugRefreshUsers } from "@/features/auth/authStorage";
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
@@ -24,6 +24,7 @@ const AdminDashboardPage = () => {
   const [isRefreshing, setIsRefreshing] = useReactState(false);
   const [currentBusinessToEdit, setCurrentBusinessToEdit] = useReactState<Business | null>(null);
   const [isSubmitting, setIsSubmitting] = useReactState(false);
+  const [selectedBusiness, setSelectedBusiness] = useReactState<Business | null>(null);
   
   const { businesses } = useBusinessListings();
 
@@ -37,7 +38,9 @@ const AdminDashboardPage = () => {
     // Load users data when in users tab
     if (activeTab === "users") {
       // Force refresh users data
-      loadAllUsers();
+      console.log("Admin Dashboard: Loading users for the Users tab");
+      const userCount = debugRefreshUsers();
+      console.log(`Admin Dashboard: Found ${userCount} users`);
     }
   }, [activeTab]);
   
@@ -75,6 +78,11 @@ const AdminDashboardPage = () => {
     console.log("Edit business clicked in AdminDashboardPage:", business);
     setCurrentBusinessToEdit(business);
     setShowBusinessFormDialog(true);
+  };
+  
+  const handleViewBusinessDetails = (business: Business) => {
+    console.log("View business details clicked in AdminDashboardPage:", business);
+    setSelectedBusiness(business);
   };
   
   const handleUploadComplete = (success: boolean, message: string, count?: number) => {
@@ -145,6 +153,7 @@ const AdminDashboardPage = () => {
         handleAddBusiness={handleAddBusiness}
         handleEditBusiness={handleEditBusiness}
         handlePermissionError={handlePermissionError}
+        onViewDetails={handleViewBusinessDetails}
       />
     </div>
   );
