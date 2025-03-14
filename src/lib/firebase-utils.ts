@@ -47,6 +47,15 @@ export async function fetchSubscriptionPackages(): Promise<SubscriptionPackage[]
     return packages;
   } catch (error) {
     console.error("Error fetching subscription packages:", error);
+    
+    // Check for permission-related errors
+    if (error instanceof Error) {
+      if (error.message.includes("permission-denied") || error.message.includes("Missing or insufficient permissions")) {
+        console.error("Permission denied when accessing subscription packages. Please check your Firebase security rules.");
+        throw new Error("Permission denied. You don't have access to view subscription packages.");
+      }
+    }
+    
     throw error;
   }
 }
@@ -85,9 +94,16 @@ export async function saveSubscriptionPackage(packageData: SubscriptionPackage):
   } catch (error) {
     console.error("Error saving subscription package:", error);
     console.error("Package data that failed:", JSON.stringify(packageData, null, 2));
+    
+    // Check for permission-related errors
     if (error instanceof Error) {
       console.error("Error message:", error.message);
+      
+      if (error.message.includes("permission-denied") || error.message.includes("Missing or insufficient permissions")) {
+        throw new Error("Permission denied. You don't have admin rights to create or update subscription packages.");
+      }
     }
+    
     throw error;
   }
 }
@@ -103,6 +119,14 @@ export async function deleteSubscriptionPackage(packageId: string): Promise<void
     console.log("Subscription package deleted successfully");
   } catch (error) {
     console.error("Error deleting subscription package:", error);
+    
+    // Check for permission-related errors
+    if (error instanceof Error) {
+      if (error.message.includes("permission-denied") || error.message.includes("Missing or insufficient permissions")) {
+        throw new Error("Permission denied. You don't have admin rights to delete subscription packages.");
+      }
+    }
+    
     throw error;
   }
 }
@@ -129,6 +153,15 @@ export async function fetchSubscriptionPackagesByType(type: "Business" | "Influe
     }));
   } catch (error) {
     console.error(`Error fetching ${type} subscription packages:`, error);
+    
+    // Check for permission-related errors
+    if (error instanceof Error) {
+      if (error.message.includes("permission-denied") || error.message.includes("Missing or insufficient permissions")) {
+        console.error("Permission denied when accessing subscription packages. Please check your Firebase security rules.");
+        throw new Error("Permission denied. You don't have access to view subscription packages.");
+      }
+    }
+    
     throw error;
   }
 }

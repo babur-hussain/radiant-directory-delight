@@ -1,19 +1,14 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Plus, Search, RefreshCw, Pencil, Trash2, CheckCircle, XCircle } from "lucide-react";
-import { SubscriptionPackage } from "@/data/subscriptionData";
-import { fetchSubscriptionPackages, saveSubscriptionPackage, deleteSubscriptionPackage } from "@/lib/firebase-utils";
-import { toast } from "@/hooks/use-toast";
 import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle 
 } from "@/components/ui/dialog";
 import { 
   AlertDialog,
@@ -23,30 +18,45 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { PlusCircle, Pencil, Trash2, Loader2 } from "lucide-react";
+import { nanoid } from "nanoid";
+import { SubscriptionPackage } from "@/data/subscriptionData";
+import { fetchSubscriptionPackages, saveSubscriptionPackage, deleteSubscriptionPackage } from "@/lib/firebase-utils";
 import SubscriptionPackageForm from "./SubscriptionPackageForm";
+import { useToast } from "@/hooks/use-toast";
 
-export const SubscriptionPackageManagement = () => {
+interface SubscriptionPackageManagementProps {
+  onPermissionError?: (error: any) => void;
+}
+
+export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps> = ({ 
+  onPermissionError 
+}) => {
   const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
   const [filteredPackages, setFilteredPackages] = useState<SubscriptionPackage[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("business");
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<SubscriptionPackage | null>(null);
-  
+  const [packageToDelete, setPackageToDelete] = useState<SubscriptionPackage | null>(null);
+  const [activeTab, setActiveTab] = useState("business");
+  const { toast } = useToast();
+
   useEffect(() => {
     loadPackages();
   }, []);
-  
+
+  useEffect(() => {
+    if (packages.length > 0) {
+      setFilteredPackages(packages.filter(pkg => 
+        pkg.type.toLowerCase() === activeTab
+      ));
+    }
+  }, [packages, activeTab]);
+
   const loadPackages = async () => {
     setIsLoading(true);
     try {
@@ -55,65 +65,82 @@ export const SubscriptionPackageManagement = () => {
       setFilteredPackages(data.filter(pkg => pkg.type.toLowerCase() === activeTab));
     } catch (error) {
       console.error("Error loading packages:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load subscription packages. Please try again later.",
-        variant: "destructive"
-      });
+      
+      // Handle permission error
+      if (onPermissionError && error instanceof Error && 
+          (error.message.includes("Permission denied") || 
+           error.message.includes("Missing or insufficient permissions"))) {
+        onPermissionError(error);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to load subscription packages. Please try again later.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsLoading(false);
     }
   };
-  
-  useEffect(() => {
-    const filtered = packages.filter(pkg => 
-      pkg.type.toLowerCase() === activeTab &&
-      (pkg.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-       pkg.shortDescription.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-    setFilteredPackages(filtered);
-  }, [packages, searchTerm, activeTab]);
-  
-  const handleAddPackage = () => {
+
+  const handleCreatePackage = () => {
     setSelectedPackage(null);
     setIsFormOpen(true);
   };
-  
+
   const handleEditPackage = (pkg: SubscriptionPackage) => {
     setSelectedPackage(pkg);
     setIsFormOpen(true);
   };
-  
-  const handleDeletePackage = (pkg: SubscriptionPackage) => {
-    setSelectedPackage(pkg);
-    setIsDeleteDialogOpen(true);
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setSelectedPackage(null);
   };
-  
-  const confirmDeletePackage = async () => {
-    if (!selectedPackage) return;
+
+  const handleOpenDeleteDialog = (pkg: SubscriptionPackage) => {
+    setPackageToDelete(pkg);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setPackageToDelete(null);
+  };
+
+  const handleDeletePackage = async () => {
+    if (!packageToDelete) return;
     
     setIsLoading(true);
     try {
-      await deleteSubscriptionPackage(selectedPackage.id);
-      setPackages(packages.filter(p => p.id !== selectedPackage.id));
+      await deleteSubscriptionPackage(packageToDelete.id);
+      
+      // Update state
+      setPackages(prev => prev.filter(p => p.id !== packageToDelete.id));
       
       toast({
-        title: "Package Deleted",
-        description: `${selectedPackage.title} has been deleted successfully.`
+        title: "Success",
+        description: "Package deleted successfully",
       });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete package. Please try again later.",
-        variant: "destructive"
-      });
+      console.error("Error deleting package:", error);
+      
+      // Handle permission error
+      if (onPermissionError && error instanceof Error && 
+          (error.message.includes("Permission denied") || 
+           error.message.includes("Missing or insufficient permissions"))) {
+        onPermissionError(error);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete package. Please try again later.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsLoading(false);
-      setIsDeleteDialogOpen(false);
-      setSelectedPackage(null);
+      setPackageToDelete(null);
     }
   };
-  
+
   const handleSavePackage = async (packageData: SubscriptionPackage) => {
     setIsLoading(true);
     try {
@@ -127,167 +154,141 @@ export const SubscriptionPackageManagement = () => {
       await saveSubscriptionPackage(packageData);
       
       // Update local state
-      if (selectedPackage) {
-        // Edit case
-        setPackages(packages.map(p => p.id === packageData.id ? packageData : p));
-      } else {
-        // Add case
-        setPackages([...packages, packageData]);
-      }
+      setPackages(prev => {
+        const existingIndex = prev.findIndex(p => p.id === packageData.id);
+        if (existingIndex >= 0) {
+          // Update existing package
+          const updated = [...prev];
+          updated[existingIndex] = packageData;
+          return updated;
+        } else {
+          // Add new package
+          return [...prev, packageData];
+        }
+      });
       
       toast({
-        title: selectedPackage ? "Package Updated" : "Package Created",
-        description: `${packageData.title} has been ${selectedPackage ? 'updated' : 'created'} successfully.`
+        title: "Success",
+        description: `Package ${selectedPackage ? 'updated' : 'created'} successfully`,
       });
       
       setIsFormOpen(false);
       setSelectedPackage(null);
     } catch (error) {
       console.error("Error saving package:", error);
-      let errorMessage = "Failed to save package. Please try again later.";
       
-      if (error instanceof Error) {
-        errorMessage = error.message || errorMessage;
+      // Handle permission error
+      if (onPermissionError && error instanceof Error && 
+          (error.message.includes("Permission denied") || 
+           error.message.includes("Missing or insufficient permissions"))) {
+        onPermissionError(error);
+      } else {
+        let errorMessage = "Failed to save package. Please try again later.";
+        
+        if (error instanceof Error) {
+          errorMessage = error.message || errorMessage;
+        }
+        
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive"
+        });
       }
-      
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
     } finally {
       setIsLoading(false);
     }
   };
-  
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(price);
-  };
-  
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Subscription Package Management</CardTitle>
-        <CardDescription>Manage subscription packages for businesses and influencers</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Subscription Packages</CardTitle>
+          <CardDescription>
+            Manage subscription packages for businesses and influencers
+          </CardDescription>
+        </div>
+        <Button onClick={handleCreatePackage} disabled={isLoading}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Create Package
+        </Button>
       </CardHeader>
       <CardContent>
-        <Tabs 
-          defaultValue="business" 
+        <Tabs
           value={activeTab}
-          onValueChange={(value) => {
-            setActiveTab(value);
-            setSearchTerm("");
-          }}
+          onValueChange={setActiveTab}
+          className="w-full"
         >
-          <div className="flex justify-between items-center mb-6">
-            <TabsList>
-              <TabsTrigger value="business">Business Packages</TabsTrigger>
-              <TabsTrigger value="influencer">Influencer Packages</TabsTrigger>
-            </TabsList>
-            
-            <Button onClick={handleAddPackage}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add New Package
-            </Button>
-          </div>
+          <TabsList className="mb-4 w-full grid grid-cols-2">
+            <TabsTrigger value="business">Business Packages</TabsTrigger>
+            <TabsTrigger value="influencer">Influencer Packages</TabsTrigger>
+          </TabsList>
           
-          <div className="mb-4 flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name or description"
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={() => setSearchTerm("")} 
-              disabled={!searchTerm}
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="outline" 
-              size="icon"
-              onClick={loadPackages}
-              disabled={isLoading}
-            >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-            </Button>
-          </div>
+          <TabsContent value="business" className="w-full">
+            {renderPackagesTable(filteredPackages, isLoading)}
+          </TabsContent>
           
-          {activeTab === "business" && (
-            <TabsContent value="business" className="mt-0">
-              <PackageTable 
-                packages={filteredPackages}
-                isLoading={isLoading}
-                onEdit={handleEditPackage}
-                onDelete={handleDeletePackage}
-                formatPrice={formatPrice}
-              />
-            </TabsContent>
-          )}
-          
-          {activeTab === "influencer" && (
-            <TabsContent value="influencer" className="mt-0">
-              <PackageTable 
-                packages={filteredPackages}
-                isLoading={isLoading}
-                onEdit={handleEditPackage}
-                onDelete={handleDeletePackage}
-                formatPrice={formatPrice}
-              />
-            </TabsContent>
-          )}
+          <TabsContent value="influencer" className="w-full">
+            {renderPackagesTable(filteredPackages, isLoading)}
+          </TabsContent>
         </Tabs>
         
-        {/* Package Form Dialog */}
+        {/* Package form dialog */}
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{selectedPackage ? "Edit Package" : "Add New Package"}</DialogTitle>
+              <DialogTitle>
+                {selectedPackage ? "Edit Package" : "Create New Package"}
+              </DialogTitle>
               <DialogDescription>
-                {selectedPackage 
-                  ? "Update the details of this subscription package"
-                  : "Create a new subscription package for your platform"}
+                Fill in the details for the subscription package
               </DialogDescription>
             </DialogHeader>
-            
             <SubscriptionPackageForm
-              initialData={selectedPackage || undefined}
+              initialData={selectedPackage || {
+                id: nanoid(),
+                title: "",
+                price: 0,
+                setupFee: 0,
+                durationMonths: 12,
+                shortDescription: "",
+                fullDescription: "",
+                features: [],
+                popular: false,
+                type: activeTab === "business" ? "Business" : "Influencer",
+                termsAndConditions: ""
+              }}
               onSubmit={handleSavePackage}
-              onCancel={() => setIsFormOpen(false)}
+              onCancel={handleCloseForm}
             />
           </DialogContent>
         </Dialog>
         
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog 
-          open={isDeleteDialogOpen} 
-          onOpenChange={setIsDeleteDialogOpen}
-        >
+        {/* Delete confirmation dialog */}
+        <AlertDialog open={!!packageToDelete} onOpenChange={open => !open && handleCloseDeleteDialog()}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Package</AlertDialogTitle>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete the "{selectedPackage?.title}" package?
+                This will permanently delete the package "{packageToDelete?.title}".
                 This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction 
-                onClick={confirmDeletePackage}
-                className="bg-destructive hover:bg-destructive/90"
+                onClick={handleDeletePackage} 
+                className="bg-destructive text-destructive-foreground"
               >
-                Delete
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -295,49 +296,32 @@ export const SubscriptionPackageManagement = () => {
       </CardContent>
     </Card>
   );
-};
 
-interface PackageTableProps {
-  packages: SubscriptionPackage[];
-  isLoading: boolean;
-  onEdit: (pkg: SubscriptionPackage) => void;
-  onDelete: (pkg: SubscriptionPackage) => void;
-  formatPrice: (price: number) => string;
-}
-
-const PackageTable: React.FC<PackageTableProps> = ({
-  packages,
-  isLoading,
-  onEdit,
-  onDelete,
-  formatPrice
-}) => {
-  if (isLoading) {
+  function renderPackagesTable(packages: SubscriptionPackage[], loading: boolean) {
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+    }
+    
+    if (packages.length === 0) {
+      return (
+        <p className="text-center py-8 text-muted-foreground">
+          No packages found. Click "Create Package" to add one.
+        </p>
+      );
+    }
+    
     return (
-      <div className="flex justify-center items-center h-40">
-        <p className="text-muted-foreground">Loading packages...</p>
-      </div>
-    );
-  }
-  
-  if (packages.length === 0) {
-    return (
-      <div className="text-center py-10 border rounded-md">
-        <p className="text-muted-foreground">No packages found</p>
-      </div>
-    );
-  }
-  
-  return (
-    <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Title</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Price</TableHead>
+            <TableHead>Price (₹)</TableHead>
+            <TableHead>Setup Fee (₹)</TableHead>
             <TableHead>Duration</TableHead>
-            <TableHead>Features</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -346,38 +330,33 @@ const PackageTable: React.FC<PackageTableProps> = ({
           {packages.map((pkg) => (
             <TableRow key={pkg.id}>
               <TableCell className="font-medium">{pkg.title}</TableCell>
-              <TableCell className="max-w-[200px] truncate">{pkg.shortDescription}</TableCell>
-              <TableCell>{formatPrice(pkg.price)}</TableCell>
+              <TableCell>{pkg.price}</TableCell>
+              <TableCell>{pkg.setupFee}</TableCell>
               <TableCell>{pkg.durationMonths} months</TableCell>
-              <TableCell>{pkg.features.length} features</TableCell>
               <TableCell>
-                <Badge variant={pkg.popular ? "default" : "secondary"}>
-                  {pkg.popular ? (
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                  ) : (
-                    <XCircle className="h-3 w-3 mr-1" />
-                  )}
-                  {pkg.popular ? "Popular" : "Regular"}
-                </Badge>
+                {pkg.popular ? (
+                  <Badge>Popular</Badge>
+                ) : (
+                  <Badge variant="outline">Standard</Badge>
+                )}
               </TableCell>
               <TableCell className="text-right">
-                <div className="flex justify-end items-center space-x-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => onEdit(pkg)}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEditPackage(pkg)}
+                    disabled={isLoading}
                   >
                     <Pencil className="h-4 w-4" />
-                    <span className="sr-only">Edit</span>
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                    onClick={() => onDelete(pkg)}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleOpenDeleteDialog(pkg)}
+                    disabled={isLoading}
                   >
                     <Trash2 className="h-4 w-4" />
-                    <span className="sr-only">Delete</span>
                   </Button>
                 </div>
               </TableCell>
@@ -385,6 +364,8 @@ const PackageTable: React.FC<PackageTableProps> = ({
           ))}
         </TableBody>
       </Table>
-    </div>
-  );
+    );
+  }
 };
+
+export default SubscriptionPackageManagement;

@@ -6,14 +6,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, Loader2 } from "lucide-react";
+import { Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const AdminLoginPage = () => {
   const { login, user, isAuthenticated } = useAuth();
   const [email, setEmail] = useState("baburhussain660@gmail.com");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -26,6 +28,7 @@ const AdminLoginPage = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
     try {
       await login(email, password);
@@ -33,6 +36,7 @@ const AdminLoginPage = () => {
       if (user?.isAdmin || email === "baburhussain660@gmail.com") {
         navigate("/admin/dashboard");
       } else {
+        setError("You don't have admin privileges. Please contact an administrator for access.");
         toast({
           title: "Access Denied",
           description: "You don't have admin privileges.",
@@ -40,6 +44,13 @@ const AdminLoginPage = () => {
         });
       }
     } catch (error) {
+      console.error("Login error:", error);
+      
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Authentication failed. Please check your credentials and try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -55,6 +66,14 @@ const AdminLoginPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
