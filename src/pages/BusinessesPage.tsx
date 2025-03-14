@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { Search, Filter, MapPin, Star, Phone, ArrowUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -11,14 +10,6 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { 
-  Pagination, 
-  PaginationContent, 
-  PaginationItem, 
-  PaginationLink, 
-  PaginationNext, 
-  PaginationPrevious 
-} from "@/components/ui/pagination";
 import { Checkbox } from "@/components/ui/checkbox";
 import { businessesData } from "@/data/businessesData";
 import { 
@@ -38,6 +29,7 @@ import {
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import TablePagination from "@/components/admin/table/TablePagination";
 
 type LocationFilter = string | null;
 type SortOption = "relevance" | "rating" | "reviews";
@@ -55,9 +47,8 @@ const BusinessesPage = () => {
   const [sortBy, setSortBy] = useState<SortOption>("relevance");
   const [activeTags, setActiveTags] = useState<string[]>([]);
   
-  const itemsPerPage = 6;
+  const itemsPerPage = 40;
   
-  // Load data from Firestore on component mount
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -73,34 +64,28 @@ const BusinessesPage = () => {
     
     loadData();
     
-    // Add listener for data changes
     const handleDataChanged = () => {
       setBusinesses(getAllBusinesses());
     };
     
     addDataChangeListener(handleDataChanged);
     
-    // Clean up on unmount
     return () => {
       removeDataChangeListener(handleDataChanged);
     };
   }, []);
   
-  // Get unique categories for filter dropdown
   const categories = useMemo(() => {
     return Array.from(new Set(businesses.map(b => b.category)));
   }, [businesses]);
   
-  // Get unique locations for filter dropdown
   const locations = useMemo(() => {
-    // Extract city from address (simplified version - in real app would be more sophisticated)
     return Array.from(new Set(businesses.map(b => {
       const parts = b.address.split(',');
       return parts.length > 1 ? parts[1].trim() : parts[0].trim();
     })));
   }, [businesses]);
 
-  // Get unique tags across all businesses
   const allTags = useMemo(() => {
     const tags = new Set<string>();
     businesses.forEach(business => {
@@ -109,7 +94,6 @@ const BusinessesPage = () => {
     return Array.from(tags);
   }, [businesses]);
   
-  // Toggle a tag in the active tags list
   const toggleTag = (tag: string) => {
     setActiveTags(prev => 
       prev.includes(tag) 
@@ -119,31 +103,24 @@ const BusinessesPage = () => {
     setCurrentPage(1);
   };
   
-  // Filter businesses based on all filters
   const filteredBusinesses = useMemo(() => {
     let results = businesses.filter(business => {
-      // Check search query
       const matchesSearch = searchQuery === "" || 
         business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         business.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         business.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      // Check category filter
       const matchesCategory = selectedCategory === "" || business.category === selectedCategory;
       
-      // Check rating filter
       const matchesRating = selectedRating === "" || 
         (selectedRating === "4+" && business.rating >= 4) ||
         (selectedRating === "3+" && business.rating >= 3) ||
         (selectedRating === "2+" && business.rating >= 2);
         
-      // Check featured filter
       const matchesFeatured = !featuredOnly || business.featured;
       
-      // Check location filter
       const matchesLocation = !selectedLocation || business.address.includes(selectedLocation);
       
-      // Check tags filter
       const matchesTags = activeTags.length === 0 || 
         activeTags.some(tag => business.tags.includes(tag));
       
@@ -151,14 +128,12 @@ const BusinessesPage = () => {
              matchesFeatured && matchesLocation && matchesTags;
     });
     
-    // Sort the results
     return results.sort((a, b) => {
       if (sortBy === "rating") {
         return b.rating - a.rating;
       } else if (sortBy === "reviews") {
         return b.reviews - a.reviews;
       }
-      // Default: relevance - keep original order or prioritize featured
       return b.featured ? 1 : -1;
     });
   }, [
@@ -172,19 +147,16 @@ const BusinessesPage = () => {
     sortBy
   ]);
   
-  // Calculate pagination
   const totalPages = Math.ceil(filteredBusinesses.length / itemsPerPage);
   const currentBusinesses = filteredBusinesses.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
   
-  // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedCategory, selectedRating, featuredOnly, selectedLocation, activeTags, sortBy]);
   
-  // Clear all filters
   const clearAllFilters = () => {
     setSelectedCategory("");
     setSelectedRating("");
@@ -195,7 +167,6 @@ const BusinessesPage = () => {
     setSortBy("relevance");
   };
 
-  // Get active filter count
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (selectedCategory) count++;
@@ -208,7 +179,6 @@ const BusinessesPage = () => {
   
   return (
     <div className="container mx-auto px-4 py-12 max-w-7xl">
-      {/* Hero Section */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">Discover Local Businesses</h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -216,7 +186,6 @@ const BusinessesPage = () => {
         </p>
       </div>
       
-      {/* Loading State */}
       {loading ? (
         <div className="flex justify-center items-center py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -236,7 +205,6 @@ const BusinessesPage = () => {
             </div>
             
             <div className="flex gap-2">
-              {/* Mobile Filter Sheet */}
               <Sheet>
                 <SheetTrigger asChild>
                   <Button
@@ -257,7 +225,6 @@ const BusinessesPage = () => {
                     <SheetTitle>Filter Businesses</SheetTitle>
                   </SheetHeader>
                   <div className="py-4 space-y-6">
-                    {/* Category Filter */}
                     <div>
                       <h3 className="text-sm font-medium mb-2">Category</h3>
                       <Select value={selectedCategory} onValueChange={setSelectedCategory}>
@@ -275,7 +242,6 @@ const BusinessesPage = () => {
                       </Select>
                     </div>
                     
-                    {/* Location Filter */}
                     <div>
                       <h3 className="text-sm font-medium mb-2">Location</h3>
                       <Select 
@@ -296,7 +262,6 @@ const BusinessesPage = () => {
                       </Select>
                     </div>
                     
-                    {/* Rating Filter */}
                     <div>
                       <h3 className="text-sm font-medium mb-2">Rating</h3>
                       <Select value={selectedRating} onValueChange={setSelectedRating}>
@@ -312,7 +277,6 @@ const BusinessesPage = () => {
                       </Select>
                     </div>
                     
-                    {/* Featured Checkbox */}
                     <div className="flex items-center space-x-2">
                       <Checkbox 
                         id="featured-mobile" 
@@ -329,7 +293,6 @@ const BusinessesPage = () => {
                       </label>
                     </div>
                     
-                    {/* Tag Filters */}
                     <div>
                       <h3 className="text-sm font-medium mb-2">Tags</h3>
                       <div className="flex flex-wrap gap-2">
@@ -357,7 +320,6 @@ const BusinessesPage = () => {
                 </SheetContent>
               </Sheet>
               
-              {/* Desktop Filter Button */}
               <Button
                 variant="outline"
                 className="items-center gap-2 hidden md:flex"
@@ -381,91 +343,86 @@ const BusinessesPage = () => {
             </div>
           </div>
           
-          {/* Expanded Filters - Desktop */}
-          {openFilters && (
-            <div className="hidden md:block border-t mt-4 pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Category</label>
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Categories" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">All Categories</SelectItem>
-                      {categories.map(category => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Location</label>
-                  <Select 
-                    value={selectedLocation || ""} 
-                    onValueChange={val => setSelectedLocation(val || null)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Any Location" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Any Location</SelectItem>
-                      {locations.map(location => (
-                        <SelectItem key={location} value={location}>
-                          {location}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Rating</label>
-                  <Select value={selectedRating} onValueChange={setSelectedRating}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Any Rating" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Any Rating</SelectItem>
-                      <SelectItem value="4+">4+ Stars</SelectItem>
-                      <SelectItem value="3+">3+ Stars</SelectItem>
-                      <SelectItem value="2+">2+ Stars</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+          <div className="hidden md:block border-t mt-4 pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Category</label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Categories</SelectItem>
+                    {categories.map(category => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               
-              {/* Tags */}
-              <div className="mt-4">
-                <label className="text-sm font-medium mb-2 block">Tags</label>
-                <div className="flex flex-wrap gap-2">
-                  {allTags.map(tag => (
-                    <Badge 
-                      key={tag}
-                      variant={activeTags.includes(tag) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => toggleTag(tag)}
-                    >
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Location</label>
+                <Select 
+                  value={selectedLocation || ""} 
+                  onValueChange={val => setSelectedLocation(val || null)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Any Location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Any Location</SelectItem>
+                    {locations.map(location => (
+                      <SelectItem key={location} value={location}>
+                        {location}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               
-              <div className="flex justify-end mt-4">
-                <Button variant="outline" onClick={clearAllFilters}>
-                  Clear All
-                </Button>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Rating</label>
+                <Select value={selectedRating} onValueChange={setSelectedRating}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Any Rating" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Any Rating</SelectItem>
+                    <SelectItem value="4+">4+ Stars</SelectItem>
+                    <SelectItem value="3+">3+ Stars</SelectItem>
+                    <SelectItem value="2+">2+ Stars</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-          )}
+            
+            <div className="mt-4">
+              <label className="text-sm font-medium mb-2 block">Tags</label>
+              <div className="flex flex-wrap gap-2">
+                {allTags.map(tag => (
+                  <Badge 
+                    key={tag}
+                    variant={activeTags.includes(tag) ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => toggleTag(tag)}
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            
+            <div className="flex justify-end mt-4">
+              <Button variant="outline" onClick={clearAllFilters}>
+                Clear All
+              </Button>
+            </div>
+          </div>
         </div>
       )}
       
-      {/* Results Info and Sort */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <p className="text-gray-600">
           Showing {currentBusinesses.length} of {filteredBusinesses.length} businesses
@@ -486,7 +443,6 @@ const BusinessesPage = () => {
         </Select>
       </div>
       
-      {/* Active Filters Display */}
       {activeFilterCount > 0 && (
         <div className="mb-6 flex flex-wrap items-center gap-2">
           <span className="text-sm text-gray-500">Active filters:</span>
@@ -562,7 +518,6 @@ const BusinessesPage = () => {
         </div>
       )}
       
-      {/* Businesses Grid */}
       {currentBusinesses.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {currentBusinesses.map(business => (
@@ -635,36 +590,14 @@ const BusinessesPage = () => {
         </div>
       )}
       
-      {/* Pagination */}
       {totalPages > 1 && (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious 
-                onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} 
-                className={currentPage === 1 ? "opacity-50 pointer-events-none" : ""}
-              />
-            </PaginationItem>
-            
-            {[...Array(totalPages)].map((_, i) => (
-              <PaginationItem key={i}>
-                <PaginationLink 
-                  isActive={currentPage === i + 1}
-                  onClick={() => setCurrentPage(i + 1)}
-                >
-                  {i + 1}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-            
-            <PaginationItem>
-              <PaginationNext 
-                onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} 
-                className={currentPage === totalPages ? "opacity-50 pointer-events-none" : ""}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+        <div className="flex justify-center my-8">
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </div>
       )}
     </div>
   );

@@ -6,8 +6,10 @@ import {
   PaginationItem, 
   PaginationLink, 
   PaginationNext, 
-  PaginationPrevious 
+  PaginationPrevious,
+  PaginationEllipsis 
 } from '@/components/ui/pagination';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface TablePaginationProps {
   currentPage: number;
@@ -23,45 +25,32 @@ const TablePagination: React.FC<TablePaginationProps> = ({
   // Generate page numbers to display
   const getPageNumbers = () => {
     const pageNumbers = [];
-    const maxPageItems = 5; // Maximum number of page items to show
+    const maxVisiblePages = 4; // Maximum number of page items to show
     
-    if (totalPages <= maxPageItems) {
-      // Show all pages if total pages are less than or equal to maxPageItems
+    if (totalPages <= maxVisiblePages) {
+      // Show all pages if total pages are less than or equal to maxVisiblePages
       for (let i = 1; i <= totalPages; i++) {
         pageNumbers.push(i);
       }
     } else {
-      // Always show first page
-      pageNumbers.push(1);
+      // Calculate start and end of visible pages
+      let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+      const endPage = Math.min(startPage + maxVisiblePages - 1, totalPages);
       
-      // Calculate start and end of the middle section
-      let startPage = Math.max(2, currentPage - 1);
-      let endPage = Math.min(totalPages - 1, currentPage + 1);
-      
-      // Adjust to ensure we show at least 3 middle pages when possible
-      if (currentPage <= 3) {
-        endPage = Math.min(4, totalPages - 1);
-      } else if (currentPage >= totalPages - 2) {
-        startPage = Math.max(totalPages - 3, 2);
+      // Adjust start page if end page is maxed out
+      if (endPage === totalPages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
       }
       
-      // Add ellipsis after first page if needed
-      if (startPage > 2) {
-        pageNumbers.push('ellipsis-start');
-      }
-      
-      // Add middle pages
+      // Add visible page numbers
       for (let i = startPage; i <= endPage; i++) {
         pageNumbers.push(i);
       }
       
-      // Add ellipsis before last page if needed
-      if (endPage < totalPages - 1) {
-        pageNumbers.push('ellipsis-end');
+      // Add ellipsis if there are more pages after the visible ones
+      if (endPage < totalPages) {
+        pageNumbers.push('ellipsis');
       }
-      
-      // Always show last page
-      pageNumbers.push(totalPages);
     }
     
     return pageNumbers;
@@ -76,18 +65,22 @@ const TablePagination: React.FC<TablePaginationProps> = ({
           <PaginationPrevious 
             onClick={() => onPageChange(Math.max(1, currentPage - 1))}
             className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-          />
+            aria-disabled={currentPage === 1}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            <span>Previous</span>
+          </PaginationPrevious>
         </PaginationItem>
         
         {getPageNumbers().map((page, index) => (
           <PaginationItem key={index}>
-            {page === 'ellipsis-start' || page === 'ellipsis-end' ? (
-              <PaginationLink className="cursor-default">...</PaginationLink>
+            {page === 'ellipsis' ? (
+              <PaginationEllipsis />
             ) : (
               <PaginationLink 
                 isActive={currentPage === page}
                 onClick={() => typeof page === 'number' && onPageChange(page)}
-                className={typeof page === 'number' ? "cursor-pointer" : ""}
+                className={typeof page === 'number' ? "cursor-pointer rounded-full w-10 h-10 p-0 flex items-center justify-center" : ""}
               >
                 {page}
               </PaginationLink>
@@ -99,7 +92,11 @@ const TablePagination: React.FC<TablePaginationProps> = ({
           <PaginationNext 
             onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
             className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-          />
+            aria-disabled={currentPage === totalPages}
+          >
+            <span>Next</span>
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </PaginationNext>
         </PaginationItem>
       </PaginationContent>
     </Pagination>

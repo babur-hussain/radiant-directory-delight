@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   getAllBusinesses, 
@@ -36,17 +35,13 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const itemsPerPage = 100;
+  const itemsPerPage = 40;
   
-  // Handle data changes and refreshes
   const refreshData = async () => {
     setIsRefreshing(true);
     
     try {
-      // Initialize data from Firestore
       await initializeData();
-      
-      // Get the latest data
       setBusinesses(getAllBusinesses());
       
       toast({
@@ -63,16 +58,13 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
     } finally {
       setIsRefreshing(false);
       
-      // Notify parent component if needed
       if (onRefresh) {
         onRefresh();
       }
     }
   };
   
-  // Listen for data changes
   useEffect(() => {
-    // Initial data load
     const loadData = async () => {
       setLoading(true);
       try {
@@ -92,23 +84,19 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
     
     loadData();
     
-    // Add a listener for data changes
     const handleDataChanged = () => {
       setBusinesses(getAllBusinesses());
     };
     
     addDataChangeListener(handleDataChanged);
     
-    // Cleanup on unmount
     return () => {
       removeDataChangeListener(handleDataChanged);
     };
   }, []);
   
-  // Handle delete business
   const handleDeleteBusiness = async () => {
     if (businessToDelete) {
-      // Check if it's from the original data set or uploaded
       const isUploaded = businessToDelete.id > 20;
       
       if (isUploaded) {
@@ -151,9 +139,7 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
     setShowDeleteDialog(false);
   };
   
-  // Handle edit business
   const handleEditClick = (business: Business) => {
-    // Check if it's from the original data
     const isOriginal = business.id <= 20;
     
     if (isOriginal) {
@@ -170,20 +156,17 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
     }
   };
 
-  // Handle search change
   const handleSearchChange = (term: string) => {
     setSearchTerm(term);
-    setCurrentPage(1); // Reset to first page on search
+    setCurrentPage(1);
   };
   
-  // Filter businesses based on search term
   const filteredBusinesses = businesses.filter(business => 
     business.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     business.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
     business.address.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  // Calculate pagination
   const totalPages = Math.ceil(filteredBusinesses.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, filteredBusinesses.length);
@@ -191,7 +174,6 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Search and actions bar */}
       <BusinessTableSearch 
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}
@@ -203,7 +185,6 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
         totalBusinesses={filteredBusinesses.length}
       />
       
-      {/* Loading State */}
       {loading ? (
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -211,7 +192,6 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
         </div>
       ) : (
         <>
-          {/* Table */}
           <BusinessTable 
             businesses={currentBusinesses}
             onViewDetails={(business) => {
@@ -225,7 +205,6 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
             }}
           />
           
-          {/* Pagination */}
           <TablePagination 
             currentPage={currentPage}
             totalPages={totalPages}
@@ -234,14 +213,12 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
         </>
       )}
       
-      {/* Business Details Dialog */}
       <BusinessDetailsDialog 
         business={selectedBusiness}
         open={showDetailsDialog}
         onOpenChange={setShowDetailsDialog}
       />
       
-      {/* Delete Confirmation Dialog */}
       <DeleteBusinessDialog 
         business={businessToDelete}
         open={showDeleteDialog}
