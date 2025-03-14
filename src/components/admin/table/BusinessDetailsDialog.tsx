@@ -23,7 +23,7 @@ const BusinessDetailsDialog: React.FC<BusinessDetailsDialogProps> = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>{business?.name}</DialogTitle>
           <DialogDescription>Business Details</DialogDescription>
