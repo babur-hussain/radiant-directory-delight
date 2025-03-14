@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { 
   User as FirebaseUser,
@@ -30,6 +29,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   signup: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
   logout: () => Promise<void>;
+  updateUserRole: (role: UserRole) => Promise<void>;
   loading: boolean;
 }
 
@@ -203,6 +203,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateUserRole = async (role: UserRole) => {
+    try {
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+      
+      // Store the updated role in localStorage
+      localStorage.setItem(getRoleKey(user.id), role as string);
+      
+      // Update the user object in state
+      setUser({
+        ...user,
+        role
+      });
+      
+      toast({
+        title: "Role updated",
+        description: `Your account type has been updated to ${role}.`,
+      });
+      
+      return Promise.resolve();
+    } catch (error: any) {
+      console.error("Role update error:", error);
+      toast({
+        title: "Update failed",
+        description: error.message || "There was an error updating your role.",
+        variant: "destructive",
+      });
+      return Promise.reject(error);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -212,6 +244,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithGoogle,
         signup,
         logout,
+        updateUserRole,
         loading
       }}
     >

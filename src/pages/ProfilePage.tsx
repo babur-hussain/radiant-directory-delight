@@ -8,14 +8,29 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, SaveIcon, LockIcon, CreditCard, UserIcon } from "lucide-react";
+import { 
+  ArrowLeft, 
+  SaveIcon, 
+  LockIcon, 
+  CreditCard, 
+  UserIcon 
+} from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "react-router-dom";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { UserRole } from "@/contexts/AuthContext";
 
 const ProfilePage = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, updateUserRole } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
@@ -34,6 +49,9 @@ const ProfilePage = () => {
     }),
     email: z.string().email({
       message: "Please enter a valid email address.",
+    }),
+    role: z.enum(["Business", "Influencer"], {
+      required_error: "Please select a role.",
     }),
   });
 
@@ -59,6 +77,7 @@ const ProfilePage = () => {
     defaultValues: {
       name: user?.name || "",
       email: user?.email || "",
+      role: user?.role || undefined,
     },
   });
 
@@ -73,19 +92,32 @@ const ProfilePage = () => {
   });
 
   // Handle profile update
-  const onProfileSubmit = (values: z.infer<typeof profileFormSchema>) => {
+  const onProfileSubmit = async (values: z.infer<typeof profileFormSchema>) => {
     setIsUpdating(true);
     
-    // In a real app, you would update the user's profile here
-    console.log("Updating profile:", values);
-    
-    // Show success toast
-    toast({
-      title: "Profile updated",
-      description: "Your profile has been updated successfully.",
-    });
-    
-    setIsUpdating(false);
+    try {
+      // Update role if it has changed
+      if (values.role !== user?.role) {
+        await updateUserRole(values.role);
+      }
+      
+      // In a real app, you would update the user's name here too
+      console.log("Updating profile:", values);
+      
+      // Show success toast
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Update failed",
+        description: "There was a problem updating your profile.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   // Handle password change
@@ -251,21 +283,33 @@ const ProfilePage = () => {
                         )}
                       />
                       
-                      {user.role && (
-                        <FormItem>
-                          <FormLabel>Account Type</FormLabel>
-                          <FormControl>
-                            <Input 
-                              value={user.role} 
-                              disabled 
-                              className="bg-muted"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            This is the account type you registered with.
-                          </FormDescription>
-                        </FormItem>
-                      )}
+                      <FormField
+                        control={profileForm.control}
+                        name="role"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Account Type</FormLabel>
+                            <FormControl>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select your account type" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white">
+                                  <SelectItem value="Business">Business</SelectItem>
+                                  <SelectItem value="Influencer">Influencer</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
+                            <FormDescription>
+                              Choose whether you want to use the platform as a Business or an Influencer.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       
                       <Button 
                         type="submit"

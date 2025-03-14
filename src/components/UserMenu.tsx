@@ -23,6 +23,16 @@ const UserMenu = () => {
     return user?.name ? user.name.charAt(0).toUpperCase() : "U";
   };
 
+  // Handle profile option click
+  const handleProfileClick = () => {
+    navigate("/profile");
+  };
+
+  // Handle subscription details click
+  const handleSubscriptionClick = () => {
+    navigate("/subscription/details");
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -49,15 +59,15 @@ const UserMenu = () => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => navigate("/profile")}>
+        <DropdownMenuItem onClick={handleProfileClick}>
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate("/subscription/details")}>
+        <DropdownMenuItem onClick={handleSubscriptionClick}>
           <CreditCard className="mr-2 h-4 w-4" />
           <span>Subscription</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate("/profile")}>
+        <DropdownMenuItem onClick={handleProfileClick}>
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>
