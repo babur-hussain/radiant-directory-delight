@@ -133,13 +133,13 @@ const Footer = () => {
               <li className="flex items-start">
                 <MapPin className="h-5 w-5 text-gray-400 mt-0.5 mr-2" />
                 <span className="text-sm text-gray-500">
-                  123 Directory St, Business City, 10001
+                  Khedapati Mandir, Itarsi Road, Betul (460001)
                 </span>
               </li>
               <li className="flex items-center">
                 <Phone className="h-5 w-5 text-gray-400 mr-2" />
                 <span className="text-sm text-gray-500">
-                  +1 (555) 123-4567
+                  79996 08163
                 </span>
               </li>
               <li className="flex items-center">
