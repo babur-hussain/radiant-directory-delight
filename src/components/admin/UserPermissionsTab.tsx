@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, Search, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { loadAllUsers } from "@/features/auth/authStorage";
+import { Button } from "@/components/ui/button";
+import { loadAllUsers, debugRefreshUsers } from "@/features/auth/authStorage";
 import { User } from "@/types/auth";
 
 interface UserData {
@@ -23,46 +24,57 @@ const UserPermissionsTab = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   const { updateUserPermission } = useAuth();
   const { toast } = useToast();
 
-  // Load users from localStorage
-  useEffect(() => {
-    const loadUsersData = () => {
-      try {
-        setLoading(true);
-        const allUsers = loadAllUsers();
-        
-        // Map User[] to UserData[] to ensure isAdmin is always defined
-        const formattedUsers: UserData[] = allUsers.map(user => ({
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          isAdmin: user.isAdmin || false
-        }));
-        
-        setUsers(formattedUsers);
-        console.log("Loaded users data:", formattedUsers);
-      } catch (error) {
-        console.error("Error loading users:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load user data",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Function to load users data
+  const loadUsersData = () => {
+    try {
+      setLoading(true);
+      const allUsers = loadAllUsers();
+      
+      // Map User[] to UserData[] to ensure isAdmin is always defined
+      const formattedUsers: UserData[] = allUsers.map(user => ({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isAdmin: user.isAdmin || false
+      }));
+      
+      setUsers(formattedUsers);
+      console.log("Loaded users data:", formattedUsers);
+    } catch (error) {
+      console.error("Error loading users:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load user data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
+  // Load users from localStorage on component mount
+  useEffect(() => {
+    loadUsersData();
+  }, [toast]);
+
+  // Refresh users function
+  const handleRefresh = () => {
+    setRefreshing(true);
+    // Force refresh the users data
+    debugRefreshUsers();
     loadUsersData();
     
-    // Set up a periodic refresh (every 5 seconds)
-    const refreshInterval = setInterval(loadUsersData, 5000);
-    
-    return () => clearInterval(refreshInterval);
-  }, [toast]);
+    toast({
+      title: "Refreshed",
+      description: "User data has been refreshed",
+    });
+  };
 
   const handleToggleAdmin = async (userId: string, isAdmin: boolean) => {
     try {
@@ -95,7 +107,7 @@ const UserPermissionsTab = () => {
     (user.role && user.role.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -105,11 +117,22 @@ const UserPermissionsTab = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>User Permissions</CardTitle>
-        <CardDescription>
-          Manage admin access for users
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>User Permissions</CardTitle>
+          <CardDescription>
+            Manage admin access for users
+          </CardDescription>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          disabled={refreshing}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </CardHeader>
       <CardContent>
         {/* Search Input */}
