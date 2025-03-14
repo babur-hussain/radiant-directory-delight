@@ -11,20 +11,20 @@ body {
   overflow-x: hidden;
 }
 
-/* Clear header positioning and visibility issues */
+/* Force header visibility with !important rules */
 header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  background-color: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 1rem 0;
-  z-index: 1000;
-  display: block;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  padding: 1rem 0 !important;
+  z-index: 9999 !important;
+  display: block !important;
 }
 
-/* Explicit display rules for header children */
+/* Explicitly show all header elements */
 header .container {
   display: flex !important;
 }
@@ -33,22 +33,31 @@ header nav {
   display: flex !important;
 }
 
-header nav a {
+header a {
   display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
   color: #333333 !important;
 }
 
 header button {
   display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
   align-items: center !important;
   justify-content: center !important;
 }
 
-/* Explicit mobile menu display rules */
-header .mobile-menu {
+header .logo-text {
   display: block !important;
-  background-color: #ffffff;
-  width: 100%;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Force mobile menu visibility */
+.mobile-menu {
+  display: block !important;
+  width: 100% !important;
 }
 
 /* Force media query behavior */
@@ -69,8 +78,9 @@ header .mobile-menu {
 }
 
 /* Ensure hero section padding */
-.min-h-\[85vh\] {
-  padding-top: 90px;
+.hero-section {
+  padding-top: 110px !important;
+  margin-top: 0 !important;
 }
 
 /* Other styles */

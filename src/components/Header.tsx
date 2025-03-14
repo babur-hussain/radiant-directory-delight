@@ -38,35 +38,35 @@ const Header = () => {
   }
 
   return (
-    <header className="header-component">
-      <div className="container max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between w-full">
-          <Link to="/" className="flex items-center space-x-2">
-            <span className="font-bold text-2xl bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">Grow Bharat Vyapaar</span>
+    <header style={{display: 'block', visibility: 'visible'}}>
+      <div className="container max-w-7xl mx-auto px-4 sm:px-6" style={{display: 'flex'}}>
+        <div className="flex items-center justify-between w-full" style={{display: 'flex'}}>
+          <Link to="/" className="flex items-center space-x-2" style={{display: 'flex'}}>
+            <span className="logo-text font-bold text-2xl bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent" style={{display: 'block'}}>Grow Bharat Vyapaar</span>
           </Link>
 
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-sm font-medium hover:text-primary transition-smooth">
+          <nav className="hidden md:flex items-center space-x-8" style={{display: 'flex'}}>
+            <Link to="/" className="text-sm font-medium hover:text-primary transition-smooth" style={{display: 'block'}}>
               Home
             </Link>
-            <Link to="/categories" className="text-sm font-medium hover:text-primary transition-smooth">
+            <Link to="/categories" className="text-sm font-medium hover:text-primary transition-smooth" style={{display: 'block'}}>
               Categories
             </Link>
-            <Link to="/businesses" className="text-sm font-medium hover:text-primary transition-smooth">
+            <Link to="/businesses" className="text-sm font-medium hover:text-primary transition-smooth" style={{display: 'block'}}>
               Businesses
             </Link>
-            <Link to="/about" className="text-sm font-medium hover:text-primary transition-smooth">
+            <Link to="/about" className="text-sm font-medium hover:text-primary transition-smooth" style={{display: 'block'}}>
               About
             </Link>
           </nav>
 
-          <div className="hidden md:flex items-center space-x-4">
-            <Button variant="outline" size="sm" className="rounded-full transition-smooth">
+          <div className="hidden md:flex items-center space-x-4" style={{display: 'flex'}}>
+            <Button variant="outline" size="sm" className="rounded-full transition-smooth" style={{display: 'flex'}}>
               <Map className="h-4 w-4 mr-2" />
               Location
             </Button>
             
-            {isAuthenticated ? <UserMenu /> : <Button variant="default" size="sm" className="rounded-full transition-smooth" onClick={() => setIsAuthModalOpen(true)}>
+            {isAuthenticated ? <UserMenu /> : <Button variant="default" size="sm" className="rounded-full transition-smooth" onClick={() => setIsAuthModalOpen(true)} style={{display: 'flex'}}>
                 <LogIn className="h-4 w-4 mr-2" />
                 Login / Register
               </Button>}
@@ -75,13 +75,19 @@ const Header = () => {
           <button 
             className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-smooth"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            style={{display: 'flex'}}
           >
             {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>
 
-      <div className={`mobile-menu md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-sm transition-all duration-300 overflow-hidden ${isMobileMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
+      <div className="mobile-menu md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-sm transition-all duration-300 overflow-hidden" 
+           style={{
+             display: isMobileMenuOpen ? 'block' : 'none',
+             maxHeight: isMobileMenuOpen ? '500px' : '0',
+             opacity: isMobileMenuOpen ? '1' : '0'
+           }}>
         <div className="container max-w-7xl mx-auto px-4 py-4 flex flex-col space-y-4">
           <Link to="/" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
             Home
