@@ -185,27 +185,37 @@ export const createTestUser = async (userData: TestUserData): Promise<User> => {
       createdAt: new Date().toISOString()
     };
     
-    // Use a reference to a specific document with the generated ID
-    const userDoc = doc(db, "users", userId);
-    
-    // Set the document data with merge option
-    await setDoc(userDoc, {
-      email: userData.email,
-      name: userData.name,
-      role: userData.role,
-      isAdmin: userData.isAdmin,
-      createdAt: new Date().toISOString(),
-      lastLogin: serverTimestamp()
-    });
-    
-    // Save to local storage as well
+    // First save to local storage for immediate feedback
     saveUserToAllUsersList(user);
     
-    console.log("Test user created successfully:", userId);
+    // Then save to Firebase with explicit error handling
+    try {
+      console.log("Attempting to save user to Firebase with ID:", userId);
+      
+      // Use a reference to a specific document with the generated ID
+      const userDoc = doc(db, "users", userId);
+      
+      // Set the document data with merge option
+      await setDoc(userDoc, {
+        email: userData.email,
+        name: userData.name,
+        role: userData.role,
+        isAdmin: userData.isAdmin,
+        createdAt: new Date().toISOString(),
+        lastLogin: serverTimestamp()
+      });
+      
+      console.log("Test user created successfully in Firebase:", userId);
+    } catch (firestoreError) {
+      console.error("Firebase error while creating test user:", firestoreError);
+      // Even if Firebase fails, we'll return the user since it's saved in localStorage
+      console.log("User was saved to localStorage but not to Firebase");
+    }
+    
     return user;
   } catch (error) {
-    console.error("Error creating test user:", error);
-    throw new Error(`Failed to create test user: ${error}`);
+    console.error("Critical error creating test user:", error);
+    throw new Error(`Failed to create test user: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
 
@@ -244,8 +254,13 @@ export const ensureTestUsers = async (): Promise<void> => {
       ];
       
       for (const user of testUsers) {
-        await createTestUser(user);
-        console.log(`Created test user: ${user.name}`);
+        try {
+          await createTestUser(user);
+          console.log(`Created test user: ${user.name}`);
+        } catch (userError) {
+          console.error(`Failed to create test user ${user.name}:`, userError);
+          // Continue with other users even if one fails
+        }
       }
       
       console.log("Sample users created successfully");

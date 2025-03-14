@@ -273,12 +273,25 @@ const UserPermissionsTab = () => {
     
     try {
       setIsCreatingUser(true);
-      await createTestUser({
+      setError(null);
+      
+      console.log("Attempting to create test user:", {
+        email: newUserEmail,
+        name: newUserName,
+        role: newUserRole
+      });
+      
+      const newUser = await createTestUser({
         email: newUserEmail,
         name: newUserName,
         role: newUserRole,
         isAdmin: false
       });
+      
+      console.log("Test user created successfully:", newUser);
+      
+      // Update the local users state immediately to show the new user
+      setUsers(prevUsers => [convertToUserData(newUser), ...prevUsers]);
       
       setIsAddUserOpen(false);
       setNewUserEmail("");
@@ -286,15 +299,19 @@ const UserPermissionsTab = () => {
       
       toast({
         title: "Success",
-        description: "Test user created successfully",
+        description: `Test user "${newUserName}" created successfully`,
       });
       
-      await loadUsersFromFirebase();
+      // Refresh the full list after a short delay to ensure Firebase has updated
+      setTimeout(() => {
+        loadUsersFromFirebase();
+      }, 1000);
     } catch (error) {
       console.error("Error creating test user:", error);
+      setError(`Failed to create user: ${error instanceof Error ? error.message : String(error)}`);
       toast({
-        title: "Error",
-        description: "Failed to create test user",
+        title: "Error Creating User",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
       });
     } finally {
@@ -398,6 +415,13 @@ const UserPermissionsTab = () => {
                   </Select>
                 </div>
               </div>
+              
+              {error && (
+                <Alert variant="destructive" className="mt-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
               
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsAddUserOpen(false)}>

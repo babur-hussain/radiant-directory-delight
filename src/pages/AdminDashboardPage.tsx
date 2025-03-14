@@ -40,25 +40,35 @@ const AdminDashboardPage = () => {
       // Force refresh users data
       console.log("Admin Dashboard: Loading users for the Users tab");
       
-      // Ensure we have test users in the system
-      ensureTestUsers().then(() => {
-        // Then refresh the users
-        const userCount = debugRefreshUsers();
-        console.log(`Admin Dashboard: Found ${userCount} users`);
-        
-        // Show toast notification for user feedback
-        toast({
-          title: "Users Refreshed",
-          description: `Successfully loaded ${userCount} users`,
-        });
-      }).catch(error => {
-        console.error("Error ensuring test users:", error);
-        toast({
-          title: "Error Loading Users",
-          description: "Could not load users from Firebase",
-          variant: "destructive",
-        });
+      // First try to ensure we have test users in the system
+      toast({
+        title: "Loading Users",
+        description: "Initializing user data...",
       });
+      
+      ensureTestUsers()
+        .then(() => {
+          console.log("Test users ensured, now refreshing all users");
+          
+          // Then refresh the users
+          return debugRefreshUsers();
+        })
+        .then((userCount) => {
+          console.log(`Admin Dashboard: Found ${userCount} users`);
+          
+          toast({
+            title: "Users Refreshed",
+            description: `Successfully loaded ${userCount} users`,
+          });
+        })
+        .catch(error => {
+          console.error("Error ensuring test users:", error);
+          toast({
+            title: "Error Loading Users",
+            description: "Could not load users from Firebase",
+            variant: "destructive",
+          });
+        });
     }
   }, [activeTab, toast]);
   
