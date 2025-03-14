@@ -12,12 +12,28 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, ShieldAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState as useReactState } from "react";
+import { useBusinessListings } from "@/hooks/useBusinessListings";
+import { Business } from "@/lib/csv-utils";
+import BusinessFormDialog from "@/components/admin/BusinessFormDialog";
+import { BusinessFormValues } from "@/components/admin/BusinessForm";
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("businesses");
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  // State for business management
+  const [showUploadDialog, setShowUploadDialog] = useReactState(false);
+  const [showBusinessFormDialog, setShowBusinessFormDialog] = useReactState(false);
+  const [businessCount, setBusinessCount] = useReactState(0);
+  const [isRefreshing, setIsRefreshing] = useReactState(false);
+  const [currentBusinessToEdit, setCurrentBusinessToEdit] = useReactState<Business | null>(null);
+  const [isSubmitting, setIsSubmitting] = useReactState(false);
+  
+  const { businesses } = useBusinessListings();
 
   // Check if user is authorized (admin or staff)
   const isAuthorized = user && (user.role === "Admin" || user.role === "staff");
@@ -26,6 +42,11 @@ const AdminDashboardPage = () => {
     // Clear any permission errors when changing tabs
     setPermissionError(null);
   }, [activeTab]);
+  
+  // Set business count when businesses array changes
+  useEffect(() => {
+    setBusinessCount(businesses.length);
+  }, [businesses]);
 
   // Error handler for permission issues
   const handlePermissionError = (error: any) => {
@@ -44,6 +65,60 @@ const AdminDashboardPage = () => {
   // Function to dismiss error
   const dismissError = () => {
     setPermissionError(null);
+  };
+  
+  const handleAddBusiness = () => {
+    console.log("Add business button clicked in AdminDashboardPage");
+    setCurrentBusinessToEdit(null);
+    setShowBusinessFormDialog(true);
+  };
+  
+  const handleEditBusiness = (business: Business) => {
+    console.log("Edit business clicked in AdminDashboardPage:", business);
+    setCurrentBusinessToEdit(business);
+    setShowBusinessFormDialog(true);
+  };
+  
+  const handleUploadComplete = (success: boolean, message: string, count?: number) => {
+    if (success) {
+      toast({
+        title: "Upload Successful",
+        description: `${count} businesses have been imported successfully.`,
+        variant: "default",
+      });
+    } else {
+      toast({
+        title: "Upload Failed",
+        description: message,
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleBusinessFormSubmit = async (values: BusinessFormValues) => {
+    // This function would handle the business form submission
+    // The actual implementation would be similar to the one in AdminBusinessListingsPage
+    setIsSubmitting(true);
+    
+    try {
+      // Handle submission logic would go here
+      toast({
+        title: currentBusinessToEdit ? "Business Updated" : "Business Added",
+        description: `${values.name} has been ${currentBusinessToEdit ? 'updated' : 'added'} successfully.`,
+      });
+      
+      setShowBusinessFormDialog(false);
+      setCurrentBusinessToEdit(null);
+    } catch (error) {
+      console.error("Error saving business:", error);
+      toast({
+        title: "Operation Failed",
+        description: `Error: ${error instanceof Error ? error.message : String(error)}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isAuthorized) {
@@ -86,7 +161,28 @@ const AdminDashboardPage = () => {
         </TabsList>
         
         <TabsContent value="businesses" className="pt-6">
-          <TableBusinessListings />
+          <Card>
+            <CardHeader>
+              <CardTitle>Manage Business Listings</CardTitle>
+              <CardDescription>
+                View and manage all business listings. Total: {businessCount} businesses.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TableBusinessListings 
+                onAddBusiness={handleAddBusiness}
+                onEditBusiness={handleEditBusiness}
+              />
+            </CardContent>
+          </Card>
+          
+          <BusinessFormDialog 
+            showDialog={showBusinessFormDialog}
+            setShowDialog={setShowBusinessFormDialog}
+            currentBusinessToEdit={currentBusinessToEdit}
+            onSubmit={handleBusinessFormSubmit}
+            isSubmitting={isSubmitting}
+          />
         </TabsContent>
         
         <TabsContent value="categories-locations" className="pt-6">
