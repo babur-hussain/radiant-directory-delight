@@ -13,6 +13,8 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { User, UserRole } from "@/types/auth";
 import { loadAllUsers, saveUserToAllUsersList } from "@/features/auth/authStorage";
 import { getAllUsers } from "@/features/auth/userManagement";
+import { db } from "@/config/firebase";
+import { collection, onSnapshot } from "firebase/firestore";
 
 interface UserData {
   id: string;
@@ -40,7 +42,6 @@ const UserPermissionsTab = () => {
   const { updateUserPermission } = useAuth();
   const { toast } = useToast();
 
-  // Function to convert User to UserData
   const convertToUserData = (user: User | Partial<User>): UserData => {
     return {
       id: user.id || "",
@@ -52,27 +53,22 @@ const UserPermissionsTab = () => {
     };
   };
 
-  // Function to load users directly from Firebase using userManagement.ts
   const loadUsersFromFirebase = async () => {
     try {
       setLoading(true);
       console.log("Fetching users directly from Firebase using getAllUsers()...");
       
-      // Use the enhanced getAllUsers function
       const firebaseUsers = await getAllUsers();
       
       console.log("Users fetched from Firebase:", firebaseUsers.length, firebaseUsers);
       
       if (firebaseUsers.length > 0) {
-        // We found users in Firebase
         setUsers(firebaseUsers.map(convertToUserData));
         
-        // Save to localStorage for backup
         firebaseUsers.forEach(user => {
           saveUserToAllUsersList(user);
         });
       } else {
-        // Fallback to localStorage if Firebase is empty
         console.log("Firebase returned no users, falling back to localStorage");
         const localUsers = loadAllUsers().map(convertToUserData);
         setUsers(localUsers);
@@ -80,7 +76,6 @@ const UserPermissionsTab = () => {
       }
     } catch (error) {
       console.error("Error fetching users:", error);
-      // Fallback to localStorage
       const localUsers = loadAllUsers().map(convertToUserData);
       setUsers(localUsers);
       toast({
@@ -94,18 +89,14 @@ const UserPermissionsTab = () => {
     }
   };
 
-  // Load users on component mount
   useEffect(() => {
     loadUsersFromFirebase();
   }, []);
 
-  // Set up real-time listener for users collection
   useEffect(() => {
     try {
-      // First, load initial data
       loadUsersFromFirebase();
       
-      // Then set up the real-time listener on the users collection
       const usersCollection = collection(db, "users");
       const unsubscribe = onSnapshot(usersCollection, (snapshot) => {
         if (!snapshot.empty) {
@@ -121,11 +112,9 @@ const UserPermissionsTab = () => {
             };
           });
           
-          // Update local state with real-time data
           setUsers(updatedUsers);
           console.log("Real-time user update:", updatedUsers);
           
-          // Also update localStorage
           updatedUsers.forEach(user => {
             saveUserToAllUsersList(convertToUserData(user) as User);
           });
@@ -139,20 +128,16 @@ const UserPermissionsTab = () => {
         });
       });
       
-      // Clean up the listener when component unmounts
       return () => unsubscribe();
     } catch (error) {
       console.error("Error setting up real-time user updates:", error);
-      // Fallback to non-real-time data
       loadUsersFromFirebase();
     }
   }, []);
 
-  // Filter and sort users whenever relevant states change
   useEffect(() => {
     let result = [...users];
     
-    // Apply role filter
     if (roleFilter !== "all") {
       result = result.filter(user => 
         roleFilter === "admin" 
@@ -161,7 +146,6 @@ const UserPermissionsTab = () => {
       );
     }
     
-    // Apply search filter
     if (searchTerm) {
       const lowerSearch = searchTerm.toLowerCase();
       result = result.filter(user => 
@@ -171,24 +155,20 @@ const UserPermissionsTab = () => {
       );
     }
     
-    // Apply sorting
     result.sort((a, b) => {
       const aValue = a[sortBy as keyof UserData];
       const bValue = b[sortBy as keyof UserData];
       
-      // Handle null or undefined values
       if (!aValue && !bValue) return 0;
       if (!aValue) return sortDirection === "asc" ? -1 : 1;
       if (!bValue) return sortDirection === "asc" ? 1 : -1;
       
-      // Compare string values
       if (typeof aValue === "string" && typeof bValue === "string") {
         return sortDirection === "asc"
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
       }
       
-      // Compare boolean values
       if (typeof aValue === "boolean" && typeof bValue === "boolean") {
         return sortDirection === "asc"
           ? (aValue === bValue ? 0 : aValue ? 1 : -1)
@@ -202,7 +182,6 @@ const UserPermissionsTab = () => {
     setTotalPages(Math.ceil(result.length / USERS_PER_PAGE));
   }, [users, searchTerm, roleFilter, sortBy, sortDirection]);
 
-  // Handle refresh button click
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadUsersFromFirebase();
@@ -213,12 +192,10 @@ const UserPermissionsTab = () => {
     });
   };
 
-  // Handle toggle admin permission
   const handleToggleAdmin = async (userId: string, isAdmin: boolean) => {
     try {
       await updateUserPermission(userId, isAdmin);
       
-      // Update local state
       setUsers(prevUsers => 
         prevUsers.map(user => 
           user.id === userId ? { ...user, isAdmin } : user
@@ -238,12 +215,8 @@ const UserPermissionsTab = () => {
     }
   };
 
-  // Handle role change
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
     try {
-      // Update role in Firebase would be implemented here
-      
-      // For now, just update local state
       setUsers(prevUsers => 
         prevUsers.map(user => 
           user.id === userId ? { ...user, role: newRole } : user
@@ -263,13 +236,11 @@ const UserPermissionsTab = () => {
     }
   };
 
-  // Pagination - get current page of users
   const getCurrentPageUsers = () => {
     const startIndex = (currentPage - 1) * USERS_PER_PAGE;
     return filteredUsers.slice(startIndex, startIndex + USERS_PER_PAGE);
   };
 
-  // Loading state
   if (loading && !refreshing) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -301,9 +272,7 @@ const UserPermissionsTab = () => {
         </Button>
       </CardHeader>
       <CardContent>
-        {/* Filter Controls */}
         <div className="flex flex-col md:flex-row gap-4 mb-4">
-          {/* Search Input */}
           <div className="relative flex-grow">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -314,7 +283,6 @@ const UserPermissionsTab = () => {
             />
           </div>
           
-          {/* Role Filter */}
           <div className="flex-shrink-0 w-full md:w-[180px]">
             <Select 
               value={roleFilter} 
@@ -334,7 +302,6 @@ const UserPermissionsTab = () => {
             </Select>
           </div>
           
-          {/* Sort Control */}
           <div className="flex-shrink-0 w-full md:w-[180px]">
             <Select 
               value={sortBy} 
@@ -353,7 +320,6 @@ const UserPermissionsTab = () => {
             </Select>
           </div>
           
-          {/* Sort Direction Button */}
           <Button 
             variant="outline" 
             size="icon"
@@ -364,7 +330,6 @@ const UserPermissionsTab = () => {
           </Button>
         </div>
         
-        {/* User Count Summary */}
         <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
           <Users className="h-4 w-4" />
           <span>
@@ -438,7 +403,6 @@ const UserPermissionsTab = () => {
               </TableBody>
             </Table>
             
-            {/* Pagination */}
             {totalPages > 1 && (
               <Pagination className="mt-4">
                 <PaginationContent>
