@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Plus, Upload } from 'lucide-react';
 import CSVUploadDialog from './CSVUploadDialog';
@@ -21,19 +21,34 @@ const BusinessListingsHeader: React.FC<BusinessListingsHeaderProps> = ({
   isRefreshing,
   handleUploadComplete
 }) => {
+  
+  useEffect(() => {
+    console.log("BusinessListingsHeader rendered", { showUploadDialog });
+  }, [showUploadDialog]);
+
+  const onAddBusinessClick = () => {
+    console.log("Add Business button clicked in header");
+    handleAddBusiness();
+  };
+
   return (
     <div className="flex items-center justify-between mb-6">
       <h1 className="text-3xl font-bold tracking-tight">Business Listings</h1>
       
       <div className="flex space-x-2">
-        <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
+        <Button 
+          variant="outline" 
+          onClick={handleRefresh} 
+          disabled={isRefreshing}
+          type="button"
+        >
           <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
         
         <Button 
           variant="outline" 
-          onClick={() => handleAddBusiness()}
+          onClick={onAddBusinessClick}
           type="button"
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -41,7 +56,10 @@ const BusinessListingsHeader: React.FC<BusinessListingsHeaderProps> = ({
         </Button>
         
         <Button 
-          onClick={() => setShowUploadDialog(true)}
+          onClick={() => {
+            console.log("Upload CSV button clicked");
+            setShowUploadDialog(true);
+          }}
           type="button"
         >
           <Upload className="mr-2 h-4 w-4" />

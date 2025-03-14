@@ -25,6 +25,11 @@ const BusinessTableSearch: React.FC<BusinessTableSearchProps> = ({
   endIndex,
   totalBusinesses
 }) => {
+  const handleAddBusinessClick = () => {
+    console.log("Add business button clicked in table search");
+    onAddBusiness();
+  };
+
   return (
     <div className="flex flex-col sm:flex-row justify-between gap-2 md:items-center mb-6">
       <div className="flex gap-2 w-full sm:w-auto">
@@ -52,7 +57,7 @@ const BusinessTableSearch: React.FC<BusinessTableSearchProps> = ({
       
       <div className="flex items-center gap-2">
         <Button 
-          onClick={() => onAddBusiness()}
+          onClick={handleAddBusinessClick}
           className="whitespace-nowrap"
           type="button"
         >

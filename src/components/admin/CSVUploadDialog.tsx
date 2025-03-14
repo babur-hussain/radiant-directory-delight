@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CSVUploader } from "@/components/admin/CSVUploader";
@@ -20,14 +20,24 @@ const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  useEffect(() => {
+    console.log("CSVUploadDialog render", { showUploadDialog });
+  }, [showUploadDialog]);
+
+  const handleDialogChange = (open: boolean) => {
+    console.log("Dialog change", { open, current: showUploadDialog });
+    setShowUploadDialog(open);
+    if (!open) {
+      setUploadSuccess(false);
+      setUploadError(null);
+    }
+  };
+
   return (
-    <Dialog open={showUploadDialog} onOpenChange={(open) => {
-      setShowUploadDialog(open);
-      if (!open) {
-        setUploadSuccess(false);
-        setUploadError(null);
-      }
-    }}>
+    <Dialog 
+      open={showUploadDialog} 
+      onOpenChange={handleDialogChange}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Upload Business Listings</DialogTitle>
@@ -91,7 +101,11 @@ const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({
         
         <DialogFooter className="sm:justify-end">
           {!isUploading && !uploadSuccess && (
-            <Button variant="outline" onClick={() => setShowUploadDialog(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowUploadDialog(false)}
+              type="button"
+            >
               Cancel
             </Button>
           )}

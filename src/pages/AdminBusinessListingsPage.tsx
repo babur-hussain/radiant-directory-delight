@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -15,10 +14,14 @@ const AdminBusinessListingsPage = () => {
   const { toast } = useToast();
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showBusinessFormDialog, setShowBusinessFormDialog] = useState(false);
-  const [businessCount, setBusinessCount] = useState(getAllBusinesses().length);
+  const [businessCount, setBusinessCount] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentBusinessToEdit, setCurrentBusinessToEdit] = useState<Business | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  useEffect(() => {
+    setBusinessCount(getAllBusinesses().length);
+  }, []);
   
   if (!isAuthenticated) {
     return <UnauthorizedView />;
@@ -64,11 +67,9 @@ const AdminBusinessListingsPage = () => {
     setIsSubmitting(true);
     
     try {
-      // Process priority field - if it's an empty string, set it to undefined
       const priorityValue = values.priority === '' ? undefined : values.priority;
       
       if (currentBusinessToEdit) {
-        // We're editing an existing business
         const updated = updateBusiness({
           ...currentBusinessToEdit,
           ...values,
@@ -88,11 +89,8 @@ const AdminBusinessListingsPage = () => {
           });
         }
       } else {
-        // We're adding a new business
-        // Generate a random number of reviews
         const randomReviews = Math.floor(Math.random() * 500) + 50;
         
-        // Make sure we're passing all required fields
         const newBusinessPromise = addBusiness({
           name: values.name,
           category: values.category,
@@ -107,7 +105,6 @@ const AdminBusinessListingsPage = () => {
           image: values.image || `https://source.unsplash.com/random/500x350/?${values.category.toLowerCase().replace(/\s+/g, ',')}`
         });
         
-        // Wait for the Promise to resolve
         const newBusiness = await newBusinessPromise;
         
         toast({
@@ -116,7 +113,6 @@ const AdminBusinessListingsPage = () => {
         });
       }
       
-      // Close the dialog and refresh the data
       setShowBusinessFormDialog(false);
       setCurrentBusinessToEdit(null);
       handleRefresh();
@@ -131,6 +127,8 @@ const AdminBusinessListingsPage = () => {
       setIsSubmitting(false);
     }
   };
+
+  console.log("Rendering AdminBusinessListingsPage", { showUploadDialog, showBusinessFormDialog });
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -159,7 +157,6 @@ const AdminBusinessListingsPage = () => {
         </CardContent>
       </Card>
       
-      {/* Add/Edit Business Dialog */}
       <BusinessFormDialog 
         showDialog={showBusinessFormDialog}
         setShowDialog={setShowBusinessFormDialog}
