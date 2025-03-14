@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -12,11 +11,11 @@ import UserSubscriptionAssignment from "./UserSubscriptionAssignment";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle } from "lucide-react";
 
-interface UserCardProps {
-  user: User;
+interface UserPermissionsTabProps {
+  onRefresh?: () => void;
 }
 
-const UserPermissionsTab = () => {
+const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefresh }) => {
   const { user: currentUser, updateUserRole, updateUserPermission } = useAuth();
   const [expanded, setExpanded] = useState<{[key: string]: boolean}>({});
   
@@ -29,6 +28,7 @@ const UserPermissionsTab = () => {
         title: "Success",
         description: `Updated role for ${user.email} to ${role}`,
       });
+      if (onRefresh) onRefresh();
     } catch (error) {
       console.error("Error updating role:", error);
       toast({
@@ -46,6 +46,7 @@ const UserPermissionsTab = () => {
         title: "Success",
         description: `${isAdmin ? "Granted" : "Revoked"} admin permission for ${user.email}`,
       });
+      if (onRefresh) onRefresh();
     } catch (error) {
       console.error("Error updating admin permission:", error);
       toast({
@@ -105,6 +106,8 @@ const UserPermissionsTab = () => {
   const handleSubscriptionAssigned = () => {
     // Force re-render by updating state
     setExpanded(prev => ({...prev}));
+    // Call the onRefresh callback if provided
+    if (onRefresh) onRefresh();
   };
   
   if (!currentUser?.isAdmin) {
