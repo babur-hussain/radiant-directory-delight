@@ -1,9 +1,10 @@
-
 import { db } from "@/config/firebase";
 import { collection, getDocs, doc, setDoc, deleteDoc, query, orderBy, where } from "firebase/firestore";
 import { SubscriptionPackage } from "@/data/subscriptionData";
+import { Business } from "./csv-utils";
 
 const SUBSCRIPTION_COLLECTION = "subscriptionPackages";
+const BUSINESSES_COLLECTION = "businesses";
 
 /**
  * Fetches all subscription packages from Firebase
@@ -63,6 +64,66 @@ export async function fetchSubscriptionPackages(): Promise<SubscriptionPackage[]
         errorMessage.includes("Missing or insufficient permissions")) {
       console.error("Permission denied when accessing subscription packages. Please check your Firebase security rules.");
       throw new Error("Permission denied. You don't have access to view subscription packages.");
+    }
+    
+    throw error;
+  }
+}
+
+/**
+ * Fetches all businesses from Firebase
+ */
+export async function fetchBusinesses(): Promise<Business[]> {
+  try {
+    console.log("Fetching businesses from collection:", BUSINESSES_COLLECTION);
+    
+    // Create a query to get all businesses 
+    const businessesQuery = query(
+      collection(db, BUSINESSES_COLLECTION),
+      orderBy("name", "asc")
+    );
+    
+    // Execute the query
+    const snapshot = await getDocs(businessesQuery);
+    console.log(`Retrieved ${snapshot.docs.length} businesses from Firebase`);
+    
+    // Map the document data to our Business type
+    const businesses = snapshot.docs.map(doc => {
+      const data = doc.data();
+      
+      return {
+        id: Number(doc.id) || parseInt(doc.id, 10),
+        name: data.name || "",
+        description: data.description || "",
+        category: data.category || "",
+        address: data.address || "",
+        phone: data.phone || "",
+        email: data.email || "",
+        website: data.website || "",
+        rating: data.rating || 0,
+        reviews: data.reviews || 0,
+        latitude: data.latitude || 0,
+        longitude: data.longitude || 0,
+        hours: data.hours || {},
+        tags: Array.isArray(data.tags) ? data.tags : [],
+        featured: !!data.featured,
+        image: data.image || ""
+      } as Business;
+    });
+    
+    return businesses;
+  } catch (error) {
+    console.error("Error fetching businesses from Firebase:", error);
+    
+    // Check for permission-related errors
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    if (errorMessage.includes("permission-denied") || 
+        errorMessage.includes("Permission denied") ||
+        errorMessage.includes("insufficient permissions") ||
+        errorMessage.includes("Missing or insufficient permissions")) {
+      console.error("Permission denied when accessing businesses. Please check your Firebase security rules.");
+      throw new Error("Permission denied. You don't have access to view businesses.");
     }
     
     throw error;
@@ -176,6 +237,78 @@ export async function fetchSubscriptionPackagesByType(type: "Business" | "Influe
         errorMessage.includes("Missing or insufficient permissions")) {
       console.error("Permission denied when accessing subscription packages. Please check your Firebase security rules.");
       throw new Error("Permission denied. You don't have access to view subscription packages.");
+    }
+    
+    throw error;
+  }
+}
+
+/**
+ * Saves a business to Firebase
+ */
+export async function saveBusiness(business: Business): Promise<void> {
+  try {
+    console.log("Saving business to Firebase:", business);
+    
+    // Validate required fields
+    if (!business.name) {
+      throw new Error("Business name is required");
+    }
+    
+    // Convert id to string for Firestore (Firestore document IDs are strings)
+    const businessId = String(business.id);
+    const businessRef = doc(db, BUSINESSES_COLLECTION, businessId);
+    
+    await setDoc(businessRef, {
+      ...business,
+      // Ensure numeric fields are stored as numbers
+      rating: Number(business.rating),
+      reviews: Number(business.reviews),
+      latitude: Number(business.latitude),
+      longitude: Number(business.longitude),
+      // Ensure boolean fields are stored as booleans
+      featured: Boolean(business.featured)
+    });
+    
+    console.log("Business saved successfully with ID:", businessId);
+  } catch (error) {
+    console.error("Error saving business:", error);
+    
+    // Check for permission-related errors
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    if (errorMessage.includes("permission-denied") || 
+        errorMessage.includes("Permission denied") ||
+        errorMessage.includes("insufficient permissions") ||
+        errorMessage.includes("Missing or insufficient permissions")) {
+      throw new Error("Permission denied. You don't have admin rights to create or update businesses.");
+    }
+    
+    throw error;
+  }
+}
+
+/**
+ * Deletes a business from Firebase
+ */
+export async function deleteBusiness(businessId: number): Promise<void> {
+  try {
+    console.log("Deleting business with ID:", businessId);
+    const documentId = String(businessId);
+    const businessRef = doc(db, BUSINESSES_COLLECTION, documentId);
+    await deleteDoc(businessRef);
+    console.log("Business deleted successfully");
+  } catch (error) {
+    console.error("Error deleting business:", error);
+    
+    // Check for permission-related errors
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    if (errorMessage.includes("permission-denied") || 
+        errorMessage.includes("Permission denied") ||
+        errorMessage.includes("insufficient permissions") ||
+        errorMessage.includes("Missing or insufficient permissions")) {
+      throw new Error("Permission denied. You don't have admin rights to delete businesses.");
     }
     
     throw error;
