@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Table, 
@@ -17,23 +16,59 @@ import {
   PaginationPrevious 
 } from '@/components/ui/pagination';
 import { Input } from '@/components/ui/input';
-import { Search, Info, RefreshCw } from 'lucide-react';
-import { getAllBusinesses, addDataChangeListener, removeDataChangeListener } from '@/lib/csv-utils';
+import { 
+  Search, Info, RefreshCw, Pencil, Trash2, AlertTriangle, Plus 
+} from 'lucide-react';
+import { 
+  getAllBusinesses, 
+  addDataChangeListener, 
+  removeDataChangeListener,
+  deleteBusiness,
+  Business 
+} from '@/lib/csv-utils';
 import { Button } from '../ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogFooter
+} from '../ui/dialog';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import BusinessImage from '@/components/BusinessImage';
+import BusinessForm from './BusinessForm';
+import { BusinessFormValues } from './BusinessForm';
 
 interface TableBusinessListingsProps {
   onRefresh?: () => void;
+  onAddBusiness?: () => void;
+  onEditBusiness?: (business: Business) => void;
 }
 
-export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({ onRefresh }) => {
+export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({ 
+  onRefresh,
+  onAddBusiness,
+  onEditBusiness
+}) => {
   const [businesses, setBusinesses] = useState(getAllBusinesses());
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedBusiness, setSelectedBusiness] = useState<any>(null);
+  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
+  const [businessToDelete, setBusinessToDelete] = useState<Business | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
   const itemsPerPage = 100;
   
@@ -70,6 +105,60 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({ on
       removeDataChangeListener(refreshData);
     };
   }, []);
+  
+  // Handle delete business
+  const handleDeleteBusiness = () => {
+    if (businessToDelete) {
+      // Check if it's from the original data set or uploaded
+      const isUploaded = !businessesData?.some(b => b.id === businessToDelete.id);
+      
+      if (isUploaded) {
+        const deleted = deleteBusiness(businessToDelete.id);
+        
+        if (deleted) {
+          toast({
+            title: "Business deleted",
+            description: `${businessToDelete.name} has been removed.`,
+          });
+          refreshData();
+        } else {
+          toast({
+            title: "Delete failed",
+            description: "The business could not be deleted.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Cannot delete original data",
+          description: "Only imported or manually added businesses can be deleted in this demo.",
+          variant: "destructive",
+        });
+      }
+    }
+    
+    setBusinessToDelete(null);
+    setShowDeleteDialog(false);
+  };
+  
+  // Handle edit business
+  const handleEditClick = (business: Business) => {
+    // Check if it's from the original data
+    const isOriginal = businessesData?.some(b => b.id === business.id);
+    
+    if (isOriginal) {
+      toast({
+        title: "Cannot edit original data",
+        description: "Only imported or manually added businesses can be edited in this demo.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (onEditBusiness) {
+      onEditBusiness(business);
+    }
+  };
   
   // Filter businesses based on search term
   const filteredBusinesses = businesses.filter(business => 
@@ -138,7 +227,7 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({ on
 
   return (
     <div className="space-y-4">
-      {/* Search and stats bar */}
+      {/* Search and actions bar */}
       <div className="flex flex-col sm:flex-row justify-between gap-2 md:items-center mb-6">
         <div className="flex gap-2 w-full sm:w-auto">
           <div className="relative flex-1 sm:min-w-[300px]">
@@ -165,8 +254,17 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({ on
           </Button>
         </div>
         
-        <div className="text-sm text-muted-foreground">
-          Showing {startIndex + 1} to {endIndex} of {filteredBusinesses.length} businesses
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={onAddBusiness}
+            className="whitespace-nowrap"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add Business
+          </Button>
+          <div className="text-sm text-muted-foreground hidden md:block">
+            Showing {startIndex + 1} to {endIndex} of {filteredBusinesses.length} businesses
+          </div>
         </div>
       </div>
       
@@ -181,7 +279,7 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({ on
               <TableHead className="hidden md:table-cell">Address</TableHead>
               <TableHead>Rating</TableHead>
               <TableHead className="hidden md:table-cell">Phone</TableHead>
-              <TableHead className="w-[100px] text-right">Actions</TableHead>
+              <TableHead className="w-[150px] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -192,80 +290,112 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({ on
                 </TableCell>
               </TableRow>
             ) : (
-              currentBusinesses.map((business) => (
-                <TableRow key={business.id}>
-                  <TableCell className="font-medium">{business.id}</TableCell>
-                  <TableCell>{business.name}</TableCell>
-                  <TableCell>{business.category}</TableCell>
-                  <TableCell className="hidden md:table-cell max-w-[200px] truncate">
-                    {business.address}
-                  </TableCell>
-                  <TableCell>{business.rating} ⭐</TableCell>
-                  <TableCell className="hidden md:table-cell">{business.phone}</TableCell>
-                  <TableCell className="text-right">
-                    <Dialog onOpenChange={(open) => {
-                      if (open) setSelectedBusiness(business);
-                      else setSelectedBusiness(null);
-                    }}>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <Info className="h-4 w-4" />
-                          <span className="sr-only">View details</span>
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>{business.name}</DialogTitle>
-                          <DialogDescription>Business Details</DialogDescription>
-                        </DialogHeader>
-                        {selectedBusiness && (
-                          <div className="space-y-4">
-                            <div className="aspect-video overflow-hidden rounded-md">
-                              <BusinessImage 
-                                src={selectedBusiness.image} 
-                                alt={selectedBusiness.name}
-                                className="object-cover w-full h-full"
-                              />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <p className="text-sm font-medium">Category</p>
-                                <p className="text-sm">{selectedBusiness.category}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium">Rating</p>
-                                <p className="text-sm">{selectedBusiness.rating} ⭐ ({selectedBusiness.reviews} reviews)</p>
-                              </div>
-                              <div className="col-span-2">
-                                <p className="text-sm font-medium">Address</p>
-                                <p className="text-sm">{selectedBusiness.address}</p>
-                              </div>
-                              <div className="col-span-2">
-                                <p className="text-sm font-medium">Phone</p>
-                                <p className="text-sm">{selectedBusiness.phone}</p>
-                              </div>
-                              <div className="col-span-2">
-                                <p className="text-sm font-medium">Description</p>
-                                <p className="text-sm">{selectedBusiness.description}</p>
-                              </div>
-                              <div className="col-span-2">
-                                <p className="text-sm font-medium">Tags</p>
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {selectedBusiness.tags.map((tag: string, index: number) => (
-                                    <span key={index} className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
-                                      {tag}
-                                    </span>
-                                  ))}
+              currentBusinesses.map((business) => {
+                // Determine if this is an original or imported business
+                const isOriginal = businessesData?.some(b => b.id === business.id);
+                
+                return (
+                  <TableRow key={business.id}>
+                    <TableCell className="font-medium">{business.id}</TableCell>
+                    <TableCell>{business.name}</TableCell>
+                    <TableCell>{business.category}</TableCell>
+                    <TableCell className="hidden md:table-cell max-w-[200px] truncate">
+                      {business.address}
+                    </TableCell>
+                    <TableCell>{business.rating} ⭐</TableCell>
+                    <TableCell className="hidden md:table-cell">{business.phone}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end items-center space-x-1">
+                        <Dialog onOpenChange={(open) => {
+                          if (open) setSelectedBusiness(business);
+                          else setSelectedBusiness(null);
+                        }}>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <Info className="h-4 w-4" />
+                              <span className="sr-only">View details</span>
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>{business.name}</DialogTitle>
+                              <DialogDescription>Business Details</DialogDescription>
+                            </DialogHeader>
+                            {selectedBusiness && (
+                              <div className="space-y-4">
+                                <div className="aspect-video overflow-hidden rounded-md">
+                                  <BusinessImage 
+                                    src={selectedBusiness.image} 
+                                    alt={selectedBusiness.name}
+                                    className="object-cover w-full h-full"
+                                  />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-sm font-medium">Category</p>
+                                    <p className="text-sm">{selectedBusiness.category}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium">Rating</p>
+                                    <p className="text-sm">{selectedBusiness.rating} ⭐ ({selectedBusiness.reviews} reviews)</p>
+                                  </div>
+                                  <div className="col-span-2">
+                                    <p className="text-sm font-medium">Address</p>
+                                    <p className="text-sm">{selectedBusiness.address}</p>
+                                  </div>
+                                  <div className="col-span-2">
+                                    <p className="text-sm font-medium">Phone</p>
+                                    <p className="text-sm">{selectedBusiness.phone}</p>
+                                  </div>
+                                  <div className="col-span-2">
+                                    <p className="text-sm font-medium">Description</p>
+                                    <p className="text-sm">{selectedBusiness.description}</p>
+                                  </div>
+                                  <div className="col-span-2">
+                                    <p className="text-sm font-medium">Tags</p>
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {selectedBusiness.tags.map((tag: string, index: number) => (
+                                        <span key={index} className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </div>
-                        )}
-                      </DialogContent>
-                    </Dialog>
-                  </TableCell>
-                </TableRow>
-              ))
+                            )}
+                          </DialogContent>
+                        </Dialog>
+                        
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          disabled={isOriginal}
+                          onClick={() => handleEditClick(business)}
+                          className={isOriginal ? "opacity-30 cursor-not-allowed" : ""}
+                        >
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">Edit</span>
+                        </Button>
+                        
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          disabled={isOriginal}
+                          className={isOriginal ? "opacity-30 cursor-not-allowed" : "text-destructive hover:text-destructive/90 hover:bg-destructive/10"}
+                          onClick={() => {
+                            setBusinessToDelete(business);
+                            setShowDeleteDialog(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete</span>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -307,6 +437,31 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({ on
           </PaginationContent>
         </Pagination>
       )}
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-destructive mr-2" />
+              Confirm Deletion
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{businessToDelete?.name}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteBusiness}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

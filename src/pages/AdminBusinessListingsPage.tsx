@@ -1,25 +1,27 @@
-
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, FileUp, AlertTriangle, Check, RefreshCw } from "lucide-react";
+import { Upload, FileUp, AlertTriangle, Check, RefreshCw, Plus } from "lucide-react";
 import { TableBusinessListings } from "@/components/admin/TableBusinessListings";
 import { CSVUploader } from "@/components/admin/CSVUploader";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { getAllBusinesses } from "@/lib/csv-utils";
+import { getAllBusinesses, addBusiness, updateBusiness, Business } from "@/lib/csv-utils";
+import BusinessForm, { BusinessFormValues } from "@/components/admin/BusinessForm";
 
 const AdminBusinessListingsPage = () => {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [showBusinessFormDialog, setShowBusinessFormDialog] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [businessCount, setBusinessCount] = useState(getAllBusinesses().length);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const tableRef = useRef<any>(null);
+  const [currentBusinessToEdit, setCurrentBusinessToEdit] = useState<Business | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   if (!isAuthenticated) {
     return (
@@ -75,6 +77,74 @@ const AdminBusinessListingsPage = () => {
       setIsRefreshing(false);
     }, 500);
   };
+  
+  const handleAddBusiness = () => {
+    setCurrentBusinessToEdit(null);
+    setShowBusinessFormDialog(true);
+  };
+  
+  const handleEditBusiness = (business: Business) => {
+    setCurrentBusinessToEdit(business);
+    setShowBusinessFormDialog(true);
+  };
+  
+  const handleBusinessFormSubmit = async (values: BusinessFormValues) => {
+    setIsSubmitting(true);
+    
+    try {
+      if (currentBusinessToEdit) {
+        // We're editing an existing business
+        const updated = updateBusiness({
+          ...values,
+          id: currentBusinessToEdit.id,
+          // Keep the reviews count
+          reviews: currentBusinessToEdit.reviews
+        });
+        
+        if (updated) {
+          toast({
+            title: "Business Updated",
+            description: `${values.name} has been updated successfully.`,
+          });
+        } else {
+          toast({
+            title: "Update Failed",
+            description: "Failed to update the business.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // We're adding a new business
+        // Generate a random number of reviews
+        const randomReviews = Math.floor(Math.random() * 500) + 50;
+        
+        const newBusiness = addBusiness({
+          ...values,
+          reviews: randomReviews,
+          image: values.image || `https://source.unsplash.com/random/500x350/?${values.category.toLowerCase().replace(/\s+/g, ',')}`
+        });
+        
+        toast({
+          title: "Business Added",
+          description: `${newBusiness.name} has been added successfully.`,
+        });
+      }
+      
+      // Close the dialog and refresh the data
+      setShowBusinessFormDialog(false);
+      setCurrentBusinessToEdit(null);
+      handleRefresh();
+    } catch (error) {
+      console.error("Error saving business:", error);
+      toast({
+        title: "Operation Failed",
+        description: `Error: ${error instanceof Error ? error.message : String(error)}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -85,6 +155,11 @@ const AdminBusinessListingsPage = () => {
           <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
             <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             Refresh
+          </Button>
+          
+          <Button variant="outline" onClick={handleAddBusiness}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Business
           </Button>
           
           <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
@@ -158,12 +233,36 @@ const AdminBusinessListingsPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <TableBusinessListings onRefresh={handleRefresh} />
+          <TableBusinessListings 
+            onRefresh={handleRefresh} 
+            onAddBusiness={handleAddBusiness}
+            onEditBusiness={handleEditBusiness}
+          />
         </CardContent>
       </Card>
+      
+      {/* Add/Edit Business Dialog */}
+      <Dialog open={showBusinessFormDialog} onOpenChange={setShowBusinessFormDialog}>
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{currentBusinessToEdit ? 'Edit Business' : 'Add New Business'}</DialogTitle>
+            <DialogDescription>
+              {currentBusinessToEdit 
+                ? 'Update the details for this business.' 
+                : 'Enter the details for the new business.'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <BusinessForm
+            initialValues={currentBusinessToEdit || undefined}
+            onSubmit={handleBusinessFormSubmit}
+            onCancel={() => setShowBusinessFormDialog(false)}
+            isSubmitting={isSubmitting}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
 export default AdminBusinessListingsPage;
-

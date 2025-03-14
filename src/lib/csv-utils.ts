@@ -47,6 +47,57 @@ export const getAllBusinesses = (): Business[] => {
   return [...businessesData, ...uploadedBusinesses];
 };
 
+// Add a new business manually
+export const addBusiness = (business: Omit<Business, "id">): Business => {
+  // Generate a new ID
+  const lastBusinessId = Math.max(
+    ...businessesData.map(b => b.id), 
+    ...uploadedBusinesses.map(b => b.id), 
+    0
+  );
+  
+  const newBusiness: Business = {
+    ...business,
+    id: lastBusinessId + 1
+  };
+  
+  uploadedBusinesses.push(newBusiness);
+  notifyDataChanged();
+  
+  return newBusiness;
+};
+
+// Edit an existing business
+export const updateBusiness = (updatedBusiness: Business): Business | null => {
+  // Check if it's in the uploadedBusinesses array
+  const index = uploadedBusinesses.findIndex(b => b.id === updatedBusiness.id);
+  
+  if (index !== -1) {
+    // Update the business in the uploaded businesses array
+    uploadedBusinesses[index] = updatedBusiness;
+    notifyDataChanged();
+    return updatedBusiness;
+  }
+  
+  // We can't update businesses from the original dataset in this demo
+  // In a real app with a database, you would update any business
+  return null;
+};
+
+// Delete a business
+export const deleteBusiness = (id: number): boolean => {
+  const initialLength = uploadedBusinesses.length;
+  uploadedBusinesses = uploadedBusinesses.filter(b => b.id !== id);
+  
+  const deleted = initialLength > uploadedBusinesses.length;
+  
+  if (deleted) {
+    notifyDataChanged();
+  }
+  
+  return deleted;
+};
+
 export const processCsvData = async (csvContent: string): Promise<{ 
   success: boolean; 
   businesses: Business[]; 
