@@ -1,15 +1,16 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle, Users, TrendingUp, BarChart3, Globe, Target, Megaphone, ArrowRight } from 'lucide-react';
+import { CheckCircle, Users, TrendingUp, BarChart3, Globe, Target, Megaphone, ArrowRight, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { fetchSubscriptionPackagesByType } from '@/lib/firebase-utils';
 import { businessPackages } from '@/data/subscriptionData';
 import { SubscriptionPackage } from '@/data/subscriptionData';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from '@/hooks/use-toast';
+import Footer from '@/components/Footer';
 
 const BusinessPage = () => {
   // Smooth scroll to top on page load
@@ -40,6 +41,10 @@ const BusinessPage = () => {
         if (fetchedPackages.length === 0) {
           console.log("No business packages found, using default packages");
           setPackages(businessPackages);
+          toast({
+            title: "Using Default Packages",
+            description: "No custom packages found. Showing default packages.",
+          });
         } else {
           setPackages(fetchedPackages);
         }
@@ -49,6 +54,13 @@ const BusinessPage = () => {
         
         // Use default packages as fallback
         setPackages(businessPackages);
+        
+        // Display a toast notification
+        toast({
+          title: "Error Loading Packages",
+          description: "Failed to load custom packages. Using default packages instead.",
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
@@ -169,6 +181,16 @@ const BusinessPage = () => {
                 Choose the right plan for your business needs and start connecting with influencers today.
               </p>
             </div>
+
+            {error && (
+              <Alert variant="warning" className="mb-8 max-w-3xl mx-auto">
+                <AlertTriangle className="h-5 w-5" />
+                <AlertTitle className="text-amber-600">Package Loading Issue</AlertTitle>
+                <AlertDescription>
+                  {error} <Link to="/admin/subscriptions" className="underline font-medium">Manage Packages</Link>
+                </AlertDescription>
+              </Alert>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
               {isLoading ? (

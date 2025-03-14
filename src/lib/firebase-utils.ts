@@ -1,3 +1,4 @@
+
 import { db } from "@/config/firebase";
 import { collection, getDocs, doc, setDoc, deleteDoc, query, orderBy, where } from "firebase/firestore";
 import { SubscriptionPackage } from "@/data/subscriptionData";
@@ -212,25 +213,56 @@ export async function fetchSubscriptionPackagesByType(type: "Business" | "Influe
   try {
     console.log(`Fetching ${type} subscription packages`);
     
+    // First, try to fetch without orderBy to avoid requiring the composite index
     const packagesQuery = query(
       collection(db, SUBSCRIPTION_COLLECTION),
-      where("type", "==", type),
-      orderBy("price", "asc")
+      where("type", "==", type)
     );
     
     const snapshot = await getDocs(packagesQuery);
     console.log(`Retrieved ${snapshot.docs.length} ${type} packages`);
     
-    return snapshot.docs.map(doc => ({
+    // Map the documents and sort them in memory instead of using Firestore's orderBy
+    const packages = snapshot.docs.map(doc => ({
       ...doc.data() as SubscriptionPackage,
       id: doc.id
     }));
+    
+    // Sort packages by price in ascending order (in memory)
+    return packages.sort((a, b) => a.price - b.price);
   } catch (error) {
     console.error(`Error fetching ${type} subscription packages:`, error);
     
-    // Check for permission-related errors more comprehensively
+    // Check for index-related errors
     const errorMessage = error instanceof Error ? error.message : String(error);
     
+    if (errorMessage.includes("index") || errorMessage.includes("requires an index")) {
+      console.warn("Missing Firestore index. Trying simpler query without sorting.");
+      
+      try {
+        // If the error is index-related, try a simpler query without orderBy
+        const simpleQuery = query(
+          collection(db, SUBSCRIPTION_COLLECTION),
+          where("type", "==", type)
+        );
+        
+        const snapshot = await getDocs(simpleQuery);
+        console.log(`Retrieved ${snapshot.docs.length} ${type} packages with simpler query`);
+        
+        const packages = snapshot.docs.map(doc => ({
+          ...doc.data() as SubscriptionPackage,
+          id: doc.id
+        }));
+        
+        // Sort packages by price in ascending order (in memory)
+        return packages.sort((a, b) => a.price - b.price);
+      } catch (fallbackError) {
+        console.error("Error with fallback query:", fallbackError);
+        throw fallbackError;
+      }
+    }
+    
+    // Check for permission-related errors
     if (errorMessage.includes("permission-denied") || 
         errorMessage.includes("Permission denied") ||
         errorMessage.includes("insufficient permissions") ||
