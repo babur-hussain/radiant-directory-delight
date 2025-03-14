@@ -71,12 +71,10 @@ const AdminBusinessListingsPage = () => {
     setPermissionError(null);
     
     try {
-      // Remove the type comparison functionality that's causing the error
       let priorityValue: number | undefined = undefined;
       
       if (values.priority !== undefined && values.priority !== null && values.priority !== "") {
         priorityValue = Number(values.priority);
-        // Remove the comparison check that was causing the type error
       }
       
       if (currentBusinessToEdit) {
