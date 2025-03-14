@@ -9,6 +9,9 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CategoriesPage from "./pages/CategoriesPage";
 import BusinessesPage from "./pages/BusinessesPage";
+import SubscriptionPage from "./pages/SubscriptionPage";
+import SubscriptionDetailsPage from "./pages/SubscriptionDetailsPage";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
 import Header from "./components/Header";
 
 const queryClient = new QueryClient();
@@ -26,6 +29,9 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/categories" element={<CategoriesPage />} />
               <Route path="/businesses" element={<BusinessesPage />} />
+              <Route path="/subscription" element={<SubscriptionPage />} />
+              <Route path="/subscription/details" element={<SubscriptionDetailsPage />} />
+              <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
