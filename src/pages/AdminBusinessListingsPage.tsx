@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,16 +70,18 @@ const AdminBusinessListingsPage = () => {
       // Handle priority value conversion properly to avoid type comparison issues
       let priorityValue: number | undefined;
       
-      if (values.priority === undefined || values.priority === '') {
+      if (values.priority === undefined || values.priority === null || values.priority === '') {
         priorityValue = undefined;
       } else if (typeof values.priority === 'number') {
         priorityValue = values.priority;
       } else {
         // Ensure we're parsing a string by explicitly converting to string first
-        priorityValue = parseInt(String(values.priority), 10);
+        const parsedValue = parseInt(String(values.priority), 10);
         // Handle NaN case
-        if (isNaN(priorityValue)) {
+        if (isNaN(parsedValue)) {
           priorityValue = undefined;
+        } else {
+          priorityValue = parsedValue;
         }
       }
       
