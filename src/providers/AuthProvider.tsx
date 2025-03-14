@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "../config/firebase";
@@ -13,7 +14,8 @@ import {
   login, 
   loginWithGoogle, 
   signup, 
-  logoutUser 
+  logoutUser,
+  saveUserToFirestore
 } from "../features/auth/authService";
 import { 
   updateUserRole as updateRole, 
@@ -70,20 +72,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }, { merge: true });
           } else {
             console.log("User not found in Firestore, creating:", firebaseUser.uid);
-            const newUserData = {
-              email: firebaseUser.email,
-              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-              role: isDefaultAdmin ? 'Admin' : userRole || 'User',
-              photoURL: firebaseUser.photoURL,
-              isAdmin: isDefaultAdmin || isAdmin,
-              createdAt: serverTimestamp(),
-              lastLogin: serverTimestamp()
-            };
             
-            await setDoc(userDoc, newUserData);
-            console.log("Created new user document in Firestore:", firebaseUser.uid);
+            // Use the correct role type
+            const userRoleToUse: UserRole = isDefaultAdmin ? 'Admin' : (userRole || 'User');
             
-            firestoreData = newUserData;
+            // Save to Firestore
+            await saveUserToFirestore(
+              firebaseUser.uid,
+              firebaseUser.email,
+              firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+              userRoleToUse,
+              firebaseUser.photoURL,
+              isDefaultAdmin || isAdmin
+            );
+            
+            // Get the newly created user data
+            const newUserSnapshot = await getDoc(userDoc);
+            if (newUserSnapshot.exists()) {
+              firestoreData = newUserSnapshot.data();
+              console.log("Created and retrieved new user document in Firestore:", firebaseUser.uid);
+            }
           }
           
           const userData: User = {

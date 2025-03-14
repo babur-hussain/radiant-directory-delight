@@ -11,6 +11,37 @@ import { UserRole } from "../../types/auth";
 import { getRoleKey, saveUserToAllUsersList } from "./authStorage";
 import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 
+// Helper function to save user to Firestore
+const saveUserToFirestore = async (
+  userId: string, 
+  email: string | null, 
+  name: string | null, 
+  role: UserRole = "User", 
+  photoURL: string | null = null, 
+  isAdmin: boolean = false
+) => {
+  try {
+    console.log(`Saving user to Firestore: ${userId}, ${email}, ${role}`);
+    const userDoc = doc(db, "users", userId);
+    
+    await setDoc(userDoc, {
+      email: email,
+      name: name || email?.split('@')[0] || 'User',
+      role: role,
+      photoURL: photoURL,
+      isAdmin: isAdmin,
+      createdAt: serverTimestamp(),
+      lastLogin: serverTimestamp()
+    }, { merge: true });
+    
+    console.log(`User successfully saved to Firestore: ${userId}`);
+    return true;
+  } catch (error) {
+    console.error("Error saving user to Firestore:", error);
+    return false;
+  }
+};
+
 export const login = async (email: string, password: string) => {
   const userCredential = await signInWithEmailAndPassword(auth, email, password);
   
@@ -24,18 +55,17 @@ export const login = async (email: string, password: string) => {
       await setDoc(userDoc, {
         lastLogin: serverTimestamp()
       }, { merge: true });
+      console.log("Updated user last login in Firestore:", userCredential.user.uid);
     } else {
       // Create the user document if it doesn't exist
-      await setDoc(userDoc, {
-        email: userCredential.user.email,
-        name: userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'User',
-        role: 'User',
-        photoURL: userCredential.user.photoURL,
-        isAdmin: false,
-        createdAt: serverTimestamp(),
-        lastLogin: serverTimestamp()
-      });
-      console.log("User document created in Firestore during login:", userCredential.user.uid);
+      await saveUserToFirestore(
+        userCredential.user.uid,
+        userCredential.user.email,
+        userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'User',
+        'User',
+        userCredential.user.photoURL,
+        false
+      );
     }
   } catch (error) {
     console.error("Error updating user in Firestore during login:", error);
@@ -58,18 +88,17 @@ export const loginWithGoogle = async () => {
         lastLogin: serverTimestamp(),
         photoURL: userCredential.user.photoURL // Update photo URL which might have changed
       }, { merge: true });
+      console.log("Updated Google user in Firestore:", userCredential.user.uid);
     } else {
       // Create new user document for Google sign-in
-      await setDoc(userDoc, {
-        email: userCredential.user.email,
-        name: userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'User',
-        role: 'User',
-        photoURL: userCredential.user.photoURL,
-        isAdmin: false,
-        createdAt: serverTimestamp(),
-        lastLogin: serverTimestamp()
-      });
-      console.log("User document created in Firestore for Google login:", userCredential.user.uid);
+      await saveUserToFirestore(
+        userCredential.user.uid,
+        userCredential.user.email,
+        userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'User',
+        'User',
+        userCredential.user.photoURL,
+        false
+      );
     }
   } catch (error) {
     console.error("Error updating user in Firestore during Google login:", error);
@@ -90,19 +119,14 @@ export const signup = async (email: string, password: string, name: string, role
     
     // Store user data in Firestore
     try {
-      const userDoc = doc(db, "users", firebaseUser.uid);
-      
-      // Always create a new document for the user
-      await setDoc(userDoc, {
-        email: firebaseUser.email,
-        name: name || firebaseUser.email?.split('@')[0] || 'User',
-        role: role,
-        photoURL: null,
-        isAdmin: false,
-        createdAt: serverTimestamp(),
-        lastLogin: serverTimestamp()
-      });
-      console.log("User successfully saved to Firestore:", firebaseUser.uid);
+      await saveUserToFirestore(
+        firebaseUser.uid,
+        firebaseUser.email,
+        name || firebaseUser.email?.split('@')[0] || 'User',
+        role,
+        null,
+        false
+      );
     } catch (error) {
       console.error("Error saving user to Firestore:", error);
       throw new Error(`Failed to save user data: ${error instanceof Error ? error.message : String(error)}`);
@@ -120,3 +144,6 @@ export const signup = async (email: string, password: string, name: string, role
 export const logoutUser = async () => {
   return await signOut(auth);
 };
+
+// Export the helper function for use in other components
+export { saveUserToFirestore };

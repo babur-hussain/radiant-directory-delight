@@ -1,6 +1,5 @@
-
 // Define types for our auth context
-export type UserRole = "Business" | "Influencer" | "Admin" | "admin" | "staff" | null;
+export type UserRole = "Business" | "Influencer" | "Admin" | "User" | "admin" | "staff" | null;
 
 export interface Subscription {
   id: string;
@@ -21,7 +20,7 @@ export interface User {
   photoURL?: string | null;
   isAdmin?: boolean;
   subscription?: Subscription | null;
-  createdAt?: string; // Add createdAt property to User type
+  createdAt?: string;
 }
 
 export interface AuthContextType {
