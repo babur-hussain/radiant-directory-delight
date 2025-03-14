@@ -78,9 +78,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     } catch (error: any) {
       console.error("Login error:", error.code, error.message);
+      
+      // Handle specific error codes
+      let errorMessage = "Please check your credentials and try again.";
+      if (error.code === 'auth/unauthorized-domain') {
+        errorMessage = "This domain is not authorized for authentication. Please try again later or contact support.";
+      } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        errorMessage = "Invalid email or password.";
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = "Too many unsuccessful login attempts. Please try again later.";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "Invalid email format.";
+      }
+      
       toast({
         title: "Login failed",
-        description: error.message || "Please check your credentials and try again.",
+        description: errorMessage,
         variant: "destructive",
       });
       throw error;
@@ -109,9 +122,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     } catch (error: any) {
       console.error("Google login error:", error.code, error.message);
+      
+      let errorMessage = "There was an error signing in with Google.";
+      if (error.code === 'auth/unauthorized-domain') {
+        errorMessage = "This domain is not authorized for authentication. Please try from an authorized domain or contact support.";
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = "Login popup was closed. Please try again.";
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        errorMessage = "Multiple popup requests were made. Please try again.";
+      } else if (error.code === 'auth/popup-blocked') {
+        errorMessage = "The authentication popup was blocked by your browser. Please allow popups for this website and try again.";
+      }
+      
       toast({
         title: "Google login failed",
-        description: error.message || "There was an error signing in with Google.",
+        description: errorMessage,
         variant: "destructive",
       });
       throw error;
@@ -136,9 +161,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     } catch (error: any) {
       console.error("Registration error:", error.code, error.message);
+      
+      let errorMessage = "There was an error processing your registration.";
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = "This email is already registered. Please login instead.";
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = "Password is too weak. Please use a stronger password.";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "Invalid email format.";
+      } else if (error.code === 'auth/unauthorized-domain') {
+        errorMessage = "This domain is not authorized for authentication. Please try from an authorized domain.";
+      }
+      
       toast({
         title: "Registration failed",
-        description: error.message || "There was an error processing your registration.",
+        description: errorMessage,
         variant: "destructive",
       });
       throw error;

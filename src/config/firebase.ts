@@ -19,6 +19,11 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
+// Add custom parameters for Google sign-in
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
 // Initialize Analytics conditionally
 const initializeAnalytics = async () => {
   try {
