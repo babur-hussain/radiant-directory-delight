@@ -9,6 +9,7 @@ import { TableBusinessListings } from "@/components/admin/TableBusinessListings"
 import UnauthorizedView from "@/components/admin/UnauthorizedView";
 import BusinessListingsHeader from "@/components/admin/BusinessListingsHeader";
 import BusinessFormDialog from "@/components/admin/BusinessFormDialog";
+import BusinessPermissionError from "@/components/admin/table/BusinessPermissionError";
 
 const AdminBusinessListingsPage = () => {
   const { user, isAuthenticated } = useAuth();
@@ -19,6 +20,7 @@ const AdminBusinessListingsPage = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentBusinessToEdit, setCurrentBusinessToEdit] = useState<Business | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
   
   useEffect(() => {
     setBusinessCount(getAllBusinesses().length);
@@ -66,6 +68,7 @@ const AdminBusinessListingsPage = () => {
   
   const handleBusinessFormSubmit = async (values: BusinessFormValues) => {
     setIsSubmitting(true);
+    setPermissionError(null);
     
     try {
       // Fix for the type comparison error - properly handle priority conversion
@@ -138,11 +141,22 @@ const AdminBusinessListingsPage = () => {
       handleRefresh();
     } catch (error) {
       console.error("Error saving business:", error);
-      toast({
-        title: "Operation Failed",
-        description: `Error: ${error instanceof Error ? error.message : String(error)}`,
-        variant: "destructive",
-      });
+      
+      // Check for permission-related errors
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      if (errorMessage.includes("permission-denied") || 
+          errorMessage.includes("Permission denied") ||
+          errorMessage.includes("insufficient permissions") ||
+          errorMessage.includes("Missing or insufficient permissions")) {
+        setPermissionError("Permission denied. You don't have admin rights to create or update business listings.");
+      } else {
+        toast({
+          title: "Operation Failed",
+          description: `Error: ${error instanceof Error ? error.message : String(error)}`,
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -160,6 +174,10 @@ const AdminBusinessListingsPage = () => {
         isRefreshing={isRefreshing}
         handleUploadComplete={handleUploadComplete}
       />
+      
+      {permissionError && (
+        <BusinessPermissionError errorMessage={permissionError} />
+      )}
       
       <Card>
         <CardHeader>
