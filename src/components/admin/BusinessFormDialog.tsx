@@ -60,6 +60,7 @@ const BusinessFormDialog: React.FC<BusinessFormDialogProps> = ({
             onSubmit={onSubmit}
             onCancel={() => setShowDialog(false)}
             isSubmitting={isSubmitting}
+            hideButtons={true} // Hide buttons in the form since we're showing them in the footer
           />
         </ScrollArea>
         

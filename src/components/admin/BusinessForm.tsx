@@ -41,6 +41,7 @@ interface BusinessFormProps {
   onSubmit: (values: BusinessFormValues) => void;
   onCancel: () => void;
   isSubmitting?: boolean;
+  hideButtons?: boolean; // New prop to hide form buttons
 }
 
 const BusinessForm: React.FC<BusinessFormProps> = ({
@@ -48,6 +49,7 @@ const BusinessForm: React.FC<BusinessFormProps> = ({
   onSubmit,
   onCancel,
   isSubmitting = false,
+  hideButtons = false, // Default to showing buttons
 }) => {
   const form = useForm<BusinessFormValues>({
     resolver: zodResolver(businessSchema),
@@ -98,7 +100,7 @@ const BusinessForm: React.FC<BusinessFormProps> = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form id="business-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
@@ -304,22 +306,25 @@ const BusinessForm: React.FC<BusinessFormProps> = ({
           />
         </div>
 
-        <div className="flex justify-end space-x-2">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-          <Button 
-            type="submit"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Saving..." : initialValues?.id ? "Update Business" : "Add Business"}
-          </Button>
-        </div>
+        {/* Only render the buttons if hideButtons is false */}
+        {!hideButtons && (
+          <div className="flex justify-end space-x-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Saving..." : initialValues?.id ? "Update Business" : "Add Business"}
+            </Button>
+          </div>
+        )}
       </form>
     </Form>
   );
