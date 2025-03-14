@@ -68,7 +68,7 @@ const AdminBusinessListingsPage = () => {
     setIsSubmitting(true);
     
     try {
-      // Handle priority value conversion properly to avoid type comparison issues
+      // Handle priority field type conversion
       let priorityValue: number | undefined;
       
       if (values.priority === undefined || values.priority === null || values.priority === '') {
@@ -76,7 +76,7 @@ const AdminBusinessListingsPage = () => {
       } else if (typeof values.priority === 'number') {
         priorityValue = values.priority;
       } else {
-        // Convert string to number
+        // Convert any string representation to a number
         const stringValue = String(values.priority).trim();
         if (stringValue === '') {
           priorityValue = undefined;
