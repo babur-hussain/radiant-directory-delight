@@ -56,14 +56,14 @@ const Header = () => {
           <Link 
             to="/" 
             className="flex items-center space-x-2"
-            style={{ display: 'flex' }}
+            style={{ display: 'inline-flex' }}
           >
             <span className="font-bold text-2xl bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">Grow Bharat Vyapaar</span>
           </Link>
 
           <nav 
             className="hidden md:flex items-center space-x-8"
-            style={{ display: 'none' }}
+            style={{ display: 'flex' }}
           >
             <Link to="/" className="text-sm font-medium hover:text-primary transition-smooth">
               Home
@@ -81,7 +81,7 @@ const Header = () => {
 
           <div 
             className="hidden md:flex items-center space-x-4"
-            style={{ display: 'none' }}
+            style={{ display: 'flex' }}
           >
             <Button variant="outline" size="sm" className="rounded-full transition-smooth">
               <Map className="h-4 w-4 mr-2" />
@@ -97,7 +97,7 @@ const Header = () => {
           <button 
             className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-smooth" 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            style={{ display: 'block' }}
+            style={{ display: 'inline-flex' }}
           >
             {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
