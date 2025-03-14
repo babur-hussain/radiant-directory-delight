@@ -20,8 +20,11 @@ const FeaturedBusinesses = () => {
       setLoading(true);
       try {
         // Get businesses from the utility function that combines original and uploaded businesses
+        // getAllBusinesses now returns businesses sorted by priority
         const allBusinesses = getAllBusinesses();
+        
         // Filter to featured businesses and take the first 6
+        // Priority sorting is already applied by getAllBusinesses
         const featuredBusinesses = allBusinesses.filter(b => b.featured).slice(0, 6);
         setBusinesses(featuredBusinesses);
       } catch (error) {

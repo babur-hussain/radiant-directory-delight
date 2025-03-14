@@ -30,6 +30,7 @@ const businessSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters."),
   featured: z.boolean().default(false),
   tags: z.array(z.string()).default([]),
+  priority: z.coerce.number().optional().or(z.literal('')),
   // reviews will be auto-generated
 });
 
@@ -60,6 +61,7 @@ const BusinessForm: React.FC<BusinessFormProps> = ({
       description: initialValues?.description || "",
       featured: initialValues?.featured || false,
       tags: initialValues?.tags || [],
+      priority: initialValues?.priority ?? "",
     },
   });
 
@@ -170,6 +172,34 @@ const BusinessForm: React.FC<BusinessFormProps> = ({
                     {...field}
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* New Priority Field */}
+          <FormField
+            control={form.control}
+            name="priority"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Priority</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    min="1"
+                    placeholder="Lower numbers appear first (optional)" 
+                    {...field}
+                    value={field.value === undefined ? "" : field.value}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      field.onChange(value === "" ? "" : Number(value));
+                    }}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Lower numbers will appear at the top of listings
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

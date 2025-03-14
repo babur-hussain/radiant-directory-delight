@@ -65,11 +65,15 @@ const AdminBusinessListingsPage = () => {
     setIsSubmitting(true);
     
     try {
+      // Process priority field - if it's an empty string, set it to undefined
+      const priorityValue = values.priority === '' ? undefined : values.priority;
+      
       if (currentBusinessToEdit) {
         // We're editing an existing business
         const updated = updateBusiness({
           ...currentBusinessToEdit,
-          ...values
+          ...values,
+          priority: priorityValue
         });
         
         if (updated) {
@@ -100,6 +104,7 @@ const AdminBusinessListingsPage = () => {
           featured: values.featured,
           tags: values.tags,
           reviews: randomReviews,
+          priority: priorityValue,
           image: values.image || `https://source.unsplash.com/random/500x350/?${values.category.toLowerCase().replace(/\s+/g, ',')}`
         });
         
