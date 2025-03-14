@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         // Check if we have role information in localStorage
-        const roleKey = `role_${firebaseUser.email}`;
+        const roleKey = `role_${firebaseUser.uid}`; // Use UID instead of email for consistency
         const userRole = localStorage.getItem(roleKey) as UserRole || null;
         
         // Create user object from Firebase user
@@ -78,6 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Welcome back!",
       });
     } catch (error: any) {
+      console.error("Login error:", error.code, error.message);
       toast({
         title: "Login failed",
         description: error.message || "Please check your credentials and try again.",
@@ -92,12 +93,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithGoogle = async () => {
     try {
       setLoading(true);
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      // Save user role if needed
+      const user = result.user;
+      if (user && user.email) {
+        // Check if we already have a role for this user
+        const roleKey = `role_${user.uid}`;
+        if (!localStorage.getItem(roleKey)) {
+          // Default to a role if needed, or let user select later
+          // localStorage.setItem(roleKey, "Business"); // Uncomment if you want to set a default
+        }
+      }
       toast({
         title: "Login successful",
         description: "Welcome back!",
       });
     } catch (error: any) {
+      console.error("Google login error:", error.code, error.message);
       toast({
         title: "Google login failed",
         description: error.message || "There was an error signing in with Google.",
@@ -112,12 +124,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithFacebook = async () => {
     try {
       setLoading(true);
-      await signInWithPopup(auth, facebookProvider);
+      const result = await signInWithPopup(auth, facebookProvider);
+      // Save user role if needed
+      const user = result.user;
+      if (user && user.email) {
+        // Check if we already have a role for this user
+        const roleKey = `role_${user.uid}`;
+        if (!localStorage.getItem(roleKey)) {
+          // Default to a role if needed
+          // localStorage.setItem(roleKey, "Business"); // Uncomment if you want to set a default
+        }
+      }
       toast({
         title: "Login successful",
         description: "Welcome back!",
       });
     } catch (error: any) {
+      console.error("Facebook login error:", error.code, error.message);
       toast({
         title: "Facebook login failed",
         description: error.message || "There was an error signing in with Facebook.",
@@ -135,8 +158,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
       
       // Store role information in localStorage
-      if (role) {
-        localStorage.setItem(`role_${email}`, role as string);
+      if (role && firebaseUser) {
+        localStorage.setItem(`role_${firebaseUser.uid}`, role as string);
       }
       
       toast({
@@ -144,6 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: `You have successfully registered as a ${role}.`,
       });
     } catch (error: any) {
+      console.error("Registration error:", error.code, error.message);
       toast({
         title: "Registration failed",
         description: error.message || "There was an error processing your registration.",
@@ -163,6 +187,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "You have been successfully logged out.",
       });
     } catch (error: any) {
+      console.error("Logout error:", error);
       toast({
         title: "Logout failed",
         description: error.message || "There was an error logging out.",
