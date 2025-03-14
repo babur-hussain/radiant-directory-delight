@@ -38,7 +38,7 @@ const Header = () => {
   }
 
   return (
-    <header>
+    <header className="header-component">
       <div className="container max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between w-full">
           <Link to="/" className="flex items-center space-x-2">
@@ -81,7 +81,7 @@ const Header = () => {
         </div>
       </div>
 
-      <div className={cn("md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-sm transition-all duration-300 overflow-hidden", isMobileMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0")}>
+      <div className={`mobile-menu md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-sm transition-all duration-300 overflow-hidden ${isMobileMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
         <div className="container max-w-7xl mx-auto px-4 py-4 flex flex-col space-y-4">
           <Link to="/" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
             Home
@@ -105,9 +105,9 @@ const Header = () => {
                 <LogIn className="h-4 w-4 mr-2" />
                 Logout
               </Button> : <Button variant="default" className="justify-start rounded-full w-full transition-smooth" onClick={() => {
-            setIsAuthModalOpen(true);
-            setIsMobileMenuOpen(false);
-          }}>
+                setIsAuthModalOpen(true);
+                setIsMobileMenuOpen(false);
+              }}>
                 <LogIn className="h-4 w-4 mr-2" />
                 Login / Register
               </Button>}

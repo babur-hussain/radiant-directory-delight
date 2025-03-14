@@ -11,37 +11,47 @@ body {
   overflow-x: hidden;
 }
 
-/* Reset and simplify header styles */
+/* Clear header positioning and visibility issues */
 header {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  background-color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 1rem 0;
-  z-index: 50;
-}
-
-/* Force display of all header content */
-header * {
+  z-index: 1000;
   display: block;
 }
 
-header a, 
-header button {
-  display: inline-flex !important;
-}
-
+/* Explicit display rules for header children */
 header .container {
   display: flex !important;
 }
 
-header .flex {
+header nav {
   display: flex !important;
 }
 
-/* Force proper media queries */
+header nav a {
+  display: block !important;
+  color: #333333 !important;
+}
+
+header button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Explicit mobile menu display rules */
+header .mobile-menu {
+  display: block !important;
+  background-color: #ffffff;
+  width: 100%;
+}
+
+/* Force media query behavior */
 @media (min-width: 768px) {
   header .md\:flex {
     display: flex !important;
@@ -58,9 +68,9 @@ header .flex {
   }
 }
 
-/* Ensure hero section doesn't overlap header */
+/* Ensure hero section padding */
 .min-h-\[85vh\] {
-  margin-top: 80px;
+  padding-top: 90px;
 }
 
 /* Other styles */
