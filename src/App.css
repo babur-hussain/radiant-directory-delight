@@ -11,31 +11,38 @@ body {
   overflow-x: hidden;
 }
 
-header, header * {
-  visibility: visible !important;
-  display: block;
+/* Basic header styling */
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-header a, header button {
-  display: inline-flex;
-}
-
-header .container, header .flex {
+/* Ensure header content is visible */
+header .container,
+header .flex {
   display: flex !important;
 }
 
-header .md\:flex {
-  display: flex !important;
+/* Navigation links on desktop */
+header nav a {
+  display: inline-block !important;
+  color: #333;
+  text-decoration: none;
 }
 
-header .hidden {
-  display: none !important;
+/* Mobile menu toggle */
+header button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
 }
 
-header .md\:hidden {
-  display: none !important;
-}
-
+/* Show desktop navigation on larger screens */
 @media (min-width: 768px) {
   header .md\:flex {
     display: flex !important;
@@ -44,6 +51,22 @@ header .md\:hidden {
   header .md\:hidden {
     display: none !important;
   }
+}
+
+/* Hide desktop navigation on mobile */
+@media (max-width: 767px) {
+  header .hidden.md\:flex {
+    display: none !important;
+  }
+  
+  header .md\:hidden {
+    display: inline-flex !important;
+  }
+}
+
+/* Hero section should have margin to not overlap with header */
+.min-h-\[85vh\] {
+  margin-top: 60px;
 }
 
 .logo {
