@@ -1,10 +1,9 @@
-
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Star, MapPin, Phone, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import BusinessImage from '@/components/BusinessImage';
 import { Business } from '@/lib/csv-utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { createGoogleSearchUrl } from '@/lib/utils';
 
 interface BusinessCardProps {
   business: Business;
@@ -107,13 +106,15 @@ const BusinessCard = ({ business }: BusinessCardProps) => {
       {/* Footer */}
       <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
         <span className="text-xs font-medium text-gray-500">{business.category}</span>
-        <Link 
-          to={`/businesses?category=${encodeURIComponent(business.category)}`}
+        <a 
+          href={createGoogleSearchUrl(business.name, business.address)}
+          target="_blank"
+          rel="noopener noreferrer"
           className="flex items-center text-xs font-medium text-primary hover:text-primary/90 transition-smooth"
         >
           View Details
           <ExternalLink className="h-3 w-3 ml-1" />
-        </Link>
+        </a>
       </div>
     </div>
   );

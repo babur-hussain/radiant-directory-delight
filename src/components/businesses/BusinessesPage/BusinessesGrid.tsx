@@ -6,6 +6,7 @@ import { Star, MapPin, Phone, ChevronDown, ChevronUp } from "lucide-react";
 import { Business } from "@/lib/csv-utils";
 import BusinessImage from "@/components/BusinessImage";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { createGoogleSearchUrl } from "@/lib/utils";
 
 interface BusinessesGridProps {
   businesses: Business[];
@@ -86,7 +87,13 @@ const BusinessesGrid: React.FC<BusinessesGridProps> = ({ businesses, clearAllFil
           
           <CardFooter className="pt-2">
             <Button variant="outline" className="w-full" asChild>
-              <a href={`/business/${business.id}`}>View Details</a>
+              <a 
+                href={createGoogleSearchUrl(business.name, business.address)}
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                View Details
+              </a>
             </Button>
           </CardFooter>
         </Card>
