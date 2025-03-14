@@ -13,6 +13,8 @@ import BusinessTableSearch from './table/BusinessTableSearch';
 import TablePagination from './table/TablePagination';
 import DeleteBusinessDialog from './table/DeleteBusinessDialog';
 import BusinessDetailsDialog from './table/BusinessDetailsDialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 interface TableBusinessListingsProps {
   onRefresh?: () => void;
@@ -34,6 +36,7 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
   const { toast } = useToast();
   const itemsPerPage = 40;
   
@@ -43,6 +46,7 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
     try {
       await initializeData();
       setBusinesses(getAllBusinesses());
+      setPermissionError(null);
       
       toast({
         title: "Data refreshed",
@@ -50,11 +54,23 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
       });
     } catch (error) {
       console.error("Error refreshing data:", error);
-      toast({
-        title: "Refresh failed",
-        description: "There was an error refreshing the business data.",
-        variant: "destructive",
-      });
+      
+      // Check for permission error
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("permission") || errorMessage.includes("Permission")) {
+        setPermissionError("Permission denied when accessing businesses. Using default data instead.");
+        toast({
+          title: "Permission Error",
+          description: "You don't have access to business data. Using default data instead.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Refresh failed",
+          description: "There was an error refreshing the business data.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsRefreshing(false);
       
@@ -70,13 +86,26 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
       try {
         await initializeData();
         setBusinesses(getAllBusinesses());
+        setPermissionError(null);
       } catch (error) {
         console.error("Error loading businesses:", error);
-        toast({
-          title: "Loading failed",
-          description: "There was an error loading the business data.",
-          variant: "destructive",
-        });
+        
+        // Check for permission error
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes("permission") || errorMessage.includes("Permission")) {
+          setPermissionError("Permission denied when accessing businesses. Using default data instead.");
+          toast({
+            title: "Permission Error",
+            description: "You don't have access to business data. Using default data instead.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Loading failed",
+            description: "There was an error loading the business data.",
+            variant: "destructive",
+          });
+        }
       } finally {
         setLoading(false);
       }
@@ -88,12 +117,23 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
       setBusinesses(getAllBusinesses());
     };
     
+    const handlePermissionError = (e: CustomEvent) => {
+      setPermissionError(e.detail.message);
+      toast({
+        title: "Permission Error",
+        description: "You don't have access to business data. Using default data instead.",
+        variant: "destructive",
+      });
+    };
+    
     addDataChangeListener(handleDataChanged);
+    window.addEventListener('businessPermissionError', handlePermissionError as EventListener);
     
     return () => {
       removeDataChangeListener(handleDataChanged);
+      window.removeEventListener('businessPermissionError', handlePermissionError as EventListener);
     };
-  }, []);
+  }, [toast]);
   
   const handleDeleteBusiness = async () => {
     if (businessToDelete) {
@@ -174,6 +214,16 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
 
   return (
     <div className="space-y-4">
+      {permissionError && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Permission Error</AlertTitle>
+          <AlertDescription>
+            {permissionError}
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <BusinessTableSearch 
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}

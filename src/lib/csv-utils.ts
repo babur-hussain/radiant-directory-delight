@@ -12,6 +12,7 @@ import {
   where,
   writeBatch
 } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 // Define the business type based on the existing data structure
 export interface Business {
@@ -29,11 +30,94 @@ export interface Business {
   priority?: number; // Added priority field (optional)
 }
 
+// Default business data to use when Firebase data is unavailable
+export const DEFAULT_BUSINESSES_DATA: Business[] = [
+  {
+    id: 1,
+    name: "The Coffee Hub",
+    category: "Coffee Shop",
+    image: "https://images.unsplash.com/photo-1559925393-8be0ec4767c8?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8Y29mZmVlJTIwc2hvcHxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=500&q=60",
+    rating: 4.8,
+    reviews: 230,
+    address: "123 Main St, Portland, OR",
+    phone: "(503) 555-1234",
+    description: "A cozy coffee shop with a wide selection of specialty drinks and pastries. Free WiFi and plenty of seating make it perfect for remote work or casual meetings.",
+    featured: true,
+    tags: ["Coffee", "Breakfast", "WiFi", "Pastries"]
+  },
+  {
+    id: 2,
+    name: "Green Leaf Restaurant",
+    category: "Restaurant",
+    image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NHx8cmVzdGF1cmFudHxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=500&q=60",
+    rating: 4.5,
+    reviews: 187,
+    address: "456 Park Ave, Portland, OR",
+    phone: "(503) 555-5678",
+    description: "Farm-to-table restaurant focusing on locally sourced ingredients and seasonal menus. Known for innovative dishes and warm, inviting atmosphere.",
+    featured: true,
+    tags: ["Dinner", "Lunch", "Organic", "Local"]
+  },
+  {
+    id: 3,
+    name: "Fitness First Gym",
+    category: "Fitness",
+    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8Z3ltfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60",
+    rating: 4.7,
+    reviews: 156,
+    address: "789 Fitness Way, Portland, OR",
+    phone: "(503) 555-9012",
+    description: "Modern gym with state-of-the-art equipment, personal training, and group fitness classes. Open 24/7 with monthly and annual membership options.",
+    featured: false,
+    tags: ["Gym", "Personal Training", "24/7", "Classes"]
+  },
+  {
+    id: 4,
+    name: "City Bookstore",
+    category: "Retail",
+    image: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8Ym9va3N0b3JlfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60",
+    rating: 4.9,
+    reviews: 203,
+    address: "321 Book Lane, Portland, OR",
+    phone: "(503) 555-3456",
+    description: "Independent bookstore with a curated selection of books, magazines, and gifts. Hosts author events and book clubs throughout the year.",
+    featured: true,
+    tags: ["Books", "Gifts", "Events", "Local"]
+  },
+  {
+    id: 5,
+    name: "Tech Solutions",
+    category: "Technology",
+    image: "https://images.unsplash.com/photo-1535303311164-664fc9ec6532?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8dGVjaHxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=500&q=60",
+    rating: 4.2,
+    reviews: 78,
+    address: "555 Tech Blvd, Portland, OR",
+    phone: "(503) 555-7890",
+    description: "Computer repair, IT consulting, and tech support for individuals and small businesses. Certified technicians and quick turnaround times.",
+    featured: false,
+    tags: ["Tech Support", "Repairs", "Consulting", "IT Services"]
+  },
+  {
+    id: 6,
+    name: "Fresh Cuts Salon",
+    category: "Beauty",
+    image: "https://images.unsplash.com/photo-1562322140-8baeececf3df?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NHx8aGFpcnNhbG9ufGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60",
+    rating: 4.6,
+    reviews: 112,
+    address: "888 Beauty Lane, Portland, OR",
+    phone: "(503) 555-2345",
+    description: "Full-service hair salon offering cuts, color, and styling for all hair types. Expert stylists and a relaxing atmosphere.",
+    featured: true,
+    tags: ["Hair", "Beauty", "Color", "Styling"]
+  }
+];
+
 // Firestore collection name
 const BUSINESSES_COLLECTION = 'businesses';
 
 // Store the uploaded businesses in this array (in-memory cache)
 export let uploadedBusinesses: Business[] = [];
+let isUsingDefaultData = false;
 
 // Default image to use when business image is unavailable
 export const DEFAULT_BUSINESS_IMAGE = "https://source.unsplash.com/photo-1518770660439-4636190af475";
@@ -65,6 +149,7 @@ export const initializeData = async (): Promise<void> => {
     
     // Clear the current array
     uploadedBusinesses = [];
+    isUsingDefaultData = false;
     
     // Add each business from Firestore to the array
     snapshot.forEach(doc => {
@@ -76,10 +161,37 @@ export const initializeData = async (): Promise<void> => {
       
       uploadedBusinesses.push(businessData);
     });
+
+    // If no businesses were loaded from Firestore, check if we should use default data
+    if (uploadedBusinesses.length === 0 && businessesData.length === 0) {
+      console.warn("No businesses found in Firestore and businessesData is empty. Using default business data.");
+      isUsingDefaultData = true;
+    }
     
     notifyDataChanged();
   } catch (error) {
     console.error("Error initializing data from Firestore:", error);
+    
+    // Check for permission issues
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes("permission-denied") || 
+        errorMessage.includes("Permission denied") ||
+        errorMessage.includes("insufficient permissions")) {
+      console.warn("Permission denied when accessing businesses. Using default business data.");
+      isUsingDefaultData = true;
+      
+      // Display a toast notification if available
+      try {
+        const event = new CustomEvent('businessPermissionError', {
+          detail: { message: "Permission denied when accessing businesses. Using default business data." }
+        });
+        window.dispatchEvent(event);
+      } catch (e) {
+        console.error("Failed to dispatch permission error event:", e);
+      }
+    }
+    
+    notifyDataChanged();
   }
 };
 
@@ -87,27 +199,43 @@ export const initializeData = async (): Promise<void> => {
 initializeData();
 
 export const getAllBusinesses = (): Business[] => {
-  // Combine the original businesses with the uploaded ones and sort by priority
-  const allBusinesses = [...businessesData, ...uploadedBusinesses];
+  // If we're using default data due to permission issues or no data
+  if (isUsingDefaultData) {
+    return DEFAULT_BUSINESSES_DATA;
+  }
   
-  // Sort businesses by priority (lower numbers first), then keep default order
-  // Businesses without priority (undefined) will be after those with priority
-  return allBusinesses.sort((a, b) => {
-    // If both have priority, compare them
-    if (a.priority !== undefined && b.priority !== undefined) {
-      return a.priority - b.priority;
-    }
-    // If only a has priority, a comes first
-    if (a.priority !== undefined) {
-      return -1;
-    }
-    // If only b has priority, b comes first
-    if (b.priority !== undefined) {
-      return 1;
-    }
-    // If neither has priority, maintain the original order
-    return 0;
-  });
+  // If businessesData has content, use it as the base
+  if (businessesData.length > 0) {
+    // Combine the original businesses with the uploaded ones and sort by priority
+    const allBusinesses = [...businessesData, ...uploadedBusinesses];
+    
+    // Sort businesses by priority (lower numbers first), then keep default order
+    // Businesses without priority (undefined) will be after those with priority
+    return allBusinesses.sort((a, b) => {
+      // If both have priority, compare them
+      if (a.priority !== undefined && b.priority !== undefined) {
+        return a.priority - b.priority;
+      }
+      // If only a has priority, a comes first
+      if (a.priority !== undefined) {
+        return -1;
+      }
+      // If only b has priority, b comes first
+      if (b.priority !== undefined) {
+        return 1;
+      }
+      // If neither has priority, maintain the original order
+      return 0;
+    });
+  }
+  
+  // If businessesData is empty but we have uploaded businesses, just return those
+  if (uploadedBusinesses.length > 0) {
+    return uploadedBusinesses;
+  }
+  
+  // If no data anywhere, return default data
+  return DEFAULT_BUSINESSES_DATA;
 };
 
 // Add a new business manually
