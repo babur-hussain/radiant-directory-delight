@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, Map, LogIn } from 'lucide-react';
@@ -12,7 +11,17 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const { isAuthenticated, logout } = useAuth();
+  
+  let isAuthenticated = false;
+  let logout = async () => {};
+  
+  try {
+    const auth = useAuth();
+    isAuthenticated = auth.isAuthenticated;
+    logout = auth.logout;
+  } catch (error) {
+    console.error("Auth context not available yet:", error);
+  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -39,14 +48,12 @@ const Header = () => {
     >
       <div className="container max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between">
-          {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <span className="font-bold text-2xl bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
               DirectSpot
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <Link to="/" className="text-sm font-medium hover:text-primary transition-smooth">
               Home
@@ -62,7 +69,6 @@ const Header = () => {
             </Link>
           </nav>
 
-          {/* Desktop Action Buttons */}
           <div className="hidden md:flex items-center space-x-4">
             <Button variant="outline" size="sm" className="rounded-full transition-smooth">
               <Map className="h-4 w-4 mr-2" />
@@ -84,7 +90,6 @@ const Header = () => {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
           <button 
             className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-smooth"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -94,7 +99,6 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Mobile Menu */}
       <div 
         className={cn(
           "md:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm transition-all duration-300 overflow-hidden",
@@ -146,7 +150,6 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Auth Modal */}
       <AuthModal isOpen={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
     </header>
   );
