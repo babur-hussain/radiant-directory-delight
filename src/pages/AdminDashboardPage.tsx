@@ -3,9 +3,9 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import UnauthorizedView from "@/components/admin/UnauthorizedView";
-import SubscriptionManagement from "@/components/admin/SubscriptionManagement";
+import { SubscriptionManagement } from "@/components/admin/SubscriptionManagement";
 import UserPermissionsTab from "@/components/admin/UserPermissionsTab";
-import BusinessTable from "@/components/admin/table/BusinessTable";
+import { TableBusinessListings } from "@/components/admin/TableBusinessListings";
 import ManageCategoriesLocations from "@/components/admin/ManageCategoriesLocations";
 
 const AdminDashboardPage = () => {
@@ -13,7 +13,7 @@ const AdminDashboardPage = () => {
   const [activeTab, setActiveTab] = useState("businesses");
 
   // Check if user is authorized (admin or staff)
-  const isAuthorized = user && (user.role === "admin" || user.role === "staff");
+  const isAuthorized = user && (user.role === "Admin" || user.role === "staff");
 
   if (!isAuthorized) {
     return <UnauthorizedView />;
@@ -32,7 +32,7 @@ const AdminDashboardPage = () => {
         </TabsList>
         
         <TabsContent value="businesses" className="pt-6">
-          <BusinessTable />
+          <TableBusinessListings />
         </TabsContent>
         
         <TabsContent value="categories-locations" className="pt-6">

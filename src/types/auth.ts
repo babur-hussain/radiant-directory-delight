@@ -1,6 +1,5 @@
-
 // Define types for our auth context
-export type UserRole = "Business" | "Influencer" | "Admin" | null;
+export type UserRole = "Business" | "Influencer" | "Admin" | "admin" | "staff" | null;
 
 export interface User {
   id: string;
