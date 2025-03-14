@@ -71,49 +71,28 @@ const AdminBusinessListingsPage = () => {
     setPermissionError(null);
     
     try {
-      // Fix for the type comparison error - properly handle priority conversion
-      let priorityValue: number | undefined;
-      
-      if (values.priority === undefined || values.priority === null || values.priority === '') {
-        priorityValue = undefined;
-      } else if (typeof values.priority === 'number') {
-        priorityValue = values.priority;
-      } else {
-        // Convert string representation to number carefully
-        const stringValue = String(values.priority).trim();
-        if (stringValue === '') {
-          priorityValue = undefined;
-        } else {
-          const parsedValue = Number(stringValue);
-          priorityValue = isNaN(parsedValue) ? undefined : parsedValue;
-        }
+      let priorityValue: number | undefined = undefined;
+      if (values.priority !== undefined && values.priority !== null && values.priority !== "") {
+        priorityValue = Number(values.priority);
+        if (isNaN(priorityValue)) priorityValue = undefined;
       }
       
       if (currentBusinessToEdit) {
         const updated = updateBusiness({
           ...currentBusinessToEdit,
           ...values,
-          // Convert tags back to an array if it's a string
-          tags: typeof values.tags === 'string' ? values.tags.split(',').map(tag => tag.trim()) : values.tags,
-          priority: priorityValue
+          tags: typeof values.tags === "string" ? values.tags.split(",").map(tag => tag.trim()) : values.tags,
+          priority: priorityValue,
         });
         
         if (updated) {
-          toast({
-            title: "Business Updated",
-            description: `${values.name} has been updated successfully.`,
-          });
+          toast({ title: "Business Updated", description: `${values.name} has been updated successfully.` });
         } else {
-          toast({
-            title: "Update Failed",
-            description: "Failed to update the business.",
-            variant: "destructive",
-          });
+          toast({ title: "Update Failed", description: "Failed to update the business.", variant: "destructive" });
         }
       } else {
         const randomReviews = Math.floor(Math.random() * 500) + 50;
-        
-        const newBusinessPromise = addBusiness({
+        const newBusiness = await addBusiness({
           name: values.name,
           category: values.category,
           address: values.address,
@@ -121,19 +100,13 @@ const AdminBusinessListingsPage = () => {
           rating: values.rating,
           description: values.description,
           featured: values.featured,
-          // Convert tags to an array if it's a string
-          tags: typeof values.tags === 'string' ? values.tags.split(',').map(tag => tag.trim()) : values.tags,
+          tags: typeof values.tags === "string" ? values.tags.split(",").map(tag => tag.trim()) : values.tags,
           reviews: randomReviews,
           priority: priorityValue,
-          image: values.image || `https://source.unsplash.com/random/500x350/?${values.category.toLowerCase().replace(/\s+/g, ',')}`
+          image: values.image || `https://source.unsplash.com/random/500x350/?${values.category.toLowerCase().replace(/\s+/g, ",")}`
         });
         
-        const newBusiness = await newBusinessPromise;
-        
-        toast({
-          title: "Business Added",
-          description: `${newBusiness.name} has been added successfully.`,
-        });
+        toast({ title: "Business Added", description: `${newBusiness.name} has been added successfully.` });
       }
       
       setShowBusinessFormDialog(false);
