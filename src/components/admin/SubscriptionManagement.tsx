@@ -1,13 +1,15 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, UserCheck, Search, RefreshCw } from "lucide-react";
+import { CheckCircle, XCircle, UserCheck, Search, RefreshCw, ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { getPackageById } from "@/data/subscriptionData";
 import { toast } from "@/hooks/use-toast";
+import SubscriptionPermissionError from "./SubscriptionPermissionError";
+import { useAuth } from "@/hooks/useAuth";
 
 // For demo purposes, we'll use this mock data
 const mockSubscriptions = [
@@ -61,6 +63,17 @@ export const SubscriptionManagement = () => {
   const [subscriptions, setSubscriptions] = useState(mockSubscriptions);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  
+  useEffect(() => {
+    // Check admin permissions
+    if (user && !user.isAdmin) {
+      setError("You don't have admin rights to manage subscription packages. Please contact your administrator.");
+    } else {
+      setError(null);
+    }
+  }, [user]);
   
   // Format date
   const formatDate = (date: Date) => {
@@ -85,53 +98,115 @@ export const SubscriptionManagement = () => {
   
   // Simulate verifying a subscription
   const handleVerifySubscription = (subscriptionId: string) => {
+    if (user && !user.isAdmin) {
+      setError("Permission denied. You don't have admin rights to verify subscriptions.");
+      toast({
+        title: "Permission Denied",
+        description: "You don't have admin rights to verify subscriptions.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     
     // Simulate API call
     setTimeout(() => {
-      // Update subscription status
-      const updatedSubscriptions = subscriptions.map(sub => 
-        sub.id === subscriptionId ? { ...sub, status: "active" } : sub
-      );
-      
-      setSubscriptions(updatedSubscriptions);
-      setIsLoading(false);
-      
-      toast({
-        title: "Subscription Verified",
-        description: `Subscription ${subscriptionId} has been verified successfully.`
-      });
+      try {
+        // Update subscription status
+        const updatedSubscriptions = subscriptions.map(sub => 
+          sub.id === subscriptionId ? { ...sub, status: "active" } : sub
+        );
+        
+        setSubscriptions(updatedSubscriptions);
+        setError(null);
+        
+        toast({
+          title: "Subscription Verified",
+          description: `Subscription ${subscriptionId} has been verified successfully.`
+        });
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        setError(errorMessage);
+        toast({
+          title: "Verification Failed",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }, 1000);
   };
   
   // Simulate cancelling a subscription
   const handleCancelSubscription = (subscriptionId: string) => {
+    if (user && !user.isAdmin) {
+      setError("Permission denied. You don't have admin rights to cancel subscriptions.");
+      toast({
+        title: "Permission Denied",
+        description: "You don't have admin rights to cancel subscriptions.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     
     // Simulate API call
     setTimeout(() => {
-      // Update subscription status
-      const updatedSubscriptions = subscriptions.map(sub => 
-        sub.id === subscriptionId ? { ...sub, status: "cancelled" } : sub
-      );
-      
-      setSubscriptions(updatedSubscriptions);
-      setIsLoading(false);
-      
-      toast({
-        title: "Subscription Cancelled",
-        description: `Subscription ${subscriptionId} has been cancelled successfully.`
-      });
+      try {
+        // Update subscription status
+        const updatedSubscriptions = subscriptions.map(sub => 
+          sub.id === subscriptionId ? { ...sub, status: "cancelled" } : sub
+        );
+        
+        setSubscriptions(updatedSubscriptions);
+        setError(null);
+        
+        toast({
+          title: "Subscription Cancelled",
+          description: `Subscription ${subscriptionId} has been cancelled successfully.`
+        });
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        setError(errorMessage);
+        toast({
+          title: "Cancellation Failed",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }, 1000);
+  };
+  
+  const handleRetry = () => {
+    setError(null);
   };
   
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Subscription Management</CardTitle>
+        <CardTitle className="flex items-center">
+          <span>Subscription Management</span>
+          {user?.isAdmin && (
+            <Badge variant="outline" className="ml-2 bg-green-100 text-green-800">
+              Admin Access
+            </Badge>
+          )}
+        </CardTitle>
         <CardDescription>Manage active subscriptions and perform admin actions</CardDescription>
       </CardHeader>
       <CardContent>
+        {error && (
+          <SubscriptionPermissionError 
+            errorMessage={error} 
+            onRetry={handleRetry}
+          />
+        )}
+        
         <div className="mb-4 flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -140,9 +215,10 @@ export const SubscriptionManagement = () => {
               className="pl-8"
               value={searchTerm}
               onChange={handleSearch}
+              disabled={!!error}
             />
           </div>
-          <Button variant="outline" size="icon" onClick={() => setSearchTerm("")} disabled={!searchTerm}>
+          <Button variant="outline" size="icon" onClick={() => setSearchTerm("")} disabled={!searchTerm || !!error}>
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
@@ -192,7 +268,7 @@ export const SubscriptionManagement = () => {
                           <Button 
                             variant="destructive" 
                             size="sm"
-                            disabled={isLoading}
+                            disabled={isLoading || !!error}
                             onClick={() => handleCancelSubscription(subscription.id)}
                           >
                             Cancel
@@ -201,7 +277,7 @@ export const SubscriptionManagement = () => {
                           <Button 
                             variant="default" 
                             size="sm"
-                            disabled={isLoading}
+                            disabled={isLoading || !!error}
                             onClick={() => handleVerifySubscription(subscription.id)}
                           >
                             <UserCheck className="h-3 w-3 mr-1" />
@@ -215,7 +291,14 @@ export const SubscriptionManagement = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={7} className="h-24 text-center">
-                    No subscriptions found
+                    {error ? (
+                      <div className="flex flex-col items-center text-muted-foreground">
+                        <ShieldAlert className="h-10 w-10 mb-2 text-muted-foreground/50" />
+                        <p>Admin access required to view subscriptions</p>
+                      </div>
+                    ) : (
+                      "No subscriptions found"
+                    )}
                   </TableCell>
                 </TableRow>
               )}

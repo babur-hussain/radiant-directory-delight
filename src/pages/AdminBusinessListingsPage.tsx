@@ -69,7 +69,7 @@ const AdminBusinessListingsPage = () => {
     
     try {
       // Convert the priority value to a number or undefined
-      const priorityValue = values.priority === undefined ? undefined : 
+      const priorityValue = values.priority === undefined || values.priority === '' ? undefined : 
                             typeof values.priority === 'string' ? parseInt(values.priority, 10) : 
                             values.priority;
       

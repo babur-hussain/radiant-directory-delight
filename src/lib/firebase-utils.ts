@@ -63,7 +63,7 @@ export async function fetchSubscriptionPackages(): Promise<SubscriptionPackage[]
         errorMessage.includes("insufficient permissions") ||
         errorMessage.includes("Missing or insufficient permissions")) {
       console.error("Permission denied when accessing subscription packages. Please check your Firebase security rules.");
-      throw new Error("Permission denied. You don't have access to view subscription packages.");
+      throw new Error("Permission denied. You don't have admin rights to view subscription packages.");
     }
     
     throw error;
