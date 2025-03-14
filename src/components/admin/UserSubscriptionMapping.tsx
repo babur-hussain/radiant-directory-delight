@@ -6,12 +6,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, UserCheck, CheckCircle, XCircle } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { Loader2, Search, UserCheck, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { User } from "@/types/auth";
 import { useAuth } from "@/hooks/useAuth";
+import { getAllUsers } from "@/features/auth/userManagement";
 
 interface UserSubscriptionMappingProps {
   onPermissionError?: (error: any) => void;
@@ -23,44 +24,48 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { user: currentUser } = useAuth();
+  const { toast } = useToast();
   
   // Fetch all users and subscription packages
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        // Get all users
-        const allUsersData = JSON.parse(localStorage.getItem("all_users_data") || "[]");
-        
-        // Get all subscription packages
-        const allPackages = await fetchSubscriptionPackages();
-        
-        setUsers(allUsersData);
-        setPackages(allPackages);
-        
-        // Get current subscriptions
-        const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
-        
-        // Add subscription info to users
-        const usersWithSubscriptions = allUsersData.map((user: User) => ({
-          ...user,
-          subscription: userSubscriptions[user.id] || null
-        }));
-        
-        setUsers(usersWithSubscriptions);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setError("Failed to load users or subscription packages.");
-        
-        if (onPermissionError) {
-          onPermissionError(error);
-        }
-      } finally {
-        setIsLoading(false);
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      // Get all users directly from Firebase
+      const firebaseUsers = await getAllUsers();
+      console.log("Fetched users for subscription mapping:", firebaseUsers.length);
+      
+      // Get all subscription packages
+      const allPackages = await fetchSubscriptionPackages();
+      
+      // Get current subscriptions
+      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
+      
+      // Add subscription info to users
+      const usersWithSubscriptions = firebaseUsers.map((user: User) => ({
+        ...user,
+        subscription: userSubscriptions[user.id] || null
+      }));
+      
+      setUsers(usersWithSubscriptions);
+      setPackages(allPackages);
+      setError(null);
+      
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setError("Failed to load users or subscription packages.");
+      
+      if (onPermissionError) {
+        onPermissionError(error);
       }
-    };
-    
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+  
+  useEffect(() => {
     fetchData();
   }, [onPermissionError]);
   
@@ -73,6 +78,16 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
   // Handle search input change
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+  };
+  
+  // Handle refreshing data
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchData();
+    toast({
+      title: "Refreshed",
+      description: "User subscription data has been refreshed",
+    });
   };
   
   // Handle assigning package to user
@@ -224,11 +239,22 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
   
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>User Subscription Mapping</CardTitle>
-        <CardDescription>
-          Manage and assign subscription packages to users
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>User Subscription Mapping</CardTitle>
+          <CardDescription>
+            Manage and assign subscription packages to users ({filteredUsers.length})
+          </CardDescription>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </CardHeader>
       <CardContent>
         {/* Search Input */}

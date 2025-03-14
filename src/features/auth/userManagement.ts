@@ -2,7 +2,7 @@ import { User, UserRole } from "../../types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { saveUserToAllUsersList } from "./authStorage";
 import { db } from "../../config/firebase";
-import { doc, setDoc, getDoc, collection, query, getDocs, where, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, query, getDocs, where, serverTimestamp, orderBy, limit } from "firebase/firestore";
 
 export const updateUserRole = async (user: User, role: UserRole) => {
   if (!user) {
@@ -116,7 +116,8 @@ export const getAllUsers = async (): Promise<User[]> => {
   try {
     console.log("Fetching ALL users from Firebase collection");
     const usersCollection = collection(db, "users");
-    const querySnapshot = await getDocs(query(usersCollection));
+    const q = query(usersCollection, orderBy("createdAt", "desc"));
+    const querySnapshot = await getDocs(q);
     
     if (querySnapshot.empty) {
       console.log("No users found in Firebase");
@@ -148,10 +149,14 @@ export const getAllUsers = async (): Promise<User[]> => {
       });
     });
     
+    localStorage.setItem('all_users_data', JSON.stringify(users));
+    
     return users;
   } catch (error) {
     console.error("Error getting all users from Firebase:", error);
-    return [];
+    const fallbackUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
+    console.log("Falling back to cached users:", fallbackUsers.length);
+    return fallbackUsers;
   }
 };
 
@@ -195,5 +200,53 @@ export const createTestUser = async (userData: TestUserData): Promise<User> => {
   } catch (error) {
     console.error("Error creating test user:", error);
     throw new Error(`Failed to create test user: ${error}`);
+  }
+};
+
+export const ensureTestUsers = async (): Promise<void> => {
+  try {
+    const existingUsers = await getAllUsers();
+    
+    if (existingUsers.length === 0) {
+      console.log("No users found, creating sample users");
+      
+      const testUsers = [
+        {
+          email: "business@example.com",
+          name: "Business User",
+          role: "Business" as UserRole,
+          isAdmin: false
+        },
+        {
+          email: "influencer@example.com",
+          name: "Influencer User",
+          role: "Influencer" as UserRole,
+          isAdmin: false
+        },
+        {
+          email: "admin@example.com",
+          name: "Admin User",
+          role: "Admin" as UserRole,
+          isAdmin: true
+        },
+        {
+          email: "staff@example.com",
+          name: "Staff Member",
+          role: "staff" as UserRole,
+          isAdmin: false
+        }
+      ];
+      
+      for (const user of testUsers) {
+        await createTestUser(user);
+        console.log(`Created test user: ${user.name}`);
+      }
+      
+      console.log("Sample users created successfully");
+    } else {
+      console.log(`Found ${existingUsers.length} existing users, no need to create test users`);
+    }
+  } catch (error) {
+    console.error("Error ensuring test users:", error);
   }
 };

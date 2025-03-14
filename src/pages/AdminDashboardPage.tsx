@@ -10,6 +10,7 @@ import { BusinessFormValues } from "@/components/admin/BusinessForm";
 import AdminPermissionError from "@/components/admin/dashboard/AdminPermissionError";
 import AdminDashboardTabs from "@/components/admin/dashboard/AdminDashboardTabs";
 import { loadAllUsers, debugRefreshUsers } from "@/features/auth/authStorage";
+import { ensureTestUsers } from "@/features/auth/userManagement";
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
@@ -38,8 +39,15 @@ const AdminDashboardPage = () => {
     if (activeTab === "users") {
       // Force refresh users data
       console.log("Admin Dashboard: Loading users for the Users tab");
-      const userCount = debugRefreshUsers();
-      console.log(`Admin Dashboard: Found ${userCount} users`);
+      
+      // Ensure we have test users in the system
+      ensureTestUsers().then(() => {
+        // Then refresh the users
+        const userCount = debugRefreshUsers();
+        console.log(`Admin Dashboard: Found ${userCount} users`);
+      }).catch(error => {
+        console.error("Error ensuring test users:", error);
+      });
     }
   }, [activeTab]);
   

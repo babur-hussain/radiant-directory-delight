@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -5,18 +6,19 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, RefreshCw, Users, Filter, UserPlus } from "lucide-react";
+import { Loader2, Search, RefreshCw, Users, Filter, UserPlus, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { User, UserRole } from "@/types/auth";
 import { loadAllUsers, saveUserToAllUsersList } from "@/features/auth/authStorage";
-import { getAllUsers, createTestUser } from "@/features/auth/userManagement";
+import { getAllUsers, createTestUser, ensureTestUsers } from "@/features/auth/userManagement";
 import { db } from "@/config/firebase";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface UserData {
   id: string;
@@ -45,6 +47,7 @@ const UserPermissionsTab = () => {
   const [newUserName, setNewUserName] = useState("");
   const [newUserRole, setNewUserRole] = useState<UserRole>("Business");
   const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const { updateUserPermission } = useAuth();
   const { toast } = useToast();
@@ -63,8 +66,13 @@ const UserPermissionsTab = () => {
   const loadUsersFromFirebase = async () => {
     try {
       setLoading(true);
+      setError(null);
       console.log("Fetching users directly from Firebase using getAllUsers()...");
       
+      // First ensure we have some test users
+      await ensureTestUsers();
+      
+      // Then fetch all users including the test ones
       const firebaseUsers = await getAllUsers();
       
       console.log("Users fetched from Firebase:", firebaseUsers.length, firebaseUsers);
@@ -85,6 +93,7 @@ const UserPermissionsTab = () => {
       console.error("Error fetching users:", error);
       const localUsers = loadAllUsers().map(convertToUserData);
       setUsers(localUsers);
+      setError("Failed to fetch users from Firebase. Using cached data.");
       toast({
         title: "Warning",
         description: "Could not connect to Firebase. Using cached data instead.",
@@ -103,7 +112,11 @@ const UserPermissionsTab = () => {
   useEffect(() => {
     try {
       const usersCollection = collection(db, "users");
-      const unsubscribe = onSnapshot(usersCollection, (snapshot) => {
+      const q = query(usersCollection, orderBy("createdAt", "desc"));
+      
+      console.log("Setting up real-time listener for users collection");
+      
+      const unsubscribe = onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
           console.log(`Real-time update: Received ${snapshot.docs.length} users from Firebase`);
           
@@ -130,6 +143,7 @@ const UserPermissionsTab = () => {
         }
       }, (error) => {
         console.error("Error in real-time user updates:", error);
+        setError("Real-time updates failed. Data may be stale.");
         toast({
           title: "Real-time Updates Failed",
           description: "Could not establish real-time updates. Data may be stale.",
@@ -141,7 +155,7 @@ const UserPermissionsTab = () => {
     } catch (error) {
       console.error("Error setting up real-time user updates:", error);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     let result = [...users];
@@ -402,6 +416,13 @@ const UserPermissionsTab = () => {
         </div>
       </CardHeader>
       <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+      
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <div className="relative flex-grow">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -463,7 +484,7 @@ const UserPermissionsTab = () => {
         <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
           <Users className="h-4 w-4" />
           <span>
-            Showing {Math.min(filteredUsers.length, 1 + (currentPage - 1) * USERS_PER_PAGE)} - {Math.min(currentPage * USERS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} users
+            Showing {filteredUsers.length > 0 ? Math.min(filteredUsers.length, 1 + (currentPage - 1) * USERS_PER_PAGE) : 0} - {Math.min(currentPage * USERS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} users
           </span>
           {refreshing && <Loader2 className="h-3 w-3 animate-spin ml-2" />}
         </div>
@@ -473,6 +494,13 @@ const UserPermissionsTab = () => {
             <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">No users found</p>
             <p className="text-sm text-muted-foreground mt-1">Try adjusting your search or filters</p>
+            <Button 
+              variant="outline"
+              className="mt-4"
+              onClick={handleRefresh}
+            >
+              Refresh Users
+            </Button>
           </div>
         ) : (
           <>
