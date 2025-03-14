@@ -40,6 +40,9 @@ const ProfilePage = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  const allowedRoles = ["Business", "Influencer", "Admin"] as const;
+  type AllowedRole = typeof allowedRoles[number];
+
   const profileFormSchema = z.object({
     name: z.string().min(2, {
       message: "Name must be at least 2 characters.",
@@ -47,7 +50,7 @@ const ProfilePage = () => {
     email: z.string().email({
       message: "Please enter a valid email address.",
     }),
-    role: z.enum(["Business", "Influencer", "Admin"] as const, {
+    role: z.enum(allowedRoles, {
       required_error: "Please select a role.",
     }),
   });
@@ -72,7 +75,9 @@ const ProfilePage = () => {
     defaultValues: {
       name: user?.name || "",
       email: user?.email || "",
-      role: user?.role || undefined,
+      role: (user?.role && allowedRoles.includes(user.role as AllowedRole)) 
+        ? (user.role as AllowedRole) 
+        : "Business",
     },
   });
 
@@ -90,7 +95,7 @@ const ProfilePage = () => {
     
     try {
       if (values.role !== user?.role) {
-        await updateUserRole(values.role);
+        await updateUserRole(values.role as UserRole);
       }
       
       console.log("Updating profile:", values);
