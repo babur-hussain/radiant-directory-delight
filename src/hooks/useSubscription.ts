@@ -17,6 +17,7 @@ interface RazorpayOptions {
   };
   notes: {
     packageId: string;
+    [key: string]: string; // Allow additional properties in notes
   };
   theme: {
     color: string;
