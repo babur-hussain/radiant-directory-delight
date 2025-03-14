@@ -129,7 +129,8 @@ const BusinessDashboardPage = () => {
     return <AccessDenied message="Please log in to access your dashboard" />;
   }
 
-  if (user?.role !== "Business") {
+  // Update this condition to allow both Business users and Admin users
+  if (user?.role !== "Business" && user?.role !== "Admin" && !user?.isAdmin) {
     return <AccessDenied message="This dashboard is only available for businesses" />;
   }
 

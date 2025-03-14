@@ -18,6 +18,7 @@ import MarketingCampaigns from "./widgets/MarketingCampaigns";
 import { useDashboardServices } from "@/hooks/useDashboardServices";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface BusinessDashboardProps {
   userId: string;
@@ -30,6 +31,7 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ userId }) => {
   const { toast } = useToast();
   const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "Business");
   const { getUserSubscription } = useSubscription();
+  const { user } = useAuth();
   
   useEffect(() => {
     const fetchSubscription = async () => {
@@ -94,8 +96,14 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ userId }) => {
     );
   }
 
-  // If no active subscription
-  if (!subscriptionData || subscriptionData.status !== "active") {
+  // Check if user is admin - if so, they always have access regardless of subscription
+  const isAdmin = user?.role === "Admin" || user?.isAdmin;
+  
+  // Check if subscription is active or if user is admin
+  const hasActiveSubscription = isAdmin || (subscriptionData && subscriptionData.status === "active");
+
+  // If no active subscription and not admin
+  if (!hasActiveSubscription) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-xl mx-auto text-center">
         <div className="bg-primary/10 p-6 rounded-full mb-6">
