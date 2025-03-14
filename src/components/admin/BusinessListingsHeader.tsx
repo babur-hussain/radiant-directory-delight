@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Plus } from 'lucide-react';
+import { RefreshCw, Plus, Upload } from 'lucide-react';
 import CSVUploadDialog from './CSVUploadDialog';
 
 interface BusinessListingsHeaderProps {
@@ -34,6 +34,11 @@ const BusinessListingsHeader: React.FC<BusinessListingsHeaderProps> = ({
         <Button variant="outline" onClick={handleAddBusiness}>
           <Plus className="mr-2 h-4 w-4" />
           Add Business
+        </Button>
+        
+        <Button onClick={() => setShowUploadDialog(true)}>
+          <Upload className="mr-2 h-4 w-4" />
+          Upload CSV
         </Button>
         
         <CSVUploadDialog 

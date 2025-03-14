@@ -22,12 +22,6 @@ const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({
 
   return (
     <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-      <DialogTrigger asChild>
-        <Button>
-          <Upload className="mr-2 h-4 w-4" />
-          Upload CSV
-        </Button>
-      </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Upload Business Listings</DialogTitle>
