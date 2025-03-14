@@ -9,6 +9,7 @@ import { Business } from "@/lib/csv-utils";
 import { BusinessFormValues } from "@/components/admin/BusinessForm";
 import AdminPermissionError from "@/components/admin/dashboard/AdminPermissionError";
 import AdminDashboardTabs from "@/components/admin/dashboard/AdminDashboardTabs";
+import { loadAllUsers } from "@/features/auth/authStorage";
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
@@ -27,11 +28,17 @@ const AdminDashboardPage = () => {
   const { businesses } = useBusinessListings();
 
   // Check if user is authorized (admin or staff)
-  const isAuthorized = user && (user.role === "Admin" || user.role === "staff");
+  const isAuthorized = user && (user.role === "Admin" || user.role === "staff" || user.isAdmin);
 
   useEffect(() => {
     // Clear any permission errors when changing tabs
     setPermissionError(null);
+    
+    // Load users data when in users tab
+    if (activeTab === "users") {
+      // Force refresh users data
+      loadAllUsers();
+    }
   }, [activeTab]);
   
   // Set business count when businesses array changes

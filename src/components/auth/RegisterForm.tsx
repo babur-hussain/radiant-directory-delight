@@ -9,6 +9,7 @@ import { UserRole } from "@/types/auth";
 import { Mail, Lock, User, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import SocialLoginButtons from "./SocialLoginButtons";
+import { saveUserToAllUsersList } from "@/features/auth/authStorage";
 
 interface RegisterFormProps {
   registerType: UserRole;
@@ -40,7 +41,19 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ registerType, onBack, onClo
     setIsSubmitting(true);
 
     try {
-      await signup(registerEmail, registerPassword, registerName, registerType);
+      const user = await signup(registerEmail, registerPassword, registerName, registerType);
+      
+      // Ensure new user is added to the admin dashboard list
+      if (user) {
+        saveUserToAllUsersList({
+          id: user.id,
+          email: registerEmail,
+          name: registerName,
+          role: registerType,
+          isAdmin: false
+        });
+      }
+      
       onClose();
     } catch (error) {
       // Error handling is in the context
@@ -61,6 +74,15 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ registerType, onBack, onClo
       if (user && !user.role) {
         // Set the role in localStorage
         localStorage.setItem(`user_role_${user.id}`, registerType as string);
+        
+        // Save to all users list for admin dashboard
+        saveUserToAllUsersList({
+          id: user.id,
+          email: user.email,
+          name: user.name || "Google User",
+          role: registerType,
+          isAdmin: false
+        });
       }
       
       onClose();

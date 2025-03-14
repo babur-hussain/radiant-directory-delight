@@ -4,7 +4,6 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Info, Pencil, Trash2 } from 'lucide-react';
 import { Business } from '@/lib/csv-utils';
-import { createGoogleSearchUrl } from '@/lib/utils';
 
 interface BusinessTableRowProps {
   business: Business;
@@ -23,15 +22,6 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({
   // Original businesses have IDs 1-20 in this demo
   const isOriginal = business.id <= 20;
 
-  const handleViewDetails = (e: React.MouseEvent) => {
-    e.preventDefault();
-    // Open Google search in a new tab
-    window.open(createGoogleSearchUrl(business.name, business.address), '_blank');
-    
-    // Also call the original handler if needed
-    onViewDetails();
-  };
-
   return (
     <TableRow>
       <TableCell className="font-medium">{business.id}</TableCell>
@@ -44,7 +34,7 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({
       <TableCell className="hidden md:table-cell">{business.phone}</TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end items-center space-x-1">
-          <Button variant="ghost" size="icon" onClick={handleViewDetails}>
+          <Button variant="ghost" size="icon" onClick={onViewDetails}>
             <Info className="h-4 w-4" />
             <span className="sr-only">View details</span>
           </Button>

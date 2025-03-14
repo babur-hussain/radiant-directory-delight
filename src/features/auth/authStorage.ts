@@ -44,7 +44,8 @@ export const saveUserToAllUsersList = (userData: User) => {
       ...allUsers[existingUserIndex],
       name: userData.name,
       role: userData.role,
-      isAdmin: userData.isAdmin
+      isAdmin: userData.isAdmin || false,
+      email: userData.email
     };
   } else {
     // Add new user
@@ -53,9 +54,22 @@ export const saveUserToAllUsersList = (userData: User) => {
       email: userData.email,
       name: userData.name,
       role: userData.role,
-      isAdmin: userData.isAdmin
+      isAdmin: userData.isAdmin || false
     });
   }
   
   localStorage.setItem(ALL_USERS_KEY, JSON.stringify(allUsers));
+};
+
+// Load all users data
+export const loadAllUsers = (): User[] => {
+  try {
+    const allUsersJson = localStorage.getItem(ALL_USERS_KEY);
+    if (allUsersJson) {
+      return JSON.parse(allUsersJson);
+    }
+  } catch (error) {
+    console.error("Error loading users:", error);
+  }
+  return [];
 };

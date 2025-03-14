@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BusinessesTab from "./BusinessesTab";
 import { SubscriptionManagement } from "@/components/admin/SubscriptionManagement";
@@ -11,6 +10,7 @@ import { Business } from "@/lib/csv-utils";
 import UserSubscriptionMapping from "@/components/admin/UserSubscriptionMapping";
 import AdminBusinessDashboards from "./AdminBusinessDashboards";
 import AdminInfluencerDashboards from "./AdminInfluencerDashboards";
+import BusinessDetailsDialog from "../table/BusinessDetailsDialog";
 
 interface AdminDashboardTabsProps {
   activeTab: string;
@@ -45,63 +45,80 @@ const AdminDashboardTabs = ({
   handleEditBusiness,
   handlePermissionError
 }: AdminDashboardTabsProps) => {
+  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+
+  const handleViewDetails = (business: Business) => {
+    setSelectedBusiness(business);
+    setShowDetailsDialog(true);
+  };
+
   return (
-    <Tabs defaultValue="businesses" value={activeTab} onValueChange={setActiveTab}>
-      <TabsList className="grid w-full grid-cols-8">
-        <TabsTrigger value="businesses">Businesses</TabsTrigger>
-        <TabsTrigger value="categories-locations">Categories & Locations</TabsTrigger>
-        <TabsTrigger value="subscription-packages">Subscription Packages</TabsTrigger>
-        <TabsTrigger value="subscriptions">Active Subscriptions</TabsTrigger>
-        <TabsTrigger value="subscription-mapping">User Mapping</TabsTrigger>
-        <TabsTrigger value="users">User Permissions</TabsTrigger>
-        <TabsTrigger value="business-dashboards">Business Dashboards</TabsTrigger>
-        <TabsTrigger value="influencer-dashboards">Influencer Dashboards</TabsTrigger>
-      </TabsList>
-      
-      <TabsContent value="businesses" className="pt-6">
-        <BusinessesTab 
-          businessCount={businessCount}
-          showBusinessFormDialog={showBusinessFormDialog}
-          setShowBusinessFormDialog={setShowBusinessFormDialog}
-          showUploadDialog={showUploadDialog}
-          setShowUploadDialog={setShowUploadDialog}
-          currentBusinessToEdit={currentBusinessToEdit}
-          isSubmitting={isSubmitting}
-          handleBusinessFormSubmit={handleBusinessFormSubmit}
-          handleUploadComplete={handleUploadComplete}
-          handleAddBusiness={handleAddBusiness}
-          handleEditBusiness={handleEditBusiness}
-        />
-      </TabsContent>
-      
-      <TabsContent value="categories-locations" className="pt-6">
-        <ManageCategoriesLocations />
-      </TabsContent>
-      
-      <TabsContent value="subscription-packages" className="pt-6">
-        <SubscriptionPackageManagement onPermissionError={handlePermissionError} />
-      </TabsContent>
-      
-      <TabsContent value="subscriptions" className="pt-6">
-        <SubscriptionManagement />
-      </TabsContent>
-      
-      <TabsContent value="subscription-mapping" className="pt-6">
-        <UserSubscriptionMapping onPermissionError={handlePermissionError} />
-      </TabsContent>
-      
-      <TabsContent value="users" className="pt-6">
-        <UserPermissionsTab />
-      </TabsContent>
-      
-      <TabsContent value="business-dashboards" className="pt-6">
-        <AdminBusinessDashboards />
-      </TabsContent>
-      
-      <TabsContent value="influencer-dashboards" className="pt-6">
-        <AdminInfluencerDashboards />
-      </TabsContent>
-    </Tabs>
+    <>
+      <Tabs defaultValue="businesses" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-8">
+          <TabsTrigger value="businesses">Businesses</TabsTrigger>
+          <TabsTrigger value="categories-locations">Categories & Locations</TabsTrigger>
+          <TabsTrigger value="subscription-packages">Subscription Packages</TabsTrigger>
+          <TabsTrigger value="subscriptions">Active Subscriptions</TabsTrigger>
+          <TabsTrigger value="subscription-mapping">User Mapping</TabsTrigger>
+          <TabsTrigger value="users">User Permissions</TabsTrigger>
+          <TabsTrigger value="business-dashboards">Business Dashboards</TabsTrigger>
+          <TabsTrigger value="influencer-dashboards">Influencer Dashboards</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="businesses" className="pt-6">
+          <BusinessesTab 
+            businessCount={businessCount}
+            showBusinessFormDialog={showBusinessFormDialog}
+            setShowBusinessFormDialog={setShowBusinessFormDialog}
+            showUploadDialog={showUploadDialog}
+            setShowUploadDialog={setShowUploadDialog}
+            currentBusinessToEdit={currentBusinessToEdit}
+            isSubmitting={isSubmitting}
+            handleBusinessFormSubmit={handleBusinessFormSubmit}
+            handleUploadComplete={handleUploadComplete}
+            handleAddBusiness={handleAddBusiness}
+            handleEditBusiness={handleEditBusiness}
+            onViewDetails={handleViewDetails}
+          />
+        </TabsContent>
+        
+        <TabsContent value="categories-locations" className="pt-6">
+          <ManageCategoriesLocations />
+        </TabsContent>
+        
+        <TabsContent value="subscription-packages" className="pt-6">
+          <SubscriptionPackageManagement onPermissionError={handlePermissionError} />
+        </TabsContent>
+        
+        <TabsContent value="subscriptions" className="pt-6">
+          <SubscriptionManagement />
+        </TabsContent>
+        
+        <TabsContent value="subscription-mapping" className="pt-6">
+          <UserSubscriptionMapping onPermissionError={handlePermissionError} />
+        </TabsContent>
+        
+        <TabsContent value="users" className="pt-6">
+          <UserPermissionsTab />
+        </TabsContent>
+        
+        <TabsContent value="business-dashboards" className="pt-6">
+          <AdminBusinessDashboards />
+        </TabsContent>
+        
+        <TabsContent value="influencer-dashboards" className="pt-6">
+          <AdminInfluencerDashboards />
+        </TabsContent>
+      </Tabs>
+
+      <BusinessDetailsDialog 
+        business={selectedBusiness}
+        open={showDetailsDialog}
+        onOpenChange={setShowDetailsDialog}
+      />
+    </>
   );
 };
 

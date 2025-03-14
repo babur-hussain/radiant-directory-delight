@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { loadAllUsers } from "@/features/auth/authStorage";
 
 interface UserData {
   id: string;
@@ -19,18 +21,17 @@ interface UserData {
 const UserPermissionsTab = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
   const { updateUserPermission } = useAuth();
   const { toast } = useToast();
 
   // Load users from localStorage
   useEffect(() => {
-    const loadUsers = () => {
+    const loadUsersData = () => {
       try {
-        const allUsersJson = localStorage.getItem('all_users_data');
-        if (allUsersJson) {
-          const parsedUsers = JSON.parse(allUsersJson);
-          setUsers(parsedUsers);
-        }
+        setLoading(true);
+        const allUsers = loadAllUsers();
+        setUsers(allUsers);
       } catch (error) {
         console.error("Error loading users:", error);
         toast({
@@ -43,7 +44,12 @@ const UserPermissionsTab = () => {
       }
     };
 
-    loadUsers();
+    loadUsersData();
+    
+    // Set up a periodic refresh (every 5 seconds)
+    const refreshInterval = setInterval(loadUsersData, 5000);
+    
+    return () => clearInterval(refreshInterval);
   }, [toast]);
 
   const handleToggleAdmin = async (userId: string, isAdmin: boolean) => {
@@ -70,6 +76,13 @@ const UserPermissionsTab = () => {
     }
   };
 
+  // Filter users based on search term
+  const filteredUsers = users.filter(user => 
+    (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (user.role && user.role.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -87,7 +100,18 @@ const UserPermissionsTab = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {users.length === 0 ? (
+        {/* Search Input */}
+        <div className="mb-4 relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, email, or role"
+            className="pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        
+        {filteredUsers.length === 0 ? (
           <p className="text-center text-muted-foreground py-6">No users found</p>
         ) : (
           <Table>
@@ -101,7 +125,7 @@ const UserPermissionsTab = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
