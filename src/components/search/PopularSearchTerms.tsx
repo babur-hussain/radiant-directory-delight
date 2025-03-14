@@ -14,7 +14,7 @@ const PopularSearchTerms: React.FC<PopularSearchTermsProps> = ({ onTermClick }) 
       {popularTerms.map((term) => (
         <button
           key={term}
-          className="px-3 py-1 bg-white/80 backdrop-blur-sm rounded-full hover:bg-gray-100 transition-smooth"
+          className="px-3 py-1 bg-white/80 backdrop-blur-sm shadow-sm rounded-full hover:bg-primary/10 hover:text-primary transition-smooth"
           onClick={() => onTermClick(term)}
         >
           {term}

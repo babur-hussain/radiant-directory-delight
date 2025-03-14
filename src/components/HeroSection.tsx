@@ -27,7 +27,7 @@ const HeroSection = () => {
       <div className="container max-w-7xl mx-auto px-4 sm:px-6 z-10 animate-fade-up">
         <HeroContent />
 
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-3xl mx-auto relative">
           <SearchBar initialQuery={searchTerm} />
           <PopularSearchTerms onTermClick={handlePopularTermClick} />
         </div>

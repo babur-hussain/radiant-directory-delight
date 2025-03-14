@@ -69,7 +69,7 @@ const SearchBar = ({ initialQuery = '' }: SearchBarProps) => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
-        setShowResults(false);
+        setShowLocationDropdown(false);
       }
     };
 
@@ -169,7 +169,7 @@ const SearchBar = ({ initialQuery = '' }: SearchBarProps) => {
         isLoading={isSearching}
         visible={showResults}
         onResultClick={handleResultClick}
-        onClose={handleClearSearch}
+        onClose={() => setShowResults(false)}
       />
     </div>
   );
