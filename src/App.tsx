@@ -26,11 +26,11 @@ const queryClient = new QueryClient();
 // App content that uses auth
 const AppContent = () => {
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <Toaster />
       <Sonner />
       <Header />
-      <div className="pt-20"> {/* Add padding to account for fixed header */}
+      <main className="flex-grow"> {/* Remove pt-20 and use flex-grow instead */}
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/categories" element={<CategoriesPage />} />
@@ -47,8 +47,8 @@ const AppContent = () => {
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </div>
-    </>
+      </main>
+    </div>
   );
 };
 

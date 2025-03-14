@@ -37,8 +37,8 @@ const Header = () => {
   }
 
   return (
-    <header className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-4", 
-      isScrolled ? "bg-white/90 backdrop-blur-md shadow-sm" : "bg-white/80 backdrop-blur-sm")}>
+    <header className={cn("fixed top-0 left-0 right-0 z-[100] transition-all duration-300 py-4", 
+      isScrolled ? "bg-white shadow-sm" : "bg-white")}>
       <div className="container max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
@@ -78,7 +78,7 @@ const Header = () => {
         </div>
       </div>
 
-      <div className={cn("md:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm transition-all duration-300 overflow-hidden", isMobileMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0")}>
+      <div className={cn("md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-sm transition-all duration-300 overflow-hidden", isMobileMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0")}>
         <div className="container max-w-7xl mx-auto px-4 py-4 flex flex-col space-y-4">
           <Link to="/" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
             Home
