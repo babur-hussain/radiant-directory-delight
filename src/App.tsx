@@ -26,11 +26,11 @@ const queryClient = new QueryClient();
 // App content that uses auth
 const AppContent = () => {
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <Toaster />
       <Sonner />
       <Header />
-      <main className="pt-16">
+      <main className="flex-grow pt-20">
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/categories" element={<CategoriesPage />} />
@@ -48,7 +48,7 @@ const AppContent = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-    </>
+    </div>
   );
 };
 
@@ -57,9 +57,7 @@ const App = () => (
     <TooltipProvider>
       <BrowserRouter>
         <AuthProvider>
-          <div className="min-h-screen flex flex-col">
-            <AppContent />
-          </div>
+          <AppContent />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

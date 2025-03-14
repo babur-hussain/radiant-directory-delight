@@ -8,6 +8,16 @@
 body {
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
+}
+
+header, header * {
+  visibility: visible !important;
+  display: block;
+}
+
+header a, header button {
+  display: inline-flex;
 }
 
 .logo {
