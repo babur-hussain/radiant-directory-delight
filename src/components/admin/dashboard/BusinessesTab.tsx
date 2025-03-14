@@ -9,7 +9,7 @@ interface BusinessesTabProps {
   onAddBusiness: () => void;
   onEditBusiness: (business: Business) => void;
   isRefreshing: boolean;
-  onRefresh: () => Promise<void>;
+  onRefresh: () => Promise<void> | void; // Updated to accept either Promise<void> or void
   handlePermissionError: (error: any) => void;
 }
 
