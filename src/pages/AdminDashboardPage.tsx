@@ -1,14 +1,18 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { SubscriptionManagement } from "@/components/admin/SubscriptionManagement";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserIcon, CreditCard, Users, Package, Building, Database } from "lucide-react";
+import { UserIcon, CreditCard, Users, Package, Building, Database, Shield } from "lucide-react";
+import UserPermissionsTab from "@/components/admin/UserPermissionsTab";
 
 const AdminDashboardPage = () => {
   const { user, isAuthenticated } = useAuth();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const defaultTab = searchParams.get('tab') || 'subscriptions';
   
   if (!isAuthenticated) {
     return (
@@ -28,8 +32,27 @@ const AdminDashboardPage = () => {
     );
   }
   
-  // In a real application, you would check if the user has admin permissions
-  // For demo purposes, we'll assume all users can access the admin dashboard
+  // Check if user has admin privileges
+  if (!user?.isAdmin) {
+    return (
+      <div className="container mx-auto px-4 py-10">
+        <Card>
+          <CardHeader>
+            <CardTitle>Access Denied</CardTitle>
+            <CardDescription>
+              You don't have permission to access this page
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>This page is only accessible to administrators.</p>
+            <Link to="/" className="text-primary hover:underline mt-4 inline-block">
+              Return to Home
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   
   return (
     <div className="container mx-auto px-4 py-10">
@@ -125,7 +148,7 @@ const AdminDashboardPage = () => {
           <Card className="hover:border-primary hover:shadow-md transition-all cursor-pointer">
             <CardHeader className="flex flex-row items-center gap-4">
               <div className="bg-primary/10 rounded-full p-3">
-                <Users className="h-6 w-6 text-primary" />
+                <Shield className="h-6 w-6 text-primary" />
               </div>
               <div>
                 <CardTitle className="text-xl">User Management</CardTitle>
@@ -143,7 +166,7 @@ const AdminDashboardPage = () => {
         </Link>
       </div>
       
-      <Tabs defaultValue="subscriptions">
+      <Tabs defaultValue={defaultTab}>
         <TabsList>
           <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
@@ -153,15 +176,7 @@ const AdminDashboardPage = () => {
           <SubscriptionManagement />
         </TabsContent>
         <TabsContent value="users" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>User Management</CardTitle>
-              <CardDescription>Manage user accounts and permissions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>User management functionality would be implemented here.</p>
-            </CardContent>
-          </Card>
+          <UserPermissionsTab />
         </TabsContent>
         <TabsContent value="reports" className="mt-6">
           <Card>

@@ -13,6 +13,7 @@ import SubscriptionPage from "./pages/SubscriptionPage";
 import SubscriptionDetailsPage from "./pages/SubscriptionDetailsPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminBusinessListingsPage from "./pages/AdminBusinessListingsPage";
+import AdminLoginPage from "./pages/AdminLoginPage";
 import InfluencerPage from "./pages/InfluencerPage";
 import BusinessPage from "./pages/BusinessPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -37,6 +38,7 @@ const AppContent = () => {
           <Route path="/subscription" element={<SubscriptionPage />} />
           <Route path="/subscription/details" element={<SubscriptionDetailsPage />} />
           <Route path="/subscription/details/:packageId" element={<SubscriptionDetails />} />
+          <Route path="/admin" element={<AdminLoginPage />} />
           <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
           <Route path="/admin/businesses" element={<AdminBusinessListingsPage />} />
           <Route path="/influencer" element={<InfluencerPage />} />

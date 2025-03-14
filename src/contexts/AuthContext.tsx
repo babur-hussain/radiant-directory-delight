@@ -12,7 +12,7 @@ import { auth, googleProvider } from "../config/firebase";
 import { toast } from "@/hooks/use-toast";
 
 // Define types for our auth context
-export type UserRole = "Business" | "Influencer" | null;
+export type UserRole = "Business" | "Influencer" | "Admin" | null;
 
 interface User {
   id: string;
@@ -20,6 +20,7 @@ interface User {
   name: string | null;
   role: UserRole;
   photoURL?: string | null;
+  isAdmin?: boolean;
 }
 
 interface AuthContextType {
@@ -30,6 +31,7 @@ interface AuthContextType {
   signup: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
   logout: () => Promise<void>;
   updateUserRole: (role: UserRole) => Promise<void>;
+  updateUserPermission: (userId: string, isAdmin: boolean) => Promise<void>;
   loading: boolean;
   initialized: boolean;
 }
@@ -43,6 +45,7 @@ const defaultContextValue: AuthContextType = {
   signup: async () => {},
   logout: async () => {},
   updateUserRole: async () => {},
+  updateUserPermission: async () => {},
   loading: true,
   initialized: false
 };
@@ -50,14 +53,48 @@ const defaultContextValue: AuthContextType = {
 // Create the auth context
 const AuthContext = createContext<AuthContextType>(defaultContextValue);
 
-// Key for storing user roles in localStorage
+// Keys for storing user data in localStorage
 const getRoleKey = (userId: string) => `user_role_${userId}`;
+const getAdminKey = (userId: string) => `user_admin_${userId}`;
+const ALL_USERS_KEY = 'all_users_data';
+
+// Initialize default admin
+const initializeDefaultAdmin = () => {
+  const adminEmail = "baburhussain660@gmail.com";
+  const adminUserKey = `user_admin_${adminEmail.replace(/[.@]/g, '_')}`;
+  
+  // Check if we've already set up the admin
+  if (!localStorage.getItem(adminUserKey)) {
+    // Store admin status for this email
+    localStorage.setItem(adminUserKey, 'true');
+    
+    // Store in all users list for admin panel
+    const allUsers = JSON.parse(localStorage.getItem(ALL_USERS_KEY) || '[]');
+    const adminExists = allUsers.some((user: any) => user.email === adminEmail);
+    
+    if (!adminExists) {
+      allUsers.push({
+        id: adminEmail.replace(/[.@]/g, '_'),
+        email: adminEmail,
+        name: 'Admin User',
+        role: 'Admin',
+        isAdmin: true
+      });
+      localStorage.setItem(ALL_USERS_KEY, JSON.stringify(allUsers));
+    }
+  }
+};
 
 // Firebase authentication implementation
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
+  
+  // Initialize default admin on first load
+  useEffect(() => {
+    initializeDefaultAdmin();
+  }, []);
   
   // Set up auth state listener on initial load
   useEffect(() => {
@@ -67,14 +104,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const roleKey = getRoleKey(firebaseUser.uid);
         const userRole = localStorage.getItem(roleKey) as UserRole || null;
         
+        // Check if user is admin
+        const adminKey = getAdminKey(firebaseUser.uid);
+        const isAdmin = localStorage.getItem(adminKey) === 'true';
+        
+        // For the default admin account
+        const isDefaultAdmin = firebaseUser.email === "baburhussain660@gmail.com";
+        
         // Create user object from Firebase user
         const userData: User = {
           id: firebaseUser.uid,
           email: firebaseUser.email,
           name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-          role: userRole,
-          photoURL: firebaseUser.photoURL
+          role: isDefaultAdmin ? 'Admin' : userRole,
+          photoURL: firebaseUser.photoURL,
+          isAdmin: isDefaultAdmin || isAdmin
         };
+        
+        // Store user in all users list for admin panel if not already there
+        const allUsers = JSON.parse(localStorage.getItem(ALL_USERS_KEY) || '[]');
+        const existingUserIndex = allUsers.findIndex((u: any) => u.email === userData.email);
+        
+        if (existingUserIndex >= 0) {
+          // Update existing user
+          allUsers[existingUserIndex] = {
+            ...allUsers[existingUserIndex],
+            name: userData.name,
+            role: userData.role,
+            isAdmin: userData.isAdmin
+          };
+        } else {
+          // Add new user
+          allUsers.push({
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            role: userData.role,
+            isAdmin: userData.isAdmin
+          });
+        }
+        localStorage.setItem(ALL_USERS_KEY, JSON.stringify(allUsers));
         
         setUser(userData);
       } else {
@@ -228,6 +297,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Store the updated role in localStorage
       localStorage.setItem(getRoleKey(user.id), role as string);
       
+      // Update all users list
+      const allUsers = JSON.parse(localStorage.getItem(ALL_USERS_KEY) || '[]');
+      const userIndex = allUsers.findIndex((u: any) => u.id === user.id);
+      
+      if (userIndex >= 0) {
+        allUsers[userIndex].role = role;
+        localStorage.setItem(ALL_USERS_KEY, JSON.stringify(allUsers));
+      }
+      
       // Update the user object in state
       setUser({
         ...user,
@@ -251,6 +329,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateUserPermission = async (userId: string, isAdmin: boolean) => {
+    try {
+      // Store the admin status in localStorage
+      localStorage.setItem(getAdminKey(userId), isAdmin ? 'true' : 'false');
+      
+      // Update all users list
+      const allUsers = JSON.parse(localStorage.getItem(ALL_USERS_KEY) || '[]');
+      const userIndex = allUsers.findIndex((u: any) => u.id === userId);
+      
+      if (userIndex >= 0) {
+        allUsers[userIndex].isAdmin = isAdmin;
+        localStorage.setItem(ALL_USERS_KEY, JSON.stringify(allUsers));
+      }
+      
+      // If the user being updated is the current user, update the state
+      if (user && user.id === userId) {
+        setUser({
+          ...user,
+          isAdmin
+        });
+      }
+      
+      toast({
+        title: "Permission updated",
+        description: `Admin permission ${isAdmin ? 'granted' : 'removed'}.`,
+      });
+      
+      return Promise.resolve();
+    } catch (error: any) {
+      console.error("Permission update error:", error);
+      toast({
+        title: "Update failed",
+        description: error.message || "There was an error updating permissions.",
+        variant: "destructive",
+      });
+      return Promise.reject(error);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -261,6 +378,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signup,
         logout,
         updateUserRole,
+        updateUserPermission,
         loading,
         initialized
       }}
