@@ -68,7 +68,7 @@ const AdminBusinessListingsPage = () => {
     setIsSubmitting(true);
     
     try {
-      // Handle priority field type conversion
+      // Fix for the type comparison error - properly handle priority conversion
       let priorityValue: number | undefined;
       
       if (values.priority === undefined || values.priority === null || values.priority === '') {
@@ -76,12 +76,12 @@ const AdminBusinessListingsPage = () => {
       } else if (typeof values.priority === 'number') {
         priorityValue = values.priority;
       } else {
-        // Convert any string representation to a number
+        // Convert string representation to number carefully
         const stringValue = String(values.priority).trim();
         if (stringValue === '') {
           priorityValue = undefined;
         } else {
-          const parsedValue = parseInt(stringValue, 10);
+          const parsedValue = Number(stringValue);
           priorityValue = isNaN(parsedValue) ? undefined : parsedValue;
         }
       }
