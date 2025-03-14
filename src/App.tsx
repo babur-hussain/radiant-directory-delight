@@ -11,6 +11,7 @@ import CategoriesPage from "./pages/CategoriesPage";
 import BusinessesPage from "./pages/BusinessesPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 import SubscriptionDetailsPage from "./pages/SubscriptionDetailsPage";
+import SubscriptionDetails from "./components/subscription/SubscriptionDetails";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminBusinessListingsPage from "./pages/AdminBusinessListingsPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
@@ -18,7 +19,6 @@ import InfluencerPage from "./pages/InfluencerPage";
 import BusinessPage from "./pages/BusinessPage";
 import ProfilePage from "./pages/ProfilePage";
 import Header from "./components/Header";
-import SubscriptionDetails from "./components/subscription/SubscriptionDetails";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
@@ -26,11 +26,11 @@ const queryClient = new QueryClient();
 // App content that uses auth
 const AppContent = () => {
   return (
-    <div className="flex flex-col min-h-screen">
+    <>
       <Toaster />
       <Sonner />
       <Header />
-      <main className="flex-grow pt-20">
+      <main className="pt-16">
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/categories" element={<CategoriesPage />} />
@@ -48,7 +48,7 @@ const AppContent = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-    </div>
+    </>
   );
 };
 
@@ -57,7 +57,9 @@ const App = () => (
     <TooltipProvider>
       <BrowserRouter>
         <AuthProvider>
-          <AppContent />
+          <div className="min-h-screen flex flex-col">
+            <AppContent />
+          </div>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
