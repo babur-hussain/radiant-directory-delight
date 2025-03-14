@@ -11,10 +11,10 @@ const BusinessPermissionError: React.FC<BusinessPermissionErrorProps> = ({ error
   if (!errorMessage) return null;
   
   return (
-    <Alert variant="destructive" className="mb-4">
-      <AlertCircle className="h-4 w-4" />
-      <AlertTitle>Permission Error</AlertTitle>
-      <AlertDescription>
+    <Alert variant="destructive" className="mb-6">
+      <AlertCircle className="h-5 w-5" />
+      <AlertTitle className="text-base font-semibold">Permission Error</AlertTitle>
+      <AlertDescription className="text-sm mt-1">
         {errorMessage}
       </AlertDescription>
     </Alert>
