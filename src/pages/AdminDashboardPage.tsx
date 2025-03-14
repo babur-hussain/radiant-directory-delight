@@ -45,11 +45,22 @@ const AdminDashboardPage = () => {
         // Then refresh the users
         const userCount = debugRefreshUsers();
         console.log(`Admin Dashboard: Found ${userCount} users`);
+        
+        // Show toast notification for user feedback
+        toast({
+          title: "Users Refreshed",
+          description: `Successfully loaded ${userCount} users`,
+        });
       }).catch(error => {
         console.error("Error ensuring test users:", error);
+        toast({
+          title: "Error Loading Users",
+          description: "Could not load users from Firebase",
+          variant: "destructive",
+        });
       });
     }
-  }, [activeTab]);
+  }, [activeTab, toast]);
   
   // Set business count when businesses array changes
   useEffect(() => {

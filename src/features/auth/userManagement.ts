@@ -1,8 +1,9 @@
+
 import { User, UserRole } from "../../types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { saveUserToAllUsersList } from "./authStorage";
 import { db } from "../../config/firebase";
-import { doc, setDoc, getDoc, collection, query, getDocs, where, serverTimestamp, orderBy, limit } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, query, getDocs, where, serverTimestamp, orderBy, limit, addDoc } from "firebase/firestore";
 
 export const updateUserRole = async (user: User, role: UserRole) => {
   if (!user) {
@@ -171,6 +172,7 @@ export const createTestUser = async (userData: TestUserData): Promise<User> => {
   try {
     console.log("Creating test user:", userData);
     
+    // Generate a unique ID for the test user
     const userId = `test_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     
     const user = {
@@ -183,7 +185,10 @@ export const createTestUser = async (userData: TestUserData): Promise<User> => {
       createdAt: new Date().toISOString()
     };
     
+    // Use a reference to a specific document with the generated ID
     const userDoc = doc(db, "users", userId);
+    
+    // Set the document data with merge option
     await setDoc(userDoc, {
       email: userData.email,
       name: userData.name,
@@ -193,6 +198,7 @@ export const createTestUser = async (userData: TestUserData): Promise<User> => {
       lastLogin: serverTimestamp()
     });
     
+    // Save to local storage as well
     saveUserToAllUsersList(user);
     
     console.log("Test user created successfully:", userId);
