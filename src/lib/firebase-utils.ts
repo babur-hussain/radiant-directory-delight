@@ -22,6 +22,11 @@ export async function fetchSubscriptionPackages(): Promise<SubscriptionPackage[]
     const snapshot = await getDocs(packagesQuery);
     console.log(`Retrieved ${snapshot.docs.length} subscription packages`);
     
+    // If no packages found, this could be a permission issue or just no data
+    if (snapshot.docs.length === 0) {
+      console.warn("No subscription packages found. This could be due to missing data or insufficient permissions.");
+    }
+    
     // Map the document data to our SubscriptionPackage type
     const packages = snapshot.docs.map(doc => {
       const data = doc.data();
@@ -49,11 +54,15 @@ export async function fetchSubscriptionPackages(): Promise<SubscriptionPackage[]
     console.error("Error fetching subscription packages:", error);
     
     // Check for permission-related errors
-    if (error instanceof Error) {
-      if (error.message.includes("permission-denied") || error.message.includes("Missing or insufficient permissions")) {
-        console.error("Permission denied when accessing subscription packages. Please check your Firebase security rules.");
-        throw new Error("Permission denied. You don't have access to view subscription packages.");
-      }
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    // Look for various permission error patterns
+    if (errorMessage.includes("permission-denied") || 
+        errorMessage.includes("Permission denied") ||
+        errorMessage.includes("insufficient permissions") ||
+        errorMessage.includes("Missing or insufficient permissions")) {
+      console.error("Permission denied when accessing subscription packages. Please check your Firebase security rules.");
+      throw new Error("Permission denied. You don't have access to view subscription packages.");
     }
     
     throw error;
@@ -95,13 +104,14 @@ export async function saveSubscriptionPackage(packageData: SubscriptionPackage):
     console.error("Error saving subscription package:", error);
     console.error("Package data that failed:", JSON.stringify(packageData, null, 2));
     
-    // Check for permission-related errors
-    if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      
-      if (error.message.includes("permission-denied") || error.message.includes("Missing or insufficient permissions")) {
-        throw new Error("Permission denied. You don't have admin rights to create or update subscription packages.");
-      }
+    // Check for permission-related errors more comprehensively
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    if (errorMessage.includes("permission-denied") || 
+        errorMessage.includes("Permission denied") ||
+        errorMessage.includes("insufficient permissions") ||
+        errorMessage.includes("Missing or insufficient permissions")) {
+      throw new Error("Permission denied. You don't have admin rights to create or update subscription packages.");
     }
     
     throw error;
@@ -120,11 +130,14 @@ export async function deleteSubscriptionPackage(packageId: string): Promise<void
   } catch (error) {
     console.error("Error deleting subscription package:", error);
     
-    // Check for permission-related errors
-    if (error instanceof Error) {
-      if (error.message.includes("permission-denied") || error.message.includes("Missing or insufficient permissions")) {
-        throw new Error("Permission denied. You don't have admin rights to delete subscription packages.");
-      }
+    // Check for permission-related errors more comprehensively
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    if (errorMessage.includes("permission-denied") || 
+        errorMessage.includes("Permission denied") ||
+        errorMessage.includes("insufficient permissions") ||
+        errorMessage.includes("Missing or insufficient permissions")) {
+      throw new Error("Permission denied. You don't have admin rights to delete subscription packages.");
     }
     
     throw error;
@@ -154,12 +167,15 @@ export async function fetchSubscriptionPackagesByType(type: "Business" | "Influe
   } catch (error) {
     console.error(`Error fetching ${type} subscription packages:`, error);
     
-    // Check for permission-related errors
-    if (error instanceof Error) {
-      if (error.message.includes("permission-denied") || error.message.includes("Missing or insufficient permissions")) {
-        console.error("Permission denied when accessing subscription packages. Please check your Firebase security rules.");
-        throw new Error("Permission denied. You don't have access to view subscription packages.");
-      }
+    // Check for permission-related errors more comprehensively
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    if (errorMessage.includes("permission-denied") || 
+        errorMessage.includes("Permission denied") ||
+        errorMessage.includes("insufficient permissions") ||
+        errorMessage.includes("Missing or insufficient permissions")) {
+      console.error("Permission denied when accessing subscription packages. Please check your Firebase security rules.");
+      throw new Error("Permission denied. You don't have access to view subscription packages.");
     }
     
     throw error;

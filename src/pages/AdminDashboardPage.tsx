@@ -9,8 +9,9 @@ import UserPermissionsTab from "@/components/admin/UserPermissionsTab";
 import { TableBusinessListings } from "@/components/admin/TableBusinessListings";
 import ManageCategoriesLocations from "@/components/admin/ManageCategoriesLocations";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ShieldAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
@@ -40,6 +41,11 @@ const AdminDashboardPage = () => {
     });
   };
 
+  // Function to dismiss error
+  const dismissError = () => {
+    setPermissionError(null);
+  };
+
   if (!isAuthorized) {
     return <UnauthorizedView />;
   }
@@ -50,9 +56,23 @@ const AdminDashboardPage = () => {
       
       {permissionError && (
         <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{permissionError}</AlertDescription>
+          <ShieldAlert className="h-5 w-5" />
+          <AlertTitle>Permission Error</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2">
+            <p>{permissionError}</p>
+            <p className="text-sm">
+              This usually happens when your Firebase security rules do not allow the operation.
+              Please check your Firebase rules or contact your administrator.
+            </p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={dismissError} 
+              className="self-end mt-2"
+            >
+              Dismiss
+            </Button>
+          </AlertDescription>
         </Alert>
       )}
       

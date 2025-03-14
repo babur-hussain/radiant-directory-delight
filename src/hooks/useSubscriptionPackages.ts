@@ -3,12 +3,13 @@ import { useState, useEffect } from "react";
 import { SubscriptionPackage, businessPackages, influencerPackages } from "@/data/subscriptionData";
 import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { UserRole } from "@/contexts/AuthContext";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export const useSubscriptionPackages = (role: UserRole) => {
   const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const loadPackages = async () => {
@@ -41,14 +42,31 @@ export const useSubscriptionPackages = (role: UserRole) => {
         }
       } catch (err) {
         console.error("Error fetching subscription packages:", err);
-        setError("Failed to load packages. Using default packages instead.");
         
-        // Show toast notification for error
-        toast({
-          title: "Error Loading Packages",
-          description: "Failed to load custom packages. Using default packages instead.",
-          variant: "destructive",
-        });
+        // Check if this is a permission error
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        const isPermissionError = errorMessage.includes("Permission denied") || 
+                                 errorMessage.includes("insufficient permissions");
+        
+        if (isPermissionError) {
+          setError("Permission denied. Using default packages instead.");
+          
+          // Show permission error toast
+          toast({
+            title: "Permission Error",
+            description: "You don't have access to view subscription packages. Using default packages.",
+            variant: "destructive",
+          });
+        } else {
+          setError("Failed to load packages. Using default packages instead.");
+          
+          // Show general error toast
+          toast({
+            title: "Error Loading Packages",
+            description: "Failed to load custom packages. Using default packages instead.",
+            variant: "destructive",
+          });
+        }
         
         // Use default packages as fallback
         setPackages(role === "Business" ? businessPackages : influencerPackages);
@@ -60,7 +78,7 @@ export const useSubscriptionPackages = (role: UserRole) => {
     if (role) {
       loadPackages();
     }
-  }, [role]);
+  }, [role, toast]);
 
   return { packages, isLoading, error };
 };
