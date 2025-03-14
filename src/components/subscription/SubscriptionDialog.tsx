@@ -1,6 +1,5 @@
 
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
 import { CheckCircle, AlertTriangle, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,7 +27,7 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
 
   if (!selectedPackage) return null;
 
-  const handleSubscribe = () => {
+  const handleSubscribe = async () => {
     if (!termsAccepted) {
       toast({
         title: "Terms Required",
@@ -38,8 +37,18 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
       return;
     }
     
-    initiateSubscription(selectedPackage.id);
-    setIsOpen(false); // Close dialog after initiation
+    // Pass the complete package ID to ensure it can be found
+    if (selectedPackage && selectedPackage.id) {
+      console.log("Initiating subscription for package:", selectedPackage.id);
+      await initiateSubscription(selectedPackage.id);
+      // Don't close dialog immediately to allow error handling to display
+    } else {
+      toast({
+        title: "Invalid Package",
+        description: "Something went wrong. Please try again or select a different package.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

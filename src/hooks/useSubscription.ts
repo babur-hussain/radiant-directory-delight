@@ -1,8 +1,10 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { getPackageById } from "@/data/subscriptionData";
+import { getPackageById, businessPackages, influencerPackages } from "@/data/subscriptionData";
 import { toast } from "@/hooks/use-toast";
+import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
+import { SubscriptionPackage } from "@/data/subscriptionData";
 
 interface RazorpayOptions {
   key: string;
@@ -56,6 +58,36 @@ export const useSubscription = () => {
     });
   };
 
+  const getPackageDetails = async (packageId: string): Promise<SubscriptionPackage | null> => {
+    try {
+      // First try to fetch from Firebase
+      const allPackages = await fetchSubscriptionPackages();
+      const foundPackage = allPackages.find(pkg => pkg.id === packageId);
+      
+      if (foundPackage) {
+        return foundPackage;
+      }
+      
+      // Fallback to local packages if not found in Firebase
+      const localPackage = getPackageById(packageId);
+      if (localPackage) {
+        return localPackage;
+      }
+      
+      throw new Error("Package not found");
+    } catch (error) {
+      console.error("Error fetching package details:", error);
+      
+      // Try local packages as final fallback
+      const localPackage = getPackageById(packageId);
+      if (localPackage) {
+        return localPackage;
+      }
+      
+      return null;
+    }
+  };
+
   const initiateSubscription = async (packageId: string) => {
     if (!user) {
       toast({
@@ -77,7 +109,7 @@ export const useSubscription = () => {
       }
 
       // Get package details
-      const selectedPackage = getPackageById(packageId);
+      const selectedPackage = await getPackageDetails(packageId);
       if (!selectedPackage) {
         toast({
           title: "Invalid Package",
