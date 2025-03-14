@@ -40,13 +40,13 @@ const BusinessListingsHeader: React.FC<BusinessListingsHeaderProps> = ({
           <Upload className="mr-2 h-4 w-4" />
           Upload CSV
         </Button>
-        
-        <CSVUploadDialog 
-          showUploadDialog={showUploadDialog}
-          setShowUploadDialog={setShowUploadDialog}
-          handleUploadComplete={handleUploadComplete}
-        />
       </div>
+      
+      <CSVUploadDialog 
+        showUploadDialog={showUploadDialog}
+        setShowUploadDialog={setShowUploadDialog}
+        handleUploadComplete={handleUploadComplete}
+      />
     </div>
   );
 };

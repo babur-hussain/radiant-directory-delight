@@ -24,8 +24,6 @@ const AdminBusinessListingsPage = () => {
     return <UnauthorizedView />;
   }
   
-  // In a real application, you would check if the user has admin permissions
-  
   const handleUploadComplete = (success: boolean, message: string, count?: number) => {
     if (success) {
       setBusinessCount(getAllBusinesses().length);
