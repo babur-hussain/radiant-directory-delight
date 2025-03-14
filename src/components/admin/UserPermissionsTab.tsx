@@ -1,221 +1,208 @@
 
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, UserRole } from "@/types/auth";
-import { useAuth } from "@/hooks/useAuth";
-import { toast } from "@/hooks/use-toast";
-import UserSubscriptionAssignment from "./UserSubscriptionAssignment";
+import React, { useState, useEffect } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
+import { updateUserRole, updateUserPermission } from "@/features/auth/userManagement";
+import { loadAllUsers } from "@/features/auth/authStorage";
+import UserSubscriptionAssignment from "./UserSubscriptionAssignment";
 
 interface UserPermissionsTabProps {
   onRefresh?: () => void;
 }
 
-const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefresh }) => {
-  const { user: currentUser, updateUserRole, updateUserPermission } = useAuth();
-  const [expanded, setExpanded] = useState<{[key: string]: boolean}>({});
-  
-  const users = JSON.parse(localStorage.getItem('all_users_data') || '[]');
-  
-  const handleRoleChange = async (user: User, role: UserRole) => {
+export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefresh }) => {
+  const [users, setUsers] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load all users on component mount
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = () => {
+    setIsLoading(true);
+    const allUsers = loadAllUsers();
+    setUsers(allUsers);
+    setIsLoading(false);
+  };
+
+  const handleRoleChange = async (userId: string, newRole: string) => {
     try {
-      await updateUserRole(user, role);
+      setIsLoading(true);
+      const user = users.find(u => u.id === userId);
+      
+      if (!user) {
+        throw new Error("User not found");
+      }
+      
+      await updateUserRole(user, newRole);
+      
+      // Update the local state
+      const updatedUsers = users.map(u => 
+        u.id === userId ? { ...u, role: newRole } : u
+      );
+      
+      setUsers(updatedUsers);
+      
       toast({
-        title: "Success",
-        description: `Updated role for ${user.email} to ${role}`,
+        title: "Role Updated",
+        description: `User role has been updated to ${newRole}`
       });
-      if (onRefresh) onRefresh();
+      
+      // Call onRefresh if provided
+      if (onRefresh) {
+        onRefresh();
+      }
     } catch (error) {
       console.error("Error updating role:", error);
       toast({
-        title: "Error",
-        description: "Failed to update user role",
-        variant: "destructive",
+        title: "Update Failed",
+        description: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
-  };
-  
-  const handleAdminToggle = async (user: User, isAdmin: boolean) => {
-    try {
-      await updateUserPermission(user.id, isAdmin);
-      toast({
-        title: "Success",
-        description: `${isAdmin ? "Granted" : "Revoked"} admin permission for ${user.email}`,
-      });
-      if (onRefresh) onRefresh();
-    } catch (error) {
-      console.error("Error updating admin permission:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update admin permission",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const toggleExpand = (userId: string) => {
-    setExpanded(prev => ({
-      ...prev,
-      [userId]: !prev[userId]
-    }));
-  };
-  
-  const getUserName = (user: User) => {
-    let userName = null;
-    
-    if (user.name === null) {
-      userName = null;
-    } else if (typeof user.name === 'string') {
-      userName = user.name;
-    } else if (typeof user.name === 'boolean') {
-      userName = 'User';
-    } else if (user.name) {
-      try {
-        userName = String(user.name);
-      } catch {
-        userName = null;
-      }
-    } else {
-      userName = null;
-    }
-    
-    let adminStatus = false;
-    if (typeof user.isAdmin === 'boolean') {
-      adminStatus = user.isAdmin;
-    } else if (typeof user.isAdmin === 'string') {
-      adminStatus = user.isAdmin === 'true';
-    } else {
-      adminStatus = !!user.isAdmin;
-    }
-    
-    return {
-      displayName: userName || user.email || "Unknown User",
-      isAdmin: adminStatus
-    };
   };
 
-  const getUserSubscription = (userId: string) => {
-    const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
-    return userSubscriptions[userId] || null;
+  const handleAdminToggle = async (userId: string, isAdmin: boolean) => {
+    try {
+      setIsLoading(true);
+      
+      await updateUserPermission(userId, isAdmin);
+      
+      // Update the local state
+      const updatedUsers = users.map(u => 
+        u.id === userId ? { ...u, isAdmin } : u
+      );
+      
+      setUsers(updatedUsers);
+      
+      toast({
+        title: "Admin Status Updated",
+        description: `User admin status has been ${isAdmin ? 'granted' : 'revoked'}`
+      });
+      
+      // Call onRefresh if provided
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error("Error updating admin status:", error);
+      toast({
+        title: "Update Failed",
+        description: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
-  
+
   const handleSubscriptionAssigned = () => {
-    // Force re-render by updating state
-    setExpanded(prev => ({...prev}));
-    // Call the onRefresh callback if provided
-    if (onRefresh) onRefresh();
+    // Refresh the users list to get updated subscription data
+    loadUsers();
+    
+    // Call onRefresh if provided
+    if (onRefresh) {
+      onRefresh();
+    }
   };
-  
-  if (!currentUser?.isAdmin) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Unauthorized</CardTitle>
-          <CardDescription>You don't have permission to manage user permissions.</CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-  
+
   return (
-    <Tabs defaultValue="users">
-      <TabsList>
-        <TabsTrigger value="users">Users & Permissions</TabsTrigger>
-      </TabsList>
-      <TabsContent value="users">
-        <Card>
-          <CardHeader>
-            <CardTitle>User Permissions</CardTitle>
-            <CardDescription>Manage user roles and admin privileges</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {users.map((user: User) => {
-                const { displayName, isAdmin } = getUserName(user);
-                const subscription = getUserSubscription(user.id);
-                
-                return (
-                  <div key={user.id} className="border rounded-lg p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-medium text-lg">{displayName}</h3>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                        {subscription && (
-                          <Badge variant={subscription.status === 'active' ? 'default' : 'destructive'} className="mt-1">
-                            {subscription.status === 'active' ? (
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                            ) : (
-                              <XCircle className="h-3 w-3 mr-1" />
-                            )}
-                            {subscription.packageName}
+    <div className="space-y-4">
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>User</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Admin</TableHead>
+              <TableHead>Subscription</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users.length > 0 ? (
+              users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>
+                    <div>
+                      <p className="font-medium">{user.name || "N/A"}</p>
+                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={user.role || "User"}
+                      onValueChange={(value) => handleRoleChange(user.id, value)}
+                      disabled={isLoading}
+                    >
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="User">User</SelectItem>
+                        <SelectItem value="Business">Business</SelectItem>
+                        <SelectItem value="Influencer">Influencer</SelectItem>
+                        <SelectItem value="Admin">Admin</SelectItem>
+                        <SelectItem value="staff">Staff</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={user.isAdmin}
+                        onCheckedChange={(checked) => handleAdminToggle(user.id, checked)}
+                        disabled={isLoading}
+                      />
+                      <span>
+                        {user.isAdmin ? (
+                          <Badge variant="outline" className="bg-green-100 text-green-800">
+                            Yes
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-gray-100 text-gray-800">
+                            No
                           </Badge>
                         )}
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <button 
-                          className="text-sm text-blue-500 hover:underline"
-                          onClick={() => toggleExpand(user.id)}
-                        >
-                          {expanded[user.id] ? 'Collapse' : 'Expand'}
-                        </button>
-                      </div>
+                      </span>
                     </div>
-                    
-                    {expanded[user.id] && (
-                      <div className="mt-4 space-y-4">
-                        <div className="flex items-center space-x-4">
-                          <div className="flex-1">
-                            <Label htmlFor={`role-${user.id}`}>User Role</Label>
-                            <Select
-                              defaultValue={user.role || "User"}
-                              onValueChange={(value) => handleRoleChange(user, value as UserRole)}
-                            >
-                              <SelectTrigger id={`role-${user.id}`}>
-                                <SelectValue placeholder="Select role" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Business">Business</SelectItem>
-                                <SelectItem value="Influencer">Influencer</SelectItem>
-                                <SelectItem value="Admin">Admin</SelectItem>
-                                <SelectItem value="User">Regular User</SelectItem>
-                                <SelectItem value="staff">Staff</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          
-                          <div>
-                            <Label htmlFor={`admin-${user.id}`} className="block mb-2">Admin Access</Label>
-                            <Switch
-                              id={`admin-${user.id}`}
-                              checked={isAdmin}
-                              onCheckedChange={(checked) => handleAdminToggle(user, checked)}
-                            />
-                          </div>
-                        </div>
-                        
-                        <div className="pt-2 border-t">
-                          <Label className="block mb-2">Subscription Assignment</Label>
-                          <UserSubscriptionAssignment 
-                            user={user} 
-                            onAssigned={handleSubscriptionAssigned}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+                  </TableCell>
+                  <TableCell>
+                    <UserSubscriptionAssignment 
+                      user={user} 
+                      onAssigned={handleSubscriptionAssigned} 
+                    />
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={4} className="h-24 text-center">
+                  {isLoading ? "Loading..." : "No users found"}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   );
 };
-
-export default UserPermissionsTab;
