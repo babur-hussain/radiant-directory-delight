@@ -11,38 +11,37 @@ body {
   overflow-x: hidden;
 }
 
-/* Basic header styling */
+/* Reset and simplify header styles */
 header {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  z-index: 9999;
-  background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1rem 0;
+  z-index: 50;
 }
 
-/* Ensure header content is visible */
-header .container,
+/* Force display of all header content */
+header * {
+  display: block;
+}
+
+header a, 
+header button {
+  display: inline-flex !important;
+}
+
+header .container {
+  display: flex !important;
+}
+
 header .flex {
   display: flex !important;
 }
 
-/* Navigation links on desktop */
-header nav a {
-  display: inline-block !important;
-  color: #333;
-  text-decoration: none;
-}
-
-/* Mobile menu toggle */
-header button {
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Show desktop navigation on larger screens */
+/* Force proper media queries */
 @media (min-width: 768px) {
   header .md\:flex {
     display: flex !important;
@@ -53,22 +52,18 @@ header button {
   }
 }
 
-/* Hide desktop navigation on mobile */
 @media (max-width: 767px) {
   header .hidden.md\:flex {
     display: none !important;
   }
-  
-  header .md\:hidden {
-    display: inline-flex !important;
-  }
 }
 
-/* Hero section should have margin to not overlap with header */
+/* Ensure hero section doesn't overlap header */
 .min-h-\[85vh\] {
-  margin-top: 60px;
+  margin-top: 80px;
 }
 
+/* Other styles */
 .logo {
   height: 6em;
   padding: 1.5em;

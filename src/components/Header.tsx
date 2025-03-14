@@ -38,7 +38,7 @@ const Header = () => {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[9999] bg-white shadow-md py-4 w-full">
+    <header>
       <div className="container max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between w-full">
           <Link to="/" className="flex items-center space-x-2">

@@ -19,6 +19,7 @@ import InfluencerPage from "./pages/InfluencerPage";
 import BusinessPage from "./pages/BusinessPage";
 import ProfilePage from "./pages/ProfilePage";
 import Header from "./components/Header";
+import "./App.css";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
@@ -30,7 +31,7 @@ const AppContent = () => {
       <Toaster />
       <Sonner />
       <Header />
-      <main className="flex-grow pt-20">
+      <main className="flex-grow">
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/categories" element={<CategoriesPage />} />
