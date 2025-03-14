@@ -12,7 +12,7 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,6 +22,11 @@ const Header = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleMobileLogout = async () => {
+    await logout();
+    setIsMobileMenuOpen(false);
+  };
 
   return (
     <header
@@ -119,10 +124,7 @@ const Header = () => {
               <Button 
                 variant="default" 
                 className="justify-start rounded-full w-full transition-smooth"
-                onClick={() => {
-                  const { logout } = useAuth();
-                  logout();
-                }}
+                onClick={handleMobileLogout}
               >
                 <LogIn className="h-4 w-4 mr-2" />
                 Logout
