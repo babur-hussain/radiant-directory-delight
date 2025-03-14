@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Star, MapPin, Phone, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { businessesData } from '@/data/businessesData';
+import BusinessImage from '@/components/BusinessImage';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +20,7 @@ const BusinessCard = ({ business }: { business: typeof businessesData[0] }) => {
     <div className="group bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-smooth">
       {/* Image */}
       <div className="relative h-44 overflow-hidden">
-        <img 
+        <BusinessImage 
           src={business.image} 
           alt={business.name}
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"

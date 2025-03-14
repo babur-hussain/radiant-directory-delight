@@ -6,6 +6,7 @@ import { Star, MapPin, ExternalLink, X, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import BusinessImage from '@/components/BusinessImage';
 
 export interface BusinessResult {
   id: number;
@@ -103,7 +104,7 @@ const SearchResults = ({ results, isLoading, visible, onResultClick, onClose }: 
                         <CardContent className="p-0">
                           <div className="flex">
                             <div className="w-24 h-24 flex-shrink-0">
-                              <img 
+                              <BusinessImage 
                                 src={result.image} 
                                 alt={result.name} 
                                 className="w-full h-full object-cover"

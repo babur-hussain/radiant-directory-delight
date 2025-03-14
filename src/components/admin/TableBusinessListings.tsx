@@ -22,6 +22,7 @@ import { getAllBusinesses, addDataChangeListener, removeDataChangeListener } fro
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import BusinessImage from '@/components/BusinessImage';
 
 interface TableBusinessListingsProps {
   onRefresh?: () => void;
@@ -220,7 +221,7 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({ on
                         {selectedBusiness && (
                           <div className="space-y-4">
                             <div className="aspect-video overflow-hidden rounded-md">
-                              <img 
+                              <BusinessImage 
                                 src={selectedBusiness.image} 
                                 alt={selectedBusiness.name}
                                 className="object-cover w-full h-full"
@@ -309,4 +310,3 @@ export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({ on
     </div>
   );
 };
-

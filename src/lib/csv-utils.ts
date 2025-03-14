@@ -21,6 +21,9 @@ export interface Business {
 // In a real app, this would be stored in a database
 export let uploadedBusinesses: Business[] = [];
 
+// Default image to use when business image is unavailable
+export const DEFAULT_BUSINESS_IMAGE = "https://source.unsplash.com/photo-1518770660439-4636190af475";
+
 // Add event listeners for data updates
 const dataChangeListeners: (() => void)[] = [];
 
@@ -147,4 +150,3 @@ export const processCsvData = async (csvContent: string): Promise<{
     };
   }
 };
-
