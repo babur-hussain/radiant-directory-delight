@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Star, MapPin, ExternalLink, X, Filter } from 'lucide-react';
@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import BusinessImage from '@/components/BusinessImage';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export interface BusinessResult {
   id: number;
@@ -30,13 +31,37 @@ interface SearchResultsProps {
 
 const SearchResults = ({ results, isLoading, visible, onResultClick, onClose }: SearchResultsProps) => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const resultsRef = useRef<HTMLDivElement>(null);
+
+  // Handle scrolling behavior for mobile devices
+  useEffect(() => {
+    if (visible) {
+      // Lock body scroll when results are visible
+      document.body.style.overflow = 'hidden';
+      
+      // Add padding to prevent page jump
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    } else {
+      // Restore normal scrolling
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    };
+  }, [visible]);
 
   if (!visible) return null;
 
   return (
     <div 
+      ref={resultsRef}
       className={cn(
-        "fixed left-0 right-0 top-[70px] z-50 bg-white shadow-2xl transition-all duration-200 border-t border-gray-100 flex flex-col",
+        "search-results-container fixed left-0 right-0 top-[70px] z-50 bg-white shadow-2xl transition-all duration-200 border-t border-gray-100 flex flex-col",
         visible ? "opacity-100" : "opacity-0 pointer-events-none"
       )}
       style={{ height: 'calc(100vh - 70px)' }}
@@ -64,8 +89,11 @@ const SearchResults = ({ results, isLoading, visible, onResultClick, onClose }: 
               <Button 
                 variant="link" 
                 size="sm" 
-                onClick={() => navigate('/businesses')}
-                className="text-sm"
+                onClick={() => {
+                  onClose();
+                  navigate('/businesses');
+                }}
+                className="text-sm hidden sm:flex"
               >
                 View all <ExternalLink className="ml-1 h-3 w-3" />
               </Button>
@@ -74,13 +102,14 @@ const SearchResults = ({ results, isLoading, visible, onResultClick, onClose }: 
                 size="icon" 
                 onClick={onClose}
                 className="h-8 w-8"
+                aria-label="Close search results"
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden bg-white">
             <ScrollArea className="h-full">
               {isLoading ? (
                 <div className="p-6 text-center">
@@ -127,7 +156,7 @@ const SearchResults = ({ results, isLoading, visible, onResultClick, onClose }: 
                               <p className="text-gray-600 text-sm mt-1 line-clamp-1">
                                 {result.description}
                               </p>
-                              <div className="flex gap-1 mt-2">
+                              <div className="flex flex-wrap gap-1 mt-2">
                                 {result.tags.slice(0, 3).map((tag, index) => (
                                   <span 
                                     key={index} 
@@ -142,6 +171,20 @@ const SearchResults = ({ results, isLoading, visible, onResultClick, onClose }: 
                         </CardContent>
                       </Card>
                     ))}
+                  </div>
+                  
+                  {/* Mobile-only view all button */}
+                  <div className="mt-4 text-center sm:hidden">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        onClose();
+                        navigate('/businesses');
+                      }}
+                      className="w-full"
+                    >
+                      View All Businesses
+                    </Button>
                   </div>
                 </div>
               )}

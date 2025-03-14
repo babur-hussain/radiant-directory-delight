@@ -6,18 +6,38 @@ import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { businessesData } from '@/data/businessesData';
 import SearchResults, { BusinessResult } from '../SearchResults';
+import { useToast } from '@/hooks/use-toast';
 
-// Define locations for dropdown
+// Define Indian states for dropdown
 const locations = [
-  'New York', 
-  'Los Angeles', 
-  'Chicago', 
-  'Houston', 
-  'Phoenix', 
-  'Philadelphia', 
-  'San Antonio', 
-  'San Diego', 
-  'Dallas'
+  'Madhya Pradesh',
+  'Andhra Pradesh',
+  'Arunachal Pradesh',
+  'Assam',
+  'Bihar',
+  'Chhattisgarh',
+  'Goa',
+  'Gujarat',
+  'Haryana',
+  'Himachal Pradesh',
+  'Jharkhand',
+  'Karnataka',
+  'Kerala',
+  'Maharashtra',
+  'Manipur',
+  'Meghalaya',
+  'Mizoram',
+  'Nagaland',
+  'Odisha',
+  'Punjab',
+  'Rajasthan',
+  'Sikkim',
+  'Tamil Nadu',
+  'Telangana',
+  'Tripura',
+  'Uttar Pradesh',
+  'Uttarakhand',
+  'West Bengal'
 ];
 
 interface SearchBarProps {
@@ -29,13 +49,15 @@ const SearchBar = ({
   initialQuery = '', 
   onResultsVisibilityChange 
 }: SearchBarProps) => {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [location, setLocation] = useState('New York');
+  const [location, setLocation] = useState('Madhya Pradesh');
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<BusinessResult[]>([]);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   // Update searchQuery when initialQuery changes
@@ -58,15 +80,25 @@ const SearchBar = ({
         setIsSearching(true);
         
         setTimeout(() => {
-          const results = businessesData.filter(business => 
-            business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            business.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            business.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-          );
-          
-          setSearchResults(results);
-          setIsSearching(false);
-          setShowResults(true);
+          try {
+            const results = businessesData.filter(business => 
+              business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              business.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              business.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+            );
+            
+            setSearchResults(results);
+            setShowResults(true);
+          } catch (error) {
+            console.error("Search error:", error);
+            toast({
+              title: "Search Error",
+              description: "There was a problem with your search. Please try again.",
+              variant: "destructive"
+            });
+          } finally {
+            setIsSearching(false);
+          }
         }, 300);
       } else {
         setSearchResults([]);
@@ -75,24 +107,56 @@ const SearchBar = ({
     }, 300);
 
     return () => clearTimeout(delaySearch);
-  }, [searchQuery]);
+  }, [searchQuery, toast]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
         setShowLocationDropdown(false);
+        
+        // Only hide search results if user clicks outside both the search container and results
+        const resultsElement = document.querySelector('.search-results-container');
+        if (resultsElement && !resultsElement.contains(event.target as Node)) {
+          setShowResults(false);
+        }
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    
+    // Handle Escape key to close dropdowns
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowLocationDropdown(false);
+        setShowResults(false);
+      }
+    };
+    
+    document.addEventListener('keydown', handleEscKey);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscKey);
+    };
   }, []);
 
   const handleSearch = () => {
-    navigate(`/businesses?search=${searchQuery}&location=${location}`);
+    if (searchQuery.trim()) {
+      navigate(`/businesses?search=${searchQuery}&location=${location}`);
+    } else {
+      // Focus on the search input if empty
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+        toast({
+          title: "Enter Search Term",
+          description: "Please enter what you're looking for.",
+        });
+      }
+    }
   };
 
   const handleResultClick = (id: number) => {
+    setShowResults(false);
     navigate(`/business?id=${id}`);
   };
 
@@ -100,11 +164,20 @@ const SearchBar = ({
     setSearchQuery('');
     setSearchResults([]);
     setShowResults(false);
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
   };
 
   const handleFocus = () => {
     if (searchQuery.trim()) {
       setShowResults(true);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
     }
   };
 
@@ -117,17 +190,20 @@ const SearchBar = ({
               <Search className="h-5 w-5 text-gray-400" />
             </div>
             <input
+              ref={searchInputRef}
               type="text"
               className="block w-full pl-12 pr-10 py-5 focus:ring-0 focus:outline-none text-gray-900 placeholder-gray-500"
               placeholder="Search for businesses, services..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={handleFocus}
+              onKeyDown={handleKeyDown}
             />
             {searchQuery && (
               <button
                 className="absolute inset-y-0 right-0 pr-4 flex items-center"
                 onClick={handleClearSearch}
+                aria-label="Clear search"
               >
                 <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
               </button>
@@ -146,7 +222,7 @@ const SearchBar = ({
 
             <div
               className={cn(
-                "absolute z-20 mt-1 w-full bg-white shadow-lg rounded-md py-1 transition-all duration-200 border border-gray-100",
+                "absolute z-50 mt-1 w-full bg-white shadow-lg rounded-md py-1 transition-all duration-200 border border-gray-100 max-h-64 overflow-y-auto",
                 showLocationDropdown ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
               )}
             >

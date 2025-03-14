@@ -1,11 +1,15 @@
 
 import React from 'react';
+import Loading from '@/components/ui/loading';
 
 const BusinessTableLoading: React.FC = () => {
   return (
     <div className="flex flex-col justify-center items-center py-12">
-      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
-      <span className="mt-4 text-lg font-medium">Loading businesses...</span>
+      <Loading 
+        size="lg" 
+        message="Loading businesses..."
+        variant="primary"
+      />
     </div>
   );
 };

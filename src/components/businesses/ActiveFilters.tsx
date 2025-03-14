@@ -1,5 +1,6 @@
 
 import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 
 interface ActiveFiltersProps {
   selectedRating: string | null;
@@ -25,22 +26,22 @@ const ActiveFilters = ({
         <Button 
           variant="secondary" 
           size="sm" 
-          className="h-7 text-xs rounded-full gap-1"
+          className="h-7 text-xs rounded-full gap-1 flex items-center"
           onClick={() => setSelectedRating(null)}
         >
           {selectedRating} Stars
-          <span className="ml-1">×</span>
+          <X className="h-3 w-3 ml-1" />
         </Button>
       )}
       {selectedLocation && (
         <Button 
           variant="secondary" 
           size="sm" 
-          className="h-7 text-xs rounded-full gap-1"
+          className="h-7 text-xs rounded-full gap-1 flex items-center"
           onClick={() => setSelectedLocation(null)}
         >
           {selectedLocation}
-          <span className="ml-1">×</span>
+          <X className="h-3 w-3 ml-1" />
         </Button>
       )}
       <Button 

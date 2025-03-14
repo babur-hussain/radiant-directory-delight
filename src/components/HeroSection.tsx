@@ -1,30 +1,40 @@
+
 import { useState, useEffect } from 'react';
 import SearchBar from './search/SearchBar';
 import PopularSearchTerms from './search/PopularSearchTerms';
 import HeroContent from './hero/HeroContent';
 import GetListedForm from './GetListedForm';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const HeroSection = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchResultsVisible, setIsSearchResultsVisible] = useState(false);
   const [isListingFormOpen, setIsListingFormOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const handlePopularTermClick = (term: string) => {
     setSearchTerm(term);
   };
   
-  // Lock body scroll when search results are visible
+  // Lock body scroll when search results are visible on mobile
   useEffect(() => {
-    if (isSearchResultsVisible) {
+    if (isSearchResultsVisible && isMobile) {
       document.body.style.overflow = 'hidden';
+      // Calculate scrollbar width to prevent layout shift
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      }
     } else {
       document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
     }
 
     return () => {
       document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
     };
-  }, [isSearchResultsVisible]);
+  }, [isSearchResultsVisible, isMobile]);
   
   return (
     <div className="relative min-h-[85vh] flex items-center justify-center overflow-hidden hero-section">
@@ -47,7 +57,9 @@ const HeroSection = () => {
             initialQuery={searchTerm} 
             onResultsVisibilityChange={setIsSearchResultsVisible}
           />
-          <PopularSearchTerms onTermClick={handlePopularTermClick} />
+          {!isSearchResultsVisible && (
+            <PopularSearchTerms onTermClick={handlePopularTermClick} />
+          )}
         </div>
       </div>
       

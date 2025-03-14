@@ -5,6 +5,8 @@ import CategoryFilter from './businesses/CategoryFilter';
 import AdvancedFilters from './businesses/AdvancedFilters';
 import ActiveFilters from './businesses/ActiveFilters';
 import BusinessGrid from './businesses/BusinessGrid';
+import Loading from './ui/loading';
+import { toast } from '@/components/ui/use-toast';
 
 const FeaturedBusinesses = () => {
   const [businesses, setBusinesses] = useState([]);
@@ -16,20 +18,28 @@ const FeaturedBusinesses = () => {
   
   // Load businesses data
   useEffect(() => {
-    const loadBusinesses = () => {
+    const loadBusinesses = async () => {
       setLoading(true);
       try {
-        // Get businesses from the utility function that combines original and uploaded businesses
-        // getAllBusinesses now returns businesses sorted by priority
-        const allBusinesses = getAllBusinesses();
-        
-        // Filter to featured businesses and take the first 6
-        // Priority sorting is already applied by getAllBusinesses
-        const featuredBusinesses = allBusinesses.filter(b => b.featured).slice(0, 6);
-        setBusinesses(featuredBusinesses);
+        // Simulate network delay for loading state demonstration
+        setTimeout(() => {
+          // Get businesses from the utility function that combines original and uploaded businesses
+          // getAllBusinesses now returns businesses sorted by priority
+          const allBusinesses = getAllBusinesses();
+          
+          // Filter to featured businesses and take the first 6
+          // Priority sorting is already applied by getAllBusinesses
+          const featuredBusinesses = allBusinesses.filter(b => b.featured).slice(0, 6);
+          setBusinesses(featuredBusinesses);
+          setLoading(false);
+        }, 800);
       } catch (error) {
         console.error("Error loading businesses:", error);
-      } finally {
+        toast({
+          title: "Error Loading Businesses",
+          description: "There was an issue loading the featured businesses. Please try refreshing the page.",
+          variant: "destructive"
+        });
         setLoading(false);
       }
     };
@@ -117,42 +127,51 @@ const FeaturedBusinesses = () => {
           </p>
         </div>
         
-        {/* Category Filters */}
-        <CategoryFilter 
-          categories={categories} 
-          visibleCategory={visibleCategory} 
-          setVisibleCategory={setVisibleCategory} 
-        />
-        
-        {/* Advanced Filters */}
-        <div className="flex justify-center mb-6">
-          <AdvancedFilters 
-            showFilters={showFilters}
-            setShowFilters={setShowFilters}
-            selectedRating={selectedRating}
-            setSelectedRating={setSelectedRating}
-            selectedLocation={selectedLocation}
-            setSelectedLocation={setSelectedLocation}
-            locations={locations}
-            hasActiveFilters={!!(selectedRating || selectedLocation)}
-          />
-        </div>
-        
-        {/* Active Filters Display */}
-        <ActiveFilters 
-          selectedRating={selectedRating}
-          selectedLocation={selectedLocation}
-          setSelectedRating={setSelectedRating}
-          setSelectedLocation={setSelectedLocation}
-          resetFilters={resetFilters}
-        />
-        
-        {/* Businesses Grid */}
-        <BusinessGrid 
-          businesses={filteredBusinesses} 
-          resetFilters={resetFilters} 
-          loading={loading} 
-        />
+        {/* Show loading state or content */}
+        {loading ? (
+          <div className="py-16">
+            <Loading size="xl" message="Loading featured businesses..." />
+          </div>
+        ) : (
+          <>
+            {/* Category Filters */}
+            <CategoryFilter 
+              categories={categories} 
+              visibleCategory={visibleCategory} 
+              setVisibleCategory={setVisibleCategory} 
+            />
+            
+            {/* Advanced Filters */}
+            <div className="flex justify-center mb-6">
+              <AdvancedFilters 
+                showFilters={showFilters}
+                setShowFilters={setShowFilters}
+                selectedRating={selectedRating}
+                setSelectedRating={setSelectedRating}
+                selectedLocation={selectedLocation}
+                setSelectedLocation={setSelectedLocation}
+                locations={locations}
+                hasActiveFilters={!!(selectedRating || selectedLocation)}
+              />
+            </div>
+            
+            {/* Active Filters Display */}
+            <ActiveFilters 
+              selectedRating={selectedRating}
+              selectedLocation={selectedLocation}
+              setSelectedRating={setSelectedRating}
+              setSelectedLocation={setSelectedLocation}
+              resetFilters={resetFilters}
+            />
+            
+            {/* Businesses Grid */}
+            <BusinessGrid 
+              businesses={filteredBusinesses} 
+              resetFilters={resetFilters} 
+              loading={false} 
+            />
+          </>
+        )}
       </div>
     </section>
   );

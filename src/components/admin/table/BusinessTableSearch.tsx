@@ -3,6 +3,7 @@ import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, RefreshCw, Plus } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface BusinessTableSearchProps {
   searchTerm: string;
@@ -25,6 +26,8 @@ const BusinessTableSearch: React.FC<BusinessTableSearchProps> = ({
   endIndex,
   totalBusinesses
 }) => {
+  const isMobile = useIsMobile();
+  
   const handleAddBusinessClick = () => {
     console.log("Add business button clicked in table search");
     onAddBusiness();
@@ -47,8 +50,9 @@ const BusinessTableSearch: React.FC<BusinessTableSearchProps> = ({
           size="icon" 
           onClick={onRefresh}
           disabled={isRefreshing}
-          className="flex-shrink-0"
+          className="flex-shrink-0 h-10 w-10"
           type="button"
+          aria-label="Refresh data"
         >
           <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           <span className="sr-only">Refresh data</span>
@@ -62,7 +66,7 @@ const BusinessTableSearch: React.FC<BusinessTableSearchProps> = ({
           type="button"
         >
           <Plus className="h-4 w-4 mr-1" />
-          Add Business
+          {isMobile ? 'Add' : 'Add Business'}
         </Button>
         <div className="text-sm text-muted-foreground hidden md:block">
           Showing {startIndex + 1} to {endIndex} of {totalBusinesses} businesses

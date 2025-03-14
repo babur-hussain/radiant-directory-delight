@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import BusinessCard from './BusinessCard';
 import { Link } from 'react-router-dom';
 import { Business } from '@/lib/csv-utils';
+import Loading from '@/components/ui/loading';
 
 interface BusinessGridProps {
   businesses: Business[];
@@ -13,9 +14,8 @@ interface BusinessGridProps {
 const BusinessGrid = ({ businesses, resetFilters, loading = false }: BusinessGridProps) => {
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        <span className="ml-3 text-lg">Loading businesses...</span>
+      <div className="flex flex-col justify-center items-center py-20">
+        <Loading size="lg" message="Loading businesses..." />
       </div>
     );
   }
@@ -37,15 +37,17 @@ const BusinessGrid = ({ businesses, resetFilters, loading = false }: BusinessGri
       </div>
       
       {/* View More Button */}
-      <div className="mt-12 text-center">
-        <Button
-          variant="outline"
-          className="rounded-full transition-smooth"
-          asChild
-        >
-          <Link to="/businesses">View All Businesses</Link>
-        </Button>
-      </div>
+      {businesses.length > 0 && (
+        <div className="mt-12 text-center">
+          <Button
+            variant="outline"
+            className="rounded-full transition-smooth"
+            asChild
+          >
+            <Link to="/businesses">View All Businesses</Link>
+          </Button>
+        </div>
+      )}
     </>
   );
 };
