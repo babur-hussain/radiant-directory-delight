@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { 
   getAllBusinesses,
@@ -16,6 +15,24 @@ import BusinessesGrid from "@/components/businesses/BusinessesPage/BusinessesGri
 type LocationFilter = string | null;
 type SortOption = "relevance" | "rating" | "reviews";
 
+const getCustomCategories = (): string[] => {
+  const storedCategories = localStorage.getItem("businessCategories");
+  if (storedCategories) {
+    const categories = JSON.parse(storedCategories);
+    return categories.map((cat: { name: string }) => cat.name);
+  }
+  return [];
+};
+
+const getCustomLocations = (): string[] => {
+  const storedLocations = localStorage.getItem("businessLocations");
+  if (storedLocations) {
+    const locations = JSON.parse(storedLocations);
+    return locations.map((loc: { name: string }) => loc.name);
+  }
+  return [];
+};
+
 const BusinessesPage = () => {
   const [loading, setLoading] = useState(true);
   const [businesses, setBusinesses] = useState(businessesData);
@@ -28,6 +45,8 @@ const BusinessesPage = () => {
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("relevance");
   const [activeTags, setActiveTags] = useState<string[]>([]);
+  const [customCategories, setCustomCategories] = useState<string[]>(getCustomCategories());
+  const [customLocations, setCustomLocations] = useState<string[]>(getCustomLocations());
   
   const itemsPerPage = 40;
   
@@ -52,21 +71,39 @@ const BusinessesPage = () => {
     
     addDataChangeListener(handleDataChanged);
     
+    const handleCategoriesChanged = () => {
+      setCustomCategories(getCustomCategories());
+    };
+    
+    const handleLocationsChanged = () => {
+      setCustomLocations(getCustomLocations());
+    };
+    
+    window.addEventListener("categoriesChanged", handleCategoriesChanged);
+    window.addEventListener("locationsChanged", handleLocationsChanged);
+    
     return () => {
       removeDataChangeListener(handleDataChanged);
+      window.removeEventListener("categoriesChanged", handleCategoriesChanged);
+      window.removeEventListener("locationsChanged", handleLocationsChanged);
     };
   }, []);
   
   const categories = useMemo(() => {
-    return Array.from(new Set(businesses.map(b => b.category)));
-  }, [businesses]);
+    const businessCategories = Array.from(new Set(businesses.map(b => b.category)));
+    const allCategories = [...new Set([...customCategories, ...businessCategories])].filter(Boolean);
+    return allCategories;
+  }, [businesses, customCategories]);
   
   const locations = useMemo(() => {
-    return Array.from(new Set(businesses.map(b => {
+    const businessLocations = Array.from(new Set(businesses.map(b => {
       const parts = b.address.split(',');
       return parts.length > 1 ? parts[1].trim() : parts[0].trim();
     })));
-  }, [businesses]);
+    
+    const allLocations = [...new Set([...customLocations, ...businessLocations])].filter(Boolean);
+    return allLocations;
+  }, [businesses, customLocations]);
 
   const allTags = useMemo(() => {
     const tags = new Set<string>();

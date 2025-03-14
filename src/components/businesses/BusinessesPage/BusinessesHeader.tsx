@@ -180,6 +180,15 @@ const MobileFilters: React.FC<MobileFiltersProps> = ({
   featuredOnly,
   setFeaturedOnly
 }) => {
+  // Get categories from localStorage or use empty array
+  const categories = React.useMemo(() => {
+    const storedCategories = localStorage.getItem("businessCategories");
+    if (storedCategories) {
+      return JSON.parse(storedCategories).map((cat: { name: string }) => cat.name);
+    }
+    return [];
+  }, []);
+
   return (
     <div className="py-4 space-y-6">
       <div>
@@ -190,7 +199,11 @@ const MobileFilters: React.FC<MobileFiltersProps> = ({
           className="w-full p-2 border rounded"
         >
           <option value="">All Categories</option>
-          {/* Categories will be populated dynamically */}
+          {categories.map(category => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
         </select>
       </div>
       
@@ -252,6 +265,15 @@ const DesktopFilters: React.FC<DesktopFiltersProps> = ({
   setSelectedRating,
   clearAllFilters
 }) => {
+  // Get categories from localStorage or use empty array
+  const categories = React.useMemo(() => {
+    const storedCategories = localStorage.getItem("businessCategories");
+    if (storedCategories) {
+      return JSON.parse(storedCategories).map((cat: { name: string }) => cat.name);
+    }
+    return [];
+  }, []);
+  
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -263,7 +285,11 @@ const DesktopFilters: React.FC<DesktopFiltersProps> = ({
             className="w-full p-2 border rounded"
           >
             <option value="">All Categories</option>
-            {/* Categories will be populated dynamically */}
+            {categories.map(category => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
           </select>
         </div>
         
