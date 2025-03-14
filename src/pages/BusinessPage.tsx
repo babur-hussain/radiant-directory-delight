@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle, Users, TrendingUp, BarChart3, Globe, Target, Megaphone, ArrowRight, AlertTriangle } from 'lucide-react';
@@ -11,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
 import Footer from '@/components/Footer';
+import SubscriptionDialog from '@/components/subscription/SubscriptionDialog';
 
 const BusinessPage = () => {
   // Smooth scroll to top on page load
@@ -25,6 +25,10 @@ const BusinessPage = () => {
   const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // State for subscription dialog
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogPackage, setDialogPackage] = useState<SubscriptionPackage | null>(null);
 
   // Fetch the business packages from Firebase
   useEffect(() => {
@@ -125,6 +129,12 @@ const BusinessPage = () => {
       </CardFooter>
     </Card>
   );
+
+  // Handle subscribe button click
+  const handleSubscribeClick = (pkg: SubscriptionPackage) => {
+    setDialogPackage(pkg);
+    setIsDialogOpen(true);
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -233,14 +243,16 @@ const BusinessPage = () => {
                       </ul>
                     </CardContent>
                     <CardFooter>
-                      <Link to="/subscription" className="w-full">
-                        <Button 
-                          className="w-full bg-blue-500 hover:bg-blue-600" 
-                          variant={pkg.popular ? 'default' : 'outline'}
-                        >
-                          Subscribe Now
-                        </Button>
-                      </Link>
+                      <Button 
+                        className="w-full bg-blue-500 hover:bg-blue-600" 
+                        variant={pkg.popular ? 'default' : 'outline'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSubscribeClick(pkg);
+                        }}
+                      >
+                        Subscribe Now
+                      </Button>
                     </CardFooter>
                   </Card>
                 ))
@@ -274,6 +286,13 @@ const BusinessPage = () => {
         </section>
       </main>
       <Footer />
+      
+      {/* Subscription Dialog */}
+      <SubscriptionDialog 
+        isOpen={isDialogOpen}
+        setIsOpen={setIsDialogOpen}
+        selectedPackage={dialogPackage}
+      />
     </div>
   );
 };
