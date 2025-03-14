@@ -11,7 +11,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Clean header styling */
+/* Header styling */
 header {
   position: fixed;
   top: 0;
@@ -19,8 +19,12 @@ header {
   width: 100%;
   background-color: #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 1rem 0;
   z-index: 1000;
+}
+
+/* Main content padding to avoid header overlap */
+main {
+  padding-top: 4rem; /* 64px to match header height */
 }
 
 /* Ensure proper spacing for content below header */

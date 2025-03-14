@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, Map, LogIn } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { cn } from '@/lib/utils';
 import AuthModal from './auth/AuthModal';
 import UserMenu from './UserMenu';
 import { useAuth } from '@/hooks/useAuth';
