@@ -62,12 +62,18 @@ const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefresh }) =>
     
     if (user.name === null) {
       userName = null;
-    } else if (typeof user.name === 'boolean') {
-      userName = 'User';
     } else if (typeof user.name === 'string') {
       userName = user.name;
+    } else if (typeof user.name === 'boolean') {
+      userName = 'User';
+    } else if (user.name) {
+      try {
+        userName = String(user.name);
+      } catch {
+        userName = null;
+      }
     } else {
-      userName = user.name?.toString() || null;
+      userName = null;
     }
     
     let adminStatus = false;

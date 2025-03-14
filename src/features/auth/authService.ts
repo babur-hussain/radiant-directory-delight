@@ -24,11 +24,24 @@ const saveUserToFirestore = async (
     console.log(`Saving user to Firestore: ${userId}, ${email}, ${role}`);
     const userDoc = doc(db, "users", userId);
     
-    // Ensure name is a string
-    const displayName = name === null ? (email?.split('@')[0] || 'User') :
-                         typeof name === 'string' ? name : 
-                         typeof name === 'boolean' ? 'User' : 
-                         name?.toString() || 'User';
+    // Ensure name is a string - Fix TypeScript never type error
+    let displayName: string;
+    if (name === null) {
+      displayName = email?.split('@')[0] || 'User';
+    } else if (typeof name === 'string') {
+      displayName = name;
+    } else if (typeof name === 'boolean') {
+      displayName = 'User';
+    } else if (name) {
+      // Only call toString if name exists and is not null
+      try {
+        displayName = String(name);
+      } catch {
+        displayName = 'User';
+      }
+    } else {
+      displayName = 'User';
+    }
     
     // Ensure isAdmin is a boolean
     let adminStatus = false;

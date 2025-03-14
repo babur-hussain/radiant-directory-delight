@@ -1,4 +1,3 @@
-
 import { User, UserRole } from "../../types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { saveUserToAllUsersList } from "./authStorage";
@@ -131,7 +130,7 @@ export const getAllUsers = async (): Promise<User[]> => {
       const data = doc.data();
       console.log("User data from Firebase:", doc.id, data);
       
-      // Ensure name is a string
+      // Ensure name is a string - Fix TypeScript never type error
       let displayName: string | null = null;
       if (data.name === null) {
         displayName = null;
@@ -139,8 +138,15 @@ export const getAllUsers = async (): Promise<User[]> => {
         displayName = 'User';
       } else if (typeof data.name === 'string') {
         displayName = data.name || data.displayName || null;
+      } else if (data.name) {
+        // Only call toString if name exists and is not null
+        try {
+          displayName = String(data.name);
+        } catch {
+          displayName = null;
+        }
       } else {
-        displayName = String(data.name) || data.displayName || null;
+        displayName = null;
       }
       
       // Ensure isAdmin is a boolean
