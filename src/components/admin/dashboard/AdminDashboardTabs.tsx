@@ -29,6 +29,7 @@ interface AdminDashboardTabsProps {
   businesses: Business[];
   isRefreshing: boolean;
   refreshBusinesses: () => Promise<void>;
+  onRefreshUsers?: () => void;
 }
 
 const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
@@ -41,7 +42,8 @@ const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
   handleAddBusiness,
   handleEditBusiness,
   handlePermissionError,
-  onViewDetails
+  onViewDetails,
+  onRefreshUsers
 }) => {
   return (
     <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -83,7 +85,7 @@ const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
       </TabsContent>
       
       <TabsContent value="users" className="space-y-4">
-        <UserPermissionsTab />
+        <UserPermissionsTab onRefresh={onRefreshUsers} />
       </TabsContent>
       
       <TabsContent value="subscriptions" className="space-y-4">

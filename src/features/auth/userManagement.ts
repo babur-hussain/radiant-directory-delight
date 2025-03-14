@@ -3,7 +3,7 @@ import { User, UserRole } from "../../types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { saveUserToAllUsersList } from "./authStorage";
 import { db } from "../../config/firebase";
-import { doc, setDoc, getDoc, collection, query, getDocs, where, serverTimestamp, orderBy, limit, addDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, query, getDocs, where, serverTimestamp, orderBy, limit } from "firebase/firestore";
 
 export const updateUserRole = async (user: User, role: UserRole) => {
   if (!user) {
@@ -120,6 +120,8 @@ export const getAllUsers = async (): Promise<User[]> => {
     const q = query(usersCollection, orderBy("createdAt", "desc"));
     const querySnapshot = await getDocs(q);
     
+    console.log(`Query executed, got ${querySnapshot.size} users`);
+    
     if (querySnapshot.empty) {
       console.log("No users found in Firebase");
       return [];
@@ -195,15 +197,20 @@ export const createTestUser = async (userData: TestUserData): Promise<User> => {
       // Use a reference to a specific document with the generated ID
       const userDoc = doc(db, "users", userId);
       
-      // Set the document data with merge option
-      await setDoc(userDoc, {
+      // Create the user document data
+      const userDocData = {
         email: userData.email,
         name: userData.name,
         role: userData.role,
         isAdmin: userData.isAdmin,
         createdAt: new Date().toISOString(),
         lastLogin: serverTimestamp()
-      });
+      };
+      
+      console.log("Creating user document with data:", userDocData);
+      
+      // Set the document data with merge option
+      await setDoc(userDoc, userDocData);
       
       console.log("Test user created successfully in Firebase:", userId);
     } catch (firestoreError) {

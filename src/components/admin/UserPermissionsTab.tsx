@@ -19,6 +19,7 @@ import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import Loading from "@/components/ui/loading";
 
 interface UserData {
   id: string;
@@ -29,9 +30,13 @@ interface UserData {
   createdAt?: string;
 }
 
+interface UserPermissionsTabProps {
+  onRefresh?: () => void;
+}
+
 const USERS_PER_PAGE = 10;
 
-const UserPermissionsTab = () => {
+const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefresh }) => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +53,7 @@ const UserPermissionsTab = () => {
   const [newUserRole, setNewUserRole] = useState<UserRole>("Business");
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [realtimeListenerActive, setRealtimeListenerActive] = useState(false);
   
   const { updateUserPermission } = useAuth();
   const { toast } = useToast();
@@ -83,11 +89,22 @@ const UserPermissionsTab = () => {
         firebaseUsers.forEach(user => {
           saveUserToAllUsersList(user);
         });
+        
+        toast({
+          title: "Users Loaded",
+          description: `Successfully loaded ${firebaseUsers.length} users from Firebase`,
+        });
       } else {
         console.log("Firebase returned no users, falling back to localStorage");
         const localUsers = loadAllUsers().map(convertToUserData);
         setUsers(localUsers);
         console.log("Local users loaded:", localUsers.length);
+        
+        toast({
+          title: "Warning",
+          description: "No users found in Firebase. Using cached data.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -111,39 +128,58 @@ const UserPermissionsTab = () => {
 
   useEffect(() => {
     try {
+      if (realtimeListenerActive) {
+        console.log("Real-time listener is already active");
+        return;
+      }
+      
       const usersCollection = collection(db, "users");
       const q = query(usersCollection, orderBy("createdAt", "desc"));
       
       console.log("Setting up real-time listener for users collection");
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
+        try {
           console.log(`Real-time update: Received ${snapshot.docs.length} users from Firebase`);
           
-          const updatedUsers = snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              email: data.email || null,
-              name: data.name || data.displayName || null,
-              role: data.role || null,
-              isAdmin: data.isAdmin || false,
-              createdAt: data.createdAt || new Date().toISOString(),
-            };
-          });
-          
-          console.log("Detailed user data from real-time listener:", updatedUsers);
-          setUsers(updatedUsers);
-          
-          updatedUsers.forEach(user => {
-            saveUserToAllUsersList(convertToUserData(user) as User);
-          });
-        } else {
-          console.log("Real-time update: Firebase users collection is empty");
+          if (!snapshot.empty) {
+            const updatedUsers = snapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                email: data.email || null,
+                name: data.name || data.displayName || null,
+                role: data.role || null,
+                isAdmin: data.isAdmin || false,
+                createdAt: data.createdAt || new Date().toISOString(),
+              };
+            });
+            
+            console.log("User data from real-time listener:", updatedUsers);
+            setUsers(updatedUsers);
+            
+            // Also update the localStorage cache
+            updatedUsers.forEach(user => {
+              saveUserToAllUsersList(convertToUserData(user) as User);
+            });
+            
+            if (!realtimeListenerActive) {
+              setRealtimeListenerActive(true);
+              toast({
+                title: "Real-time Updates Active",
+                description: "You'll now see live user updates",
+              });
+            }
+          } else {
+            console.log("Real-time update: Firebase users collection is empty");
+          }
+        } catch (innerError) {
+          console.error("Error processing real-time updates:", innerError);
         }
       }, (error) => {
         console.error("Error in real-time user updates:", error);
         setError("Real-time updates failed. Data may be stale.");
+        setRealtimeListenerActive(false);
         toast({
           title: "Real-time Updates Failed",
           description: "Could not establish real-time updates. Data may be stale.",
@@ -151,9 +187,14 @@ const UserPermissionsTab = () => {
         });
       });
       
-      return () => unsubscribe();
+      return () => {
+        console.log("Cleaning up real-time listener");
+        unsubscribe();
+        setRealtimeListenerActive(false);
+      };
     } catch (error) {
       console.error("Error setting up real-time user updates:", error);
+      setError("Failed to set up real-time updates. Using static data.");
     }
   }, [toast]);
 
@@ -209,7 +250,12 @@ const UserPermissionsTab = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadUsersFromFirebase();
+    // Call the parent refresh if available
+    if (onRefresh) {
+      onRefresh();
+    } else {
+      await loadUsersFromFirebase();
+    }
     
     toast({
       title: "Refreshed",
@@ -302,9 +348,9 @@ const UserPermissionsTab = () => {
         description: `Test user "${newUserName}" created successfully`,
       });
       
-      // Refresh the full list after a short delay to ensure Firebase has updated
+      // Real-time updates should catch this, but let's refresh to be sure
       setTimeout(() => {
-        loadUsersFromFirebase();
+        handleRefresh();
       }, 1000);
     } catch (error) {
       console.error("Error creating test user:", error);
@@ -326,12 +372,14 @@ const UserPermissionsTab = () => {
 
   if (loading && !refreshing) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading users...</p>
-        </div>
-      </div>
+      <Card>
+        <CardContent className="flex justify-center items-center py-10">
+          <Loading 
+            size="lg" 
+            message="Loading users data..." 
+          />
+        </CardContent>
+      </Card>
     );
   }
 
@@ -444,6 +492,15 @@ const UserPermissionsTab = () => {
           <Alert variant="destructive" className="mb-4">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        {realtimeListenerActive && (
+          <Alert className="mb-4 bg-green-50 border-green-200">
+            <div className="flex items-center">
+              <Badge variant="outline" className="bg-green-100 text-green-800 mr-2">Live</Badge>
+              <AlertDescription>Real-time updates are active. User changes will appear automatically.</AlertDescription>
+            </div>
           </Alert>
         )}
       

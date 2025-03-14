@@ -24,8 +24,8 @@ service cloud.firestore {
       allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
     
-    // IMPORTANT: Enhanced rules to allow admins to read/write ALL users
-    match /users/{userId} {
+    // ENHANCED RULES: Allow admins to read/write ALL users collection
+    match /users/{allPaths=**} {
       allow read, write: if request.auth != null && isAdmin();
     }
     

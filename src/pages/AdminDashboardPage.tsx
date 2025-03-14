@@ -11,6 +11,7 @@ import AdminPermissionError from "@/components/admin/dashboard/AdminPermissionEr
 import AdminDashboardTabs from "@/components/admin/dashboard/AdminDashboardTabs";
 import { loadAllUsers, debugRefreshUsers } from "@/features/auth/authStorage";
 import { ensureTestUsers } from "@/features/auth/userManagement";
+import Loading from "@/components/ui/loading";
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
@@ -26,10 +27,46 @@ const AdminDashboardPage = () => {
   const [isSubmitting, setIsSubmitting] = useReactState(false);
   const [selectedBusiness, setSelectedBusiness] = useReactState<Business | null>(null);
   
+  // State for users tab
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  
   const { businesses, isRefreshing, refreshData } = useBusinessListings();
 
   // Check if user is authorized (admin or staff)
   const isAuthorized = user && (user.role === "Admin" || user.role === "staff" || user.isAdmin);
+
+  // Function to load users data
+  const loadUsersData = async () => {
+    setIsLoadingUsers(true);
+    try {
+      // Show loading toast
+      toast({
+        title: "Loading Users",
+        description: "Initializing user data...",
+      });
+      
+      console.log("Admin Dashboard: Ensuring test users exist first");
+      await ensureTestUsers();
+      
+      console.log("Admin Dashboard: Now refreshing all users");
+      const userCount = await debugRefreshUsers();
+      console.log(`Admin Dashboard: Found ${userCount} users`);
+      
+      toast({
+        title: "Users Refreshed",
+        description: `Successfully loaded ${userCount} users`,
+      });
+    } catch (error) {
+      console.error("Error loading users data:", error);
+      toast({
+        title: "Error Loading Users",
+        description: "Could not load users from Firebase",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
 
   useEffect(() => {
     // Clear any permission errors when changing tabs
@@ -37,40 +74,9 @@ const AdminDashboardPage = () => {
     
     // Load users data when in users tab
     if (activeTab === "users") {
-      // Force refresh users data
-      console.log("Admin Dashboard: Loading users for the Users tab");
-      
-      // First try to ensure we have test users in the system
-      toast({
-        title: "Loading Users",
-        description: "Initializing user data...",
-      });
-      
-      ensureTestUsers()
-        .then(() => {
-          console.log("Test users ensured, now refreshing all users");
-          
-          // Then refresh the users
-          return debugRefreshUsers();
-        })
-        .then((userCount) => {
-          console.log(`Admin Dashboard: Found ${userCount} users`);
-          
-          toast({
-            title: "Users Refreshed",
-            description: `Successfully loaded ${userCount} users`,
-          });
-        })
-        .catch(error => {
-          console.error("Error ensuring test users:", error);
-          toast({
-            title: "Error Loading Users",
-            description: "Could not load users from Firebase",
-            variant: "destructive",
-          });
-        });
+      loadUsersData();
     }
-  }, [activeTab, toast]);
+  }, [activeTab]);
   
   // Set business count when businesses array changes
   useEffect(() => {
@@ -153,6 +159,13 @@ const AdminDashboardPage = () => {
     }
   };
 
+  // Function to manually refresh user data
+  const handleRefreshUsers = () => {
+    if (activeTab === "users") {
+      loadUsersData();
+    }
+  };
+
   if (!isAuthorized) {
     return <UnauthorizedView />;
   }
@@ -165,6 +178,16 @@ const AdminDashboardPage = () => {
         permissionError={permissionError} 
         dismissError={dismissError} 
       />
+      
+      {isLoadingUsers && activeTab === "users" && (
+        <div className="mb-4">
+          <Loading 
+            size="md" 
+            message="Loading users data..." 
+            className="my-4"
+          />
+        </div>
+      )}
       
       <AdminDashboardTabs 
         activeTab={activeTab}
@@ -185,6 +208,7 @@ const AdminDashboardPage = () => {
         businesses={businesses}
         isRefreshing={isRefreshing}
         refreshBusinesses={refreshData}
+        onRefreshUsers={handleRefreshUsers}
       />
     </div>
   );
