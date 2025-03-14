@@ -492,3 +492,13 @@ export const processCsvData = async (csvContent: string): Promise<{
     };
   }
 };
+
+// Add this function to generate a unique ID for a new business
+export const generateUniqueId = async (): Promise<number> => {
+  const businesses = getAllBusinesses();
+  const highestId = businesses.reduce((maxId, business) => {
+    return Math.max(maxId, business.id);
+  }, 0);
+  
+  return highestId + 1;
+};
