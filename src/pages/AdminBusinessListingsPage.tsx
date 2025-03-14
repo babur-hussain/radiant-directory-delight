@@ -68,13 +68,21 @@ const AdminBusinessListingsPage = () => {
     setIsSubmitting(true);
     
     try {
-      // Fix the priority value conversion to avoid type comparison issues
-      // Convert the priority value to a number or undefined
-      const priorityValue = values.priority === undefined || values.priority === '' ? 
-                           undefined : 
-                           typeof values.priority === 'number' ? 
-                           values.priority : 
-                           parseInt(String(values.priority), 10);
+      // Handle priority value conversion properly to avoid type comparison issues
+      let priorityValue: number | undefined;
+      
+      if (values.priority === undefined || values.priority === '') {
+        priorityValue = undefined;
+      } else if (typeof values.priority === 'number') {
+        priorityValue = values.priority;
+      } else {
+        // Ensure we're parsing a string by explicitly converting to string first
+        priorityValue = parseInt(String(values.priority), 10);
+        // Handle NaN case
+        if (isNaN(priorityValue)) {
+          priorityValue = undefined;
+        }
+      }
       
       if (currentBusinessToEdit) {
         const updated = updateBusiness({
