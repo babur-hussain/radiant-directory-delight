@@ -30,7 +30,10 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
   
   try {
     console.log(`⚡ Updating subscription for user ${userId}:`, subscriptionData);
-    console.log(`⚡ Current user from auth:`, JSON.stringify(auth?.currentUser || {}));
+    console.log(`⚡ Current user from auth:`, auth?.currentUser ? {
+      uid: auth.currentUser.uid,
+      email: auth.currentUser.email
+    } : "No authenticated user");
     
     // First check if user document exists
     const userRef = doc(db, "users", userId);
@@ -48,6 +51,23 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
     }
     
     console.log(`✅ User document exists: ${userId}`);
+    
+    // Log more info about the current auth state and admin status
+    if (auth?.currentUser) {
+      try {
+        const adminUserRef = doc(db, "users", auth.currentUser.uid);
+        const adminUserSnap = await getDoc(adminUserRef);
+        if (adminUserSnap.exists()) {
+          const adminData = adminUserSnap.data();
+          console.log(`🔐 Current user admin status:`, {
+            isAdmin: adminData.isAdmin,
+            role: adminData.role
+          });
+        }
+      } catch (adminCheckError) {
+        console.error("❌ Error checking admin status:", adminCheckError);
+      }
+    }
     
     // Try multiple approaches to ensure we can update the subscription
     // Approach 1: Use batch writes - often more successful with permission issues
@@ -108,7 +128,61 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
       console.log("⚠️ Falling back to transaction approach...");
     }
     
-    // Approach 2: Use transaction approach
+    // Approach 2: Use set with merge option (often works when update fails)
+    try {
+      console.log("🔄 Attempting set with merge approach...");
+      
+      // Update the main user document with subscription summary using set with merge
+      await setDoc(userRef, {
+        subscription: subscriptionData,
+        subscriptionStatus: subscriptionData.status,
+        subscriptionPackage: subscriptionData.packageId,
+        lastUpdated: serverTimestamp(),
+        ...(subscriptionData.status === "active" 
+            ? { subscriptionAssignedAt: serverTimestamp() } 
+            : {}),
+        ...(subscriptionData.status === "cancelled" 
+            ? { subscriptionCancelledAt: serverTimestamp() } 
+            : {})
+      }, { merge: true });
+      
+      // Create new subscription in subscriptions subcollection
+      const userSubscriptionsRef = collection(db, "users", userId, "subscriptions");
+      const newSubscriptionRef = doc(userSubscriptionsRef);
+      
+      // Prepare subscription data with IDs
+      const subscriptionWithIds = {
+        ...subscriptionData,
+        id: newSubscriptionRef.id,
+        userId: userId,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      
+      // Add to subscriptions subcollection using set
+      await setDoc(newSubscriptionRef, subscriptionWithIds);
+      
+      // Also add to the main subscriptions collection for backward compatibility
+      const mainSubscriptionRef = doc(db, "subscriptions", newSubscriptionRef.id);
+      await setDoc(mainSubscriptionRef, {
+        ...subscriptionWithIds,
+        userId: userId
+      });
+      
+      console.log("✅ Successfully updated subscription using set with merge");
+      toast({
+        title: "Subscription Updated",
+        description: `Successfully updated subscription to ${subscriptionData.packageId}`,
+        variant: "success"
+      });
+      return true;
+    } catch (setMergeError) {
+      console.error("❌ Set with merge approach failed:", setMergeError);
+      console.log("⚠️ Detailed set/merge error:", setMergeError instanceof Error ? setMergeError.message : String(setMergeError));
+      console.log("⚠️ Falling back to transaction approach...");
+    }
+    
+    // Approach 3: Use transaction approach
     try {
       console.log("🔄 Attempting transaction approach...");
       await runTransaction(db, async (transaction) => {
@@ -172,8 +246,8 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
       console.log("⚠️ Falling back to direct write approach...");
     }
     
-    // Approach 3: Fall back to a more basic approach using set with merge option
-    console.log("🔄 Attempting direct write approach with set and merge...");
+    // Approach 4: Fall back to a more basic approach using addDoc
+    console.log("🔄 Attempting direct write approach with addDoc...");
     
     try {
       // First try to update the user document with setDoc and merge
@@ -233,7 +307,7 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
     console.error("❌ All approaches to update subscription failed:", error);
     
     // Provide more specific error messages based on the error type
-    let errorMessage = "Failed to update subscription details in database";
+    let errorMessage = "Failed to update subscription";
     let errorDetails = "";
     
     if (error instanceof Error) {
@@ -248,7 +322,11 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
         // Try to log current auth state for debugging
         try {
           const currentUser = auth?.currentUser;
-          console.log("🔑 Current Firebase user:", currentUser ? JSON.stringify(currentUser) : "No user logged in");
+          console.log("🔑 Current Firebase user:", currentUser ? {
+            uid: currentUser.uid,
+            email: currentUser.email,
+            isAnonymous: currentUser.isAnonymous
+          } : "No user logged in");
         } catch (authError) {
           console.error("Failed to log auth state:", authError);
         }
@@ -263,7 +341,7 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
         errorMessage = "Firebase quota exceeded. Please try again later.";
       } else {
         // If we have a specific error message, use it
-        errorMessage = `Error: ${error.message}`;
+        errorMessage = `${errorMessage}: ${error.message}`;
       }
     }
     

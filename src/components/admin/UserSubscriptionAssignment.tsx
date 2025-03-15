@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -6,7 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { User } from "@/types/auth";
 import { updateUserSubscription, getUserSubscription } from "@/lib/subscription";
-import { Loader2, AlertCircle, ShieldAlert, ExternalLink, Info } from "lucide-react";
+import { Loader2, AlertCircle, ShieldAlert, ExternalLink, Info, Bug } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -131,6 +132,13 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       console.log("⚡ Creating subscription data:", subscriptionData);
       
       try {
+        // Add additional debug info before calling updateUserSubscription
+        console.log("Debug info before update:", {
+          currentAdminId: currentUser?.id,
+          isCurrentUserAdmin: currentUser?.isAdmin,
+          targetUserId: user.id
+        });
+        
         const success = await updateUserSubscription(user.id, subscriptionData);
         
         if (success) {
@@ -144,6 +152,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
           
           onAssigned(packageDetails.id);
         } else {
+          // If updateUserSubscription returns false but doesn't throw
           throw new Error("Failed to update subscription: Unknown error occurred");
         }
       } catch (updateError) {
@@ -273,6 +282,12 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
               <div className="mt-2 flex items-center text-sm">
                 <ShieldAlert className="h-4 w-4 mr-1" />
                 <span>Check your admin permissions and Firestore rules.</span>
+              </div>
+            )}
+            {error.includes("Unknown error") && (
+              <div className="mt-2 flex items-center text-sm">
+                <Bug className="h-4 w-4 mr-1" />
+                <span>This may be a Firestore connectivity issue or permission problem.</span>
               </div>
             )}
             {errorDetails && (
