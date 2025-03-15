@@ -7,7 +7,9 @@ import { toast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { User } from "@/types/auth";
 import { updateUserSubscription, getUserSubscription } from "@/lib/subscription";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAuth } from "@/hooks/useAuth";
 
 interface UserSubscriptionAssignmentProps {
   user: User;
@@ -19,6 +21,8 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<string>("");
   const [userCurrentSubscription, setUserCurrentSubscription] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
     const loadData = async () => {
@@ -45,6 +49,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         }
       } catch (error) {
         console.error("❌ Error loading subscription data:", error);
+        setError("Failed to load subscription data");
         toast({
           title: "Error",
           description: "Failed to load subscription data",
@@ -76,10 +81,23 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       return;
     }
 
+    // Verify current user has admin permissions
+    if (!currentUser?.isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "You must have admin privileges to assign subscriptions",
+        variant: "destructive"
+      });
+      console.error("❌ Permission denied: Current user is not an admin", currentUser);
+      return;
+    }
+
     setIsLoading(true);
+    setError(null);
 
     try {
       console.log(`🚀 Starting package assignment: ${selectedPackage} to user ${user.id}`);
+      console.log(`🔑 Current user (admin) ID: ${currentUser?.id}`);
       
       // Find the selected package
       const packageDetails = packages.find(pkg => pkg.id === selectedPackage);
@@ -97,7 +115,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         startDate: new Date().toISOString(),
         endDate: new Date(Date.now() + packageDetails.durationMonths * 30 * 24 * 60 * 60 * 1000).toISOString(),
         status: "active",
-        assignedBy: "admin",
+        assignedBy: currentUser?.id || "admin",
         assignedAt: new Date().toISOString()
       };
       
@@ -127,6 +145,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         errorMessage = error.message || errorMessage;
       }
       
+      setError(errorMessage);
       toast({
         title: "Assignment Failed",
         description: errorMessage,
@@ -147,7 +166,20 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       return;
     }
     
+    // Verify current user has admin permissions
+    if (!currentUser?.isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "You must have admin privileges to cancel subscriptions",
+        variant: "destructive"
+      });
+      console.error("❌ Permission denied: Current user is not an admin", currentUser);
+      return;
+    }
+    
     setIsLoading(true);
+    setError(null);
+    
     try {
       if (!userCurrentSubscription) {
         throw new Error("No active subscription found");
@@ -157,7 +189,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         ...userCurrentSubscription,
         status: "cancelled",
         cancelledAt: new Date().toISOString(),
-        cancelledBy: "admin"
+        cancelledBy: currentUser?.id || "admin"
       };
       
       console.log("⚡ Cancelling subscription:", updatedSubscription);
@@ -185,6 +217,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         errorMessage = error.message || errorMessage;
       }
       
+      setError(errorMessage);
       toast({
         title: "Cancellation Failed",
         description: errorMessage,
@@ -209,7 +242,15 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
   };
 
   return (
-    <div className="flex flex-col space-y-2">
+    <div className="flex flex-col space-y-3">
+      {error && (
+        <Alert variant="destructive" className="mb-2">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
       <div className="flex items-center gap-2">
         <Select
           value={selectedPackage}

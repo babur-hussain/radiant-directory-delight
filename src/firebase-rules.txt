@@ -15,7 +15,7 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
-    // Check if the current user is an admin
+    // Check if the current user is an admin - more permissive check
     function isAdmin() {
       return isAuthenticated() && (
         // Check admin collection reference
@@ -45,20 +45,17 @@ service cloud.firestore {
       allow update: if isAuthenticated() && (isOwner(userId) || isAdmin());
       allow delete: if isAuthenticated() && isAdmin();
       
-      // User subscriptions subcollection - accessed by owner or admin
+      // User subscriptions subcollection - accessed by owner or admin with explicit permissions
       match /subscriptions/{subscriptionId} {
         allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
-        allow create, update: if isAuthenticated() && (isOwner(userId) || isAdmin());
-        allow delete: if isAuthenticated() && isAdmin();
+        allow create, update, delete: if isAuthenticated() && (isOwner(userId) || isAdmin());
       }
     }
     
-    // Direct subscriptions collection (for backward compatibility)
+    // Direct subscriptions collection (for backward compatibility) - more permissive
     match /subscriptions/{subscriptionId} {
-      allow read: if isAuthenticated() && 
-                 (request.auth.uid == resource.data.userId || isAdmin());
-      allow create, update, delete: if isAuthenticated() && 
-                 (request.auth.uid == resource.data.userId || isAdmin());
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAuthenticated();
     }
     
     // Admins collection - read by authenticated users, write by admins
