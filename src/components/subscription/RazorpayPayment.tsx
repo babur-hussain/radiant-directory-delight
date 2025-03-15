@@ -36,7 +36,9 @@ const RazorpayPayment = ({ selectedPackage, onSuccess, onFailure }: RazorpayPaym
     document.body.appendChild(script);
 
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
   }, []);
 
@@ -101,12 +103,24 @@ const RazorpayPayment = ({ selectedPackage, onSuccess, onFailure }: RazorpayPaym
             variant: "destructive"
           });
           onFailure(new Error("Payment process cancelled by user"));
-        }
+        },
+        escape: false,
+        backdrop_close: false
       }
     };
 
     try {
+      console.log("Opening Razorpay with options:", options);
       const razorpay = new window.Razorpay(options);
+      razorpay.on('payment.failed', function(response: any) {
+        console.error("Payment failed:", response.error);
+        toast({
+          title: "Payment Failed",
+          description: response.error.description || "Your payment was not successful. Please try again.",
+          variant: "destructive"
+        });
+        onFailure(response.error);
+      });
       razorpay.open();
     } catch (error) {
       console.error("Error opening Razorpay:", error);

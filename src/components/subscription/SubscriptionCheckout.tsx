@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { ShoppingCart, ArrowLeft, Loader2 } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -20,6 +20,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
   const { initiateSubscription, isProcessing } = useSubscription();
   const [showPaymentUI, setShowPaymentUI] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const { toast } = useToast();
   
   const handleSubscribe = () => {
     if (!termsAccepted) {
@@ -38,15 +39,29 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
     setPaymentProcessing(true);
     console.log("Payment successful:", paymentResponse);
     
-    // Now initiate the subscription with payment details
-    await initiateSubscription(selectedPackage.id, {
-      paymentId: paymentResponse.razorpay_payment_id,
-      orderId: paymentResponse.razorpay_order_id,
-      signature: paymentResponse.razorpay_signature,
-      paymentStatus: "completed"
-    });
-    
-    setPaymentProcessing(false);
+    try {
+      // Now initiate the subscription with payment details
+      await initiateSubscription(selectedPackage.id, {
+        paymentId: paymentResponse.razorpay_payment_id,
+        orderId: paymentResponse.razorpay_order_id,
+        signature: paymentResponse.razorpay_signature,
+        paymentStatus: "completed"
+      });
+      
+      toast({
+        title: "Subscription Activated",
+        description: "Your subscription has been successfully activated. Thank you!",
+      });
+    } catch (error) {
+      console.error("Subscription activation failed:", error);
+      toast({
+        title: "Subscription Failed",
+        description: "We couldn't activate your subscription. Please contact support.",
+        variant: "destructive"
+      });
+    } finally {
+      setPaymentProcessing(false);
+    }
   };
 
   const handlePaymentFailure = (error: any) => {

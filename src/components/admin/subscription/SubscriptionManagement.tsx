@@ -64,6 +64,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     setPermissionError(null);
     try {
       const data = await fetchSubscriptionPackages();
+      console.log("Fetched subscription packages:", data);
       setPackages(data);
       setFilteredPackages(data.filter(pkg => pkg.type.toLowerCase() === activeTab));
     } catch (error) {
@@ -96,7 +97,8 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
   };
 
   const handleEditPackage = (pkg: SubscriptionPackage) => {
-    setSelectedPackage(pkg);
+    console.log("Editing package:", pkg);
+    setSelectedPackage({...pkg}); // Clone to prevent direct state mutation
     setIsFormOpen(true);
   };
 
@@ -157,26 +159,36 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     setIsLoading(true);
     setPermissionError(null);
     try {
-      console.log("Attempting to save package:", packageData);
+      console.log("Saving package data:", packageData);
       
       // Validate required fields
       if (!packageData.title || packageData.title.trim() === '') {
         throw new Error("Package title is required");
       }
       
-      await saveSubscriptionPackage(packageData);
+      // Ensure numbers are properly converted
+      const validatedPackageData = {
+        ...packageData,
+        price: Number(packageData.price),
+        monthlyPrice: Number(packageData.monthlyPrice || 0),
+        setupFee: Number(packageData.setupFee || 0),
+        durationMonths: Number(packageData.durationMonths || 12),
+        advancePaymentMonths: Number(packageData.advancePaymentMonths || 0)
+      };
       
-      // Update local state
+      await saveSubscriptionPackage(validatedPackageData);
+      
+      // Update local state with validated data
       setPackages(prev => {
-        const existingIndex = prev.findIndex(p => p.id === packageData.id);
+        const existingIndex = prev.findIndex(p => p.id === validatedPackageData.id);
         if (existingIndex >= 0) {
           // Update existing package
           const updated = [...prev];
-          updated[existingIndex] = packageData;
+          updated[existingIndex] = validatedPackageData;
           return updated;
         } else {
           // Add new package
-          return [...prev, packageData];
+          return [...prev, validatedPackageData];
         }
       });
       

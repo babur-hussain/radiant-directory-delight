@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -26,7 +26,6 @@ import { SubscriptionPackage } from "@/data/subscriptionData";
 import { nanoid } from "nanoid";
 import { featuresToString, stringToFeatures } from "@/lib/subscription-utils";
 
-// Form schema validation
 const formSchema = z.object({
   id: z.string().min(1, "ID is required"),
   title: z.string().min(1, "Title is required"),
@@ -50,7 +49,6 @@ type SubscriptionPackageFormProps = {
   onCancel: () => void;
 };
 
-// Define the type for the form values based on the Zod schema
 type FormValues = z.infer<typeof formSchema>;
 
 const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
@@ -58,7 +56,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   onSubmit,
   onCancel
 }) => {
-  // Define form with default values
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -79,17 +76,35 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
     }
   });
 
+  const billingCycle = form.watch("billingCycle");
+
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === "price" && value.price) {
+        const monthlyPrice = Math.round(Number(value.price) / 12);
+        form.setValue("monthlyPrice", monthlyPrice);
+      } else if (name === "monthlyPrice" && value.monthlyPrice) {
+        const yearlyPrice = Number(value.monthlyPrice) * 12;
+        form.setValue("price", yearlyPrice);
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   const handleSubmit = (values: FormValues) => {
-    // Convert features string to array
     const featureArray = stringToFeatures(values.featuresString);
     
-    // Ensure all required properties are present with proper types
+    const price = Number(values.price);
+    const monthlyPrice = Number(values.monthlyPrice);
+    const setupFee = Number(values.setupFee);
+    
     const packageData: SubscriptionPackage = {
       id: values.id,
       title: values.title,
-      price: Number(values.price),
-      monthlyPrice: Number(values.monthlyPrice),
-      setupFee: Number(values.setupFee),
+      price: price,
+      monthlyPrice: monthlyPrice,
+      setupFee: setupFee,
       durationMonths: Number(values.durationMonths),
       shortDescription: values.shortDescription,
       fullDescription: values.fullDescription,
@@ -104,8 +119,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
     console.log("Form submitted with data:", packageData);
     onSubmit(packageData);
   };
-
-  const billingCycle = form.watch("billingCycle");
 
   return (
     <Form {...form}>
@@ -182,7 +195,22 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
               <FormItem>
                 <FormLabel>{billingCycle === "monthly" ? "Monthly Price (₹)" : "Annual Price (₹)"}</FormLabel>
                 <FormControl>
-                  <Input type="number" min="0" step="1" {...field} />
+                  <Input 
+                    type="number" 
+                    min="0" 
+                    step="1" 
+                    {...field} 
+                    onChange={(e) => {
+                      field.onChange(e);
+                      if (billingCycle === "monthly") {
+                        const yearlyPrice = Number(e.target.value) * 12;
+                        form.setValue("price", yearlyPrice);
+                      } else {
+                        const monthlyPrice = Math.round(Number(e.target.value) / 12);
+                        form.setValue("monthlyPrice", monthlyPrice);
+                      }
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -197,10 +225,15 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
                 <FormItem>
                   <FormLabel>Annual Price (₹)</FormLabel>
                   <FormControl>
-                    <Input type="number" min="0" step="1" {...field} />
+                    <Input 
+                      type="number" 
+                      min="0" 
+                      step="1" 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormDescription>
-                    The annual price if paid yearly instead of monthly
+                    The annual price is calculated automatically (monthly × 12)
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -216,10 +249,15 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
                 <FormItem>
                   <FormLabel>Monthly Price (₹)</FormLabel>
                   <FormControl>
-                    <Input type="number" min="0" step="1" {...field} />
+                    <Input 
+                      type="number" 
+                      min="0" 
+                      step="1" 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormDescription>
-                    The monthly price if paid monthly instead of yearly
+                    The monthly price is calculated automatically (yearly ÷ 12)
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
