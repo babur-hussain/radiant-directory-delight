@@ -4,8 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import BusinessDashboard from "@/components/dashboard/business/BusinessDashboard";
 import AccessDenied from "@/components/dashboard/AccessDenied";
-import { doc, onSnapshot, getDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/config/firebase";
+import { listenToUserSubscription } from "@/lib/subscription-utils";
 
 const BusinessDashboardPage = () => {
   const { user, isAuthenticated } = useAuth();
@@ -14,102 +13,32 @@ const BusinessDashboardPage = () => {
   
   useEffect(() => {
     if (isAuthenticated && user?.id) {
-      console.log("🔍 Checking subscription for user:", user.id);
+      console.log("🔍 Setting up subscription listener for user:", user.id);
       
-      // Initial fetch to quickly get subscription data
-      const fetchInitialData = async () => {
-        try {
-          const userRef = doc(db, "users", user.id);
-          const docSnapshot = await getDoc(userRef);
-          
-          if (docSnapshot.exists()) {
-            const userData = docSnapshot.data();
-            console.log("📊 Initial Firestore user data:", userData);
-            
-            // Check for subscription status in different paths
-            if (userData?.subscription?.status) {
-              setSubscriptionStatus(userData.subscription.status);
-              console.log("✅ Initial subscription status from Firestore:", userData.subscription.status);
-            } else if (userData?.subscriptionStatus) {
-              setSubscriptionStatus(userData.subscriptionStatus);
-              console.log("✅ Initial legacy subscription status from Firestore:", userData.subscriptionStatus);
-            } else {
-              console.log("⚠️ No subscription status found in user document");
-              
-              // Try querying subscriptions collection as a fallback
-              try {
-                const subscriptionsQuery = query(
-                  collection(db, "subscriptions"), 
-                  where("userId", "==", user.id)
-                );
-                const subscriptionDocs = await getDocs(subscriptionsQuery);
-                
-                if (!subscriptionDocs.empty) {
-                  const latestSubscription = subscriptionDocs.docs[0].data();
-                  console.log("📊 Found subscription in subscriptions collection:", latestSubscription);
-                  setSubscriptionStatus(latestSubscription.status || null);
-                } else {
-                  console.log("⚠️ No subscription found in subscriptions collection");
-                }
-              } catch (subError) {
-                console.error("❌ Error querying subscriptions:", subError);
-              }
-            }
+      // Set up real-time listener for user subscription
+      const unsubscribe = listenToUserSubscription(
+        user.id,
+        (subscription) => {
+          setIsLoading(false);
+          if (subscription) {
+            setSubscriptionStatus(subscription.status);
+            console.log("✅ Real-time subscription update:", subscription.status);
           } else {
-            console.log("⚠️ User document doesn't exist in Firestore");
+            setSubscriptionStatus(null);
+            console.log("⚠️ No subscription found in real-time update");
           }
-        } catch (error) {
-          console.error("❌ Error getting initial data:", error);
-        }
-      };
-      
-      fetchInitialData();
-      
-      // Set up a Firestore listener for subscription updates
-      const userRef = doc(db, "users", user.id);
-      const unsubscribe = onSnapshot(userRef, (docSnapshot) => {
-        setIsLoading(false);
-        if (docSnapshot.exists()) {
-          const userData = docSnapshot.data();
-          console.log("📊 Firestore real-time update for user:", user.id);
-          console.log("Full user data:", userData);
-          
-          // Check for subscription status in different paths
-          if (userData?.subscription?.status) {
-            setSubscriptionStatus(userData.subscription.status);
-            console.log("✅ Real-time subscription status from Firestore:", userData.subscription.status);
-          } else if (userData?.subscriptionStatus) {
-            setSubscriptionStatus(userData.subscriptionStatus);
-            console.log("✅ Real-time legacy subscription status from Firestore:", userData.subscriptionStatus);
-          } else {
-            console.log("⚠️ No subscription found in Firestore real-time update");
-            // No subscription found in Firestore, check local storage as fallback
-            const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
-            const subscription = userSubscriptions[user.id];
-            
-            if (subscription?.status) {
-              setSubscriptionStatus(subscription.status);
-              console.log("✅ Subscription status from localStorage:", subscription.status);
-            } else {
-              console.log("❌ No subscription found in localStorage either");
-              setSubscriptionStatus(null);
-            }
-          }
-        } else {
-          console.log("User document doesn't exist in Firestore");
+        },
+        (error) => {
+          console.error("❌ Error in subscription listener:", error);
+          setIsLoading(false);
           setSubscriptionStatus(null);
         }
-      }, (error) => {
-        console.error("Error getting real-time subscription updates:", error);
-        setIsLoading(false);
-        
-        // Fall back to localStorage
-        const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
-        const subscription = userSubscriptions[user.id];
-        setSubscriptionStatus(subscription?.status || null);
-      });
+      );
       
-      return () => unsubscribe();
+      return () => {
+        console.log("Cleaning up subscription listener");
+        unsubscribe();
+      };
     } else {
       setIsLoading(false);
     }
@@ -136,7 +65,7 @@ const BusinessDashboardPage = () => {
 
   return (
     <DashboardLayout>
-      <BusinessDashboard userId={user.id} />
+      <BusinessDashboard userId={user.id} subscriptionStatus={subscriptionStatus} />
     </DashboardLayout>
   );
 };

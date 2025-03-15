@@ -1,8 +1,13 @@
 
-import { initializeApp, getApps } from "firebase/app";
+import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { 
+  getFirestore, 
+  enableMultiTabIndexedDbPersistence,
+  CACHE_SIZE_UNLIMITED 
+} from "firebase/firestore";
 import { getAnalytics, isSupported } from "firebase/analytics";
-import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -15,10 +20,11 @@ const firebaseConfig = {
   measurementId: "G-0QDRL2SSJ1"
 };
 
-// Initialize Firebase only if no apps exist
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();
 
 // Add custom parameters for Google sign-in
@@ -26,9 +32,12 @@ googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
 
-// Enable offline persistence when possible
+// Enable enhanced offline persistence with optimized settings
 if (typeof window !== 'undefined') {
-  enableIndexedDbPersistence(db).catch((err) => {
+  enableMultiTabIndexedDbPersistence(db, {
+    synchronizeTabs: true,
+    cacheSizeBytes: CACHE_SIZE_UNLIMITED
+  }).catch((err) => {
     if (err.code === 'failed-precondition') {
       console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
     } else if (err.code === 'unimplemented') {
@@ -54,4 +63,4 @@ const initializeAnalytics = async () => {
 
 const analyticsPromise = initializeAnalytics();
 
-export { auth, db, googleProvider, analyticsPromise as analytics };
+export { auth, db, googleProvider, analyticsPromise as analytics, storage, app };

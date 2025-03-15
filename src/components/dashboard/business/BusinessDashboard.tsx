@@ -16,38 +16,29 @@ import LeadsAndInquiries from "./widgets/LeadsAndInquiries";
 import ReachAndVisibility from "./widgets/ReachAndVisibility";
 import MarketingCampaigns from "./widgets/MarketingCampaigns";
 import { useDashboardServices } from "@/hooks/useDashboardServices";
-import { useSubscription } from "@/hooks/useSubscription";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
 interface BusinessDashboardProps {
   userId: string;
+  subscriptionStatus?: string | null;
 }
 
-const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ userId }) => {
+const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ userId, subscriptionStatus }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [subscriptionData, setSubscriptionData] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "Business");
-  const { getUserSubscription } = useSubscription();
   const { user } = useAuth();
   
   useEffect(() => {
-    const fetchSubscription = async () => {
-      try {
-        const subscription = await getUserSubscription();
-        setSubscriptionData(subscription);
-      } catch (error) {
-        console.error("Failed to fetch subscription:", error);
-        setSubscriptionData(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    // Short timeout to ensure services are loaded
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
     
-    fetchSubscription();
-  }, [getUserSubscription]);
+    return () => clearTimeout(timer);
+  }, []);
   
   const handleExportData = (format: string) => {
     toast({
@@ -100,7 +91,7 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ userId }) => {
   const isAdmin = user?.role === "Admin" || user?.isAdmin;
   
   // Check if subscription is active or if user is admin
-  const hasActiveSubscription = isAdmin || (subscriptionData && subscriptionData.status === "active");
+  const hasActiveSubscription = isAdmin || subscriptionStatus === "active";
 
   // If no active subscription and not admin
   if (!hasActiveSubscription) {

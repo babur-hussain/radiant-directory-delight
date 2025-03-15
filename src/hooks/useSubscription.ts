@@ -1,319 +1,100 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { getPackageById, businessPackages, influencerPackages } from "@/data/subscriptionData";
-import { toast } from "@/hooks/use-toast";
-import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
-import { SubscriptionPackage } from "@/data/subscriptionData";
-import { syncUserData } from "@/features/auth/authStorage";
-import { updateUserSubscription, getUserSubscription as getSubscription } from "@/lib/subscription-utils";
 
-interface RazorpayOptions {
-  key: string;
-  amount: number;
-  currency: string;
-  name: string;
-  description: string;
-  order_id?: string;
-  prefill: {
-    name: string;
-    email: string;
-  };
-  notes: {
-    packageId: string;
-    [key: string]: string; // Allow additional properties in notes
-  };
-  theme: {
-    color: string;
-  };
-  handler: (response: any) => void;
-  modal: {
-    ondismiss: () => void;
-  };
-}
-
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
+import { useState, useCallback } from 'react';
+import { useAuth } from './useAuth';
+import { updateUserSubscription, getUserSubscription } from '@/lib/subscription-utils';
+import { useToast } from './use-toast';
+import { useNavigate } from 'react-router-dom';
 
 export const useSubscription = () => {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [userSubscription, setUserSubscription] = useState<any>(null);
   const { user } = useAuth();
-
-  useEffect(() => {
-    if (user) {
-      const fetchSubscription = async () => {
-        const subscription = await getUserSubscription();
-        setUserSubscription(subscription);
-      };
-      
-      fetchSubscription();
-    } else {
-      setUserSubscription(null);
-    }
-  }, [user]);
-
-  const loadRazorpayScript = (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.async = true;
-      script.onload = () => resolve(true);
-      script.onerror = () => {
-        toast({
-          title: "Payment Gateway Error",
-          description: "Failed to load payment gateway. Please try again later.",
-          variant: "destructive",
-        });
-        resolve(false);
-      };
-      document.body.appendChild(script);
-    });
-  };
-
-  const getPackageDetails = async (packageId: string): Promise<SubscriptionPackage | null> => {
-    try {
-      const allPackages = await fetchSubscriptionPackages();
-      const foundPackage = allPackages.find(pkg => pkg.id === packageId);
-      
-      if (foundPackage) {
-        return foundPackage;
-      }
-      
-      const localPackage = getPackageById(packageId);
-      if (localPackage) {
-        return localPackage;
-      }
-      
-      throw new Error("Package not found");
-    } catch (error) {
-      console.error("Error fetching package details:", error);
-      
-      const localPackage = getPackageById(packageId);
-      if (localPackage) {
-        return localPackage;
-      }
-      
-      return null;
-    }
-  };
-
-  const initiateSubscription = async (packageId: string) => {
-    if (!user) {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  /**
+   * Initiates a subscription process for the current user
+   */
+  const initiateSubscription = useCallback(async (packageId: string) => {
+    if (!user?.id) {
       toast({
         title: "Authentication Required",
-        description: "Please log in to subscribe to a plan.",
+        description: "Please log in to subscribe to this package.",
         variant: "destructive",
       });
-      return;
-    }
-
-    setIsProcessing(true);
-
-    try {
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        setIsProcessing(false);
-        return;
-      }
-
-      const selectedPackage = await getPackageDetails(packageId);
-      if (!selectedPackage) {
-        toast({
-          title: "Invalid Package",
-          description: "The selected subscription package is invalid.",
-          variant: "destructive",
-        });
-        setIsProcessing(false);
-        return;
-      }
-
-      handleSignupFeePayment(selectedPackage);
-    } catch (error) {
-      console.error("Subscription error:", error);
-      toast({
-        title: "Subscription Error",
-        description: "An error occurred while processing your request. Please try again.",
-        variant: "destructive",
-      });
-      setIsProcessing(false);
-    }
-  };
-
-  const handleSignupFeePayment = (selectedPackage: any) => {
-    const options: RazorpayOptions = {
-      key: "rzp_live_8PGS0Ug3QeCb2I",
-      amount: selectedPackage.setupFee * 100,
-      currency: "INR",
-      name: "Influencer Platform",
-      description: `Signup fee for ${selectedPackage.title}`,
-      prefill: {
-        name: user?.name || "",
-        email: user?.email || "",
-      },
-      notes: {
-        packageId: selectedPackage.id,
-      },
-      theme: {
-        color: "#6366F1",
-      },
-      handler: function (response: any) {
-        handleSubscriptionSetup(selectedPackage, response.razorpay_payment_id);
-      },
-      modal: {
-        ondismiss: function () {
-          setIsProcessing(false);
-          toast({
-            title: "Payment Cancelled",
-            description: "You cancelled the payment process.",
-          });
-        },
-      },
-    };
-
-    const razorpayInstance = new window.Razorpay(options);
-    razorpayInstance.open();
-  };
-
-  const handleSubscriptionSetup = (selectedPackage: any, signupPaymentId: string) => {
-    const subscriptionOptions: RazorpayOptions = {
-      key: "rzp_live_8PGS0Ug3QeCb2I",
-      amount: selectedPackage.price * 100,
-      currency: "INR",
-      name: "Influencer Platform",
-      description: `Subscription to ${selectedPackage.title} (₹${selectedPackage.price}/year)`,
-      prefill: {
-        name: user?.name || "",
-        email: user?.email || "",
-      },
-      notes: {
-        packageId: selectedPackage.id,
-        signupPaymentId: signupPaymentId,
-      },
-      theme: {
-        color: "#6366F1",
-      },
-      handler: function (response: any) {
-        processSuccessfulSubscription(selectedPackage, response.razorpay_payment_id);
-      },
-      modal: {
-        ondismiss: function () {
-          setIsProcessing(false);
-          toast({
-            title: "Subscription Setup Cancelled",
-            description: "You cancelled the subscription setup process. Your signup fee has been processed, but the subscription was not set up.",
-          });
-        },
-      },
-    };
-
-    const razorpayInstance = new window.Razorpay(subscriptionOptions);
-    razorpayInstance.open();
-  };
-
-  const processSuccessfulSubscription = async (selectedPackage: any, subscriptionPaymentId: string) => {
-    if (!user?.id) {
-      setIsProcessing(false);
-      toast({
-        title: "Error",
-        description: "User information is missing",
-        variant: "destructive",
-      });
-      return;
+      return null;
     }
     
-    const subscriptionData = {
-      id: subscriptionPaymentId,
-      userId: user.id,
-      packageId: selectedPackage.id,
-      packageName: selectedPackage.title,
-      amount: selectedPackage.price,
-      startDate: new Date().toISOString(),
-      endDate: new Date(Date.now() + selectedPackage.durationMonths * 30 * 24 * 60 * 60 * 1000).toISOString(),
-      status: "active",
-      paymentMethod: "razorpay",
-      paymentId: subscriptionPaymentId
-    };
-
+    setIsProcessing(true);
+    
     try {
-      console.log("⚡ Processing successful subscription:", subscriptionData);
+      // In a real implementation, this would integrate with a payment gateway
+      // For now, we'll simulate a successful subscription
       
-      // Update subscription in Firestore and localStorage
-      const updated = await updateUserSubscription(user.id, subscriptionData);
+      console.log(`Initiating subscription for user ${user.id} to package ${packageId}`);
       
-      if (updated) {
-        setUserSubscription(subscriptionData);
-        
+      // Create subscription data
+      const subscriptionData = {
+        userId: user.id,
+        packageId: packageId,
+        packageName: `Package ${packageId}`,
+        amount: 999, // This would normally come from the package details
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year
+        status: "active",
+        paymentMethod: "manual",
+        transactionId: `manual_${Date.now()}`
+      };
+      
+      // Save the subscription to Firestore
+      const success = await updateUserSubscription(user.id, subscriptionData);
+      
+      if (success) {
         toast({
-          title: "Subscription Successful",
-          description: `You have successfully subscribed to the ${selectedPackage.title} plan.`,
+          title: "Subscription Activated",
+          description: "Your subscription has been successfully activated.",
+          variant: "success",
         });
         
-        window.location.href = "/subscription/details";
+        // Redirect to dashboard
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 1000);
+        
+        return subscriptionData;
       } else {
-        throw new Error("Failed to update subscription data");
+        throw new Error("Failed to save subscription");
       }
     } catch (error) {
-      console.error("Error saving subscription data:", error);
+      console.error("Error initiating subscription:", error);
       toast({
-        title: "Error",
-        description: "Your payment was successful but we couldn't complete your subscription setup.",
+        title: "Subscription Failed",
+        description: "There was an error processing your subscription. Please try again.",
         variant: "destructive",
       });
+      return null;
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  const getUserSubscription = async () => {
-    if (!user) return null;
-    
-    try {
-      console.log("⚡ Getting subscription for user:", user.id);
-      
-      // First check if user object already has subscription
-      if (user.subscription) {
-        console.log("✅ Found subscription in user object:", user.subscription);
-        return user.subscription;
-      }
-      
-      // Otherwise query from Firestore and localStorage
-      const subscription = await getSubscription(user.id);
-      
-      if (subscription) {
-        console.log("✅ Retrieved subscription:", subscription);
-        
-        // Sync to user data if found
-        if (user.id) {
-          console.log("Syncing subscription to user data");
-          
-          syncUserData(user.id, {
-            subscription: subscription,
-            subscriptionPackage: subscription.packageId,
-            subscriptionStatus: subscription.status,
-            lastUpdated: new Date().toISOString()
-          }).catch(err => console.error("Error syncing subscription to user data:", err));
-        }
-      } else {
-        console.log("❌ No subscription found for user", user.id);
-      }
-      
-      return subscription;
-    } catch (error) {
-      console.error("Error getting user subscription:", error);
-      return null;
+  }, [user, toast, navigate]);
+  
+  /**
+   * Cancels the current user's subscription
+   */
+  const cancelSubscription = useCallback(async () => {
+    if (!user?.id) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to manage your subscriptions.",
+        variant: "destructive",
+      });
+      return false;
     }
-  };
-
-  const cancelSubscription = async () => {
-    if (!user) return;
+    
+    setIsProcessing(true);
     
     try {
-      setIsProcessing(true);
-      
-      const currentSubscription = await getUserSubscription();
+      // Get current subscription first
+      const currentSubscription = await getUserSubscription(user.id);
       
       if (!currentSubscription) {
         toast({
@@ -321,48 +102,60 @@ export const useSubscription = () => {
           description: "You don't have an active subscription to cancel.",
           variant: "destructive",
         });
-        setIsProcessing(false);
-        return;
+        return false;
       }
       
+      // Update the subscription with cancelled status
       const updatedSubscription = {
         ...currentSubscription,
         status: "cancelled",
-        cancelledAt: new Date().toISOString()
+        cancelledAt: new Date().toISOString(),
+        cancelReason: "user_requested"
       };
       
-      console.log("⚡ Cancelling subscription:", updatedSubscription);
+      const success = await updateUserSubscription(user.id, updatedSubscription);
       
-      // Update subscription in Firestore and localStorage
-      const updated = await updateUserSubscription(user.id, updatedSubscription);
-      
-      if (updated) {
-        setUserSubscription(updatedSubscription);
-        
+      if (success) {
         toast({
           title: "Subscription Cancelled",
-          description: "Your subscription has been cancelled successfully.",
+          description: "Your subscription has been successfully cancelled.",
+          variant: "success",
         });
+        return true;
       } else {
-        throw new Error("Failed to update subscription data");
+        throw new Error("Failed to cancel subscription");
       }
     } catch (error) {
       console.error("Error cancelling subscription:", error);
       toast({
-        title: "Error",
-        description: "Failed to cancel subscription.",
+        title: "Cancellation Failed",
+        description: "There was an error cancelling your subscription. Please try again.",
         variant: "destructive",
       });
+      return false;
     } finally {
       setIsProcessing(false);
     }
-  };
-
+  }, [user, toast]);
+  
+  /**
+   * Fetches the current user's subscription
+   */
+  const fetchUserSubscription = useCallback(async () => {
+    if (!user?.id) return null;
+    
+    try {
+      return await getUserSubscription(user.id);
+    } catch (error) {
+      console.error("Error fetching user subscription:", error);
+      return null;
+    }
+  }, [user]);
+  
   return {
-    isProcessing,
-    userSubscription,
     initiateSubscription,
-    getUserSubscription,
-    cancelSubscription
+    cancelSubscription,
+    getUserSubscription: fetchUserSubscription,
+    isProcessing
   };
 };
