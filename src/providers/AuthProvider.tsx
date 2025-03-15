@@ -19,7 +19,8 @@ import {
 } from "../features/auth/authService";
 import { 
   updateUserRole as updateRole, 
-  updateUserPermission as updatePermission 
+  updateUserPermission as updatePermission,
+  getAllUsers
 } from "../features/auth/userManagement";
 import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 
@@ -111,7 +112,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             localStorage.setItem(adminKey, firestoreData.isAdmin ? 'true' : 'false');
           }
           
+          // Make sure user is properly saved to the users list in localStorage
           saveUserToAllUsersList(userData);
+          
+          // After logging in, refresh all users list
+          getAllUsers().then(() => {
+            console.log("Updated all users list after login");
+          }).catch(err => {
+            console.error("Failed to update all users list:", err);
+          });
+          
           console.log("Auth state changed: User logged in", userData);
           
           setUser(userData);

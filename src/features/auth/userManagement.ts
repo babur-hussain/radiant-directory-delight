@@ -1,3 +1,4 @@
+
 import { User, UserRole } from "../../types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { saveUserToAllUsersList } from "./authStorage";
@@ -159,6 +160,14 @@ export const getAllUsers = async (): Promise<User[]> => {
       } else {
         adminStatus = Boolean(data.isAdmin);
       }
+      
+      // Fix potential issue with missing createdAt field
+      let createdTimestamp = data.createdAt || new Date().toISOString();
+      
+      // Convert Firestore timestamp to ISO string if needed
+      if (createdTimestamp && typeof createdTimestamp.toDate === 'function') {
+        createdTimestamp = createdTimestamp.toDate().toISOString();
+      }
         
       return {
         id: doc.id,
@@ -167,12 +176,13 @@ export const getAllUsers = async (): Promise<User[]> => {
         role: data.role || null,
         isAdmin: adminStatus,
         photoURL: data.photoURL || null,
-        createdAt: data.createdAt || new Date().toISOString()
+        createdAt: createdTimestamp
       };
     });
     
     console.log(`Successfully fetched ${users.length} users from Firebase`);
     
+    // Log each user to verify all are being processed
     users.forEach((user, index) => {
       console.log(`User ${index + 1}:`, {
         id: user.id,
@@ -182,6 +192,7 @@ export const getAllUsers = async (): Promise<User[]> => {
       });
     });
     
+    // Ensure we're correctly saving to localStorage
     localStorage.setItem('all_users_data', JSON.stringify(users));
     
     return users;

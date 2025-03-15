@@ -36,6 +36,11 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
       const firebaseUsers = await getAllUsers();
       console.log("Fetched users for subscription mapping:", firebaseUsers.length);
       
+      // Log each user to verify they're all available
+      firebaseUsers.forEach((user, idx) => {
+        console.log(`Mapping user ${idx + 1}:`, user.id, user.email);
+      });
+      
       // Get all subscription packages
       const allPackages = await fetchSubscriptionPackages();
       

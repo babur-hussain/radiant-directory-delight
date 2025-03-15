@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { updateUserRole, updateUserPermission } from "@/features/auth/userManagement";
+import { updateUserRole, updateUserPermission, getAllUsers } from "@/features/auth/userManagement";
 import { loadAllUsers } from "@/features/auth/authStorage";
 import UserSubscriptionAssignment from "./UserSubscriptionAssignment";
 import { db } from "@/config/firebase";
@@ -41,7 +41,13 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
   const loadUsers = async () => {
     setIsLoading(true);
     try {
-      const allUsers = await loadAllUsers();
+      // Change from loadAllUsers to directly use getAllUsers for consistency
+      const allUsers = await getAllUsers();
+      console.log("UserPermissionsTab - Loaded users:", allUsers.length);
+      // Log individual users to verify all are available
+      allUsers.forEach((user, index) => {
+        console.log(`Tab User ${index + 1}:`, user.id, user.email);
+      });
       setUsers(allUsers);
     } catch (error) {
       console.error("Error loading users:", error);
