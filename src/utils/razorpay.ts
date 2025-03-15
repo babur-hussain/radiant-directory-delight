@@ -35,7 +35,23 @@ export const loadRazorpayScript = (): Promise<void> => {
     
     if (existingScript) {
       console.log("Razorpay script already exists, using it");
-      resolve();
+      // Check if Razorpay is available in window
+      if (typeof window !== 'undefined' && window.Razorpay) {
+        console.log("Razorpay object is available in window");
+        resolve();
+      } else {
+        // If script exists but Razorpay is not available, wait a bit
+        console.log("Script exists but Razorpay object not available yet, waiting...");
+        setTimeout(() => {
+          if (typeof window !== 'undefined' && window.Razorpay) {
+            console.log("Razorpay object is now available");
+            resolve();
+          } else {
+            console.error("Razorpay not available even after waiting");
+            reject(new Error("Razorpay SDK not initialized properly"));
+          }
+        }, 2000);
+      }
       return;
     }
     
@@ -44,10 +60,20 @@ export const loadRazorpayScript = (): Promise<void> => {
     script.id = 'razorpay-checkout-js';
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.async = true;
+    script.defer = true;
     
     script.onload = () => {
       console.log("Razorpay script loaded successfully");
-      resolve();
+      // Wait to ensure Razorpay object is initialized
+      setTimeout(() => {
+        if (typeof window !== 'undefined' && window.Razorpay) {
+          console.log("Razorpay object available after script load");
+          resolve();
+        } else {
+          console.error("Razorpay object not available after script load");
+          reject(new Error("Razorpay SDK not initialized properly"));
+        }
+      }, 1000);
     };
     
     script.onerror = (error) => {
@@ -63,7 +89,9 @@ export const loadRazorpayScript = (): Promise<void> => {
  * Validates if Razorpay is available in the window object
  */
 export const isRazorpayAvailable = (): boolean => {
-  return typeof window !== 'undefined' && window.Razorpay !== undefined;
+  const available = typeof window !== 'undefined' && window.Razorpay !== undefined;
+  console.log("Razorpay available in window:", available);
+  return available;
 };
 
 /**
@@ -78,5 +106,7 @@ export const generateOrderId = (): string => {
  * Ensures minimum payment is ₹1 (100 paise)
  */
 export const convertToPaise = (amount: number): number => {
-  return Math.max(Math.round(amount * 100), 100);
+  const paise = Math.max(Math.round(amount * 100), 100);
+  console.log(`Converting amount ${amount} to ${paise} paise`);
+  return paise;
 };

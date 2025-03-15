@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { SubscriptionPackage } from '@/data/subscriptionData';
 import { useRazorpay } from '@/hooks/useRazorpay';
@@ -15,7 +15,7 @@ const RazorpayPayment = ({
   onSuccess, 
   onFailure 
 }: RazorpayPaymentProps) => {
-  const { isLoading, scriptLoaded } = useRazorpay({
+  const { isLoading, scriptLoaded, error } = useRazorpay({
     selectedPackage,
     onSuccess,
     onFailure
@@ -29,6 +29,11 @@ const RazorpayPayment = ({
           ? "Loading payment gateway..." 
           : "Preparing payment gateway..."}
       </p>
+      {error && (
+        <p className="mt-2 text-center text-xs text-red-500">
+          {error}
+        </p>
+      )}
       <p className="mt-2 text-center text-xs text-muted-foreground">
         Please wait while we connect to our secure payment system
       </p>
