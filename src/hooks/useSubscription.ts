@@ -2,8 +2,11 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { updateUserSubscription, getUserSubscription } from '@/lib/subscription';
+import { getGlobalSubscriptionSettings } from '@/lib/subscription/subscription-settings';
+import { adminAssignSubscription } from '@/lib/subscription/admin-subscription';
 import { useToast } from './use-toast';
 import { useNavigate } from 'react-router-dom';
+import { getPackageById } from '@/data/subscriptionData';
 
 export const useSubscription = () => {
   const { user } = useAuth();
@@ -24,48 +27,90 @@ export const useSubscription = () => {
       return null;
     }
     
-    // Check if user is admin - only admins should be able to create subscriptions
-    if (!user.isAdmin) {
-      toast({
-        title: "Permission Denied",
-        description: "Only administrators can create or modify subscriptions.",
-        variant: "destructive",
-      });
-      return null;
-    }
-    
     setIsProcessing(true);
     
     try {
-      // In a real implementation, this would integrate with a payment gateway
-      // For now, we'll simulate a successful subscription
+      // Get subscription settings
+      const settings = await getGlobalSubscriptionSettings();
+      console.log("Using subscription settings:", settings);
+      
+      // Check if user is admin or if non-admin subscriptions are allowed
+      const isAdmin = user.isAdmin === true || user.role === "Admin";
+      
+      if (!isAdmin && !settings.allowNonAdminSubscriptions) {
+        toast({
+          title: "Permission Denied",
+          description: "Only administrators can create subscriptions at this time.",
+          variant: "destructive",
+        });
+        return null;
+      }
+      
+      // Get the package details from local data if needed
+      const packageDetails = await getPackageById(packageId);
+      
+      if (!packageDetails) {
+        throw new Error(`Package ${packageId} not found`);
+      }
       
       console.log(`Initiating subscription for user ${user.id} to package ${packageId}`);
       
-      // Create subscription data with default values for the new required fields
+      // Create subscription data
       const subscriptionData = {
         userId: user.id,
         packageId: packageId,
-        packageName: `Package ${packageId}`,
-        amount: 999, // This would normally come from the package details
+        packageName: packageDetails.title,
+        amount: packageDetails.price,
         startDate: new Date().toISOString(),
-        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
         status: "active",
         paymentMethod: "manual",
         transactionId: `manual_${Date.now()}`,
-        advancePaymentMonths: 6, // Default to 6 months advance payment
-        signupFee: 0,
-        actualStartDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(), // Start after 6 months
+        advancePaymentMonths: settings.defaultAdvancePaymentMonths,
+        signupFee: packageDetails.setupFee || 0,
+        actualStartDate: new Date().toISOString(),
         isPaused: false,
-        isPausable: true, // Admin can pause
-        isUserCancellable: false, // Users cannot cancel
+        isPausable: true,
+        isUserCancellable: false,
         invoiceIds: []
       };
       
-      // Save the subscription to Firestore
-      const success = await updateUserSubscription(user.id, subscriptionData);
+      // Try to save the subscription
+      let success = false;
       
-      if (success) {
+      // First try the admin-specific function which has more permissions
+      if (isAdmin) {
+        console.log("Trying admin subscription assignment flow");
+        success = await adminAssignSubscription(user.id, {
+          ...packageDetails,
+          ...subscriptionData
+        });
+      }
+      
+      // If admin function failed or user is not admin, try regular update
+      if (!success) {
+        console.log("Trying regular subscription update flow");
+        success = await updateUserSubscription(user.id, subscriptionData);
+      }
+      
+      // If both online methods failed but we allow local fallback
+      if (!success && settings.shouldUseLocalFallback) {
+        console.log("Online subscription methods failed, using local fallback");
+        
+        // Show success toast even though we're just using a local fallback
+        toast({
+          title: "Subscription Activated (Local)",
+          description: "Your subscription has been activated in local mode.",
+          variant: "success",
+        });
+        
+        // Redirect to dashboard
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 1000);
+        
+        return subscriptionData;
+      } else if (success) {
         toast({
           title: "Subscription Activated",
           description: "Your subscription has been successfully activated.",
@@ -85,7 +130,9 @@ export const useSubscription = () => {
       console.error("Error initiating subscription:", error);
       toast({
         title: "Subscription Failed",
-        description: "There was an error processing your subscription. Please try again.",
+        description: error instanceof Error 
+          ? error.message 
+          : "There was an error processing your subscription. Please try again.",
         variant: "destructive",
       });
       return null;
