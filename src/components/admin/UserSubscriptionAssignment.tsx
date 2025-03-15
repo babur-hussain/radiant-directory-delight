@@ -10,6 +10,8 @@ import { updateUserSubscription, getUserSubscription } from "@/lib/subscription"
 import { Loader2, AlertCircle, ShieldAlert, ExternalLink, Info, Bug } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/config/firebase";
 
 interface UserSubscriptionAssignmentProps {
   user: User;
@@ -25,6 +27,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const { user: currentUser } = useAuth();
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
+  const [adminChecked, setAdminChecked] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -47,6 +50,27 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         } else {
           console.warn("⚠️ User object is missing ID:", user);
           setError("Invalid user data: Missing user ID");
+        }
+
+        // Validate that the current user has admin rights
+        if (currentUser?.id) {
+          try {
+            const adminRef = doc(db, "users", currentUser.id);
+            const adminDoc = await getDoc(adminRef);
+            if (adminDoc.exists()) {
+              const isAdmin = adminDoc.data()?.isAdmin === true;
+              setAdminChecked(true);
+              console.log(`🔐 Admin check: currentUser.id=${currentUser.id}, isAdmin=${isAdmin}`);
+              if (!isAdmin) {
+                setDebugInfo(`Warning: Your account (${currentUser.id}) does not have admin privileges in Firestore.`);
+              }
+            } else {
+              console.warn("⚠️ Admin document not found");
+              setDebugInfo(`Warning: Your account (${currentUser.id}) document was not found in Firestore.`);
+            }
+          } catch (adminError) {
+            console.error("❌ Error checking admin status:", adminError);
+          }
         }
       } catch (error) {
         console.error("❌ Error loading subscription data:", error);
@@ -117,6 +141,25 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         throw new Error(`Selected package not found: ${selectedPackage}`);
       }
 
+      // Check Firestore permissions before attempting update
+      if (currentUser) {
+        try {
+          // Verify admin status directly before proceeding
+          const adminRef = doc(db, "users", currentUser.id);
+          const adminDoc = await getDoc(adminRef);
+          
+          if (adminDoc.exists()) {
+            const isAdmin = adminDoc.data()?.isAdmin === true;
+            console.log(`🔐 Admin verification before update: ${isAdmin}`);
+            if (!isAdmin) {
+              console.warn(`⚠️ User ${currentUser.id} attempted to assign subscription without admin rights`);
+            }
+          }
+        } catch (permError) {
+          console.error("❌ Permission check error:", permError);
+        }
+      }
+
       const subscriptionData = {
         userId: user.id,
         packageId: packageDetails.id,
@@ -136,7 +179,8 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         console.log("Debug info before update:", {
           currentAdminId: currentUser?.id,
           isCurrentUserAdmin: currentUser?.isAdmin,
-          targetUserId: user.id
+          targetUserId: user.id,
+          adminCheckedStatus: adminChecked
         });
         
         const success = await updateUserSubscription(user.id, subscriptionData);
@@ -153,7 +197,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
           onAssigned(packageDetails.id);
         } else {
           // If updateUserSubscription returns false but doesn't throw
-          throw new Error("Failed to update subscription: Unknown error occurred");
+          throw new Error("Failed to update subscription: Returned false");
         }
       } catch (updateError) {
         console.error("❌ Error in updateUserSubscription:", updateError);

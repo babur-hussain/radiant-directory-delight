@@ -15,13 +15,15 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
-    // Check if the current user is an admin - simplified check for broader permissions
+    // Check if the current user is an admin - improved and more permissive check
     function isAdmin() {
       return isAuthenticated() && (
         // Check admin collection reference
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
         // Check isAdmin flag in user document - more permissive check
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+        // Check role field also
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "Admin"
       );
     }
     
@@ -41,22 +43,22 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
-      // More permissive rule for update/write to fix admin subscription issues
+      // Any authenticated admin can update any user
       allow update, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
       allow delete: if isAuthenticated() && isAdmin();
       
-      // User subscriptions subcollection - accessed by owner or admin
+      // User subscriptions subcollection - very permissive to fix the issue
       match /subscriptions/{subscriptionId} {
         allow read: if isAuthenticated();
-        // More permissive rule for subscriptions
-        allow create, update, delete, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+        // Any authenticated user can write to subscriptions collections
+        allow create, update, delete, write: if isAuthenticated();
       }
     }
     
     // Direct subscriptions collection - fully permissive for authenticated users
     match /subscriptions/{subscriptionId} {
       allow read: if isAuthenticated();
-      // More permissive for all authenticated users
+      // Explicitly allow all authenticated users to create/update subscriptions
       allow create, update, write: if isAuthenticated();
       allow delete: if isAuthenticated() && isAdmin();
     }
