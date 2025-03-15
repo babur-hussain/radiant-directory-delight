@@ -24,6 +24,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { nanoid } from "nanoid";
+import { featuresToString, stringToFeatures } from "@/lib/subscription-utils";
 
 // Form schema validation
 const formSchema = z.object({
@@ -36,7 +37,7 @@ const formSchema = z.object({
   shortDescription: z.string().min(1, "Short description is required"),
   fullDescription: z.string().min(1, "Full description is required"),
   termsAndConditions: z.string().optional(),
-  features: z.string().transform(val => val.split('\n').filter(f => f.trim().length > 0)),
+  featuresString: z.string(),
   popular: z.boolean().default(false),
   type: z.enum(["Business", "Influencer"]),
   billingCycle: z.enum(["monthly", "yearly"]).default("yearly"),
@@ -57,14 +58,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   onSubmit,
   onCancel
 }) => {
-  // Process initial features data for the form
-  const getInitialFeaturesString = (): string => {
-    if (initialData && Array.isArray(initialData.features)) {
-      return initialData.features.join('\n');
-    }
-    return '';
-  };
-
   // Define form with default values
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -78,7 +71,7 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
       shortDescription: initialData?.shortDescription || "",
       fullDescription: initialData?.fullDescription || "",
       termsAndConditions: initialData?.termsAndConditions || "",
-      features: getInitialFeaturesString(),
+      featuresString: featuresToString(initialData?.features),
       popular: initialData?.popular || false,
       type: initialData?.type || "Business",
       billingCycle: initialData?.billingCycle || "yearly",
@@ -87,10 +80,8 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   });
 
   const handleSubmit = (values: FormValues) => {
-    // Ensure we have an array of features
-    const featureArray = Array.isArray(values.features) 
-      ? values.features 
-      : [];
+    // Convert features string to array
+    const featureArray = stringToFeatures(values.featuresString);
     
     // Ensure all required properties are present with proper types
     const packageData: SubscriptionPackage = {
@@ -340,7 +331,7 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
 
         <FormField
           control={form.control}
-          name="features"
+          name="featuresString"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Features (one per line)</FormLabel>
