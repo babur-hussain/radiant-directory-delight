@@ -55,11 +55,19 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   onSubmit,
   onCancel
 }) => {
+  // Process initial features data for the form
+  const getInitialFeaturesString = (): string => {
+    if (initialData && Array.isArray(initialData.features)) {
+      return initialData.features.join('\n');
+    }
+    return '';
+  };
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
       ...initialData,
-      features: Array.isArray(initialData.features) ? initialData.features.join('\n') : initialData.features,
+      features: getInitialFeaturesString(),
       monthlyPrice: initialData.monthlyPrice || Math.round(initialData.price / 12),
       billingCycle: initialData.billingCycle || "yearly",
       advancePaymentMonths: initialData.advancePaymentMonths || 0
@@ -82,10 +90,10 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   });
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    // Ensure features is properly handled as an array
-    const featureArray = typeof values.features === 'string' 
-      ? values.features.split('\n').filter(f => f.trim().length > 0)
-      : values.features;
+    // Process features from form input to array
+    const featureArray = Array.isArray(values.features) 
+      ? values.features 
+      : values.features.split('\n').filter(f => f.trim().length > 0);
     
     // Ensure all required properties are present with proper types
     const packageData: SubscriptionPackage = {
@@ -343,8 +351,7 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
                 <Textarea
                   placeholder="List the features of this package (one per line)"
                   className="min-h-[150px]"
-                  value={typeof field.value === 'string' ? field.value : Array.isArray(field.value) ? field.value.join('\n') : ''}
-                  onChange={(e) => field.onChange(e.target.value)}
+                  {...field}
                 />
               </FormControl>
               <FormDescription>
