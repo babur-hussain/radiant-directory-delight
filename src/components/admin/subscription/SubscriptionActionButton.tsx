@@ -44,7 +44,7 @@ const SubscriptionActionButton: React.FC<SubscriptionActionButtonProps> = ({
   if (isActive) {
     return (
       <div className="flex space-x-2">
-        {showCancel && (
+        {showCancel && isAdmin && (
           <Button 
             variant="destructive" 
             onClick={onCancel}

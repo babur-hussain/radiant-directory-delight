@@ -1,162 +1,127 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { UserPlus, Upload, RefreshCw } from "lucide-react";
-import { UserPermissionsTab } from "@/components/admin/UserPermissionsTab";
+import { Card, CardContent } from "@/components/ui/card";
 import BusinessesTab from "./BusinessesTab";
-import { SubscriptionManagement } from "@/components/admin/SubscriptionManagement";
-import BusinessFormDialog from "@/components/admin/BusinessFormDialog";
-import CSVUploadDialog from "@/components/admin/CSVUploadDialog";
-import AdminBusinessDashboards from "./AdminBusinessDashboards";
-import AdminInfluencerDashboards from "./AdminInfluencerDashboards";
+import UserSubscriptionMapping from "../UserSubscriptionMapping";
 import { Business } from "@/lib/csv-utils";
-import { BusinessFormValues } from "@/components/admin/BusinessForm";
+import BusinessFormDialog from "../BusinessFormDialog";
+import CSVUploadDialog from "../CSVUploadDialog";
+import { BusinessFormValues } from "../BusinessForm";
+import UserPermissionsTab from "../UserPermissionsTab";
+import { CentralizedSubscriptionManager } from "../subscription/CentralizedSubscriptionManager";
 
 interface AdminDashboardTabsProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  businessCount: number;
+  businessCount?: number;
+  businesses?: Business[];
   showBusinessFormDialog: boolean;
   setShowBusinessFormDialog: (show: boolean) => void;
   showUploadDialog: boolean;
   setShowUploadDialog: (show: boolean) => void;
   currentBusinessToEdit: Business | null;
   isSubmitting: boolean;
-  handleBusinessFormSubmit: (values: BusinessFormValues) => Promise<void>;
+  isRefreshing?: boolean;
+  refreshBusinesses?: () => void;
+  handleBusinessFormSubmit: (values: BusinessFormValues) => void;
   handleUploadComplete: (success: boolean, message: string, count?: number) => void;
   handleAddBusiness: () => void;
   handleEditBusiness: (business: Business) => void;
   handlePermissionError: (error: any) => void;
-  onViewDetails: (business: Business) => void;
-  businesses: Business[];
-  isRefreshing: boolean;
-  refreshBusinesses: () => void;
-  onRefreshUsers: () => void;
+  onViewDetails?: (business: Business) => void;
+  onRefreshUsers?: () => void;
 }
 
 const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
   activeTab,
   setActiveTab,
-  businessCount,
+  businessCount = 0,
+  businesses = [],
   showBusinessFormDialog,
   setShowBusinessFormDialog,
   showUploadDialog,
   setShowUploadDialog,
   currentBusinessToEdit,
   isSubmitting,
+  isRefreshing = false,
+  refreshBusinesses = () => {},
   handleBusinessFormSubmit,
   handleUploadComplete,
   handleAddBusiness,
   handleEditBusiness,
   handlePermissionError,
   onViewDetails,
-  businesses,
-  isRefreshing,
-  refreshBusinesses,
   onRefreshUsers
 }) => {
   return (
     <>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-4 flex w-full justify-start overflow-x-auto">
-          <TabsTrigger value="businesses" className="relative">
-            Businesses
-            {businessCount > 0 && (
-              <Badge className="ml-2 bg-primary text-primary-foreground" variant="outline">
-                {businessCount}
-              </Badge>
-            )}
+        <TabsList className="grid grid-cols-4 mb-6">
+          <TabsTrigger value="businesses">
+            Businesses ({businessCount})
           </TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
-          <TabsTrigger value="business-dashboards">Business Dashboards</TabsTrigger>
-          <TabsTrigger value="influencer-dashboards">Influencer Dashboards</TabsTrigger>
+          <TabsTrigger value="users">
+            Users
+          </TabsTrigger>
+          <TabsTrigger value="subscriptions">
+            Subscriptions
+          </TabsTrigger>
+          <TabsTrigger value="assignments">
+            User Assignments
+          </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="businesses" className="space-y-4">
-          <div className="flex justify-between mb-4">
-            <h2 className="text-xl font-bold">Business Listings</h2>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setShowUploadDialog(true)}>
-                <Upload className="h-4 w-4 mr-2" />
-                Upload CSV
-              </Button>
-              <Button onClick={handleAddBusiness}>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Add Business
-              </Button>
-              <Button
-                variant="outline"
-                onClick={refreshBusinesses}
-                disabled={isRefreshing}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
-                Refresh
-              </Button>
-            </div>
-          </div>
-          
+        
+        <TabsContent value="businesses">
           <BusinessesTab 
             businesses={businesses}
-            onAddBusiness={handleAddBusiness}
-            onEditBusiness={handleEditBusiness}
             isRefreshing={isRefreshing}
-            onRefresh={refreshBusinesses}
-            handlePermissionError={handlePermissionError}
+            refreshData={refreshBusinesses}
+            handleAddBusiness={handleAddBusiness}
+            handleEditBusiness={handleEditBusiness}
+            onViewDetails={onViewDetails}
           />
         </TabsContent>
-
+        
         <TabsContent value="users">
-          <div className="flex justify-between mb-4">
-            <h2 className="text-xl font-bold">User Permissions</h2>
-            <Button 
-              variant="outline" 
-              onClick={onRefreshUsers}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh Users
-            </Button>
-          </div>
-          <UserPermissionsTab onRefresh={onRefreshUsers} />
+          <Card>
+            <CardContent className="pt-6">
+              <UserPermissionsTab 
+                onPermissionError={handlePermissionError}
+                onRefreshUsers={onRefreshUsers}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
-
+        
         <TabsContent value="subscriptions">
-          <h2 className="text-xl font-bold mb-4">Subscription Management</h2>
-          <SubscriptionManagement />
+          <CentralizedSubscriptionManager />
         </TabsContent>
-
-        <TabsContent value="business-dashboards">
-          <h2 className="text-xl font-bold mb-4">Business Dashboards</h2>
-          <AdminBusinessDashboards />
-        </TabsContent>
-
-        <TabsContent value="influencer-dashboards">
-          <h2 className="text-xl font-bold mb-4">Influencer Dashboards</h2>
-          <AdminInfluencerDashboards 
-            influencers={[]}
-          />
+        
+        <TabsContent value="assignments">
+          <Card>
+            <CardContent className="pt-6">
+              <UserSubscriptionMapping onPermissionError={handlePermissionError} />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
-
-      {showBusinessFormDialog && (
-        <BusinessFormDialog
-          show={showBusinessFormDialog}
-          onClose={() => setShowBusinessFormDialog(false)}
-          onSubmit={handleBusinessFormSubmit}
-          business={currentBusinessToEdit}
-          isSubmitting={isSubmitting}
-        />
-      )}
-
-      {showUploadDialog && (
-        <CSVUploadDialog
-          show={showUploadDialog}
-          onClose={() => setShowUploadDialog(false)}
-          onUploadComplete={handleUploadComplete}
-        />
-      )}
+      
+      {/* Business Form Dialog */}
+      <BusinessFormDialog
+        isOpen={showBusinessFormDialog}
+        onClose={() => setShowBusinessFormDialog(false)}
+        onSubmit={handleBusinessFormSubmit}
+        initialData={currentBusinessToEdit}
+        isSubmitting={isSubmitting}
+      />
+      
+      {/* CSV Upload Dialog */}
+      <CSVUploadDialog
+        isOpen={showUploadDialog}
+        onClose={() => setShowUploadDialog(false)}
+        onComplete={handleUploadComplete}
+      />
     </>
   );
 };

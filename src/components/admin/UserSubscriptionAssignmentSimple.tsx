@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -7,6 +7,7 @@ import StatusBadge from "./subscription/StatusBadge";
 import SubscriptionActionButton from "./subscription/SubscriptionActionButton";
 import { useSubscriptionAssignment } from "@/hooks/useSubscriptionAssignment";
 import { User } from "@/types/auth";
+import { getGlobalSubscriptionSettings } from "@/lib/subscription/subscription-settings";
 
 interface UserSubscriptionAssignmentProps {
   user: User;
@@ -27,6 +28,23 @@ const UserSubscriptionAssignmentSimple: React.FC<UserSubscriptionAssignmentProps
     handleAssignPackage,
     handleCancelSubscription
   } = useSubscriptionAssignment(user, onAssigned);
+  
+  const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Check if current user is admin
+  useEffect(() => {
+    setIsAdmin(user?.isAdmin || user?.role === "Admin" || user?.role === "admin");
+  }, [user]);
+  
+  // Apply global settings when assigning subscription
+  const handleAssign = async () => {
+    // Get global settings
+    const globalSettings = await getGlobalSubscriptionSettings();
+    console.log("Using global settings for subscription:", globalSettings);
+    
+    // Call the original assign function
+    handleAssignPackage();
+  };
 
   return (
     <div className="flex flex-col space-y-3">
@@ -60,8 +78,9 @@ const UserSubscriptionAssignmentSimple: React.FC<UserSubscriptionAssignmentProps
           isActive={userCurrentSubscription?.status === 'active'}
           isLoading={isLoading}
           selectedPackage={selectedPackage}
-          onAssign={handleAssignPackage}
+          onAssign={handleAssign}
           onCancel={handleCancelSubscription}
+          isAdmin={isAdmin}
         />
       </div>
       
@@ -71,6 +90,11 @@ const UserSubscriptionAssignmentSimple: React.FC<UserSubscriptionAssignmentProps
             status={userCurrentSubscription.status} 
             packageName={userCurrentSubscription.packageName} 
           />
+          {!isAdmin && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Only administrators can modify subscription details.
+            </p>
+          )}
         </div>
       )}
     </div>
