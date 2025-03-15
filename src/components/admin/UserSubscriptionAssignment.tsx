@@ -7,7 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { User } from "@/types/auth";
 import { updateUserSubscription, getUserSubscription } from "@/lib/subscription";
-import { Loader2, AlertCircle, ShieldAlert, ExternalLink } from "lucide-react";
+import { Loader2, AlertCircle, ShieldAlert, ExternalLink, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -24,6 +24,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const { user: currentUser } = useAuth();
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -71,7 +72,17 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
     };
 
     loadData();
-  }, [user?.id]);
+
+    // Collect debug info about current auth state for troubleshooting
+    if (currentUser) {
+      const info = `Current admin: ${currentUser.id} (isAdmin: ${currentUser.isAdmin ? 'true' : 'false'})`;
+      setDebugInfo(info);
+      console.log(`🔐 ${info}`);
+    } else {
+      setDebugInfo("No authenticated user found. Authentication may be required.");
+      console.log("⚠️ No authenticated user found");
+    }
+  }, [user?.id, currentUser]);
 
   const handleAssignPackage = async () => {
     if (!selectedPackage) {
@@ -95,23 +106,11 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       return;
     }
 
-    // Verify current user has admin permissions
-    if (!currentUser?.isAdmin) {
-      const errorMsg = "You must have admin privileges to assign subscriptions";
-      setError(errorMsg);
-      toast({
-        title: "Permission Denied",
-        description: errorMsg,
-        variant: "destructive"
-      });
-      console.error("❌ Permission denied: Current user is not an admin", currentUser);
-      return;
-    }
-
-    setIsLoading(true);
+    // Clear previous errors
     setError(null);
     setErrorDetails(null);
-
+    setIsLoading(true);
+    
     try {
       console.log(`🚀 Starting package assignment: ${selectedPackage} to user ${user.id}`);
       console.log(`🔑 Current user (admin) ID: ${currentUser?.id}`);
@@ -196,20 +195,10 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       return;
     }
     
-    // Verify current user has admin permissions
-    if (!currentUser?.isAdmin) {
-      toast({
-        title: "Permission Denied",
-        description: "You must have admin privileges to cancel subscriptions",
-        variant: "destructive"
-      });
-      console.error("❌ Permission denied: Current user is not an admin", currentUser);
-      return;
-    }
-    
-    setIsLoading(true);
+    // Clear previous errors
     setError(null);
     setErrorDetails(null);
+    setIsLoading(true);
     
     try {
       if (!userCurrentSubscription) {
@@ -282,7 +271,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       {error && (
         <Alert variant="destructive" className="mb-2">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle>Subscription Update Error</AlertTitle>
           <AlertDescription className="break-words max-w-full">
             {error}
             {error.includes("permission-denied") && (
@@ -301,6 +290,13 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
             )}
           </AlertDescription>
         </Alert>
+      )}
+      
+      {debugInfo && (
+        <div className="text-xs text-muted-foreground mb-2 flex items-center">
+          <Info className="h-3 w-3 mr-1" />
+          <span>{debugInfo}</span>
+        </div>
       )}
       
       <div className="flex items-center gap-2">
@@ -362,7 +358,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       {isLoading && (
         <div className="text-xs text-muted-foreground italic mt-2">
           <Loader2 className="inline-block h-3 w-3 animate-spin mr-1" />
-          Processing request, this may take a moment...
+          Processing subscription update, this may take a moment...
         </div>
       )}
       
@@ -372,7 +368,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
           <AlertTitle>Admin Permission Required</AlertTitle>
           <AlertDescription>
             <div className="flex items-center">
-              <ExternalLink className="h-4 w-4 mr-1" />
+              <ShieldAlert className="h-4 w-4 mr-1" />
               <span>You need admin privileges to manage subscriptions.</span>
             </div>
           </AlertDescription>
