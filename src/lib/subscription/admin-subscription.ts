@@ -1,5 +1,5 @@
 
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { SubscriptionData } from "./types";
 import { toast } from "@/hooks/use-toast";
@@ -12,9 +12,10 @@ export const adminAssignSubscription = async (userId: string, packageData: any):
   try {
     console.log(`🔰 Admin assigning subscription to user ${userId}`, packageData);
     
-    // Create subscription data
+    // Generate a unique subscription ID
     const subscriptionId = `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
+    // Create subscription data
     const subscriptionData: SubscriptionData = {
       id: subscriptionId,
       userId: userId,
@@ -28,24 +29,23 @@ export const adminAssignSubscription = async (userId: string, packageData: any):
       updatedAt: new Date().toISOString()
     };
     
-    // Step 1: Update the user document with subscription info
+    // Step 1: Check if user exists
     const userRef = doc(db, "users", userId);
-    
-    // Check if user exists
     const userDoc = await getDoc(userRef);
+    
     if (!userDoc.exists()) {
       throw new Error(`User ${userId} does not exist`);
     }
     
-    // Update the user document
-    await setDoc(userRef, {
+    // Step 2: Update the user document with subscription info
+    await updateDoc(userRef, {
       subscriptionData: subscriptionData,
       subscriptionStatus: "active",
       subscriptionPackage: packageData.id,
       updatedAt: serverTimestamp()
-    }, { merge: true });
+    });
     
-    // Step 2: Create a new subscription document in the subscriptions collection
+    // Step 3: Create a new subscription document in subscriptions collection
     const subscriptionRef = doc(db, "subscriptions", subscriptionId);
     await setDoc(subscriptionRef, {
       ...subscriptionData,
@@ -53,7 +53,7 @@ export const adminAssignSubscription = async (userId: string, packageData: any):
       updatedAt: serverTimestamp()
     });
     
-    // Step 3: Also add to user's subscriptions subcollection
+    // Step 4: Also add to user's subscriptions subcollection
     const userSubscriptionRef = doc(db, "users", userId, "subscriptions", subscriptionId);
     await setDoc(userSubscriptionRef, {
       ...subscriptionData,
@@ -112,11 +112,11 @@ export const adminCancelSubscription = async (userId: string, subscriptionId: st
     
     // Update user document
     const userRef = doc(db, "users", userId);
-    await setDoc(userRef, {
+    await updateDoc(userRef, {
       subscriptionStatus: "cancelled",
       subscriptionCancelledAt: serverTimestamp(),
       updatedAt: serverTimestamp()
-    }, { merge: true });
+    });
     
     console.log("✅ Subscription cancellation successful");
     return true;

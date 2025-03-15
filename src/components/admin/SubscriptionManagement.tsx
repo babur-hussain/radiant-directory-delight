@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,8 +9,8 @@ import { getPackageById } from "@/data/subscriptionData";
 import { toast } from "@/hooks/use-toast";
 import SubscriptionPermissionError from "./SubscriptionPermissionError";
 import { useAuth } from "@/hooks/useAuth";
+import { adminCancelSubscription } from "@/lib/subscription/admin-subscription";
 
-// For demo purposes, we'll use this mock data
 const mockSubscriptions = [
   {
     id: "sub_123456",
@@ -67,7 +66,6 @@ export const SubscriptionManagement = () => {
   const { user } = useAuth();
   
   useEffect(() => {
-    // Check admin permissions
     if (user && !user.isAdmin) {
       setError("You don't have admin rights to manage subscription packages. Please contact your administrator.");
     } else {
@@ -75,7 +73,6 @@ export const SubscriptionManagement = () => {
     }
   }, [user]);
   
-  // Format date
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -84,19 +81,16 @@ export const SubscriptionManagement = () => {
     });
   };
   
-  // Handle search
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
   
-  // Filter subscriptions based on search term
   const filteredSubscriptions = subscriptions.filter(sub => 
     sub.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     sub.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
     sub.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  // Simulate verifying a subscription
   const handleVerifySubscription = (subscriptionId: string) => {
     if (user && !user.isAdmin) {
       setError("Permission denied. You don't have admin rights to verify subscriptions.");
@@ -110,36 +104,31 @@ export const SubscriptionManagement = () => {
 
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        // Update subscription status
-        const updatedSubscriptions = subscriptions.map(sub => 
-          sub.id === subscriptionId ? { ...sub, status: "active" } : sub
-        );
-        
-        setSubscriptions(updatedSubscriptions);
-        setError(null);
-        
-        toast({
-          title: "Subscription Verified",
-          description: `Subscription ${subscriptionId} has been verified successfully.`
-        });
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        setError(errorMessage);
-        toast({
-          title: "Verification Failed",
-          description: errorMessage,
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }, 1000);
+    const subscription = subscriptions.find(sub => sub.id === subscriptionId);
+    if (!subscription) {
+      toast({
+        title: "Error",
+        description: "Subscription not found",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+      return;
+    }
+    
+    const updatedSubscriptions = subscriptions.map(sub => 
+      sub.id === subscriptionId ? { ...sub, status: "active" } : sub
+    );
+    
+    setSubscriptions(updatedSubscriptions);
+    setError(null);
+    
+    toast({
+      title: "Subscription Verified",
+      description: `Subscription ${subscriptionId} has been verified successfully.`
+    });
+    setIsLoading(false);
   };
   
-  // Simulate cancelling a subscription
   const handleCancelSubscription = (subscriptionId: string) => {
     if (user && !user.isAdmin) {
       setError("Permission denied. You don't have admin rights to cancel subscriptions.");
@@ -153,33 +142,29 @@ export const SubscriptionManagement = () => {
 
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        // Update subscription status
-        const updatedSubscriptions = subscriptions.map(sub => 
-          sub.id === subscriptionId ? { ...sub, status: "cancelled" } : sub
-        );
-        
-        setSubscriptions(updatedSubscriptions);
-        setError(null);
-        
-        toast({
-          title: "Subscription Cancelled",
-          description: `Subscription ${subscriptionId} has been cancelled successfully.`
-        });
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        setError(errorMessage);
-        toast({
-          title: "Cancellation Failed",
-          description: errorMessage,
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }, 1000);
+    const subscription = subscriptions.find(sub => sub.id === subscriptionId);
+    if (!subscription) {
+      toast({
+        title: "Error",
+        description: "Subscription not found",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+      return;
+    }
+    
+    const updatedSubscriptions = subscriptions.map(sub => 
+      sub.id === subscriptionId ? { ...sub, status: "cancelled" } : sub
+    );
+    
+    setSubscriptions(updatedSubscriptions);
+    setError(null);
+    
+    toast({
+      title: "Subscription Cancelled",
+      description: `Subscription ${subscriptionId} has been cancelled successfully.`
+    });
+    setIsLoading(false);
   };
   
   const handleRetry = () => {
