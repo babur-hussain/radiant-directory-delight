@@ -34,10 +34,7 @@ googleProvider.setCustomParameters({
 
 // Enable enhanced offline persistence with optimized settings
 if (typeof window !== 'undefined') {
-  enableMultiTabIndexedDbPersistence(db, {
-    synchronizeTabs: true,
-    cacheSizeBytes: CACHE_SIZE_UNLIMITED
-  }).catch((err) => {
+  enableMultiTabIndexedDbPersistence(db).catch((err) => {
     if (err.code === 'failed-precondition') {
       console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
     } else if (err.code === 'unimplemented') {

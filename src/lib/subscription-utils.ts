@@ -16,10 +16,31 @@ import {
 import { db } from "@/config/firebase";
 import { toast } from "@/hooks/use-toast";
 
+// Define subscription data interface to fix TypeScript errors
+interface SubscriptionData {
+  id?: string;
+  userId: string;
+  packageId: string;
+  packageName: string;
+  amount: number;
+  startDate: string;
+  endDate: string;
+  status: string;
+  paymentMethod?: string;
+  transactionId?: string;
+  createdAt?: any;
+  updatedAt?: any;
+  cancelledAt?: string;
+  cancelReason?: string;
+  assignedBy?: string;
+  assignedAt?: string;
+  [key: string]: any; // Allow additional properties
+}
+
 /**
  * Updates a user's subscription in Firestore
  */
-export const updateUserSubscription = async (userId: string, subscriptionData: any) => {
+export const updateUserSubscription = async (userId: string, subscriptionData: SubscriptionData) => {
   if (!userId) {
     console.error("❌ Cannot update subscription: No user ID provided");
     return false;
@@ -101,7 +122,7 @@ export const getUserSubscription = async (userId: string) => {
       // Check for subscription in user document
       if (userData?.subscription) {
         console.log("✅ Found subscription in user document:", userData.subscription);
-        return userData.subscription;
+        return userData.subscription as SubscriptionData;
       }
       
       // Check for legacy subscription fields
@@ -114,8 +135,12 @@ export const getUserSubscription = async (userId: string) => {
           status: userData.subscriptionStatus,
           startDate: userData.subscriptionAssignedAt 
             ? new Date(userData.subscriptionAssignedAt.toDate()).toISOString() 
-            : new Date().toISOString()
-        };
+            : new Date().toISOString(),
+          userId: userId,
+          packageName: "Legacy Package",
+          amount: 0,
+          endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+        } as SubscriptionData;
       }
     }
     
@@ -133,16 +158,16 @@ export const getUserSubscription = async (userId: string) => {
       const subscriptions = subscriptionsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }));
+      })) as SubscriptionData[];
       
       // Sort by createdAt descending to get the most recent
       const sortedSubscriptions = subscriptions.sort((a, b) => {
         const dateA = a.createdAt instanceof Timestamp 
           ? a.createdAt.toDate() 
-          : new Date(a.createdAt);
+          : new Date(a.createdAt || 0);
         const dateB = b.createdAt instanceof Timestamp 
           ? b.createdAt.toDate() 
-          : new Date(b.createdAt);
+          : new Date(b.createdAt || 0);
         
         return dateB.getTime() - dateA.getTime();
       });
@@ -174,16 +199,16 @@ export const getUserSubscription = async (userId: string) => {
       const mainSubscriptions = mainSubscriptionsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }));
+      })) as SubscriptionData[];
       
       // Sort by createdAt descending
       const sortedMainSubscriptions = mainSubscriptions.sort((a, b) => {
         const dateA = a.createdAt instanceof Timestamp 
           ? a.createdAt.toDate() 
-          : new Date(a.createdAt);
+          : new Date(a.createdAt || 0);
         const dateB = b.createdAt instanceof Timestamp 
           ? b.createdAt.toDate() 
-          : new Date(b.createdAt);
+          : new Date(b.createdAt || 0);
         
         return dateB.getTime() - dateA.getTime();
       });
@@ -215,7 +240,7 @@ export const getUserSubscription = async (userId: string) => {
  */
 export const listenToUserSubscription = (
   userId: string,
-  onUpdate: (subscription: any) => void,
+  onUpdate: (subscription: SubscriptionData | null) => void,
   onError: (error: any) => void
 ) => {
   if (!userId) return () => {};
@@ -227,15 +252,19 @@ export const listenToUserSubscription = (
       if (docSnapshot.exists()) {
         const userData = docSnapshot.data();
         if (userData?.subscription) {
-          onUpdate(userData.subscription);
+          onUpdate(userData.subscription as SubscriptionData);
         } else if (userData?.subscriptionStatus) {
           // Handle legacy format
-          const subscription = {
+          const subscription: SubscriptionData = {
             packageId: userData.subscriptionPackage,
             status: userData.subscriptionStatus,
             startDate: userData.subscriptionAssignedAt 
               ? new Date(userData.subscriptionAssignedAt.toDate()).toISOString() 
-              : new Date().toISOString()
+              : new Date().toISOString(),
+            userId: userId,
+            packageName: "Legacy Package",
+            amount: 0,
+            endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
           };
           onUpdate(subscription);
         } else {
