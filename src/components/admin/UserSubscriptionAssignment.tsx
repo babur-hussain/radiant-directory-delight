@@ -7,7 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { User } from "@/types/auth";
 import { updateUserSubscription, getUserSubscription } from "@/lib/subscription";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, ShieldAlert } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -46,13 +46,20 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
           }
         } else {
           console.warn("⚠️ User object is missing ID:", user);
+          setError("Invalid user data: Missing user ID");
         }
       } catch (error) {
         console.error("❌ Error loading subscription data:", error);
-        setError("Failed to load subscription data");
+        let errorMessage = "Failed to load subscription data";
+        
+        if (error instanceof Error) {
+          errorMessage = error.message || errorMessage;
+        }
+        
+        setError(errorMessage);
         toast({
           title: "Error",
-          description: "Failed to load subscription data",
+          description: errorMessage,
           variant: "destructive"
         });
       }
@@ -72,9 +79,11 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
     }
 
     if (!user?.id) {
+      const errorMsg = "Invalid user data. Missing user ID.";
+      setError(errorMsg);
       toast({
         title: "Error",
-        description: "Invalid user data. Missing user ID.",
+        description: errorMsg,
         variant: "destructive"
       });
       console.error("❌ Cannot assign package: User ID is missing", user);
@@ -83,9 +92,11 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
 
     // Verify current user has admin permissions
     if (!currentUser?.isAdmin) {
+      const errorMsg = "You must have admin privileges to assign subscriptions";
+      setError(errorMsg);
       toast({
         title: "Permission Denied",
-        description: "You must have admin privileges to assign subscriptions",
+        description: errorMsg,
         variant: "destructive"
       });
       console.error("❌ Permission denied: Current user is not an admin", currentUser);
@@ -143,6 +154,13 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       
       if (error instanceof Error) {
         errorMessage = error.message || errorMessage;
+        
+        // Add more context for specific errors
+        if (errorMessage.includes("permission-denied")) {
+          errorMessage = "Permission denied. Please check your admin privileges and try again.";
+        } else if (errorMessage.includes("not-found")) {
+          errorMessage = "User document not found. Please refresh and try again.";
+        }
       }
       
       setError(errorMessage);
@@ -247,7 +265,15 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         <Alert variant="destructive" className="mb-2">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription className="break-words max-w-full">
+            {error}
+            {error.includes("permission-denied") && (
+              <div className="mt-2 flex items-center text-sm">
+                <ShieldAlert className="h-4 w-4 mr-1" />
+                <span>Check your admin permissions and Firestore rules.</span>
+              </div>
+            )}
+          </AlertDescription>
         </Alert>
       )}
       

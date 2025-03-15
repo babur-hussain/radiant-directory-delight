@@ -19,6 +19,11 @@ import { SubscriptionData } from "./types";
 export const updateUserSubscription = async (userId: string, subscriptionData: SubscriptionData) => {
   if (!userId) {
     console.error("❌ Cannot update subscription: No user ID provided");
+    toast({
+      title: "Update Failed",
+      description: "Cannot update subscription: Missing user ID",
+      variant: "destructive"
+    });
     return false;
   }
   
@@ -30,8 +35,14 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
     const userSnap = await getDoc(userRef);
     
     if (!userSnap.exists()) {
-      console.error(`❌ User document ${userId} does not exist`);
-      throw new Error("User document does not exist");
+      const errorMsg = `User document ${userId} does not exist`;
+      console.error(`❌ ${errorMsg}`);
+      toast({
+        title: "User Not Found",
+        description: errorMsg,
+        variant: "destructive"
+      });
+      throw new Error(errorMsg);
     }
     
     console.log(`✅ User document exists: ${userId}`);
@@ -76,10 +87,24 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
       });
       
       console.log("✅ Successfully updated subscription in all collections");
+      
+      // Show success toast
+      toast({
+        title: "Subscription Updated",
+        description: `Successfully updated subscription to ${subscriptionData.packageId}`,
+        variant: "success"
+      });
+      
       return true;
     } catch (directWriteError) {
       console.error("❌ Direct write approach failed:", directWriteError);
       console.log("⚠️ Falling back to transaction approach...");
+      
+      const errorMessage = directWriteError instanceof Error 
+        ? directWriteError.message 
+        : 'Unknown error during direct write';
+      
+      console.log(`⚠️ Detailed error: ${errorMessage}`);
       
       // Fall back to transaction if direct writes fail
       await runTransaction(db, async (transaction) => {
@@ -125,6 +150,11 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
       });
       
       console.log("✅ Successfully updated subscription using transaction fallback");
+      toast({
+        title: "Subscription Updated",
+        description: `Successfully updated subscription to ${subscriptionData.packageId}`,
+        variant: "success"
+      });
       return true;
     }
   } catch (error) {
@@ -147,6 +177,9 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
       } else if (error.message.includes("failed-precondition")) {
         errorMessage = "Operation failed. This might be due to a missing index or conflicting operations.";
         console.error("⚠️ This could indicate a missing Firestore index. Check console for index creation link.");
+      } else {
+        // If we have a specific error message, use it
+        errorMessage = `Error: ${error.message}`;
       }
     }
     

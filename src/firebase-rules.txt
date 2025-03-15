@@ -42,7 +42,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow update, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
       allow delete: if isAuthenticated() && isAdmin();
       
       // User subscriptions subcollection - accessed by owner or admin with explicit permissions
@@ -55,7 +55,7 @@ service cloud.firestore {
     // Direct subscriptions collection (for backward compatibility) - more permissive
     match /subscriptions/{subscriptionId} {
       allow read: if isAuthenticated();
-      allow create, update, delete: if isAuthenticated();
+      allow create, update, delete: if isAuthenticated() && isAdmin();
     }
     
     // Admins collection - read by authenticated users, write by admins
