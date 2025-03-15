@@ -1,12 +1,24 @@
 
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/config/firebase";
+import { User } from "@/types/auth";
+
+// Define a type for the raw Firestore user data
+interface FirestoreUserData {
+  id: string;
+  email?: string | null;
+  name?: string | null;
+  role?: string | null;
+  isAdmin?: boolean;
+  createdAt: any;
+  [key: string]: any; // Allow for other properties
+}
 
 /**
  * Debug utility to get raw users data from Firestore
  * This can be called in the browser console to debug firestore issues
  */
-export const debugFirestoreUsers = async () => {
+export const debugFirestoreUsers = async (): Promise<FirestoreUserData[]> => {
   try {
     const usersCollection = collection(db, "users");
     const q = query(usersCollection, orderBy("createdAt", "desc"));
@@ -23,17 +35,17 @@ export const debugFirestoreUsers = async () => {
         createdAt: data.createdAt && typeof data.createdAt.toDate === 'function' 
           ? data.createdAt.toDate().toISOString() 
           : data.createdAt
-      };
+      } as FirestoreUserData;
     });
     
     // Log each user individually for better debugging
     users.forEach((user, index) => {
       console.log(`Firestore user ${index + 1}:`, {
         id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        isAdmin: user.isAdmin
+        email: user.email || 'N/A',
+        name: user.name || 'N/A',
+        role: user.role || 'N/A',
+        isAdmin: user.isAdmin || false
       });
     });
     
@@ -49,19 +61,19 @@ export const debugFirestoreUsers = async () => {
 /**
  * Debug utility to check localStorage stored users
  */
-export const debugLocalStorageUsers = () => {
+export const debugLocalStorageUsers = (): FirestoreUserData[] => {
   try {
-    const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
+    const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]') as FirestoreUserData[];
     console.log(`LocalStorage debug: Found ${allUsers.length} users`);
     
     // Log each user individually for better debugging
     allUsers.forEach((user, index) => {
       console.log(`LocalStorage user ${index + 1}:`, {
         id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        isAdmin: user.isAdmin
+        email: user.email || 'N/A',
+        name: user.name || 'N/A',
+        role: user.role || 'N/A',
+        isAdmin: user.isAdmin || false
       });
     });
     
@@ -91,7 +103,7 @@ export const compareUserSources = async () => {
   
   if (missingInLocalStorage.length > 0) {
     console.log(`Found ${missingInLocalStorage.length} users in Firestore but missing in localStorage:`, 
-      missingInLocalStorage.map(user => ({ id: user.id, email: user.email })));
+      missingInLocalStorage.map(user => ({ id: user.id, email: user.email || 'N/A' })));
   }
   
   // Check for users in localStorage but not in Firestore
@@ -101,7 +113,7 @@ export const compareUserSources = async () => {
   
   if (missingInFirestore.length > 0) {
     console.log(`Found ${missingInFirestore.length} users in localStorage but missing in Firestore:`, 
-      missingInFirestore.map(user => ({ id: user.id, email: user.email })));
+      missingInFirestore.map(user => ({ id: user.id, email: user.email || 'N/A' })));
   }
   
   return {
