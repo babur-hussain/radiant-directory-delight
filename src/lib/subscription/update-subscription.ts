@@ -10,7 +10,7 @@ import {
   getDoc,
   writeBatch
 } from "firebase/firestore";
-import { db } from "@/config/firebase";
+import { db, auth } from "@/config/firebase";
 import { toast } from "@/hooks/use-toast";
 import { SubscriptionData } from "./types";
 
@@ -30,7 +30,7 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
   
   try {
     console.log(`⚡ Updating subscription for user ${userId}:`, subscriptionData);
-    console.log(`⚡ Current user from auth:`, JSON.stringify(window.auth?.currentUser || {}));
+    console.log(`⚡ Current user from auth:`, JSON.stringify(auth?.currentUser || {}));
     
     // First check if user document exists
     const userRef = doc(db, "users", userId);
@@ -245,10 +245,8 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
         
         // Try to log current auth state for debugging
         try {
-          if (window.firebase && window.firebase.auth) {
-            const currentUser = window.firebase.auth().currentUser;
-            console.log("🔑 Current Firebase user:", currentUser ? JSON.stringify(currentUser) : "No user logged in");
-          }
+          const currentUser = auth?.currentUser;
+          console.log("🔑 Current Firebase user:", currentUser ? JSON.stringify(currentUser) : "No user logged in");
         } catch (authError) {
           console.error("Failed to log auth state:", authError);
         }
