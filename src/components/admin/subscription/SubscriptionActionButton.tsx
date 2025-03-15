@@ -9,6 +9,7 @@ type SubscriptionActionButtonProps = {
   selectedPackage: string;
   onAssign: () => void;
   onCancel: () => void;
+  showCancel?: boolean;
 };
 
 const SubscriptionActionButton: React.FC<SubscriptionActionButtonProps> = ({
@@ -16,9 +17,10 @@ const SubscriptionActionButton: React.FC<SubscriptionActionButtonProps> = ({
   isLoading,
   selectedPackage,
   onAssign,
-  onCancel
+  onCancel,
+  showCancel = true
 }) => {
-  if (isActive) {
+  if (isActive && showCancel) {
     return (
       <Button 
         onClick={onCancel} 
@@ -45,9 +47,9 @@ const SubscriptionActionButton: React.FC<SubscriptionActionButtonProps> = ({
       {isLoading ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Assigning...
+          {isActive ? "Updating..." : "Creating..."}
         </>
-      ) : "Assign"}
+      ) : (isActive ? "Update" : "Create Subscription")}
     </Button>
   );
 };
