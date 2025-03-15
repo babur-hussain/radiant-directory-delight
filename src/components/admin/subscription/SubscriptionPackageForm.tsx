@@ -50,6 +50,9 @@ type SubscriptionPackageFormProps = {
   onCancel: () => void;
 };
 
+// Define the type for the form values based on the Zod schema
+type FormValues = z.infer<typeof formSchema>;
+
 const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   initialData,
   onSubmit,
@@ -64,7 +67,7 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   };
 
   // Define form with default values
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       id: initialData?.id || nanoid(),
@@ -84,14 +87,11 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
     }
   });
 
-  const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    // At this point, features should already be transformed to an array by zod
-    // Making sure we have an array of features
+  const handleSubmit = (values: FormValues) => {
+    // Ensure we have an array of features
     const featureArray = Array.isArray(values.features) 
       ? values.features 
-      : (typeof values.features === 'string' 
-          ? values.features.split('\n').filter(f => f.trim().length > 0) 
-          : []);
+      : [];
     
     // Ensure all required properties are present with proper types
     const packageData: SubscriptionPackage = {
