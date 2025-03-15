@@ -1,3 +1,4 @@
+
 // Define types for our auth context
 export type UserRole = "Business" | "Influencer" | "Admin" | "User" | "admin" | "staff" | null;
 
@@ -10,6 +11,16 @@ export interface Subscription {
   startDate: Date;
   endDate: Date;
   status: string;
+  // New fields for Razorpay integration
+  advancePaymentMonths?: number;
+  signupFee?: number;
+  actualStartDate?: Date | string;
+  isPaused?: boolean;
+  isPausable?: boolean;
+  isUserCancellable?: boolean;
+  invoiceIds?: string[];
+  pausedAt?: Date | string;
+  resumedAt?: Date | string;
 }
 
 export interface User {

@@ -32,7 +32,15 @@ export const listenToUserSubscription = (
             userId: userId,
             packageName: "Legacy Package",
             amount: 0,
-            endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+            endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+            // Add default values for required fields
+            advancePaymentMonths: 0,
+            signupFee: 0,
+            actualStartDate: new Date().toISOString(),
+            isPaused: false,
+            isPausable: false,
+            isUserCancellable: true,
+            invoiceIds: []
           };
           onUpdate(subscription);
         } else {

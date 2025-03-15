@@ -1,4 +1,3 @@
-
 import { doc, setDoc, getDoc, serverTimestamp, updateDoc, collection } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { SubscriptionData } from "./types";
@@ -15,7 +14,7 @@ export const adminAssignSubscription = async (userId: string, packageData: any):
     // Generate a unique subscription ID
     const subscriptionId = `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Create subscription data
+    // Create subscription data with default values for new required fields
     const subscriptionData: SubscriptionData = {
       id: subscriptionId,
       userId: userId,
@@ -26,7 +25,15 @@ export const adminAssignSubscription = async (userId: string, packageData: any):
       endDate: new Date(Date.now() + packageData.durationMonths * 30 * 24 * 60 * 60 * 1000).toISOString(),
       status: "active",
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      // Add default values for required fields
+      advancePaymentMonths: 0,
+      signupFee: 0,
+      actualStartDate: new Date().toISOString(),
+      isPaused: false,
+      isPausable: false,
+      isUserCancellable: true,
+      invoiceIds: []
     };
     
     // Step 1: Check if user exists

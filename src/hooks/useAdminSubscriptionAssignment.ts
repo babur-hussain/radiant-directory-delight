@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { toast } from "@/hooks/use-toast";
@@ -163,7 +162,14 @@ export const useAdminSubscriptionAssignment = (
         endDate: new Date(Date.now() + packageDetails.durationMonths * 30 * 24 * 60 * 60 * 1000).toISOString(),
         status: "active",
         assignedBy: currentUser?.id || "admin",
-        assignedAt: new Date().toISOString()
+        assignedAt: new Date().toISOString(),
+        advancePaymentMonths: 0,
+        signupFee: 0,
+        actualStartDate: new Date().toISOString(),
+        isPaused: false,
+        isPausable: false,
+        isUserCancellable: true,
+        invoiceIds: []
       };
       
       console.log("⚡ Creating subscription data:", subscriptionData);

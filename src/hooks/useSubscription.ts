@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { updateUserSubscription, getUserSubscription } from '@/lib/subscription';
@@ -42,7 +41,14 @@ export const useSubscription = () => {
         endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year
         status: "active",
         paymentMethod: "manual",
-        transactionId: `manual_${Date.now()}`
+        transactionId: `manual_${Date.now()}`,
+        advancePaymentMonths: 0,
+        signupFee: 0,
+        actualStartDate: new Date().toISOString(),
+        isPaused: false,
+        isPausable: false,
+        isUserCancellable: true,
+        invoiceIds: []
       };
       
       // Save the subscription to Firestore

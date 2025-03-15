@@ -20,19 +20,19 @@ export interface SubscriptionData {
   assignedBy?: string;
   assignedAt?: string;
   
-  // New fields for advanced payment structure
-  advancePaymentMonths: number;
-  signupFee: number;
-  actualStartDate: string; // When subscription actually starts after advance period
-  isPaused: boolean;
+  // New fields for advanced payment structure - making them optional for backward compatibility
+  advancePaymentMonths?: number; 
+  signupFee?: number;
+  actualStartDate?: string;
+  isPaused?: boolean;
   pausedAt?: string;
   pausedBy?: string;
   resumedAt?: string;
   resumedBy?: string;
-  isPausable: boolean; // Whether admin allows this subscription to be paused
-  isUserCancellable: boolean; // Whether user can cancel (defaults to false)
-  invoiceIds: string[]; // Array of Razorpay invoice IDs
-  razorpaySubscriptionId?: string; // Razorpay subscription ID
+  isPausable?: boolean;
+  isUserCancellable?: boolean;
+  invoiceIds?: string[];
+  razorpaySubscriptionId?: string;
   
   [key: string]: any; // Allow additional properties
 }
