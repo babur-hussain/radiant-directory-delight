@@ -248,6 +248,46 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
           </Button>
         </CardFooter>
       </Card>
+      
+      {showPaymentUI && (
+        <Dialog open={showPaymentUI} onOpenChange={setShowPaymentUI}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Complete Payment</DialogTitle>
+              <DialogDescription>
+                Process your payment to activate your subscription
+              </DialogDescription>
+            </DialogHeader>
+            
+            {paymentProcessing ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="mt-4 text-center">Processing your payment...</p>
+              </div>
+            ) : (
+              <RazorpayPayment 
+                selectedPackage={selectedPackage}
+                onSuccess={(response) => {
+                  handlePaymentSuccess(response);
+                  setShowPaymentUI(false);
+                }}
+                onFailure={handlePaymentFailure}
+              />
+            )}
+            
+            <DialogFooter className="sm:justify-start">
+              <Button 
+                type="button" 
+                variant="secondary" 
+                onClick={() => setShowPaymentUI(false)}
+                disabled={paymentProcessing}
+              >
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
