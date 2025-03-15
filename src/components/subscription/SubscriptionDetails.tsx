@@ -11,6 +11,7 @@ import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "@/hooks/use-toast";
+import RazorpayPayment from "./RazorpayPayment";
 
 const SubscriptionDetails = () => {
   const { packageId } = useParams();
@@ -20,6 +21,8 @@ const SubscriptionDetails = () => {
   const [selectedPackage, setSelectedPackage] = useState<SubscriptionPackage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showPaymentUI, setShowPaymentUI] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
   
   useEffect(() => {
     const loadPackage = async () => {
@@ -79,8 +82,36 @@ const SubscriptionDetails = () => {
     }
     
     if (selectedPackage) {
-      initiateSubscription(selectedPackage.id);
+      setShowPaymentUI(true);
     }
+  };
+
+  const handlePaymentSuccess = async (paymentResponse: any) => {
+    setPaymentProcessing(true);
+    console.log("Payment successful:", paymentResponse);
+    
+    if (selectedPackage) {
+      // Now initiate the subscription with payment details
+      await initiateSubscription(selectedPackage.id, {
+        paymentId: paymentResponse.razorpay_payment_id,
+        orderId: paymentResponse.razorpay_order_id,
+        signature: paymentResponse.razorpay_signature,
+        paymentStatus: "completed"
+      });
+    }
+    
+    setPaymentProcessing(false);
+  };
+
+  const handlePaymentFailure = (error: any) => {
+    console.error("Payment failed:", error);
+    setShowPaymentUI(false);
+    
+    toast({
+      title: "Payment Failed",
+      description: "We couldn't process your payment. Please try again later.",
+      variant: "destructive",
+    });
   };
 
   if (isLoading) {
@@ -110,6 +141,41 @@ const SubscriptionDetails = () => {
               Back to Subscription Plans
             </Button>
           </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  if (showPaymentUI) {
+    return (
+      <div className="container mx-auto px-4 py-10 max-w-4xl">
+        <div className="flex items-center mb-6">
+          <Button variant="ghost" onClick={() => setShowPaymentUI(false)} className="mr-2" disabled={paymentProcessing}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Package Details
+          </Button>
+          <h1 className="text-2xl font-bold">Complete Payment</h1>
+        </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Process Payment</CardTitle>
+            <CardDescription>Complete your payment to activate your subscription</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {paymentProcessing ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="mt-4 text-center">Processing your payment...</p>
+              </div>
+            ) : (
+              <RazorpayPayment 
+                selectedPackage={selectedPackage}
+                onSuccess={handlePaymentSuccess}
+                onFailure={handlePaymentFailure}
+              />
+            )}
+          </CardContent>
         </Card>
       </div>
     );

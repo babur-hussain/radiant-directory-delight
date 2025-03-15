@@ -6,8 +6,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
-import { ShoppingCart, ArrowLeft } from "lucide-react";
+import { ShoppingCart, ArrowLeft, Loader2 } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
+import RazorpayPayment from "./RazorpayPayment";
 
 interface SubscriptionCheckoutProps {
   selectedPackage: SubscriptionPackage;
@@ -17,6 +18,8 @@ interface SubscriptionCheckoutProps {
 export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ selectedPackage, onBack }) => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const { initiateSubscription, isProcessing } = useSubscription();
+  const [showPaymentUI, setShowPaymentUI] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
   
   const handleSubscribe = () => {
     if (!termsAccepted) {
@@ -28,8 +31,71 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
       return;
     }
     
-    initiateSubscription(selectedPackage.id);
+    setShowPaymentUI(true);
   };
+  
+  const handlePaymentSuccess = async (paymentResponse: any) => {
+    setPaymentProcessing(true);
+    console.log("Payment successful:", paymentResponse);
+    
+    // Now initiate the subscription with payment details
+    await initiateSubscription(selectedPackage.id, {
+      paymentId: paymentResponse.razorpay_payment_id,
+      orderId: paymentResponse.razorpay_order_id,
+      signature: paymentResponse.razorpay_signature,
+      paymentStatus: "completed"
+    });
+    
+    setPaymentProcessing(false);
+  };
+
+  const handlePaymentFailure = (error: any) => {
+    console.error("Payment failed:", error);
+    setShowPaymentUI(false);
+    
+    toast({
+      title: "Payment Failed",
+      description: "We couldn't process your payment. Please try again later.",
+      variant: "destructive",
+    });
+  };
+  
+  if (showPaymentUI) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <Button 
+          variant="ghost" 
+          onClick={() => setShowPaymentUI(false)} 
+          className="mb-4"
+          disabled={paymentProcessing}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Checkout
+        </Button>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Complete Payment</CardTitle>
+            <CardDescription>Process your payment to activate your subscription</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {paymentProcessing ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="mt-4 text-center">Processing your payment...</p>
+              </div>
+            ) : (
+              <RazorpayPayment 
+                selectedPackage={selectedPackage}
+                onSuccess={handlePaymentSuccess}
+                onFailure={handlePaymentFailure}
+              />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   
   return (
     <div className="max-w-2xl mx-auto">
@@ -163,7 +229,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
             disabled={isProcessing || !termsAccepted}
           >
             <ShoppingCart className="h-4 w-4 mr-2" />
-            Subscribe Now
+            Proceed to Payment
           </Button>
         </CardFooter>
       </Card>

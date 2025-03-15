@@ -8,6 +8,13 @@ import { useToast } from './use-toast';
 import { useNavigate } from 'react-router-dom';
 import { getPackageById, businessPackages, influencerPackages } from '@/data/subscriptionData';
 
+interface PaymentDetails {
+  paymentId: string;
+  orderId?: string;
+  signature?: string;
+  paymentStatus: 'pending' | 'completed' | 'failed';
+}
+
 export const useSubscription = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -17,7 +24,7 @@ export const useSubscription = () => {
   /**
    * Initiates a subscription process for the current user
    */
-  const initiateSubscription = useCallback(async (packageId: string) => {
+  const initiateSubscription = useCallback(async (packageId: string, paymentDetails?: PaymentDetails) => {
     if (!user?.id) {
       toast({
         title: "Authentication Required",
@@ -41,6 +48,16 @@ export const useSubscription = () => {
         toast({
           title: "Permission Denied",
           description: "Only administrators can create subscriptions at this time.",
+          variant: "destructive",
+        });
+        return null;
+      }
+      
+      // Check if payment is required and payment details are provided
+      if (!isAdmin && !paymentDetails) {
+        toast({
+          title: "Payment Required",
+          description: "Payment is required to activate this subscription.",
           variant: "destructive",
         });
         return null;
@@ -102,8 +119,8 @@ export const useSubscription = () => {
         startDate: new Date().toISOString(),
         endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
         status: "active",
-        paymentMethod: "manual",
-        transactionId: `manual_${Date.now()}`,
+        paymentMethod: paymentDetails ? "razorpay" : "manual",
+        transactionId: paymentDetails?.paymentId || `manual_${Date.now()}`,
         advancePaymentMonths: settings.defaultAdvancePaymentMonths,
         signupFee: packageDetails.setupFee || 0,
         actualStartDate: new Date().toISOString(),
@@ -112,6 +129,17 @@ export const useSubscription = () => {
         isUserCancellable: false,
         invoiceIds: []
       };
+      
+      // Add payment details if available
+      if (paymentDetails) {
+        Object.assign(subscriptionData, {
+          paymentId: paymentDetails.paymentId,
+          orderId: paymentDetails.orderId,
+          paymentSignature: paymentDetails.signature,
+          paymentStatus: paymentDetails.paymentStatus,
+          paymentDate: new Date().toISOString()
+        });
+      }
       
       // Try to save the subscription
       let success = false;
