@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { updateUserRole, updateUserPermission, getAllUsers } from "@/features/auth/userManagement";
-import { loadAllUsers } from "@/features/auth/authStorage";
+import { debugFirestoreUsers, compareUserSources } from "@/lib/firebase-debug";
 import UserSubscriptionAssignment from "./UserSubscriptionAssignment";
 import { db } from "@/config/firebase";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
@@ -41,13 +41,26 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
   const loadUsers = async () => {
     setIsLoading(true);
     try {
-      // Change from loadAllUsers to directly use getAllUsers for consistency
+      // First load users directly from Firestore for immediate debugging
+      const firestoreUsers = await debugFirestoreUsers();
+      console.log(`Debug: Firestore directly returned ${firestoreUsers.length} users`);
+      
+      // Then use getAllUsers which handles caching and merging
       const allUsers = await getAllUsers();
-      console.log("UserPermissionsTab - Loaded users:", allUsers.length);
-      // Log individual users to verify all are available
+      console.log(`UserPermissionsTab - Loaded ${allUsers.length} users from getAllUsers()`);
+      
+      // Compare sources to detect any discrepancies
+      await compareUserSources();
+      
+      // Verify each user has required properties
       allUsers.forEach((user, index) => {
-        console.log(`Tab User ${index + 1}:`, user.id, user.email);
+        if (!user.id || !user.email) {
+          console.warn(`User at index ${index} is missing required properties:`, user);
+        } else {
+          console.log(`Tab User ${index + 1}:`, user.id, user.email, user.role, user.isAdmin);
+        }
       });
+      
       setUsers(allUsers);
     } catch (error) {
       console.error("Error loading users:", error);
@@ -60,6 +73,17 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
       setIsLoading(false);
     }
   };
+
+  // Force a refresh every 10 seconds during development to ensure we're getting latest data
+  // This can be removed in production
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      console.log("Automatically refreshing user data...");
+      loadUsers();
+    }, 10000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
@@ -186,6 +210,24 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium">User Permissions Management</h3>
+        <button 
+          onClick={loadUsers}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          disabled={isLoading}
+        >
+          {isLoading ? "Loading..." : "Refresh Users"}
+        </button>
+      </div>
+      
+      <div className="bg-amber-50 p-3 rounded-md border border-amber-200 mb-4">
+        <p className="text-amber-800 text-sm">
+          <strong>User Count:</strong> {users.length} users loaded. 
+          {users.length === 0 && !isLoading && " No users found. Try refreshing."}
+        </p>
+      </div>
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
