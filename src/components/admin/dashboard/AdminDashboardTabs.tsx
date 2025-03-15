@@ -109,7 +109,7 @@ const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
       
       {/* Business Form Dialog */}
       <BusinessFormDialog
-        isOpen={showBusinessFormDialog}
+        show={showBusinessFormDialog}
         onClose={() => setShowBusinessFormDialog(false)}
         onSubmit={handleBusinessFormSubmit}
         initialData={currentBusinessToEdit}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -27,13 +26,16 @@ import { UserRole } from "@/types/auth";
 
 interface UserPermissionsTabProps {
   onRefresh?: () => void;
+  onPermissionError?: (error: any) => void;
 }
 
-export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefresh }) => {
+export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ 
+  onRefresh,
+  onPermissionError 
+}) => {
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load all users on component mount
   useEffect(() => {
     loadUsers();
   }, []);
@@ -41,18 +43,14 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
   const loadUsers = async () => {
     setIsLoading(true);
     try {
-      // First load users directly from Firestore for immediate debugging
       const firestoreUsers = await debugFirestoreUsers();
       console.log(`Debug: Firestore directly returned ${firestoreUsers.length} users`);
       
-      // Then use getAllUsers which handles caching and merging
       const allUsers = await getAllUsers();
       console.log(`UserPermissionsTab - Loaded ${allUsers.length} users from getAllUsers()`);
       
-      // Compare sources to detect any discrepancies
       await compareUserSources();
       
-      // Verify each user has required properties
       allUsers.forEach((user, index) => {
         if (!user.id || !user.email) {
           console.warn(`User at index ${index} is missing required properties:`, user);
@@ -74,8 +72,6 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
     }
   };
 
-  // Force a refresh every 10 seconds during development to ensure we're getting latest data
-  // This can be removed in production
   useEffect(() => {
     const intervalId = setInterval(() => {
       console.log("Automatically refreshing user data...");
@@ -94,19 +90,16 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
         throw new Error("User not found");
       }
       
-      // Convert string to UserRole type
       const typedRole = newRole as UserRole;
       
       await updateUserRole(user, typedRole);
       
-      // Update the local state
       const updatedUsers = users.map(u => 
         u.id === userId ? { ...u, role: typedRole } : u
       );
       
       setUsers(updatedUsers);
       
-      // Update user in Firestore
       try {
         const userDoc = doc(db, "users", userId);
         await updateDoc(userDoc, { 
@@ -123,7 +116,6 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
         description: `User role has been updated to ${newRole}`
       });
       
-      // Call onRefresh if provided
       if (onRefresh) {
         onRefresh();
       }
@@ -134,6 +126,10 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
         description: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
         variant: "destructive"
       });
+      
+      if (onPermissionError) {
+        onPermissionError(error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -145,14 +141,12 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
       
       await updateUserPermission(userId, isAdmin);
       
-      // Update the local state
       const updatedUsers = users.map(u => 
         u.id === userId ? { ...u, isAdmin } : u
       );
       
       setUsers(updatedUsers);
       
-      // Update user in Firestore
       try {
         const userDoc = doc(db, "users", userId);
         await updateDoc(userDoc, { 
@@ -169,7 +163,6 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
         description: `User admin status has been ${isAdmin ? 'granted' : 'revoked'}`
       });
       
-      // Call onRefresh if provided
       if (onRefresh) {
         onRefresh();
       }
@@ -180,16 +173,18 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
         description: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
         variant: "destructive"
       });
+      
+      if (onPermissionError) {
+        onPermissionError(error);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSubscriptionAssigned = async (userId: string, packageId: string) => {
-    // Refresh the users list to get updated subscription data
     await loadUsers();
     
-    // Update user subscription in Firestore
     try {
       const userDoc = doc(db, "users", userId);
       await updateDoc(userDoc, {
@@ -202,7 +197,6 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({ onRefres
       console.error("❌ Failed to assign subscription in Firestore:", firestoreError);
     }
     
-    // Call onRefresh if provided
     if (onRefresh) {
       onRefresh();
     }

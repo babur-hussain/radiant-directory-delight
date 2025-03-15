@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertCircle } from "lucide-react";
@@ -94,7 +95,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
   };
   
   if (isLoadingPackages) {
-    return <SubscriptionLoader message="Loading subscription packages..." />;
+    return <SubscriptionLoader isLoading={true} message="Loading subscription packages..." />;
   }
   
   if (packageError) {
