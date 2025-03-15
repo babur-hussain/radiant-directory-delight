@@ -25,6 +25,7 @@ interface SubscriptionDialogProps {
 
 const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: SubscriptionDialogProps) => {
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [packageValidationError, setPackageValidationError] = useState<string | null>(null);
   const { initiateSubscription, isProcessing } = useSubscription();
   const { user } = useAuth();
   const [showPermissionError, setShowPermissionError] = useState(false);
@@ -33,7 +34,16 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
   });
 
   useEffect(() => {
-    // Check subscription settings when dialog opens
+    if (isOpen && selectedPackage) {
+      if (!selectedPackage.id || !selectedPackage.title || selectedPackage.price === undefined) {
+        setPackageValidationError("Invalid package data. Some required fields are missing.");
+      } else {
+        setPackageValidationError(null);
+      }
+    }
+  }, [isOpen, selectedPackage]);
+
+  useEffect(() => {
     if (isOpen) {
       const checkPermissions = async () => {
         try {
@@ -41,12 +51,10 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
           console.log("Current subscription settings:", subscriptionSettings);
           setSettings(subscriptionSettings);
           
-          // Show error if non-admin subscriptions are not allowed and user is not admin
           const isAdmin = user?.isAdmin === true || user?.role === "Admin";
           setShowPermissionError(!subscriptionSettings.allowNonAdminSubscriptions && !isAdmin);
         } catch (error) {
           console.error("Error checking permissions:", error);
-          // Default to showing no error
           setShowPermissionError(false);
         }
       };
@@ -67,7 +75,6 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
       return;
     }
     
-    // Check if the selected package is valid
     if (!selectedPackage || !selectedPackage.id) {
       toast({
         title: "Invalid Package",
@@ -77,7 +84,6 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
       return;
     }
     
-    // Check permission again before proceeding
     const isAdmin = user?.isAdmin === true || user?.role === "Admin";
     if (!settings.allowNonAdminSubscriptions && !isAdmin) {
       toast({
@@ -88,11 +94,9 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
       return;
     }
     
-    // Pass the complete package ID to ensure it can be found
     console.log("Initiating subscription for package:", selectedPackage.id);
     const result = await initiateSubscription(selectedPackage.id);
     
-    // If subscription was successful, close the dialog
     if (result) {
       setTimeout(() => {
         setIsOpen(false);
@@ -107,6 +111,14 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
           <DialogTitle className="text-xl">{selectedPackage.title}</DialogTitle>
           <DialogDescription>{selectedPackage.shortDescription}</DialogDescription>
         </DialogHeader>
+        
+        {packageValidationError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Package Error</AlertTitle>
+            <AlertDescription>{packageValidationError}</AlertDescription>
+          </Alert>
+        )}
         
         {showPermissionError && (
           <Alert variant="destructive" className="mb-4">
@@ -206,7 +218,7 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
           </Button>
           <Button 
             onClick={handleSubscribe}
-            disabled={isProcessing || !termsAccepted || showPermissionError}
+            disabled={isProcessing || !termsAccepted || showPermissionError || !!packageValidationError}
             className="w-full sm:w-auto"
           >
             <ShieldCheck className="mr-2 h-4 w-4" />

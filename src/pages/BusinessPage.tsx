@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle, Users, TrendingUp, BarChart3, Globe, Target, Megaphone, ArrowRight, AlertTriangle } from 'lucide-react';
@@ -131,12 +130,23 @@ const BusinessPage = () => {
     </Card>
   );
 
-  // Handle subscribe button click
+  // Handle subscribe button click with additional validation
   const handleSubscribeClick = (pkg: SubscriptionPackage) => {
     if (!pkg || !pkg.id) {
       toast({
         title: "Invalid Package",
         description: "This package is not available. Please try another one.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate package has all required fields
+    if (!pkg.title || pkg.price === undefined || !pkg.features || !pkg.features.length) {
+      console.error("Invalid package data:", pkg);
+      toast({
+        title: "Package Error",
+        description: "This package is missing required information. Please try another one.",
         variant: "destructive",
       });
       return;

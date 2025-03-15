@@ -58,6 +58,8 @@ export const useSubscription = () => {
         packageDetails = allDefaultPackages.find(pkg => pkg.id === packageId);
         
         if (!packageDetails) {
+          console.log("Package not found in default packages either, using fallback package");
+          
           // If still not found, use the first package of the user's role as fallback
           if (user.role === "Business" && businessPackages.length > 0) {
             packageDetails = businessPackages[0];
@@ -66,7 +68,14 @@ export const useSubscription = () => {
             packageDetails = influencerPackages[0];
             console.log(`Using fallback influencer package: ${packageDetails.id}`);
           } else {
-            throw new Error(`Package ${packageId} not found and no fallback available`);
+            // As a last resort, use the first available package from any collection
+            packageDetails = allDefaultPackages.length > 0 ? allDefaultPackages[0] : null;
+            
+            if (!packageDetails) {
+              throw new Error("No subscription packages available. Please contact support.");
+            }
+            
+            console.log(`Using emergency fallback package: ${packageDetails.id}`);
           }
           
           // Notify the user that we're using a fallback package
@@ -76,6 +85,10 @@ export const useSubscription = () => {
             variant: "warning",
           });
         }
+      }
+      
+      if (!packageDetails) {
+        throw new Error("No subscription packages available. Please contact support.");
       }
       
       console.log(`Initiating subscription for user ${user.id} to package ${packageDetails.id}`);
