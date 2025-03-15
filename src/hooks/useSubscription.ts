@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { useAuth } from './useAuth';
-import { updateUserSubscription, getUserSubscription } from '@/lib/subscription-utils';
+import { updateUserSubscription, getUserSubscription } from '@/lib/subscription';
 import { useToast } from './use-toast';
 import { useNavigate } from 'react-router-dom';
 

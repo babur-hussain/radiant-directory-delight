@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import BusinessDashboard from "@/components/dashboard/business/BusinessDashboard";
 import AccessDenied from "@/components/dashboard/AccessDenied";
-import { listenToUserSubscription } from "@/lib/subscription-utils";
+import { listenToUserSubscription } from "@/lib/subscription";
 
 const BusinessDashboardPage = () => {
   const { user, isAuthenticated } = useAuth();

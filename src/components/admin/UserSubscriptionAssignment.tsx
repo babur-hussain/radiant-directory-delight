@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -6,7 +5,7 @@ import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { toast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { User } from "@/types/auth";
-import { updateUserSubscription, getUserSubscription } from "@/lib/subscription-utils";
+import { updateUserSubscription, getUserSubscription } from "@/lib/subscription";
 
 interface UserSubscriptionAssignmentProps {
   user: User;
@@ -19,15 +18,12 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
   const [selectedPackage, setSelectedPackage] = useState<string>("");
   const [userCurrentSubscription, setUserCurrentSubscription] = useState<any>(null);
 
-  // Load subscription packages and current user subscription
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Load subscription packages
         const allPackages = await fetchSubscriptionPackages();
         setPackages(allPackages);
 
-        // Get user's current subscription
         if (user.id) {
           const subscription = await getUserSubscription(user.id);
           setUserCurrentSubscription(subscription);
@@ -62,14 +58,12 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
     setIsLoading(true);
 
     try {
-      // Find the selected package
       const packageDetails = packages.find(pkg => pkg.id === selectedPackage);
       
       if (!packageDetails) {
         throw new Error("Selected package not found");
       }
 
-      // Create subscription data
       const subscriptionData = {
         userId: user.id,
         packageId: packageDetails.id,
@@ -84,11 +78,9 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       
       console.log("⚡ Creating subscription data:", subscriptionData);
       
-      // Update the subscription using our utility
       const success = await updateUserSubscription(user.id, subscriptionData);
       
       if (success) {
-        // Update the local state
         setUserCurrentSubscription(subscriptionData);
         
         toast({
@@ -96,7 +88,6 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
           description: `Successfully assigned ${packageDetails.title} to ${user.name || user.email}`
         });
         
-        // Call the callback to notify parent component
         onAssigned(packageDetails.id);
       } else {
         throw new Error("Failed to update subscription");
@@ -120,7 +111,6 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         throw new Error("No active subscription found");
       }
       
-      // Update the subscription status to cancelled
       const updatedSubscription = {
         ...userCurrentSubscription,
         status: "cancelled",
@@ -130,11 +120,9 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       
       console.log("⚡ Cancelling subscription:", updatedSubscription);
       
-      // Update the subscription using our utility
       const success = await updateUserSubscription(user.id, updatedSubscription);
       
       if (success) {
-        // Update local state
         setUserCurrentSubscription(updatedSubscription);
         
         toast({
@@ -142,7 +130,6 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
           description: "Subscription has been cancelled successfully"
         });
         
-        // Notify parent component
         onAssigned("");
       } else {
         throw new Error("Failed to cancel subscription");
@@ -159,7 +146,6 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
     }
   };
 
-  // Helper function to get subscription status color
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case "active":
