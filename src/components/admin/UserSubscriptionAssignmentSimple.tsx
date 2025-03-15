@@ -34,10 +34,10 @@ const UserSubscriptionAssignmentSimple: React.FC<UserSubscriptionAssignmentProps
         console.log(`📦 Loaded ${allPackages.length} subscription packages`);
 
         // Check if user has an existing subscription (simplified)
-        if (user?.subscriptionData) {
-          setUserCurrentSubscription(user.subscriptionData);
-          setSelectedPackage(user.subscriptionData.packageId);
-          console.log(`💡 User has existing subscription: ${user.subscriptionData.packageId}`);
+        if (user?.subscription) {
+          setUserCurrentSubscription(user.subscription);
+          setSelectedPackage(user.subscription.packageId);
+          console.log(`💡 User has existing subscription: ${user.subscription.packageId}`);
         } else {
           console.log("💡 User has no existing subscription");
         }
