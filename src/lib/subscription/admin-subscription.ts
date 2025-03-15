@@ -1,5 +1,5 @@
 
-import { doc, setDoc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp, updateDoc, collection } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { SubscriptionData } from "./types";
 import { toast } from "@/hooks/use-toast";
@@ -37,29 +37,44 @@ export const adminAssignSubscription = async (userId: string, packageData: any):
       throw new Error(`User ${userId} does not exist`);
     }
     
-    // Step 2: Update the user document with subscription info
-    await updateDoc(userRef, {
-      subscriptionData: subscriptionData,
-      subscriptionStatus: "active",
-      subscriptionPackage: packageData.id,
-      updatedAt: serverTimestamp()
-    });
+    console.log("✅ User exists, proceeding with subscription assignment");
     
-    // Step 3: Create a new subscription document in subscriptions collection
+    // Step 2: Create a batch-like operation by using individual promises
+    const updatePromises = [];
+    
+    // Update the user document with subscription info
+    updatePromises.push(
+      updateDoc(userRef, {
+        subscription: subscriptionData,
+        subscriptionStatus: "active",
+        subscriptionPackage: packageData.id,
+        updatedAt: serverTimestamp(),
+        subscriptionAssignedAt: serverTimestamp()
+      })
+    );
+    
+    // Create a new subscription document in subscriptions collection
     const subscriptionRef = doc(db, "subscriptions", subscriptionId);
-    await setDoc(subscriptionRef, {
-      ...subscriptionData,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
+    updatePromises.push(
+      setDoc(subscriptionRef, {
+        ...subscriptionData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
+    );
     
-    // Step 4: Also add to user's subscriptions subcollection
+    // Add to user's subscriptions subcollection
     const userSubscriptionRef = doc(db, "users", userId, "subscriptions", subscriptionId);
-    await setDoc(userSubscriptionRef, {
-      ...subscriptionData,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
+    updatePromises.push(
+      setDoc(userSubscriptionRef, {
+        ...subscriptionData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
+    );
+    
+    // Execute all promises
+    await Promise.all(updatePromises);
     
     console.log("✅ Subscription assignment successful");
     return true;
@@ -85,17 +100,49 @@ export const adminCancelSubscription = async (userId: string, subscriptionId: st
   try {
     console.log(`🔰 Admin cancelling subscription ${subscriptionId} for user ${userId}`);
     
-    // Step 1: Get the current subscription
+    // Step 1: Verify user exists
+    const userRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userRef);
+    
+    if (!userDoc.exists()) {
+      throw new Error(`User ${userId} does not exist`);
+    }
+    
+    console.log("✅ User exists, proceeding with subscription cancellation");
+    
+    // Step 2: Get the current subscription if it exists
     const subscriptionRef = doc(db, "subscriptions", subscriptionId);
     const subscriptionDoc = await getDoc(subscriptionRef);
     
-    if (!subscriptionDoc.exists()) {
-      throw new Error(`Subscription ${subscriptionId} does not exist`);
+    let subscriptionData: SubscriptionData | null = null;
+    
+    if (subscriptionDoc.exists()) {
+      subscriptionData = subscriptionDoc.data() as SubscriptionData;
+    } else {
+      // If not found in subscriptions collection, check in the user's subscriptions subcollection
+      const userSubscriptionRef = doc(db, "users", userId, "subscriptions", subscriptionId);
+      const userSubscriptionDoc = await getDoc(userSubscriptionRef);
+      
+      if (!userSubscriptionDoc.exists()) {
+        // If we still can't find it, check the user document itself
+        const userData = userDoc.data();
+        if (userData?.subscription?.id === subscriptionId) {
+          subscriptionData = userData.subscription as SubscriptionData;
+        } else {
+          throw new Error(`Subscription ${subscriptionId} not found for user ${userId}`);
+        }
+      } else {
+        subscriptionData = userSubscriptionDoc.data() as SubscriptionData;
+      }
     }
     
-    const subscriptionData = subscriptionDoc.data() as SubscriptionData;
+    if (!subscriptionData) {
+      throw new Error(`No valid subscription data found for ID ${subscriptionId}`);
+    }
     
-    // Step 2: Update the subscription with cancelled status
+    console.log("✅ Found subscription data:", subscriptionData);
+    
+    // Step 3: Prepare updated subscription with cancelled status
     const updatedSubscription = {
       ...subscriptionData,
       status: "cancelled",
@@ -103,20 +150,28 @@ export const adminCancelSubscription = async (userId: string, subscriptionId: st
       updatedAt: new Date().toISOString()
     };
     
-    // Update in main subscriptions collection
-    await setDoc(subscriptionRef, updatedSubscription);
+    // Step 4: Update all relevant documents in a Promise.all pattern
+    const updatePromises = [];
+    
+    // Update in main subscriptions collection if it exists
+    if (subscriptionDoc.exists()) {
+      updatePromises.push(setDoc(subscriptionRef, updatedSubscription));
+    }
     
     // Update in user's subscriptions subcollection
     const userSubscriptionRef = doc(db, "users", userId, "subscriptions", subscriptionId);
-    await setDoc(userSubscriptionRef, updatedSubscription);
+    updatePromises.push(setDoc(userSubscriptionRef, updatedSubscription, { merge: true }));
     
     // Update user document
-    const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, {
+    updatePromises.push(updateDoc(userRef, {
+      subscription: updatedSubscription,
       subscriptionStatus: "cancelled",
       subscriptionCancelledAt: serverTimestamp(),
       updatedAt: serverTimestamp()
-    });
+    }));
+    
+    // Execute all promises
+    await Promise.all(updatePromises);
     
     console.log("✅ Subscription cancellation successful");
     return true;

@@ -98,29 +98,30 @@ const UserSubscriptionAssignmentSimple: React.FC<UserSubscriptionAssignmentProps
       // Use the admin function to assign subscription
       const success = await adminAssignSubscription(user.id, packageDetails);
       
-      if (success) {
-        console.log("✅ Subscription assigned successfully");
-        
-        // Update local state
-        const subscriptionData = {
-          packageId: packageDetails.id,
-          packageName: packageDetails.title,
-          status: "active",
-          assignedBy: currentUser?.id || "admin",
-          assignedAt: new Date().toISOString()
-        };
-        
-        setUserCurrentSubscription(subscriptionData);
-        
-        toast({
-          title: "Subscription Assigned",
-          description: `Successfully assigned ${packageDetails.title} to ${user.name || user.email || 'user'}`
-        });
-        
-        onAssigned(packageDetails.id);
-      } else {
+      if (!success) {
         throw new Error("Failed to assign subscription: Operation returned false");
       }
+      
+      console.log("✅ Subscription assigned successfully");
+      
+      // Update local state with the new subscription data
+      const subscriptionData = {
+        packageId: packageDetails.id,
+        packageName: packageDetails.title,
+        status: "active",
+        assignedBy: currentUser?.id || "admin",
+        assignedAt: new Date().toISOString()
+      };
+      
+      setUserCurrentSubscription(subscriptionData);
+      
+      toast({
+        title: "Subscription Assigned",
+        description: `Successfully assigned ${packageDetails.title} to ${user.name || user.email || 'user'}`
+      });
+      
+      // Notify parent component
+      onAssigned(packageDetails.id);
     } catch (error) {
       console.error("❌ Error assigning subscription:", error);
       let errorMessage = "Failed to assign subscription. Please try again.";
@@ -143,23 +144,38 @@ const UserSubscriptionAssignmentSimple: React.FC<UserSubscriptionAssignmentProps
 
   // Handle subscription cancellation
   const handleCancelSubscription = async () => {
-    if (!user?.id || !userCurrentSubscription?.id) {
+    if (!user?.id) {
       toast({
         title: "Error",
-        description: "Missing subscription or user information",
+        description: "Missing user ID",
         variant: "destructive"
       });
       return;
     }
     
-    setError(null);
-    setIsLoading(true);
-    
-    try {
-      // Use admin function to cancel subscription
-      const success = await adminCancelSubscription(user.id, userCurrentSubscription.id);
+    if (!userCurrentSubscription || !userCurrentSubscription.id) {
+      // Try to find subscription ID from user.subscription
+      const subscriptionId = user.subscription?.id;
+      if (!subscriptionId) {
+        toast({
+          title: "Error",
+          description: "Missing subscription information",
+          variant: "destructive"
+        });
+        return;
+      }
       
-      if (success) {
+      setError(null);
+      setIsLoading(true);
+      
+      try {
+        // Use admin function to cancel subscription
+        const success = await adminCancelSubscription(user.id, subscriptionId);
+        
+        if (!success) {
+          throw new Error("Failed to cancel subscription: Operation returned false");
+        }
+        
         console.log("✅ Subscription cancelled successfully");
         
         // Update local state
@@ -175,9 +191,53 @@ const UserSubscriptionAssignmentSimple: React.FC<UserSubscriptionAssignmentProps
         });
         
         onAssigned("");
-      } else {
+      } catch (error) {
+        console.error("❌ Error cancelling subscription:", error);
+        
+        let errorMessage = "Failed to cancel subscription. Please try again.";
+        if (error instanceof Error) {
+          errorMessage = error.message || errorMessage;
+        }
+        
+        setError(errorMessage);
+        
+        toast({
+          title: "Cancellation Failed",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+    
+    setError(null);
+    setIsLoading(true);
+    
+    try {
+      // Use admin function to cancel subscription
+      const success = await adminCancelSubscription(user.id, userCurrentSubscription.id);
+      
+      if (!success) {
         throw new Error("Failed to cancel subscription: Operation returned false");
       }
+      
+      console.log("✅ Subscription cancelled successfully");
+      
+      // Update local state
+      setUserCurrentSubscription({
+        ...userCurrentSubscription,
+        status: "cancelled",
+        cancelledAt: new Date().toISOString()
+      });
+      
+      toast({
+        title: "Subscription Cancelled",
+        description: "Subscription has been cancelled successfully"
+      });
+      
+      onAssigned("");
     } catch (error) {
       console.error("❌ Error cancelling subscription:", error);
       
