@@ -63,38 +63,35 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
     return '';
   };
 
+  // Define form with default values
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData ? {
-      ...initialData,
+    defaultValues: {
+      id: initialData?.id || nanoid(),
+      title: initialData?.title || "",
+      price: initialData?.price || 0,
+      monthlyPrice: initialData?.monthlyPrice || (initialData ? Math.round(initialData.price / 12) : 0),
+      setupFee: initialData?.setupFee || 0,
+      durationMonths: initialData?.durationMonths || 12,
+      shortDescription: initialData?.shortDescription || "",
+      fullDescription: initialData?.fullDescription || "",
+      termsAndConditions: initialData?.termsAndConditions || "",
       features: getInitialFeaturesString(),
-      monthlyPrice: initialData.monthlyPrice || Math.round(initialData.price / 12),
-      billingCycle: initialData.billingCycle || "yearly",
-      advancePaymentMonths: initialData.advancePaymentMonths || 0
-    } : {
-      id: nanoid(),
-      title: "",
-      price: 0,
-      monthlyPrice: 0,
-      setupFee: 0,
-      durationMonths: 12,
-      shortDescription: "",
-      fullDescription: "",
-      termsAndConditions: "",
-      features: "",
-      popular: false,
-      type: "Business",
-      billingCycle: "yearly",
-      advancePaymentMonths: 0
+      popular: initialData?.popular || false,
+      type: initialData?.type || "Business",
+      billingCycle: initialData?.billingCycle || "yearly",
+      advancePaymentMonths: initialData?.advancePaymentMonths || 0
     }
   });
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
     // At this point, features should already be transformed to an array by zod
-    // But let's ensure it's handled as an array for maximum safety
+    // Making sure we have an array of features
     const featureArray = Array.isArray(values.features) 
       ? values.features 
-      : values.features.toString().split('\n').filter(f => f.trim().length > 0);
+      : (typeof values.features === 'string' 
+          ? values.features.split('\n').filter(f => f.trim().length > 0) 
+          : []);
     
     // Ensure all required properties are present with proper types
     const packageData: SubscriptionPackage = {
