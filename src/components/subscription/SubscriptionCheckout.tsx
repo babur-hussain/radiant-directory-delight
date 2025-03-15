@@ -75,6 +75,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
     });
   };
   
+  // Use a dedicated full-page UI for payment processing
   if (showPaymentUI) {
     return (
       <div className="max-w-2xl mx-auto">
@@ -138,7 +139,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span>One-time setup fee</span>
-                <span>₹{selectedPackage.setupFee}</span>
+                <span>₹{selectedPackage.setupFee || 0}</span>
               </div>
               <div className="flex justify-between">
                 <span>Annual subscription</span>
@@ -146,7 +147,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
               </div>
               <div className="border-t pt-2 flex justify-between font-medium">
                 <span>Initial payment</span>
-                <span>₹{selectedPackage.setupFee}</span>
+                <span>₹{selectedPackage.setupFee || 0}</span>
               </div>
               <div className="flex justify-between font-medium">
                 <span>Annual recurring payment</span>
@@ -185,7 +186,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
                           1.1. Your subscription will automatically renew at the end of each billing cycle unless cancelled.
                         </p>
                         <p className="mb-2">
-                          1.2. A one-time setup fee of ₹{selectedPackage.setupFee} is charged at the beginning of the subscription.
+                          1.2. A one-time setup fee of ₹{selectedPackage.setupFee || 0} is charged at the beginning of the subscription.
                         </p>
                         <p className="mb-2">
                           1.3. The annual subscription fee of ₹{selectedPackage.price} will be charged after the setup fee payment.
@@ -248,46 +249,6 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
           </Button>
         </CardFooter>
       </Card>
-      
-      {showPaymentUI && (
-        <Dialog open={showPaymentUI} onOpenChange={setShowPaymentUI}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Complete Payment</DialogTitle>
-              <DialogDescription>
-                Process your payment to activate your subscription
-              </DialogDescription>
-            </DialogHeader>
-            
-            {paymentProcessing ? (
-              <div className="flex flex-col items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="mt-4 text-center">Processing your payment...</p>
-              </div>
-            ) : (
-              <RazorpayPayment 
-                selectedPackage={selectedPackage}
-                onSuccess={(response) => {
-                  handlePaymentSuccess(response);
-                  setShowPaymentUI(false);
-                }}
-                onFailure={handlePaymentFailure}
-              />
-            )}
-            
-            <DialogFooter className="sm:justify-start">
-              <Button 
-                type="button" 
-                variant="secondary" 
-                onClick={() => setShowPaymentUI(false)}
-                disabled={paymentProcessing}
-              >
-                Cancel
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 };

@@ -19,6 +19,8 @@ interface RazorpayPaymentProps {
 const RazorpayPayment = ({ selectedPackage, onSuccess, onFailure }: RazorpayPaymentProps) => {
   const { toast } = useToast();
   const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [sdkInitialized, setSdkInitialized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Check if script already exists
@@ -56,12 +58,25 @@ const RazorpayPayment = ({ selectedPackage, onSuccess, onFailure }: RazorpayPaym
     };
   }, [toast, onFailure]);
 
+  // Wait for script to load before initializing
   useEffect(() => {
-    // Only initialize Razorpay when the script is loaded
     if (scriptLoaded && window.Razorpay) {
+      // Small delay to ensure script is fully initialized
+      const timer = setTimeout(() => {
+        setSdkInitialized(true);
+        setIsLoading(false);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [scriptLoaded]);
+
+  // Only initialize Razorpay when everything is ready
+  useEffect(() => {
+    if (sdkInitialized && !isLoading) {
       initializeRazorpay();
     }
-  }, [scriptLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sdkInitialized, isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const initializeRazorpay = () => {
     if (!window.Razorpay) {
@@ -80,7 +95,7 @@ const RazorpayPayment = ({ selectedPackage, onSuccess, onFailure }: RazorpayPaym
       const amountInPaise = Math.round(selectedPackage.price * 100);
       
       // Initial payment is the setup fee (minimum 100 paise = 1 INR if setupFee is 0)
-      const initialPaymentInPaise = Math.max(Math.round(selectedPackage.setupFee * 100), 100);
+      const initialPaymentInPaise = Math.max(Math.round((selectedPackage.setupFee || 0) * 100), 100);
 
       // Generate a unique order ID
       const orderId = `order_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
@@ -94,35 +109,18 @@ const RazorpayPayment = ({ selectedPackage, onSuccess, onFailure }: RazorpayPaym
         image: "https://your-company-logo.png", // Replace with your logo URL
         order_id: orderId, // This should ideally come from your backend
         prefill: {
-          name: "",
-          email: "",
-          contact: ""
+          name: "Customer Name", // Add default values to prevent validation errors
+          email: "customer@example.com",
+          contact: "9800000000"
         },
         notes: {
           packageId: selectedPackage.id,
           packageName: selectedPackage.title,
-          setupFee: selectedPackage.setupFee,
+          setupFee: selectedPackage.setupFee || 0,
           annualSubscription: selectedPackage.price
         },
         theme: {
           color: "#3B82F6" // Blue color matching the UI
-        },
-        // Make these properties directly accessible
-        handler: function(response: any) {
-          console.log("Payment successful", response);
-          // This function gets called after successful payment
-          toast({
-            title: "Payment Successful",
-            description: `Your payment of ₹${selectedPackage.setupFee} was successful. Activating your subscription...`,
-          });
-          
-          // Pass the payment response to the parent component
-          onSuccess({
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_order_id: response.razorpay_order_id || orderId,
-            razorpay_signature: response.razorpay_signature || 'test_signature',
-            packageId: selectedPackage.id
-          });
         },
         modal: {
           ondismiss: function() {
@@ -134,9 +132,28 @@ const RazorpayPayment = ({ selectedPackage, onSuccess, onFailure }: RazorpayPaym
             });
             onFailure(new Error("Payment process cancelled by user"));
           },
-          escape: true, // Allow escape key to dismiss the modal
+          escape: false, // Don't allow escape key to dismiss the modal
           confirm_close: true, // Ask for confirmation before closing
-          backdrop_close: false // Don't allow backdrop clicks to close the modal
+          backdrop_close: false, // Don't allow backdrop clicks to close the modal
+          handleback: true, // Handle back button press
+          animation: true // Enable animations
+        },
+        // Make these properties directly accessible
+        handler: function(response: any) {
+          console.log("Payment successful", response);
+          // This function gets called after successful payment
+          toast({
+            title: "Payment Successful",
+            description: `Your payment of ₹${selectedPackage.setupFee || 0} was successful. Activating your subscription...`,
+          });
+          
+          // Pass the payment response to the parent component
+          onSuccess({
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_order_id: response.razorpay_order_id || orderId,
+            razorpay_signature: response.razorpay_signature || 'test_signature',
+            packageId: selectedPackage.id
+          });
         }
       };
 
@@ -156,9 +173,12 @@ const RazorpayPayment = ({ selectedPackage, onSuccess, onFailure }: RazorpayPaym
         onFailure(response.error);
       });
       
-      // Open the Razorpay checkout modal
-      razorpay.open();
-      console.log("Razorpay checkout modal opened");
+      // Force open method to be called separately to ensure it's initialized properly
+      setTimeout(() => {
+        // Open the Razorpay checkout modal
+        razorpay.open();
+        console.log("Razorpay checkout modal opened");
+      }, 300);
       
     } catch (error) {
       console.error("Error opening Razorpay:", error);
@@ -175,7 +195,11 @@ const RazorpayPayment = ({ selectedPackage, onSuccess, onFailure }: RazorpayPaym
     <div className="flex flex-col items-center justify-center p-6">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
       <p className="mt-4 text-center text-sm text-muted-foreground">
-        {scriptLoaded ? "Initializing payment gateway..." : "Loading payment gateway..."}
+        {!scriptLoaded 
+          ? "Loading payment gateway..." 
+          : !sdkInitialized 
+            ? "Initializing payment gateway..." 
+            : "Opening payment gateway..."}
       </p>
     </div>
   );
