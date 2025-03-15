@@ -1,7 +1,9 @@
+
 export interface SubscriptionPackage {
   id: string;
   title: string;
   price: number;
+  monthlyPrice?: number;
   shortDescription: string;
   fullDescription: string;
   features: string[];
@@ -10,6 +12,8 @@ export interface SubscriptionPackage {
   durationMonths: number;
   termsAndConditions?: string;
   type: "Business" | "Influencer";
+  billingCycle?: "monthly" | "yearly";
+  advancePaymentMonths?: number;
 }
 
 // Default business subscription packages (used as fallback if Firebase fetch fails)
@@ -18,6 +22,7 @@ export const businessPackages: SubscriptionPackage[] = [
     id: "business-basic",
     title: "Basic Business",
     price: 999,
+    monthlyPrice: 99,
     setupFee: 20,
     durationMonths: 12,
     shortDescription: "Perfect for small businesses just starting out",
@@ -28,12 +33,16 @@ export const businessPackages: SubscriptionPackage[] = [
       "Standard customer support",
       "Basic campaign management"
     ],
-    popular: false
+    popular: false,
+    type: "Business",
+    billingCycle: "yearly",
+    advancePaymentMonths: 0
   },
   {
     id: "business-standard",
     title: "Standard Business",
     price: 1999,
+    monthlyPrice: 199,
     setupFee: 20,
     durationMonths: 12,
     shortDescription: "The ideal choice for growing businesses",
@@ -45,12 +54,16 @@ export const businessPackages: SubscriptionPackage[] = [
       "Campaign management tools",
       "Monthly performance reports"
     ],
-    popular: true
+    popular: true,
+    type: "Business",
+    billingCycle: "yearly",
+    advancePaymentMonths: 0
   },
   {
     id: "business-premium",
     title: "Premium Business",
     price: 3999,
+    monthlyPrice: 399,
     setupFee: 20,
     durationMonths: 12,
     shortDescription: "Advanced features for established businesses",
@@ -63,12 +76,16 @@ export const businessPackages: SubscriptionPackage[] = [
       "Competitor analysis tools",
       "Custom monthly reports"
     ],
-    popular: false
+    popular: false,
+    type: "Business",
+    billingCycle: "yearly",
+    advancePaymentMonths: 0
   },
   {
     id: "business-enterprise",
     title: "Enterprise",
     price: 7999,
+    monthlyPrice: 799,
     setupFee: 20,
     durationMonths: 12,
     shortDescription: "Custom solutions for large businesses",
@@ -82,9 +99,12 @@ export const businessPackages: SubscriptionPackage[] = [
       "Custom integrations",
       "Strategic consulting"
     ],
-    popular: false
+    popular: false,
+    type: "Business",
+    billingCycle: "yearly",
+    advancePaymentMonths: 0
   }
-].map(pkg => ({ ...pkg, type: "Business" }));
+];
 
 // Default influencer subscription packages (used as fallback if Firebase fetch fails)
 export const influencerPackages: SubscriptionPackage[] = [
@@ -92,6 +112,7 @@ export const influencerPackages: SubscriptionPackage[] = [
     id: "influencer-starter",
     title: "Influencer Starter",
     price: 999,
+    monthlyPrice: 99,
     setupFee: 20,
     durationMonths: 12,
     shortDescription: "Perfect for new influencers",
@@ -102,12 +123,16 @@ export const influencerPackages: SubscriptionPackage[] = [
       "Basic analytics dashboard",
       "Standard support"
     ],
-    popular: false
+    popular: false,
+    type: "Influencer",
+    billingCycle: "yearly",
+    advancePaymentMonths: 0
   },
   {
     id: "influencer-growth",
     title: "Influencer Growth",
     price: 1599,
+    monthlyPrice: 159,
     setupFee: 20,
     durationMonths: 12,
     shortDescription: "Ideal for growing your influence",
@@ -120,12 +145,16 @@ export const influencerPackages: SubscriptionPackage[] = [
       "Campaign performance tools",
       "Collaboration recommendations"
     ],
-    popular: true
+    popular: true,
+    type: "Influencer",
+    billingCycle: "yearly",
+    advancePaymentMonths: 0
   },
   {
     id: "influencer-pro",
     title: "Influencer Pro",
     price: 2999,
+    monthlyPrice: 299,
     setupFee: 20,
     durationMonths: 12,
     shortDescription: "For established influencers",
@@ -139,12 +168,16 @@ export const influencerPackages: SubscriptionPackage[] = [
       "Performance insights",
       "Early access to new businesses"
     ],
-    popular: false
+    popular: false,
+    type: "Influencer",
+    billingCycle: "yearly",
+    advancePaymentMonths: 0
   },
   {
     id: "influencer-elite",
     title: "Influencer Elite",
     price: 4999,
+    monthlyPrice: 499,
     setupFee: 20,
     durationMonths: 12,
     shortDescription: "For professional influencers",
@@ -159,9 +192,12 @@ export const influencerPackages: SubscriptionPackage[] = [
       "Exclusive events and networking",
       "Personalized growth consultation"
     ],
-    popular: false
+    popular: false,
+    type: "Influencer",
+    billingCycle: "yearly",
+    advancePaymentMonths: 0
   }
-].map(pkg => ({ ...pkg, type: "Influencer" }));
+];
 
 // Function to get package by ID
 export const getPackageById = (packageId: string, packages?: SubscriptionPackage[]): SubscriptionPackage | undefined => {

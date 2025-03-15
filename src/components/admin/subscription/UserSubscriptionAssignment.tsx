@@ -41,16 +41,27 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
     try {
       console.log(`Assigning package ${packageData.id} to user ${user.id}`);
       
+      // Prepare subscription data based on billing cycle
+      const isMonthlyCycle = packageData.billingCycle === "monthly";
+      const packagePrice = isMonthlyCycle ? packageData.monthlyPrice || packageData.price / 12 : packageData.price;
+      const durationMonths = isMonthlyCycle ? 1 : packageData.durationMonths;
+      
+      // Calculate end date based on duration
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + durationMonths);
+      
       // Simulate subscription assignment
       const subscriptionData = {
         id: `sub_${Date.now()}`,
         userId: user.id,
         packageId: packageData.id,
         packageName: packageData.title,
-        amount: packageData.price,
+        amount: packagePrice,
         status: "active",
         startDate: new Date().toISOString(),
-        endDate: new Date(Date.now() + packageData.durationMonths * 30 * 24 * 60 * 60 * 1000).toISOString(),
+        endDate: endDate.toISOString(),
+        billingCycle: packageData.billingCycle || "yearly",
+        advancePaymentMonths: packageData.advancePaymentMonths || 0
       };
       
       // In a real app, we would save this to the database
@@ -208,7 +219,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
             <SelectContent>
               {packages.map(pkg => (
                 <SelectItem key={pkg.id} value={pkg.id}>
-                  {pkg.title} (₹{pkg.price})
+                  {pkg.title} ({pkg.billingCycle === "monthly" ? `₹${pkg.monthlyPrice}/month` : `₹${pkg.price}/year`})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -239,9 +250,19 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
               />
             </div>
           </div>
-          <p className="text-muted-foreground">
-            Users cannot modify or cancel their subscriptions. Only admins can manage subscriptions.
-          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div>
+              <p className="text-xs text-muted-foreground">
+                Billing cycle: {userCurrentSubscription.billingCycle === "monthly" ? "Monthly" : "Yearly"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Advance payment: {userCurrentSubscription.advancePaymentMonths || 0} months
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Users cannot modify or cancel their subscriptions. Only admins can manage subscriptions.
+            </p>
+          </div>
         </div>
       )}
     </div>
