@@ -90,10 +90,11 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   });
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    // Process features from form input to array
+    // At this point, features should already be transformed to an array by zod
+    // But let's ensure it's handled as an array for maximum safety
     const featureArray = Array.isArray(values.features) 
       ? values.features 
-      : values.features.split('\n').filter(f => f.trim().length > 0);
+      : values.features.toString().split('\n').filter(f => f.trim().length > 0);
     
     // Ensure all required properties are present with proper types
     const packageData: SubscriptionPackage = {
