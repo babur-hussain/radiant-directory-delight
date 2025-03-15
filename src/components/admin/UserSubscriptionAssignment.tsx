@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -6,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { User } from "@/types/auth";
 import { updateUserSubscription, getUserSubscription } from "@/lib/subscription";
+import { Loader2 } from "lucide-react";
 
 interface UserSubscriptionAssignmentProps {
   user: User;
@@ -21,19 +23,28 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
   useEffect(() => {
     const loadData = async () => {
       try {
+        // Load packages
         const allPackages = await fetchSubscriptionPackages();
         setPackages(allPackages);
+        console.log(`📦 Loaded ${allPackages.length} subscription packages`);
 
-        if (user.id) {
+        // Load user's current subscription if it exists
+        if (user?.id) {
+          console.log(`🔍 Checking subscription for user ${user.id}`);
           const subscription = await getUserSubscription(user.id);
           setUserCurrentSubscription(subscription);
           
           if (subscription?.packageId) {
             setSelectedPackage(subscription.packageId);
+            console.log(`💡 User has existing subscription: ${subscription.packageId}`);
+          } else {
+            console.log("💡 User has no existing subscription");
           }
+        } else {
+          console.warn("⚠️ User object is missing ID:", user);
         }
       } catch (error) {
-        console.error("Error loading subscription data:", error);
+        console.error("❌ Error loading subscription data:", error);
         toast({
           title: "Error",
           description: "Failed to load subscription data",
@@ -43,7 +54,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
     };
 
     loadData();
-  }, [user.id]);
+  }, [user?.id]);
 
   const handleAssignPackage = async () => {
     if (!selectedPackage) {
@@ -55,15 +66,29 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       return;
     }
 
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "Invalid user data. Missing user ID.",
+        variant: "destructive"
+      });
+      console.error("❌ Cannot assign package: User ID is missing", user);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      console.log(`🚀 Starting package assignment: ${selectedPackage} to user ${user.id}`);
+      
+      // Find the selected package
       const packageDetails = packages.find(pkg => pkg.id === selectedPackage);
       
       if (!packageDetails) {
-        throw new Error("Selected package not found");
+        throw new Error(`Selected package not found: ${selectedPackage}`);
       }
 
+      // Create subscription data
       const subscriptionData = {
         userId: user.id,
         packageId: packageDetails.id,
@@ -78,14 +103,16 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       
       console.log("⚡ Creating subscription data:", subscriptionData);
       
+      // Update the subscription in Firestore
       const success = await updateUserSubscription(user.id, subscriptionData);
       
       if (success) {
+        console.log("✅ Subscription assigned successfully");
         setUserCurrentSubscription(subscriptionData);
         
         toast({
           title: "Subscription Assigned",
-          description: `Successfully assigned ${packageDetails.title} to ${user.name || user.email}`
+          description: `Successfully assigned ${packageDetails.title} to ${user.name || user.email || 'user'}`
         });
         
         onAssigned(packageDetails.id);
@@ -93,10 +120,16 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         throw new Error("Failed to update subscription");
       }
     } catch (error) {
-      console.error("Error assigning subscription:", error);
+      console.error("❌ Error assigning subscription:", error);
+      let errorMessage = "Failed to assign subscription. Please try again.";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      }
+      
       toast({
         title: "Assignment Failed",
-        description: "Failed to assign subscription",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -105,6 +138,15 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
   };
 
   const handleCancelSubscription = async () => {
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "Invalid user data. Missing user ID.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsLoading(true);
     try {
       if (!userCurrentSubscription) {
@@ -123,6 +165,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       const success = await updateUserSubscription(user.id, updatedSubscription);
       
       if (success) {
+        console.log("✅ Subscription cancelled successfully");
         setUserCurrentSubscription(updatedSubscription);
         
         toast({
@@ -135,10 +178,16 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         throw new Error("Failed to cancel subscription");
       }
     } catch (error) {
-      console.error("Error cancelling subscription:", error);
+      console.error("❌ Error cancelling subscription:", error);
+      
+      let errorMessage = "Failed to cancel subscription. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      }
+      
       toast({
         title: "Cancellation Failed",
-        description: "Failed to cancel subscription",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -186,7 +235,12 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
             variant="destructive"
             size="sm"
           >
-            {isLoading ? "Processing..." : "Cancel"}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : "Cancel"}
           </Button>
         ) : (
           <Button 
@@ -194,7 +248,12 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
             disabled={!selectedPackage || isLoading}
             size="sm"
           >
-            {isLoading ? "Assigning..." : "Assign"}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Assigning...
+              </>
+            ) : "Assign"}
           </Button>
         )}
       </div>
