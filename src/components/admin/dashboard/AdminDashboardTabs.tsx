@@ -8,7 +8,7 @@ import { Business } from "@/lib/csv-utils";
 import BusinessFormDialog from "../BusinessFormDialog";
 import CSVUploadDialog from "../CSVUploadDialog";
 import { BusinessFormValues } from "../BusinessForm";
-import UserPermissionsTab from "../UserPermissionsTab";
+import { UserPermissionsTab } from "../UserPermissionsTab";
 import { CentralizedSubscriptionManager } from "../subscription/CentralizedSubscriptionManager";
 
 interface AdminDashboardTabsProps {
@@ -24,7 +24,7 @@ interface AdminDashboardTabsProps {
   isSubmitting: boolean;
   isRefreshing?: boolean;
   refreshBusinesses?: () => void;
-  handleBusinessFormSubmit: (values: BusinessFormValues) => void;
+  handleBusinessFormSubmit: (values: BusinessFormValues) => Promise<void>;
   handleUploadComplete: (success: boolean, message: string, count?: number) => void;
   handleAddBusiness: () => void;
   handleEditBusiness: (business: Business) => void;
@@ -76,7 +76,7 @@ const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
           <BusinessesTab 
             businesses={businesses}
             isRefreshing={isRefreshing}
-            refreshData={refreshBusinesses}
+            onRefresh={refreshBusinesses}
             handleAddBusiness={handleAddBusiness}
             handleEditBusiness={handleEditBusiness}
             onViewDetails={onViewDetails}
@@ -88,7 +88,7 @@ const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
             <CardContent className="pt-6">
               <UserPermissionsTab 
                 onPermissionError={handlePermissionError}
-                onRefreshUsers={onRefreshUsers}
+                onRefresh={onRefreshUsers}
               />
             </CardContent>
           </Card>
@@ -117,10 +117,10 @@ const AdminDashboardTabs: React.FC<AdminDashboardTabsProps> = ({
       />
       
       {/* CSV Upload Dialog */}
-      <CSVUploadDialog
-        isOpen={showUploadDialog}
+      <CSVUploadDialog 
+        show={showUploadDialog}
         onClose={() => setShowUploadDialog(false)}
-        onComplete={handleUploadComplete}
+        onUploadComplete={handleUploadComplete}
       />
     </>
   );

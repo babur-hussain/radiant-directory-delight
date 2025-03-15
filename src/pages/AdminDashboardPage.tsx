@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import UnauthorizedView from "@/components/admin/UnauthorizedView";
@@ -135,7 +134,8 @@ const AdminDashboardPage = () => {
     }
   };
   
-  const handleBusinessFormSubmit = async (values: BusinessFormValues) => {
+  // Update the handleBusinessFormSubmit to return a Promise
+  const handleBusinessFormSubmit = async (values: BusinessFormValues): Promise<void> => {
     setIsSubmitting(true);
     
     try {

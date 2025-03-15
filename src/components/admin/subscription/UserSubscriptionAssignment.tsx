@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertCircle } from "lucide-react";
@@ -33,17 +32,14 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
     handleCancelSubscription
   } = useAdminSubscriptionAssignment(user, onAssigned);
   
-  // Fetch available packages
   useEffect(() => {
     const loadPackages = async () => {
       setIsLoadingPackages(true);
       
       try {
-        // Try to fetch from Firebase
         const fetchedPackages = await fetchSubscriptionPackages();
         
         if (fetchedPackages && fetchedPackages.length > 0) {
-          // Only show packages matching the user's role if role is defined
           if (user.role) {
             const rolePackages = fetchedPackages.filter(pkg => 
               pkg.type === user.role
@@ -64,7 +60,6 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         console.error("Error loading packages:", err);
         setPackageError("Failed to load subscription packages");
         
-        // Set default packages based on user role as fallback
         if (user.role === "Business" || user.role === "Influencer") {
           const defaultPackages = require("@/data/subscriptionData");
           const rolePackages = user.role === "Business" 
@@ -81,7 +76,6 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
     loadPackages();
   }, [user.role]);
   
-  // Auto-select the user's current package if they have one
   useEffect(() => {
     if (userCurrentSubscription && packages.length > 0) {
       setSelectedPackage(userCurrentSubscription.packageId);

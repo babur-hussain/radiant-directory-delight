@@ -6,20 +6,21 @@ import BusinessDetailsDialog from "../table/BusinessDetailsDialog";
 
 interface BusinessesTabProps {
   businesses: Business[];
-  onAddBusiness: () => void;
-  onEditBusiness: (business: Business) => void;
+  onAddBusiness?: () => void;
+  handleAddBusiness: () => void;
+  handleEditBusiness: (business: Business) => void;
   isRefreshing: boolean;
-  onRefresh: () => Promise<void> | void; // Updated to accept either Promise<void> or void
-  handlePermissionError: (error: any) => void;
+  onRefresh?: () => Promise<void> | void;
+  onViewDetails?: (business: Business) => void;
 }
 
 const BusinessesTab: React.FC<BusinessesTabProps> = ({
   businesses,
-  onAddBusiness,
-  onEditBusiness,
+  handleAddBusiness,
+  handleEditBusiness,
   isRefreshing,
   onRefresh,
-  handlePermissionError,
+  onViewDetails,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
@@ -35,8 +36,8 @@ const BusinessesTab: React.FC<BusinessesTabProps> = ({
     <div className="space-y-4">
       <BusinessTable
         businesses={businesses}
-        onViewDetails={handleViewDetails}
-        onEditBusiness={onEditBusiness}
+        onViewDetails={onViewDetails || handleViewDetails}
+        onEditBusiness={handleEditBusiness}
         onDeleteBusiness={() => {}}
       />
       
