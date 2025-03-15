@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,12 +28,10 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Load packages
         const allPackages = await fetchSubscriptionPackages();
         setPackages(allPackages);
         console.log(`📦 Loaded ${allPackages.length} subscription packages`);
 
-        // Load user's current subscription if it exists
         if (user?.id) {
           console.log(`🔍 Checking subscription for user ${user.id}`);
           const subscription = await getUserSubscription(user.id);
@@ -73,7 +70,6 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
 
     loadData();
 
-    // Collect debug info about current auth state for troubleshooting
     if (currentUser) {
       const info = `Current admin: ${currentUser.id} (isAdmin: ${currentUser.isAdmin ? 'true' : 'false'})`;
       setDebugInfo(info);
@@ -106,7 +102,6 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       return;
     }
 
-    // Clear previous errors
     setError(null);
     setErrorDetails(null);
     setIsLoading(true);
@@ -115,14 +110,12 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       console.log(`🚀 Starting package assignment: ${selectedPackage} to user ${user.id}`);
       console.log(`🔑 Current user (admin) ID: ${currentUser?.id}`);
       
-      // Find the selected package
       const packageDetails = packages.find(pkg => pkg.id === selectedPackage);
       
       if (!packageDetails) {
         throw new Error(`Selected package not found: ${selectedPackage}`);
       }
 
-      // Create subscription data
       const subscriptionData = {
         userId: user.id,
         packageId: packageDetails.id,
@@ -137,21 +130,25 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       
       console.log("⚡ Creating subscription data:", subscriptionData);
       
-      // Update the subscription in Firestore
-      const success = await updateUserSubscription(user.id, subscriptionData);
-      
-      if (success) {
-        console.log("✅ Subscription assigned successfully");
-        setUserCurrentSubscription(subscriptionData);
+      try {
+        const success = await updateUserSubscription(user.id, subscriptionData);
         
-        toast({
-          title: "Subscription Assigned",
-          description: `Successfully assigned ${packageDetails.title} to ${user.name || user.email || 'user'}`
-        });
-        
-        onAssigned(packageDetails.id);
-      } else {
-        throw new Error("Failed to update subscription");
+        if (success) {
+          console.log("✅ Subscription assigned successfully");
+          setUserCurrentSubscription(subscriptionData);
+          
+          toast({
+            title: "Subscription Assigned",
+            description: `Successfully assigned ${packageDetails.title} to ${user.name || user.email || 'user'}`
+          });
+          
+          onAssigned(packageDetails.id);
+        } else {
+          throw new Error("Failed to update subscription: Unknown error occurred");
+        }
+      } catch (updateError) {
+        console.error("❌ Error in updateUserSubscription:", updateError);
+        throw updateError;
       }
     } catch (error) {
       console.error("❌ Error assigning subscription:", error);
@@ -162,7 +159,6 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         errorMessage = error.message || errorMessage;
         details = JSON.stringify(error, Object.getOwnPropertyNames(error));
         
-        // Add more context for specific errors
         if (errorMessage.includes("permission-denied")) {
           errorMessage = "Permission denied. Please check your admin privileges and try again.";
         } else if (errorMessage.includes("not-found")) {
@@ -195,7 +191,6 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       return;
     }
     
-    // Clear previous errors
     setError(null);
     setErrorDetails(null);
     setIsLoading(true);

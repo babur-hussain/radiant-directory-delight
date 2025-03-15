@@ -172,17 +172,8 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
       console.log("⚠️ Falling back to direct write approach...");
     }
     
-    // Approach 3: Fall back to a more basic approach - set with merge option
-    console.log("🔄 Attempting direct write approach...");
-    
-    // Add to subscriptions subcollection
-    const userSubscriptionsRef = collection(db, "users", userId, "subscriptions");
-    const subscriptionWithIds = {
-      ...subscriptionData,
-      userId: userId,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    };
+    // Approach 3: Fall back to a more basic approach using set with merge option
+    console.log("🔄 Attempting direct write approach with set and merge...");
     
     try {
       // First try to update the user document with setDoc and merge
@@ -201,7 +192,18 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
       
       console.log(`✅ Successfully updated main user document with subscription info`);
       
-      // If user document updated successfully, add the subscription
+      // Add to subscriptions subcollection
+      const userSubscriptionsRef = collection(db, "users", userId, "subscriptions");
+      
+      // Create subscription with the necessary IDs
+      const subscriptionWithIds = {
+        ...subscriptionData,
+        userId: userId,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      
+      // Add the subscription record
       const newSubscriptionDoc = await addDoc(userSubscriptionsRef, subscriptionWithIds);
       console.log(`✅ Added subscription to user's subscriptions subcollection with ID: ${newSubscriptionDoc.id}`);
       
@@ -268,9 +270,12 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
     // Show a toast with both the user-friendly message and technical details
     toast({
       title: "Update Failed",
-      description: `${errorMessage}\n\nTechnical details: ${errorDetails}`,
+      description: errorMessage,
       variant: "destructive"
     });
+    
+    // Log the full error for debugging
+    console.error("Full error details:", errorDetails);
     return false;
   }
 };
