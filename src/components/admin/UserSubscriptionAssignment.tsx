@@ -7,7 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { User } from "@/types/auth";
 import { updateUserSubscription, getUserSubscription } from "@/lib/subscription";
-import { Loader2, AlertCircle, ShieldAlert } from "lucide-react";
+import { Loader2, AlertCircle, ShieldAlert, ExternalLink } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -22,6 +22,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
   const [selectedPackage, setSelectedPackage] = useState<string>("");
   const [userCurrentSubscription, setUserCurrentSubscription] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const { user: currentUser } = useAuth();
 
   useEffect(() => {
@@ -51,12 +52,16 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       } catch (error) {
         console.error("❌ Error loading subscription data:", error);
         let errorMessage = "Failed to load subscription data";
+        let details = "";
         
         if (error instanceof Error) {
           errorMessage = error.message || errorMessage;
+          details = JSON.stringify(error, Object.getOwnPropertyNames(error));
         }
         
         setError(errorMessage);
+        setErrorDetails(details);
+        
         toast({
           title: "Error",
           description: errorMessage,
@@ -105,6 +110,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
 
     setIsLoading(true);
     setError(null);
+    setErrorDetails(null);
 
     try {
       console.log(`🚀 Starting package assignment: ${selectedPackage} to user ${user.id}`);
@@ -151,19 +157,25 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
     } catch (error) {
       console.error("❌ Error assigning subscription:", error);
       let errorMessage = "Failed to assign subscription. Please try again.";
+      let details = "";
       
       if (error instanceof Error) {
         errorMessage = error.message || errorMessage;
+        details = JSON.stringify(error, Object.getOwnPropertyNames(error));
         
         // Add more context for specific errors
         if (errorMessage.includes("permission-denied")) {
           errorMessage = "Permission denied. Please check your admin privileges and try again.";
         } else if (errorMessage.includes("not-found")) {
           errorMessage = "User document not found. Please refresh and try again.";
+        } else if (errorMessage.includes("failed-precondition")) {
+          errorMessage = "Operation failed. This might be due to a missing Firestore index. Check console for index creation link.";
         }
       }
       
       setError(errorMessage);
+      setErrorDetails(details);
+      
       toast({
         title: "Assignment Failed",
         description: errorMessage,
@@ -197,6 +209,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
     
     setIsLoading(true);
     setError(null);
+    setErrorDetails(null);
     
     try {
       if (!userCurrentSubscription) {
@@ -231,11 +244,16 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       console.error("❌ Error cancelling subscription:", error);
       
       let errorMessage = "Failed to cancel subscription. Please try again.";
+      let details = "";
+      
       if (error instanceof Error) {
         errorMessage = error.message || errorMessage;
+        details = JSON.stringify(error, Object.getOwnPropertyNames(error));
       }
       
       setError(errorMessage);
+      setErrorDetails(details);
+      
       toast({
         title: "Cancellation Failed",
         description: errorMessage,
@@ -271,6 +289,14 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
               <div className="mt-2 flex items-center text-sm">
                 <ShieldAlert className="h-4 w-4 mr-1" />
                 <span>Check your admin permissions and Firestore rules.</span>
+              </div>
+            )}
+            {errorDetails && (
+              <div className="mt-2 p-2 bg-black/5 rounded-md text-xs font-mono overflow-auto max-h-32">
+                <details>
+                  <summary className="cursor-pointer">Technical details</summary>
+                  <pre className="whitespace-pre-wrap">{errorDetails}</pre>
+                </details>
               </div>
             )}
           </AlertDescription>
@@ -331,6 +357,26 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
             {userCurrentSubscription.packageName} ({userCurrentSubscription.status})
           </span>
         </div>
+      )}
+      
+      {isLoading && (
+        <div className="text-xs text-muted-foreground italic mt-2">
+          <Loader2 className="inline-block h-3 w-3 animate-spin mr-1" />
+          Processing request, this may take a moment...
+        </div>
+      )}
+      
+      {!error && currentUser && !currentUser.isAdmin && (
+        <Alert variant="warning" className="mt-2">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Admin Permission Required</AlertTitle>
+          <AlertDescription>
+            <div className="flex items-center">
+              <ExternalLink className="h-4 w-4 mr-1" />
+              <span>You need admin privileges to manage subscriptions.</span>
+            </div>
+          </AlertDescription>
+        </Alert>
       )}
     </div>
   );

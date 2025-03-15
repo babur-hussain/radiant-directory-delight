@@ -47,69 +47,25 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
     
     console.log(`✅ User document exists: ${userId}`);
     
-    // Start with a more basic approach - set with merge option
-    // This is less likely to fail compared to transactions
+    // Use transaction approach as the primary method
     try {
-      // Update the main user document with subscription summary
-      await setDoc(userRef, {
-        subscription: subscriptionData,
-        subscriptionStatus: subscriptionData.status,
-        subscriptionPackage: subscriptionData.packageId,
-        lastUpdated: serverTimestamp(),
-        ...(subscriptionData.status === "active" 
-            ? { subscriptionAssignedAt: serverTimestamp() } 
-            : {}),
-        ...(subscriptionData.status === "cancelled" 
-            ? { subscriptionCancelledAt: serverTimestamp() } 
-            : {})
-      }, { merge: true });
-      
-      console.log(`✅ Successfully updated main user document with subscription info`);
-      
-      // Add to subscriptions subcollection
-      const userSubscriptionsRef = collection(db, "users", userId, "subscriptions");
-      const subscriptionWithIds = {
-        ...subscriptionData,
-        userId: userId,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      };
-      
-      await addDoc(userSubscriptionsRef, subscriptionWithIds);
-      console.log(`✅ Added subscription to user's subscriptions subcollection`);
-      
-      // For backward compatibility - add to main subscriptions collection
-      const mainSubscriptionRef = doc(collection(db, "subscriptions"));
-      await setDoc(mainSubscriptionRef, {
-        ...subscriptionWithIds,
-        id: mainSubscriptionRef.id,
-        userId: userId
-      });
-      
-      console.log("✅ Successfully updated subscription in all collections");
-      
-      // Show success toast
-      toast({
-        title: "Subscription Updated",
-        description: `Successfully updated subscription to ${subscriptionData.packageId}`,
-        variant: "success"
-      });
-      
-      return true;
-    } catch (directWriteError) {
-      console.error("❌ Direct write approach failed:", directWriteError);
-      console.log("⚠️ Falling back to transaction approach...");
-      
-      const errorMessage = directWriteError instanceof Error 
-        ? directWriteError.message 
-        : 'Unknown error during direct write';
-      
-      console.log(`⚠️ Detailed error: ${errorMessage}`);
-      
-      // Fall back to transaction if direct writes fail
       await runTransaction(db, async (transaction) => {
         // Reference to the user document
         const userRef = doc(db, "users", userId);
+        
+        // Update the main user document with subscription summary
+        transaction.update(userRef, {
+          subscription: subscriptionData,
+          subscriptionStatus: subscriptionData.status,
+          subscriptionPackage: subscriptionData.packageId,
+          lastUpdated: serverTimestamp(),
+          ...(subscriptionData.status === "active" 
+              ? { subscriptionAssignedAt: serverTimestamp() } 
+              : {}),
+          ...(subscriptionData.status === "cancelled" 
+              ? { subscriptionCancelledAt: serverTimestamp() } 
+              : {})
+        });
         
         // Create new subscription in subscriptions subcollection
         const userSubscriptionsRef = collection(db, "users", userId, "subscriptions");
@@ -127,20 +83,6 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
         // Create in subscriptions subcollection
         transaction.set(newSubscriptionRef, subscriptionWithIds);
         
-        // Update the main user document with subscription summary
-        transaction.update(userRef, {
-          subscription: subscriptionWithIds,
-          subscriptionStatus: subscriptionData.status,
-          subscriptionPackage: subscriptionData.packageId,
-          lastUpdated: serverTimestamp(),
-          ...(subscriptionData.status === "active" 
-              ? { subscriptionAssignedAt: serverTimestamp() } 
-              : {}),
-          ...(subscriptionData.status === "cancelled" 
-              ? { subscriptionCancelledAt: serverTimestamp() } 
-              : {})
-        });
-        
         // Also add to the main subscriptions collection for backward compatibility
         const mainSubscriptionRef = doc(db, "subscriptions", newSubscriptionRef.id);
         transaction.set(mainSubscriptionRef, {
@@ -149,12 +91,69 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
         });
       });
       
-      console.log("✅ Successfully updated subscription using transaction fallback");
+      console.log("✅ Successfully updated subscription using transaction");
       toast({
         title: "Subscription Updated",
         description: `Successfully updated subscription to ${subscriptionData.packageId}`,
         variant: "success"
       });
+      return true;
+    } catch (transactionError) {
+      console.error("❌ Transaction approach failed:", transactionError);
+      console.log("⚠️ Falling back to direct write approach...");
+      
+      const errorMessage = transactionError instanceof Error 
+        ? transactionError.message 
+        : 'Unknown error during transaction';
+      
+      console.log(`⚠️ Detailed transaction error: ${errorMessage}`);
+      
+      // Fall back to a more basic approach - set with merge option
+      // Add to subscriptions subcollection
+      const userSubscriptionsRef = collection(db, "users", userId, "subscriptions");
+      const subscriptionWithIds = {
+        ...subscriptionData,
+        userId: userId,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      
+      const newSubscriptionDoc = await addDoc(userSubscriptionsRef, subscriptionWithIds);
+      console.log(`✅ Added subscription to user's subscriptions subcollection with ID: ${newSubscriptionDoc.id}`);
+      
+      // Update the main user document with subscription summary
+      await setDoc(userRef, {
+        subscription: subscriptionData,
+        subscriptionStatus: subscriptionData.status,
+        subscriptionPackage: subscriptionData.packageId,
+        lastUpdated: serverTimestamp(),
+        ...(subscriptionData.status === "active" 
+            ? { subscriptionAssignedAt: serverTimestamp() } 
+            : {}),
+        ...(subscriptionData.status === "cancelled" 
+            ? { subscriptionCancelledAt: serverTimestamp() } 
+            : {})
+      }, { merge: true });
+      
+      console.log(`✅ Successfully updated main user document with subscription info`);
+      
+      // For backward compatibility - add to main subscriptions collection
+      const mainSubscriptionRef = doc(collection(db, "subscriptions"), newSubscriptionDoc.id);
+      await setDoc(mainSubscriptionRef, {
+        ...subscriptionWithIds,
+        id: mainSubscriptionRef.id,
+        userId: userId
+      });
+      
+      console.log("✅ Successfully updated subscription using direct write fallback");
+      
+      // Show success toast
+      toast({
+        title: "Subscription Updated",
+        description: `Successfully updated subscription to ${subscriptionData.packageId}`,
+        variant: "success"
+      });
+      
       return true;
     }
   } catch (error) {
@@ -162,10 +161,12 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
     
     // Provide more specific error messages based on the error type
     let errorMessage = "Failed to update subscription details in database";
+    let errorDetails = "";
     
     if (error instanceof Error) {
       // Log the detailed error for debugging
       console.error(`💥 Detailed error: ${error.message}`);
+      errorDetails = error.message;
       
       if (error.message.includes("permission-denied") || error.message.includes("Missing or insufficient permissions")) {
         errorMessage = "Permission denied. The current user doesn't have permission to update subscriptions. Admin rights may be required.";
@@ -177,15 +178,18 @@ export const updateUserSubscription = async (userId: string, subscriptionData: S
       } else if (error.message.includes("failed-precondition")) {
         errorMessage = "Operation failed. This might be due to a missing index or conflicting operations.";
         console.error("⚠️ This could indicate a missing Firestore index. Check console for index creation link.");
+      } else if (error.message.includes("resource-exhausted")) {
+        errorMessage = "Firebase quota exceeded. Please try again later.";
       } else {
         // If we have a specific error message, use it
         errorMessage = `Error: ${error.message}`;
       }
     }
     
+    // Show a toast with both the user-friendly message and technical details
     toast({
       title: "Update Failed",
-      description: errorMessage,
+      description: `${errorMessage}\n\nTechnical details: ${errorDetails}`,
       variant: "destructive"
     });
     return false;
