@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertCircle } from "lucide-react";
@@ -5,10 +6,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import StatusBadge from "./StatusBadge";
 import SubscriptionActionButton from "./SubscriptionActionButton";
 import SubscriptionLoader from "./SubscriptionLoader";
-import { useAdminSubscriptionAssignment } from "@/hooks/useAdminSubscriptionAssignment";
+import { useAuth } from "@/hooks/useAuth";
 import { User } from "@/types/auth";
 import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { SubscriptionPackage, getPackageById } from "@/data/subscriptionData";
+import SubscriptionError from "./SubscriptionError";
 
 interface UserSubscriptionAssignmentProps {
   user: User;
@@ -23,20 +25,88 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
   const [isLoadingPackages, setIsLoadingPackages] = useState(true);
   const [selectedPackage, setSelectedPackage] = useState("");
   const [packageError, setPackageError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
+  const { user: currentUser } = useAuth();
   
-  const {
-    isLoading,
-    userCurrentSubscription,
-    error,
-    handleAssignPackage,
-    handleCancelSubscription
-  } = useAdminSubscriptionAssignment(user, onAssigned);
+  const [isLoading, setIsLoading] = useState(false);
+  const [userCurrentSubscription, setUserCurrentSubscription] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  
+  const handleAssignPackage = async (packageData: SubscriptionPackage) => {
+    if (!packageData) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      console.log(`Assigning package ${packageData.id} to user ${user.id}`);
+      
+      // Simulate subscription assignment
+      const subscriptionData = {
+        id: `sub_${Date.now()}`,
+        userId: user.id,
+        packageId: packageData.id,
+        packageName: packageData.title,
+        amount: packageData.price,
+        status: "active",
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + packageData.durationMonths * 30 * 24 * 60 * 60 * 1000).toISOString(),
+      };
+      
+      // In a real app, we would save this to the database
+      setUserCurrentSubscription(subscriptionData);
+      
+      // Notify parent component
+      if (onAssigned) {
+        onAssigned(packageData.id);
+      }
+      
+      console.log("Subscription assigned successfully:", subscriptionData);
+    } catch (err) {
+      console.error("Error assigning subscription:", err);
+      setError("Failed to assign subscription. Please try again.");
+      setErrorDetails(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleCancelSubscription = async () => {
+    if (!userCurrentSubscription) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      console.log(`Cancelling subscription for user ${user.id}`);
+      
+      // Update the status to cancelled
+      const updatedSubscription = {
+        ...userCurrentSubscription,
+        status: "cancelled",
+        cancelledAt: new Date().toISOString()
+      };
+      
+      // In a real app, we would update this in the database
+      setUserCurrentSubscription(updatedSubscription);
+      
+      console.log("Subscription cancelled successfully");
+    } catch (err) {
+      console.error("Error cancelling subscription:", err);
+      setError("Failed to cancel subscription. Please try again.");
+      setErrorDetails(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   useEffect(() => {
     const loadPackages = async () => {
       setIsLoadingPackages(true);
+      setPackageError(null);
       
       try {
+        console.log("Fetching subscription packages for role:", user.role);
         const fetchedPackages = await fetchSubscriptionPackages();
         
         if (fetchedPackages && fetchedPackages.length > 0) {
@@ -47,25 +117,32 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
             
             if (rolePackages.length > 0) {
               setPackages(rolePackages);
+              console.log(`Found ${rolePackages.length} packages for role ${user.role}`);
             } else {
+              console.warn("No packages found for user role:", user.role);
               throw new Error("No packages available for this user's role");
             }
           } else {
             setPackages(fetchedPackages);
+            console.log(`Found ${fetchedPackages.length} packages`);
           }
         } else {
+          console.warn("No packages returned from fetchSubscriptionPackages");
           throw new Error("No packages available");
         }
       } catch (err) {
         console.error("Error loading packages:", err);
         setPackageError("Failed to load subscription packages");
+        setErrorDetails(err instanceof Error ? err.message : String(err));
         
+        // Load fallback packages from local data
         if (user.role === "Business" || user.role === "Influencer") {
           const defaultPackages = require("@/data/subscriptionData");
           const rolePackages = user.role === "Business" 
             ? defaultPackages.businessPackages 
             : defaultPackages.influencerPackages;
           
+          console.log(`Using ${rolePackages.length} fallback packages for role ${user.role}`);
           setPackages(rolePackages);
         }
       } finally {
@@ -74,7 +151,12 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
     };
     
     loadPackages();
-  }, [user.role]);
+    
+    // Also try to load the user's current subscription if available
+    if (user.subscription) {
+      setUserCurrentSubscription(user.subscription);
+    }
+  }, [user.role, user.subscription]);
   
   useEffect(() => {
     if (userCurrentSubscription && packages.length > 0) {
@@ -110,11 +192,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
   return (
     <div className="flex flex-col space-y-4">
       {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Subscription Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <SubscriptionError error={error} errorDetails={errorDetails} />
       )}
       
       <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
