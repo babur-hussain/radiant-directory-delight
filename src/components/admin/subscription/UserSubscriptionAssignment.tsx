@@ -95,7 +95,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
   };
   
   if (isLoadingPackages) {
-    return <SubscriptionLoader isLoading={true} message="Loading subscription packages..." />;
+    return <SubscriptionLoader isLoading={true} />; // Fixed: removed the message parameter
   }
   
   if (packageError) {
