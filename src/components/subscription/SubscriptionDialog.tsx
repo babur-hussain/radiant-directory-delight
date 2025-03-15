@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CheckCircle, AlertTriangle, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,6 +13,9 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { useSubscription } from "@/hooks/useSubscription";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAuth } from "@/hooks/useAuth";
+import { getGlobalSubscriptionSettings } from "@/lib/subscription/subscription-settings";
 
 interface SubscriptionDialogProps {
   isOpen: boolean;
@@ -23,6 +26,34 @@ interface SubscriptionDialogProps {
 const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: SubscriptionDialogProps) => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const { initiateSubscription, isProcessing } = useSubscription();
+  const { user } = useAuth();
+  const [showPermissionError, setShowPermissionError] = useState(false);
+  const [settings, setSettings] = useState<{ allowNonAdminSubscriptions: boolean }>({ 
+    allowNonAdminSubscriptions: true 
+  });
+
+  useEffect(() => {
+    // Check subscription settings when dialog opens
+    if (isOpen) {
+      const checkPermissions = async () => {
+        try {
+          const subscriptionSettings = await getGlobalSubscriptionSettings();
+          console.log("Current subscription settings:", subscriptionSettings);
+          setSettings(subscriptionSettings);
+          
+          // Show error if non-admin subscriptions are not allowed and user is not admin
+          const isAdmin = user?.isAdmin === true || user?.role === "Admin";
+          setShowPermissionError(!subscriptionSettings.allowNonAdminSubscriptions && !isAdmin);
+        } catch (error) {
+          console.error("Error checking permissions:", error);
+          // Default to showing no error
+          setShowPermissionError(false);
+        }
+      };
+      
+      checkPermissions();
+    }
+  }, [isOpen, user]);
 
   if (!selectedPackage) return null;
 
@@ -41,6 +72,17 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
       toast({
         title: "Invalid Package",
         description: "The selected package is not available. Please try another one.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Check permission again before proceeding
+    const isAdmin = user?.isAdmin === true || user?.role === "Admin";
+    if (!settings.allowNonAdminSubscriptions && !isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "Only administrators can create subscriptions at this time.",
         variant: "destructive",
       });
       return;
@@ -65,6 +107,16 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
           <DialogTitle className="text-xl">{selectedPackage.title}</DialogTitle>
           <DialogDescription>{selectedPackage.shortDescription}</DialogDescription>
         </DialogHeader>
+        
+        {showPermissionError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Permission Denied</AlertTitle>
+            <AlertDescription>
+              Only administrators can create subscriptions at this time.
+            </AlertDescription>
+          </Alert>
+        )}
         
         <div className="space-y-4 my-4">
           <div className="border-b pb-3">
@@ -154,7 +206,7 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
           </Button>
           <Button 
             onClick={handleSubscribe}
-            disabled={isProcessing || !termsAccepted}
+            disabled={isProcessing || !termsAccepted || showPermissionError}
             className="w-full sm:w-auto"
           >
             <ShieldCheck className="mr-2 h-4 w-4" />

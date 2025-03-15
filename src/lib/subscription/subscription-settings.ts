@@ -18,7 +18,7 @@ export interface SubscriptionSettings {
  */
 const DEFAULT_SETTINGS: SubscriptionSettings = {
   shouldUseLocalFallback: true,
-  allowNonAdminSubscriptions: false,
+  allowNonAdminSubscriptions: true, // Changed to TRUE to allow non-admin subscriptions by default
   requiresPayment: false,
   defaultGracePeriodDays: 7,
   defaultAdvancePaymentMonths: 1
