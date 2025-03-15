@@ -6,7 +6,7 @@ import { getGlobalSubscriptionSettings } from '@/lib/subscription/subscription-s
 import { adminAssignSubscription } from '@/lib/subscription/admin-subscription';
 import { useToast } from './use-toast';
 import { useNavigate } from 'react-router-dom';
-import { getPackageById } from '@/data/subscriptionData';
+import { getPackageById, businessPackages, influencerPackages } from '@/data/subscriptionData';
 
 export const useSubscription = () => {
   const { user } = useAuth();
@@ -47,18 +47,43 @@ export const useSubscription = () => {
       }
       
       // Get the package details from local data if needed
-      const packageDetails = await getPackageById(packageId);
+      let packageDetails = await getPackageById(packageId);
       
+      // If package not found by ID, try to find it in the default packages
       if (!packageDetails) {
-        throw new Error(`Package ${packageId} not found`);
+        console.log(`Package ${packageId} not found in primary source, checking default packages`);
+        
+        // Try to match by ID from default packages
+        const allDefaultPackages = [...businessPackages, ...influencerPackages];
+        packageDetails = allDefaultPackages.find(pkg => pkg.id === packageId);
+        
+        if (!packageDetails) {
+          // If still not found, use the first package of the user's role as fallback
+          if (user.role === "Business" && businessPackages.length > 0) {
+            packageDetails = businessPackages[0];
+            console.log(`Using fallback business package: ${packageDetails.id}`);
+          } else if (user.role === "Influencer" && influencerPackages.length > 0) {
+            packageDetails = influencerPackages[0];
+            console.log(`Using fallback influencer package: ${packageDetails.id}`);
+          } else {
+            throw new Error(`Package ${packageId} not found and no fallback available`);
+          }
+          
+          // Notify the user that we're using a fallback package
+          toast({
+            title: "Package Not Found",
+            description: `We're using a default package instead. The requested package may have been removed.`,
+            variant: "warning",
+          });
+        }
       }
       
-      console.log(`Initiating subscription for user ${user.id} to package ${packageId}`);
+      console.log(`Initiating subscription for user ${user.id} to package ${packageDetails.id}`);
       
       // Create subscription data
       const subscriptionData = {
         userId: user.id,
-        packageId: packageId,
+        packageId: packageDetails.id,
         packageName: packageDetails.title,
         amount: packageDetails.price,
         startDate: new Date().toISOString(),

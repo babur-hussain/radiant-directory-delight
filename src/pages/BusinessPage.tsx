@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle, Users, TrendingUp, BarChart3, Globe, Target, Megaphone, ArrowRight, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { fetchSubscriptionPackagesByType } from '@/lib/firebase-utils';
 import { businessPackages } from '@/data/subscriptionData';
 import { SubscriptionPackage } from '@/data/subscriptionData';
@@ -132,6 +132,15 @@ const BusinessPage = () => {
 
   // Handle subscribe button click
   const handleSubscribeClick = (pkg: SubscriptionPackage) => {
+    if (!pkg || !pkg.id) {
+      toast({
+        title: "Invalid Package",
+        description: "This package is not available. Please try another one.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setDialogPackage(pkg);
     setIsDialogOpen(true);
   };

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { CheckCircle, AlertTriangle, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,17 +36,25 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
       return;
     }
     
-    // Pass the complete package ID to ensure it can be found
-    if (selectedPackage && selectedPackage.id) {
-      console.log("Initiating subscription for package:", selectedPackage.id);
-      await initiateSubscription(selectedPackage.id);
-      // Don't close dialog immediately to allow error handling to display
-    } else {
+    // Check if the selected package is valid
+    if (!selectedPackage || !selectedPackage.id) {
       toast({
         title: "Invalid Package",
-        description: "Something went wrong. Please try again or select a different package.",
+        description: "The selected package is not available. Please try another one.",
         variant: "destructive",
       });
+      return;
+    }
+    
+    // Pass the complete package ID to ensure it can be found
+    console.log("Initiating subscription for package:", selectedPackage.id);
+    const result = await initiateSubscription(selectedPackage.id);
+    
+    // If subscription was successful, close the dialog
+    if (result) {
+      setTimeout(() => {
+        setIsOpen(false);
+      }, 1500);
     }
   };
 
