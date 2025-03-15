@@ -153,6 +153,7 @@ export const useAdminSubscriptionAssignment = (
         }
       }
 
+      // Added required fields to match SubscriptionData interface
       const subscriptionData = {
         userId: user.id,
         packageId: packageDetails.id,
@@ -163,12 +164,13 @@ export const useAdminSubscriptionAssignment = (
         status: "active",
         assignedBy: currentUser?.id || "admin",
         assignedAt: new Date().toISOString(),
-        advancePaymentMonths: 0,
+        // Add the new required fields
+        advancePaymentMonths: 6, // Default to 6 months advance payment
         signupFee: 0,
-        actualStartDate: new Date().toISOString(),
+        actualStartDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(), // Start after 6 months
         isPaused: false,
-        isPausable: false,
-        isUserCancellable: true,
+        isPausable: true, // Admin can pause
+        isUserCancellable: false, // Users cannot cancel
         invoiceIds: []
       };
       

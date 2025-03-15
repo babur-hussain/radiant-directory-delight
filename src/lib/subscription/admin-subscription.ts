@@ -1,3 +1,4 @@
+
 import { doc, setDoc, getDoc, serverTimestamp, updateDoc, collection } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { SubscriptionData } from "./types";
@@ -27,12 +28,12 @@ export const adminAssignSubscription = async (userId: string, packageData: any):
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       // Add default values for required fields
-      advancePaymentMonths: 0,
+      advancePaymentMonths: 6, // Default to 6 months advance payment
       signupFee: 0,
-      actualStartDate: new Date().toISOString(),
+      actualStartDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(), // Start after 6 months
       isPaused: false,
-      isPausable: false,
-      isUserCancellable: true,
+      isPausable: true, // Admin can pause
+      isUserCancellable: false, // Users cannot cancel
       invoiceIds: []
     };
     

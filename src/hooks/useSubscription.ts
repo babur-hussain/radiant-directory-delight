@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { updateUserSubscription, getUserSubscription } from '@/lib/subscription';
@@ -23,6 +24,16 @@ export const useSubscription = () => {
       return null;
     }
     
+    // Check if user is admin - only admins should be able to create subscriptions
+    if (!user.isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "Only administrators can create or modify subscriptions.",
+        variant: "destructive",
+      });
+      return null;
+    }
+    
     setIsProcessing(true);
     
     try {
@@ -31,7 +42,7 @@ export const useSubscription = () => {
       
       console.log(`Initiating subscription for user ${user.id} to package ${packageId}`);
       
-      // Create subscription data
+      // Create subscription data with default values for the new required fields
       const subscriptionData = {
         userId: user.id,
         packageId: packageId,
@@ -42,12 +53,12 @@ export const useSubscription = () => {
         status: "active",
         paymentMethod: "manual",
         transactionId: `manual_${Date.now()}`,
-        advancePaymentMonths: 0,
+        advancePaymentMonths: 6, // Default to 6 months advance payment
         signupFee: 0,
-        actualStartDate: new Date().toISOString(),
+        actualStartDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(), // Start after 6 months
         isPaused: false,
-        isPausable: false,
-        isUserCancellable: true,
+        isPausable: true, // Admin can pause
+        isUserCancellable: false, // Users cannot cancel
         invoiceIds: []
       };
       
@@ -84,13 +95,23 @@ export const useSubscription = () => {
   }, [user, toast, navigate]);
   
   /**
-   * Cancels the current user's subscription
+   * Cancels the current user's subscription - restricted to admin only
    */
   const cancelSubscription = useCallback(async () => {
     if (!user?.id) {
       toast({
         title: "Authentication Required",
         description: "Please log in to manage your subscriptions.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    // Check if user is admin - only admins should be able to cancel subscriptions
+    if (!user.isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "Only administrators can cancel subscriptions.",
         variant: "destructive",
       });
       return false;
@@ -116,7 +137,7 @@ export const useSubscription = () => {
         ...currentSubscription,
         status: "cancelled",
         cancelledAt: new Date().toISOString(),
-        cancelReason: "user_requested"
+        cancelReason: "admin_requested"
       };
       
       const success = await updateUserSubscription(user.id, updatedSubscription);

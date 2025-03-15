@@ -3,14 +3,15 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
-type SubscriptionActionButtonProps = {
+interface SubscriptionActionButtonProps {
   isActive: boolean;
   isLoading: boolean;
   selectedPackage: string;
   onAssign: () => void;
   onCancel: () => void;
   showCancel?: boolean;
-};
+  isAdmin?: boolean;
+}
 
 const SubscriptionActionButton: React.FC<SubscriptionActionButtonProps> = ({
   isActive,
@@ -18,38 +19,51 @@ const SubscriptionActionButton: React.FC<SubscriptionActionButtonProps> = ({
   selectedPackage,
   onAssign,
   onCancel,
-  showCancel = true
+  showCancel = true,
+  isAdmin = false
 }) => {
-  if (isActive && showCancel) {
+  if (!isAdmin) {
     return (
-      <Button 
-        onClick={onCancel} 
-        disabled={isLoading}
-        variant="destructive"
-        size="sm"
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Processing...
-          </>
-        ) : "Cancel"}
-      </Button>
+      <div className="flex w-full items-center justify-center">
+        <Button variant="outline" disabled className="w-full text-sm">
+          Only admins can manage subscriptions
+        </Button>
+      </div>
     );
   }
   
+  if (isLoading) {
+    return (
+      <Button disabled className="w-full">
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Processing
+      </Button>
+    );
+  }
+
+  if (isActive) {
+    return (
+      <div className="flex space-x-2">
+        {showCancel && (
+          <Button 
+            variant="destructive" 
+            onClick={onCancel}
+            disabled={!isAdmin}
+          >
+            Cancel Subscription
+          </Button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <Button 
       onClick={onAssign} 
-      disabled={!selectedPackage || isLoading}
-      size="sm"
+      disabled={!selectedPackage || !isAdmin} 
+      className="w-full"
     >
-      {isLoading ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          {isActive ? "Updating..." : "Creating..."}
-        </>
-      ) : (isActive ? "Update" : "Create Subscription")}
+      Assign Subscription
     </Button>
   );
 };

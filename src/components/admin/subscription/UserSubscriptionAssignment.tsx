@@ -53,7 +53,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         <Select
           value={selectedPackage}
           onValueChange={setSelectedPackage}
-          disabled={isLoading}
+          disabled={isLoading || !currentUser?.isAdmin}
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select a subscription package" />
@@ -67,8 +67,8 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
           </SelectContent>
         </Select>
         
-        {/* Only show advanced controls if no subscription exists yet */}
-        {!userCurrentSubscription && (
+        {/* Only show advanced controls if no subscription exists yet and user is admin */}
+        {!userCurrentSubscription && currentUser?.isAdmin && (
           <AdvancedSubscriptionControls
             advancePaymentMonths={advancePaymentMonths}
             setAdvancePaymentMonths={setAdvancePaymentMonths}
@@ -89,6 +89,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
             onAssign={handleCreateSubscription}
             onCancel={() => {}}
             showCancel={false} // No cancellation option as per requirements
+            isAdmin={currentUser?.isAdmin || false}
           />
         </div>
       </div>
@@ -106,12 +107,15 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
             subscription={userCurrentSubscription}
           />
           
-          <AdvancedSubscriptionActions
-            subscription={userCurrentSubscription}
-            isLoading={isLoading}
-            onPause={handlePauseSubscription}
-            onResume={handleResumeSubscription}
-          />
+          {/* Only show admin actions if user is admin */}
+          {currentUser?.isAdmin && (
+            <AdvancedSubscriptionActions
+              subscription={userCurrentSubscription}
+              isLoading={isLoading}
+              onPause={handlePauseSubscription}
+              onResume={handleResumeSubscription}
+            />
+          )}
         </div>
       )}
       

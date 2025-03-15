@@ -11,7 +11,7 @@ export interface Subscription {
   startDate: Date;
   endDate: Date;
   status: string;
-  // New fields for Razorpay integration
+  // New fields for Razorpay integration - making all optional for backward compatibility
   advancePaymentMonths?: number;
   signupFee?: number;
   actualStartDate?: Date | string;

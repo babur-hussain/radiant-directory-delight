@@ -39,7 +39,7 @@ export const listenToUserSubscription = (
             actualStartDate: new Date().toISOString(),
             isPaused: false,
             isPausable: false,
-            isUserCancellable: true,
+            isUserCancellable: false, // Set to false to ensure users cannot cancel
             invoiceIds: []
           };
           onUpdate(subscription);
