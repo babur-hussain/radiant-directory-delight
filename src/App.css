@@ -156,6 +156,30 @@ main {
   max-width: 100% !important;
 }
 
+/* UPDATED: Ensure card content doesn't overflow */
+.admin-layout .card-content {
+  overflow-x: hidden !important;
+  max-width: 100% !important;
+}
+
+/* UPDATED: Fix text overflow in dashboard components */
+.admin-layout p, 
+.admin-layout h2, 
+.admin-layout h3,
+.admin-layout .card-description {
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  max-width: 100% !important;
+}
+
+/* UPDATED: Fix tab content overflow */
+.admin-layout .tabs-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
 /* Other styles */
 .logo {
   height: 6em;
