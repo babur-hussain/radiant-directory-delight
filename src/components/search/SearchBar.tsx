@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -83,7 +84,19 @@ const SearchBar = ({
               business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
               business.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
               business.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-            );
+            ).map(business => ({
+              id: business.id,
+              name: business.name,
+              category: business.category,
+              address: business.address,
+              location: business.location,
+              rating: business.rating,
+              reviews: business.reviews,
+              image: business.image,
+              description: business.description,
+              tags: business.tags,
+              featured: business.featured
+            }));
             
             setSearchResults(results);
             setShowResults(true);
@@ -272,6 +285,51 @@ const SearchBar = ({
       </div>
     </div>
   );
+  
+  function handleSearch() {
+    if (searchQuery.trim()) {
+      navigate(`/businesses?search=${searchQuery}&location=${location}`);
+    } else {
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+        toast({
+          title: "Enter Search Term",
+          description: "Please enter what you're looking for.",
+        });
+      }
+    }
+  }
+
+  function handleResultClick(id: number) {
+    setShowResults(false);
+    navigate(`/business?id=${id}`);
+  }
+
+  function handleClearSearch() {
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowResults(false);
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }
+
+  function handleFocus() {
+    if (searchQuery.trim()) {
+      setShowResults(true);
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  }
+
+  function toggleLocationDropdown(e: React.MouseEvent) {
+    e.stopPropagation();
+    setShowLocationDropdown(!showLocationDropdown);
+  }
 };
 
 export default SearchBar;

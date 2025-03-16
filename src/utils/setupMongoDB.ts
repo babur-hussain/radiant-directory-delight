@@ -19,7 +19,7 @@ export const autoInitMongoDB = async () => {
     }
     
     // Set a timeout to avoid hanging
-    const connectionPromise = new Promise(async (resolve) => {
+    const connectionPromise = new Promise<boolean>(async (resolve) => {
       try {
         console.log("Attempting to connect to MongoDB...");
         const connected = await connectToMongoDB();
@@ -31,7 +31,7 @@ export const autoInitMongoDB = async () => {
     });
     
     // Add a timeout to ensure we don't wait forever
-    const timeoutPromise = new Promise(resolve => {
+    const timeoutPromise = new Promise<boolean>(resolve => {
       setTimeout(() => {
         console.log("MongoDB connection timeout reached");
         resolve(false);
@@ -79,7 +79,14 @@ export const autoInitMongoDB = async () => {
 // Progress callback type definition
 type ProgressCallback = (progress: number, message: string) => void;
 
-export const setupMongoDB = async (progressCallback?: ProgressCallback) => {
+// Define return type for setupMongoDB
+interface SetupMongoDBResult {
+  success: boolean;
+  collections: string[];
+  error?: string;
+}
+
+export const setupMongoDB = async (progressCallback?: ProgressCallback): Promise<SetupMongoDBResult> => {
   try {
     if (progressCallback) {
       progressCallback(10, "Connecting to MongoDB...");
@@ -87,7 +94,7 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback) => {
     console.log("Setting up MongoDB models...");
     
     // Set a timeout to ensure we don't hang if MongoDB is unavailable
-    const setupPromise = new Promise(async (resolve) => {
+    const setupPromise = new Promise<SetupMongoDBResult>(async (resolve) => {
       try {
         // Ensure MongoDB is connected first with retries
         if (!isMongoDBConnected()) {
@@ -187,7 +194,7 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback) => {
     });
     
     // Add a timeout to prevent hanging
-    const timeoutPromise = new Promise(resolve => {
+    const timeoutPromise = new Promise<SetupMongoDBResult>(resolve => {
       setTimeout(() => {
         if (progressCallback) {
           progressCallback(100, "Setup timed out, using static data");
