@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { connectToMongoDB, isMongoDBConnected } from '@/config/mongodb';
 import { fullSyncPackages } from '@/utils/syncMongoFirebase';
 import { diagnoseMongoDbConnection, testConnectionWithRetry } from '@/utils/mongoDebug';
+import AdminLayout from '@/components/admin/AdminLayout';
 
 const Dashboard = () => {
   const [isInitializing, setIsInitializing] = useState(true);
@@ -227,173 +228,175 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <div className="flex gap-2">
-          <Button 
-            onClick={handleDiagnoseMongoDB} 
-            variant="outline"
-            disabled={isDiagnosing}
-            className="flex items-center gap-2"
-          >
-            <Activity className={`h-4 w-4 ${isDiagnosing ? 'animate-pulse' : ''}`} />
-            {isDiagnosing ? 'Diagnosing...' : 'Diagnose MongoDB'}
-          </Button>
-          
-          <Button 
-            onClick={handleManualConnect} 
-            variant="outline"
-            disabled={isInitializing}
-            className="flex items-center gap-2"
-          >
-            <Database className="h-4 w-4" />
-            Connect to MongoDB
-          </Button>
-          
-          <Button 
-            onClick={handleSyncPackages} 
-            disabled={isSyncing || isInitializing}
-            className="flex items-center gap-2"
-          >
-            {isSyncing ? (
-              <>
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                Syncing...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4" />
-                Sync MongoDB ↔ Firebase
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-      
-      {diagnosticResults && (
-        <Alert className="bg-blue-50 border-blue-200">
-          <Activity className="h-4 w-4" />
-          <AlertTitle>MongoDB Diagnostic Results</AlertTitle>
-          <AlertDescription>
-            <div className="space-y-1 text-sm">
-              <p><strong>Environment:</strong> {diagnosticResults.environment}</p>
-              <p><strong>Connection State:</strong> {diagnosticResults.connectionState}</p>
-              <p><strong>URI:</strong> {diagnosticResults.uri}</p>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      {connectionError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Connection Error</AlertTitle>
-          <AlertDescription>
-            <div className="space-y-2">
-              <p>{connectionError}</p>
-              <Button 
-                onClick={handleManualConnect} 
-                variant="outline" 
-                size="sm" 
-                className="mt-2"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Retry Connection
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      {isInitializing && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Database className="h-5 w-5 mr-2" />
-              Initializing MongoDB...
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Progress value={progress} className="w-full h-2" />
-            <p className="text-sm text-muted-foreground">{statusMessage}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {!isInitializing && dbStatus && (
-        <Alert variant={dbStatus.success ? "default" : "destructive"}>
-          {dbStatus.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-          <AlertTitle>{dbStatus.success ? "Success" : "Error"}</AlertTitle>
-          <AlertDescription>
-            <div className="space-y-2">
-              <p>{dbStatus.message}</p>
-              {dbStatus.success && (
-                <p className="text-sm text-muted-foreground">
-                  Collections created: {dbStatus.collections.join(', ')}
-                </p>
+    <AdminLayout>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleDiagnoseMongoDB} 
+              variant="outline"
+              disabled={isDiagnosing}
+              className="flex items-center gap-2"
+            >
+              <Activity className={`h-4 w-4 ${isDiagnosing ? 'animate-pulse' : ''}`} />
+              {isDiagnosing ? 'Diagnosing...' : 'Diagnose MongoDB'}
+            </Button>
+            
+            <Button 
+              onClick={handleManualConnect} 
+              variant="outline"
+              disabled={isInitializing}
+              className="flex items-center gap-2"
+            >
+              <Database className="h-4 w-4" />
+              Connect to MongoDB
+            </Button>
+            
+            <Button 
+              onClick={handleSyncPackages} 
+              disabled={isSyncing || isInitializing}
+              className="flex items-center gap-2"
+            >
+              {isSyncing ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4" />
+                  Sync MongoDB ↔ Firebase
+                </>
               )}
-              {!dbStatus.success && (
+            </Button>
+          </div>
+        </div>
+        
+        {diagnosticResults && (
+          <Alert className="bg-blue-50 border-blue-200">
+            <Activity className="h-4 w-4" />
+            <AlertTitle>MongoDB Diagnostic Results</AlertTitle>
+            <AlertDescription>
+              <div className="space-y-1 text-sm">
+                <p><strong>Environment:</strong> {diagnosticResults.environment}</p>
+                <p><strong>Connection State:</strong> {diagnosticResults.connectionState}</p>
+                <p><strong>URI:</strong> {diagnosticResults.uri}</p>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {connectionError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Connection Error</AlertTitle>
+            <AlertDescription>
+              <div className="space-y-2">
+                <p>{connectionError}</p>
                 <Button 
-                  onClick={handleRetryInitialization} 
+                  onClick={handleManualConnect} 
                   variant="outline" 
                   size="sm" 
                   className="mt-2"
                 >
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Retry Initialization
+                  Retry Connection
                 </Button>
-              )}
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      <Tabs defaultValue="db" className="w-full">
-        <TabsList className="w-full md:w-auto">
-          <TabsTrigger value="db">Database</TabsTrigger>
-          <TabsTrigger value="migration">Migration</TabsTrigger>
-          <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
-          <TabsTrigger value="seed">Seed Data</TabsTrigger>
-          <TabsTrigger value="stats">Statistics</TabsTrigger>
-        </TabsList>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
         
-        <TabsContent value="db" className="space-y-4">
-          <MongoDBInitializationPanel />
-        </TabsContent>
-        
-        <TabsContent value="migration" className="space-y-4">
-          <MigrationUtility />
-        </TabsContent>
-        
-        <TabsContent value="subscriptions" className="space-y-4">
-          <SubscriptionPackageManagement 
-            onPermissionError={(error) => {
-              toast({
-                title: "Permission Error",
-                description: String(error),
-                variant: "destructive"
-              });
-            }} 
-          />
-        </TabsContent>
-        
-        <TabsContent value="seed" className="space-y-4">
-          <SeedDataPanel />
-        </TabsContent>
-        
-        <TabsContent value="stats" className="space-y-4">
-          <Card className="bg-white border-gray-200 shadow-sm">
+        {isInitializing && (
+          <Card>
             <CardHeader>
-              <CardTitle>Dashboard Statistics</CardTitle>
+              <CardTitle className="flex items-center">
+                <Database className="h-5 w-5 mr-2" />
+                Initializing MongoDB...
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p>Statistics dashboard coming soon...</p>
+            <CardContent className="space-y-4">
+              <Progress value={progress} className="w-full h-2" />
+              <p className="text-sm text-muted-foreground">{statusMessage}</p>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+        )}
+
+        {!isInitializing && dbStatus && (
+          <Alert variant={dbStatus.success ? "default" : "destructive"}>
+            {dbStatus.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+            <AlertTitle>{dbStatus.success ? "Success" : "Error"}</AlertTitle>
+            <AlertDescription>
+              <div className="space-y-2">
+                <p>{dbStatus.message}</p>
+                {dbStatus.success && (
+                  <p className="text-sm text-muted-foreground">
+                    Collections created: {dbStatus.collections.join(', ')}
+                  </p>
+                )}
+                {!dbStatus.success && (
+                  <Button 
+                    onClick={handleRetryInitialization} 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Retry Initialization
+                  </Button>
+                )}
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        <Tabs defaultValue="db" className="w-full">
+          <TabsList className="w-full md:w-auto">
+            <TabsTrigger value="db">Database</TabsTrigger>
+            <TabsTrigger value="migration">Migration</TabsTrigger>
+            <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+            <TabsTrigger value="seed">Seed Data</TabsTrigger>
+            <TabsTrigger value="stats">Statistics</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="db" className="space-y-4">
+            <MongoDBInitializationPanel />
+          </TabsContent>
+          
+          <TabsContent value="migration" className="space-y-4">
+            <MigrationUtility />
+          </TabsContent>
+          
+          <TabsContent value="subscriptions" className="space-y-4">
+            <SubscriptionPackageManagement 
+              onPermissionError={(error) => {
+                toast({
+                  title: "Permission Error",
+                  description: String(error),
+                  variant: "destructive"
+                });
+              }} 
+            />
+          </TabsContent>
+          
+          <TabsContent value="seed" className="space-y-4">
+            <SeedDataPanel />
+          </TabsContent>
+          
+          <TabsContent value="stats" className="space-y-4">
+            <Card className="bg-white border-gray-200 shadow-sm">
+              <CardHeader>
+                <CardTitle>Dashboard Statistics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>Statistics dashboard coming soon...</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </AdminLayout>
   );
 };
 

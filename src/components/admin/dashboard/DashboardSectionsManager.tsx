@@ -45,7 +45,7 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ sel
   }
 
   return (
-    <Card>
+    <Card className="shadow-sm">
       <CardHeader>
         <CardTitle>Dashboard Sections Manager</CardTitle>
         <CardDescription>
