@@ -9,6 +9,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 
 const Header = () => {
+  console.log("Header component rendering"); // Debug log
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -73,15 +75,26 @@ const Header = () => {
 
   // Only show dashboard button for users with active subscription or admins
   const shouldShowDashboard = () => {
-    if (!isAuthenticated || !user) return false;
+    console.log("Checking dashboard visibility. User:", user); // Debug log
+    if (!isAuthenticated || !user) {
+      console.log("Not authenticated or no user"); // Debug log
+      return false;
+    }
     
     // Always show dashboard button for debugging in development
-    if (process.env.NODE_ENV === 'development') return true;
+    if (process.env.NODE_ENV === 'development') {
+      console.log("Development mode, showing dashboard"); // Debug log
+      return true;
+    }
     
     // Admins always see the dashboard button
-    if (user.role === "Admin" || user.isAdmin) return true;
+    if (user.role === "Admin" || user.isAdmin) {
+      console.log("Admin user, showing dashboard"); // Debug log
+      return true;
+    }
     
     // For debugging, let's always show it for now
+    console.log("Showing dashboard for all users"); // Debug log
     return true;
     
     // Regular users need an active subscription
@@ -91,8 +104,11 @@ const Header = () => {
 
   // Make sure we don't show anything until auth is initialized
   if (!initialized) {
+    console.log("Auth not initialized yet"); // Debug log
     return null;
   }
+
+  console.log("Header fully rendered"); // Debug log
 
   return (
     <header className="fixed top-0 left-0 w-full z-[1000] bg-white shadow-sm h-16">
