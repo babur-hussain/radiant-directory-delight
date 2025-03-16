@@ -2,56 +2,58 @@
 import React, { useState } from "react";
 import AdminSidebar from "./AdminSidebar";
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { 
-  Drawer,
-  DrawerContent,
-  DrawerTrigger 
-} from "@/components/ui/drawer";
+  Sheet,
+  SheetContent,
+  SheetTrigger 
+} from "@/components/ui/sheet";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  // Add state to control drawer visibility
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   return (
     <div className="admin-layout flex min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Desktop Sidebar - fixed position so it doesn't collapse */}
       <div className="hidden md:block md:w-64 flex-shrink-0">
-        <div className="fixed h-screen w-64 overflow-y-auto">
+        <div className="fixed h-screen w-64 overflow-y-auto border-r bg-white dark:bg-gray-800">
           <AdminSidebar />
         </div>
       </div>
       
       {/* Main content */}
       <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
-        {/* Mobile header - sticky positioning ensures it's always visible */}
-        <header className="admin-header md:hidden sticky top-0 left-0 right-0 z-50 bg-white shadow-sm">
-          <div className="p-4 border-b bg-card flex items-center">
-            <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-              <DrawerTrigger asChild>
-                <Button variant="outline" size="icon" className="mr-4">
-                  <Menu className="h-4 w-4" />
+        {/* Mobile header with sheet sidebar */}
+        <header className="admin-header md:hidden sticky top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 shadow-sm">
+          <div className="p-4 border-b flex items-center justify-between">
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="md:hidden">
+                  <Menu className="h-5 w-5" />
                   <span className="sr-only">Toggle menu</span>
                 </Button>
-              </DrawerTrigger>
-              <DrawerContent>
-                <div className="py-4">
-                  <AdminSidebar onItemClick={() => setIsDrawerOpen(false)} />
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-64">
+                <div className="h-full overflow-y-auto">
+                  <AdminSidebar onItemClick={() => setIsMobileMenuOpen(false)} />
                 </div>
-              </DrawerContent>
-            </Drawer>
+              </SheetContent>
+            </Sheet>
             
             <h1 className="text-xl font-semibold">Admin Panel</h1>
+            
+            {/* Empty div to balance the flex layout */}
+            <div className="w-9"></div>
           </div>
         </header>
         
-        {/* Desktop header - show on desktop only, sticky positioning with higher z-index */}
-        <header className="admin-header hidden md:block sticky top-0 left-0 right-0 z-50 bg-white shadow-sm">
-          <div className="p-4 border-b bg-card">
+        {/* Desktop header */}
+        <header className="admin-header hidden md:block sticky top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 shadow-sm">
+          <div className="p-4 border-b flex items-center justify-between">
             <h1 className="text-xl font-semibold">Admin Panel</h1>
           </div>
         </header>
