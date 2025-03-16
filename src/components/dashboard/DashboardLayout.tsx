@@ -19,7 +19,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       
       {/* Main content */}
       <div className="flex-1 overflow-x-hidden">
-        <DashboardHeader />
+        {/* Using the admin-header class for consistent styling */}
+        <header className="admin-header sticky top-0 left-0 right-0 z-50">
+          <DashboardHeader />
+        </header>
         <main className="p-4 md:p-6 max-w-7xl mx-auto">
           {children}
         </main>

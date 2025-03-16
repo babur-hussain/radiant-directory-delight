@@ -29,13 +29,23 @@ header {
 /* Main content styling with proper padding to avoid header overlap */
 main {
   padding-top: 64px; /* Add padding equal to header height */
-  margin-top: 0;
+  min-height: calc(100vh - 64px);
 }
 
 /* Hero section styling to align properly */
 .hero-section {
   padding-top: 0; /* Remove the padding from hero as main already has padding */
   margin-top: 0;
+}
+
+/* Fix for admin layouts */
+.admin-layout .admin-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 /* Other styles */

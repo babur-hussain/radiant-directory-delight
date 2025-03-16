@@ -18,7 +18,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="admin-layout flex min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Desktop Sidebar - fixed position so it doesn't collapse */}
       <div className="hidden md:block md:w-64 flex-shrink-0">
         <div className="fixed h-screen w-64 overflow-y-auto">
@@ -29,7 +29,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       {/* Main content */}
       <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
         {/* Mobile header - sticky positioning ensures it's always visible */}
-        <header className="md:hidden sticky top-0 left-0 right-0 z-20 bg-white shadow-sm">
+        <header className="admin-header md:hidden sticky top-0 left-0 right-0 z-50 bg-white shadow-sm">
           <div className="p-4 border-b bg-card flex items-center">
             <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
               <DrawerTrigger asChild>
@@ -49,8 +49,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           </div>
         </header>
         
-        {/* Desktop header - show on desktop only, sticky positioning */}
-        <header className="hidden md:block sticky top-0 left-0 right-0 z-20 bg-white shadow-sm">
+        {/* Desktop header - show on desktop only, sticky positioning with higher z-index */}
+        <header className="admin-header hidden md:block sticky top-0 left-0 right-0 z-50 bg-white shadow-sm">
           <div className="p-4 border-b bg-card">
             <h1 className="text-xl font-semibold">Admin Panel</h1>
           </div>
