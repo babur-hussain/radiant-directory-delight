@@ -17,10 +17,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   return (
-    <div className="admin-layout flex min-h-screen bg-gray-50 dark:bg-gray-900 pt-16"> {/* Added pt-16 to account for main header */}
+    <div className="admin-layout flex min-h-screen bg-gray-50 dark:bg-gray-900 pt-16"> {/* Keep pt-16 to account for main header */}
       {/* Desktop Sidebar - fixed position so it doesn't collapse */}
       <div className="hidden md:block md:w-64 flex-shrink-0">
-        <div className="fixed h-screen w-64 overflow-y-auto border-r bg-white dark:bg-gray-800 pt-16"> {/* Added pt-16 to account for main header */}
+        <div className="fixed h-screen w-64 overflow-y-auto border-r bg-white dark:bg-gray-800 pt-16"> {/* Keep pt-16 to account for main header */}
           <AdminSidebar />
         </div>
       </div>
@@ -28,7 +28,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       {/* Main content */}
       <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
         {/* Mobile header with sheet sidebar */}
-        <header className="admin-header md:hidden sticky top-16 left-0 right-0 z-50 bg-white dark:bg-gray-800 shadow-sm"> {/* Changed top-0 to top-16 */}
+        <header className="admin-header md:hidden sticky top-16 left-0 right-0 z-40 bg-white dark:bg-gray-800 shadow-sm"> {/* Changed z-50 to z-40 */}
           <div className="p-4 border-b flex items-center justify-between">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -38,7 +38,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-64 z-[99999]">
-                <div className="h-full overflow-y-auto pt-16"> {/* Added pt-16 to account for main header */}
+                <div className="h-full overflow-y-auto pt-16"> {/* Keep pt-16 to account for main header */}
                   <AdminSidebar onItemClick={() => setIsMobileMenuOpen(false)} />
                 </div>
               </SheetContent>
@@ -51,12 +51,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           </div>
         </header>
         
-        {/* Desktop header */}
-        <header className="admin-header hidden md:block sticky top-16 left-0 right-0 z-50 bg-white dark:bg-gray-800 shadow-sm"> {/* Changed top-0 to top-16 */}
-          <div className="p-4 border-b flex items-center justify-between">
-            <h1 className="text-xl font-semibold">Admin Panel</h1>
-          </div>
-        </header>
+        {/* We'll remove the duplicate desktop header since it's not needed */}
         
         <main className="p-4 md:p-6 max-w-7xl mx-auto w-full flex-grow">
           {children}
