@@ -6,7 +6,18 @@ import routes from './routes';
 import './index.css';
 import AuthProvider from './providers/AuthProvider';
 import { initializeMongoDB } from './utils/initMongoDB';
-import App from './App';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+// Create a new QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // Initialize MongoDB connection
 initializeMongoDB()
@@ -19,8 +30,12 @@ initializeMongoDB()
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <AuthProvider>
-      <RouterProvider router={createBrowserRouter(routes)} />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <RouterProvider router={createBrowserRouter(routes)} />
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
   </React.StrictMode>
 );
