@@ -4,11 +4,15 @@ export type UserRole = "Business" | "Influencer" | "Admin" | "User" | "admin" | 
 
 export interface User {
   uid: string;
+  id?: string; // Alias for uid for compatibility
   email: string | null;
-  displayName: string | null;
+  displayName: string | null; 
+  name?: string | null; // Alias for displayName for compatibility
   photoURL: string | null;
   role?: UserRole;
   isAdmin?: boolean;
+  subscription?: any; // For storing subscription information
+  createdAt?: Date | string; // For storing user creation date
 }
 
 export interface Subscription {

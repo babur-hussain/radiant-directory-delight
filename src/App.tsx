@@ -25,12 +25,19 @@ import Header from "./components/Header";
 import "./App.css";
 
 // Create a new QueryClient instance
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // App content that uses auth
 const AppContent = () => {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-background">
       <Toaster />
       <Sonner />
       <Header />

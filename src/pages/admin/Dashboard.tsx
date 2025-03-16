@@ -10,13 +10,13 @@ const Dashboard = () => {
       <h1 className="text-3xl font-bold">Admin Dashboard</h1>
       
       <Tabs defaultValue="migration" className="w-full">
-        <TabsList>
+        <TabsList className="w-full md:w-auto">
           <TabsTrigger value="migration">Database Migration</TabsTrigger>
           <TabsTrigger value="stats">Statistics</TabsTrigger>
         </TabsList>
         
         <TabsContent value="migration" className="space-y-4">
-          <Card>
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardHeader>
               <CardTitle>Firestore to MongoDB Migration</CardTitle>
             </CardHeader>
@@ -27,7 +27,7 @@ const Dashboard = () => {
         </TabsContent>
         
         <TabsContent value="stats" className="space-y-4">
-          <Card>
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardHeader>
               <CardTitle>Dashboard Statistics</CardTitle>
             </CardHeader>
