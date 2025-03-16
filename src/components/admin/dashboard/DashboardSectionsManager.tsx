@@ -9,14 +9,13 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Save, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { User } from "@/types/auth";
 import { BUSINESS_DASHBOARD_SECTIONS, INFLUENCER_DASHBOARD_SECTIONS, getUserDashboardSections, updateUserDashboardSections, updatePackageDashboardSections } from "@/utils/dashboardSections";
 import { SubscriptionPackage } from "@/models/SubscriptionPackage";
 import { connectToMongoDB } from "@/config/mongodb";
 import SubscriptionError from "../subscription/SubscriptionError";
 
 interface DashboardSectionsManagerProps {
-  selectedUser?: User | null;
+  selectedUser?: any;
 }
 
 const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ selectedUser }) => {

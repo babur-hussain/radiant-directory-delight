@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminBusinessDashboards from "./AdminBusinessDashboards";
 import AdminInfluencerDashboards from "./AdminInfluencerDashboards";
 import UserDashboardCustomizer from "./UserDashboardCustomizer";
+import DashboardSectionsManager from "./DashboardSectionsManager";
 import { Separator } from "@/components/ui/separator";
 
 const AdminDashboardTabs = () => {
