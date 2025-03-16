@@ -23,11 +23,18 @@ export const useSubscriptionPackages = (userRole: UserRole) => {
       try {
         console.log(`Loading subscription packages for role: ${userRole}`);
         
-        // Convert UserRole to expected type
-        const role: "Business" | "Influencer" = 
-          userRole === "Business" || userRole === "Influencer" 
-            ? userRole 
-            : "Business"; // Default to Business for other roles
+        // Convert UserRole to expected type, handling all possible UserRole values
+        let role: "Business" | "Influencer"; 
+        
+        if (userRole === "Business") {
+          role = "Business";
+        } else if (userRole === "Influencer") {
+          role = "Influencer";
+        } else {
+          // Default to Business for Admin, User, staff, or any other role
+          role = "Business";
+          console.log(`Using default 'Business' packages for role: ${userRole}`);
+        }
         
         // Get packages for the specific role from MongoDB
         const rolePackages = await fetchSubscriptionPackagesByType(role);

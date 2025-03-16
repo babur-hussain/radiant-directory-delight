@@ -81,7 +81,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       prefill: {
         name: user.displayName || user.name || '',
         email: user.email || '',
-        contact: user.phoneNumber || '' // Fixed: use phoneNumber instead of phone
+        contact: '' // Remove phoneNumber reference as it doesn't exist in User type
       },
       notes: {
         package_id: selectedPackage.id,
