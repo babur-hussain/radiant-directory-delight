@@ -19,6 +19,8 @@ initializeMongoDB()
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    <AuthProvider>
+      <RouterProvider router={createBrowserRouter(routes)} />
+    </AuthProvider>
   </React.StrictMode>
 );

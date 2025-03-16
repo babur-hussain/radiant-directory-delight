@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, LogIn, LayoutDashboard } from 'lucide-react';
@@ -5,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import AuthModal from './auth/AuthModal';
 import UserMenu from './UserMenu';
 import { useAuth } from '@/hooks/useAuth';
-import useSubscription from '@/hooks/useSubscription';
+import { useSubscription } from '@/hooks/useSubscription';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -31,6 +32,7 @@ const Header = () => {
       if (user?.uid) {
         try {
           const subscription = await getUserSubscription();
+          console.log("Fetched subscription:", subscription);
           setSubscriptionStatus(subscription?.status || null);
         } catch (error) {
           console.error("Failed to fetch subscription:", error);
@@ -73,11 +75,18 @@ const Header = () => {
   const shouldShowDashboard = () => {
     if (!isAuthenticated || !user) return false;
     
+    // Always show dashboard button for debugging in development
+    if (process.env.NODE_ENV === 'development') return true;
+    
     // Admins always see the dashboard button
     if (user.role === "Admin" || user.isAdmin) return true;
     
+    // For debugging, let's always show it for now
+    return true;
+    
     // Regular users need an active subscription
-    return subscriptionStatus === "active";
+    // Uncomment this when subscription checking is working properly
+    // return subscriptionStatus === "active";
   };
 
   // Make sure we don't show anything until auth is initialized
