@@ -2,11 +2,12 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, ShieldCheck, Loader2 } from "lucide-react";
+import InfoCircle from "@/components/ui/InfoCircle";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { getPackageById, businessPackages, influencerPackages } from "@/data/subscriptionData";
+import { getPackageById } from "@/data/subscriptionData";
 import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -97,7 +98,7 @@ const SubscriptionDetails = () => {
         orderId: paymentResponse.razorpay_order_id,
         signature: paymentResponse.razorpay_signature,
         paymentStatus: "completed",
-        paymentType: paymentResponse.paymentType || selectedPackage.paymentType || "recurring"
+        paymentType: selectedPackage.paymentType || "recurring"
       });
     }
     
@@ -262,6 +263,21 @@ const SubscriptionDetails = () => {
                 )}
               </div>
             </div>
+            
+            {isOneTimePackage && (
+              <div className="bg-amber-50 p-3 rounded-md border border-amber-200">
+                <div className="flex items-start gap-2">
+                  <InfoCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-amber-800">One-time Purchase</h4>
+                    <p className="text-sm text-amber-700">
+                      This is a one-time purchase valid for {selectedPackage.durationMonths} months. 
+                      You will not be automatically charged again after purchase.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             
             <div className="flex items-start space-x-2 pt-4 border-t">
               <div className="flex h-5 items-center">

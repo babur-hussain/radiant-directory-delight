@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getPackageById } from "@/data/subscriptionData";
-import { ArrowLeft, Calendar, CheckCircle, Clock, CreditCard, XCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, CheckCircle, Clock, CreditCard, XCircle, Loader2, AlertTriangle } from "lucide-react";
+import InfoCircle from "@/components/ui/InfoCircle";
 import { Link, useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import AdvancedSubscriptionDetails from "@/components/admin/subscription/AdvancedSubscriptionDetails";
 
 const SubscriptionDetailsPage = () => {
   const { user, isAuthenticated } = useAuth();
@@ -106,6 +108,9 @@ const SubscriptionDetailsPage = () => {
     });
   };
 
+  // Check if this is a one-time payment
+  const isOneTime = subscription.paymentType === "one-time";
+
   return (
     <div className="container mx-auto px-4 py-10">
       <div className="flex items-center mb-6">
@@ -122,7 +127,14 @@ const SubscriptionDetailsPage = () => {
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-xl">{packageDetails?.title}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-xl">{packageDetails?.title}</CardTitle>
+                    {isOneTime && (
+                      <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
+                        One-time purchase
+                      </Badge>
+                    )}
+                  </div>
                   <CardDescription>{packageDetails?.shortDescription}</CardDescription>
                 </div>
                 <Badge variant={subscription.status === 'active' ? 'default' : 'destructive'}>
@@ -146,8 +158,13 @@ const SubscriptionDetailsPage = () => {
                   <div className="flex items-center">
                     <CreditCard className="h-4 w-4 mr-2 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Subscription Amount</p>
-                      <p className="font-medium">₹{subscription.amount}/year</p>
+                      <p className="text-sm text-muted-foreground">
+                        {isOneTime ? "Amount Paid" : "Subscription Amount"}
+                      </p>
+                      <p className="font-medium">
+                        ₹{subscription.amount}
+                        {!isOneTime && "/year"}
+                      </p>
                     </div>
                   </div>
                   
@@ -162,19 +179,40 @@ const SubscriptionDetailsPage = () => {
                   <div className="flex items-center">
                     <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Renewal Date</p>
+                      <p className="text-sm text-muted-foreground">
+                        {isOneTime ? "Valid Until" : "Renewal Date"}
+                      </p>
                       <p className="font-medium">{formatDate(subscription.endDate)}</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Billing Cycle</p>
-                      <p className="font-medium">Annual</p>
+                  {!isOneTime && (
+                    <div className="flex items-center">
+                      <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Billing Cycle</p>
+                        <p className="font-medium">Annual</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {isOneTime && (
+                  <div className="bg-amber-50 p-3 rounded-md border border-amber-200 mt-4">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+                      <div>
+                        <h4 className="font-medium text-amber-800">One-time Purchase</h4>
+                        <p className="text-sm text-amber-700">
+                          This is a one-time purchase, not a recurring subscription. 
+                          You will not be charged again and your access will end on {formatDate(subscription.endDate)}.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+                
+                <AdvancedSubscriptionDetails subscription={subscription} />
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">
@@ -182,7 +220,7 @@ const SubscriptionDetailsPage = () => {
                 <Link to="/subscription">Change Plan</Link>
               </Button>
               
-              {subscription.status === 'active' && (
+              {subscription.status === 'active' && !isOneTime && subscription.isUserCancellable !== false && (
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button variant="destructive">Cancel Subscription</Button>
@@ -207,6 +245,13 @@ const SubscriptionDetailsPage = () => {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+              )}
+              
+              {isOneTime && subscription.status === 'active' && (
+                <div className="flex items-center">
+                  <InfoCircle className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">One-time purchases cannot be cancelled</span>
+                </div>
               )}
             </CardFooter>
           </Card>
