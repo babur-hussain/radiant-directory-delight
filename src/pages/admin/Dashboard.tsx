@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,6 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import MongoDBInitializationPanel from '@/components/admin/MongoDBInitializationPanel';
 import SubscriptionPackageManagement from '@/components/admin/subscription/SubscriptionManagement';
 import MigrationUtility from '@/components/admin/MigrationUtility';
+import SeedDataPanel from '@/components/admin/dashboard/SeedDataPanel';
 import { useToast } from '@/hooks/use-toast';
 import { connectToMongoDB } from '@/config/mongodb';
 import { fullSyncPackages } from '@/utils/syncMongoFirebase';
@@ -225,6 +227,7 @@ const Dashboard = () => {
           <TabsTrigger value="db">Database</TabsTrigger>
           <TabsTrigger value="migration">Migration</TabsTrigger>
           <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+          <TabsTrigger value="seed">Seed Data</TabsTrigger>
           <TabsTrigger value="stats">Statistics</TabsTrigger>
         </TabsList>
         
@@ -246,6 +249,10 @@ const Dashboard = () => {
               });
             }} 
           />
+        </TabsContent>
+        
+        <TabsContent value="seed" className="space-y-4">
+          <SeedDataPanel />
         </TabsContent>
         
         <TabsContent value="stats" className="space-y-4">
