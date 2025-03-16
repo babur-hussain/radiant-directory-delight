@@ -59,10 +59,8 @@ export const setupMongoDB = async (
         delete mongoose.models[modelName];
       });
       
-      // Clear all compiled schemas
-      Object.keys(mongoose.modelSchemas || {}).forEach(modelName => {
-        delete mongoose.modelSchemas[modelName];
-      });
+      // In newer mongoose versions, modelSchemas is not directly accessible
+      // We'll just rely on clearing the models which is sufficient
     } catch (cacheError) {
       console.error('Error clearing mongoose model cache:', cacheError);
     }
