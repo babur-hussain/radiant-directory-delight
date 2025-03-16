@@ -1,5 +1,5 @@
 
-import mongoose from '../config/mongodb';
+import { mongoose } from '../config/mongodb';
 
 export interface ISubscription {
   id: string;
