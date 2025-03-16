@@ -20,7 +20,11 @@ import {
   Gauge,
 } from "lucide-react";
 
-const AdminSidebar = () => {
+interface AdminSidebarProps {
+  onItemClick?: () => void;
+}
+
+const AdminSidebar: React.FC<AdminSidebarProps> = ({ onItemClick }) => {
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -87,9 +91,13 @@ const AdminSidebar = () => {
     }
   ];
   
-  const handleNavigation = (e, href) => {
+  const handleNavigation = (e: React.MouseEvent, href: string) => {
     e.preventDefault();
     navigate(href);
+    // Call the onItemClick handler if provided (for mobile drawer)
+    if (onItemClick) {
+      onItemClick();
+    }
   };
   
   return (
