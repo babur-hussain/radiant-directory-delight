@@ -46,7 +46,7 @@ const DashboardHeader = () => {
   };
   
   return (
-    <div className="z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+    <div className="z-[9999] flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
       <div className="flex flex-1 items-center justify-between">
         <div className="flex items-center gap-2 md:hidden">
           <Button variant="outline" size="icon" className="rounded-full" asChild>

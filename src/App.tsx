@@ -28,9 +28,8 @@ const App = () => {
             <div className="flex flex-col min-h-screen bg-background">
               <Toaster />
               <Sonner />
-              <main className="flex-grow">
-                <AppRoutes />
-              </main>
+              {/* Removed the main wrapper to prevent layout conflicts */}
+              <AppRoutes />
             </div>
           </AuthProvider>
         </BrowserRouter>
