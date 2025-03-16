@@ -8,21 +8,33 @@ import AuthProvider from "./providers/AuthProvider";
 import AppRoutes from "./routes";
 import Header from "./components/Header";
 import "./App.css";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import Loading from "./components/ui/loading";
 
-// Create a new QueryClient instance
+// Create a new QueryClient instance with more lenient settings
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      staleTime: 10000, // Data considered fresh for 10 seconds
     },
   },
 });
 
 const App = () => {
   console.log("Rendering App component");
+  
+  useEffect(() => {
+    console.log("App component mounted");
+    // Check if there are any visible elements
+    const appElement = document.getElementById('root');
+    if (appElement) {
+      console.log("Root element exists with dimensions:", 
+        appElement.offsetWidth, "x", appElement.offsetHeight);
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -30,7 +42,7 @@ const App = () => {
           <AuthProvider>
             <div className="relative min-h-screen bg-background">
               <Header />
-              <main>
+              <main className="min-h-[50vh]">
                 <Suspense fallback={
                   <div className="flex items-center justify-center min-h-[80vh]">
                     <Loading size="lg" message="Loading page..." />

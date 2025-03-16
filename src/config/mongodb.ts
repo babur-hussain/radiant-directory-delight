@@ -25,8 +25,8 @@ export const connectToMongoDB = async () => {
       console.log('MongoDB connection already in progress');
       // Wait for the connection to complete
       let attempts = 0;
-      while (isConnecting && attempts < 10) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+      while (isConnecting && attempts < 5) {  // Reduced from 10 attempts
+        await new Promise(resolve => setTimeout(resolve, 300));  // Reduced from 500ms
         attempts++;
       }
       return mongoose.connection && mongoose.connection.readyState === 1;
@@ -35,10 +35,10 @@ export const connectToMongoDB = async () => {
     isConnecting = true;
     console.log('Connecting to MongoDB...', MONGODB_URI);
     
-    // Connect to MongoDB with improved options
+    // Connect to MongoDB with improved options and shorter timeouts
     await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000, // Timeout after 10s instead of 30s
-      socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 10s
+      socketTimeoutMS: 30000, // Close sockets after 30s of inactivity
     });
     
     isConnecting = false;

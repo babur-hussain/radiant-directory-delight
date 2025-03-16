@@ -28,7 +28,7 @@ const Index = () => {
     const loadingTimeout = setTimeout(() => {
       console.log("Data loading timeout reached, showing content anyway");
       setIsLoading(false);
-    }, 2000); // 2 second timeout
+    }, 1500); // 1.5 second timeout - reduced from 2 seconds
     
     // Initialize business data on page load
     const loadData = async () => {
@@ -36,9 +36,12 @@ const Index = () => {
         console.log("Initializing data from csv-utils");
         await initializeData();
         console.log("Data initialized successfully");
+        // Ensure we show the page even if there's no data
+        setIsLoading(false);
       } catch (error) {
         console.error("Error initializing data:", error);
         setError("Failed to initialize data, but continuing with static content");
+        setIsLoading(false);
         
         // Show toast notification of error but don't block rendering
         toast({
@@ -48,7 +51,6 @@ const Index = () => {
         });
       } finally {
         clearTimeout(loadingTimeout);
-        setIsLoading(false);
       }
     };
     
@@ -57,7 +59,18 @@ const Index = () => {
     return () => clearTimeout(loadingTimeout);
   }, [toast]);
 
-  // Show a loading indicator while data is being initialized
+  // Add basic fallback content if everything else fails
+  if (document.body.innerHTML === "" || document.body.children.length <= 1) {
+    console.error("Document body appears to be empty, forcing minimal content");
+    return (
+      <div className="p-8 text-center">
+        <h1 className="text-2xl font-bold">Welcome to Grow Bharat Vyapaar</h1>
+        <p className="mt-4">There was an issue loading the website. Please try refreshing.</p>
+      </div>
+    );
+  }
+
+  // Show a loading indicator while data is being initialized, but with a shorter wait
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-background to-background/90 p-6">
@@ -67,7 +80,7 @@ const Index = () => {
     );
   }
 
-  // Show any error that occurred during initialization
+  // Show any error that occurred during initialization, but still render content
   if (error) {
     console.log("Rendering with error:", error);
   }

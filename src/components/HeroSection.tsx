@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SearchBar from './search/SearchBar';
 import HeroContent from './hero/HeroContent';
 import PopularSearchTerms from './search/PopularSearchTerms';
@@ -10,7 +10,12 @@ const HeroSection: React.FC = () => {
   
   console.log("Rendering HeroSection component");
   
+  useEffect(() => {
+    console.log("HeroSection mounted");
+  }, []);
+  
   const handleTermClick = (term: string) => {
+    console.log("Search term clicked:", term);
     setSearchQuery(term);
   };
   

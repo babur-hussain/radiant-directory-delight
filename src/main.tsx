@@ -27,6 +27,8 @@ function renderApp() {
           <App />
         </React.StrictMode>
       );
+      
+      console.log("React app rendered successfully");
     } catch (error) {
       console.error("Error rendering React app:", error);
       // Display a basic error message if React fails to render
@@ -44,10 +46,10 @@ function renderApp() {
   }
 }
 
-// Immediately render the app - don't wait for MongoDB
+// Immediately render the app without waiting for MongoDB
 renderApp();
 
-// Try to connect to MongoDB in the background
+// Try to connect to MongoDB in the background (reduced priority)
 if (typeof window !== 'undefined') {
   // Set a timeout to ensure we don't block rendering if MongoDB connection hangs
   setTimeout(() => {
