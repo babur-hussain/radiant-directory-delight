@@ -1,88 +1,51 @@
 
-import { RouteObject } from 'react-router-dom';
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Index from './pages/Index';
-import NotFound from './pages/NotFound';
-import CategoriesPage from './pages/CategoriesPage';
 import BusinessesPage from './pages/BusinessesPage';
-import SubscriptionPage from './pages/SubscriptionPage';
-import SubscriptionDetailsPage from './pages/SubscriptionDetailsPage';
-import SubscriptionDetails from './components/subscription/SubscriptionDetails';
+import BusinessPage from './pages/BusinessPage';
+import CategoriesPage from './pages/CategoriesPage';
+import InfluencerPage from './pages/InfluencerPage';
+import NotFound from './pages/NotFound';
+import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminBusinessListingsPage from './pages/AdminBusinessListingsPage';
-import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardServicePage from './pages/AdminDashboardServicePage';
-import InfluencerPage from './pages/InfluencerPage';
-import BusinessPage from './pages/BusinessPage';
-import ProfilePage from './pages/ProfilePage';
-import InfluencerDashboardPage from './pages/InfluencerDashboardPage';
 import BusinessDashboardPage from './pages/BusinessDashboardPage';
+import InfluencerDashboardPage from './pages/InfluencerDashboardPage';
+import ProfilePage from './pages/ProfilePage';
+import SubscriptionPage from './pages/SubscriptionPage';
+import SubscriptionDetailsPage from './pages/SubscriptionDetailsPage';
+import AdminDashboardManagerPage from './pages/AdminDashboardManagerPage';
 
-// Define all application routes
-const routes: RouteObject[] = [
-  {
-    path: '/',
-    element: <Index />
-  },
-  {
-    path: '/categories',
-    element: <CategoriesPage />
-  },
-  {
-    path: '/businesses',
-    element: <BusinessesPage />
-  },
-  {
-    path: '/subscription',
-    element: <SubscriptionPage />
-  },
-  {
-    path: '/subscription/details',
-    element: <SubscriptionDetailsPage />
-  },
-  {
-    path: '/subscription/details/:packageId',
-    element: <SubscriptionDetails />
-  },
-  {
-    path: '/admin',
-    element: <AdminLoginPage />
-  },
-  {
-    path: '/admin/dashboard',
-    element: <AdminDashboardPage />
-  },
-  {
-    path: '/admin/businesses',
-    element: <AdminBusinessListingsPage />
-  },
-  {
-    path: '/admin/dashboard-services',
-    element: <AdminDashboardServicePage />
-  },
-  {
-    path: '/influencer',
-    element: <InfluencerPage />
-  },
-  {
-    path: '/business',
-    element: <BusinessPage />
-  },
-  {
-    path: '/profile',
-    element: <ProfilePage />
-  },
-  {
-    path: '/influencer-dashboard/*',
-    element: <InfluencerDashboardPage />
-  },
-  {
-    path: '/business-dashboard/*',
-    element: <BusinessDashboardPage />
-  },
-  {
-    path: '*',
-    element: <NotFound />
-  }
-];
+const AppRoutes = () => {
+  return (
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/businesses" element={<BusinessesPage />} />
+      <Route path="/business/:id" element={<BusinessPage />} />
+      <Route path="/categories" element={<CategoriesPage />} />
+      <Route path="/influencer" element={<InfluencerPage />} />
+      <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/subscription" element={<SubscriptionPage />} />
+      <Route path="/subscription/details" element={<SubscriptionDetailsPage />} />
+      
+      {/* Admin Routes */}
+      <Route path="/admin/login" element={<AdminLoginPage />} />
+      <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+      <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+      <Route path="/admin/dashboard-manager" element={<AdminDashboardManagerPage />} />
+      <Route path="/admin/businesses" element={<AdminBusinessListingsPage />} />
+      <Route path="/admin/dashboard-service/:type" element={<AdminDashboardServicePage />} />
+      
+      {/* User dashboard routes */}
+      <Route path="/dashboard/business" element={<BusinessDashboardPage />} />
+      <Route path="/dashboard/influencer" element={<InfluencerDashboardPage />} />
+      
+      {/* Catch all for 404 */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
 
-export default routes;
+export default AppRoutes;

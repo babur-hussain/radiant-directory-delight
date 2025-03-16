@@ -17,6 +17,7 @@ import {
   Rocket,
   ListChecks,
   Activity,
+  Gauge,
 } from "lucide-react";
 
 const AdminSidebar = () => {
@@ -43,6 +44,11 @@ const AdminSidebar = () => {
       title: "Subscriptions",
       href: "/admin/subscriptions",
       icon: <Package className="h-5 w-5" />,
+    },
+    {
+      title: "Dashboard Manager",
+      href: "/admin/dashboard-manager",
+      icon: <Gauge className="h-5 w-5" />,
     },
     {
       title: "Dashboard Sections",
