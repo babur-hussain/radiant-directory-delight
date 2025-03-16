@@ -25,6 +25,18 @@ export const setupMongoDB = async (
     
     progressCallback?.(10, 'Connected to MongoDB');
     
+    // Clear existing collections if they exist - this will remove Firebase data
+    try {
+      console.log('Dropping existing collections to ensure clean state');
+      if (mongoose.connection.db) {
+        await mongoose.connection.db.dropCollection('subscriptionpackages').catch(() => {
+          console.log('subscriptionpackages collection does not exist or already dropped');
+        });
+      }
+    } catch (error) {
+      console.log('Error dropping collections (likely do not exist yet):', error);
+    }
+    
     // Verify/create necessary collections
     const collections = [];
     
@@ -72,12 +84,12 @@ export const setupMongoDB = async (
       collections.push('subscriptions');
     }
     
-    // 5. Setup default subscription packages if none exist
+    // 5. Setup default subscription packages - first delete all existing packages
     progressCallback?.(80, 'Setting up default subscription packages');
-    const packageCount = await SubscriptionPackage.countDocuments();
-    
-    if (packageCount === 0) {
-      console.log('No subscription packages found, seeding default packages...');
+    try {
+      // Remove all existing packages to start fresh
+      await SubscriptionPackage.deleteMany({});
+      console.log('Deleted all existing subscription packages');
       
       // Combine business and influencer packages
       const allPackages = [...businessPackages, ...influencerPackages];
@@ -94,6 +106,12 @@ export const setupMongoDB = async (
           console.error(`Error seeding package ${pkg.title}:`, err);
         }
       }
+      
+      // Verify packages were created
+      const packageCount = await SubscriptionPackage.countDocuments();
+      console.log(`Created ${packageCount} subscription packages`);
+    } catch (error) {
+      console.error('Error setting up subscription packages:', error);
     }
     
     // 6. Create indexes

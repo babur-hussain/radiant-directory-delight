@@ -3,12 +3,26 @@ import { User, IUser } from '../models/User';
 import { SubscriptionPackage, ISubscriptionPackage } from '../models/SubscriptionPackage';
 import { Business, IBusiness } from '../models/Business';
 import { Subscription, ISubscription } from '../models/Subscription';
+import { autoInitMongoDB } from '../utils/setupMongoDB';
+
+// Ensure MongoDB is initialized before any operations
+const ensureMongoDBInitialized = async () => {
+  try {
+    await autoInitMongoDB();
+  } catch (error) {
+    console.error("Error initializing MongoDB:", error);
+    throw error;
+  }
+};
 
 /**
  * Fetches all subscription packages from MongoDB
  */
 export async function fetchSubscriptionPackages(): Promise<ISubscriptionPackage[]> {
   try {
+    // Ensure MongoDB is initialized
+    await ensureMongoDBInitialized();
+    
     console.log("Fetching subscription packages from MongoDB");
     
     // Query all packages and sort by price
@@ -33,6 +47,9 @@ export async function fetchSubscriptionPackages(): Promise<ISubscriptionPackage[
  */
 export async function fetchBusinesses(): Promise<IBusiness[]> {
   try {
+    // Ensure MongoDB is initialized
+    await ensureMongoDBInitialized();
+    
     console.log("Fetching businesses from MongoDB");
     
     // Query all businesses and sort by name
@@ -52,7 +69,10 @@ export async function fetchBusinesses(): Promise<IBusiness[]> {
  */
 export async function saveSubscriptionPackage(packageData: ISubscriptionPackage): Promise<void> {
   try {
-    console.log("Saving subscription package:", packageData);
+    // Ensure MongoDB is initialized
+    await ensureMongoDBInitialized();
+    
+    console.log("Saving subscription package to MongoDB:", packageData);
     
     // Validate required fields before saving
     if (!packageData.id) {
@@ -106,6 +126,9 @@ export async function saveSubscriptionPackage(packageData: ISubscriptionPackage)
  */
 export async function deleteSubscriptionPackage(packageId: string): Promise<void> {
   try {
+    // Ensure MongoDB is initialized
+    await ensureMongoDBInitialized();
+    
     console.log("Deleting subscription package with ID:", packageId);
     await SubscriptionPackage.deleteOne({ id: packageId });
     console.log("Subscription package deleted successfully");
@@ -120,6 +143,9 @@ export async function deleteSubscriptionPackage(packageId: string): Promise<void
  */
 export async function fetchSubscriptionPackagesByType(type: "Business" | "Influencer"): Promise<ISubscriptionPackage[]> {
   try {
+    // Ensure MongoDB is initialized
+    await ensureMongoDBInitialized();
+    
     console.log(`Fetching ${type} subscription packages`);
     
     // Query packages by type and sort by price
@@ -139,6 +165,9 @@ export async function fetchSubscriptionPackagesByType(type: "Business" | "Influe
  */
 export async function saveBusiness(business: IBusiness): Promise<void> {
   try {
+    // Ensure MongoDB is initialized
+    await ensureMongoDBInitialized();
+    
     console.log("Saving business to MongoDB:", business);
     
     // Validate required fields
@@ -174,6 +203,9 @@ export async function saveBusiness(business: IBusiness): Promise<void> {
  */
 export async function deleteBusiness(businessId: number): Promise<void> {
   try {
+    // Ensure MongoDB is initialized
+    await ensureMongoDBInitialized();
+    
     console.log("Deleting business with ID:", businessId);
     await Business.deleteOne({ id: businessId });
     console.log("Business deleted successfully");

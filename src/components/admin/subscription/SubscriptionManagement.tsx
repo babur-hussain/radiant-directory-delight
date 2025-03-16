@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,11 +23,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { PlusCircle, Pencil, Trash2, Loader2, RefreshCw } from "lucide-react";
 import { nanoid } from "nanoid";
-import { SubscriptionPackage } from "@/data/subscriptionData";
-import { fetchSubscriptionPackages, saveSubscriptionPackage, deleteSubscriptionPackage } from "@/lib/firebase-utils";
+import { SubscriptionPackage as SubscriptionPackageType } from "@/data/subscriptionData";
+import { fetchSubscriptionPackages, saveSubscriptionPackage, deleteSubscriptionPackage } from "@/lib/mongodb-utils";
 import SubscriptionPackageForm from "./SubscriptionPackageForm";
 import { useToast } from "@/hooks/use-toast";
 import AdminPermissionError from "../dashboard/AdminPermissionError";
+import { autoInitMongoDB } from "@/utils/setupMongoDB";
 
 interface SubscriptionPackageManagementProps {
   onPermissionError?: (error: any) => void;
@@ -37,19 +37,21 @@ interface SubscriptionPackageManagementProps {
 export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps> = ({ 
   onPermissionError 
 }) => {
-  const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
-  const [filteredPackages, setFilteredPackages] = useState<SubscriptionPackage[]>([]);
+  const [packages, setPackages] = useState<SubscriptionPackageType[]>([]);
+  const [filteredPackages, setFilteredPackages] = useState<SubscriptionPackageType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState<SubscriptionPackage | null>(null);
-  const [packageToDelete, setPackageToDelete] = useState<SubscriptionPackage | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<SubscriptionPackageType | null>(null);
+  const [packageToDelete, setPackageToDelete] = useState<SubscriptionPackageType | null>(null);
   const [activeTab, setActiveTab] = useState("business");
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    loadPackages();
+    autoInitMongoDB().then(() => {
+      loadPackages();
+    });
   }, []);
 
   useEffect(() => {
@@ -65,17 +67,15 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     setPermissionError(null);
     try {
       const data = await fetchSubscriptionPackages();
-      console.log("Fetched subscription packages:", data);
+      console.log("Fetched subscription packages from MongoDB:", data);
       setPackages(data);
       setFilteredPackages(data.filter(pkg => pkg.type.toLowerCase() === activeTab));
     } catch (error) {
       console.error("Error loading packages:", error);
       
       // Handle permission error
-      if (error instanceof Error && 
-          (error.message.includes("Permission denied") || 
-           error.message.includes("Missing or insufficient permissions"))) {
-        const errorMessage = "You don't have admin rights to view subscription packages.";
+      if (error instanceof Error) {
+        const errorMessage = "Error loading subscription packages: " + error.message;
         setPermissionError(errorMessage);
         if (onPermissionError) {
           onPermissionError(error);
@@ -97,7 +97,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     setIsFormOpen(true);
   };
 
-  const handleEditPackage = (pkg: SubscriptionPackage) => {
+  const handleEditPackage = (pkg: SubscriptionPackageType) => {
     console.log("Editing package:", pkg);
     setSelectedPackage({...pkg}); // Clone to prevent direct state mutation
     setIsFormOpen(true);
@@ -108,7 +108,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     setSelectedPackage(null);
   };
 
-  const handleOpenDeleteDialog = (pkg: SubscriptionPackage) => {
+  const handleOpenDeleteDialog = (pkg: SubscriptionPackageType) => {
     setPackageToDelete(pkg);
   };
 
@@ -134,33 +134,30 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     } catch (error) {
       console.error("Error deleting package:", error);
       
-      // Handle permission error
-      if (error instanceof Error && 
-          (error.message.includes("Permission denied") || 
-           error.message.includes("Missing or insufficient permissions"))) {
-        const errorMessage = "You don't have admin rights to delete subscription packages.";
-        setPermissionError(errorMessage);
-        if (onPermissionError) {
-          onPermissionError(error);
-        }
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to delete package. Please try again later.",
-          variant: "destructive"
-        });
+      // Handle error
+      const errorMessage = "Error deleting subscription package: " + 
+        (error instanceof Error ? error.message : String(error));
+      setPermissionError(errorMessage);
+      if (onPermissionError) {
+        onPermissionError(error);
       }
+      
+      toast({
+        title: "Error",
+        description: "Failed to delete package. Please try again later.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
       setPackageToDelete(null);
     }
   };
 
-  const handleSavePackage = async (packageData: SubscriptionPackage) => {
+  const handleSavePackage = async (packageData: SubscriptionPackageType) => {
     setIsSaving(true);
     setPermissionError(null);
     try {
-      console.log("Saving package data:", packageData);
+      console.log("Saving package data to MongoDB:", packageData);
       
       // Validate required fields
       if (!packageData.title || packageData.title.trim() === '') {
@@ -183,7 +180,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
       }
       
       await saveSubscriptionPackage(validatedPackageData);
-      console.log("Package saved successfully to Firebase");
+      console.log("Package saved successfully to MongoDB");
       
       // Update local state with validated data
       setPackages(prev => {
@@ -214,28 +211,19 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     } catch (error) {
       console.error("Error saving package:", error);
       
-      // Handle permission error
-      if (error instanceof Error && 
-          (error.message.includes("Permission denied") || 
-           error.message.includes("Missing or insufficient permissions"))) {
-        const errorMessage = "You don't have admin rights to create or update subscription packages.";
-        setPermissionError(errorMessage);
-        if (onPermissionError) {
-          onPermissionError(error);
-        }
-      } else {
-        let errorMessage = "Failed to save package. Please try again later.";
-        
-        if (error instanceof Error) {
-          errorMessage = error.message || errorMessage;
-        }
-        
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive"
-        });
+      // Handle error
+      const errorMessage = "Error saving subscription package: " + 
+        (error instanceof Error ? error.message : String(error));
+      setPermissionError(errorMessage);
+      if (onPermissionError) {
+        onPermissionError(error);
       }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
     } finally {
       setIsSaving(false);
     }
@@ -369,7 +357,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     </Card>
   );
 
-  function renderPackagesTable(packages: SubscriptionPackage[], loading: boolean) {
+  function renderPackagesTable(packages: SubscriptionPackageType[], loading: boolean) {
     if (loading) {
       return (
         <div className="flex justify-center items-center py-8">
