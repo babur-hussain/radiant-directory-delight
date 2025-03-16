@@ -4,6 +4,7 @@ import { createSubscription as createSubscriptionAPI, updateSubscription as upda
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
 import { useAuth } from './useAuth';
+import { getUserDashboardSections } from "@/utils/dashboardSections";
 
 export const useSubscription = () => {
   const queryClient = useQueryClient();
@@ -155,6 +156,20 @@ export const useSubscription = () => {
     }
   };
 
+  const getUserDashboardFeatures = async (userId?: string) => {
+    if (!userId) {
+      console.log("Cannot get dashboard features: No user ID provided");
+      return [];
+    }
+    
+    try {
+      return await getUserDashboardSections(userId);
+    } catch (error) {
+      console.error("Error getting user dashboard features:", error);
+      return [];
+    }
+  };
+
   return {
     subscription: fetchedSubscription,
     subscriptions,
@@ -173,6 +188,7 @@ export const useSubscription = () => {
     initiateSubscription,
     cancelSubscription,
     isProcessing,
+    getUserDashboardFeatures
   };
 };
 

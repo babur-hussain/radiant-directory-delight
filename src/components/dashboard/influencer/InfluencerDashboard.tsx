@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +31,7 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
   const navigate = useNavigate();
   const { toast } = useToast();
   const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "Influencer");
-  const { getUserSubscription } = useSubscription();
+  const { getUserSubscription, getUserDashboardFeatures } = useSubscription();
   const { user } = useAuth();
   
   useEffect(() => {

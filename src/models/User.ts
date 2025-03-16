@@ -14,6 +14,8 @@ export interface IUser {
   subscriptionId?: string;
   subscriptionStatus?: string;
   subscriptionPackage?: string;
+  // New field for custom dashboard sections
+  customDashboardSections?: string[];
 }
 
 const UserSchema = new mongoose.Schema<IUser>({
@@ -28,7 +30,9 @@ const UserSchema = new mongoose.Schema<IUser>({
   subscription: { type: mongoose.Schema.Types.ObjectId, ref: 'Subscription', default: null },
   subscriptionId: { type: String, default: null },
   subscriptionStatus: { type: String, default: null },
-  subscriptionPackage: { type: String, default: null }
+  subscriptionPackage: { type: String, default: null },
+  // Add customDashboardSections field to schema
+  customDashboardSections: [{ type: String }]
 });
 
 // Create indexes for frequently queried fields

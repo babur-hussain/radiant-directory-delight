@@ -17,6 +17,8 @@ export interface ISubscriptionPackage {
   paymentType: "recurring" | "one-time";
   billingCycle?: "monthly" | "yearly";
   advancePaymentMonths?: number;
+  // New fields for dashboard customization
+  dashboardSections?: string[];
 }
 
 const SubscriptionPackageSchema = new mongoose.Schema<ISubscriptionPackage>({
@@ -34,7 +36,9 @@ const SubscriptionPackageSchema = new mongoose.Schema<ISubscriptionPackage>({
   termsAndConditions: { type: String, default: '' },
   paymentType: { type: String, enum: ['recurring', 'one-time'], default: 'recurring', required: true },
   billingCycle: { type: String, enum: ['monthly', 'yearly'] },
-  advancePaymentMonths: { type: Number, default: 0 }
+  advancePaymentMonths: { type: Number, default: 0 },
+  // Add dashboardSections field to schema
+  dashboardSections: [{ type: String }]
 });
 
 // Create indexes for frequently queried fields
