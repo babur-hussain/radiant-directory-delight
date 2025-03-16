@@ -8,6 +8,7 @@ const MONGODB_URI = typeof process !== 'undefined' && process.env && process.env
 
 // Initialize connection variable
 let isConnecting = false;
+let mongoConnected = false;
 
 // Initialize MongoDB connection
 export const connectToMongoDB = async () => {
@@ -15,6 +16,7 @@ export const connectToMongoDB = async () => {
     // Check if already connected
     if (mongoose.connection && mongoose.connection.readyState === 1) {
       console.log('Already connected to MongoDB');
+      mongoConnected = true;
       return true;
     }
     
@@ -34,13 +36,10 @@ export const connectToMongoDB = async () => {
     console.log('Connecting to MongoDB...', MONGODB_URI);
     
     // Connect to MongoDB with improved options
-    await mongoose.connect(MONGODB_URI, {
-      // These options help with connection stability
-      serverSelectionTimeoutMS: 15000, // Increase timeout from 10s to 15s
-      socketTimeoutMS: 60000, // Increase from 45s to 60s for slow connections
-    });
+    await mongoose.connect(MONGODB_URI);
     
     isConnecting = false;
+    mongoConnected = true;
     console.log('Connected to MongoDB successfully');
     
     // Log connection details
@@ -53,6 +52,7 @@ export const connectToMongoDB = async () => {
     return true;
   } catch (error) {
     isConnecting = false;
+    mongoConnected = false;
     console.error('MongoDB connection error:', error);
     
     if (error instanceof Error) {
@@ -63,6 +63,11 @@ export const connectToMongoDB = async () => {
     
     return false;
   }
+};
+
+// Function to check if MongoDB is connected
+export const isMongoDBConnected = () => {
+  return mongoose.connection && mongoose.connection.readyState === 1;
 };
 
 // Export mongoose for use in other files

@@ -1,6 +1,6 @@
 
 import mongoose from 'mongoose';
-import { connectToMongoDB } from '../config/mongodb';
+import { connectToMongoDB, isMongoDBConnected } from '../config/mongodb';
 
 // Function to auto-initialize MongoDB when needed
 export const autoInitMongoDB = async () => {
@@ -8,7 +8,7 @@ export const autoInitMongoDB = async () => {
     console.log("Auto-initializing MongoDB...");
     
     // Check if already connected
-    if (mongoose.connection && mongoose.connection.readyState === 1) {
+    if (isMongoDBConnected()) {
       console.log("MongoDB is already connected, skipping initialization");
       return true;
     }
@@ -60,7 +60,12 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback) => {
     console.log("Setting up MongoDB models...");
     
     // Ensure MongoDB is connected first
-    await autoInitMongoDB();
+    if (!isMongoDBConnected()) {
+      const connected = await connectToMongoDB();
+      if (!connected) {
+        throw new Error("Failed to connect to MongoDB");
+      }
+    }
     
     if (progressCallback) {
       progressCallback(30, "Connected to MongoDB, registering models...");

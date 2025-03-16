@@ -13,7 +13,7 @@ import SubscriptionPackageManagement from '@/components/admin/subscription/Subsc
 import MigrationUtility from '@/components/admin/MigrationUtility';
 import SeedDataPanel from '@/components/admin/dashboard/SeedDataPanel';
 import { useToast } from '@/hooks/use-toast';
-import { connectToMongoDB } from '@/config/mongodb';
+import { connectToMongoDB, isMongoDBConnected } from '@/config/mongodb';
 import { fullSyncPackages } from '@/utils/syncMongoFirebase';
 
 const Dashboard = () => {
@@ -22,18 +22,23 @@ const Dashboard = () => {
   const [statusMessage, setStatusMessage] = useState('Connecting to MongoDB...');
   const [dbStatus, setDbStatus] = useState<{success: boolean; message: string; collections: string[]} | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     const initDb = async () => {
       try {
+        setConnectionError(null);
         const connected = await connectToMongoDB();
         if (!connected) {
-          throw new Error('Failed to connect to MongoDB');
+          const errorMsg = 'Failed to connect to MongoDB. Please check your connection string and network.';
+          setConnectionError(errorMsg);
+          throw new Error(errorMsg);
         }
         console.log('MongoDB connection established');
       } catch (connError) {
         console.error('MongoDB connection error:', connError);
+        setConnectionError(connError instanceof Error ? connError.message : String(connError));
         toast({
           title: "MongoDB Connection Error",
           description: String(connError),
@@ -90,6 +95,7 @@ const Dashboard = () => {
     setIsInitializing(true);
     setProgress(0);
     setStatusMessage('Connecting to MongoDB...');
+    setConnectionError(null);
     
     setupMongoDB((progressValue, message) => {
       setProgress(progressValue);
@@ -130,6 +136,14 @@ const Dashboard = () => {
   const handleSyncPackages = async () => {
     setIsSyncing(true);
     try {
+      // First check if MongoDB is connected
+      if (!isMongoDBConnected()) {
+        const connected = await connectToMongoDB();
+        if (!connected) {
+          throw new Error("Failed to connect to MongoDB. Cannot sync without database connection.");
+        }
+      }
+      
       const result = await fullSyncPackages();
       
       if (result.success) {
@@ -156,28 +170,91 @@ const Dashboard = () => {
     }
   };
 
+  const handleManualConnect = async () => {
+    try {
+      setStatusMessage('Manually connecting to MongoDB...');
+      setConnectionError(null);
+      
+      const connected = await connectToMongoDB();
+      if (!connected) {
+        const errorMsg = 'Failed to manually connect to MongoDB';
+        setConnectionError(errorMsg);
+        throw new Error(errorMsg);
+      }
+      
+      toast({
+        title: "Connection Successful",
+        description: "Successfully connected to MongoDB database",
+      });
+      
+      // If we're connected, try to initialize
+      handleRetryInitialization();
+    } catch (error) {
+      console.error("Manual connection error:", error);
+      setConnectionError(error instanceof Error ? error.message : String(error));
+      toast({
+        title: "Connection Failed",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <Button 
-          onClick={handleSyncPackages} 
-          disabled={isSyncing || isInitializing}
-          className="flex items-center gap-2"
-        >
-          {isSyncing ? (
-            <>
-              <RefreshCw className="h-4 w-4 animate-spin" />
-              Syncing...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="h-4 w-4" />
-              Sync MongoDB ↔ Firebase
-            </>
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleManualConnect} 
+            variant="outline"
+            disabled={isInitializing}
+            className="flex items-center gap-2"
+          >
+            <Database className="h-4 w-4" />
+            Connect to MongoDB
+          </Button>
+          
+          <Button 
+            onClick={handleSyncPackages} 
+            disabled={isSyncing || isInitializing}
+            className="flex items-center gap-2"
+          >
+            {isSyncing ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Syncing...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4" />
+                Sync MongoDB ↔ Firebase
+              </>
+            )}
+          </Button>
+        </div>
       </div>
+      
+      {connectionError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Connection Error</AlertTitle>
+          <AlertDescription>
+            <div className="space-y-2">
+              <p>{connectionError}</p>
+              <Button 
+                onClick={handleManualConnect} 
+                variant="outline" 
+                size="sm" 
+                className="mt-2"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry Connection
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
       
       {isInitializing && (
         <Card>
