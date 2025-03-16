@@ -22,6 +22,8 @@ header {
   z-index: 1000;
   height: 64px;
   display: block !important; /* Ensure header is always displayed */
+  visibility: visible !important; /* Force visibility */
+  opacity: 1 !important; /* Force opacity */
 }
 
 /* Main content styling with proper padding to avoid header overlap */

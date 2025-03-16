@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 
 const Header = () => {
-  console.log("Header component rendering"); // Debug log
+  console.log("Header component rendering start"); // Debug log
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -30,6 +30,7 @@ const Header = () => {
   
   // Fetch subscription data when user changes
   useEffect(() => {
+    console.log("Header useEffect for subscription");
     const fetchSubscription = async () => {
       if (user?.uid) {
         try {
@@ -49,6 +50,7 @@ const Header = () => {
   }, [getUserSubscription, user?.uid]);
   
   useEffect(() => {
+    console.log("Header useEffect for scroll");
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
