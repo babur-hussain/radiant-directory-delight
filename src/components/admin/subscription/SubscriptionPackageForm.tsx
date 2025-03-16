@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,9 +22,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { SubscriptionPackage } from "@/data/subscriptionData";
 import { nanoid } from "nanoid";
 import { featuresToString, stringToFeatures } from "@/lib/subscription-utils";
+import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
 
 const formSchema = z.object({
   id: z.string().min(1, "ID is required"),
@@ -46,8 +45,8 @@ const formSchema = z.object({
 });
 
 type SubscriptionPackageFormProps = {
-  initialData?: SubscriptionPackage;
-  onSubmit: (data: SubscriptionPackage) => void;
+  initialData?: ISubscriptionPackage;
+  onSubmit: (data: ISubscriptionPackage) => void;
   onCancel: () => void;
 };
 
@@ -83,7 +82,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   const paymentType = form.watch("paymentType");
 
   useEffect(() => {
-    // Only setup the price/monthly price synchronization for recurring subscriptions
     if (paymentType === "recurring") {
       const subscription = form.watch((value, { name }) => {
         if (name === "price" && value.price) {
@@ -106,7 +104,7 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
     const monthlyPrice = Number(values.monthlyPrice);
     const setupFee = Number(values.setupFee);
     
-    const packageData: SubscriptionPackage = {
+    const packageData: ISubscriptionPackage = {
       id: values.id,
       title: values.title,
       price: price,
@@ -240,10 +238,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
                     step="1" 
                     {...field} 
                     onChange={(e) => {
-                      // For one-time payments, just update the price without recalculation
-                      field.onChange(e);
-                      
-                      // Only perform automatic calculation for recurring subscriptions
                       if (paymentType === "recurring") {
                         if (billingCycle === "monthly") {
                           const yearlyPrice = Number(e.target.value) * 12;
@@ -328,7 +322,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
             />
           )}
 
-          {/* Only show duration field for recurring subscriptions */}
           {paymentType === "recurring" && (
             <FormField
               control={form.control}

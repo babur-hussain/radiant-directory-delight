@@ -1,12 +1,13 @@
 
 import { useState, useEffect } from "react";
-import { SubscriptionPackage, businessPackages, influencerPackages } from "@/data/subscriptionData";
+import { businessPackages, influencerPackages } from "@/data/subscriptionData";
 import { fetchSubscriptionPackagesByType } from "@/lib/firebase-utils";
 import { UserRole } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
 
 export const useSubscriptionPackages = (role: UserRole) => {
-  const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
+  const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();

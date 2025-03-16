@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Check, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useSubscriptionPackages } from "@/hooks/useSubscriptionPackages";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
 
 interface SubscriptionPackagesProps {
   userRole: UserRole;

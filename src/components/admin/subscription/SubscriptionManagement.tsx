@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { PlusCircle, Pencil, Trash2, Loader2, RefreshCw } from "lucide-react";
 import { nanoid } from "nanoid";
-import { ISubscriptionPackage } from "@/models/SubscriptionPackage"; // Import the correct type
+import { ISubscriptionPackage } from "@/models/SubscriptionPackage"; 
 import { fetchSubscriptionPackages, saveSubscriptionPackage, deleteSubscriptionPackage } from "@/lib/mongodb-utils";
 import SubscriptionPackageForm from "./SubscriptionPackageForm";
 import { useToast } from "@/hooks/use-toast";
@@ -38,13 +37,13 @@ interface SubscriptionPackageManagementProps {
 export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps> = ({ 
   onPermissionError 
 }) => {
-  const [packages, setPackages] = useState<ISubscriptionPackage[]>([]); // Changed type to ISubscriptionPackage
-  const [filteredPackages, setFilteredPackages] = useState<ISubscriptionPackage[]>([]); // Changed type to ISubscriptionPackage
+  const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);
+  const [filteredPackages, setFilteredPackages] = useState<ISubscriptionPackage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null); // Changed type to ISubscriptionPackage
-  const [packageToDelete, setPackageToDelete] = useState<ISubscriptionPackage | null>(null); // Changed type to ISubscriptionPackage
+  const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
+  const [packageToDelete, setPackageToDelete] = useState<ISubscriptionPackage | null>(null);
   const [activeTab, setActiveTab] = useState("business");
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -74,7 +73,6 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     } catch (error) {
       console.error("Error loading packages:", error);
       
-      // Handle permission error
       if (error instanceof Error) {
         const errorMessage = "Error loading subscription packages: " + error.message;
         setPermissionError(errorMessage);
@@ -98,9 +96,9 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     setIsFormOpen(true);
   };
 
-  const handleEditPackage = (pkg: ISubscriptionPackage) => { // Changed type to ISubscriptionPackage
+  const handleEditPackage = (pkg: ISubscriptionPackage) => {
     console.log("Editing package:", pkg);
-    setSelectedPackage({...pkg}); // Clone to prevent direct state mutation
+    setSelectedPackage({...pkg});
     setIsFormOpen(true);
   };
 
@@ -109,7 +107,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     setSelectedPackage(null);
   };
 
-  const handleOpenDeleteDialog = (pkg: ISubscriptionPackage) => { // Changed type to ISubscriptionPackage
+  const handleOpenDeleteDialog = (pkg: ISubscriptionPackage) => {
     setPackageToDelete(pkg);
   };
 
@@ -125,7 +123,6 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     try {
       await deleteSubscriptionPackage(packageToDelete.id);
       
-      // Update state
       setPackages(prev => prev.filter(p => p.id !== packageToDelete.id));
       
       toast({
@@ -135,7 +132,6 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     } catch (error) {
       console.error("Error deleting package:", error);
       
-      // Handle error
       const errorMessage = "Error deleting subscription package: " + 
         (error instanceof Error ? error.message : String(error));
       setPermissionError(errorMessage);
@@ -154,18 +150,16 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     }
   };
 
-  const handleSavePackage = async (packageData: ISubscriptionPackage) => { // Changed type to ISubscriptionPackage
+  const handleSavePackage = async (packageData: ISubscriptionPackage) => {
     setIsSaving(true);
     setPermissionError(null);
     try {
       console.log("Saving package data to MongoDB:", packageData);
       
-      // Validate required fields
       if (!packageData.title || packageData.title.trim() === '') {
         throw new Error("Package title is required");
       }
       
-      // Ensure numbers are properly converted
       const validatedPackageData: ISubscriptionPackage = {
         ...packageData,
         price: Number(packageData.price),
@@ -176,7 +170,6 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
         termsAndConditions: packageData.termsAndConditions || '',
       };
       
-      // Make sure paymentType is set properly
       if (!validatedPackageData.paymentType) {
         validatedPackageData.paymentType = "recurring";
       }
@@ -184,16 +177,13 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
       await saveSubscriptionPackage(validatedPackageData);
       console.log("Package saved successfully to MongoDB");
       
-      // Update local state with validated data
       setPackages(prev => {
         const existingIndex = prev.findIndex(p => p.id === validatedPackageData.id);
         if (existingIndex >= 0) {
-          // Update existing package
           const updated = [...prev];
           updated[existingIndex] = validatedPackageData;
           return updated;
         } else {
-          // Add new package
           return [...prev, validatedPackageData];
         }
       });
@@ -206,14 +196,12 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
       setIsFormOpen(false);
       setSelectedPackage(null);
       
-      // Refresh the package list to confirm changes were saved
       setTimeout(() => {
         loadPackages();
       }, 1000);
     } catch (error) {
       console.error("Error saving package:", error);
       
-      // Handle error
       const errorMessage = "Error saving subscription package: " + 
         (error instanceof Error ? error.message : String(error));
       setPermissionError(errorMessage);
@@ -294,7 +282,6 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
           </TabsContent>
         </Tabs>
         
-        {/* Package form dialog */}
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -319,7 +306,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
                 popular: false,
                 type: activeTab === "business" ? "Business" : "Influencer",
                 termsAndConditions: "",
-                paymentType: "recurring" // Ensuring paymentType is set
+                paymentType: "recurring"
               }}
               onSubmit={handleSavePackage}
               onCancel={handleCloseForm}
@@ -327,7 +314,6 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
           </DialogContent>
         </Dialog>
         
-        {/* Delete confirmation dialog */}
         <AlertDialog open={!!packageToDelete} onOpenChange={open => !open && handleCloseDeleteDialog()}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -359,7 +345,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     </Card>
   );
 
-  function renderPackagesTable(packages: ISubscriptionPackage[], loading: boolean) { // Changed type to ISubscriptionPackage
+  function renderPackagesTable(packages: ISubscriptionPackage[], loading: boolean) {
     if (loading) {
       return (
         <div className="flex justify-center items-center py-8">
