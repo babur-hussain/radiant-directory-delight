@@ -37,31 +37,36 @@ export const getUserSubscription = async (userId: string) => {
       }
     }
     
-    // If not found in user document, check subscriptions collection directly
-    console.log(`Looking for active subscriptions for user ${userId}`);
-    const activeSubscriptions = await Subscription.find({ 
-      userId: userId,
-      status: "active"
-    }).sort({ createdAt: -1 });
-    
-    if (activeSubscriptions && activeSubscriptions.length > 0) {
-      // Get the most recent active subscription
-      const latestSubscription = activeSubscriptions[0];
-      console.log("✅ Found subscription in subscriptions collection:", latestSubscription.id);
+    try {
+      // If not found in user document, check subscriptions collection directly
+      console.log(`Looking for active subscriptions for user ${userId}`);
+      const activeSubscriptions = await Subscription.find({ 
+        userId: userId,
+        status: "active"
+      }).sort({ createdAt: -1 });
       
-      // Update user document with this subscription
-      console.log(`Updating user document with subscription ${latestSubscription.id}`);
-      await User.findOneAndUpdate(
-        { uid: userId },
-        {
-          subscription: latestSubscription.id,
-          subscriptionStatus: latestSubscription.status,
-          subscriptionPackage: latestSubscription.packageId,
-          lastUpdated: new Date()
-        }
-      );
-      
-      return latestSubscription;
+      if (activeSubscriptions && activeSubscriptions.length > 0) {
+        // Get the most recent active subscription
+        const latestSubscription = activeSubscriptions[0];
+        console.log("✅ Found subscription in subscriptions collection:", latestSubscription.id);
+        
+        // Update user document with this subscription
+        console.log(`Updating user document with subscription ${latestSubscription.id}`);
+        await User.findOneAndUpdate(
+          { uid: userId },
+          {
+            subscription: latestSubscription.id,
+            subscriptionStatus: latestSubscription.status,
+            subscriptionPackage: latestSubscription.packageId,
+            lastUpdated: new Date()
+          }
+        );
+        
+        return latestSubscription;
+      }
+    } catch (subscriptionError) {
+      console.error("Error fetching active subscriptions:", subscriptionError);
+      // Continue execution, returning null at the end
     }
     
     console.log("❌ No subscription found for user", userId);

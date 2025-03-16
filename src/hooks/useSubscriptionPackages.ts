@@ -5,6 +5,7 @@ import { fetchSubscriptionPackagesByType } from "@/lib/mongodb-utils";
 import { UserRole } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
+import { connectToMongoDB } from "@/config/mongodb";
 
 export const useSubscriptionPackages = (role: UserRole) => {
   const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);
@@ -19,6 +20,12 @@ export const useSubscriptionPackages = (role: UserRole) => {
       
       try {
         console.log("Fetching subscription packages for role:", role);
+        
+        // Ensure MongoDB is connected first
+        const connected = await connectToMongoDB();
+        if (!connected) {
+          throw new Error("Could not connect to MongoDB");
+        }
         
         // Determine package type based on user role
         const packageType = role === "Business" ? "Business" : "Influencer";

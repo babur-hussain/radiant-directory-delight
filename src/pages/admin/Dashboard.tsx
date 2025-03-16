@@ -4,17 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { setupMongoDB } from '@/utils/setupMongoDB';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { CheckCircle2, AlertCircle, RefreshCw, Database } from 'lucide-react';
 import Loading from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import MongoDBInitializationPanel from '@/components/admin/MongoDBInitializationPanel';
+import SubscriptionPackageManagement from '@/components/admin/subscription/SubscriptionManagement';
+import MigrationUtility from '@/components/admin/MigrationUtility';
+import { useToast } from '@/hooks/use-toast';
 
 const Dashboard = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState('Connecting to MongoDB...');
   const [dbStatus, setDbStatus] = useState<{success: boolean; message: string; collections: string[]} | null>(null);
+  const { toast } = useToast();
 
   // Force MongoDB initialization on component mount
   useEffect(() => {
@@ -40,6 +44,12 @@ const Dashboard = () => {
           message: 'MongoDB initialized successfully',
           collections: result.collections
         });
+
+        // Show success toast notification
+        toast({
+          title: "MongoDB Initialized",
+          description: `Successfully created ${result.collections.length} collections`,
+        });
       } catch (error) {
         console.error('Failed to initialize MongoDB:', error);
         setDbStatus({
@@ -47,13 +57,20 @@ const Dashboard = () => {
           message: `MongoDB initialization failed: ${error instanceof Error ? error.message : String(error)}`,
           collections: []
         });
+        
+        // Show error toast notification
+        toast({
+          title: "MongoDB Initialization Failed",
+          description: error instanceof Error ? error.message : String(error),
+          variant: "destructive"
+        });
       } finally {
         setIsInitializing(false);
       }
     };
 
     initDb();
-  }, []);
+  }, [toast]);
 
   const handleRetryInitialization = () => {
     setIsInitializing(true);
@@ -72,6 +89,12 @@ const Dashboard = () => {
         message: 'MongoDB initialized successfully',
         collections: result.collections
       });
+      
+      // Show success toast notification
+      toast({
+        title: "MongoDB Reinitialized",
+        description: `Successfully created ${result.collections.length} collections`,
+      });
     })
     .catch(error => {
       console.error('Failed to initialize MongoDB on retry:', error);
@@ -79,6 +102,13 @@ const Dashboard = () => {
         success: false,
         message: `MongoDB initialization failed: ${error instanceof Error ? error.message : String(error)}`,
         collections: []
+      });
+      
+      // Show error toast notification
+      toast({
+        title: "MongoDB Initialization Failed",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive"
       });
     })
     .finally(() => {
@@ -93,7 +123,10 @@ const Dashboard = () => {
       {isInitializing && (
         <Card>
           <CardHeader>
-            <CardTitle>Initializing MongoDB...</CardTitle>
+            <CardTitle className="flex items-center">
+              <Database className="h-5 w-5 mr-2" />
+              Initializing MongoDB...
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <Progress value={progress} className="w-full h-2" />
@@ -133,11 +166,29 @@ const Dashboard = () => {
       <Tabs defaultValue="db" className="w-full">
         <TabsList className="w-full md:w-auto">
           <TabsTrigger value="db">Database</TabsTrigger>
+          <TabsTrigger value="migration">Migration</TabsTrigger>
+          <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
           <TabsTrigger value="stats">Statistics</TabsTrigger>
         </TabsList>
         
         <TabsContent value="db" className="space-y-4">
           <MongoDBInitializationPanel />
+        </TabsContent>
+        
+        <TabsContent value="migration" className="space-y-4">
+          <MigrationUtility />
+        </TabsContent>
+        
+        <TabsContent value="subscriptions" className="space-y-4">
+          <SubscriptionPackageManagement 
+            onPermissionError={(error) => {
+              toast({
+                title: "Permission Error",
+                description: String(error),
+                variant: "destructive"
+              });
+            }} 
+          />
         </TabsContent>
         
         <TabsContent value="stats" className="space-y-4">
