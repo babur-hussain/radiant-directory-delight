@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +22,8 @@ const mockSubscriptions = [
     startDate: new Date(2023, 5, 15),
     endDate: new Date(2024, 5, 15),
     status: "active",
-    amount: 1999
+    amount: 1999,
+    paymentType: "recurring" as const
   },
   {
     id: "sub_234567",
@@ -32,7 +34,8 @@ const mockSubscriptions = [
     startDate: new Date(2023, 7, 22),
     endDate: new Date(2024, 7, 22),
     status: "active",
-    amount: 1599
+    amount: 1599,
+    paymentType: "recurring" as const
   },
   {
     id: "sub_345678",
@@ -43,7 +46,8 @@ const mockSubscriptions = [
     startDate: new Date(2023, 4, 10),
     endDate: new Date(2024, 4, 10),
     status: "cancelled",
-    amount: 3999
+    amount: 3999,
+    paymentType: "recurring" as const
   },
   {
     id: "sub_456789",
@@ -54,7 +58,20 @@ const mockSubscriptions = [
     startDate: new Date(2023, 9, 5),
     endDate: new Date(2024, 9, 5),
     status: "active",
-    amount: 2999
+    amount: 2999,
+    paymentType: "recurring" as const
+  },
+  {
+    id: "sub_567890",
+    userId: "user5",
+    userName: "David Wilson",
+    userEmail: "david@example.com",
+    packageId: "business-starter-kit",
+    startDate: new Date(2023, 10, 15),
+    endDate: new Date(2024, 10, 15),
+    status: "active",
+    amount: 4999,
+    paymentType: "one-time" as const
   }
 ];
 
@@ -217,6 +234,7 @@ export const SubscriptionManagement = () => {
                 <TableHead>Start Date</TableHead>
                 <TableHead>Renewal Date</TableHead>
                 <TableHead>Amount</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -236,8 +254,17 @@ export const SubscriptionManagement = () => {
                       </TableCell>
                       <TableCell>{packageDetails?.title || subscription.packageId}</TableCell>
                       <TableCell>{formatDate(subscription.startDate)}</TableCell>
-                      <TableCell>{formatDate(subscription.endDate)}</TableCell>
+                      <TableCell>
+                        {subscription.paymentType === "one-time" 
+                          ? formatDate(subscription.endDate) 
+                          : formatDate(subscription.endDate)}
+                      </TableCell>
                       <TableCell>₹{subscription.amount}</TableCell>
+                      <TableCell>
+                        <Badge variant={subscription.paymentType === "one-time" ? "secondary" : "outline"}>
+                          {subscription.paymentType === "one-time" ? "One-time" : "Recurring"}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <Badge variant={subscription.status === 'active' ? 'default' : 'destructive'}>
                           {subscription.status === 'active' ? (
@@ -275,7 +302,7 @@ export const SubscriptionManagement = () => {
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
+                  <TableCell colSpan={8} className="h-24 text-center">
                     {error ? (
                       <div className="flex flex-col items-center text-muted-foreground">
                         <ShieldAlert className="h-10 w-10 mb-2 text-muted-foreground/50" />
@@ -294,3 +321,5 @@ export const SubscriptionManagement = () => {
     </Card>
   );
 };
+
+export default SubscriptionManagement;

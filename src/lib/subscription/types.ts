@@ -33,7 +33,7 @@ export interface SubscriptionData {
   isUserCancellable?: boolean;
   invoiceIds?: string[];
   razorpaySubscriptionId?: string;
-  paymentType?: "recurring" | "one-time"; // New field for one-time vs recurring
+  paymentType: "recurring" | "one-time"; // Required field for payment type
   
   [key: string]: any; // Allow additional properties
 }

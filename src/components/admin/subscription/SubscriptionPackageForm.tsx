@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -40,7 +41,8 @@ const formSchema = z.object({
   popular: z.boolean().default(false),
   type: z.enum(["Business", "Influencer"]),
   billingCycle: z.enum(["monthly", "yearly"]).default("yearly"),
-  advancePaymentMonths: z.coerce.number().min(0).default(0)
+  advancePaymentMonths: z.coerce.number().min(0).default(0),
+  paymentType: z.enum(["recurring", "one-time"]).default("recurring")
 });
 
 type SubscriptionPackageFormProps = {
@@ -72,11 +74,13 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
       popular: initialData?.popular || false,
       type: initialData?.type || "Business",
       billingCycle: initialData?.billingCycle || "yearly",
-      advancePaymentMonths: initialData?.advancePaymentMonths || 0
+      advancePaymentMonths: initialData?.advancePaymentMonths || 0,
+      paymentType: initialData?.paymentType || "recurring"
     }
   });
 
   const billingCycle = form.watch("billingCycle");
+  const paymentType = form.watch("paymentType");
 
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
@@ -113,7 +117,8 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
       type: values.type,
       termsAndConditions: values.termsAndConditions || "",
       billingCycle: values.billingCycle,
-      advancePaymentMonths: Number(values.advancePaymentMonths)
+      advancePaymentMonths: Number(values.advancePaymentMonths),
+      paymentType: values.paymentType
     };
     
     console.log("Form submitted with data:", packageData);
@@ -165,35 +170,66 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
 
           <FormField
             control={form.control}
-            name="billingCycle"
+            name="paymentType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Billing Cycle</FormLabel>
+                <FormLabel>Payment Type</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select billing cycle" />
+                      <SelectValue placeholder="Select payment type" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="yearly">Yearly</SelectItem>
+                    <SelectItem value="recurring">Recurring Subscription</SelectItem>
+                    <SelectItem value="one-time">One-time Payment</SelectItem>
                   </SelectContent>
                 </Select>
+                <FormDescription>
+                  Choose whether this is a subscription with recurring payments or a one-time purchase
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
+
+          {paymentType === "recurring" && (
+            <FormField
+              control={form.control}
+              name="billingCycle"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Billing Cycle</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    disabled={paymentType === "one-time"}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select billing cycle" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="yearly">Yearly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           <FormField
             control={form.control}
             name={billingCycle === "monthly" ? "monthlyPrice" : "price"}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{billingCycle === "monthly" ? "Monthly Price (₹)" : "Annual Price (₹)"}</FormLabel>
+                <FormLabel>{paymentType === "one-time" ? "Price (₹)" : (billingCycle === "monthly" ? "Monthly Price (₹)" : "Annual Price (₹)")}</FormLabel>
                 <FormControl>
                   <Input 
                     type="number" 
@@ -202,10 +238,10 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
                     {...field} 
                     onChange={(e) => {
                       field.onChange(e);
-                      if (billingCycle === "monthly") {
+                      if (paymentType === "recurring" && billingCycle === "monthly") {
                         const yearlyPrice = Number(e.target.value) * 12;
                         form.setValue("price", yearlyPrice);
-                      } else {
+                      } else if (paymentType === "recurring" && billingCycle === "yearly") {
                         const monthlyPrice = Math.round(Number(e.target.value) / 12);
                         form.setValue("monthlyPrice", monthlyPrice);
                       }
@@ -217,7 +253,7 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
             )}
           />
 
-          {billingCycle === "monthly" && (
+          {paymentType === "recurring" && billingCycle === "monthly" && (
             <FormField
               control={form.control}
               name="price"
@@ -241,7 +277,7 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
             />
           )}
 
-          {billingCycle === "yearly" && (
+          {paymentType === "recurring" && billingCycle === "yearly" && (
             <FormField
               control={form.control}
               name="monthlyPrice"
@@ -265,19 +301,24 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
             />
           )}
 
-          <FormField
-            control={form.control}
-            name="setupFee"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Setup Fee (₹)</FormLabel>
-                <FormControl>
-                  <Input type="number" min="0" step="1" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {paymentType === "recurring" && (
+            <FormField
+              control={form.control}
+              name="setupFee"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Setup Fee (₹)</FormLabel>
+                  <FormControl>
+                    <Input type="number" min="0" step="1" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    One-time fee charged at subscription start
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           <FormField
             control={form.control}
@@ -288,27 +329,34 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
                 <FormControl>
                   <Input type="number" min="1" step="1" {...field} />
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="advancePaymentMonths"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Advance Payment (months)</FormLabel>
-                <FormControl>
-                  <Input type="number" min="0" step="1" {...field} />
-                </FormControl>
                 <FormDescription>
-                  Number of months to be paid in advance (0 for no advance payment)
+                  {paymentType === "one-time" 
+                    ? "How long this package will be valid after purchase" 
+                    : "Duration of the subscription"}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
+
+          {paymentType === "recurring" && (
+            <FormField
+              control={form.control}
+              name="advancePaymentMonths"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Advance Payment (months)</FormLabel>
+                  <FormControl>
+                    <Input type="number" min="0" step="1" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Number of months to be paid in advance (0 for no advance payment)
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           <FormField
             control={form.control}
