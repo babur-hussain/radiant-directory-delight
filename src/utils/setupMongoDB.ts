@@ -114,3 +114,17 @@ export const setupMongoDB = async (
     throw error;
   }
 };
+
+/**
+ * Automatically initialize MongoDB on application startup
+ * This function will be called when the app loads
+ */
+export const autoInitMongoDB = async (): Promise<void> => {
+  console.log('Auto-initializing MongoDB...');
+  try {
+    const result = await setupMongoDB();
+    console.log('MongoDB auto-initialization completed:', result);
+  } catch (error) {
+    console.error('Error during MongoDB auto-initialization:', error);
+  }
+};

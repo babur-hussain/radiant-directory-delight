@@ -2,6 +2,12 @@
 import { ISubscription, Subscription } from '../models/Subscription';
 import mongoose from '../config/mongodb';
 import { nanoid } from 'nanoid';
+import { autoInitMongoDB } from '../utils/setupMongoDB';
+
+// Auto-initialize MongoDB when this module is imported
+autoInitMongoDB()
+  .then(() => console.log('MongoDB initialized from subscription service'))
+  .catch(err => console.error('Failed to initialize MongoDB from subscription service:', err));
 
 // Create a new subscription
 export const createSubscription = async (subscriptionData: Omit<ISubscription, 'id'>): Promise<ISubscription> => {

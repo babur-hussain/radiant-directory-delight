@@ -12,8 +12,7 @@ import AdminDashboardTabs from "@/components/admin/dashboard/AdminDashboardTabs"
 import { loadAllUsers, debugRefreshUsers } from "@/features/auth/authStorage";
 import { ensureTestUsers } from "@/features/auth/userManagement";
 import Loading from "@/components/ui/loading";
-import MongoDBInitializationPanel from "@/components/admin/MongoDBInitializationPanel";
-import DatabaseMigrationPanel from "@/components/admin/DatabaseMigrationPanel";
+import { autoInitMongoDB } from "@/utils/setupMongoDB";
 
 const AdminDashboardPage = () => {
   const { user, isAuthenticated, initialized } = useAuth();
@@ -31,8 +30,26 @@ const AdminDashboardPage = () => {
   
   // State for users tab
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [isInitializingDB, setIsInitializingDB] = useState(true);
   
   const { businesses, isRefreshing, refreshData } = useBusinessListings();
+
+  // Initialize MongoDB when the component mounts
+  useEffect(() => {
+    const initializeDB = async () => {
+      setIsInitializingDB(true);
+      try {
+        await autoInitMongoDB();
+        console.log("MongoDB initialized successfully");
+      } catch (error) {
+        console.error("Error initializing MongoDB:", error);
+      } finally {
+        setIsInitializingDB(false);
+      }
+    };
+    
+    initializeDB();
+  }, []);
 
   // Check if user is authorized (admin or staff)
   console.log("Admin Dashboard Auth Check:", { 
@@ -190,6 +207,10 @@ const AdminDashboardPage = () => {
     return <Loading size="lg" message="Initializing authentication..." />;
   }
 
+  if (isInitializingDB) {
+    return <Loading size="lg" message="Setting up database..." />;
+  }
+
   // Special case handling for the default admin email
   if (user?.email === "baburhussain660@gmail.com") {
     console.log("Default admin email detected, granting access");
@@ -224,15 +245,6 @@ const AdminDashboardPage = () => {
           />
         </div>
       )}
-      
-      {/* MongoDB Initialization Panel */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-4">Database Management</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <MongoDBInitializationPanel />
-          <DatabaseMigrationPanel />
-        </div>
-      </div>
       
       <AdminDashboardTabs 
         activeTab={activeTab}
