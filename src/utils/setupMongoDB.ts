@@ -29,17 +29,21 @@ export const autoInitMongoDB = async () => {
       attempts++;
       console.log(`Connection attempt ${attempts}/${maxAttempts}...`);
       
-      connected = await connectToMongoDB();
-      
-      if (!connected && attempts < maxAttempts) {
-        console.log(`Connection failed, retrying in 2 seconds...`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+      try {
+        connected = await connectToMongoDB();
+      } catch (error) {
+        console.error(`Connection attempt ${attempts} failed:`, error);
+        if (attempts < maxAttempts) {
+          console.log(`Retrying in 2 seconds... (${attempts}/${maxAttempts})`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
       }
     }
     
     if (!connected) {
       console.error(`Failed to connect to MongoDB after ${maxAttempts} attempts`);
-      throw new Error("MongoDB connection failed");
+      console.log("App will continue to function with static data");
+      return false;
     }
     
     console.log("MongoDB connection established successfully");
@@ -66,6 +70,7 @@ export const autoInitMongoDB = async () => {
       console.error(`Error stack: ${error.stack}`);
     }
     
+    console.log("App will continue to function with static data");
     return false;
   }
 };
@@ -84,7 +89,7 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback) => {
     if (!isMongoDBConnected()) {
       let connected = false;
       let attempts = 0;
-      const maxAttempts = 3;
+      const maxAttempts = 2; // Reduced attempts to speed up fallback
       
       while (!connected && attempts < maxAttempts) {
         attempts++;
@@ -94,16 +99,27 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback) => {
           progressCallback(15 + attempts * 5, `Connection attempt ${attempts}...`);
         }
         
-        connected = await connectToMongoDB();
-        
-        if (!connected && attempts < maxAttempts) {
-          console.log(`Connection failed, retrying in 2 seconds...`);
-          await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+          connected = await connectToMongoDB();
+        } catch (error) {
+          console.error(`Connection attempt ${attempts} failed:`, error);
+          if (attempts < maxAttempts) {
+            console.log(`Retrying in 1 second... (${attempts}/${maxAttempts})`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
         }
       }
       
       if (!connected) {
-        throw new Error("Failed to connect to MongoDB after multiple attempts");
+        console.log("MongoDB connection failed, proceeding with static data");
+        if (progressCallback) {
+          progressCallback(100, "Using static data (MongoDB unavailable)");
+        }
+        return {
+          success: false,
+          collections: [],
+          error: "MongoDB connection failed, using static data"
+        };
       }
     }
     
@@ -158,7 +174,7 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback) => {
   } catch (error) {
     console.error("Error setting up MongoDB models:", error);
     if (progressCallback) {
-      progressCallback(100, "Error setting up MongoDB models");
+      progressCallback(100, "Error setting up MongoDB models, using static data");
     }
     // Return an object even in case of error to maintain consistent return type
     return {

@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Footer from '@/components/Footer';
 import HeroSection from '@/components/HeroSection';
 import CategorySection from '@/components/CategorySection';
@@ -10,6 +10,9 @@ import CtaSection from '@/components/CtaSection';
 import { initializeData } from '@/lib/csv-utils';
 
 const Index = () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   // Smooth scroll to top on page load and initialize data
   useEffect(() => {
     window.scrollTo({
@@ -20,15 +23,20 @@ const Index = () => {
     // Initialize business data on page load
     const loadData = async () => {
       try {
+        setIsLoading(true);
         await initializeData();
       } catch (error) {
         console.error("Error initializing data:", error);
+        setError("Failed to initialize data, but continuing with static content");
+      } finally {
+        setIsLoading(false);
       }
     };
     
     loadData();
   }, []);
 
+  // Always render content, even if there's an error with data initialization
   return (
     <>
       <HeroSection />

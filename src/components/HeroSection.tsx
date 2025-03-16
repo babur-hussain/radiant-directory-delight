@@ -10,6 +10,7 @@ const HeroSection = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchResultsVisible, setIsSearchResultsVisible] = useState(false);
   const [isListingFormOpen, setIsListingFormOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const isMobile = useIsMobile();
 
   const handlePopularTermClick = (term: string) => {
@@ -18,6 +19,7 @@ const HeroSection = () => {
   
   // Lock body scroll when search results are visible on mobile
   useEffect(() => {
+    console.log("HeroSection rendering and mounting");
     if (isSearchResultsVisible && isMobile) {
       document.body.style.overflow = 'hidden';
       // Calculate scrollbar width to prevent layout shift

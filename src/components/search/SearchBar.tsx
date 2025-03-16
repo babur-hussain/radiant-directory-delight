@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -61,14 +60,12 @@ const SearchBar = ({
   const locationDropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  // Update searchQuery when initialQuery changes
   useEffect(() => {
     if (initialQuery) {
       setSearchQuery(initialQuery);
     }
   }, [initialQuery]);
 
-  // Notify parent component when results visibility changes
   useEffect(() => {
     if (onResultsVisibilityChange) {
       onResultsVisibilityChange(showResults);
@@ -112,14 +109,12 @@ const SearchBar = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Handle location dropdown close
       if (locationDropdownRef.current && 
           !locationDropdownRef.current.contains(event.target as Node) &&
           !searchContainerRef.current?.querySelector('.location-selector')?.contains(event.target as Node)) {
         setShowLocationDropdown(false);
       }
       
-      // Handle search results close - only if clicking outside both search container and results
       if (searchContainerRef.current && 
           !searchContainerRef.current.contains(event.target as Node)) {
         const resultsElement = document.querySelector('.search-results-container');
@@ -131,7 +126,6 @@ const SearchBar = ({
 
     document.addEventListener('mousedown', handleClickOutside);
     
-    // Handle Escape key to close dropdowns
     const handleEscKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setShowLocationDropdown(false);
@@ -151,7 +145,6 @@ const SearchBar = ({
     if (searchQuery.trim()) {
       navigate(`/businesses?search=${searchQuery}&location=${location}`);
     } else {
-      // Focus on the search input if empty
       if (searchInputRef.current) {
         searchInputRef.current.focus();
         toast({
@@ -268,7 +261,6 @@ const SearchBar = ({
         </div>
       </div>
 
-      {/* Position search results below search bar */}
       <div className="relative">
         <SearchResults 
           results={searchResults}
