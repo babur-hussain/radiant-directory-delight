@@ -13,7 +13,7 @@ import { ensureTestUsers } from "@/features/auth/userManagement";
 import Loading from "@/components/ui/loading";
 
 const AdminDashboardPage = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated, initialized } = useAuth();
   const [activeTab, setActiveTab] = useState("businesses");
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -32,7 +32,23 @@ const AdminDashboardPage = () => {
   const { businesses, isRefreshing, refreshData } = useBusinessListings();
 
   // Check if user is authorized (admin or staff)
-  const isAuthorized = user && (user.role === "Admin" || user.role === "staff" || user.isAdmin);
+  console.log("Admin Dashboard Auth Check:", { 
+    user,
+    isAuthenticated,
+    initialized,
+    userRole: user?.role,
+    isAdmin: user?.isAdmin,
+    email: user?.email
+  });
+
+  // We'll check authorization once auth is initialized
+  const isAuthorized = user && (
+    user.role === "Admin" || 
+    user.role === "admin" || 
+    user.role === "staff" || 
+    user.isAdmin || 
+    (user.email === "baburhussain660@gmail.com")
+  );
 
   // Function to load users data
   const loadUsersData = async () => {
@@ -166,10 +182,27 @@ const AdminDashboardPage = () => {
     }
   };
 
-  if (!isAuthorized) {
+  // Wait for auth to initialize before checking authorization
+  if (!initialized) {
+    return <Loading size="lg" message="Initializing authentication..." />;
+  }
+
+  // Special case handling for the default admin email
+  if (user?.email === "baburhussain660@gmail.com") {
+    console.log("Default admin email detected, granting access");
+  }
+
+  if (!isAuthenticated) {
+    console.log("User not authenticated, showing unauthorized view");
     return <UnauthorizedView />;
   }
 
+  if (!isAuthorized) {
+    console.log("User authenticated but not authorized:", user?.role, user?.isAdmin);
+    return <UnauthorizedView />;
+  }
+
+  console.log("User authorized, showing admin dashboard");
   return (
     <div className="container mx-auto px-4 py-10">
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
