@@ -11,12 +11,12 @@ import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminBusinessListingsPage from './pages/AdminBusinessListingsPage';
 import AdminDashboardServicePage from './pages/AdminDashboardServicePage';
+import AdminDashboardManagerPage from './pages/AdminDashboardManagerPage';
 import BusinessDashboardPage from './pages/BusinessDashboardPage';
 import InfluencerDashboardPage from './pages/InfluencerDashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import SubscriptionDetailsPage from './pages/SubscriptionDetailsPage';
-import AdminDashboardManagerPage from './pages/AdminDashboardManagerPage';
 
 const AppRoutes = () => {
   return (
@@ -37,6 +37,16 @@ const AppRoutes = () => {
       <Route path="/admin/dashboard-manager" element={<AdminDashboardManagerPage />} />
       <Route path="/admin/businesses" element={<AdminBusinessListingsPage />} />
       <Route path="/admin/dashboard-service/:type" element={<AdminDashboardServicePage />} />
+      <Route path="/admin/diagnostics" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
+      <Route path="/admin/users" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
+      <Route path="/admin/subscriptions" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
+      <Route path="/admin/dashboard-sections" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
+      <Route path="/admin/migration" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
+      <Route path="/admin/database" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
+      <Route path="/admin/upload" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
+      <Route path="/admin/analytics" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
+      <Route path="/admin/seed" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
+      <Route path="/admin/settings" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
       
       {/* User dashboard routes */}
       <Route path="/dashboard/business" element={<BusinessDashboardPage />} />

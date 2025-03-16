@@ -87,8 +87,13 @@ const AdminSidebar = () => {
     }
   ];
   
+  const handleNavigation = (e: React.MouseEvent<HTMLButtonElement>, href: string) => {
+    e.preventDefault();
+    navigate(href);
+  };
+  
   return (
-    <div className="hidden border-r bg-card md:flex md:w-64 md:flex-col">
+    <div className="h-screen border-r bg-card md:w-64 flex flex-col fixed">
       <div className="flex h-16 items-center border-b px-6">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">A</div>
@@ -110,7 +115,7 @@ const AdminSidebar = () => {
                   "w-full justify-start gap-2",
                   isActive && "bg-secondary"
                 )}
-                onClick={() => navigate(item.href)}
+                onClick={(e) => handleNavigation(e, item.href)}
               >
                 {item.icon}
                 {item.title}
@@ -123,7 +128,7 @@ const AdminSidebar = () => {
         <Button 
           variant="outline" 
           className="w-full justify-start gap-2" 
-          onClick={() => navigate("/admin/diagnostics")}
+          onClick={(e) => handleNavigation(e, "/admin/diagnostics")}
         >
           <Activity className="h-5 w-5" />
           System Diagnostics

@@ -17,7 +17,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Desktop Sidebar */}
-      <AdminSidebar />
+      <div className="hidden md:block">
+        <AdminSidebar />
+      </div>
       
       {/* Main content */}
       <div className="flex-1 overflow-x-hidden">
