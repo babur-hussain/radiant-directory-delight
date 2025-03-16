@@ -89,13 +89,24 @@ export const useRazorpay = ({ selectedPackage, onSuccess, onFailure }: UseRazorp
           
           console.log("Creating Razorpay options with package:", selectedPackage.title);
           
-          // Ensure we have a setup fee (default to 1 if not provided or zero)
-          const setupFee = selectedPackage.setupFee && selectedPackage.setupFee > 0 
-            ? selectedPackage.setupFee 
-            : 1;
+          // Determine the payment amount based on the package type
+          let paymentAmount = 0;
+          const isOneTime = selectedPackage.paymentType === "one-time";
+          
+          if (isOneTime) {
+            // For one-time payment, we charge the full price
+            paymentAmount = selectedPackage.price;
+            console.log(`One-time payment package with price: ${paymentAmount}`);
+          } else {
+            // For recurring, we use the setup fee
+            paymentAmount = selectedPackage.setupFee && selectedPackage.setupFee > 0 
+              ? selectedPackage.setupFee 
+              : 1;
+            console.log(`Recurring package with setup fee: ${paymentAmount}`);
+          }
           
           // Convert to paise and ensure minimum payment
-          const amountInPaise = convertToPaise(setupFee);
+          const amountInPaise = convertToPaise(paymentAmount);
           
           // Generate a unique order ID
           const orderId = generateOrderId();
@@ -106,7 +117,9 @@ export const useRazorpay = ({ selectedPackage, onSuccess, onFailure }: UseRazorp
             amount: amountInPaise,
             currency: "INR",
             name: "Grow Bharat Vyapaar",
-            description: `Setup fee for ${selectedPackage.title} package`,
+            description: isOneTime 
+              ? `Full payment for ${selectedPackage.title} package` 
+              : `Setup fee for ${selectedPackage.title} package`,
             image: "https://example.com/your-logo.png", // Replace with actual logo
             order_id: orderId, // This should ideally come from your backend
             prefill: {
@@ -117,8 +130,9 @@ export const useRazorpay = ({ selectedPackage, onSuccess, onFailure }: UseRazorp
             notes: {
               packageId: selectedPackage.id,
               packageName: selectedPackage.title,
-              setupFee: setupFee,
-              annualSubscription: selectedPackage.price
+              paymentType: selectedPackage.paymentType || "recurring",
+              price: selectedPackage.price,
+              setupFee: selectedPackage.setupFee
             },
             theme: {
               color: "#3B82F6" // Blue color
@@ -127,15 +141,19 @@ export const useRazorpay = ({ selectedPackage, onSuccess, onFailure }: UseRazorp
               console.log("Payment success response:", response);
               toast({
                 title: "Payment Successful",
-                description: `Your payment of ₹${setupFee} was successful.`,
+                description: isOneTime
+                  ? `Your one-time payment of ₹${paymentAmount} was successful.`
+                  : `Your payment of ₹${paymentAmount} was successful.`,
                 variant: "success"
               });
               
+              // Add payment type to the response
               onSuccess({
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id || orderId,
                 razorpay_signature: response.razorpay_signature || 'test_signature',
-                packageId: selectedPackage.id
+                packageId: selectedPackage.id,
+                paymentType: selectedPackage.paymentType || "recurring"
               });
             }
           };

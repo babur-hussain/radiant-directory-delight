@@ -14,6 +14,7 @@ export interface SubscriptionPackage {
   type: "Business" | "Influencer";
   billingCycle?: "monthly" | "yearly";
   advancePaymentMonths?: number;
+  paymentType: "recurring" | "one-time"; // New field to identify one-time vs recurring packages
 }
 
 // Default business subscription packages (used as fallback if Firebase fetch fails)
@@ -36,7 +37,8 @@ export const businessPackages: SubscriptionPackage[] = [
     popular: false,
     type: "Business",
     billingCycle: "yearly",
-    advancePaymentMonths: 0
+    advancePaymentMonths: 0,
+    paymentType: "recurring"
   },
   {
     id: "business-standard",
@@ -57,7 +59,8 @@ export const businessPackages: SubscriptionPackage[] = [
     popular: true,
     type: "Business",
     billingCycle: "yearly",
-    advancePaymentMonths: 0
+    advancePaymentMonths: 0,
+    paymentType: "recurring"
   },
   {
     id: "business-premium",
@@ -79,7 +82,8 @@ export const businessPackages: SubscriptionPackage[] = [
     popular: false,
     type: "Business",
     billingCycle: "yearly",
-    advancePaymentMonths: 0
+    advancePaymentMonths: 0,
+    paymentType: "recurring"
   },
   {
     id: "business-enterprise",
@@ -102,7 +106,28 @@ export const businessPackages: SubscriptionPackage[] = [
     popular: false,
     type: "Business",
     billingCycle: "yearly",
-    advancePaymentMonths: 0
+    advancePaymentMonths: 0,
+    paymentType: "recurring"
+  },
+  // Adding a one-time payment package
+  {
+    id: "business-starter-kit",
+    title: "Business Starter Kit",
+    price: 4999,
+    setupFee: 0,
+    durationMonths: 12, // Still valid for a year, but no auto-renewal
+    shortDescription: "One-time payment package for businesses",
+    fullDescription: "Get started with a comprehensive one-time payment package that includes all the essential tools for your business without recurring payments.",
+    features: [
+      "Connect with up to 10 influencers",
+      "Basic analytics dashboard",
+      "Standard customer support",
+      "Campaign management tools",
+      "Valid for 12 months"
+    ],
+    popular: false,
+    type: "Business",
+    paymentType: "one-time"
   }
 ];
 
@@ -126,7 +151,8 @@ export const influencerPackages: SubscriptionPackage[] = [
     popular: false,
     type: "Influencer",
     billingCycle: "yearly",
-    advancePaymentMonths: 0
+    advancePaymentMonths: 0,
+    paymentType: "recurring"
   },
   {
     id: "influencer-growth",
@@ -148,7 +174,8 @@ export const influencerPackages: SubscriptionPackage[] = [
     popular: true,
     type: "Influencer",
     billingCycle: "yearly",
-    advancePaymentMonths: 0
+    advancePaymentMonths: 0,
+    paymentType: "recurring"
   },
   {
     id: "influencer-pro",
@@ -171,7 +198,8 @@ export const influencerPackages: SubscriptionPackage[] = [
     popular: false,
     type: "Influencer",
     billingCycle: "yearly",
-    advancePaymentMonths: 0
+    advancePaymentMonths: 0,
+    paymentType: "recurring"
   },
   {
     id: "influencer-elite",
@@ -195,7 +223,29 @@ export const influencerPackages: SubscriptionPackage[] = [
     popular: false,
     type: "Influencer",
     billingCycle: "yearly",
-    advancePaymentMonths: 0
+    advancePaymentMonths: 0,
+    paymentType: "recurring"
+  },
+  // Adding a one-time payment package
+  {
+    id: "influencer-quick-start",
+    title: "Influencer Quick Start",
+    price: 3499,
+    setupFee: 0,
+    durationMonths: 12, // Still valid for a year, but no auto-renewal
+    shortDescription: "One-time payment for influencers",
+    fullDescription: "Jumpstart your influencer career with this one-time payment package that includes essential tools and features without recurring payments.",
+    features: [
+      "Professional profile creation",
+      "Connect with up to 15 businesses",
+      "Basic analytics tools",
+      "Standard support",
+      "Campaign performance tracking",
+      "Valid for 12 months"
+    ],
+    popular: false,
+    type: "Influencer",
+    paymentType: "one-time"
   }
 ];
 

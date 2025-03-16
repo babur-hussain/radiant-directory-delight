@@ -72,6 +72,9 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
 
   if (!selectedPackage) return null;
 
+  // Check if this is a one-time package
+  const isOneTimePackage = selectedPackage.paymentType === "one-time";
+
   const handleSubscribe = async () => {
     if (!termsAccepted) {
       toast({
@@ -114,7 +117,8 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
       paymentId: paymentResponse.razorpay_payment_id,
       orderId: paymentResponse.razorpay_order_id,
       signature: paymentResponse.razorpay_signature,
-      paymentStatus: "completed"
+      paymentStatus: "completed",
+      paymentType: paymentResponse.paymentType || selectedPackage.paymentType || "recurring"
     });
     
     setPaymentProcessing(false);
@@ -143,7 +147,14 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
         {!showPaymentUI ? (
           <>
             <DialogHeader>
-              <DialogTitle className="text-xl">{selectedPackage.title}</DialogTitle>
+              <div className="flex items-center gap-2">
+                <DialogTitle className="text-xl">{selectedPackage.title}</DialogTitle>
+                {isOneTimePackage && (
+                  <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2 py-1 rounded">
+                    One-time
+                  </span>
+                )}
+              </div>
               <DialogDescription>{selectedPackage.shortDescription}</DialogDescription>
             </DialogHeader>
             
@@ -181,22 +192,33 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
               <div className="border-b pb-3">
                 <h3 className="font-medium mb-2">Pricing Details</h3>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>One-time setup fee</span>
-                    <span>₹{selectedPackage.setupFee}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Annual subscription</span>
-                    <span>₹{selectedPackage.price}</span>
-                  </div>
-                  <div className="border-t pt-2 flex justify-between font-medium">
-                    <span>Total initial payment</span>
-                    <span>₹{selectedPackage.setupFee}</span>
-                  </div>
-                  <div className="flex justify-between font-medium">
-                    <span>Annual recurring payment</span>
-                    <span>₹{selectedPackage.price}</span>
-                  </div>
+                  {isOneTimePackage ? (
+                    // One-time payment pricing display
+                    <div className="flex justify-between font-medium">
+                      <span>One-time payment</span>
+                      <span>₹{selectedPackage.price}</span>
+                    </div>
+                  ) : (
+                    // Subscription pricing display
+                    <>
+                      <div className="flex justify-between">
+                        <span>One-time setup fee</span>
+                        <span>₹{selectedPackage.setupFee}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Annual subscription</span>
+                        <span>₹{selectedPackage.price}</span>
+                      </div>
+                      <div className="border-t pt-2 flex justify-between font-medium">
+                        <span>Total initial payment</span>
+                        <span>₹{selectedPackage.setupFee}</span>
+                      </div>
+                      <div className="flex justify-between font-medium">
+                        <span>Annual recurring payment</span>
+                        <span>₹{selectedPackage.price}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               
@@ -205,12 +227,24 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
                 <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md max-h-32 overflow-y-auto mb-3">
                   <p className="mb-2">By subscribing to our service, you agree to the following terms:</p>
                   <ol className="list-decimal list-inside space-y-1">
-                    <li>Your subscription will automatically renew annually.</li>
-                    <li>You may cancel your subscription at any time from your account dashboard.</li>
-                    <li>The setup fee is non-refundable.</li>
-                    <li>All payments are processed securely via Razorpay.</li>
-                    <li>We reserve the right to modify subscription plans with advance notice.</li>
-                    <li>Your subscription is for a single business account and cannot be shared.</li>
+                    {isOneTimePackage ? (
+                      <>
+                        <li>This is a one-time payment for a {selectedPackage.durationMonths || 12}-month service.</li>
+                        <li>The package will not automatically renew.</li>
+                        <li>All payments are processed securely via Razorpay.</li>
+                        <li>We reserve the right to modify packages with advance notice.</li>
+                        <li>Your package is for a single business account and cannot be shared.</li>
+                      </>
+                    ) : (
+                      <>
+                        <li>Your subscription will automatically renew annually.</li>
+                        <li>You may cancel your subscription at any time from your account dashboard.</li>
+                        <li>The setup fee is non-refundable.</li>
+                        <li>All payments are processed securely via Razorpay.</li>
+                        <li>We reserve the right to modify subscription plans with advance notice.</li>
+                        <li>Your subscription is for a single business account and cannot be shared.</li>
+                      </>
+                    )}
                   </ol>
                 </div>
                 
@@ -266,7 +300,9 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
             <DialogHeader>
               <DialogTitle className="text-xl">Complete Payment</DialogTitle>
               <DialogDescription>
-                Please complete the payment to activate your subscription
+                {isOneTimePackage 
+                  ? "Please complete the payment to activate your package" 
+                  : "Please complete the payment to activate your subscription"}
               </DialogDescription>
             </DialogHeader>
             

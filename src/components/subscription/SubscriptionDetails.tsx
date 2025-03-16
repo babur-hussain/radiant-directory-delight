@@ -96,7 +96,8 @@ const SubscriptionDetails = () => {
         paymentId: paymentResponse.razorpay_payment_id,
         orderId: paymentResponse.razorpay_order_id,
         signature: paymentResponse.razorpay_signature,
-        paymentStatus: "completed"
+        paymentStatus: "completed",
+        paymentType: paymentResponse.paymentType || selectedPackage.paymentType || "recurring"
       });
     }
     
@@ -160,7 +161,11 @@ const SubscriptionDetails = () => {
         <Card>
           <CardHeader>
             <CardTitle>Process Payment</CardTitle>
-            <CardDescription>Complete your payment to activate your subscription</CardDescription>
+            <CardDescription>
+              {selectedPackage.paymentType === "one-time" 
+                ? "Complete your one-time payment to activate your package" 
+                : "Complete your payment to activate your subscription"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {paymentProcessing ? (
@@ -181,6 +186,9 @@ const SubscriptionDetails = () => {
     );
   }
 
+  // Determine if this is a one-time package
+  const isOneTimePackage = selectedPackage.paymentType === "one-time";
+
   return (
     <div className="container mx-auto px-4 py-10 max-w-4xl">
       <div className="flex items-center mb-6">
@@ -193,7 +201,14 @@ const SubscriptionDetails = () => {
       
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="text-xl">{selectedPackage.title}</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-xl">{selectedPackage.title}</CardTitle>
+            {isOneTimePackage && (
+              <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2 py-1 rounded">
+                One-time payment
+              </span>
+            )}
+          </div>
           <CardDescription>{selectedPackage.shortDescription}</CardDescription>
         </CardHeader>
         <CardContent>
@@ -218,22 +233,33 @@ const SubscriptionDetails = () => {
             <div>
               <h3 className="text-lg font-medium mb-2">Pricing</h3>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>One-time setup fee</span>
-                  <span>₹{selectedPackage.setupFee}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Annual subscription</span>
-                  <span>₹{selectedPackage.price}</span>
-                </div>
-                <div className="border-t pt-2 flex justify-between font-medium">
-                  <span>Initial payment</span>
-                  <span>₹{selectedPackage.setupFee}</span>
-                </div>
-                <div className="flex justify-between font-medium">
-                  <span>Annual recurring payment</span>
-                  <span>₹{selectedPackage.price}</span>
-                </div>
+                {isOneTimePackage ? (
+                  // One-time payment pricing display
+                  <div className="border-t pt-2 flex justify-between font-medium">
+                    <span>One-time payment</span>
+                    <span>₹{selectedPackage.price}</span>
+                  </div>
+                ) : (
+                  // Subscription pricing display
+                  <>
+                    <div className="flex justify-between">
+                      <span>One-time setup fee</span>
+                      <span>₹{selectedPackage.setupFee}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Annual subscription</span>
+                      <span>₹{selectedPackage.price}</span>
+                    </div>
+                    <div className="border-t pt-2 flex justify-between font-medium">
+                      <span>Initial payment</span>
+                      <span>₹{selectedPackage.setupFee}</span>
+                    </div>
+                    <div className="flex justify-between font-medium">
+                      <span>Annual recurring payment</span>
+                      <span>₹{selectedPackage.price}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
             
@@ -266,7 +292,7 @@ const SubscriptionDetails = () => {
             disabled={isProcessing || !termsAccepted}
           >
             <ShieldCheck className="h-4 w-4 mr-2" />
-            Proceed to Payment
+            {isOneTimePackage ? "Proceed to Payment" : "Proceed to Payment"}
           </Button>
           <p className="text-xs text-center text-muted-foreground">
             All payments are processed securely via Razorpay

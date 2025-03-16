@@ -13,6 +13,7 @@ interface PaymentDetails {
   orderId?: string;
   signature?: string;
   paymentStatus: 'pending' | 'completed' | 'failed';
+  paymentType?: 'recurring' | 'one-time';
 }
 
 export const useSubscription = () => {
@@ -110,6 +111,11 @@ export const useSubscription = () => {
       
       console.log(`Initiating subscription for user ${user.id} to package ${packageDetails.id}`);
       
+      // Check if it's a one-time payment or recurring subscription
+      const isOneTime = paymentDetails?.paymentType === "one-time" || packageDetails.paymentType === "one-time";
+      
+      console.log(`Package type: ${isOneTime ? "One-time payment" : "Recurring subscription"}`);
+      
       // Create subscription data
       const subscriptionData = {
         userId: user.id,
@@ -122,11 +128,12 @@ export const useSubscription = () => {
         paymentMethod: paymentDetails ? "razorpay" : "manual",
         transactionId: paymentDetails?.paymentId || `manual_${Date.now()}`,
         advancePaymentMonths: settings.defaultAdvancePaymentMonths,
-        signupFee: packageDetails.setupFee || 0,
+        signupFee: isOneTime ? 0 : (packageDetails.setupFee || 0),
         actualStartDate: new Date().toISOString(),
         isPaused: false,
-        isPausable: true,
-        isUserCancellable: false,
+        isPausable: !isOneTime, // One-time packages cannot be paused
+        isUserCancellable: !isOneTime, // One-time packages cannot be cancelled
+        paymentType: isOneTime ? "one-time" : "recurring",
         invoiceIds: []
       };
       
@@ -165,8 +172,10 @@ export const useSubscription = () => {
         
         // Show success toast even though we're just using a local fallback
         toast({
-          title: "Subscription Activated (Local)",
-          description: "Your subscription has been activated in local mode.",
+          title: isOneTime ? "Purchase Completed (Local)" : "Subscription Activated (Local)",
+          description: isOneTime 
+            ? "Your purchase has been completed in local mode." 
+            : "Your subscription has been activated in local mode.",
           variant: "success",
         });
         
@@ -178,8 +187,10 @@ export const useSubscription = () => {
         return subscriptionData;
       } else if (success) {
         toast({
-          title: "Subscription Activated",
-          description: "Your subscription has been successfully activated.",
+          title: isOneTime ? "Purchase Completed" : "Subscription Activated",
+          description: isOneTime 
+            ? "Your purchase has been successfully completed." 
+            : "Your subscription has been successfully activated.",
           variant: "success",
         });
         
@@ -190,7 +201,9 @@ export const useSubscription = () => {
         
         return subscriptionData;
       } else {
-        throw new Error("Failed to save subscription");
+        throw new Error(isOneTime 
+          ? "Failed to complete purchase" 
+          : "Failed to save subscription");
       }
     } catch (error) {
       console.error("Error initiating subscription:", error);
@@ -240,6 +253,16 @@ export const useSubscription = () => {
         toast({
           title: "No Active Subscription",
           description: "You don't have an active subscription to cancel.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      // Check if this is a one-time package, which cannot be cancelled
+      if (currentSubscription.paymentType === "one-time") {
+        toast({
+          title: "Cannot Cancel",
+          description: "One-time purchases cannot be cancelled.",
           variant: "destructive",
         });
         return false;

@@ -41,8 +41,11 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
     try {
       console.log(`Assigning package ${packageData.id} to user ${user.id}`);
       
-      // Prepare subscription data based on billing cycle
-      const isMonthlyCycle = packageData.billingCycle === "monthly";
+      // Check if it's a one-time or recurring package
+      const isOneTime = packageData.paymentType === "one-time";
+      
+      // For recurring, determine billing cycle
+      const isMonthlyCycle = !isOneTime && packageData.billingCycle === "monthly";
       const packagePrice = isMonthlyCycle ? packageData.monthlyPrice || packageData.price / 12 : packageData.price;
       const durationMonths = isMonthlyCycle ? 1 : packageData.durationMonths;
       
@@ -60,8 +63,9 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
         status: "active",
         startDate: new Date().toISOString(),
         endDate: endDate.toISOString(),
-        billingCycle: packageData.billingCycle || "yearly",
-        advancePaymentMonths: packageData.advancePaymentMonths || 0
+        billingCycle: isOneTime ? undefined : (packageData.billingCycle || "yearly"),
+        advancePaymentMonths: isOneTime ? 0 : (packageData.advancePaymentMonths || 0),
+        paymentType: isOneTime ? "one-time" : "recurring"
       };
       
       // In a real app, we would save this to the database
@@ -84,6 +88,12 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
   
   const handleCancelSubscription = async () => {
     if (!userCurrentSubscription) return;
+    
+    // Check if this is a one-time package which cannot be cancelled
+    if (userCurrentSubscription.paymentType === "one-time") {
+      setError("One-time packages cannot be cancelled.");
+      return;
+    }
     
     setIsLoading(true);
     setError(null);
@@ -200,6 +210,13 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
     );
   }
   
+  // Find the currently selected package to check if it's one-time
+  const currentlySelectedPackage = packages.find(pkg => pkg.id === selectedPackage);
+  const isOneTimePackage = currentlySelectedPackage?.paymentType === "one-time";
+  
+  // Also check if current subscription is one-time
+  const currentSubscriptionIsOneTime = userCurrentSubscription?.paymentType === "one-time";
+  
   return (
     <div className="flex flex-col space-y-4">
       {error && (
@@ -219,7 +236,12 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
             <SelectContent>
               {packages.map(pkg => (
                 <SelectItem key={pkg.id} value={pkg.id}>
-                  {pkg.title} ({pkg.billingCycle === "monthly" ? `₹${pkg.monthlyPrice}/month` : `₹${pkg.price}/year`})
+                  {pkg.title} 
+                  {pkg.paymentType === "one-time" 
+                    ? ` (One-time ₹${pkg.price})` 
+                    : pkg.billingCycle === "monthly" 
+                      ? ` (₹${pkg.monthlyPrice}/month)` 
+                      : ` (₹${pkg.price}/year)`}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -233,7 +255,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
             selectedPackage={selectedPackage}
             onAssign={assignPackage}
             onCancel={handleCancelSubscription}
-            showCancel={true}
+            showCancel={!isOneTimePackage}
             isAdmin={true}
           />
         </div>
@@ -242,22 +264,36 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
       {userCurrentSubscription && (
         <div className="text-sm space-y-2 border-t pt-2 mt-2">
           <div className="flex justify-between items-center">
-            <div>
+            <div className="flex items-center gap-2">
               <span className="font-medium">Current Subscription: </span>
               <StatusBadge 
                 status={userCurrentSubscription.status} 
                 packageName={userCurrentSubscription.packageName} 
               />
+              {currentSubscriptionIsOneTime && (
+                <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2 py-1 rounded">
+                  One-time
+                </span>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
-              <p className="text-xs text-muted-foreground">
-                Billing cycle: {userCurrentSubscription.billingCycle === "monthly" ? "Monthly" : "Yearly"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Advance payment: {userCurrentSubscription.advancePaymentMonths || 0} months
-              </p>
+              {!currentSubscriptionIsOneTime && (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    Billing cycle: {userCurrentSubscription.billingCycle === "monthly" ? "Monthly" : "Yearly"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Advance payment: {userCurrentSubscription.advancePaymentMonths || 0} months
+                  </p>
+                </>
+              )}
+              {currentSubscriptionIsOneTime && (
+                <p className="text-xs text-muted-foreground">
+                  One-time payment: Valid until {new Date(userCurrentSubscription.endDate).toLocaleDateString()}
+                </p>
+              )}
             </div>
             <p className="text-xs text-muted-foreground">
               Users cannot modify or cancel their subscriptions. Only admins can manage subscriptions.
