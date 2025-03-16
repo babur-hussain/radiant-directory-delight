@@ -1,7 +1,6 @@
 
 import { Business, IBusiness } from '../models/Business';
 import { getAllBusinesses } from '@/lib/csv-utils';
-import { saveBusiness } from '@/lib/mongodb-utils';
 
 export const initializeBusinessesInMongoDB = async (
   progressCallback?: (progress: number) => void

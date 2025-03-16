@@ -1,5 +1,6 @@
 
 import { connectToMongoDB } from '../config/mongodb';
+import mongoose from '../config/mongodb';
 import { ISubscriptionPackage, SubscriptionPackage } from '../models/SubscriptionPackage';
 import { businessPackages, influencerPackages } from '@/data/subscriptionData';
 
