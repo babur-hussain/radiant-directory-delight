@@ -285,51 +285,6 @@ const SearchBar = ({
       </div>
     </div>
   );
-  
-  function handleSearch() {
-    if (searchQuery.trim()) {
-      navigate(`/businesses?search=${searchQuery}&location=${location}`);
-    } else {
-      if (searchInputRef.current) {
-        searchInputRef.current.focus();
-        toast({
-          title: "Enter Search Term",
-          description: "Please enter what you're looking for.",
-        });
-      }
-    }
-  }
-
-  function handleResultClick(id: number) {
-    setShowResults(false);
-    navigate(`/business?id=${id}`);
-  }
-
-  function handleClearSearch() {
-    setSearchQuery('');
-    setSearchResults([]);
-    setShowResults(false);
-    if (searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }
-
-  function handleFocus() {
-    if (searchQuery.trim()) {
-      setShowResults(true);
-    }
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  }
-
-  function toggleLocationDropdown(e: React.MouseEvent) {
-    e.stopPropagation();
-    setShowLocationDropdown(!showLocationDropdown);
-  }
 };
 
 export default SearchBar;

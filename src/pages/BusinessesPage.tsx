@@ -19,7 +19,7 @@ type SortOption = "relevance" | "rating" | "reviews";
 
 // Extended business type that includes location field
 interface ExtendedBusiness extends Business {
-  location?: string;
+  location: string;
 }
 
 const getCustomCategories = (): string[] => {
@@ -65,15 +65,12 @@ const BusinessesPage = () => {
         const fetchedBusinesses = getAllBusinesses();
         // Add location from address if missing
         const extendedBusinesses = fetchedBusinesses.map(business => {
-          if (!('location' in business)) {
-            // Extract location from address
-            const addressParts = business.address.split(',');
-            const extractedLocation = addressParts.length > 1 
-              ? addressParts[addressParts.length - 1].trim()
-              : 'Unknown';
-            return { ...business, location: extractedLocation };
-          }
-          return business;
+          // Extract location from address
+          const addressParts = business.address?.split(',') || [];
+          const extractedLocation = addressParts.length > 1 
+            ? addressParts[addressParts.length - 1].trim()
+            : 'Unknown';
+          return { ...business, location: extractedLocation };
         });
         setBusinesses(extendedBusinesses);
       } catch (error) {
@@ -89,15 +86,12 @@ const BusinessesPage = () => {
       const fetchedBusinesses = getAllBusinesses();
       // Add location from address if missing
       const extendedBusinesses = fetchedBusinesses.map(business => {
-        if (!('location' in business)) {
-          // Extract location from address
-          const addressParts = business.address.split(',');
-          const extractedLocation = addressParts.length > 1 
-            ? addressParts[addressParts.length - 1].trim()
-            : 'Unknown';
-          return { ...business, location: extractedLocation };
-        }
-        return business;
+        // Extract location from address
+        const addressParts = business.address?.split(',') || [];
+        const extractedLocation = addressParts.length > 1 
+          ? addressParts[addressParts.length - 1].trim()
+          : 'Unknown';
+        return { ...business, location: extractedLocation };
       });
       setBusinesses(extendedBusinesses);
     };
@@ -133,8 +127,8 @@ const BusinessesPage = () => {
       // Use location field if available, otherwise extract from address
       if (b.location) return b.location;
       
-      const parts = b.address.split(',');
-      return parts.length > 1 ? parts[parts.length - 1].trim() : parts[0].trim();
+      const parts = b.address?.split(',') || [];
+      return parts.length > 1 ? parts[parts.length - 1].trim() : parts[0]?.trim() || 'Unknown';
     });
     
     const businessLocations = Array.from(new Set(extractedLocations));
@@ -305,7 +299,7 @@ const BusinessesPage = () => {
       />
       
       <BusinessesGrid 
-        businesses={currentBusinesses as Business[]}
+        businesses={currentBusinesses as unknown as Business[]}
         clearAllFilters={clearAllFilters}
       />
       
