@@ -3,6 +3,12 @@ import { connectToMongoDB, mongoose } from '../config/mongodb';
 import { ISubscriptionPackage, SubscriptionPackage } from '../models/SubscriptionPackage';
 import { businessPackages, influencerPackages } from '@/data/subscriptionData';
 
+// Add a browser compatibility check for process
+if (typeof window !== 'undefined' && typeof process === 'undefined') {
+  // @ts-ignore - Add a minimal process polyfill for browser environments
+  window.process = window.process || { env: {} };
+}
+
 export const initializeMongoDB = async () => {
   try {
     console.log('Initializing MongoDB connection...');

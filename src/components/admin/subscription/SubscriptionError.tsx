@@ -1,16 +1,19 @@
 
 import React from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, ShieldAlert, Bug } from "lucide-react";
+import { AlertCircle, ShieldAlert, Bug, Database } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type SubscriptionErrorProps = {
   error: string;
   errorDetails?: string | null;
+  onRetry?: () => void;
 };
 
 const SubscriptionError: React.FC<SubscriptionErrorProps> = ({ 
   error, 
-  errorDetails 
+  errorDetails,
+  onRetry 
 }) => {
   if (!error) return null;
   
@@ -32,6 +35,12 @@ const SubscriptionError: React.FC<SubscriptionErrorProps> = ({
             <span>This may be a Firestore connectivity issue or permission problem.</span>
           </div>
         )}
+        {error.includes("MongoDB") && (
+          <div className="mt-2 flex items-center text-sm">
+            <Database className="h-4 w-4 mr-1" />
+            <span>MongoDB connection issue. This might be because browser-based connections to MongoDB are not supported without a backend service.</span>
+          </div>
+        )}
         {errorDetails && (
           <div className="mt-2 p-2 bg-black/5 rounded-md text-xs font-mono overflow-auto max-h-32">
             <details>
@@ -39,6 +48,17 @@ const SubscriptionError: React.FC<SubscriptionErrorProps> = ({
               <pre className="whitespace-pre-wrap">{errorDetails}</pre>
             </details>
           </div>
+        )}
+        
+        {onRetry && (
+          <Button 
+            onClick={onRetry} 
+            variant="outline" 
+            size="sm" 
+            className="mt-2"
+          >
+            Retry Connection
+          </Button>
         )}
       </AlertDescription>
     </Alert>

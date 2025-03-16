@@ -1,6 +1,12 @@
 
 import { connectToMongoDB, mongoose, isMongoDBConnected } from '../config/mongodb';
 
+// Add a minimal browser check
+if (typeof window !== 'undefined' && typeof process === 'undefined') {
+  // @ts-ignore - Add a minimal process polyfill for browser environments
+  window.process = window.process || { env: {} };
+}
+
 // Function to auto-initialize MongoDB when needed
 export const autoInitMongoDB = async () => {
   try {
