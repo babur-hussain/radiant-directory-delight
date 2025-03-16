@@ -18,8 +18,19 @@ import {
 } from '@/components/ui/table';
 import CSVUploadDialog from './CSVUploadDialog';
 import BusinessTableRow from './table/BusinessTableRow';
+import { Business } from '@/lib/csv-utils';
 
-const TableBusinessListings = () => {
+interface TableBusinessListingsProps {
+  onRefresh?: () => void;
+  onAddBusiness?: () => void;
+  onEditBusiness?: (business: Business) => void;
+}
+
+const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({ 
+  onRefresh, 
+  onAddBusiness, 
+  onEditBusiness 
+}) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState<IBusiness | null>(null);
@@ -35,6 +46,9 @@ const TableBusinessListings = () => {
       // This would be implemented in the refreshData call after deletion
       await refreshData();
       setIsDeleteDialogOpen(false);
+      if (onRefresh) {
+        onRefresh();
+      }
     } catch (error) {
       console.error("Error deleting business:", error);
     }
@@ -46,6 +60,23 @@ const TableBusinessListings = () => {
     setIsDeleteDialogOpen(true);
   };
 
+  const handleAddClick = () => {
+    if (onAddBusiness) {
+      onAddBusiness();
+    } else {
+      setIsFormOpen(true);
+    }
+  };
+
+  const handleEditClick = (business: IBusiness) => {
+    if (onEditBusiness) {
+      onEditBusiness(business as Business);
+    } else {
+      setSelectedBusiness(business);
+      setIsFormOpen(true);
+    }
+  };
+
   return (
     <div className="business-table-container">
       <div className="mb-4 flex justify-between items-center">
@@ -54,7 +85,7 @@ const TableBusinessListings = () => {
           <Button onClick={() => setIsUploadOpen(true)} variant="outline" size="sm">
             Import CSV
           </Button>
-          <Button onClick={() => setIsFormOpen(true)}>
+          <Button onClick={handleAddClick}>
             <Plus className="mr-2 h-4 w-4" /> Add Business
           </Button>
         </div>
@@ -91,10 +122,7 @@ const TableBusinessListings = () => {
                     key={business.id}
                     business={business}
                     onViewDetails={() => {}}
-                    onEditBusiness={() => {
-                      setSelectedBusiness(business);
-                      setIsFormOpen(true);
-                    }}
+                    onEditBusiness={() => handleEditClick(business)}
                     onDeleteBusiness={() => openDeleteDialog(business)}
                   />
                 ))
@@ -114,6 +142,9 @@ const TableBusinessListings = () => {
           await refreshData();
           setIsFormOpen(false);
           setSelectedBusiness(null);
+          if (onRefresh) {
+            onRefresh();
+          }
         }}
         business={selectedBusiness}
         isSubmitting={false}
@@ -122,7 +153,12 @@ const TableBusinessListings = () => {
       <CSVUploadDialog 
         show={isUploadOpen} 
         onClose={() => setIsUploadOpen(false)} 
-        onUploadComplete={() => refreshData()}
+        onUploadComplete={() => {
+          refreshData();
+          if (onRefresh) {
+            onRefresh();
+          }
+        }}
       />
 
       <DeleteBusinessDialog
