@@ -1,175 +1,155 @@
-import { User, IUser } from '../models/User';
+import { connectToMongoDB } from '../config/mongodb';
+import mongoose from '../config/mongodb';
 import { SubscriptionPackage, ISubscriptionPackage } from '../models/SubscriptionPackage';
 import { Business, IBusiness } from '../models/Business';
-import { Subscription, ISubscription } from '../models/Subscription';
-import { connectToMongoDB } from '../config/mongodb';
-import { businessPackages, influencerPackages } from '@/data/subscriptionData';
-
-/**
- * Ensures MongoDB is connected before any operations
- */
-const ensureMongoDBConnected = async (): Promise<boolean> => {
-  try {
-    console.log("Ensuring MongoDB is connected before operations");
-    const connected = await connectToMongoDB();
-    if (!connected) {
-      console.error("Failed to connect to MongoDB");
-      return false;
-    }
-    return true;
-  } catch (error) {
-    console.error("Error connecting to MongoDB:", error);
-    return false;
-  }
-};
+import { setupMongoDB } from '@/utils/setupMongoDB';
 
 /**
  * Fetches all subscription packages from MongoDB
  */
-export async function fetchSubscriptionPackages(): Promise<ISubscriptionPackage[]> {
+export const fetchSubscriptionPackages = async (): Promise<ISubscriptionPackage[]> => {
   try {
-    // Ensure MongoDB is connected
-    const connected = await ensureMongoDBConnected();
+    // First ensure MongoDB is connected
+    const connected = await connectToMongoDB();
     if (!connected) {
-      console.warn("Using default packages due to MongoDB connection failure");
-      return [...businessPackages, ...influencerPackages];
+      throw new Error("Could not connect to MongoDB");
     }
     
-    console.log("Fetching subscription packages from MongoDB");
+    // Attempt to get the SubscriptionPackage model
+    let packageModel;
+    try {
+      packageModel = mongoose.model('SubscriptionPackage');
+    } catch (modelError) {
+      console.error("Model not found, initializing MongoDB:", modelError);
+      // If model not found, try to initialize MongoDB first
+      await setupMongoDB();
+      // Then try again
+      packageModel = mongoose.model('SubscriptionPackage');
+    }
     
-    // Query all packages and sort by price
-    const packages = await SubscriptionPackage.find().sort({ price: 1 });
+    // Now fetch all packages
+    const packages = await packageModel.find().lean();
     
-    console.log(`Retrieved ${packages.length} subscription packages from MongoDB`);
-    
-    // If no packages found, use default packages
-    if (packages.length === 0) {
-      console.warn("No subscription packages found in MongoDB. Using default packages.");
-      return [...businessPackages, ...influencerPackages];
+    if (!packages || packages.length === 0) {
+      console.warn("No subscription packages found in MongoDB");
     }
     
     return packages;
   } catch (error) {
     console.error("Error fetching subscription packages:", error);
-    // Return default packages on error
-    return [...businessPackages, ...influencerPackages];
+    throw error;
   }
-}
+};
 
 /**
- * Fetches subscription packages by type (Business or Influencer)
+ * Fetches subscription packages by type from MongoDB
  */
-export async function fetchSubscriptionPackagesByType(type: "Business" | "Influencer"): Promise<ISubscriptionPackage[]> {
+export const fetchSubscriptionPackagesByType = async (type: "Business" | "Influencer"): Promise<ISubscriptionPackage[]> => {
   try {
-    // Ensure MongoDB is connected
-    const connected = await ensureMongoDBConnected();
+    // First ensure MongoDB is connected
+    const connected = await connectToMongoDB();
     if (!connected) {
-      console.warn(`Using default ${type} packages due to MongoDB connection failure`);
-      return type === "Business" ? businessPackages : influencerPackages;
+      throw new Error("Could not connect to MongoDB");
     }
     
-    console.log(`Fetching ${type} subscription packages from MongoDB`);
+    // Get the SubscriptionPackage model
+    let packageModel;
+    try {
+      packageModel = mongoose.model('SubscriptionPackage');
+    } catch (modelError) {
+      console.error("Model not found, initializing MongoDB:", modelError);
+      // If model not found, try to initialize MongoDB first
+      await setupMongoDB();
+      // Then try again
+      packageModel = mongoose.model('SubscriptionPackage');
+    }
     
-    // Query packages by type and sort by price
-    const packages = await SubscriptionPackage.find({ type }).sort({ price: 1 });
+    // Query by type
+    const packages = await packageModel.find({ type }).lean();
     
-    console.log(`Retrieved ${packages.length} ${type} packages from MongoDB`);
-    
-    // If no packages found, use default packages for the type
-    if (packages.length === 0) {
-      console.warn(`No ${type} subscription packages found in MongoDB. Using default ${type} packages.`);
-      return type === "Business" ? businessPackages : influencerPackages;
+    if (!packages || packages.length === 0) {
+      console.warn(`No ${type} subscription packages found in MongoDB`);
     }
     
     return packages;
   } catch (error) {
     console.error(`Error fetching ${type} subscription packages:`, error);
-    // Return default packages for the type on error
-    return type === "Business" ? businessPackages : influencerPackages;
+    throw error;
   }
-}
+};
 
 /**
- * Creates or updates a subscription package in MongoDB
+ * Saves a subscription package to MongoDB
  */
-export async function saveSubscriptionPackage(packageData: ISubscriptionPackage): Promise<void> {
+export const saveSubscriptionPackage = async (packageData: ISubscriptionPackage): Promise<ISubscriptionPackage> => {
   try {
-    // Ensure MongoDB is connected
-    const connected = await ensureMongoDBConnected();
+    // First ensure MongoDB is connected
+    const connected = await connectToMongoDB();
     if (!connected) {
-      throw new Error("Failed to connect to MongoDB");
+      throw new Error("Could not connect to MongoDB");
     }
     
-    console.log("Saving subscription package to MongoDB:", packageData);
-    
-    // Validate required fields before saving
-    if (!packageData.id) {
-      throw new Error("Package ID is required");
-    }
-    
-    if (!packageData.title) {
-      throw new Error("Package title is required");
-    }
-    
-    // Make sure we have proper type conversion for numeric fields
-    const sanitizedPackage = {
-      ...packageData,
-      price: Number(packageData.price),
-      monthlyPrice: Number(packageData.monthlyPrice || 0),
-      setupFee: Number(packageData.setupFee || 0),
-      durationMonths: Number(packageData.durationMonths || 12),
-      advancePaymentMonths: Number(packageData.advancePaymentMonths || 0),
-      popular: Boolean(packageData.popular),
-      // Ensure paymentType is always set
-      paymentType: packageData.paymentType || "recurring",
-      // Ensure termsAndConditions is set
-      termsAndConditions: packageData.termsAndConditions || "",
-    };
-    
-    // Update or create the package in MongoDB
-    console.log("Before MongoDB upsert operation with data:", JSON.stringify(sanitizedPackage, null, 2));
-    
-    await SubscriptionPackage.findOneAndUpdate(
-      { id: packageData.id },
-      sanitizedPackage,
-      { upsert: true, new: true }
-    );
-    
-    console.log("Subscription package saved successfully with ID:", packageData.id);
-    
-    // Verify the document was saved by attempting to read it back
+    // Get the SubscriptionPackage model
+    let packageModel;
     try {
-      const savedPackage = await SubscriptionPackage.findOne({ id: packageData.id });
-      console.log(`Successfully verified document was saved with ID: ${packageData.id}`);
-    } catch (verifyError) {
-      console.error("Failed to verify document was saved:", verifyError);
+      packageModel = mongoose.model('SubscriptionPackage');
+    } catch (modelError) {
+      console.error("Model not found, initializing MongoDB:", modelError);
+      // If model not found, try to initialize MongoDB first
+      await setupMongoDB();
+      // Then try again
+      packageModel = mongoose.model('SubscriptionPackage');
+    }
+    
+    // Check if package with this ID already exists
+    const existingPackage = await packageModel.findOne({ id: packageData.id });
+    
+    if (existingPackage) {
+      // Update existing package
+      const updated = await packageModel.findOneAndUpdate(
+        { id: packageData.id },
+        packageData,
+        { new: true }
+      );
+      return updated;
+    } else {
+      // Create new package
+      const newPackage = await packageModel.create(packageData);
+      return newPackage;
     }
   } catch (error) {
     console.error("Error saving subscription package:", error);
-    console.error("Package data that failed:", JSON.stringify(packageData, null, 2));
     throw error;
   }
-}
+};
 
 /**
  * Deletes a subscription package from MongoDB
  */
-export async function deleteSubscriptionPackage(packageId: string): Promise<void> {
+export const deleteSubscriptionPackage = async (packageId: string): Promise<{ success: boolean }> => {
   try {
-    // Ensure MongoDB is initialized
-    const connected = await ensureMongoDBConnected();
+    // First ensure MongoDB is connected
+    const connected = await connectToMongoDB();
     if (!connected) {
-      throw new Error("Failed to connect to MongoDB");
+      throw new Error("Could not connect to MongoDB");
     }
     
-    console.log("Deleting subscription package with ID:", packageId);
-    await SubscriptionPackage.deleteOne({ id: packageId });
-    console.log("Subscription package deleted successfully");
+    // Get the SubscriptionPackage model
+    const packageModel = mongoose.model('SubscriptionPackage');
+    
+    // Delete the package
+    const result = await packageModel.deleteOne({ id: packageId });
+    
+    if (result.deletedCount === 0) {
+      throw new Error(`Package with ID ${packageId} not found`);
+    }
+    
+    return { success: true };
   } catch (error) {
     console.error("Error deleting subscription package:", error);
     throw error;
   }
-}
+};
 
 /**
  * Saves a business to MongoDB
@@ -177,7 +157,7 @@ export async function deleteSubscriptionPackage(packageId: string): Promise<void
 export async function saveBusiness(business: IBusiness): Promise<void> {
   try {
     // Ensure MongoDB is initialized
-    const connected = await ensureMongoDBConnected();
+    const connected = await connectToMongoDB();
     if (!connected) {
       throw new Error("Failed to connect to MongoDB");
     }
@@ -218,7 +198,7 @@ export async function saveBusiness(business: IBusiness): Promise<void> {
 export async function deleteBusiness(businessId: number): Promise<void> {
   try {
     // Ensure MongoDB is initialized
-    const connected = await ensureMongoDBConnected();
+    const connected = await connectToMongoDB();
     if (!connected) {
       throw new Error("Failed to connect to MongoDB");
     }

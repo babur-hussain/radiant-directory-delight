@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { setupMongoDB } from '@/utils/setupMongoDB';
+import { setupMongoDB, autoInitMongoDB } from '@/utils/setupMongoDB';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, AlertCircle, RefreshCw, Database } from 'lucide-react';
 import Loading from '@/components/ui/loading';
@@ -12,6 +12,7 @@ import MongoDBInitializationPanel from '@/components/admin/MongoDBInitialization
 import SubscriptionPackageManagement from '@/components/admin/subscription/SubscriptionManagement';
 import MigrationUtility from '@/components/admin/MigrationUtility';
 import { useToast } from '@/hooks/use-toast';
+import { connectToMongoDB } from '@/config/mongodb';
 
 const Dashboard = () => {
   const [isInitializing, setIsInitializing] = useState(true);
@@ -24,9 +25,25 @@ const Dashboard = () => {
   useEffect(() => {
     // Initialize MongoDB when component mounts
     const initDb = async () => {
+      // Ensure MongoDB is connected first
+      try {
+        const connected = await connectToMongoDB();
+        if (!connected) {
+          throw new Error('Failed to connect to MongoDB');
+        }
+        console.log('MongoDB connection established');
+      } catch (connError) {
+        console.error('MongoDB connection error:', connError);
+        toast({
+          title: "MongoDB Connection Error",
+          description: String(connError),
+          variant: "destructive"
+        });
+      }
+
       setIsInitializing(true);
       setProgress(0);
-      setStatusMessage('Connecting to MongoDB...');
+      setStatusMessage('Setting up MongoDB collections...');
       
       try {
         console.log('Admin Dashboard: Forcefully initializing MongoDB...');

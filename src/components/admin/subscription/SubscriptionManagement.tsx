@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +29,8 @@ import { fetchSubscriptionPackages, saveSubscriptionPackage, deleteSubscriptionP
 import SubscriptionPackageForm from "./SubscriptionPackageForm";
 import { useToast } from "@/hooks/use-toast";
 import AdminPermissionError from "../dashboard/AdminPermissionError";
-import { autoInitMongoDB } from "@/utils/setupMongoDB";
+import { setupMongoDB } from "@/utils/setupMongoDB";
+import { connectToMongoDB } from "@/config/mongodb";
 
 interface SubscriptionPackageManagementProps {
   onPermissionError?: (error: any) => void;
@@ -49,9 +51,41 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
   const { toast } = useToast();
 
   useEffect(() => {
-    autoInitMongoDB().then(() => {
-      loadPackages();
-    });
+    const initAndLoad = async () => {
+      setIsLoading(true);
+      try {
+        // Ensure MongoDB is connected first
+        const connected = await connectToMongoDB();
+        if (!connected) {
+          throw new Error("Could not connect to MongoDB");
+        }
+        
+        // Initialize MongoDB if needed
+        try {
+          await setupMongoDB((progress, message) => {
+            console.log(`MongoDB setup: ${progress}% - ${message}`);
+          });
+        } catch (initError) {
+          console.error("Error during MongoDB initialization:", initError);
+          // Continue to try loading packages even if initialization fails
+        }
+        
+        // Now try to load packages
+        await loadPackages();
+      } catch (error) {
+        console.error("Error initializing MongoDB and loading packages:", error);
+        setPermissionError("Failed to initialize MongoDB and load packages. Please try again.");
+        toast({
+          title: "Error",
+          description: "Failed to initialize database. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    initAndLoad();
   }, []);
 
   useEffect(() => {
@@ -68,8 +102,18 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     try {
       const data = await fetchSubscriptionPackages();
       console.log("Fetched subscription packages from MongoDB:", data);
-      setPackages(data);
-      setFilteredPackages(data.filter(pkg => pkg.type.toLowerCase() === activeTab));
+      
+      if (data && data.length > 0) {
+        setPackages(data);
+        setFilteredPackages(data.filter(pkg => pkg.type.toLowerCase() === activeTab));
+      } else {
+        console.warn("No subscription packages found in MongoDB");
+        toast({
+          title: "No Packages Found",
+          description: "No subscription packages found in the database.",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
       console.error("Error loading packages:", error);
       

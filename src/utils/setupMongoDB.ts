@@ -52,12 +52,29 @@ export const setupMongoDB = async (
       console.log('Error dropping collections (continuing anyway):', error);
     }
     
+    // Clear mongoose model cache to prevent schema registration errors
+    try {
+      // Unregister all models to avoid "Cannot overwrite model once compiled" errors
+      Object.keys(mongoose.models).forEach(modelName => {
+        delete mongoose.models[modelName];
+      });
+      
+      // Clear all compiled schemas
+      Object.keys(mongoose.modelSchemas || {}).forEach(modelName => {
+        delete mongoose.modelSchemas[modelName];
+      });
+    } catch (cacheError) {
+      console.error('Error clearing mongoose model cache:', cacheError);
+    }
+    
     // Verify/create necessary collections
     const collections = [];
     
     progressCallback?.(20, 'Setting up User collection');
     try {
-      await User.createCollection();
+      // Ensure the model is registered before creating collection
+      const UserModel = mongoose.model('User', User.schema);
+      await UserModel.createCollection();
       console.log('User collection created successfully');
       collections.push('users');
     } catch (error) {
@@ -68,51 +85,56 @@ export const setupMongoDB = async (
     
     progressCallback?.(35, 'Setting up Business collection');
     try {
-      await Business.createCollection();
+      // Ensure the model is registered
+      const BusinessModel = mongoose.model('Business', Business.schema);
+      await BusinessModel.createCollection();
       console.log('Business collection created successfully');
       collections.push('businesses');
     } catch (error) {
       console.error('Error creating Business collection:', error);
-      // Collection might already exist, try to continue
       collections.push('businesses');
     }
     
     progressCallback?.(50, 'Setting up SubscriptionPackage collection');
     try {
-      await SubscriptionPackage.createCollection();
+      // Ensure the model is registered
+      const SubscriptionPackageModel = mongoose.model('SubscriptionPackage', SubscriptionPackage.schema);
+      await SubscriptionPackageModel.createCollection();
       console.log('SubscriptionPackage collection created successfully');
       collections.push('subscriptionpackages');
     } catch (error) {
       console.error('Error creating SubscriptionPackage collection:', error);
-      // Collection might already exist, try to continue
       collections.push('subscriptionpackages');
     }
     
     progressCallback?.(65, 'Setting up Subscription collection');
     try {
-      await Subscription.createCollection();
+      // Ensure the model is registered
+      const SubscriptionModel = mongoose.model('Subscription', Subscription.schema);
+      await SubscriptionModel.createCollection();
       console.log('Subscription collection created successfully');
       collections.push('subscriptions');
     } catch (error) {
       console.error('Error creating Subscription collection:', error);
-      // Collection might already exist, try to continue
       collections.push('subscriptions');
     }
     
     // Setup default subscription packages - first delete all existing packages
     progressCallback?.(80, 'Setting up default subscription packages');
     try {
+      const SubscriptionPackageModel = mongoose.model('SubscriptionPackage');
+      
       // Remove all existing packages to start fresh
-      await SubscriptionPackage.deleteMany({});
+      await SubscriptionPackageModel.deleteMany({});
       console.log('Deleted all existing subscription packages');
       
       // Combine business and influencer packages
       const allPackages = [...businessPackages, ...influencerPackages];
       
       // Add each package to MongoDB
-      for (const pkg of allPackages) {
+      const seedPromises = allPackages.map(async (pkg) => {
         try {
-          await SubscriptionPackage.create({
+          await SubscriptionPackageModel.create({
             ...pkg,
             features: pkg.features || [],
             setupFee: pkg.setupFee || 0,
@@ -123,26 +145,45 @@ export const setupMongoDB = async (
             paymentType: pkg.paymentType || "recurring"
           });
           console.log(`Seeded package: ${pkg.title}`);
+          return true;
         } catch (err) {
           console.error(`Error seeding package ${pkg.title}:`, err);
+          return false;
         }
-      }
+      });
+      
+      await Promise.all(seedPromises);
       
       // Verify packages were created
-      const packageCount = await SubscriptionPackage.countDocuments();
+      const packageCount = await SubscriptionPackageModel.countDocuments();
       console.log(`Created ${packageCount} subscription packages`);
     } catch (error) {
       console.error('Error setting up subscription packages:', error);
+      throw new Error(`Failed to seed subscription packages: ${error instanceof Error ? error.message : String(error)}`);
     }
     
     // Create indexes
     progressCallback?.(95, 'Creating database indexes');
     try {
       console.log('Creating indexes for collections');
-      await User.syncIndexes();
-      await Business.syncIndexes();
-      await SubscriptionPackage.syncIndexes();
-      await Subscription.syncIndexes();
+      
+      // Create indexes manually instead of using syncIndexes
+      const UserModel = mongoose.model('User');
+      await UserModel.collection.createIndex({ uid: 1 }, { unique: true });
+      await UserModel.collection.createIndex({ email: 1 });
+      
+      const BusinessModel = mongoose.model('Business');
+      await BusinessModel.collection.createIndex({ id: 1 }, { unique: true });
+      await BusinessModel.collection.createIndex({ name: 1 });
+      
+      const SubscriptionPackageModel = mongoose.model('SubscriptionPackage');
+      await SubscriptionPackageModel.collection.createIndex({ id: 1 }, { unique: true });
+      await SubscriptionPackageModel.collection.createIndex({ type: 1 });
+      
+      const SubscriptionModel = mongoose.model('Subscription');
+      await SubscriptionModel.collection.createIndex({ id: 1 }, { unique: true });
+      await SubscriptionModel.collection.createIndex({ userId: 1 });
+      
       console.log('Indexes successfully created');
     } catch (indexError) {
       console.error('Error creating indexes:', indexError);
