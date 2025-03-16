@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -82,6 +83,7 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   const paymentType = form.watch("paymentType");
 
   useEffect(() => {
+    // Only set up price relationship for recurring subscriptions
     if (paymentType === "recurring") {
       const subscription = form.watch((value, { name }) => {
         if (name === "price" && value.price) {
@@ -100,9 +102,18 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   const handleSubmit = (values: FormValues) => {
     const featureArray = stringToFeatures(values.featuresString);
     
+    // Ensure price is properly set for one-time payment packages
     const price = Number(values.price);
-    const monthlyPrice = Number(values.monthlyPrice);
-    const setupFee = Number(values.setupFee);
+    const monthlyPrice = paymentType === "recurring" ? Number(values.monthlyPrice) : undefined;
+    const setupFee = paymentType === "recurring" ? Number(values.setupFee) : 0;
+    
+    console.log("Form submitted with data:", {
+      ...values,
+      price,
+      monthlyPrice,
+      setupFee,
+      paymentType: values.paymentType
+    });
     
     const packageData: ISubscriptionPackage = {
       id: values.id,
@@ -117,12 +128,12 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
       popular: values.popular,
       type: values.type,
       termsAndConditions: values.termsAndConditions || "",
-      billingCycle: values.billingCycle,
-      advancePaymentMonths: Number(values.advancePaymentMonths),
+      billingCycle: paymentType === "recurring" ? values.billingCycle : undefined,
+      advancePaymentMonths: paymentType === "recurring" ? Number(values.advancePaymentMonths) : 0,
       paymentType: values.paymentType
     };
     
-    console.log("Form submitted with data:", packageData);
+    console.log("Final package data being submitted:", packageData);
     onSubmit(packageData);
   };
 
@@ -238,6 +249,9 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
                     step="1" 
                     {...field} 
                     onChange={(e) => {
+                      field.onChange(e);
+                      
+                      // Only calculate relationships for recurring subscriptions
                       if (paymentType === "recurring") {
                         if (billingCycle === "monthly") {
                           const yearlyPrice = Number(e.target.value) * 12;
@@ -250,6 +264,9 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
                     }}
                   />
                 </FormControl>
+                <FormDescription>
+                  {paymentType === "one-time" && "The full one-time payment amount for this package"}
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -322,24 +339,24 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
             />
           )}
 
-          {paymentType === "recurring" && (
-            <FormField
-              control={form.control}
-              name="durationMonths"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Duration (months)</FormLabel>
-                  <FormControl>
-                    <Input type="number" min="1" step="1" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Duration of the subscription
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
+          <FormField
+            control={form.control}
+            name="durationMonths"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Duration (months)</FormLabel>
+                <FormControl>
+                  <Input type="number" min="1" step="1" {...field} />
+                </FormControl>
+                <FormDescription>
+                  {paymentType === "one-time" 
+                    ? "How long this package will be valid after purchase" 
+                    : "Duration of the subscription"}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           {paymentType === "recurring" && (
             <FormField

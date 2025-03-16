@@ -37,6 +37,8 @@ export const fetchSubscriptionPackages = async (): Promise<ISubscriptionPackage[
       console.warn("No subscription packages found in MongoDB");
     }
     
+    console.log("Fetched packages:", packages);
+    
     // Make sure all one-time packages have valid price
     const validatedPackages = packages.map(pkg => {
       if (pkg.paymentType === "one-time" && (!pkg.price || pkg.price <= 0)) {
@@ -126,17 +128,37 @@ export const saveSubscriptionPackage = async (packageData: ISubscriptionPackage)
       packageModel = mongoose.model('SubscriptionPackage');
     }
     
-    // Fix one-time payment price if it's not set correctly
+    console.log("Original package data to save:", packageData);
+    
+    // Ensure price is properly set for one-time payment packages
     let sanitizedPackage = { ...packageData };
-    if (packageData.paymentType === "one-time" && (!packageData.price || packageData.price <= 0)) {
-      sanitizedPackage.price = 999; // Default to 999 if not set
+    
+    if (packageData.paymentType === "one-time") {
+      // Make sure one-time packages have required fields
+      if (!packageData.price || packageData.price <= 0) {
+        sanitizedPackage.price = 999; // Default to 999 if not set
+      }
+      
+      // One-time packages don't need recurring fields
+      sanitizedPackage.billingCycle = undefined;
+      sanitizedPackage.setupFee = 0;
+      sanitizedPackage.monthlyPrice = undefined;
+      sanitizedPackage.advancePaymentMonths = 0;
+    } else {
+      // Make sure recurring packages have required fields
+      if (!sanitizedPackage.billingCycle) {
+        sanitizedPackage.billingCycle = "yearly";
+      }
     }
+    
+    console.log("Sanitized package data to save:", sanitizedPackage);
     
     // Check if package with this ID already exists
     const existingPackage = await packageModel.findOne({ id: packageData.id });
     
     if (existingPackage) {
       // Update existing package
+      console.log("Updating existing package with ID:", packageData.id);
       const updated = await packageModel.findOneAndUpdate(
         { id: packageData.id },
         sanitizedPackage,
@@ -145,6 +167,7 @@ export const saveSubscriptionPackage = async (packageData: ISubscriptionPackage)
       return updated;
     } else {
       // Create new package
+      console.log("Creating new package with ID:", packageData.id);
       const newPackage = await packageModel.create(sanitizedPackage);
       return newPackage;
     }

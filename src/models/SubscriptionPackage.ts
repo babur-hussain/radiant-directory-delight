@@ -13,7 +13,7 @@ export interface ISubscriptionPackage {
   features: string[];
   popular: boolean;
   type: "Business" | "Influencer";
-  termsAndConditions?: string; // Changed to optional
+  termsAndConditions?: string;
   paymentType: "recurring" | "one-time";
   billingCycle?: "monthly" | "yearly";
   advancePaymentMonths?: number;
@@ -31,8 +31,8 @@ const SubscriptionPackageSchema = new mongoose.Schema<ISubscriptionPackage>({
   features: [{ type: String }],
   popular: { type: Boolean, default: false },
   type: { type: String, enum: ['Business', 'Influencer'], required: true },
-  termsAndConditions: { type: String, default: '' }, // Default empty string
-  paymentType: { type: String, enum: ['recurring', 'one-time'], default: 'recurring' },
+  termsAndConditions: { type: String, default: '' },
+  paymentType: { type: String, enum: ['recurring', 'one-time'], default: 'recurring', required: true },
   billingCycle: { type: String, enum: ['monthly', 'yearly'] },
   advancePaymentMonths: { type: Number, default: 0 }
 });
@@ -41,5 +41,22 @@ const SubscriptionPackageSchema = new mongoose.Schema<ISubscriptionPackage>({
 SubscriptionPackageSchema.index({ type: 1 });
 SubscriptionPackageSchema.index({ paymentType: 1 });
 SubscriptionPackageSchema.index({ price: 1 });
+
+// Pre-save middleware to ensure one-time packages have proper setup
+SubscriptionPackageSchema.pre('save', function(next) {
+  if (this.paymentType === 'one-time') {
+    // Ensure price is set for one-time packages
+    if (!this.price || this.price <= 0) {
+      this.price = 999;
+    }
+    
+    // Remove recurring-specific fields
+    this.billingCycle = undefined;
+    this.setupFee = 0;
+    this.monthlyPrice = undefined;
+    this.advancePaymentMonths = 0;
+  }
+  next();
+});
 
 export const SubscriptionPackage = mongoose.model<ISubscriptionPackage>('SubscriptionPackage', SubscriptionPackageSchema);
