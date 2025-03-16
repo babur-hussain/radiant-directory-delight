@@ -43,7 +43,7 @@ export const diagnoseMongoDbConnection = async () => {
   }
   
   // Check current connection state
-  const connectionState = mongoose.connection.readyState;
+  const connectionState = mongoose.connection ? mongoose.connection.readyState : 99;
   const stateMap = {
     0: 'disconnected',
     1: 'connected',
@@ -60,7 +60,7 @@ export const diagnoseMongoDbConnection = async () => {
     const connected = await connectToMongoDB();
     console.log(`Test connection ${connected ? 'succeeded' : 'failed'}`);
     
-    if (connected) {
+    if (connected && mongoose.connection) {
       // Try a simple query
       try {
         const admin = mongoose.connection.db.admin();

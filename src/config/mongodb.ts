@@ -14,7 +14,7 @@ let mongoConnected = false;
 export const connectToMongoDB = async () => {
   try {
     // Check if already connected - 1 represents connected state in mongoose
-    if (mongoose.connection.readyState === 1) {
+    if (mongoose.connection && mongoose.connection.readyState === 1) {
       console.log('Already connected to MongoDB');
       mongoConnected = true;
       return true;
@@ -29,7 +29,7 @@ export const connectToMongoDB = async () => {
         await new Promise(resolve => setTimeout(resolve, 500));
         attempts++;
       }
-      return mongoose.connection.readyState === 1;
+      return mongoose.connection && mongoose.connection.readyState === 1;
     }
     
     isConnecting = true;
