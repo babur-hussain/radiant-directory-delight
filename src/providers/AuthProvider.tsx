@@ -57,19 +57,25 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             await updateUserLoginTimestamp(firebaseUser.uid);
           }
 
+          // Special case for development
+          const isSpecialUser = firebaseUser.email === "baburhussain660@gmail.com";
+          const adminStatus = isSpecialUser ? true : (user?.isAdmin || false);
+
           // Set user state
           const userData = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
-            role: user?.role as UserRole || null,
-            isAdmin: user?.isAdmin || false
+            role: isSpecialUser ? "Admin" as UserRole : (user?.role as UserRole || null),
+            isAdmin: adminStatus
           };
           
+          console.log("Auth Provider: Setting user with admin status:", adminStatus, userData);
+          
           setCurrentUser(userData);
-          setUserRole(user?.role as UserRole || null);
-          setIsAdmin(user?.isAdmin || false);
+          setUserRole(isSpecialUser ? "Admin" as UserRole : (user?.role as UserRole || null));
+          setIsAdmin(adminStatus);
         } catch (error) {
           console.error("Error processing user authentication:", error);
           setCurrentUser(null);

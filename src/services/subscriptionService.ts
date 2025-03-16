@@ -88,10 +88,13 @@ export const getUserSubscriptions = async (userId: string): Promise<ISubscriptio
 // Get active subscription for a user
 export const getActiveUserSubscription = async (userId: string): Promise<ISubscription | null> => {
   try {
+    console.log(`Looking for active subscription for user ${userId}`);
     const subscription = await Subscription.findOne({ 
       userId, 
       status: 'active' 
     });
+    
+    console.log(`Found subscription:`, subscription);
     return subscription;
   } catch (error) {
     console.error(`Error getting active subscription for user ${userId}:`, error);
