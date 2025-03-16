@@ -1,6 +1,6 @@
 
 import { ISubscription } from '../models/Subscription';
-import { mongoose } from '../config/mongodb';
+import mongoose from '../config/mongodb';
 import { Subscription } from '../models/Subscription';
 import { nanoid } from 'nanoid';
 

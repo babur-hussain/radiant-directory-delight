@@ -1,5 +1,4 @@
-
-import { mongoose } from '../config/mongodb';
+import mongoose from '../config/mongodb';
 
 export interface IUser {
   uid: string;
