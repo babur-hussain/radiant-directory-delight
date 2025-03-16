@@ -1,9 +1,8 @@
 
+import { User as UserModel } from '../../models/User';
 import { User, UserRole } from "../../types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { saveUserToAllUsersList } from "./authStorage";
-import { db } from "../../config/firebase";
-import { doc, setDoc, getDoc, collection, query, getDocs, where, serverTimestamp, orderBy, limit } from "firebase/firestore";
 
 export const updateUserRole = async (user: User, role: UserRole) => {
   if (!user) {
@@ -13,8 +12,11 @@ export const updateUserRole = async (user: User, role: UserRole) => {
   try {
     localStorage.setItem(getRoleKey(user.id), role as string);
     
-    const userDoc = doc(db, "users", user.id);
-    await setDoc(userDoc, { role }, { merge: true });
+    // Update user role in MongoDB
+    await UserModel.findOneAndUpdate(
+      { uid: user.id },
+      { role: role }
+    );
     
     await syncUserData(user.id, { role });
     
@@ -48,8 +50,11 @@ export const updateUserPermission = async (userId: string, isAdmin: boolean) => 
   try {
     localStorage.setItem(getAdminKey(userId), isAdmin ? 'true' : 'false');
     
-    const userDoc = doc(db, "users", userId);
-    await setDoc(userDoc, { isAdmin }, { merge: true });
+    // Update user admin status in MongoDB
+    await UserModel.findOneAndUpdate(
+      { uid: userId },
+      { isAdmin: isAdmin }
+    );
     
     await syncUserData(userId, { isAdmin });
     
@@ -75,19 +80,18 @@ export const updateUserPermission = async (userId: string, isAdmin: boolean) => 
 
 export const getUserById = async (userId: string): Promise<User | null> => {
   try {
-    const userDoc = doc(db, "users", userId);
-    const docSnap = await getDoc(userDoc);
+    // Get user from MongoDB
+    const mongoUser = await UserModel.findOne({ uid: userId });
     
-    if (docSnap.exists()) {
-      const data = docSnap.data();
+    if (mongoUser) {
       return {
         id: userId,
-        email: data.email || null,
-        name: data.name || null,
-        role: data.role || null,
-        isAdmin: data.isAdmin || false,
-        photoURL: data.photoURL || null,
-        createdAt: data.createdAt || new Date().toISOString()
+        email: mongoUser.email,
+        name: mongoUser.name,
+        role: mongoUser.role as UserRole,
+        isAdmin: mongoUser.isAdmin,
+        photoURL: mongoUser.photoURL,
+        createdAt: mongoUser.createdAt.toISOString()
       };
     }
     
@@ -115,34 +119,33 @@ export const getUserById = async (userId: string): Promise<User | null> => {
 
 export const getAllUsers = async (): Promise<User[]> => {
   try {
-    console.log("Fetching ALL users from Firebase collection");
-    const usersCollection = collection(db, "users");
-    const q = query(usersCollection, orderBy("createdAt", "desc"));
-    const querySnapshot = await getDocs(q);
+    console.log("Fetching ALL users from MongoDB collection");
     
-    console.log(`Query executed, got ${querySnapshot.size} users`);
+    // Get all users from MongoDB, ordered by creation date
+    const mongoUsers = await UserModel.find().sort({ createdAt: -1 });
     
-    if (querySnapshot.empty) {
-      console.log("No users found in Firebase");
+    console.log(`Query executed, got ${mongoUsers.length} users`);
+    
+    if (mongoUsers.length === 0) {
+      console.log("No users found in MongoDB");
       return [];
     }
     
-    const users = querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      console.log("User data from Firebase:", doc.id, data);
+    const users = mongoUsers.map(mongoUser => {
+      console.log("User data from MongoDB:", mongoUser.uid, mongoUser);
       
       // Ensure name is a string - Fix TypeScript never type error
       let displayName: string | null = null;
-      if (data.name === null) {
+      if (mongoUser.name === null) {
         displayName = null;
-      } else if (typeof data.name === 'boolean') {
+      } else if (typeof mongoUser.name === 'boolean') {
         displayName = 'User';
-      } else if (typeof data.name === 'string') {
-        displayName = data.name || data.displayName || null;
-      } else if (data.name) {
+      } else if (typeof mongoUser.name === 'string') {
+        displayName = mongoUser.name;
+      } else if (mongoUser.name) {
         // Only call toString if name exists and is not null
         try {
-          displayName = String(data.name);
+          displayName = String(mongoUser.name);
         } catch {
           displayName = null;
         }
@@ -150,37 +153,21 @@ export const getAllUsers = async (): Promise<User[]> => {
         displayName = null;
       }
       
-      // Ensure isAdmin is a boolean
-      let adminStatus = false;
-      if (typeof data.isAdmin === 'boolean') {
-        adminStatus = data.isAdmin;
-      } else if (typeof data.isAdmin === 'string') {
-        // Safe check without using toLowerCase
-        adminStatus = data.isAdmin === 'true' || data.isAdmin === 'TRUE';
-      } else {
-        adminStatus = Boolean(data.isAdmin);
-      }
+      // Convert MongoDB date to ISO string
+      let createdTimestamp = mongoUser.createdAt?.toISOString() || new Date().toISOString();
       
-      // Fix potential issue with missing createdAt field
-      let createdTimestamp = data.createdAt || new Date().toISOString();
-      
-      // Convert Firestore timestamp to ISO string if needed
-      if (createdTimestamp && typeof createdTimestamp.toDate === 'function') {
-        createdTimestamp = createdTimestamp.toDate().toISOString();
-      }
-        
       return {
-        id: doc.id,
-        email: data.email || null,
+        id: mongoUser.uid,
+        email: mongoUser.email,
         name: displayName,
-        role: data.role || null,
-        isAdmin: adminStatus,
-        photoURL: data.photoURL || null,
+        role: mongoUser.role as UserRole,
+        isAdmin: mongoUser.isAdmin,
+        photoURL: mongoUser.photoURL,
         createdAt: createdTimestamp
       };
     });
     
-    console.log(`Successfully fetched ${users.length} users from Firebase`);
+    console.log(`Successfully fetched ${users.length} users from MongoDB`);
     
     // Log each user to verify all are being processed
     users.forEach((user, index) => {
@@ -197,7 +184,7 @@ export const getAllUsers = async (): Promise<User[]> => {
     
     return users;
   } catch (error) {
-    console.error("Error getting all users from Firebase:", error);
+    console.error("Error getting all users from MongoDB:", error);
     const fallbackUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
     console.log("Falling back to cached users:", fallbackUsers.length);
     return fallbackUsers;
@@ -231,33 +218,26 @@ export const createTestUser = async (userData: TestUserData): Promise<User> => {
     // First save to local storage for immediate feedback
     saveUserToAllUsersList(user);
     
-    // Then save to Firebase with explicit error handling
+    // Then save to MongoDB with explicit error handling
     try {
-      console.log("Attempting to save user to Firebase with ID:", userId);
+      console.log("Attempting to save user to MongoDB with ID:", userId);
       
-      // Use a reference to a specific document with the generated ID
-      const userDoc = doc(db, "users", userId);
-      
-      // Create the user document data
-      const userDocData = {
+      // Create the user document in MongoDB
+      await UserModel.create({
+        uid: userId,
         email: userData.email,
         name: userData.name,
         role: userData.role,
         isAdmin: userData.isAdmin,
-        createdAt: new Date().toISOString(),
-        lastLogin: serverTimestamp()
-      };
+        createdAt: new Date(),
+        lastLogin: new Date()
+      });
       
-      console.log("Creating user document with data:", userDocData);
-      
-      // Set the document data with merge option
-      await setDoc(userDoc, userDocData);
-      
-      console.log("Test user created successfully in Firebase:", userId);
-    } catch (firestoreError) {
-      console.error("Firebase error while creating test user:", firestoreError);
-      // Even if Firebase fails, we'll return the user since it's saved in localStorage
-      console.log("User was saved to localStorage but not to Firebase");
+      console.log("Test user created successfully in MongoDB:", userId);
+    } catch (dbError) {
+      console.error("MongoDB error while creating test user:", dbError);
+      // Even if MongoDB fails, we'll return the user since it's saved in localStorage
+      console.log("User was saved to localStorage but not to MongoDB");
     }
     
     return user;

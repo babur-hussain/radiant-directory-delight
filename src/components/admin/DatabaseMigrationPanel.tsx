@@ -1,0 +1,70 @@
+
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Database, Server } from 'lucide-react';
+import MigrationUtility from './MigrationUtility';
+
+const DatabaseMigrationPanel = () => {
+  return (
+    <Card className="col-span-full">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-xl font-bold">Database Migration</CardTitle>
+          <div className="flex items-center space-x-2">
+            <Database className="h-5 w-5 text-muted-foreground" />
+            <span className="text-muted-foreground">↔</span>
+            <Server className="h-5 w-5 text-primary" />
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="migrate" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="migrate">Migration Tool</TabsTrigger>
+            <TabsTrigger value="info">Information</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="migrate" className="space-y-4">
+            <MigrationUtility />
+          </TabsContent>
+          
+          <TabsContent value="info" className="space-y-4">
+            <div className="prose max-w-none">
+              <h3>Firestore to MongoDB Migration</h3>
+              <p>
+                This tool helps you migrate your data from Firebase Firestore to MongoDB. The migration process preserves all your existing data structure and relationships.
+              </p>
+              
+              <h4>Why Migrate?</h4>
+              <ul>
+                <li><strong>Improved Performance:</strong> MongoDB offers better performance for complex queries and large datasets.</li>
+                <li><strong>Cost Optimization:</strong> MongoDB pricing model can be more cost-effective for growing applications.</li>
+                <li><strong>Advanced Features:</strong> MongoDB provides advanced features like aggregation pipelines, transactions, and more flexible indexing.</li>
+              </ul>
+              
+              <h4>Migration Process</h4>
+              <ol>
+                <li>All users will be migrated with their roles and permissions.</li>
+                <li>All subscription packages will be migrated with their complete details.</li>
+                <li>All active and historical subscriptions will be preserved.</li>
+                <li>All business listings will be migrated with their details.</li>
+              </ol>
+              
+              <h4>Post-Migration</h4>
+              <p>
+                After migration, the application will continue using Firebase for authentication, but all data operations will use MongoDB. This hybrid approach gives you the best of both worlds.
+              </p>
+              
+              <div className="bg-muted p-4 rounded-md text-sm mt-4">
+                <strong>Note:</strong> It's recommended to perform this migration during low-traffic periods. The process is non-destructive to your Firestore data, but it's always good practice to backup your data before migration.
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default DatabaseMigrationPanel;

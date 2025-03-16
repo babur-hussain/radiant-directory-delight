@@ -1,10 +1,28 @@
 
-import { createRoot } from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import routes from './routes';
+import './index.css';
+import AuthProvider from './providers/AuthProvider';
+import { connectToMongoDB } from './config/mongodb';
+import { initializeMongoDB } from './utils/initMongoDB';
 
-const rootElement = document.getElementById("root");
-if (!rootElement) throw new Error("Failed to find the root element");
+// Initialize MongoDB connection
+initializeMongoDB()
+  .then(success => {
+    console.log('MongoDB initialization result:', success);
+  })
+  .catch(error => {
+    console.error('Error during MongoDB initialization:', error);
+  });
 
-const root = createRoot(rootElement);
-root.render(<App />);
+const router = createBrowserRouter(routes);
+
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+  <React.StrictMode>
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  </React.StrictMode>
+);

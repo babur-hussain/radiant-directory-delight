@@ -1,7 +1,6 @@
 
-import { doc, setDoc, Timestamp } from "firebase/firestore";
-import { db } from "@/config/firebase";
-import { SubscriptionData } from "./types";
+import { Subscription, ISubscription } from '../../models/Subscription';
+import { User } from '../../models/User';
 
 export const adminAssignSubscription = async (userId: string, subscriptionData: any): Promise<boolean> => {
   try {
@@ -14,7 +13,7 @@ export const adminAssignSubscription = async (userId: string, subscriptionData: 
     const subscriptionId = subscriptionData.id || `sub_${Date.now()}`;
     
     // Prepare subscription data
-    const subscription: SubscriptionData = {
+    const subscription: ISubscription = {
       id: subscriptionId,
       userId: userId,
       packageId: subscriptionData.packageId || subscriptionData.id,
@@ -23,8 +22,8 @@ export const adminAssignSubscription = async (userId: string, subscriptionData: 
       startDate: subscriptionData.startDate || new Date().toISOString(),
       endDate: subscriptionData.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       status: subscriptionData.status || "active",
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
       assignedBy: subscriptionData.assignedBy || "admin",
       assignedAt: subscriptionData.assignedAt || new Date().toISOString(),
       advancePaymentMonths: subscriptionData.advancePaymentMonths || 0,
@@ -37,11 +36,28 @@ export const adminAssignSubscription = async (userId: string, subscriptionData: 
       paymentType: subscriptionData.paymentType || "recurring" // Default to recurring if not specified
     };
     
-    // Set the document in Firestore with better logging
-    const docRef = doc(db, "subscriptions", subscriptionId);
-    console.log(`Attempting to save subscription ${subscriptionId} to Firestore for user ${userId}`, subscription);
+    // Save to MongoDB with better logging
+    console.log(`Attempting to save subscription ${subscriptionId} to MongoDB for user ${userId}`, subscription);
     
-    await setDoc(docRef, subscription);
+    // Update or create the subscription
+    await Subscription.findOneAndUpdate(
+      { id: subscriptionId },
+      subscription,
+      { upsert: true, new: true }
+    );
+    
+    // Also update the user's subscription reference
+    await User.findOneAndUpdate(
+      { uid: userId },
+      { 
+        subscription: subscriptionId,
+        $set: {
+          'subscriptionStatus': subscription.status,
+          'subscriptionPackage': subscription.packageId
+        }
+      },
+      { new: true }
+    );
     
     console.log(`Subscription ${subscriptionId} assigned to user ${userId}`);
     return true;
@@ -51,7 +67,7 @@ export const adminAssignSubscription = async (userId: string, subscriptionData: 
   }
 };
 
-// Adding this function to fix reference errors
+// Adding this function to maintain compatibility with the existing code
 export const adminCancelSubscription = async (userId: string, subscriptionId: string): Promise<boolean> => {
   try {
     if (!userId || !subscriptionId) {
@@ -59,16 +75,27 @@ export const adminCancelSubscription = async (userId: string, subscriptionId: st
       return false;
     }
     
-    // Get the subscription document
-    const docRef = doc(db, "subscriptions", subscriptionId);
+    // Update the subscription with cancelled status
+    await Subscription.findOneAndUpdate(
+      { id: subscriptionId },
+      {
+        status: "cancelled",
+        cancelledAt: new Date().toISOString(),
+        cancelReason: "admin_cancelled",
+        updatedAt: new Date()
+      }
+    );
     
-    // Update with cancelled status
-    await setDoc(docRef, {
-      status: "cancelled",
-      cancelledAt: new Date().toISOString(),
-      cancelReason: "admin_cancelled",
-      updatedAt: Timestamp.now()
-    }, { merge: true });
+    // Also update the user's subscription status
+    await User.findOneAndUpdate(
+      { uid: userId },
+      { 
+        $set: {
+          'subscriptionStatus': 'cancelled',
+          'subscriptionCancelledAt': new Date()
+        }
+      }
+    );
     
     console.log(`Subscription ${subscriptionId} cancelled for user ${userId}`);
     return true;
