@@ -93,7 +93,7 @@ const AdminSidebar = () => {
   };
   
   return (
-    <div className="h-screen border-r bg-card w-64 flex flex-col fixed">
+    <div className="h-full border-r bg-card w-full flex flex-col">
       <div className="flex h-16 items-center border-b px-6">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">A</div>
