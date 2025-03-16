@@ -1,4 +1,3 @@
-
 import { connectToMongoDB } from '../config/mongodb';
 import mongoose from '../config/mongodb';
 import { SubscriptionPackage, ISubscriptionPackage } from '../models/SubscriptionPackage';
@@ -6,6 +5,7 @@ import { Business, IBusiness } from '../models/Business';
 import { setupMongoDB } from '@/utils/setupMongoDB';
 import { Subscription, ISubscription } from '@/models/Subscription';
 import { User, IUser } from '@/models/User';
+import { syncPackageToFirebase } from '@/utils/syncMongoFirebase';
 
 /**
  * Fetches all subscription packages from MongoDB
@@ -106,7 +106,7 @@ export const fetchSubscriptionPackagesByType = async (type: "Business" | "Influe
 };
 
 /**
- * Saves a subscription package to MongoDB
+ * Saves a subscription package to MongoDB and syncs to Firebase
  */
 export const saveSubscriptionPackage = async (packageData: ISubscriptionPackage): Promise<ISubscriptionPackage> => {
   try {
@@ -136,6 +136,7 @@ export const saveSubscriptionPackage = async (packageData: ISubscriptionPackage)
     if (packageData.paymentType === "one-time") {
       // Make sure one-time packages have required fields
       if (!packageData.price || packageData.price <= 0) {
+        console.warn("One-time package has invalid price, setting default:", packageData.id);
         sanitizedPackage.price = 999; // Default to 999 if not set
       }
       
@@ -156,21 +157,33 @@ export const saveSubscriptionPackage = async (packageData: ISubscriptionPackage)
     // Check if package with this ID already exists
     const existingPackage = await packageModel.findOne({ id: packageData.id });
     
+    let savedPackage;
     if (existingPackage) {
       // Update existing package
       console.log("Updating existing package with ID:", packageData.id);
-      const updated = await packageModel.findOneAndUpdate(
+      savedPackage = await packageModel.findOneAndUpdate(
         { id: packageData.id },
         sanitizedPackage,
         { new: true }
       );
-      return updated;
     } else {
       // Create new package
       console.log("Creating new package with ID:", packageData.id);
-      const newPackage = await packageModel.create(sanitizedPackage);
-      return newPackage;
+      savedPackage = await packageModel.create(sanitizedPackage);
     }
+    
+    // Sync the package to Firebase
+    try {
+      console.log("Syncing package to Firebase:", packageData.id);
+      await syncPackageToFirebase(savedPackage.toObject());
+      console.log("Successfully synced package to Firebase");
+    } catch (syncError) {
+      console.error("Error syncing package to Firebase:", syncError);
+      // We don't throw here to avoid breaking the save operation
+      // The package was saved to MongoDB successfully
+    }
+    
+    return savedPackage;
   } catch (error) {
     console.error("Error saving subscription package:", error);
     throw error;

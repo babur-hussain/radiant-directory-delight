@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { setupMongoDB, autoInitMongoDB } from '@/utils/setupMongoDB';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle2, AlertCircle, RefreshCw, Database } from 'lucide-react';
+import { CheckCircle2, AlertCircle, RefreshCw, Database, Sync } from 'lucide-react';
 import Loading from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -13,12 +13,14 @@ import SubscriptionPackageManagement from '@/components/admin/subscription/Subsc
 import MigrationUtility from '@/components/admin/MigrationUtility';
 import { useToast } from '@/hooks/use-toast';
 import { connectToMongoDB } from '@/config/mongodb';
+import { fullSyncPackages } from '@/utils/syncMongoFirebase';
 
 const Dashboard = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState('Connecting to MongoDB...');
   const [dbStatus, setDbStatus] = useState<{success: boolean; message: string; collections: string[]} | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
 
   // Force MongoDB initialization on component mount
@@ -133,9 +135,57 @@ const Dashboard = () => {
     });
   };
 
+  const handleSyncPackages = async () => {
+    setIsSyncing(true);
+    try {
+      const result = await fullSyncPackages();
+      
+      if (result.success) {
+        toast({
+          title: "Sync Successful",
+          description: `Synced ${result.mongoToFirebase} packages to Firebase and ${result.firebaseToMongo} packages to MongoDB`,
+        });
+      } else {
+        toast({
+          title: "Sync Partially Failed",
+          description: `Some packages may not have been synced properly. Check console for details.`,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error syncing packages:", error);
+      toast({
+        title: "Sync Failed",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive"
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <Button 
+          onClick={handleSyncPackages} 
+          disabled={isSyncing || isInitializing}
+          className="flex items-center gap-2"
+        >
+          {isSyncing ? (
+            <>
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              Syncing...
+            </>
+          ) : (
+            <>
+              <Sync className="h-4 w-4" />
+              Sync MongoDB ↔ Firebase
+            </>
+          )}
+        </Button>
+      </div>
       
       {isInitializing && (
         <Card>

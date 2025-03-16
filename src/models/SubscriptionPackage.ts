@@ -45,9 +45,12 @@ SubscriptionPackageSchema.index({ price: 1 });
 // Pre-save middleware to ensure one-time packages have proper setup
 SubscriptionPackageSchema.pre('save', function(next) {
   if (this.paymentType === 'one-time') {
-    // Ensure price is set for one-time packages
+    // For one-time packages, ensure price is set correctly
     if (!this.price || this.price <= 0) {
+      console.log('Setting default price for one-time package:', this.id);
       this.price = 999;
+    } else {
+      console.log('One-time package price set to:', this.price);
     }
     
     // Remove recurring-specific fields
@@ -55,6 +58,11 @@ SubscriptionPackageSchema.pre('save', function(next) {
     this.setupFee = 0;
     this.monthlyPrice = undefined;
     this.advancePaymentMonths = 0;
+  } else {
+    // For recurring packages, ensure billingCycle is set
+    if (!this.billingCycle) {
+      this.billingCycle = 'yearly';
+    }
   }
   next();
 });
