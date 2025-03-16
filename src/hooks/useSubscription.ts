@@ -10,6 +10,7 @@ export const useSubscription = () => {
   const queryClient = useQueryClient();
   const [subscription, setSubscription] = useState<ISubscription | null>(null);
   const { currentUser } = useAuth();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Function to fetch a single subscription by ID
   const {
@@ -31,7 +32,7 @@ export const useSubscription = () => {
     error: subscriptionsError,
   } = useQuery({
     queryKey: ['subscriptions'],
-    queryFn: getSubscriptionsAPI
+    queryFn: getSubscriptionsAPI,
   });
 
   // Function to fetch user's subscriptions
@@ -97,6 +98,84 @@ export const useSubscription = () => {
     return await deleteSubscriptionMutation.mutateAsync(id);
   };
 
+  // New method: initiateSubscription
+  const initiateSubscription = async (packageId: string, paymentDetails?: any) => {
+    setIsProcessing(true);
+    try {
+      if (!currentUser?.uid) {
+        throw new Error("User not authenticated");
+      }
+
+      // Create a new subscription object
+      const today = new Date();
+      const endDate = new Date();
+      endDate.setFullYear(today.getFullYear() + 1); // Default to 1 year subscription
+
+      const newSubscription = {
+        userId: currentUser.uid,
+        packageId: packageId,
+        packageName: paymentDetails?.packageName || 'Subscription Package',
+        status: 'active',
+        startDate: today.toISOString(),
+        endDate: endDate.toISOString(),
+        amount: paymentDetails?.amount || 0,
+        paymentType: paymentDetails?.paymentType || 'recurring',
+        paymentMethod: 'razorpay',
+        transactionId: paymentDetails?.paymentId || '',
+        // Add any other payment details
+        ...paymentDetails
+      };
+
+      const result = await createSubscription(newSubscription);
+      
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ['user-subscription', currentUser.uid] });
+      
+      return result;
+    } catch (error) {
+      console.error("Failed to initiate subscription:", error);
+      throw error;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // New method: cancelSubscription
+  const cancelSubscription = async () => {
+    setIsProcessing(true);
+    try {
+      if (!currentUser?.uid) {
+        throw new Error("User not authenticated");
+      }
+
+      // Get current subscription
+      const currentSubscription = await getUserSubscription();
+      
+      if (!currentSubscription) {
+        throw new Error("No active subscription found");
+      }
+
+      // Update subscription status to cancelled
+      const updatedSubscription = {
+        ...currentSubscription,
+        status: 'cancelled',
+        cancelledAt: new Date().toISOString(),
+      };
+
+      const result = await updateSubscription(updatedSubscription);
+      
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ['user-subscription', currentUser.uid] });
+      
+      return result;
+    } catch (error) {
+      console.error("Failed to cancel subscription:", error);
+      throw error;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return {
     subscription: fetchedSubscription,
     subscriptions,
@@ -112,6 +191,10 @@ export const useSubscription = () => {
     isCreating: createSubscriptionMutation.isPending,
     isUpdating: updateSubscriptionMutation.isPending,
     isDeleting: deleteSubscriptionMutation.isPending,
+    // Add the new methods
+    initiateSubscription,
+    cancelSubscription,
+    isProcessing,
   };
 };
 
