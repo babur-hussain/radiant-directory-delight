@@ -1,202 +1,80 @@
 
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  signOut,
-  updateProfile
-} from "firebase/auth";
-import { auth, googleProvider } from "../../config/firebase";
-import { UserRole } from "../../types/auth";
-import { getRoleKey, saveUserToAllUsersList } from "./authStorage";
-import { User } from "../../models/User";
+import { User as FirebaseUser } from 'firebase/auth';
+import { User, IUser } from '../../models/User';
 
-// Helper function to save user to MongoDB
-const saveUserToMongoDB = async (
-  userId: string, 
-  email: string | null, 
-  name: string | null, 
-  role: UserRole = "User", 
-  photoURL: string | null = null, 
-  isAdmin: boolean = false
-) => {
+// Get user by Firebase UID from MongoDB
+export const getUserByUid = async (uid: string): Promise<IUser | null> => {
   try {
-    console.log(`Saving user to MongoDB: ${userId}, ${email}, ${role}`);
-    
-    // Ensure name is a string - Fix TypeScript never type error
-    let displayName: string;
-    if (name === null) {
-      displayName = email?.split('@')[0] || 'User';
-    } else if (typeof name === 'string') {
-      displayName = name;
-    } else if (typeof name === 'boolean') {
-      displayName = 'User';
-    } else if (name) {
-      // Only call toString if name exists and is not null
-      try {
-        displayName = String(name);
-      } catch {
-        displayName = 'User';
-      }
-    } else {
-      displayName = 'User';
-    }
-    
-    // Ensure isAdmin is a boolean
-    let adminStatus = false;
-    if (typeof isAdmin === 'boolean') {
-      adminStatus = isAdmin;
-    } else if (typeof isAdmin === 'string') {
-      // Safely convert string to boolean without using toLowerCase
-      adminStatus = isAdmin === 'true' || isAdmin === 'TRUE';
-    } else {
-      // For any other type, use Boolean conversion
-      adminStatus = Boolean(isAdmin);
-    }
-    
+    const user = await User.findOne({ uid });
+    return user;
+  } catch (error) {
+    console.error('Error getting user by UID:', error);
+    return null;
+  }
+};
+
+// Create user in MongoDB if not exists
+export const createUserIfNotExists = async (firebaseUser: FirebaseUser): Promise<IUser | null> => {
+  try {
     // Check if user already exists
-    const existingUser = await User.findOne({ uid: userId });
+    let user = await User.findOne({ uid: firebaseUser.uid });
     
-    if (existingUser) {
-      // Update existing user
-      await User.findOneAndUpdate(
-        { uid: userId },
-        {
-          email: email,
-          name: displayName,
-          role: role,
-          photoURL: photoURL,
-          isAdmin: adminStatus,
-          lastLogin: new Date()
-        }
-      );
-    } else {
-      // Create new user
-      await User.create({
-        uid: userId,
-        email: email,
-        name: displayName,
-        role: role,
-        photoURL: photoURL,
-        isAdmin: adminStatus,
+    // If user doesn't exist, create new user
+    if (!user) {
+      user = await User.create({
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName,
+        email: firebaseUser.email,
+        photoURL: firebaseUser.photoURL,
         createdAt: new Date(),
-        lastLogin: new Date()
+        lastLogin: new Date(),
+        role: 'user', // Default role
+        isAdmin: false, // Default admin status
       });
+      console.log('New user created in MongoDB:', user);
     }
     
-    console.log(`User successfully saved to MongoDB: ${userId}`);
-    return true;
+    return user;
   } catch (error) {
-    console.error("Error saving user to MongoDB:", error);
-    return false;
+    console.error('Error creating user:', error);
+    return null;
   }
 };
 
-export const login = async (email: string, password: string) => {
-  const userCredential = await signInWithEmailAndPassword(auth, email, password);
-  
-  // Update the user's last login in MongoDB
+// Update user's last login timestamp
+export const updateUserLoginTimestamp = async (uid: string): Promise<void> => {
   try {
-    const existingUser = await User.findOne({ uid: userCredential.user.uid });
-    
-    if (existingUser) {
-      // Update last login if document exists
-      await User.findOneAndUpdate(
-        { uid: userCredential.user.uid },
-        { lastLogin: new Date() }
-      );
-      console.log("Updated user last login in MongoDB:", userCredential.user.uid);
-    } else {
-      // Create the user document if it doesn't exist
-      await saveUserToMongoDB(
-        userCredential.user.uid,
-        userCredential.user.email,
-        userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'User',
-        'User',
-        userCredential.user.photoURL,
-        false
-      );
-    }
+    await User.updateOne(
+      { uid },
+      { $set: { lastLogin: new Date() } }
+    );
   } catch (error) {
-    console.error("Error updating user in MongoDB during login:", error);
+    console.error('Error updating user login timestamp:', error);
   }
-  
-  return userCredential;
 };
 
-export const loginWithGoogle = async () => {
-  const userCredential = await signInWithPopup(auth, googleProvider);
-  
-  // Save or update the Google user in MongoDB
+// Get all users (admin function)
+export const getAllUsers = async (): Promise<IUser[]> => {
   try {
-    const existingUser = await User.findOne({ uid: userCredential.user.uid });
-    
-    if (existingUser) {
-      // Update last login if document exists
-      await User.findOneAndUpdate(
-        { uid: userCredential.user.uid },
-        {
-          lastLogin: new Date(),
-          photoURL: userCredential.user.photoURL // Update photo URL which might have changed
-        }
-      );
-      console.log("Updated Google user in MongoDB:", userCredential.user.uid);
-    } else {
-      // Create new user document for Google sign-in
-      await saveUserToMongoDB(
-        userCredential.user.uid,
-        userCredential.user.email,
-        userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'User',
-        'User',
-        userCredential.user.photoURL,
-        false
-      );
-    }
+    const users = await User.find().sort({ createdAt: -1 });
+    return users;
   } catch (error) {
-    console.error("Error updating user in MongoDB during Google login:", error);
+    console.error('Error getting all users:', error);
+    return [];
   }
-  
-  return userCredential;
 };
 
-export const signup = async (email: string, password: string, name: string, role: UserRole) => {
-  // Create the user in Firebase Authentication
-  const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
-  
-  // Set display name
-  if (firebaseUser) {
-    await updateProfile(firebaseUser, {
-      displayName: name
-    });
-    
-    // Store user data in MongoDB
-    try {
-      await saveUserToMongoDB(
-        firebaseUser.uid,
-        firebaseUser.email,
-        name || firebaseUser.email?.split('@')[0] || 'User',
-        role,
-        null,
-        false
-      );
-      console.log(`User ${firebaseUser.uid} added to MongoDB during signup`);
-    } catch (error) {
-      console.error("Error saving user to MongoDB:", error);
-      throw new Error(`Failed to save user data: ${error instanceof Error ? error.message : String(error)}`);
-    }
+// Update user role
+export const updateUserRole = async (uid: string, role: string, isAdmin: boolean = false): Promise<IUser | null> => {
+  try {
+    const user = await User.findOneAndUpdate(
+      { uid },
+      { $set: { role, isAdmin } },
+      { new: true }
+    );
+    return user;
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    return null;
   }
-  
-  // Store role information in localStorage
-  if (role && firebaseUser) {
-    localStorage.setItem(getRoleKey(firebaseUser.uid), role as string);
-  }
-  
-  return firebaseUser;
 };
-
-export const logoutUser = async () => {
-  return await signOut(auth);
-};
-
-// Export the helper function for use in other components
-export { saveUserToMongoDB };
