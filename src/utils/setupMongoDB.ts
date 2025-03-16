@@ -47,23 +47,77 @@ export const autoInitMongoDB = async () => {
   }
 };
 
-export const setupMongoDB = async () => {
+// Progress callback type definition
+type ProgressCallback = (progress: number, message: string) => void;
+
+export const setupMongoDB = async (progressCallback?: ProgressCallback) => {
   try {
+    if (progressCallback) {
+      progressCallback(10, "Connecting to MongoDB...");
+    }
     console.log("Setting up MongoDB models...");
     
     // Ensure MongoDB is connected first
     await autoInitMongoDB();
     
-    // Import models to register them
-    await import('../models/User');
-    await import('../models/Business');
-    await import('../models/Subscription');
-    await import('../models/SubscriptionPackage');
+    if (progressCallback) {
+      progressCallback(30, "Connected to MongoDB, registering models...");
+    }
     
+    // Import models to register them
+    const collections = [];
+    try {
+      await import('../models/User');
+      collections.push('User');
+      if (progressCallback) progressCallback(40, "Registered User model");
+    } catch (e) {
+      console.error("Error importing User model:", e);
+    }
+    
+    try {
+      await import('../models/Business');
+      collections.push('Business');
+      if (progressCallback) progressCallback(60, "Registered Business model");
+    } catch (e) {
+      console.error("Error importing Business model:", e);
+    }
+    
+    try {
+      await import('../models/Subscription');
+      collections.push('Subscription');
+      if (progressCallback) progressCallback(80, "Registered Subscription model");
+    } catch (e) {
+      console.error("Error importing Subscription model:", e);
+    }
+    
+    try {
+      await import('../models/SubscriptionPackage');
+      collections.push('SubscriptionPackage');
+      if (progressCallback) progressCallback(90, "Registered SubscriptionPackage model");
+    } catch (e) {
+      console.error("Error importing SubscriptionPackage model:", e);
+    }
+    
+    if (progressCallback) {
+      progressCallback(100, "All MongoDB models registered successfully");
+    }
     console.log("All MongoDB models registered successfully");
-    return true;
+    
+    // Return an object with information about the setup
+    return {
+      success: true,
+      collections: collections
+    };
   } catch (error) {
     console.error("Error setting up MongoDB models:", error);
-    return false;
+    if (progressCallback) {
+      progressCallback(100, "Error setting up MongoDB models");
+    }
+    // Return an object even in case of error to maintain consistent return type
+    return {
+      success: false,
+      collections: [],
+      error: error instanceof Error ? error.message : String(error)
+    };
   }
 };

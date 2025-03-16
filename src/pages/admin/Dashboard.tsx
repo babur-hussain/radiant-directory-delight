@@ -57,7 +57,7 @@ const Dashboard = () => {
         console.log('MongoDB initialization result:', result);
         
         setDbStatus({
-          success: true,
+          success: result.success,
           message: 'MongoDB initialized successfully',
           collections: result.collections
         });
@@ -102,7 +102,7 @@ const Dashboard = () => {
     .then(result => {
       console.log('MongoDB initialization retry result:', result);
       setDbStatus({
-        success: true,
+        success: result.success,
         message: 'MongoDB initialized successfully',
         collections: result.collections
       });
