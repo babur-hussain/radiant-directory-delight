@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -394,5 +395,16 @@ const Dashboard = () => {
             <Card className="bg-white border-gray-200 shadow-sm">
               <CardHeader>
                 <CardTitle>Dashboard Statistics</CardTitle>
-             
+              </CardHeader>
+              <CardContent>
+                <p>Statistics dashboard coming soon...</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </AdminLayout>
+  );
+};
 
+export default Dashboard;
