@@ -5,8 +5,10 @@ import PopularSearchTerms from './search/PopularSearchTerms';
 import HeroContent from './hero/HeroContent';
 import GetListedForm from './GetListedForm';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useToast } from '@/hooks/use-toast';
 
 const HeroSection = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchResultsVisible, setIsSearchResultsVisible] = useState(false);
   const [isListingFormOpen, setIsListingFormOpen] = useState(false);
@@ -31,6 +33,9 @@ const HeroSection = () => {
       document.body.style.overflow = '';
       document.body.style.paddingRight = '';
     }
+
+    // Simple health check to verify the component is rendering properly
+    console.log("HeroSection component mounted successfully");
 
     return () => {
       document.body.style.overflow = '';
