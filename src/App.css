@@ -19,7 +19,7 @@ header {
   width: 100% !important;
   background-color: #ffffff !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-  z-index: 9999 !important; /* Very high z-index to overcome any stacking issues */
+  z-index: 100 !important; /* High z-index but lower than popovers/modals */
   height: 64px !important;
   display: block !important; /* Ensure header is always displayed */
   visibility: visible !important; /* Force visibility */
@@ -39,10 +39,11 @@ main {
 }
 
 /* Fix for admin layouts */
-.admin-layout .admin-header {
+.admin-layout .admin-header,
+.dashboard-header {
   position: sticky !important;
   top: 0 !important;
-  z-index: 9999 !important;
+  z-index: 100 !important;
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
@@ -55,7 +56,33 @@ main {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
-  z-index: 9999 !important;
+  z-index: 100 !important;
+}
+
+/* Proper z-index hierarchy */
+.radix-sheet-content,
+.radix-dropdown-menu-content,
+.radix-popover-content {
+  z-index: 9999 !important; /* Higher than headers */
+}
+
+/* Fix for button click issues in admin panels */
+.admin-layout button,
+.dashboard-layout button {
+  position: relative !important;
+  z-index: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Fix for navigation items */
+.admin-layout nav button,
+.dashboard-layout nav button {
+  width: 100% !important;
+  text-align: left !important;
+  display: flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+  user-select: none !important;
 }
 
 /* Other styles */

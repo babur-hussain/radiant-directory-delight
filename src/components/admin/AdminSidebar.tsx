@@ -91,8 +91,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onItemClick }) => {
     }
   ];
   
-  const handleNavigation = (e: React.MouseEvent, href: string) => {
-    e.preventDefault();
+  const handleNavigation = (href: string) => {
     navigate(href);
     // Call the onItemClick handler if provided (for mobile drawer)
     if (onItemClick) {
@@ -120,13 +119,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onItemClick }) => {
                 key={index}
                 variant={isActive ? "secondary" : "ghost"}
                 className={cn(
-                  "w-full justify-start gap-2",
+                  "w-full justify-start gap-2 h-auto py-2",
                   isActive && "bg-secondary"
                 )}
-                onClick={(e) => handleNavigation(e, item.href)}
+                onClick={() => handleNavigation(item.href)}
+                type="button"
               >
                 {item.icon}
-                {item.title}
+                <span>{item.title}</span>
               </Button>
             );
           })}
@@ -135,11 +135,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onItemClick }) => {
       <div className="border-t p-4">
         <Button 
           variant="outline" 
-          className="w-full justify-start gap-2" 
-          onClick={(e) => handleNavigation(e, "/admin/diagnostics")}
+          className="w-full justify-start gap-2 h-auto py-2" 
+          onClick={() => handleNavigation("/admin/diagnostics")}
+          type="button"
         >
           <Activity className="h-5 w-5" />
-          System Diagnostics
+          <span>System Diagnostics</span>
         </Button>
       </div>
     </div>
