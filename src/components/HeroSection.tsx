@@ -1,80 +1,34 @@
 
-import { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import SearchBar from './search/SearchBar';
-import PopularSearchTerms from './search/PopularSearchTerms';
 import HeroContent from './hero/HeroContent';
-import GetListedForm from './GetListedForm';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { useToast } from '@/hooks/use-toast';
+import PopularSearchTerms from './search/PopularSearchTerms';
 
-const HeroSection = () => {
-  const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isSearchResultsVisible, setIsSearchResultsVisible] = useState(false);
-  const [isListingFormOpen, setIsListingFormOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const isMobile = useIsMobile();
-
-  const handlePopularTermClick = (term: string) => {
-    setSearchTerm(term);
-  };
+const HeroSection: React.FC = () => {
+  const [resultsVisible, setResultsVisible] = useState(false);
   
-  // Lock body scroll when search results are visible on mobile
-  useEffect(() => {
-    console.log("HeroSection rendering and mounting");
-    if (isSearchResultsVisible && isMobile) {
-      document.body.style.overflow = 'hidden';
-      // Calculate scrollbar width to prevent layout shift
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      if (scrollbarWidth > 0) {
-        document.body.style.paddingRight = `${scrollbarWidth}px`;
-      }
-    } else {
-      document.body.style.overflow = '';
-      document.body.style.paddingRight = '';
-    }
-
-    // Simple health check to verify the component is rendering properly
-    console.log("HeroSection component mounted successfully");
-
-    return () => {
-      document.body.style.overflow = '';
-      document.body.style.paddingRight = '';
-    };
-  }, [isSearchResultsVisible, isMobile]);
+  console.log("Rendering HeroSection component");
   
   return (
-    <div className="relative min-h-[85vh] flex items-center justify-center overflow-hidden hero-section">
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-white"></div>
-        <div 
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: 'url("data:image/svg+xml,%3Csvg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z" fill="%23000000" fill-opacity="1" fill-rule="evenodd"/%3E%3C/svg%3E")',
-            backgroundSize: '600px 600px',
-          }}
-        ></div>
-      </div>
-
-      <div className="container max-w-7xl mx-auto px-4 sm:px-6 z-10 animate-fade-up">
+    <section className="relative overflow-hidden bg-gradient-to-b from-primary/10 to-background pt-10 md:pt-16 pb-8">
+      <div className="container max-w-7xl mx-auto px-4">
         <HeroContent />
-
-        <div className="max-w-3xl mx-auto relative z-30">
+        
+        <div className="mt-8 md:mt-12 w-full max-w-4xl mx-auto z-20 relative">
           <SearchBar 
-            initialQuery={searchTerm} 
-            onResultsVisibilityChange={setIsSearchResultsVisible}
+            onResultsVisibilityChange={setResultsVisible}
           />
-          {!isSearchResultsVisible && (
-            <PopularSearchTerms onTermClick={handlePopularTermClick} />
+          
+          {!resultsVisible && (
+            <div className="mt-4 text-center">
+              <PopularSearchTerms />
+            </div>
           )}
         </div>
       </div>
       
-      <GetListedForm 
-        isOpen={isListingFormOpen}
-        setIsOpen={setIsListingFormOpen}
-      />
-    </div>
+      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent"></div>
+    </section>
   );
 };
 

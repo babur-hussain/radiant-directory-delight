@@ -35,7 +35,7 @@ export const autoInitMongoDB = async () => {
       setTimeout(() => {
         console.log("MongoDB connection timeout reached");
         resolve(false);
-      }, 3000); // 3 second timeout
+      }, 2000); // 2 second timeout - reduced from 3 seconds
     });
     
     // Use Promise.race to either get a connection or timeout

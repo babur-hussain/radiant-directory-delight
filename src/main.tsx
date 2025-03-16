@@ -7,31 +7,7 @@ import { connectToMongoDB } from './config/mongodb';
 
 console.log("Starting application in main.tsx");
 
-// Initialize MongoDB connection - only in browser environment
-// But don't block rendering the app if connection fails
-if (typeof window !== 'undefined') {
-  // Set a timeout to ensure the app renders even if MongoDB connection hangs
-  const connectionTimeout = setTimeout(() => {
-    console.log('MongoDB connection timeout reached, continuing app initialization');
-    renderApp();
-  }, 5000); // 5 second timeout
-
-  connectToMongoDB()
-    .then(success => {
-      clearTimeout(connectionTimeout);
-      console.log('MongoDB initialization result:', success);
-      renderApp();
-    })
-    .catch(error => {
-      clearTimeout(connectionTimeout);
-      console.error('Error during MongoDB initialization:', error);
-      console.log('Continuing to render app despite MongoDB connection failure');
-      renderApp();
-    });
-} else {
-  renderApp();
-}
-
+// Create a function to handle the app rendering
 function renderApp() {
   // Only render if the app hasn't been rendered yet
   if (!window.appRendered) {
@@ -39,7 +15,14 @@ function renderApp() {
     
     try {
       console.log("Rendering React app to DOM");
-      ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+      const rootElement = document.getElementById('root');
+      
+      if (!rootElement) {
+        console.error("Root element not found in the DOM");
+        return;
+      }
+      
+      ReactDOM.createRoot(rootElement).render(
         <React.StrictMode>
           <App />
         </React.StrictMode>
@@ -53,11 +36,31 @@ function renderApp() {
           <div style="padding: 20px; text-align: center;">
             <h1>Something went wrong</h1>
             <p>Please try refreshing the page.</p>
+            <p>Error: ${error instanceof Error ? error.message : 'Unknown error'}</p>
           </div>
         `;
       }
     }
   }
+}
+
+// Immediately render the app - don't wait for MongoDB
+renderApp();
+
+// Try to connect to MongoDB in the background
+if (typeof window !== 'undefined') {
+  // Set a timeout to ensure we don't block rendering if MongoDB connection hangs
+  setTimeout(() => {
+    console.log("Initializing MongoDB connection in the background");
+    connectToMongoDB()
+      .then(success => {
+        console.log('MongoDB initialization result:', success);
+      })
+      .catch(error => {
+        console.error('Error during MongoDB initialization:', error);
+        console.log('App will continue to function with static data');
+      });
+  }, 100); // Short delay to prioritize rendering the UI first
 }
 
 // For TypeScript

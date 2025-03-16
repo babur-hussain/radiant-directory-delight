@@ -8,6 +8,8 @@ import AuthProvider from "./providers/AuthProvider";
 import AppRoutes from "./routes";
 import Header from "./components/Header";
 import "./App.css";
+import { Suspense } from "react";
+import Loading from "./components/ui/loading";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient({
@@ -29,7 +31,13 @@ const App = () => {
             <div className="relative min-h-screen bg-background">
               <Header />
               <main>
-                <AppRoutes />
+                <Suspense fallback={
+                  <div className="flex items-center justify-center min-h-[80vh]">
+                    <Loading size="lg" message="Loading page..." />
+                  </div>
+                }>
+                  <AppRoutes />
+                </Suspense>
               </main>
               <Toaster />
               <Sonner />
