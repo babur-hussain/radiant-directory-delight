@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import AuthProvider from "./providers/AuthProvider";
 import AppRoutes from "./routes";
+import Header from "./components/Header";
 import "./App.css";
 
 // Create a new QueryClient instance
@@ -26,9 +27,12 @@ const App = () => {
         <BrowserRouter>
           <AuthProvider>
             <div className="relative min-h-screen bg-background">
+              <Header />
+              <main>
+                <AppRoutes />
+              </main>
               <Toaster />
               <Sonner />
-              <AppRoutes />
             </div>
           </AuthProvider>
         </BrowserRouter>
