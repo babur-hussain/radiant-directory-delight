@@ -1,10 +1,10 @@
 
 import mongoose from 'mongoose';
 
-// Use a fallback connection string if environment variables are not available
+// Use the updated connection string provided by the user
 const MONGODB_URI = typeof process !== 'undefined' && process.env && process.env.MONGODB_URI 
   ? process.env.MONGODB_URI 
-  : 'mongodb+srv://growbharatvyapaar:KShEQVp120dMJGvr@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+  : 'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
 // Initialize connection variable
 let isConnecting = false;
@@ -31,13 +31,13 @@ export const connectToMongoDB = async () => {
     }
     
     isConnecting = true;
-    console.log('Connecting to MongoDB...');
+    console.log('Connecting to MongoDB...', MONGODB_URI);
     
     // Connect to MongoDB with improved options
     await mongoose.connect(MONGODB_URI, {
       // These options help with connection stability
-      serverSelectionTimeoutMS: 10000, // Timeout after 10 seconds
-      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+      serverSelectionTimeoutMS: 15000, // Increase timeout from 10s to 15s
+      socketTimeoutMS: 60000, // Increase from 45s to 60s for slow connections
     });
     
     isConnecting = false;

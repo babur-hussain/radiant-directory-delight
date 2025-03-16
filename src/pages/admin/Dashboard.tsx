@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { setupMongoDB, autoInitMongoDB } from '@/utils/setupMongoDB';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle2, AlertCircle, RefreshCw, Database, Sync } from 'lucide-react';
+import { CheckCircle2, AlertCircle, RefreshCw, Database } from 'lucide-react';
 import Loading from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -23,11 +22,8 @@ const Dashboard = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
 
-  // Force MongoDB initialization on component mount
   useEffect(() => {
-    // Initialize MongoDB when component mounts
     const initDb = async () => {
-      // Ensure MongoDB is connected first
       try {
         const connected = await connectToMongoDB();
         if (!connected) {
@@ -50,7 +46,6 @@ const Dashboard = () => {
       try {
         console.log('Admin Dashboard: Forcefully initializing MongoDB...');
         
-        // Use the setupMongoDB function with a progress callback
         const result = await setupMongoDB((progressValue, message) => {
           setProgress(progressValue);
           setStatusMessage(message);
@@ -64,7 +59,6 @@ const Dashboard = () => {
           collections: result.collections
         });
 
-        // Show success toast notification
         toast({
           title: "MongoDB Initialized",
           description: `Successfully created ${result.collections.length} collections`,
@@ -77,7 +71,6 @@ const Dashboard = () => {
           collections: []
         });
         
-        // Show error toast notification
         toast({
           title: "MongoDB Initialization Failed",
           description: error instanceof Error ? error.message : String(error),
@@ -96,7 +89,6 @@ const Dashboard = () => {
     setProgress(0);
     setStatusMessage('Connecting to MongoDB...');
     
-    // Re-run the initialization
     setupMongoDB((progressValue, message) => {
       setProgress(progressValue);
       setStatusMessage(message);
@@ -109,7 +101,6 @@ const Dashboard = () => {
         collections: result.collections
       });
       
-      // Show success toast notification
       toast({
         title: "MongoDB Reinitialized",
         description: `Successfully created ${result.collections.length} collections`,
@@ -123,7 +114,6 @@ const Dashboard = () => {
         collections: []
       });
       
-      // Show error toast notification
       toast({
         title: "MongoDB Initialization Failed",
         description: error instanceof Error ? error.message : String(error),
@@ -180,7 +170,7 @@ const Dashboard = () => {
             </>
           ) : (
             <>
-              <Sync className="h-4 w-4" />
+              <RefreshCw className="h-4 w-4" />
               Sync MongoDB ↔ Firebase
             </>
           )}

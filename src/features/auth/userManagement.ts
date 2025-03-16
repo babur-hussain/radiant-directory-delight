@@ -80,6 +80,13 @@ export const updateUserPermission = async (userId: string, isAdmin: boolean) => 
 
 export const getUserById = async (userId: string): Promise<User | null> => {
   try {
+    // First ensure MongoDB is connected
+    const connected = await connectToMongoDB();
+    if (!connected) {
+      console.warn("Cannot connect to MongoDB, falling back to localStorage");
+      throw new Error("MongoDB connection failed");
+    }
+    
     // Get user from MongoDB
     const mongoUser = await UserModel.findOne({ uid: userId });
     
@@ -97,6 +104,7 @@ export const getUserById = async (userId: string): Promise<User | null> => {
       };
     }
     
+    console.log(`User ${userId} not found in MongoDB, checking localStorage`);
     const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
     const user = allUsers.find((u: any) => u.id === userId || u.uid === userId);
     
@@ -145,17 +153,18 @@ export const getAllUsers = async (): Promise<User[]> => {
   try {
     console.log("Fetching ALL users from MongoDB collection");
     
-    // First ensure MongoDB is connected
+    // First ensure MongoDB is connected with a clear error message
     console.log("Checking MongoDB connection...");
     const connected = await connectToMongoDB();
     if (!connected) {
+      console.error("MongoDB connection failed - could not establish connection");
       throw new Error("Could not connect to MongoDB database");
     }
     console.log("MongoDB connection verified");
     
     // Get all users from MongoDB, ordered by creation date
     console.log("Executing User.find() query...");
-    const mongoUsers = await UserModel.find().sort({ createdAt: -1 });
+    const mongoUsers = await UserModel.find().sort({ createdAt: -1 }).lean();
     
     console.log(`Query executed, got ${mongoUsers.length} users`);
     
@@ -165,8 +174,6 @@ export const getAllUsers = async (): Promise<User[]> => {
     }
     
     const users: User[] = mongoUsers.map(mongoUser => {
-      console.log("Processing user data from MongoDB:", mongoUser.uid, mongoUser);
-      
       // Ensure name is a string - Fix TypeScript never type error
       let displayName: string | null = null;
       if (mongoUser.name === null) {
@@ -218,40 +225,8 @@ export const getAllUsers = async (): Promise<User[]> => {
       console.error(`Error stack: ${error.stack}`);
     }
     
-    // Check for specific MongoDB connection errors
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes("ECONNREFUSED") || errorMessage.includes("connect ETIMEDOUT")) {
-      console.error("MongoDB connection error: Could not connect to the MongoDB server");
-    } else if (errorMessage.includes("Authentication failed")) {
-      console.error("MongoDB authentication error: Invalid credentials");
-    }
-    
-    // Check if model is registered
-    try {
-      const isModelRegistered = UserModel.modelName ? true : false;
-      console.log("User model registered:", isModelRegistered);
-    } catch (modelError) {
-      console.error("Error checking model registration:", modelError);
-    }
-    
-    const fallbackUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
-    console.log("Falling back to cached users:", fallbackUsers.length);
-    
-    // Ensure cached users conform to User interface
-    const conformedUsers: User[] = fallbackUsers.map((user: any) => ({
-      uid: user.id || user.uid,
-      id: user.id || user.uid,
-      email: user.email,
-      displayName: user.name || user.displayName,
-      name: user.name || user.displayName,
-      photoURL: user.photoURL,
-      role: user.role,
-      isAdmin: user.isAdmin,
-      createdAt: user.createdAt
-    }));
-    
-    // Re-throw the error with more context for better debugging
-    throw new Error(`Failed to fetch users from MongoDB: ${errorMessage}`);
+    // Re-throw the error with better context, as our error handling will help us handle it downstream
+    throw new Error(`Failed to fetch users from MongoDB: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
 

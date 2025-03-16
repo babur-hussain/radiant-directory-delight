@@ -17,13 +17,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { updateUserRole, updateUserPermission, getAllUsers } from "@/features/auth/userManagement";
+import { updateUserRole, updateUserPermission, getAllUsers, ensureTestUsers } from "@/features/auth/userManagement";
 import { debugFirestoreUsers, compareUserSources } from "@/lib/firebase-debug";
 import UserSubscriptionAssignment from "./UserSubscriptionAssignment";
 import { db } from "@/config/firebase";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { UserRole } from "@/types/auth";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { connectToMongoDB } from "@/config/mongodb";
 
 interface UserPermissionsTabProps {
   onRefresh?: () => void;
@@ -37,10 +39,49 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [mongoConnected, setMongoConnected] = useState<boolean | null>(null);
 
   useEffect(() => {
+    checkMongoConnection();
     loadUsers();
   }, []);
+
+  const checkMongoConnection = async () => {
+    try {
+      const connected = await connectToMongoDB();
+      console.log("MongoDB connection test result:", connected);
+      setMongoConnected(connected);
+      
+      if (!connected) {
+        setLoadingError("Cannot connect to MongoDB. Please check your connection settings.");
+      }
+    } catch (error) {
+      console.error("Error checking MongoDB connection:", error);
+      setMongoConnected(false);
+      setLoadingError("Error checking MongoDB connection: " + (error instanceof Error ? error.message : String(error)));
+    }
+  };
+  
+  const createTestUsersIfEmpty = async () => {
+    try {
+      setIsLoading(true);
+      await ensureTestUsers();
+      await loadUsers();
+      toast({
+        title: "Test Users Created",
+        description: "Sample users have been created successfully",
+      });
+    } catch (error) {
+      console.error("Error creating test users:", error);
+      toast({
+        title: "Error Creating Test Users",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const loadUsers = async () => {
     setIsLoading(true);
@@ -48,32 +89,19 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
     try {
       console.log("Starting to load users...");
       
-      try {
-        const firestoreUsers = await debugFirestoreUsers();
-        console.log(`Debug: Firestore directly returned ${firestoreUsers.length} users`);
-      } catch (firestoreError) {
-        console.error("Failed to debug Firestore users:", firestoreError);
+      // First test MongoDB connection
+      const connected = await connectToMongoDB();
+      setMongoConnected(connected);
+      
+      if (!connected) {
+        throw new Error("Cannot connect to MongoDB. Please check your connection settings.");
       }
       
       console.log("Attempting to load users from MongoDB via getAllUsers()...");
       const allUsers = await getAllUsers();
       console.log(`UserPermissionsTab - Loaded ${allUsers.length} users from getAllUsers()`);
       
-      try {
-        await compareUserSources();
-      } catch (compareError) {
-        console.error("Error comparing user sources:", compareError);
-      }
-      
       if (allUsers && allUsers.length > 0) {
-        allUsers.forEach((user, index) => {
-          if (!user.id || !user.email) {
-            console.warn(`User at index ${index} is missing required properties:`, user);
-          } else {
-            console.log(`Tab User ${index + 1}:`, user.id, user.email, user.role, user.isAdmin);
-          }
-        });
-        
         setUsers(allUsers);
       } else {
         console.warn("No users returned from getAllUsers()");
@@ -108,15 +136,6 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      console.log("Automatically refreshing user data...");
-      loadUsers();
-    }, 10000);
-    
-    return () => clearInterval(intervalId);
-  }, []);
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
@@ -243,19 +262,48 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-medium">User Permissions Management</h3>
-        <button 
-          onClick={loadUsers}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-          disabled={isLoading}
-        >
-          {isLoading ? "Loading..." : "Refresh Users"}
-        </button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={loadUsers}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            disabled={isLoading}
+          >
+            {isLoading ? "Loading..." : "Refresh Users"}
+          </Button>
+          {users.length === 0 && (
+            <Button 
+              onClick={createTestUsersIfEmpty}
+              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+              disabled={isLoading}
+            >
+              Create Test Users
+            </Button>
+          )}
+        </div>
       </div>
+      
+      {mongoConnected === false && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTitle>MongoDB Connection Failed</AlertTitle>
+          <AlertDescription className="space-y-2">
+            <p>Cannot connect to MongoDB. Please check your connection URI and network settings.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={checkMongoConnection}
+              className="mt-2"
+            >
+              Retry Connection
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
       
       {loadingError && (
         <Alert variant="destructive" className="mb-4">
+          <AlertTitle>Failed to load users</AlertTitle>
           <AlertDescription className="space-y-2">
-            <p><strong>Failed to load users:</strong> {loadingError}</p>
+            <p>{loadingError}</p>
             <p className="text-sm">
               Check the browser console for more detailed error information.
               This could be due to MongoDB connection issues or missing permissions.
@@ -266,8 +314,10 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
       
       <div className="bg-amber-50 p-3 rounded-md border border-amber-200 mb-4">
         <p className="text-amber-800 text-sm">
+          <strong>MongoDB Status:</strong> {mongoConnected === true ? "Connected" : mongoConnected === false ? "Disconnected" : "Unknown"}
+          <br />
           <strong>User Count:</strong> {users.length} users loaded. 
-          {users.length === 0 && !isLoading && " No users found. Try refreshing."}
+          {users.length === 0 && !isLoading && " No users found. Try refreshing or creating test users."}
         </p>
       </div>
 
