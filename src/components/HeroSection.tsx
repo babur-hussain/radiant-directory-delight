@@ -15,12 +15,10 @@ const HeroSection: React.FC = () => {
     setSearchQuery(term);
   };
   
-  // Always render the component, with fallback content if needed
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-primary/10 to-background pt-10 md:pt-16 pb-8">
       <div className="container max-w-7xl mx-auto px-4">
         <div className="hero-content">
-          {/* Always render HeroContent */}
           <HeroContent />
         </div>
         
