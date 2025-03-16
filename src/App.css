@@ -101,6 +101,17 @@ main {
   display: none !important;
 }
 
+/* UPDATED: Hide duplicate Admin Panel headers */
+.admin-layout .p-4.border-b h1.text-xl,
+.admin-layout .flex h1.text-xl {
+  display: none !important;
+}
+
+/* Hide all page titles that come after the first one */
+.admin-layout h1.text-3xl:not(:first-of-type) {
+  display: none !important;
+}
+
 /* Ensure main content has proper spacing and width */
 .admin-layout main,
 .dashboard-layout main {
@@ -137,6 +148,12 @@ main {
 /* Fix for dashboard sections manager */
 .admin-layout .card {
   width: 100% !important;
+}
+
+/* UPDATED: Force full width on Dashboard Manager page */
+#root .admin-layout .space-y-6 {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 /* Other styles */

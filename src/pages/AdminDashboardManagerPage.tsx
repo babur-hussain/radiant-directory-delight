@@ -135,7 +135,7 @@ const AdminDashboardManagerPage = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 w-full">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Dashboard Manager</h1>
           <Button onClick={loadUsers} variant="outline" className="flex items-center gap-2">
@@ -152,7 +152,7 @@ const AdminDashboardManagerPage = () => {
           </Alert>
         )}
         
-        <Card>
+        <Card className="w-full">
           <CardHeader>
             <CardTitle>User Dashboard Customization</CardTitle>
             <CardDescription>
@@ -161,8 +161,8 @@ const AdminDashboardManagerPage = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-full max-w-sm">
+              <div className="flex flex-col md:flex-row md:items-center gap-4">
+                <div className="w-full md:max-w-sm">
                   <Label htmlFor="user-select">Select User</Label>
                   <Select 
                     value={selectedUserId} 
@@ -214,7 +214,7 @@ const AdminDashboardManagerPage = () => {
                             checked={userSections.includes(section)} 
                             onCheckedChange={() => toggleSection(section)}
                           />
-                          <div className="space-y-1">
+                          <div className="space-y-1 w-full">
                             <Label 
                               htmlFor={`section-${section}`}
                               className="font-medium cursor-pointer"
@@ -291,14 +291,14 @@ const AdminDashboardManagerPage = () => {
         </Card>
         
         {selectedUser && (
-          <Card>
+          <Card className="w-full">
             <CardHeader>
               <CardTitle>Dashboard Metrics Summary</CardTitle>
               <CardDescription>
                 Overview of all metrics for this user's dashboard
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
