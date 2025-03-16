@@ -165,7 +165,7 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
         business={selectedBusiness}
         open={isDeleteDialogOpen}
         onOpenChange={() => setIsDeleteDialogOpen(false)}
-        onConfirmDelete={() => selectedBusiness && handleDeleteBusiness(selectedBusiness.id)}
+        onConfirmDelete={() => selectedBusiness && handleDeleteBusiness(selectedBusiness.id.toString())}
       />
     </div>
   );
