@@ -25,66 +25,81 @@ export const setupMongoDB = async (
     
     progressCallback?.(10, 'Connected to MongoDB');
     
-    // Clear existing collections if they exist - this will remove Firebase data
+    // Force drop all existing collections to ensure clean state
     try {
-      console.log('Dropping existing collections to ensure clean state');
-      if (mongoose.connection.db) {
-        await mongoose.connection.db.dropCollection('subscriptionpackages').catch(() => {
-          console.log('subscriptionpackages collection does not exist or already dropped');
-        });
+      console.log('FORCE DROPPING all existing collections to ensure clean state');
+      const db = mongoose.connection.db;
+      if (db) {
+        // Get list of all collections
+        const collections = await db.listCollections().toArray();
+        const collectionNames = collections.map(c => c.name);
+        console.log('Found collections:', collectionNames);
+        
+        // Drop each collection individually
+        for (const collName of collectionNames) {
+          if (collName !== 'system.indexes' && collName !== 'system.users') {
+            try {
+              console.log(`Dropping collection: ${collName}`);
+              await db.dropCollection(collName);
+              console.log(`Successfully dropped ${collName}`);
+            } catch (dropError) {
+              console.error(`Error dropping collection ${collName}:`, dropError);
+            }
+          }
+        }
       }
     } catch (error) {
-      console.log('Error dropping collections (likely do not exist yet):', error);
+      console.log('Error dropping collections (continuing anyway):', error);
     }
     
     // Verify/create necessary collections
     const collections = [];
     
-    // 1. Verify User collection is properly set up
     progressCallback?.(20, 'Setting up User collection');
     try {
       await User.createCollection();
+      console.log('User collection created successfully');
       collections.push('users');
     } catch (error) {
-      // Collection might already exist
-      console.log('User collection already exists');
+      console.error('Error creating User collection:', error);
+      // Collection might already exist, try to continue
       collections.push('users');
     }
     
-    // 2. Verify Business collection is properly set up
     progressCallback?.(35, 'Setting up Business collection');
     try {
       await Business.createCollection();
+      console.log('Business collection created successfully');
       collections.push('businesses');
     } catch (error) {
-      // Collection might already exist
-      console.log('Business collection already exists');
+      console.error('Error creating Business collection:', error);
+      // Collection might already exist, try to continue
       collections.push('businesses');
     }
     
-    // 3. Verify SubscriptionPackage collection is properly set up
     progressCallback?.(50, 'Setting up SubscriptionPackage collection');
     try {
       await SubscriptionPackage.createCollection();
+      console.log('SubscriptionPackage collection created successfully');
       collections.push('subscriptionpackages');
     } catch (error) {
-      // Collection might already exist
-      console.log('SubscriptionPackage collection already exists');
+      console.error('Error creating SubscriptionPackage collection:', error);
+      // Collection might already exist, try to continue
       collections.push('subscriptionpackages');
     }
     
-    // 4. Verify Subscription collection is properly set up
     progressCallback?.(65, 'Setting up Subscription collection');
     try {
       await Subscription.createCollection();
+      console.log('Subscription collection created successfully');
       collections.push('subscriptions');
     } catch (error) {
-      // Collection might already exist
-      console.log('Subscription collection already exists');
+      console.error('Error creating Subscription collection:', error);
+      // Collection might already exist, try to continue
       collections.push('subscriptions');
     }
     
-    // 5. Setup default subscription packages - first delete all existing packages
+    // Setup default subscription packages - first delete all existing packages
     progressCallback?.(80, 'Setting up default subscription packages');
     try {
       // Remove all existing packages to start fresh
@@ -99,7 +114,13 @@ export const setupMongoDB = async (
         try {
           await SubscriptionPackage.create({
             ...pkg,
-            features: pkg.features || []
+            features: pkg.features || [],
+            setupFee: pkg.setupFee || 0,
+            monthlyPrice: pkg.monthlyPrice || 0,
+            advancePaymentMonths: pkg.advancePaymentMonths || 0,
+            durationMonths: pkg.durationMonths || 12,
+            termsAndConditions: pkg.termsAndConditions || "",
+            paymentType: pkg.paymentType || "recurring"
           });
           console.log(`Seeded package: ${pkg.title}`);
         } catch (err) {
@@ -114,12 +135,18 @@ export const setupMongoDB = async (
       console.error('Error setting up subscription packages:', error);
     }
     
-    // 6. Create indexes
+    // Create indexes
     progressCallback?.(95, 'Creating database indexes');
-    await User.ensureIndexes();
-    await Business.ensureIndexes();
-    await SubscriptionPackage.ensureIndexes();
-    await Subscription.ensureIndexes();
+    try {
+      console.log('Creating indexes for collections');
+      await User.syncIndexes();
+      await Business.syncIndexes();
+      await SubscriptionPackage.syncIndexes();
+      await Subscription.syncIndexes();
+      console.log('Indexes successfully created');
+    } catch (indexError) {
+      console.error('Error creating indexes:', indexError);
+    }
     
     progressCallback?.(100, 'MongoDB setup completed');
     
@@ -137,12 +164,14 @@ export const setupMongoDB = async (
  * Automatically initialize MongoDB on application startup
  * This function will be called when the app loads
  */
-export const autoInitMongoDB = async (): Promise<void> => {
+export const autoInitMongoDB = async (): Promise<{ success: boolean; collections: string[] }> => {
   console.log('Auto-initializing MongoDB...');
   try {
     const result = await setupMongoDB();
     console.log('MongoDB auto-initialization completed:', result);
+    return result;
   } catch (error) {
     console.error('Error during MongoDB auto-initialization:', error);
+    throw error;
   }
 };

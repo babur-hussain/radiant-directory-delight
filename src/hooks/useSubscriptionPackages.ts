@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { businessPackages, influencerPackages } from "@/data/subscriptionData";
-import { fetchSubscriptionPackagesByType } from "@/lib/firebase-utils";
+import { fetchSubscriptionPackagesByType } from "@/lib/mongodb-utils";
 import { UserRole } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
@@ -23,38 +23,43 @@ export const useSubscriptionPackages = (role: UserRole) => {
         // Determine package type based on user role
         const packageType = role === "Business" ? "Business" : "Influencer";
         
-        // Fetch packages by type directly from Firebase
+        // Fetch packages by type directly from MongoDB
         const fetchedPackages = await fetchSubscriptionPackagesByType(packageType);
-        console.log(`Fetched ${fetchedPackages.length} ${packageType} packages from Firebase`);
+        console.log(`Fetched ${fetchedPackages.length} ${packageType} packages from MongoDB`);
         
         // If no packages found for the role, use default packages
         if (fetchedPackages.length === 0) {
-          console.log("No packages found for role, using default packages");
-          setPackages(role === "Business" ? businessPackages : influencerPackages);
+          console.log("No packages found in MongoDB, using default packages");
+          const defaultPackages = role === "Business" ? businessPackages : influencerPackages;
+          
+          // Set default packages
+          setPackages(defaultPackages);
           
           // Show toast notification
           toast({
             title: "Using Default Packages",
-            description: "No custom packages found. Showing default packages.",
+            description: "No packages found in MongoDB. Using default packages.",
           });
         } else {
+          // Store fetched packages from MongoDB
           setPackages(fetchedPackages);
         }
       } catch (err) {
         console.error("Error fetching subscription packages:", err);
         
-        // Check if this is a permission error
+        // Check if this is a MongoDB connection error
         const errorMessage = err instanceof Error ? err.message : String(err);
-        const isPermissionError = errorMessage.includes("Permission denied") || 
-                                 errorMessage.includes("insufficient permissions");
+        const isMongoError = errorMessage.toLowerCase().includes('mongo') || 
+                            errorMessage.toLowerCase().includes('database') ||
+                            errorMessage.toLowerCase().includes('connection');
         
-        if (isPermissionError) {
-          setError("Permission denied. Using default packages instead.");
+        if (isMongoError) {
+          setError("Could not connect to MongoDB. Using default packages instead.");
           
-          // Show permission error toast
+          // Show database error toast
           toast({
-            title: "Permission Error",
-            description: "You don't have access to view subscription packages. Using default packages.",
+            title: "Database Connection Error",
+            description: "Could not connect to MongoDB. Using default packages instead.",
             variant: "destructive",
           });
         } else {
@@ -63,7 +68,7 @@ export const useSubscriptionPackages = (role: UserRole) => {
           // Show general error toast
           toast({
             title: "Error Loading Packages",
-            description: "Failed to load custom packages. Using default packages instead.",
+            description: "Failed to load packages from database. Using default packages instead.",
             variant: "destructive",
           });
         }

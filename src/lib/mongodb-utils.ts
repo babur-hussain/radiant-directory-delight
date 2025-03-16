@@ -1,17 +1,25 @@
-
 import { User, IUser } from '../models/User';
 import { SubscriptionPackage, ISubscriptionPackage } from '../models/SubscriptionPackage';
 import { Business, IBusiness } from '../models/Business';
 import { Subscription, ISubscription } from '../models/Subscription';
-import { autoInitMongoDB } from '../utils/setupMongoDB';
+import { connectToMongoDB } from '../config/mongodb';
+import { businessPackages, influencerPackages } from '@/data/subscriptionData';
 
-// Ensure MongoDB is initialized before any operations
-const ensureMongoDBInitialized = async () => {
+/**
+ * Ensures MongoDB is connected before any operations
+ */
+const ensureMongoDBConnected = async (): Promise<boolean> => {
   try {
-    await autoInitMongoDB();
+    console.log("Ensuring MongoDB is connected before operations");
+    const connected = await connectToMongoDB();
+    if (!connected) {
+      console.error("Failed to connect to MongoDB");
+      return false;
+    }
+    return true;
   } catch (error) {
-    console.error("Error initializing MongoDB:", error);
-    throw error;
+    console.error("Error connecting to MongoDB:", error);
+    return false;
   }
 };
 
@@ -20,47 +28,64 @@ const ensureMongoDBInitialized = async () => {
  */
 export async function fetchSubscriptionPackages(): Promise<ISubscriptionPackage[]> {
   try {
-    // Ensure MongoDB is initialized
-    await ensureMongoDBInitialized();
+    // Ensure MongoDB is connected
+    const connected = await ensureMongoDBConnected();
+    if (!connected) {
+      console.warn("Using default packages due to MongoDB connection failure");
+      return [...businessPackages, ...influencerPackages];
+    }
     
     console.log("Fetching subscription packages from MongoDB");
     
     // Query all packages and sort by price
     const packages = await SubscriptionPackage.find().sort({ price: 1 });
     
-    console.log(`Retrieved ${packages.length} subscription packages`);
+    console.log(`Retrieved ${packages.length} subscription packages from MongoDB`);
     
-    // If no packages found, this could be a permission issue or just no data
+    // If no packages found, use default packages
     if (packages.length === 0) {
-      console.warn("No subscription packages found. This could be due to missing data.");
+      console.warn("No subscription packages found in MongoDB. Using default packages.");
+      return [...businessPackages, ...influencerPackages];
     }
     
     return packages;
   } catch (error) {
     console.error("Error fetching subscription packages:", error);
-    throw error;
+    // Return default packages on error
+    return [...businessPackages, ...influencerPackages];
   }
 }
 
 /**
- * Fetches all businesses from MongoDB
+ * Fetches subscription packages by type (Business or Influencer)
  */
-export async function fetchBusinesses(): Promise<IBusiness[]> {
+export async function fetchSubscriptionPackagesByType(type: "Business" | "Influencer"): Promise<ISubscriptionPackage[]> {
   try {
-    // Ensure MongoDB is initialized
-    await ensureMongoDBInitialized();
+    // Ensure MongoDB is connected
+    const connected = await ensureMongoDBConnected();
+    if (!connected) {
+      console.warn(`Using default ${type} packages due to MongoDB connection failure`);
+      return type === "Business" ? businessPackages : influencerPackages;
+    }
     
-    console.log("Fetching businesses from MongoDB");
+    console.log(`Fetching ${type} subscription packages from MongoDB`);
     
-    // Query all businesses and sort by name
-    const businesses = await Business.find().sort({ name: 1 });
+    // Query packages by type and sort by price
+    const packages = await SubscriptionPackage.find({ type }).sort({ price: 1 });
     
-    console.log(`Retrieved ${businesses.length} businesses from MongoDB`);
+    console.log(`Retrieved ${packages.length} ${type} packages from MongoDB`);
     
-    return businesses;
+    // If no packages found, use default packages for the type
+    if (packages.length === 0) {
+      console.warn(`No ${type} subscription packages found in MongoDB. Using default ${type} packages.`);
+      return type === "Business" ? businessPackages : influencerPackages;
+    }
+    
+    return packages;
   } catch (error) {
-    console.error("Error fetching businesses from MongoDB:", error);
-    throw error;
+    console.error(`Error fetching ${type} subscription packages:`, error);
+    // Return default packages for the type on error
+    return type === "Business" ? businessPackages : influencerPackages;
   }
 }
 
@@ -69,8 +94,11 @@ export async function fetchBusinesses(): Promise<IBusiness[]> {
  */
 export async function saveSubscriptionPackage(packageData: ISubscriptionPackage): Promise<void> {
   try {
-    // Ensure MongoDB is initialized
-    await ensureMongoDBInitialized();
+    // Ensure MongoDB is connected
+    const connected = await ensureMongoDBConnected();
+    if (!connected) {
+      throw new Error("Failed to connect to MongoDB");
+    }
     
     console.log("Saving subscription package to MongoDB:", packageData);
     
@@ -129,7 +157,10 @@ export async function saveSubscriptionPackage(packageData: ISubscriptionPackage)
 export async function deleteSubscriptionPackage(packageId: string): Promise<void> {
   try {
     // Ensure MongoDB is initialized
-    await ensureMongoDBInitialized();
+    const connected = await ensureMongoDBConnected();
+    if (!connected) {
+      throw new Error("Failed to connect to MongoDB");
+    }
     
     console.log("Deleting subscription package with ID:", packageId);
     await SubscriptionPackage.deleteOne({ id: packageId });
@@ -141,34 +172,15 @@ export async function deleteSubscriptionPackage(packageId: string): Promise<void
 }
 
 /**
- * Fetches subscription packages by type (Business or Influencer)
- */
-export async function fetchSubscriptionPackagesByType(type: "Business" | "Influencer"): Promise<ISubscriptionPackage[]> {
-  try {
-    // Ensure MongoDB is initialized
-    await ensureMongoDBInitialized();
-    
-    console.log(`Fetching ${type} subscription packages`);
-    
-    // Query packages by type and sort by price
-    const packages = await SubscriptionPackage.find({ type }).sort({ price: 1 });
-    
-    console.log(`Retrieved ${packages.length} ${type} packages`);
-    
-    return packages;
-  } catch (error) {
-    console.error(`Error fetching ${type} subscription packages:`, error);
-    throw error;
-  }
-}
-
-/**
  * Saves a business to MongoDB
  */
 export async function saveBusiness(business: IBusiness): Promise<void> {
   try {
     // Ensure MongoDB is initialized
-    await ensureMongoDBInitialized();
+    const connected = await ensureMongoDBConnected();
+    if (!connected) {
+      throw new Error("Failed to connect to MongoDB");
+    }
     
     console.log("Saving business to MongoDB:", business);
     
@@ -206,7 +218,10 @@ export async function saveBusiness(business: IBusiness): Promise<void> {
 export async function deleteBusiness(businessId: number): Promise<void> {
   try {
     // Ensure MongoDB is initialized
-    await ensureMongoDBInitialized();
+    const connected = await ensureMongoDBConnected();
+    if (!connected) {
+      throw new Error("Failed to connect to MongoDB");
+    }
     
     console.log("Deleting business with ID:", businessId);
     await Business.deleteOne({ id: businessId });
