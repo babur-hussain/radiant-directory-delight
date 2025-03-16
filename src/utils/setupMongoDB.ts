@@ -8,7 +8,7 @@ export const autoInitMongoDB = async () => {
     console.log("Auto-initializing MongoDB...");
     
     // Check if already connected
-    if (mongoose.connection.readyState === 1) {
+    if (mongoose.connection && mongoose.connection.readyState === 1) {
       console.log("MongoDB is already connected, skipping initialization");
       return true;
     }
@@ -25,9 +25,11 @@ export const autoInitMongoDB = async () => {
     
     // Try to log connection details for debugging
     try {
-      const host = mongoose.connection.host;
-      const name = mongoose.connection.name;
-      console.log(`Connected to MongoDB at ${host}/${name}`);
+      if (mongoose.connection) {
+        const host = mongoose.connection.host || 'unknown-host';
+        const name = mongoose.connection.name || 'unknown-name';
+        console.log(`Connected to MongoDB at ${host}/${name}`);
+      }
     } catch (infoError) {
       console.warn("Could not log connection details:", infoError);
     }
