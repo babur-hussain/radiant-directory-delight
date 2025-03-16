@@ -1,7 +1,10 @@
 
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://growbharatvyapaar:KShEQVp120dMJGvr@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+// Use a fallback connection string if environment variables are not available
+const MONGODB_URI = typeof process !== 'undefined' && process.env && process.env.MONGODB_URI 
+  ? process.env.MONGODB_URI 
+  : 'mongodb+srv://growbharatvyapaar:KShEQVp120dMJGvr@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
 // Initialize MongoDB connection
 export const connectToMongoDB = async () => {

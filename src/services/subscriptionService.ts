@@ -44,7 +44,7 @@ export const getSubscriptions = async (): Promise<ISubscription[]> => {
 };
 
 // Update a subscription
-export const updateSubscription = async (id: string, subscriptionData: Partial<ISubscection>): Promise<ISubscription> => {
+export const updateSubscription = async (id: string, subscriptionData: Partial<ISubscription>): Promise<ISubscription> => {
   try {
     const subscription = await Subscription.findOneAndUpdate(
       { id },
@@ -54,7 +54,6 @@ export const updateSubscription = async (id: string, subscriptionData: Partial<I
     if (!subscription) {
       throw new Error(`Subscription with ID ${id} not found`);
     }
-    Subscription.findById
     return subscription;
   } catch (error) {
     console.error(`Error updating subscription with ID ${id}:`, error);
