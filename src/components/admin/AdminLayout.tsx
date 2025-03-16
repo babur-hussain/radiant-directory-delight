@@ -16,13 +16,13 @@ interface AdminLayoutProps {
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Desktop Sidebar */}
-      <div className="hidden md:block">
+      {/* Desktop Sidebar - this should be fixed and always visible */}
+      <div className="hidden md:block md:w-64 flex-shrink-0">
         <AdminSidebar />
       </div>
       
       {/* Main content */}
-      <div className="flex-1 overflow-x-hidden">
+      <div className="flex-1 overflow-x-hidden md:ml-64">
         {/* Mobile menu drawer */}
         <div className="md:hidden p-4 border-b bg-card flex items-center">
           <Drawer>

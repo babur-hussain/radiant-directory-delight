@@ -12,6 +12,15 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminBusinessListingsPage from './pages/AdminBusinessListingsPage';
 import AdminDashboardServicePage from './pages/AdminDashboardServicePage';
 import AdminDashboardManagerPage from './pages/AdminDashboardManagerPage';
+import AdminUsersPage from './pages/AdminUsersPage';
+import AdminSubscriptionsPage from './pages/AdminSubscriptionsPage';
+import AdminDashboardSectionsPage from './pages/AdminDashboardSectionsPage';
+import AdminMigrationPage from './pages/AdminMigrationPage';
+import AdminDatabasePage from './pages/AdminDatabasePage';
+import AdminUploadPage from './pages/AdminUploadPage';
+import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
+import AdminSeedDataPage from './pages/AdminSeedDataPage';
+import AdminSettingsPage from './pages/AdminSettingsPage';
 import BusinessDashboardPage from './pages/BusinessDashboardPage';
 import InfluencerDashboardPage from './pages/InfluencerDashboardPage';
 import ProfilePage from './pages/ProfilePage';
@@ -34,19 +43,19 @@ const AppRoutes = () => {
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
       <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-      <Route path="/admin/dashboard-manager" element={<AdminDashboardManagerPage />} />
       <Route path="/admin/businesses" element={<AdminBusinessListingsPage />} />
       <Route path="/admin/dashboard-service/:type" element={<AdminDashboardServicePage />} />
-      <Route path="/admin/diagnostics" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
-      <Route path="/admin/users" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
-      <Route path="/admin/subscriptions" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
-      <Route path="/admin/dashboard-sections" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
-      <Route path="/admin/migration" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
-      <Route path="/admin/database" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
-      <Route path="/admin/upload" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
-      <Route path="/admin/analytics" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
-      <Route path="/admin/seed" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
-      <Route path="/admin/settings" element={<AdminDashboardPage />} /> {/* Temporary fallback */}
+      <Route path="/admin/dashboard-manager" element={<AdminDashboardManagerPage />} />
+      <Route path="/admin/users" element={<AdminUsersPage />} />
+      <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
+      <Route path="/admin/dashboard-sections" element={<AdminDashboardSectionsPage />} />
+      <Route path="/admin/migration" element={<AdminMigrationPage />} />
+      <Route path="/admin/database" element={<AdminDatabasePage />} />
+      <Route path="/admin/upload" element={<AdminUploadPage />} />
+      <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+      <Route path="/admin/seed" element={<AdminSeedDataPage />} />
+      <Route path="/admin/settings" element={<AdminSettingsPage />} />
+      <Route path="/admin/diagnostics" element={<AdminDashboardPage />} /> {/* Using dashboard page for diagnostics */}
       
       {/* User dashboard routes */}
       <Route path="/dashboard/business" element={<BusinessDashboardPage />} />

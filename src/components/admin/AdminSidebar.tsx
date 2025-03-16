@@ -87,13 +87,13 @@ const AdminSidebar = () => {
     }
   ];
   
-  const handleNavigation = (e: React.MouseEvent<HTMLButtonElement>, href: string) => {
+  const handleNavigation = (e, href) => {
     e.preventDefault();
     navigate(href);
   };
   
   return (
-    <div className="h-screen border-r bg-card md:w-64 flex flex-col fixed">
+    <div className="h-screen border-r bg-card w-64 flex flex-col fixed">
       <div className="flex h-16 items-center border-b px-6">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">A</div>
