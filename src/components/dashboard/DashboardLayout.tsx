@@ -19,8 +19,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       
       {/* Main content */}
       <div className="flex-1 overflow-x-hidden">
-        {/* Using the admin-header class for consistent styling */}
-        <header className="admin-header dashboard-header sticky top-0 left-0 right-0 z-[9999]">
+        {/* Using the admin-header class for consistent styling and forcing visibility */}
+        <header className="admin-header dashboard-header sticky top-0 left-0 right-0 z-[9999]" style={{display: 'block !important', visibility: 'visible !important', opacity: '1 !important'}}>
           <DashboardHeader />
         </header>
         <main className="p-4 md:p-6 max-w-7xl mx-auto">

@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import AuthProvider from "./providers/AuthProvider";
 import AppRoutes from "./routes";
+import Header from "./components/Header";  // Import Header explicitly
 import "./App.css";
 
 // Create a new QueryClient instance
@@ -28,8 +29,10 @@ const App = () => {
             <div className="flex flex-col min-h-screen bg-background">
               <Toaster />
               <Sonner />
-              {/* Removed the main wrapper to prevent layout conflicts */}
-              <AppRoutes />
+              <Header /> {/* Add the Header component here */}
+              <main className="pt-16"> {/* Add padding top to prevent content from being hidden by header */}
+                <AppRoutes />
+              </main>
             </div>
           </AuthProvider>
         </BrowserRouter>
