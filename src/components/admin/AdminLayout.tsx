@@ -28,7 +28,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       {/* Main content */}
       <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
         {/* Mobile header with sheet sidebar */}
-        <header className="admin-header md:hidden sticky top-0 left-0 right-0 z-[100] bg-white dark:bg-gray-800 shadow-sm">
+        <header className="admin-header md:hidden sticky top-0 left-0 right-0 z-[999] bg-white dark:bg-gray-800 shadow-sm">
           <div className="p-4 border-b flex items-center justify-between">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -52,7 +52,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </header>
         
         {/* Desktop header */}
-        <header className="admin-header hidden md:block sticky top-0 left-0 right-0 z-[100] bg-white dark:bg-gray-800 shadow-sm">
+        <header className="admin-header hidden md:block sticky top-0 left-0 right-0 z-[999] bg-white dark:bg-gray-800 shadow-sm">
           <div className="p-4 border-b flex items-center justify-between">
             <h1 className="text-xl font-semibold">Admin Panel</h1>
           </div>

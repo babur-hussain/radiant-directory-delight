@@ -25,7 +25,7 @@ const App = () => {
       <TooltipProvider>
         <BrowserRouter>
           <AuthProvider>
-            <div className="flex flex-col min-h-screen bg-background">
+            <div className="relative min-h-screen bg-background">
               <Toaster />
               <Sonner />
               <AppRoutes />

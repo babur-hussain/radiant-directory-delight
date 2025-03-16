@@ -19,7 +19,7 @@ header {
   width: 100% !important;
   background-color: #ffffff !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-  z-index: 100 !important; /* High z-index but lower than popovers/modals */
+  z-index: 999 !important; /* Higher z-index to ensure it stays on top */
   height: 64px !important;
   display: block !important; /* Ensure header is always displayed */
   visibility: visible !important; /* Force visibility */
@@ -40,10 +40,10 @@ main {
 
 /* Fix for admin layouts */
 .admin-layout .admin-header,
-.dashboard-header {
+.dashboard-layout .dashboard-header {
   position: sticky !important;
   top: 0 !important;
-  z-index: 100 !important;
+  z-index: 999 !important;
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
@@ -56,7 +56,7 @@ main {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
-  z-index: 100 !important;
+  z-index: 999 !important;
 }
 
 /* Proper z-index hierarchy */
