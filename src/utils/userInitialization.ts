@@ -43,7 +43,7 @@ export const importUsersToMongoDB = async (
           isAdmin: Boolean(user.isAdmin) || false,
           photoURL: user.photoURL || null,
           createdAt: user.createdAt ? new Date(user.createdAt) : new Date(),
-          lastLogin: user.lastLogin ? new Date(user.lastLogin) : new Date()
+          lastLogin: new Date() // Default to current date if not provided
         };
         
         // Save to MongoDB

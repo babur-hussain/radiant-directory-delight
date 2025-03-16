@@ -1,4 +1,3 @@
-
 // Define types for our auth context
 export type UserRole = "Business" | "Influencer" | "Admin" | "User" | "admin" | "staff" | null;
 
@@ -13,6 +12,7 @@ export interface User {
   isAdmin?: boolean;
   subscription?: any; // For storing subscription information
   createdAt?: Date | string; // For storing user creation date
+  lastLogin?: Date | string; // For storing user's last login date
 }
 
 export interface Subscription {
