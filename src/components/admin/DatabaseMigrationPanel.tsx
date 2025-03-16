@@ -1,22 +1,25 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Database, Server } from 'lucide-react';
 import MigrationUtility from './MigrationUtility';
 
 const DatabaseMigrationPanel = () => {
   return (
-    <Card className="col-span-full">
+    <Card className="w-full">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-bold">Database Migration</CardTitle>
+          <CardTitle className="text-xl font-bold">Firestore to MongoDB Migration</CardTitle>
           <div className="flex items-center space-x-2">
             <Database className="h-5 w-5 text-muted-foreground" />
             <span className="text-muted-foreground">↔</span>
             <Server className="h-5 w-5 text-primary" />
           </div>
         </div>
+        <CardDescription>
+          Migrate your Firestore data to MongoDB for improved performance and scalability.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="migrate" className="space-y-4">
