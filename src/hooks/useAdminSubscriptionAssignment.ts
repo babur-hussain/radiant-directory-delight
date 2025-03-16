@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createSubscription, updateSubscription, deleteSubscription } from '@/services/subscriptionService';
@@ -8,8 +9,8 @@ const useAdminSubscriptionAssignment = () => {
   const [isEditing, setIsEditing] = useState(false);
   const queryClient = useQueryClient();
 
-  const createSubscriptionMutation = useMutation(
-    async (subscriptionData: Omit<ISubscription, 'id'>) => {
+  const createSubscriptionMutation = useMutation({
+    mutationFn: async (subscriptionData: Omit<ISubscription, 'id'>) => {
       // Ensure all required fields are present
       if (!subscriptionData.userId || !subscriptionData.packageId) {
         throw new Error("User ID and Package ID are required.");
@@ -30,50 +31,44 @@ const useAdminSubscriptionAssignment = () => {
       });
       return subscription;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['subscriptions']);
-        queryClient.invalidateQueries(['userSubscriptions']);
-      },
-      onError: (error) => {
-        console.error("Error creating subscription:", error);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['userSubscriptions'] });
+    },
+    onError: (error) => {
+      console.error("Error creating subscription:", error);
+    },
+  });
 
-  const updateSubscriptionMutation = useMutation(
-    async (subscriptionData: ISubscription) => {
+  const updateSubscriptionMutation = useMutation({
+    mutationFn: async (subscriptionData: ISubscription) => {
       if (!subscriptionData.id) {
         throw new Error("Subscription ID is required for updating.");
       }
       const subscription = await updateSubscription(subscriptionData.id, subscriptionData);
       return subscription;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['subscriptions']);
-        queryClient.invalidateQueries(['userSubscriptions']);
-      },
-      onError: (error) => {
-        console.error("Error updating subscription:", error);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['userSubscriptions'] });
+    },
+    onError: (error) => {
+      console.error("Error updating subscription:", error);
+    },
+  });
 
-  const deleteSubscriptionMutation = useMutation(
-    async (id: string) => {
+  const deleteSubscriptionMutation = useMutation({
+    mutationFn: async (id: string) => {
       await deleteSubscription(id);
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['subscriptions']);
-        queryClient.invalidateQueries(['userSubscriptions']);
-      },
-      onError: (error) => {
-        console.error("Error deleting subscription:", error);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['userSubscriptions'] });
+    },
+    onError: (error) => {
+      console.error("Error deleting subscription:", error);
+    },
+  });
 
   return {
     isEditing,
@@ -81,7 +76,7 @@ const useAdminSubscriptionAssignment = () => {
     createSubscription: createSubscriptionMutation.mutateAsync,
     updateSubscription: updateSubscriptionMutation.mutateAsync,
     deleteSubscription: deleteSubscriptionMutation.mutateAsync,
-    isLoading: createSubscriptionMutation.isLoading || updateSubscriptionMutation.isLoading || deleteSubscriptionMutation.isLoading,
+    isLoading: createSubscriptionMutation.isPending || updateSubscriptionMutation.isPending || deleteSubscriptionMutation.isPending,
     error: createSubscriptionMutation.error || updateSubscriptionMutation.error || deleteSubscriptionMutation.error,
   };
 };

@@ -1,12 +1,15 @@
+
 import { useState } from 'react';
 import { ISubscription } from '@/models/Subscription';
-import { createSubscription as createSubscriptionAPI, updateSubscription as updateSubscriptionAPI, getSubscription as getSubscriptionAPI, getSubscriptions as getSubscriptionsAPI, deleteSubscription as deleteSubscriptionAPI } from '@/services/subscriptionService';
+import { createSubscription as createSubscriptionAPI, updateSubscription as updateSubscriptionAPI, getSubscription as getSubscriptionAPI, getSubscriptions as getSubscriptionsAPI, deleteSubscription as deleteSubscriptionAPI, getUserSubscriptions as getUserSubscriptionsAPI, getActiveUserSubscription } from '@/services/subscriptionService';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
+import { useAuth } from './useAuth';
 
 const useSubscription = () => {
   const queryClient = useQueryClient();
   const [subscription, setSubscription] = useState<ISubscription | null>(null);
+  const { currentUser } = useAuth();
 
   // Function to fetch a single subscription by ID
   const {
@@ -14,13 +17,11 @@ const useSubscription = () => {
     isLoading: isSubscriptionLoading,
     isError: isSubscriptionError,
     error: subscriptionError,
-  } = useQuery<ISubscription, Error>(
-    ['subscription', subscription?.id],
-    () => getSubscriptionAPI(subscription?.id || ''),
-    {
-      enabled: !!subscription?.id, // Only run the query if subscriptionId is not null
-    }
-  );
+  } = useQuery({
+    queryKey: ['subscription', subscription?.id],
+    queryFn: () => getSubscriptionAPI(subscription?.id || ''),
+    enabled: !!subscription?.id, // Only run the query if subscriptionId is not null
+  });
 
   // Function to fetch all subscriptions
   const {
@@ -28,50 +29,50 @@ const useSubscription = () => {
     isLoading: isSubscriptionsLoading,
     isError: isSubscriptionsError,
     error: subscriptionsError,
-  } = useQuery<ISubscription[], Error>(['subscriptions'], getSubscriptionsAPI);
+  } = useQuery({
+    queryKey: ['subscriptions'],
+    queryFn: getSubscriptionsAPI
+  });
+
+  // Function to fetch user's subscriptions
+  const getUserSubscription = async () => {
+    if (!currentUser?.uid) return null;
+    return await getActiveUserSubscription(currentUser.uid);
+  };
 
   // Mutation to create a new subscription
-  const createSubscriptionMutation = useMutation<ISubscription, Error, ISubscription>(
-    createSubscriptionAPI,
-    {
-      onSuccess: () => {
-        // Invalidate and refetch queries after successful creation
-        queryClient.invalidateQueries(['subscriptions']);
-      },
-    }
-  );
+  const createSubscriptionMutation = useMutation({
+    mutationFn: (subscriptionData: ISubscription) => createSubscriptionAPI(subscriptionData),
+    onSuccess: () => {
+      // Invalidate and refetch queries after successful creation
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+    },
+  });
 
   // Mutation to update an existing subscription
-  const updateSubscriptionMutation = useMutation<ISubscription, Error, ISubscription>(
-    updateSubscriptionAPI,
-    {
-      onSuccess: () => {
-        // Invalidate and refetch queries after successful update
-        queryClient.invalidateQueries(['subscriptions']);
-        queryClient.invalidateQueries(['subscription', subscription?.id]);
-      },
-    }
-  );
+  const updateSubscriptionMutation = useMutation({
+    mutationFn: (subscriptionData: ISubscription) => updateSubscriptionAPI(subscriptionData.id, subscriptionData),
+    onSuccess: () => {
+      // Invalidate and refetch queries after successful update
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['subscription', subscription?.id] });
+    },
+  });
 
   // Mutation to delete a subscription
-  const deleteSubscriptionMutation = useMutation<void, Error, string>(
-    deleteSubscriptionAPI,
-    {
-      onSuccess: () => {
-        // Invalidate and refetch queries after successful deletion
-        queryClient.invalidateQueries(['subscriptions']);
-      },
-    }
-  );
+  const deleteSubscriptionMutation = useMutation({
+    mutationFn: (id: string) => deleteSubscriptionAPI(id),
+    onSuccess: () => {
+      // Invalidate and refetch queries after successful deletion
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+    },
+  });
 
   // Helper functions to trigger mutations
-  const createSubscription = async (subscriptionData: ISubscription) => {
-    // Update the problematic line where we're passing SubscriptionData to something expecting ISubscription
-    // Change this:
-    // const subscription = await createSubscription(subscriptionData);
-    // To this:
-    const subscription = await createSubscriptionMutation.mutateAsync({
-      id: nanoid(), // Generate an ID if it doesn't exist
+  const createSubscription = async (subscriptionData: Omit<ISubscription, 'id'>) => {
+    // Generate an ID if it doesn't exist
+    const newSubscription = {
+      id: nanoid(),
       ...subscriptionData,
       // Ensure all required fields are present
       status: subscriptionData.status || 'active',
@@ -82,9 +83,10 @@ const useSubscription = () => {
       userId: subscriptionData.userId || '',
       amount: subscriptionData.amount || 0,
       paymentType: subscriptionData.paymentType || 'recurring'
-    });
+    } as ISubscription;
 
-    return subscription;
+    const result = await createSubscriptionMutation.mutateAsync(newSubscription);
+    return result;
   };
 
   const updateSubscription = async (subscriptionData: ISubscription) => {
@@ -106,9 +108,10 @@ const useSubscription = () => {
     createSubscription,
     updateSubscription,
     deleteSubscription,
-    isCreating: createSubscriptionMutation.isLoading,
-    isUpdating: updateSubscriptionMutation.isLoading,
-    isDeleting: deleteSubscriptionMutation.isLoading,
+    getUserSubscription,
+    isCreating: createSubscriptionMutation.isPending,
+    isUpdating: updateSubscriptionMutation.isPending,
+    isDeleting: deleteSubscriptionMutation.isPending,
   };
 };
 

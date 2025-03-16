@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, LogIn, LayoutDashboard } from 'lucide-react';
@@ -6,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import AuthModal from './auth/AuthModal';
 import UserMenu from './UserMenu';
 import { useAuth } from '@/hooks/useAuth';
-import { useSubscription } from '@/hooks/useSubscription';
+import useSubscription from '@/hooks/useSubscription';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -16,17 +15,20 @@ const Header = () => {
   const navigate = useNavigate();
   const auth = useAuth();
   const {
-    isAuthenticated,
+    currentUser,
     logout,
-    initialized,
-    user
+    initialized
   } = auth;
+  
+  const isAuthenticated = !!currentUser;
+  const user = currentUser;
+  
   const { getUserSubscription } = useSubscription();
   
   // Fetch subscription data when user changes
   useEffect(() => {
     const fetchSubscription = async () => {
-      if (user?.id) {
+      if (user?.uid) {
         try {
           const subscription = await getUserSubscription();
           setSubscriptionStatus(subscription?.status || null);
@@ -40,7 +42,7 @@ const Header = () => {
     };
     
     fetchSubscription();
-  }, [getUserSubscription, user?.id]);
+  }, [getUserSubscription, user?.uid]);
   
   useEffect(() => {
     const handleScroll = () => {

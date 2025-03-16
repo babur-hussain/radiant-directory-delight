@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DatabaseMigrationPanel } from '@/components/admin/DatabaseMigrationPanel';
+import DatabaseMigrationPanel from '@/components/admin/DatabaseMigrationPanel';
 
 const Dashboard = () => {
   return (

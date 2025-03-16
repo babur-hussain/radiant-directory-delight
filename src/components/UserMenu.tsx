@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -15,12 +15,13 @@ import { LogOut, User, Settings, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const UserMenu = () => {
-  const { user, logout, initialized } = useAuth();
+  const auth = useAuth();
+  const { currentUser, initialized, logout } = auth;
   const navigate = useNavigate();
   
   // Get first letter of name for avatar fallback
   const getInitials = () => {
-    return user?.name ? user.name.charAt(0).toUpperCase() : "U";
+    return currentUser?.displayName ? currentUser.displayName.charAt(0).toUpperCase() : "U";
   };
 
   // Handle profile option click
@@ -34,7 +35,7 @@ const UserMenu = () => {
   };
 
   // Don't render until auth is initialized and we have a user
-  if (!initialized || !user) {
+  if (!initialized || !currentUser) {
     return null;
   }
 
@@ -43,8 +44,8 @@ const UserMenu = () => {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="relative h-9 w-9 rounded-full">
           <Avatar className="h-9 w-9">
-            {user?.photoURL ? (
-              <AvatarImage src={user.photoURL} alt={user?.name || "User"} />
+            {currentUser?.photoURL ? (
+              <AvatarImage src={currentUser.photoURL} alt={currentUser?.displayName || "User"} />
             ) : (
               <AvatarFallback>{getInitials()}</AvatarFallback>
             )}
@@ -54,11 +55,11 @@ const UserMenu = () => {
       <DropdownMenuContent align="end" className="w-56 bg-white">
         <DropdownMenuLabel>
           <div className="flex flex-col">
-            <span>{user?.name}</span>
-            <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
-            {user?.role && (
+            <span>{currentUser?.displayName}</span>
+            <span className="text-xs text-muted-foreground truncate">{currentUser?.email}</span>
+            {currentUser?.role && (
               <span className="text-xs font-medium mt-1 bg-primary/10 text-primary rounded-full px-2 py-0.5 inline-block w-fit">
-                {user.role}
+                {currentUser.role}
               </span>
             )}
           </div>

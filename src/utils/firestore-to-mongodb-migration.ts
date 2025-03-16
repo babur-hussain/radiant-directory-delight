@@ -1,266 +1,200 @@
 
+/**
+ * Firestore to MongoDB Migration Utility
+ * 
+ * This module provides functions to migrate data from Firestore to MongoDB
+ */
+
 import { db } from '../config/firebase';
 import { collection, getDocs } from 'firebase/firestore';
-import { connectToMongoDB } from '../config/mongodb';
 import { User } from '../models/User';
 import { Subscription } from '../models/Subscription';
-import { SubscriptionPackage } from '../models/SubscriptionPackage';
 import { Business } from '../models/Business';
 
-// Function to migrate users from Firestore to MongoDB
-const migrateUsers = async () => {
+/**
+ * Migrates users from Firestore to MongoDB
+ */
+export const migrateUsersFromFirestore = async (progressCallback?: (progress: number) => void): Promise<{ success: number; failed: number }> => {
   try {
-    console.log('Starting migration of users...');
-    const usersSnapshot = await getDocs(collection(db, 'users'));
+    const usersCollection = collection(db, "users");
+    const snapshot = await getDocs(usersCollection);
     
-    if (usersSnapshot.empty) {
-      console.log('No users to migrate');
-      return 0;
+    let success = 0;
+    let failed = 0;
+    let processed = 0;
+    const total = snapshot.docs.length;
+    
+    for (const doc of snapshot.docs) {
+      try {
+        const userData = doc.data();
+        
+        // Check if user already exists in MongoDB
+        const existingUser = await User.findOne({ uid: doc.id });
+        
+        if (!existingUser) {
+          // Create new user in MongoDB
+          await User.create({
+            uid: doc.id,
+            name: userData.name || userData.displayName,
+            email: userData.email,
+            role: userData.role || 'user',
+            isAdmin: userData.isAdmin || false,
+            photoURL: userData.photoURL,
+            createdAt: userData.createdAt?.toDate() || new Date(),
+            lastLogin: userData.lastLogin?.toDate() || new Date()
+          });
+          success++;
+        } else {
+          // Update existing user
+          await User.updateOne(
+            { uid: doc.id },
+            {
+              $set: {
+                name: userData.name || userData.displayName,
+                email: userData.email,
+                role: userData.role || existingUser.role,
+                isAdmin: userData.isAdmin || existingUser.isAdmin,
+                photoURL: userData.photoURL || existingUser.photoURL,
+                lastLogin: new Date()
+              }
+            }
+          );
+          success++;
+        }
+      } catch (error) {
+        console.error(`Failed to migrate user ${doc.id}:`, error);
+        failed++;
+      }
+      
+      processed++;
+      if (progressCallback) {
+        progressCallback(processed / total);
+      }
     }
     
-    let count = 0;
-    const promises = usersSnapshot.docs.map(async (doc) => {
-      const userData = doc.data();
-      
-      // Convert Firestore timestamps to Date objects
-      const createdAt = userData.createdAt ? new Date(userData.createdAt.toDate()) : new Date();
-      const lastLogin = userData.lastLogin ? new Date(userData.lastLogin.toDate()) : new Date();
-      
-      // Create or update user in MongoDB
-      await User.findOneAndUpdate(
-        { uid: doc.id },
-        {
-          uid: doc.id,
-          name: userData.name || null,
-          email: userData.email || null,
-          role: userData.role || null,
-          isAdmin: userData.isAdmin || false,
-          photoURL: userData.photoURL || null,
-          createdAt: createdAt,
-          lastLogin: lastLogin
-        },
-        { upsert: true }
-      );
-      
-      count++;
-    });
-    
-    await Promise.all(promises);
-    console.log(`Successfully migrated ${count} users`);
-    return count;
+    return { success, failed };
   } catch (error) {
-    console.error('Error migrating users:', error);
-    throw error;
+    console.error("Failed to migrate users:", error);
+    return { success: 0, failed: 0 };
   }
 };
 
-// Function to migrate subscription packages from Firestore to MongoDB
-const migrateSubscriptionPackages = async () => {
+/**
+ * Migrates subscriptions from Firestore to MongoDB
+ */
+export const migrateSubscriptionsFromFirestore = async (progressCallback?: (progress: number) => void): Promise<{ success: number; failed: number }> => {
   try {
-    console.log('Starting migration of subscription packages...');
-    const packagesSnapshot = await getDocs(collection(db, 'subscriptionPackages'));
+    const subscriptionsCollection = collection(db, "subscriptions");
+    const snapshot = await getDocs(subscriptionsCollection);
     
-    if (packagesSnapshot.empty) {
-      console.log('No subscription packages to migrate');
-      return 0;
+    let success = 0;
+    let failed = 0;
+    let processed = 0;
+    const total = snapshot.docs.length;
+    
+    for (const doc of snapshot.docs) {
+      try {
+        const subscriptionData = doc.data();
+        
+        // Check if subscription already exists in MongoDB
+        const existingSubscription = await Subscription.findOne({ _id: doc.id });
+        
+        if (!existingSubscription) {
+          // Create new subscription in MongoDB
+          await Subscription.create({
+            _id: doc.id,
+            userId: subscriptionData.userId,
+            packageId: subscriptionData.packageId,
+            packageName: subscriptionData.packageName,
+            amount: subscriptionData.amount,
+            startDate: subscriptionData.startDate?.toDate() || new Date(),
+            endDate: subscriptionData.endDate?.toDate() || new Date(),
+            status: subscriptionData.status || 'active',
+            paymentType: subscriptionData.paymentType || 'recurring'
+          });
+          success++;
+        } else {
+          // Update existing subscription
+          await Subscription.updateOne(
+            { _id: doc.id },
+            { $set: subscriptionData }
+          );
+          success++;
+        }
+      } catch (error) {
+        console.error(`Failed to migrate subscription ${doc.id}:`, error);
+        failed++;
+      }
+      
+      processed++;
+      if (progressCallback) {
+        progressCallback(processed / total);
+      }
     }
     
-    let count = 0;
-    const promises = packagesSnapshot.docs.map(async (doc) => {
-      const packageData = doc.data();
-      
-      // Create or update package in MongoDB
-      await SubscriptionPackage.findOneAndUpdate(
-        { id: doc.id },
-        {
-          id: doc.id,
-          title: packageData.title || '',
-          price: Number(packageData.price || 0),
-          monthlyPrice: Number(packageData.monthlyPrice || 0),
-          setupFee: Number(packageData.setupFee || 0),
-          durationMonths: Number(packageData.durationMonths || 12),
-          shortDescription: packageData.shortDescription || '',
-          fullDescription: packageData.fullDescription || '',
-          features: Array.isArray(packageData.features) ? packageData.features : [],
-          popular: Boolean(packageData.popular),
-          type: packageData.type || 'Business',
-          termsAndConditions: packageData.termsAndConditions || '',
-          paymentType: packageData.paymentType || 'recurring',
-          billingCycle: packageData.billingCycle || 'yearly',
-          advancePaymentMonths: Number(packageData.advancePaymentMonths || 0)
-        },
-        { upsert: true }
-      );
-      
-      count++;
-    });
-    
-    await Promise.all(promises);
-    console.log(`Successfully migrated ${count} subscription packages`);
-    return count;
+    return { success, failed };
   } catch (error) {
-    console.error('Error migrating subscription packages:', error);
-    throw error;
+    console.error("Failed to migrate subscriptions:", error);
+    return { success: 0, failed: 0 };
   }
 };
 
-// Function to migrate subscriptions from Firestore to MongoDB
-const migrateSubscriptions = async () => {
+/**
+ * Migrates businesses from Firestore to MongoDB
+ */
+export const migrateBusinessesFromFirestore = async (progressCallback?: (progress: number) => void): Promise<{ success: number; failed: number }> => {
   try {
-    console.log('Starting migration of subscriptions...');
-    const subscriptionsSnapshot = await getDocs(collection(db, 'subscriptions'));
+    const businessesCollection = collection(db, "businesses");
+    const snapshot = await getDocs(businessesCollection);
     
-    if (subscriptionsSnapshot.empty) {
-      console.log('No subscriptions to migrate');
-      return 0;
+    let success = 0;
+    let failed = 0;
+    let processed = 0;
+    const total = snapshot.docs.length;
+    
+    for (const doc of snapshot.docs) {
+      try {
+        const businessData = doc.data();
+        
+        // Check if business already exists in MongoDB
+        const existingBusiness = await Business.findOne({ _id: doc.id });
+        
+        if (!existingBusiness) {
+          // Create new business in MongoDB
+          await Business.create({
+            _id: doc.id,
+            ...businessData,
+            createdAt: businessData.createdAt?.toDate() || new Date(),
+            updatedAt: businessData.updatedAt?.toDate() || new Date()
+          });
+          success++;
+        } else {
+          // Update existing business
+          await Business.updateOne(
+            { _id: doc.id },
+            { 
+              $set: {
+                ...businessData,
+                updatedAt: new Date()
+              } 
+            }
+          );
+          success++;
+        }
+      } catch (error) {
+        console.error(`Failed to migrate business ${doc.id}:`, error);
+        failed++;
+      }
+      
+      processed++;
+      if (progressCallback) {
+        progressCallback(processed / total);
+      }
     }
     
-    let count = 0;
-    const promises = subscriptionsSnapshot.docs.map(async (doc) => {
-      const subscriptionData = doc.data();
-      
-      // Convert Firestore timestamps to Date objects
-      const createdAt = subscriptionData.createdAt ? new Date(subscriptionData.createdAt.toDate()) : new Date();
-      const updatedAt = subscriptionData.updatedAt ? new Date(subscriptionData.updatedAt.toDate()) : new Date();
-      
-      // Create or update subscription in MongoDB
-      await Subscription.findOneAndUpdate(
-        { id: doc.id },
-        {
-          id: doc.id,
-          userId: subscriptionData.userId || '',
-          packageId: subscriptionData.packageId || '',
-          packageName: subscriptionData.packageName || '',
-          amount: Number(subscriptionData.amount || 0),
-          startDate: subscriptionData.startDate || new Date().toISOString(),
-          endDate: subscriptionData.endDate || new Date().toISOString(),
-          status: subscriptionData.status || 'active',
-          createdAt: createdAt,
-          updatedAt: updatedAt,
-          assignedBy: subscriptionData.assignedBy || 'admin',
-          assignedAt: subscriptionData.assignedAt || new Date().toISOString(),
-          advancePaymentMonths: Number(subscriptionData.advancePaymentMonths || 0),
-          signupFee: Number(subscriptionData.signupFee || 0),
-          actualStartDate: subscriptionData.actualStartDate || new Date().toISOString(),
-          isPaused: Boolean(subscriptionData.isPaused),
-          isPausable: subscriptionData.isPausable !== undefined ? subscriptionData.isPausable : true,
-          isUserCancellable: subscriptionData.isUserCancellable !== undefined ? subscriptionData.isUserCancellable : true,
-          invoiceIds: Array.isArray(subscriptionData.invoiceIds) ? subscriptionData.invoiceIds : [],
-          paymentType: subscriptionData.paymentType || 'recurring'
-        },
-        { upsert: true }
-      );
-      
-      count++;
-    });
-    
-    await Promise.all(promises);
-    console.log(`Successfully migrated ${count} subscriptions`);
-    return count;
+    return { success, failed };
   } catch (error) {
-    console.error('Error migrating subscriptions:', error);
-    throw error;
+    console.error("Failed to migrate businesses:", error);
+    return { success: 0, failed: 0 };
   }
 };
-
-// Function to migrate businesses from Firestore to MongoDB
-const migrateBusinesses = async () => {
-  try {
-    console.log('Starting migration of businesses...');
-    const businessesSnapshot = await getDocs(collection(db, 'businesses'));
-    
-    if (businessesSnapshot.empty) {
-      console.log('No businesses to migrate');
-      return 0;
-    }
-    
-    let count = 0;
-    const promises = businessesSnapshot.docs.map(async (doc) => {
-      const businessData = doc.data();
-      
-      // Create or update business in MongoDB
-      await Business.findOneAndUpdate(
-        { id: Number(doc.id) },
-        {
-          id: Number(doc.id),
-          name: businessData.name || '',
-          description: businessData.description || '',
-          category: businessData.category || '',
-          address: businessData.address || '',
-          phone: businessData.phone || '',
-          email: businessData.email || '',
-          website: businessData.website || '',
-          rating: Number(businessData.rating || 0),
-          reviews: Number(businessData.reviews || 0),
-          latitude: Number(businessData.latitude || 0),
-          longitude: Number(businessData.longitude || 0),
-          hours: businessData.hours || {},
-          tags: Array.isArray(businessData.tags) ? businessData.tags : [],
-          featured: Boolean(businessData.featured),
-          image: businessData.image || ''
-        },
-        { upsert: true }
-      );
-      
-      count++;
-    });
-    
-    await Promise.all(promises);
-    console.log(`Successfully migrated ${count} businesses`);
-    return count;
-  } catch (error) {
-    console.error('Error migrating businesses:', error);
-    throw error;
-  }
-};
-
-// Main migration function
-export const migrateFirestoreToMongoDB = async () => {
-  try {
-    console.log('Starting Firestore to MongoDB migration...');
-    
-    // Ensure MongoDB connection
-    await connectToMongoDB();
-    
-    // Run all migrations
-    const userCount = await migrateUsers();
-    const packageCount = await migrateSubscriptionPackages();
-    const subscriptionCount = await migrateSubscriptions();
-    const businessCount = await migrateBusinesses();
-    
-    console.log('----- Migration Summary -----');
-    console.log(`Users: ${userCount}`);
-    console.log(`Subscription Packages: ${packageCount}`);
-    console.log(`Subscriptions: ${subscriptionCount}`);
-    console.log(`Businesses: ${businessCount}`);
-    console.log('-----------------------------');
-    console.log('Migration completed successfully');
-    
-    return {
-      success: true,
-      userCount,
-      packageCount,
-      subscriptionCount,
-      businessCount
-    };
-  } catch (error) {
-    console.error('Migration failed:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : String(error)
-    };
-  }
-};
-
-// Optional: Create CLI command for migration
-if (typeof window === 'undefined' && require.main === module) {
-  migrateFirestoreToMongoDB()
-    .then(result => {
-      console.log('Migration result:', result);
-      process.exit(result.success ? 0 : 1);
-    })
-    .catch(error => {
-      console.error('Unhandled error during migration:', error);
-      process.exit(1);
-    });
-}
