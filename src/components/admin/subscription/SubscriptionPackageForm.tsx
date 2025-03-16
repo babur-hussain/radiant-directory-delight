@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -206,7 +205,7 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
-                    disabled={paymentType === "one-time"}
+                    disabled={paymentType !== "recurring"}
                   >
                     <FormControl>
                       <SelectTrigger>

@@ -49,3 +49,30 @@ export const adminAssignSubscription = async (userId: string, subscriptionData: 
     return false;
   }
 };
+
+// Adding this function to fix reference errors
+export const adminCancelSubscription = async (userId: string, subscriptionId: string): Promise<boolean> => {
+  try {
+    if (!userId || !subscriptionId) {
+      console.error("Invalid user ID or subscription ID");
+      return false;
+    }
+    
+    // Get the subscription document
+    const docRef = doc(db, "subscriptions", subscriptionId);
+    
+    // Update with cancelled status
+    await setDoc(docRef, {
+      status: "cancelled",
+      cancelledAt: new Date().toISOString(),
+      cancelReason: "admin_cancelled",
+      updatedAt: Timestamp.now()
+    }, { merge: true });
+    
+    console.log(`Subscription ${subscriptionId} cancelled for user ${userId}`);
+    return true;
+  } catch (error) {
+    console.error("Error cancelling subscription:", error);
+    return false;
+  }
+};

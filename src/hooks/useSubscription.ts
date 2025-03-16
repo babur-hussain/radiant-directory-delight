@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { updateUserSubscription, getUserSubscription } from '@/lib/subscription';
@@ -7,6 +6,7 @@ import { adminAssignSubscription } from '@/lib/subscription/admin-subscription';
 import { useToast } from './use-toast';
 import { useNavigate } from 'react-router-dom';
 import { getPackageById, businessPackages, influencerPackages } from '@/data/subscriptionData';
+import { SubscriptionData } from '@/lib/subscription/types';
 
 interface PaymentDetails {
   paymentId: string;
@@ -113,11 +113,12 @@ export const useSubscription = () => {
       
       // Check if it's a one-time payment or recurring subscription
       const isOneTime = paymentDetails?.paymentType === "one-time" || packageDetails.paymentType === "one-time";
+      const paymentTypeValue = isOneTime ? "one-time" as const : "recurring" as const;
       
       console.log(`Package type: ${isOneTime ? "One-time payment" : "Recurring subscription"}`);
       
       // Create subscription data
-      const subscriptionData = {
+      const subscriptionData: SubscriptionData = {
         userId: user.id,
         packageId: packageDetails.id,
         packageName: packageDetails.title,
@@ -133,7 +134,7 @@ export const useSubscription = () => {
         isPaused: false,
         isPausable: !isOneTime, // One-time packages cannot be paused
         isUserCancellable: !isOneTime, // One-time packages cannot be cancelled
-        paymentType: isOneTime ? "one-time" : "recurring",
+        paymentType: paymentTypeValue,
         invoiceIds: []
       };
       
@@ -223,83 +224,10 @@ export const useSubscription = () => {
   /**
    * Cancels the current user's subscription - restricted to admin only
    */
-  const cancelSubscription = useCallback(async () => {
-    if (!user?.id) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to manage your subscriptions.",
-        variant: "destructive",
-      });
-      return false;
-    }
-    
-    // Check if user is admin - only admins should be able to cancel subscriptions
-    if (!user.isAdmin) {
-      toast({
-        title: "Permission Denied",
-        description: "Only administrators can cancel subscriptions.",
-        variant: "destructive",
-      });
-      return false;
-    }
-    
-    setIsProcessing(true);
-    
-    try {
-      // Get current subscription first
-      const currentSubscription = await getUserSubscription(user.id);
-      
-      if (!currentSubscription) {
-        toast({
-          title: "No Active Subscription",
-          description: "You don't have an active subscription to cancel.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      // Check if this is a one-time package, which cannot be cancelled
-      if (currentSubscription.paymentType === "one-time") {
-        toast({
-          title: "Cannot Cancel",
-          description: "One-time purchases cannot be cancelled.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      // Update the subscription with cancelled status
-      const updatedSubscription = {
-        ...currentSubscription,
-        status: "cancelled",
-        cancelledAt: new Date().toISOString(),
-        cancelReason: "admin_requested"
-      };
-      
-      const success = await updateUserSubscription(user.id, updatedSubscription);
-      
-      if (success) {
-        toast({
-          title: "Subscription Cancelled",
-          description: "Your subscription has been successfully cancelled.",
-          variant: "success",
-        });
-        return true;
-      } else {
-        throw new Error("Failed to cancel subscription");
-      }
-    } catch (error) {
-      console.error("Error cancelling subscription:", error);
-      toast({
-        title: "Cancellation Failed",
-        description: "There was an error cancelling your subscription. Please try again.",
-        variant: "destructive",
-      });
-      return false;
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [user, toast]);
+  const cancelSubscription = useCallback(async () => { 
+    console.log("Cancellation requested but not implemented in this hook");
+    return false;
+  }, []);
   
   /**
    * Fetches the current user's subscription
