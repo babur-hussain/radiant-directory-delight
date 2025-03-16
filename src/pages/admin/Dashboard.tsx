@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { setupMongoDB, autoInitMongoDB } from '@/utils/setupMongoDB';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle2, AlertCircle, RefreshCw, Database } from 'lucide-react';
+import { CheckCircle2, AlertCircle, RefreshCw, Database, Activity } from 'lucide-react';
 import Loading from '@/components/ui/loading';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -15,6 +14,7 @@ import SeedDataPanel from '@/components/admin/dashboard/SeedDataPanel';
 import { useToast } from '@/hooks/use-toast';
 import { connectToMongoDB, isMongoDBConnected } from '@/config/mongodb';
 import { fullSyncPackages } from '@/utils/syncMongoFirebase';
+import { diagnoseMongoDbConnection, testConnectionWithRetry } from '@/utils/mongoDebug';
 
 const Dashboard = () => {
   const [isInitializing, setIsInitializing] = useState(true);
@@ -23,15 +23,19 @@ const Dashboard = () => {
   const [dbStatus, setDbStatus] = useState<{success: boolean; message: string; collections: string[]} | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
+  const [diagnosticResults, setDiagnosticResults] = useState<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     const initDb = async () => {
       try {
         setConnectionError(null);
-        const connected = await connectToMongoDB();
+        console.log('Testing MongoDB connection with retry...');
+        const connected = await testConnectionWithRetry(3, 2000);
+        
         if (!connected) {
-          const errorMsg = 'Failed to connect to MongoDB. Please check your connection string and network.';
+          const errorMsg = 'Failed to connect to MongoDB after multiple attempts. Please check your connection string and network.';
           setConnectionError(errorMsg);
           throw new Error(errorMsg);
         }
@@ -133,6 +137,28 @@ const Dashboard = () => {
     });
   };
 
+  const handleDiagnoseMongoDB = async () => {
+    setIsDiagnosing(true);
+    try {
+      const diagnostics = await diagnoseMongoDbConnection();
+      setDiagnosticResults(diagnostics);
+      
+      toast({
+        title: "MongoDB Diagnostics Complete",
+        description: `Current connection state: ${diagnosticResults.connectionState}`,
+      });
+    } catch (error) {
+      console.error("Error running MongoDB diagnostics:", error);
+      toast({
+        title: "Diagnostics Failed",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive"
+      });
+    } finally {
+      setIsDiagnosing(false);
+    }
+  };
+
   const handleSyncPackages = async () => {
     setIsSyncing(true);
     try {
@@ -175,9 +201,9 @@ const Dashboard = () => {
       setStatusMessage('Manually connecting to MongoDB...');
       setConnectionError(null);
       
-      const connected = await connectToMongoDB();
+      const connected = await testConnectionWithRetry(3, 2000);
       if (!connected) {
-        const errorMsg = 'Failed to manually connect to MongoDB';
+        const errorMsg = 'Failed to manually connect to MongoDB after multiple attempts';
         setConnectionError(errorMsg);
         throw new Error(errorMsg);
       }
@@ -205,6 +231,16 @@ const Dashboard = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
         <div className="flex gap-2">
+          <Button 
+            onClick={handleDiagnoseMongoDB} 
+            variant="outline"
+            disabled={isDiagnosing}
+            className="flex items-center gap-2"
+          >
+            <Activity className={`h-4 w-4 ${isDiagnosing ? 'animate-pulse' : ''}`} />
+            {isDiagnosing ? 'Diagnosing...' : 'Diagnose MongoDB'}
+          </Button>
+          
           <Button 
             onClick={handleManualConnect} 
             variant="outline"
@@ -234,6 +270,20 @@ const Dashboard = () => {
           </Button>
         </div>
       </div>
+      
+      {diagnosticResults && (
+        <Alert className="bg-blue-50 border-blue-200">
+          <Activity className="h-4 w-4" />
+          <AlertTitle>MongoDB Diagnostic Results</AlertTitle>
+          <AlertDescription>
+            <div className="space-y-1 text-sm">
+              <p><strong>Environment:</strong> {diagnosticResults.environment}</p>
+              <p><strong>Connection State:</strong> {diagnosticResults.connectionState}</p>
+              <p><strong>URI:</strong> {diagnosticResults.uri}</p>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
       
       {connectionError && (
         <Alert variant="destructive">

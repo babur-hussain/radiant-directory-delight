@@ -1,5 +1,5 @@
 
-import { mongoose, connectToMongoDB, isMongoDBConnected } from '../config/mongodb';
+import { connectToMongoDB, mongoose, isMongoDBConnected } from '../config/mongodb';
 
 // Function to auto-initialize MongoDB when needed
 export const autoInitMongoDB = async () => {
@@ -13,10 +13,26 @@ export const autoInitMongoDB = async () => {
     }
     
     console.log("Attempting to connect to MongoDB...");
-    const connected = await connectToMongoDB();
+    
+    // Try connecting with retries
+    let connected = false;
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    while (!connected && attempts < maxAttempts) {
+      attempts++;
+      console.log(`Connection attempt ${attempts}/${maxAttempts}...`);
+      
+      connected = await connectToMongoDB();
+      
+      if (!connected && attempts < maxAttempts) {
+        console.log(`Connection failed, retrying in 2 seconds...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
     
     if (!connected) {
-      console.error("Failed to connect to MongoDB");
+      console.error(`Failed to connect to MongoDB after ${maxAttempts} attempts`);
       throw new Error("MongoDB connection failed");
     }
     
@@ -58,11 +74,30 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback) => {
     }
     console.log("Setting up MongoDB models...");
     
-    // Ensure MongoDB is connected first
+    // Ensure MongoDB is connected first with retries
     if (!isMongoDBConnected()) {
-      const connected = await connectToMongoDB();
+      let connected = false;
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (!connected && attempts < maxAttempts) {
+        attempts++;
+        console.log(`Connection attempt ${attempts}/${maxAttempts}...`);
+        
+        if (progressCallback) {
+          progressCallback(15 + attempts * 5, `Connection attempt ${attempts}...`);
+        }
+        
+        connected = await connectToMongoDB();
+        
+        if (!connected && attempts < maxAttempts) {
+          console.log(`Connection failed, retrying in 2 seconds...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+      
       if (!connected) {
-        throw new Error("Failed to connect to MongoDB");
+        throw new Error("Failed to connect to MongoDB after multiple attempts");
       }
     }
     
