@@ -1,96 +1,48 @@
 
-import { useState, useEffect } from "react";
-import { businessPackages, influencerPackages } from "@/data/subscriptionData";
-import { fetchSubscriptionPackagesByType } from "@/lib/mongodb-utils";
-import { UserRole } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
-import { connectToMongoDB } from "@/config/mongodb";
+import { useState, useEffect } from 'react';
+import { UserRole } from '@/contexts/AuthContext';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
+import { fetchSubscriptionPackagesByType } from '@/lib/mongodb-utils';
 
-export const useSubscriptionPackages = (role: UserRole) => {
+export const useSubscriptionPackages = (userRole: UserRole) => {
   const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     const loadPackages = async () => {
+      if (!userRole) {
+        setPackages([]);
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
-      
+
       try {
-        console.log("Fetching subscription packages for role:", role);
+        console.log(`Loading subscription packages for role: ${userRole}`);
         
-        // Ensure MongoDB is connected first
-        const connected = await connectToMongoDB();
-        if (!connected) {
-          throw new Error("Could not connect to MongoDB");
-        }
+        // Get packages for the specific role from MongoDB
+        const rolePackages = await fetchSubscriptionPackagesByType(userRole);
         
-        // Determine package type based on user role
-        const packageType = role === "Business" ? "Business" : "Influencer";
-        
-        // Fetch packages by type directly from MongoDB
-        const fetchedPackages = await fetchSubscriptionPackagesByType(packageType);
-        console.log(`Fetched ${fetchedPackages.length} ${packageType} packages from MongoDB`);
-        
-        // If no packages found for the role, use default packages
-        if (fetchedPackages.length === 0) {
-          console.log("No packages found in MongoDB, using default packages");
-          const defaultPackages = role === "Business" ? businessPackages : influencerPackages;
-          
-          // Set default packages
-          setPackages(defaultPackages);
-          
-          // Show toast notification
-          toast({
-            title: "Using Default Packages",
-            description: "No packages found in MongoDB. Using default packages.",
-          });
+        if (rolePackages && rolePackages.length > 0) {
+          setPackages(rolePackages);
+          console.log(`Loaded ${rolePackages.length} ${userRole} packages from MongoDB`);
         } else {
-          // Store fetched packages from MongoDB
-          setPackages(fetchedPackages);
+          console.warn(`No ${userRole} packages found in MongoDB`);
+          setError(`No subscription packages available for ${userRole} role`);
         }
       } catch (err) {
-        console.error("Error fetching subscription packages:", err);
-        
-        // Check if this is a MongoDB connection error
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        const isMongoError = errorMessage.toLowerCase().includes('mongo') || 
-                            errorMessage.toLowerCase().includes('database') ||
-                            errorMessage.toLowerCase().includes('connection');
-        
-        if (isMongoError) {
-          setError("Could not connect to MongoDB. Using default packages instead.");
-          
-          // Show database error toast
-          toast({
-            title: "Database Connection Error",
-            description: "Could not connect to MongoDB. Using default packages instead.",
-            variant: "destructive",
-          });
-        } else {
-          setError("Failed to load packages. Using default packages instead.");
-          
-          // Show general error toast
-          toast({
-            title: "Error Loading Packages",
-            description: "Failed to load packages from database. Using default packages instead.",
-            variant: "destructive",
-          });
-        }
-        
-        // Use default packages as fallback
-        setPackages(role === "Business" ? businessPackages : influencerPackages);
+        console.error('Error loading subscription packages:', err);
+        setError('Failed to load subscription packages. Please try again later.');
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (role) {
-      loadPackages();
-    }
-  }, [role, toast]);
+    loadPackages();
+  }, [userRole]);
 
   return { packages, isLoading, error };
 };

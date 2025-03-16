@@ -132,7 +132,8 @@ export const setupMongoDB = async (
       // Add each package to MongoDB
       const seedPromises = allPackages.map(async (pkg) => {
         try {
-          await SubscriptionPackageModel.create({
+          // Ensure one-time payment packages have proper price set
+          const packageToSave = {
             ...pkg,
             features: pkg.features || [],
             setupFee: pkg.setupFee || 0,
@@ -140,8 +141,12 @@ export const setupMongoDB = async (
             advancePaymentMonths: pkg.advancePaymentMonths || 0,
             durationMonths: pkg.durationMonths || 12,
             termsAndConditions: pkg.termsAndConditions || "",
-            paymentType: pkg.paymentType || "recurring"
-          });
+            paymentType: pkg.paymentType || "recurring",
+            // Ensure one-time payments have proper price
+            price: pkg.paymentType === "one-time" ? (pkg.price || 999) : pkg.price
+          };
+          
+          await SubscriptionPackageModel.create(packageToSave);
           console.log(`Seeded package: ${pkg.title}`);
           return true;
         } catch (err) {

@@ -1,8 +1,11 @@
+
 import { connectToMongoDB } from '../config/mongodb';
 import mongoose from '../config/mongodb';
 import { SubscriptionPackage, ISubscriptionPackage } from '../models/SubscriptionPackage';
 import { Business, IBusiness } from '../models/Business';
 import { setupMongoDB } from '@/utils/setupMongoDB';
+import { Subscription, ISubscription } from '@/models/Subscription';
+import { User, IUser } from '@/models/User';
 
 /**
  * Fetches all subscription packages from MongoDB
@@ -99,6 +102,11 @@ export const saveSubscriptionPackage = async (packageData: ISubscriptionPackage)
       await setupMongoDB();
       // Then try again
       packageModel = mongoose.model('SubscriptionPackage');
+    }
+    
+    // Fix one-time payment price if it's not set correctly
+    if (packageData.paymentType === "one-time" && (!packageData.price || packageData.price <= 0)) {
+      packageData.price = packageData.price || 999; // Default to 999 if not set
     }
     
     // Check if package with this ID already exists
@@ -211,3 +219,83 @@ export async function deleteBusiness(businessId: number): Promise<void> {
     throw error;
   }
 }
+
+/**
+ * Fetches all users from MongoDB
+ */
+export const fetchUsers = async (): Promise<IUser[]> => {
+  try {
+    // Ensure MongoDB is connected
+    const connected = await connectToMongoDB();
+    if (!connected) {
+      throw new Error("Could not connect to MongoDB");
+    }
+    
+    // Get users from MongoDB
+    const users = await User.find().lean();
+    return users;
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches user by UID from MongoDB
+ */
+export const fetchUserByUid = async (uid: string): Promise<IUser | null> => {
+  try {
+    // Ensure MongoDB is connected
+    const connected = await connectToMongoDB();
+    if (!connected) {
+      throw new Error("Could not connect to MongoDB");
+    }
+    
+    // Get user from MongoDB
+    const user = await User.findOne({ uid }).lean();
+    return user;
+  } catch (error) {
+    console.error(`Error fetching user with UID ${uid}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches user subscriptions from MongoDB
+ */
+export const fetchUserSubscriptions = async (userId: string): Promise<ISubscription[]> => {
+  try {
+    // Ensure MongoDB is connected
+    const connected = await connectToMongoDB();
+    if (!connected) {
+      throw new Error("Could not connect to MongoDB");
+    }
+    
+    // Get subscriptions from MongoDB
+    const subscriptions = await Subscription.find({ userId }).lean();
+    return subscriptions;
+  } catch (error) {
+    console.error(`Error fetching subscriptions for user ${userId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches all businesses from MongoDB
+ */
+export const fetchBusinesses = async (): Promise<IBusiness[]> => {
+  try {
+    // Ensure MongoDB is connected
+    const connected = await connectToMongoDB();
+    if (!connected) {
+      throw new Error("Could not connect to MongoDB");
+    }
+    
+    // Get businesses from MongoDB
+    const businesses = await Business.find().lean();
+    return businesses;
+  } catch (error) {
+    console.error("Error fetching businesses:", error);
+    throw error;
+  }
+};
