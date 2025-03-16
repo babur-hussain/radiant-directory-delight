@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Pencil, Trash2, Loader2 } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Loader2, RefreshCw } from "lucide-react";
 import { nanoid } from "nanoid";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { fetchSubscriptionPackages, saveSubscriptionPackage, deleteSubscriptionPackage } from "@/lib/firebase-utils";
@@ -40,6 +40,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
   const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
   const [filteredPackages, setFilteredPackages] = useState<SubscriptionPackage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<SubscriptionPackage | null>(null);
   const [packageToDelete, setPackageToDelete] = useState<SubscriptionPackage | null>(null);
@@ -156,7 +157,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
   };
 
   const handleSavePackage = async (packageData: SubscriptionPackage) => {
-    setIsLoading(true);
+    setIsSaving(true);
     setPermissionError(null);
     try {
       console.log("Saving package data:", packageData);
@@ -176,7 +177,13 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
         advancePaymentMonths: Number(packageData.advancePaymentMonths || 0)
       };
       
+      // Make sure paymentType is set properly
+      if (!validatedPackageData.paymentType) {
+        validatedPackageData.paymentType = "recurring";
+      }
+      
       await saveSubscriptionPackage(validatedPackageData);
+      console.log("Package saved successfully to Firebase");
       
       // Update local state with validated data
       setPackages(prev => {
@@ -199,6 +206,11 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
       
       setIsFormOpen(false);
       setSelectedPackage(null);
+      
+      // Refresh the package list to confirm changes were saved
+      setTimeout(() => {
+        loadPackages();
+      }, 1000);
     } catch (error) {
       console.error("Error saving package:", error);
       
@@ -225,8 +237,16 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
         });
       }
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
+  };
+
+  const handleRefresh = () => {
+    loadPackages();
+    toast({
+      title: "Refreshing",
+      description: "Refreshing subscription package data",
+    });
   };
 
   const dismissError = () => {
@@ -242,10 +262,20 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
             Manage subscription packages for businesses and influencers
           </CardDescription>
         </div>
-        <Button onClick={handleCreatePackage} disabled={isLoading}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Create Package
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleRefresh} 
+            disabled={isLoading}
+            title="Refresh package data"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
+          <Button onClick={handleCreatePackage} disabled={isLoading}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Create Package
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {permissionError && (
@@ -290,6 +320,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
                 id: nanoid(),
                 title: "",
                 price: 0,
+                monthlyPrice: 0,
                 setupFee: 0,
                 durationMonths: 12,
                 shortDescription: "",
@@ -298,7 +329,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
                 popular: false,
                 type: activeTab === "business" ? "Business" : "Influencer",
                 termsAndConditions: "",
-                paymentType: "recurring" // Added the missing paymentType property
+                paymentType: "recurring" // Ensuring paymentType is set
               }}
               onSubmit={handleSavePackage}
               onCancel={handleCloseForm}
@@ -362,6 +393,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
             <TableHead>Title</TableHead>
             <TableHead>Price (₹)</TableHead>
             <TableHead>Setup Fee (₹)</TableHead>
+            <TableHead>Type</TableHead>
             <TableHead>Duration</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -373,7 +405,10 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
               <TableCell className="font-medium">{pkg.title}</TableCell>
               <TableCell>{pkg.price}</TableCell>
               <TableCell>{pkg.setupFee}</TableCell>
-              <TableCell>{pkg.durationMonths} months</TableCell>
+              <TableCell>
+                <Badge variant="outline">{pkg.paymentType === "one-time" ? "One-time" : "Recurring"}</Badge>
+              </TableCell>
+              <TableCell>{pkg.paymentType === "one-time" ? "N/A" : `${pkg.durationMonths} months`}</TableCell>
               <TableCell>
                 {pkg.popular ? (
                   <Badge>Popular</Badge>
@@ -387,7 +422,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
                     variant="outline"
                     size="sm"
                     onClick={() => handleEditPackage(pkg)}
-                    disabled={isLoading}
+                    disabled={isLoading || isSaving}
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
@@ -395,7 +430,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
                     variant="destructive"
                     size="sm"
                     onClick={() => handleOpenDeleteDialog(pkg)}
-                    disabled={isLoading}
+                    disabled={isLoading || isSaving}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

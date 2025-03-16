@@ -1,5 +1,4 @@
 
-// This file needs updating to include paymentType
 import { doc, setDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { SubscriptionData } from "./types";
@@ -38,8 +37,10 @@ export const adminAssignSubscription = async (userId: string, subscriptionData: 
       paymentType: subscriptionData.paymentType || "recurring" // Default to recurring if not specified
     };
     
-    // Set the document in Firestore
+    // Set the document in Firestore with better logging
     const docRef = doc(db, "subscriptions", subscriptionId);
+    console.log(`Attempting to save subscription ${subscriptionId} to Firestore for user ${userId}`, subscription);
+    
     await setDoc(docRef, subscription);
     
     console.log(`Subscription ${subscriptionId} assigned to user ${userId}`);

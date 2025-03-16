@@ -151,17 +151,31 @@ export async function saveSubscriptionPackage(packageData: SubscriptionPackage):
     const sanitizedPackage = {
       ...packageData,
       price: Number(packageData.price),
-      setupFee: Number(packageData.setupFee),
-      durationMonths: Number(packageData.durationMonths),
-      popular: Boolean(packageData.popular)
+      monthlyPrice: Number(packageData.monthlyPrice || 0),
+      setupFee: Number(packageData.setupFee || 0),
+      durationMonths: Number(packageData.durationMonths || 12),
+      advancePaymentMonths: Number(packageData.advancePaymentMonths || 0),
+      popular: Boolean(packageData.popular),
+      // Ensure paymentType is always set
+      paymentType: packageData.paymentType || "recurring"
     };
     
     // Create a reference to the document
     const packageRef = doc(db, SUBSCRIPTION_COLLECTION, packageData.id);
     
-    // Save the document
+    // Save the document with better logging
+    console.log("Before Firestore setDoc operation with data:", JSON.stringify(sanitizedPackage, null, 2));
     await setDoc(packageRef, sanitizedPackage);
-    console.log("Subscription package saved successfully with ID:", packageData.id);
+    console.log("After Firestore setDoc - Subscription package saved successfully with ID:", packageData.id);
+    
+    // Verify the document was saved by attempting to read it back
+    try {
+      const docRef = doc(db, SUBSCRIPTION_COLLECTION, packageData.id);
+      console.log(`Attempting to verify document was saved with ID: ${packageData.id}`);
+    } catch (verifyError) {
+      console.error("Failed to verify document was saved:", verifyError);
+      // Don't throw here, just log the error
+    }
   } catch (error) {
     console.error("Error saving subscription package:", error);
     console.error("Package data that failed:", JSON.stringify(packageData, null, 2));
