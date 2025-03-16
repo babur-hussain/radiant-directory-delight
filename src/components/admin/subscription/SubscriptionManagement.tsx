@@ -297,7 +297,8 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
                 features: [],
                 popular: false,
                 type: activeTab === "business" ? "Business" : "Influencer",
-                termsAndConditions: ""
+                termsAndConditions: "",
+                paymentType: "recurring" // Added the missing paymentType property
               }}
               onSubmit={handleSavePackage}
               onCancel={handleCloseForm}

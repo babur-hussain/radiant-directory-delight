@@ -4,7 +4,7 @@ import { useAuth } from './useAuth';
 import { updateUserSubscription } from '@/lib/subscription';
 import { adminAssignSubscription } from '@/lib/subscription/admin-subscription';
 import { getGlobalSubscriptionSettings } from '@/lib/subscription/subscription-settings';
-import { addNotification } from '@/lib/notification';
+import { addNotification as createNotification } from '@/lib/notification'; // Renamed import to avoid conflict
 import { useToast } from './use-toast';
 import { SubscriptionData } from '@/lib/subscription/types';
 
@@ -134,8 +134,8 @@ export const useAdminSubscriptionAssignment = (userId: string, onSuccess?: (pack
         
         setUserCurrentSubscription(subscriptionData);
         
-        // Send notification to user (in a real app)
-        await addNotification({
+        // Send notification to user (in a real app) - using renamed import
+        await createNotification({
           userId: userId,
           title: "Subscription Assigned",
           message: `An administrator has assigned you the ${packageData.title} subscription.`,
@@ -219,7 +219,7 @@ export const useAdminSubscriptionAssignment = (userId: string, onSuccess?: (pack
         setUserCurrentSubscription(updatedSubscription);
         
         // Send notification to user (in a real app)
-        await addNotification({
+        await createNotification({
           userId: userId,
           title: "Subscription Cancelled",
           message: "An administrator has cancelled your subscription.",
@@ -296,9 +296,3 @@ export const useAdminSubscriptionAssignment = (userId: string, onSuccess?: (pack
     }, [])
   };
 };
-
-// This function should be in a separate file, but keeping it here to fix the error for now
-async function addNotification(notification: any) {
-  console.log("Notification added:", notification);
-  return true;
-}
