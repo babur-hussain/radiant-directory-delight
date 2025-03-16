@@ -33,7 +33,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       {/* Main content */}
       <div className="flex-1 md:ml-64 flex flex-col">
         {/* Mobile Header with menu */}
-        <header className="dashboard-header md:hidden sticky top-0 left-0 right-0 z-[999] bg-white dark:bg-gray-800 shadow-sm">
+        <header className="dashboard-header md:hidden sticky top-0 left-0 right-0 z-[9999] bg-white dark:bg-gray-800 shadow-sm">
           <div className="p-4 border-b flex items-center justify-between">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -42,7 +42,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                   <span className="sr-only">Toggle menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-64 z-[9999]">
+              <SheetContent side="left" className="p-0 w-64 z-[99999]">
                 <div className="h-full overflow-y-auto">
                   <DashboardSidebar userRole={user?.role} />
                 </div>
@@ -56,7 +56,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </header>
         
         {/* Desktop Header */}
-        <header className="dashboard-header hidden md:block sticky top-0 left-0 right-0 z-[999] bg-white dark:bg-gray-800 shadow-sm">
+        <header className="dashboard-header hidden md:block sticky top-0 left-0 right-0 z-[9999] bg-white dark:bg-gray-800 shadow-sm">
           <DashboardHeader />
         </header>
         
