@@ -9,10 +9,19 @@ const MONGODB_URI = typeof process !== 'undefined' && process.env && process.env
 // Initialize connection variable
 let isConnecting = false;
 let mongoConnected = false;
+let connectAttempts = 0;
 
 // Initialize MongoDB connection
 export const connectToMongoDB = async () => {
   try {
+    // Only allow 3 connection attempts to prevent app hanging
+    if (connectAttempts >= 3) {
+      console.log('Maximum MongoDB connection attempts reached, proceeding with local data');
+      return false;
+    }
+    
+    connectAttempts++;
+    
     // Check if already connected - 1 represents connected state in mongoose
     if (mongoose.connection && mongoose.connection.readyState === 1) {
       console.log('Already connected to MongoDB');
@@ -25,8 +34,8 @@ export const connectToMongoDB = async () => {
       console.log('MongoDB connection already in progress');
       // Wait for the connection to complete
       let attempts = 0;
-      while (isConnecting && attempts < 5) {  // Reduced from 10 attempts
-        await new Promise(resolve => setTimeout(resolve, 300));  // Reduced from 500ms
+      while (isConnecting && attempts < 3) {  // Reduced from 5 attempts
+        await new Promise(resolve => setTimeout(resolve, 200));  // Reduced from 300ms
         attempts++;
       }
       return mongoose.connection && mongoose.connection.readyState === 1;
@@ -37,8 +46,8 @@ export const connectToMongoDB = async () => {
     
     // Connect to MongoDB with improved options and shorter timeouts
     await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 10s
-      socketTimeoutMS: 30000, // Close sockets after 30s of inactivity
+      serverSelectionTimeoutMS: 3000, // Timeout after 3s instead of 5s
+      socketTimeoutMS: 10000, // Close sockets after 10s of inactivity
     });
     
     isConnecting = false;
@@ -62,10 +71,12 @@ export const connectToMongoDB = async () => {
     if (error instanceof Error) {
       console.error(`Error name: ${error.name}`);
       console.error(`Error message: ${error.message}`);
-      console.error(`Error stack: ${error.stack}`);
     }
     
     return false;
+  } finally {
+    // Always reset connecting flag in case of any error path
+    isConnecting = false;
   }
 };
 

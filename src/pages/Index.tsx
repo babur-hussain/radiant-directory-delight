@@ -15,10 +15,14 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [initialRender, setInitialRender] = useState(false);
 
   // Smooth scroll to top on page load and initialize data
   useEffect(() => {
     console.log("Index page mounting - attempting to load data");
+    // Mark initial render completed
+    setInitialRender(true);
+    
     window.scrollTo({
       top: 0,
       behavior: 'smooth',
@@ -28,7 +32,7 @@ const Index = () => {
     const loadingTimeout = setTimeout(() => {
       console.log("Data loading timeout reached, showing content anyway");
       setIsLoading(false);
-    }, 1500); // 1.5 second timeout - reduced from 2 seconds
+    }, 1000); // 1 second timeout - reduced for faster display
     
     // Initialize business data on page load
     const loadData = async () => {
@@ -55,17 +59,24 @@ const Index = () => {
     };
     
     loadData();
+    
+    // Add a failsafe to show content
+    if (!document.body.innerHTML || document.body.innerHTML.length < 100) {
+      console.log("Empty body detected, forcing content render");
+      setIsLoading(false);
+    }
 
     return () => clearTimeout(loadingTimeout);
   }, [toast]);
 
-  // Add basic fallback content if everything else fails
-  if (document.body.innerHTML === "" || document.body.children.length <= 1) {
-    console.error("Document body appears to be empty, forcing minimal content");
+  // Add emergency fallback content
+  if (!initialRender && document.body.children.length <= 1) {
+    console.log("Emergency fallback content rendered");
     return (
       <div className="p-8 text-center">
         <h1 className="text-2xl font-bold">Welcome to Grow Bharat Vyapaar</h1>
-        <p className="mt-4">There was an issue loading the website. Please try refreshing.</p>
+        <p className="mt-4">Loading content...</p>
+        <Loading size="md" />
       </div>
     );
   }
