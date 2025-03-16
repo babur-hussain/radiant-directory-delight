@@ -43,7 +43,7 @@ main {
 .dashboard-layout .dashboard-header {
   position: sticky !important;
   top: 0 !important;
-  z-index: 9999 !important;
+  z-index: 50 !important; /* Lower z-index than main header */
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
@@ -56,7 +56,7 @@ main {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
-  z-index: 9999 !important;
+  z-index: 50 !important; /* Lower z-index than main header */
 }
 
 /* Proper z-index hierarchy */

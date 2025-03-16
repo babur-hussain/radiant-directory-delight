@@ -22,10 +22,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   return (
-    <div className="dashboard-layout flex min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="dashboard-layout flex min-h-screen bg-gray-50 dark:bg-gray-900 pt-16"> {/* Added pt-16 to account for main header */}
       {/* Desktop Sidebar */}
       <div className="hidden md:block md:w-64 flex-shrink-0">
-        <div className="fixed h-screen w-64 overflow-y-auto border-r bg-white dark:bg-gray-800">
+        <div className="fixed h-screen w-64 overflow-y-auto border-r bg-white dark:bg-gray-800 pt-16"> {/* Added pt-16 to account for main header */}
           <DashboardSidebar userRole={user?.role} />
         </div>
       </div>
@@ -33,7 +33,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       {/* Main content */}
       <div className="flex-1 md:ml-64 flex flex-col">
         {/* Mobile Header with menu */}
-        <header className="dashboard-header md:hidden sticky top-0 left-0 right-0 z-[9999] bg-white dark:bg-gray-800 shadow-sm">
+        <header className="dashboard-header md:hidden sticky top-16 left-0 right-0 z-50 bg-white dark:bg-gray-800 shadow-sm"> {/* Changed top-0 to top-16 */}
           <div className="p-4 border-b flex items-center justify-between">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -43,7 +43,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-64 z-[99999]">
-                <div className="h-full overflow-y-auto">
+                <div className="h-full overflow-y-auto pt-16"> {/* Added pt-16 to account for main header */}
                   <DashboardSidebar userRole={user?.role} />
                 </div>
               </SheetContent>
@@ -56,7 +56,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </header>
         
         {/* Desktop Header */}
-        <header className="dashboard-header hidden md:block sticky top-0 left-0 right-0 z-[9999] bg-white dark:bg-gray-800 shadow-sm">
+        <header className="dashboard-header hidden md:block sticky top-16 left-0 right-0 z-50 bg-white dark:bg-gray-800 shadow-sm"> {/* Changed top-0 to top-16 */}
           <DashboardHeader />
         </header>
         
