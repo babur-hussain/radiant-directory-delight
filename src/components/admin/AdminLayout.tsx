@@ -28,24 +28,33 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       
       {/* Main content */}
       <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
-        {/* Mobile menu drawer - controlled with state */}
-        <div className="md:hidden p-4 border-b bg-card flex items-center sticky top-0 z-10">
-          <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-            <DrawerTrigger asChild>
-              <Button variant="outline" size="icon" className="mr-4">
-                <Menu className="h-4 w-4" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </DrawerTrigger>
-            <DrawerContent>
-              <div className="py-4">
-                <AdminSidebar onItemClick={() => setIsDrawerOpen(false)} />
-              </div>
-            </DrawerContent>
-          </Drawer>
-          
-          <h1 className="text-xl font-semibold">Admin Panel</h1>
-        </div>
+        {/* Mobile header - sticky positioning ensures it's always visible */}
+        <header className="md:hidden sticky top-0 left-0 right-0 z-20 bg-white shadow-sm">
+          <div className="p-4 border-b bg-card flex items-center">
+            <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+              <DrawerTrigger asChild>
+                <Button variant="outline" size="icon" className="mr-4">
+                  <Menu className="h-4 w-4" />
+                  <span className="sr-only">Toggle menu</span>
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent>
+                <div className="py-4">
+                  <AdminSidebar onItemClick={() => setIsDrawerOpen(false)} />
+                </div>
+              </DrawerContent>
+            </Drawer>
+            
+            <h1 className="text-xl font-semibold">Admin Panel</h1>
+          </div>
+        </header>
+        
+        {/* Desktop header - show on desktop only, sticky positioning */}
+        <header className="hidden md:block sticky top-0 left-0 right-0 z-20 bg-white shadow-sm">
+          <div className="p-4 border-b bg-card">
+            <h1 className="text-xl font-semibold">Admin Panel</h1>
+          </div>
+        </header>
         
         <main className="p-4 md:p-6 max-w-7xl mx-auto w-full flex-grow">
           {children}
