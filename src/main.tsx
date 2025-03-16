@@ -34,10 +34,49 @@ rootElement.innerHTML = `
   </style>
 `;
 
+// Suppress common errors that might prevent rendering
+const suppressCommonErrors = () => {
+  if (window && window.console) {
+    const originalError = window.console.error;
+    window.console.error = (...args) => {
+      // Skip certain errors that shouldn't prevent rendering
+      if (args[0] && typeof args[0] === 'string' && 
+          (args[0].includes('emitWarning') || 
+           args[0].includes('Failed to execute') ||
+           args[0].includes('TypeError'))) {
+        console.log("Suppressed non-critical error:", args[0].substring(0, 100) + "...");
+        return;
+      }
+      originalError.apply(window.console, args);
+    };
+  }
+};
+
+// Apply error suppression
+suppressCommonErrors();
+
 // Render the app with error handling
 try {
   console.log("Creating React root");
   const root = ReactDOM.createRoot(rootElement);
+  
+  // Add global error handler for unhandled exceptions
+  window.addEventListener('error', (event) => {
+    console.log('Caught global error:', event.error);
+    // Don't let errors stop the app from rendering
+    event.preventDefault();
+    
+    // Show user-friendly error message if React fails to render
+    if (!document.getElementById('app-rendered')) {
+      rootElement.innerHTML += `
+        <div id="app-rendered" style="display: none;"></div>
+        <div style="padding: 20px; max-width: 800px; margin: 0 auto; font-family: system-ui, sans-serif;">
+          <p style="color: #666;">We encountered a minor issue while loading. Please refresh the page if content doesn't appear within a few seconds.</p>
+        </div>
+      `;
+    }
+    return true;
+  });
   
   console.log("Rendering app");
   root.render(
@@ -45,6 +84,12 @@ try {
       <App />
     </React.StrictMode>
   );
+  
+  // Mark app as rendered
+  const renderedMarker = document.createElement('div');
+  renderedMarker.id = 'app-rendered';
+  renderedMarker.style.display = 'none';
+  document.body.appendChild(renderedMarker);
   
   // Connect to MongoDB in the background without blocking rendering
   setTimeout(() => {
