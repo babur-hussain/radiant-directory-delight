@@ -9,6 +9,7 @@ body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  width: 100%;
 }
 
 /* Header styling with important flags to ensure visibility */
@@ -30,6 +31,7 @@ header {
 main {
   padding-top: 64px; /* Add padding equal to header height */
   min-height: calc(100vh - 64px);
+  width: 100%;
 }
 
 /* Hero section styling to align properly */
@@ -47,6 +49,14 @@ main {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
+  width: 100% !important;
+}
+
+/* Admin and Dashboard layout full width */
+.admin-layout,
+.dashboard-layout {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 /* Ensure all headers are visible regardless of class */
@@ -57,6 +67,7 @@ main {
   visibility: visible !important;
   opacity: 1 !important;
   z-index: 40 !important; /* Lower z-index than main header */
+  width: 100% !important;
 }
 
 /* Proper z-index hierarchy */
@@ -90,10 +101,42 @@ main {
   display: none !important;
 }
 
-/* Ensure main content has proper spacing */
+/* Ensure main content has proper spacing and width */
 .admin-layout main,
 .dashboard-layout main {
   padding-top: 20px !important;
+  width: 100% !important;
+}
+
+/* Admin tabs container fix */
+.admin-layout .tabs-container,
+.dashboard-layout .tabs-container {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Better responsive behavior for admin dashboard */
+@media (max-width: 768px) {
+  .admin-layout main,
+  .dashboard-layout main {
+    padding: 16px !important;
+  }
+  
+  .admin-layout .tabs-container,
+  .dashboard-layout .tabs-container {
+    overflow-x: auto !important;
+  }
+}
+
+/* Fix for AdminDashboardTabs component */
+.admin-layout .w-full {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Fix for dashboard sections manager */
+.admin-layout .card {
+  width: 100% !important;
 }
 
 /* Other styles */

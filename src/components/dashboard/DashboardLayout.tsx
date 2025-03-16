@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardHeader from "./DashboardHeader";
@@ -21,14 +22,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   return (
-    <div className="dashboard-layout flex min-h-screen bg-gray-50 dark:bg-gray-900 pt-16">
+    <div className="dashboard-layout flex min-h-screen w-full bg-gray-50 dark:bg-gray-900 pt-16"> {/* Added w-full */}
       <div className="hidden md:block md:w-64 flex-shrink-0">
         <div className="fixed h-screen w-64 overflow-y-auto border-r bg-white dark:bg-gray-800 pt-16">
           <DashboardSidebar userRole={user?.role} />
         </div>
       </div>
       
-      <div className="flex-1 md:ml-64 flex flex-col">
+      <div className="flex-1 md:ml-64 flex flex-col w-full"> {/* Added w-full */}
         <header className="dashboard-header md:hidden sticky top-16 left-0 right-0 z-40 bg-white dark:bg-gray-800 shadow-sm">
           <div className="p-4 border-b flex items-center justify-between">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -55,7 +56,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           <DashboardHeader />
         </header>
         
-        <main className="p-4 md:p-6 max-w-7xl mx-auto w-full flex-grow">
+        <main className="p-4 md:p-6 w-full flex-grow"> {/* Changed max-w-7xl to w-full */}
           {children}
         </main>
       </div>
