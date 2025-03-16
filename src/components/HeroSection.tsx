@@ -4,29 +4,16 @@ import SearchBar from './search/SearchBar';
 import HeroContent from './hero/HeroContent';
 import PopularSearchTerms from './search/PopularSearchTerms';
 
-interface PopularSearchTermsProps {
-  onTermClick: (term: string) => void;
-}
-
 const HeroSection: React.FC = () => {
   const [resultsVisible, setResultsVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [renderFailed, setRenderFailed] = useState(false);
+  const [componentLoaded, setComponentLoaded] = useState(false);
   
   console.log("Rendering HeroSection component");
   
   useEffect(() => {
     console.log("HeroSection mounted");
-    
-    // Add a safety check to ensure the component renders
-    const renderCheck = setTimeout(() => {
-      if (!document.querySelector('.hero-content')) {
-        console.log("HeroSection content not detected, forcing rerender");
-        setRenderFailed(true);
-      }
-    }, 500);
-    
-    return () => clearTimeout(renderCheck);
+    setComponentLoaded(true);
   }, []);
   
   const handleTermClick = (term: string) => {
@@ -34,39 +21,38 @@ const HeroSection: React.FC = () => {
     setSearchQuery(term);
   };
   
-  // Emergency backup render if needed
-  if (renderFailed) {
-    return (
-      <section className="relative overflow-hidden bg-gradient-to-b from-primary/10 to-background pt-10 md:pt-16 pb-8">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-3xl font-bold">Welcome to Grow Bharat Vyapaar</h1>
-          <p className="mt-4">Discover local businesses across India</p>
-          <div className="mt-8 w-full max-w-xl mx-auto">
-            <input 
-              type="text" 
-              placeholder="Search for businesses..." 
-              className="w-full p-3 rounded-md border border-gray-300"
-            />
-          </div>
-        </div>
-      </section>
-    );
-  }
-  
+  // Ensure we always render something, even if subcomponents fail
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-primary/10 to-background pt-10 md:pt-16 pb-8">
       <div className="container max-w-7xl mx-auto px-4">
         <div className="hero-content">
-          <HeroContent />
+          {componentLoaded ? (
+            <HeroContent />
+          ) : (
+            <div className="text-center py-8">
+              <h1 className="text-4xl font-bold">Welcome to Grow Bharat Vyapaar</h1>
+              <p className="mt-4 text-lg">Discover local businesses across India</p>
+            </div>
+          )}
         </div>
         
         <div className="mt-8 md:mt-12 w-full max-w-4xl mx-auto z-20 relative">
-          <SearchBar 
-            initialQuery={searchQuery}
-            onResultsVisibilityChange={setResultsVisible}
-          />
+          {componentLoaded ? (
+            <SearchBar 
+              initialQuery={searchQuery}
+              onResultsVisibilityChange={setResultsVisible}
+            />
+          ) : (
+            <div className="w-full p-4 rounded-lg border border-gray-200 bg-white">
+              <input 
+                type="text" 
+                placeholder="Search businesses..." 
+                className="w-full p-2 rounded-md"
+              />
+            </div>
+          )}
           
-          {!resultsVisible && (
+          {!resultsVisible && componentLoaded && (
             <div className="mt-4 text-center">
               <PopularSearchTerms onTermClick={handleTermClick} />
             </div>

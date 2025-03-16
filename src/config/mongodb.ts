@@ -14,8 +14,8 @@ let connectAttempts = 0;
 // Initialize MongoDB connection
 export const connectToMongoDB = async () => {
   try {
-    // Only allow 3 connection attempts to prevent app hanging
-    if (connectAttempts >= 3) {
+    // Only allow 2 connection attempts to prevent app hanging
+    if (connectAttempts >= 2) {
       console.log('Maximum MongoDB connection attempts reached, proceeding with local data');
       return false;
     }
@@ -32,34 +32,31 @@ export const connectToMongoDB = async () => {
     // Prevent multiple concurrent connection attempts
     if (isConnecting) {
       console.log('MongoDB connection already in progress');
-      // Wait for the connection to complete
-      let attempts = 0;
-      while (isConnecting && attempts < 3) {  // Reduced from 5 attempts
-        await new Promise(resolve => setTimeout(resolve, 200));  // Reduced from 300ms
-        attempts++;
-      }
-      return mongoose.connection && mongoose.connection.readyState === 1;
+      return false;
     }
     
     isConnecting = true;
     console.log('Connecting to MongoDB...', MONGODB_URI);
     
     // Connect to MongoDB with improved options and shorter timeouts
-    await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 3000, // Timeout after 3s instead of 5s
-      socketTimeoutMS: 10000, // Close sockets after 10s of inactivity
+    const connectPromise = mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 2000, // Timeout after 2s instead of 3s
+      socketTimeoutMS: 5000, // Close sockets after 5s of inactivity
     });
+    
+    // Add a timeout to ensure we don't hang waiting for MongoDB
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('MongoDB connection timeout'));
+      }, 2000); // 2 second timeout
+    });
+    
+    // Race the connection against the timeout
+    await Promise.race([connectPromise, timeoutPromise]);
     
     isConnecting = false;
     mongoConnected = true;
     console.log('Connected to MongoDB successfully');
-    
-    // Log connection details
-    if (mongoose.connection) {
-      const host = mongoose.connection.host || 'unknown-host';
-      const name = mongoose.connection.name || 'unknown-name';
-      console.log(`MongoDB connection details: ${host}/${name}`);
-    }
     
     return true;
   } catch (error) {

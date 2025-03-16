@@ -28,33 +28,22 @@ const App = () => {
   
   useEffect(() => {
     console.log("App component mounted");
-    // Check if there are any visible elements
-    const appElement = document.getElementById('root');
-    if (appElement) {
-      console.log("Root element exists with dimensions:", 
-        appElement.offsetWidth, "x", appElement.offsetHeight);
-    }
     
-    // Add a timeout to ensure we always set the app as ready
-    const readyTimeout = setTimeout(() => {
-      console.log("App ready timeout reached, showing UI anyway");
+    // Always force app to be ready after a short delay
+    setTimeout(() => {
+      console.log("Forcing app ready state");
       setAppReady(true);
-    }, 500);
+    }, 200); // Very short timeout to show content quickly
     
-    // Set app as ready immediately if it's not a direct page load
-    if (document.readyState === 'complete' || performance.navigation.type !== 0) {
-      console.log("App ready - not a direct page load");
-      setAppReady(true);
-    }
-    
-    return () => clearTimeout(readyTimeout);
+    return () => {
+      console.log("App component unmounting");
+    };
   }, []);
 
-  // Add a safety check to ensure we always render something
-  if (!appReady && document.body.innerHTML === '') {
-    console.log("Forcing minimal content while app prepares");
+  // Always render a minimal version while loading
+  if (!appReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Loading size="lg" message="Loading application..." />
       </div>
     );
