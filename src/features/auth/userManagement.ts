@@ -10,15 +10,15 @@ export const updateUserRole = async (user: User, role: UserRole) => {
   }
   
   try {
-    localStorage.setItem(getRoleKey(user.id), role as string);
+    localStorage.setItem(getRoleKey(user.uid), role as string);
     
     // Update user role in MongoDB
     await UserModel.findOneAndUpdate(
-      { uid: user.id },
+      { uid: user.uid },
       { role: role }
     );
     
-    await syncUserData(user.id, { role });
+    await syncUserData(user.uid, { role });
     
     return {
       ...user,
@@ -29,10 +29,10 @@ export const updateUserRole = async (user: User, role: UserRole) => {
     
     console.log("Falling back to localStorage-only update for role");
     
-    localStorage.setItem(getRoleKey(user.id), role as string);
+    localStorage.setItem(getRoleKey(user.uid), role as string);
     
     const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
-    const userIndex = allUsers.findIndex((u: any) => u.id === user.id);
+    const userIndex = allUsers.findIndex((u: any) => u.uid === user.uid);
     
     if (userIndex >= 0) {
       allUsers[userIndex].role = role;
@@ -67,7 +67,7 @@ export const updateUserPermission = async (userId: string, isAdmin: boolean) => 
     localStorage.setItem(getAdminKey(userId), isAdmin ? 'true' : 'false');
     
     const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
-    const userIndex = allUsers.findIndex((u: any) => u.id === userId);
+    const userIndex = allUsers.findIndex((u: any) => u.uid === userId);
     
     if (userIndex >= 0) {
       allUsers[userIndex].isAdmin = isAdmin;
@@ -85,8 +85,10 @@ export const getUserById = async (userId: string): Promise<User | null> => {
     
     if (mongoUser) {
       return {
-        id: userId,
+        uid: userId,
+        id: userId, // Alias for uid for compatibility
         email: mongoUser.email,
+        displayName: mongoUser.name,
         name: mongoUser.name,
         role: mongoUser.role as UserRole,
         isAdmin: mongoUser.isAdmin,
@@ -96,10 +98,21 @@ export const getUserById = async (userId: string): Promise<User | null> => {
     }
     
     const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
-    const user = allUsers.find((u: any) => u.id === userId);
+    const user = allUsers.find((u: any) => u.id === userId || u.uid === userId);
     
     if (user) {
-      return user as User;
+      // Make sure returned user conforms to User interface
+      return {
+        uid: user.id || user.uid,
+        id: user.id || user.uid,
+        email: user.email,
+        displayName: user.name || user.displayName,
+        name: user.name || user.displayName,
+        photoURL: user.photoURL,
+        role: user.role,
+        isAdmin: user.isAdmin,
+        createdAt: user.createdAt
+      };
     }
     
     return null;
@@ -107,10 +120,21 @@ export const getUserById = async (userId: string): Promise<User | null> => {
     console.error("Error getting user by ID:", error);
     
     const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
-    const user = allUsers.find((u: any) => u.id === userId);
+    const user = allUsers.find((u: any) => u.id === userId || u.uid === userId);
     
     if (user) {
-      return user as User;
+      // Make sure returned user conforms to User interface
+      return {
+        uid: user.id || user.uid,
+        id: user.id || user.uid,
+        email: user.email,
+        displayName: user.name || user.displayName,
+        name: user.name || user.displayName,
+        photoURL: user.photoURL,
+        role: user.role,
+        isAdmin: user.isAdmin,
+        createdAt: user.createdAt
+      };
     }
     
     return null;
@@ -131,7 +155,7 @@ export const getAllUsers = async (): Promise<User[]> => {
       return [];
     }
     
-    const users = mongoUsers.map(mongoUser => {
+    const users: User[] = mongoUsers.map(mongoUser => {
       console.log("User data from MongoDB:", mongoUser.uid, mongoUser);
       
       // Ensure name is a string - Fix TypeScript never type error
@@ -157,8 +181,10 @@ export const getAllUsers = async (): Promise<User[]> => {
       let createdTimestamp = mongoUser.createdAt?.toISOString() || new Date().toISOString();
       
       return {
+        uid: mongoUser.uid,
         id: mongoUser.uid,
         email: mongoUser.email,
+        displayName: displayName,
         name: displayName,
         role: mongoUser.role as UserRole,
         isAdmin: mongoUser.isAdmin,
@@ -173,7 +199,9 @@ export const getAllUsers = async (): Promise<User[]> => {
     users.forEach((user, index) => {
       console.log(`User ${index + 1}:`, {
         id: user.id,
+        uid: user.uid,
         email: user.email,
+        displayName: user.displayName,
         name: user.name,
         isAdmin: user.isAdmin
       });
@@ -187,7 +215,21 @@ export const getAllUsers = async (): Promise<User[]> => {
     console.error("Error getting all users from MongoDB:", error);
     const fallbackUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
     console.log("Falling back to cached users:", fallbackUsers.length);
-    return fallbackUsers;
+    
+    // Ensure cached users conform to User interface
+    const conformedUsers: User[] = fallbackUsers.map((user: any) => ({
+      uid: user.id || user.uid,
+      id: user.id || user.uid,
+      email: user.email,
+      displayName: user.name || user.displayName,
+      name: user.name || user.displayName,
+      photoURL: user.photoURL,
+      role: user.role,
+      isAdmin: user.isAdmin,
+      createdAt: user.createdAt
+    }));
+    
+    return conformedUsers;
   }
 };
 
@@ -205,9 +247,11 @@ export const createTestUser = async (userData: TestUserData): Promise<User> => {
     // Generate a unique ID for the test user
     const userId = `test_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     
-    const user = {
+    const user: User = {
+      uid: userId,
       id: userId,
       email: userData.email,
+      displayName: userData.name,
       name: userData.name,
       role: userData.role,
       isAdmin: userData.isAdmin,

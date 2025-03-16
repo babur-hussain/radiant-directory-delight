@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,11 +14,11 @@ import PerformanceMetrics from "./widgets/PerformanceMetrics";
 import LeadsGenerated from "./widgets/LeadsGenerated";
 import InfluencerRank from "./widgets/InfluencerRank";
 import { useDashboardServices } from "@/hooks/useDashboardServices";
-import { useSubscription } from "@/hooks/useSubscription";
+import { useSubscription } from "@/hooks";
 import { useToast } from "@/hooks/use-toast";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/config/firebase";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks";
 
 interface InfluencerDashboardProps {
   userId: string;
@@ -34,7 +33,6 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
   const { getUserSubscription } = useSubscription();
   const { user } = useAuth();
   
-  // Load subscription data when component mounts
   useEffect(() => {
     const fetchSubscription = async () => {
       try {
@@ -48,7 +46,6 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
     fetchSubscription();
   }, [getUserSubscription]);
   
-  // Set up a Firestore listener for real-time subscription updates
   useEffect(() => {
     if (!userId) {
       setIsLoading(false);
@@ -59,7 +56,6 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
     const unsubscribe = onSnapshot(userRef, async (docSnapshot) => {
       if (docSnapshot.exists()) {
         const userData = docSnapshot.data();
-        // Use subscription data from Firestore if available
         if (userData?.subscription || userData?.subscriptionPackage) {
           console.log("✅ Got subscription from Firestore:", userData.subscription || userData.subscriptionPackage);
           setSubscriptionData(userData.subscription);
@@ -74,11 +70,9 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
         }
       }
       
-      // In any case, finish loading
       setIsLoading(false);
     }, (error) => {
       console.error("Error getting real-time subscription updates:", error);
-      // Fall back to local subscription data if Firestore listener fails
       fetchLocalSubscription();
       setIsLoading(false);
     });
@@ -142,13 +136,10 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
     );
   }
 
-  // Check if user is admin - if so, they always have access regardless of subscription
   const isAdmin = user?.role === "Admin" || user?.isAdmin;
   
-  // Check if subscription is active or if user is admin
   const hasActiveSubscription = isAdmin || (subscriptionData && subscriptionData.status === "active");
 
-  // If no active subscription and not admin
   if (!hasActiveSubscription) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-xl mx-auto text-center">

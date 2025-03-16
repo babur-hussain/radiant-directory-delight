@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
 import { useAuth } from './useAuth';
 
-const useSubscription = () => {
+export const useSubscription = () => {
   const queryClient = useQueryClient();
   const [subscription, setSubscription] = useState<ISubscription | null>(null);
   const { currentUser } = useAuth();

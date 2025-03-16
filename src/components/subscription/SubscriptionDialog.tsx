@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { CheckCircle, AlertTriangle, ShieldCheck, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,9 +12,9 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
-import { useSubscription } from "@/hooks/useSubscription";
+import { useSubscription } from "@/hooks";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks";
 import { getGlobalSubscriptionSettings } from "@/lib/subscription/subscription-settings";
 import RazorpayPayment from "./RazorpayPayment";
 
@@ -44,7 +43,6 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
       } else {
         setPackageValidationError(null);
       }
-      // Reset payment UI state when dialog opens
       setShowPaymentUI(false);
       setPaymentProcessing(false);
     }
@@ -72,7 +70,6 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
 
   if (!selectedPackage) return null;
 
-  // Check if this is a one-time package
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
 
   const handleSubscribe = async () => {
@@ -104,7 +101,6 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
       return;
     }
     
-    // Show Razorpay payment UI instead of directly initiating subscription
     setShowPaymentUI(true);
   };
 
@@ -112,7 +108,6 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
     setPaymentProcessing(true);
     console.log("Payment successful:", paymentResponse);
     
-    // Now initiate the subscription with payment details
     const result = await initiateSubscription(selectedPackage.id, {
       paymentId: paymentResponse.razorpay_payment_id,
       orderId: paymentResponse.razorpay_order_id,
@@ -193,13 +188,11 @@ const SubscriptionDialog = ({ isOpen, setIsOpen, selectedPackage }: Subscription
                 <h3 className="font-medium mb-2">Pricing Details</h3>
                 <div className="space-y-2 text-sm">
                   {isOneTimePackage ? (
-                    // One-time payment pricing display
                     <div className="flex justify-between font-medium">
                       <span>One-time payment</span>
                       <span>₹{selectedPackage.price}</span>
                     </div>
                   ) : (
-                    // Subscription pricing display
                     <>
                       <div className="flex justify-between">
                         <span>One-time setup fee</span>
