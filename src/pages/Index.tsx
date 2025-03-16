@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Footer from '@/components/Footer';
 import HeroSection from '@/components/HeroSection';
 import CategorySection from '@/components/CategorySection';
@@ -9,53 +9,46 @@ import CallToAction from '@/components/CallToAction';
 import CtaSection from '@/components/CtaSection';
 import { initializeData } from '@/lib/csv-utils';
 import { useToast } from '@/hooks/use-toast';
-import Loading from '@/components/ui/loading';
 
 const Index = () => {
-  const [isLoading, setIsLoading] = useState(false); // Start with false to show content immediately
-  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Initialize data in the background without blocking rendering
   useEffect(() => {
-    console.log("Index page mounting - loading data in the background");
+    console.log("Index page mounting");
     
+    // Scroll to top
     window.scrollTo({
       top: 0,
-      behavior: 'smooth',
+      behavior: 'auto', // Changed to auto for faster scrolling
     });
     
-    // Initialize business data in the background
-    const loadData = async () => {
-      try {
-        console.log("Initializing data from csv-utils");
-        await initializeData();
-        console.log("Data initialized successfully");
-      } catch (error) {
-        console.error("Error initializing data:", error);
-        setError("Failed to initialize data, but continuing with static content");
-        
-        // Show toast notification of error but don't block rendering
-        toast({
-          title: "Connection Issue",
-          description: "Using local data - some features may be limited",
-          variant: "destructive",
-        });
-      }
-    };
+    // Initialize business data in the background with a timeout
+    const initializeTimeout = setTimeout(() => {
+      const loadData = async () => {
+        try {
+          console.log("Initializing data from csv-utils");
+          await initializeData();
+          console.log("Data initialized successfully");
+        } catch (error) {
+          console.error("Error initializing data:", error);
+          
+          // Show toast notification of error but don't block rendering
+          toast({
+            title: "Using Local Data",
+            description: "Working with offline content",
+            variant: "default",
+          });
+        }
+      };
+      
+      loadData().catch(console.error);
+    }, 1000); // Delay data initialization to prioritize UI rendering
     
-    // Load data in the background without blocking rendering
-    loadData();
-    
-    // Force content to show even if there's an error
-    const forceTimeout = setTimeout(() => {
-      setIsLoading(false);
-    }, 100);
-    
-    return () => clearTimeout(forceTimeout);
+    return () => clearTimeout(initializeTimeout);
   }, [toast]);
 
-  // Always render content, even if there's an error with data initialization
+  // Always render content immediately, no loading state
   console.log("Rendering Index page content");
   return (
     <>

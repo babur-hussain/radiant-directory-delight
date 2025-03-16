@@ -2,11 +2,8 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { 
-  getFirestore, 
-  enableMultiTabIndexedDbPersistence,
-  CACHE_SIZE_UNLIMITED 
+  getFirestore
 } from "firebase/firestore";
-import { getAnalytics, isSupported } from "firebase/analytics";
 import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
@@ -20,44 +17,42 @@ const firebaseConfig = {
   measurementId: "G-0QDRL2SSJ1"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
-const googleProvider = new GoogleAuthProvider();
+// Initialize Firebase with error handling
+let app;
+let auth;
+let db;
+let storage;
+let googleProvider;
 
-// Add custom parameters for Google sign-in
-googleProvider.setCustomParameters({
-  prompt: 'select_account'
-});
-
-// Enable enhanced offline persistence with optimized settings
-if (typeof window !== 'undefined') {
-  enableMultiTabIndexedDbPersistence(db).catch((err) => {
-    if (err.code === 'failed-precondition') {
-      console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
-    } else if (err.code === 'unimplemented') {
-      console.warn('The current browser does not support all of the features required to enable persistence');
-    } else {
-      console.error('Error enabling persistence:', err);
-    }
+try {
+  console.log("Initializing Firebase...");
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
+  googleProvider = new GoogleAuthProvider();
+  
+  // Add custom parameters for Google sign-in
+  googleProvider.setCustomParameters({
+    prompt: 'select_account'
   });
+  
+  console.log("Firebase services initialized successfully");
+} catch (error) {
+  console.error("Failed to initialize Firebase:", error);
+  // Create dummy objects to prevent app from crashing
+  if (!app) app = {} as any;
+  if (!auth) auth = {} as any;
+  if (!db) db = {} as any;
+  if (!storage) storage = {} as any;
+  if (!googleProvider) googleProvider = {} as any;
 }
 
-// Initialize Analytics conditionally
-const initializeAnalytics = async () => {
-  try {
-    if (await isSupported()) {
-      return getAnalytics(app);
-    }
-    return null;
-  } catch (err) {
-    console.error('Analytics error:', err);
-    return null;
+// Simple analytics stub that won't break if blocked
+const analytics = {
+  logEvent: (...args: any[]) => {
+    console.log("Analytics event (stub):", args);
   }
 };
 
-const analyticsPromise = initializeAnalytics();
-
-export { auth, db, googleProvider, analyticsPromise as analytics, storage, app };
+export { auth, db, googleProvider, analytics, storage, app };

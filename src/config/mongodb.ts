@@ -6,16 +6,16 @@ const MONGODB_URI = typeof process !== 'undefined' && process.env && process.env
   ? process.env.MONGODB_URI 
   : 'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
-// Initialize connection variable
+// Initialize connection variables
 let isConnecting = false;
 let mongoConnected = false;
 let connectAttempts = 0;
 
-// Initialize MongoDB connection
+// Initialize MongoDB connection with better error handling
 export const connectToMongoDB = async () => {
   try {
-    // Only allow 2 connection attempts to prevent app hanging
-    if (connectAttempts >= 2) {
+    // Only allow 1 connection attempt to prevent app hanging
+    if (connectAttempts >= 1) {
       console.log('Maximum MongoDB connection attempts reached, proceeding with local data');
       return false;
     }
@@ -40,15 +40,15 @@ export const connectToMongoDB = async () => {
     
     // Connect to MongoDB with improved options and shorter timeouts
     const connectPromise = mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 2000, // Timeout after 2s instead of 3s
-      socketTimeoutMS: 5000, // Close sockets after 5s of inactivity
+      serverSelectionTimeoutMS: 1000, // Much shorter timeout (1s)
+      socketTimeoutMS: 1000, // Close sockets after 1s of inactivity
     });
     
     // Add a timeout to ensure we don't hang waiting for MongoDB
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => {
         reject(new Error('MongoDB connection timeout'));
-      }, 2000); // 2 second timeout
+      }, 1000); // 1 second timeout - even shorter
     });
     
     // Race the connection against the timeout
@@ -64,7 +64,7 @@ export const connectToMongoDB = async () => {
     mongoConnected = false;
     console.error('MongoDB connection error:', error);
     
-    // More detailed error logging
+    // More detailed error logging but don't let it block the app
     if (error instanceof Error) {
       console.error(`Error name: ${error.name}`);
       console.error(`Error message: ${error.message}`);
