@@ -23,6 +23,7 @@ import UserSubscriptionAssignment from "./UserSubscriptionAssignment";
 import { db } from "@/config/firebase";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { UserRole } from "@/types/auth";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface UserPermissionsTabProps {
   onRefresh?: () => void;
@@ -35,6 +36,7 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
 }) => {
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
 
   useEffect(() => {
     loadUsers();
@@ -42,31 +44,66 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
 
   const loadUsers = async () => {
     setIsLoading(true);
+    setLoadingError(null);
     try {
-      const firestoreUsers = await debugFirestoreUsers();
-      console.log(`Debug: Firestore directly returned ${firestoreUsers.length} users`);
+      console.log("Starting to load users...");
       
+      try {
+        const firestoreUsers = await debugFirestoreUsers();
+        console.log(`Debug: Firestore directly returned ${firestoreUsers.length} users`);
+      } catch (firestoreError) {
+        console.error("Failed to debug Firestore users:", firestoreError);
+      }
+      
+      console.log("Attempting to load users from MongoDB via getAllUsers()...");
       const allUsers = await getAllUsers();
       console.log(`UserPermissionsTab - Loaded ${allUsers.length} users from getAllUsers()`);
       
-      await compareUserSources();
+      try {
+        await compareUserSources();
+      } catch (compareError) {
+        console.error("Error comparing user sources:", compareError);
+      }
       
-      allUsers.forEach((user, index) => {
-        if (!user.id || !user.email) {
-          console.warn(`User at index ${index} is missing required properties:`, user);
-        } else {
-          console.log(`Tab User ${index + 1}:`, user.id, user.email, user.role, user.isAdmin);
-        }
-      });
-      
-      setUsers(allUsers);
+      if (allUsers && allUsers.length > 0) {
+        allUsers.forEach((user, index) => {
+          if (!user.id || !user.email) {
+            console.warn(`User at index ${index} is missing required properties:`, user);
+          } else {
+            console.log(`Tab User ${index + 1}:`, user.id, user.email, user.role, user.isAdmin);
+          }
+        });
+        
+        setUsers(allUsers);
+      } else {
+        console.warn("No users returned from getAllUsers()");
+        setLoadingError("No users found in database");
+      }
     } catch (error) {
-      console.error("Error loading users:", error);
+      console.error("Error loading users (FULL ERROR):", error);
+      
+      // Extract detailed error message
+      let errorMessage = "Unknown error";
+      if (error instanceof Error) {
+        errorMessage = `${error.name}: ${error.message}`;
+        if (error.stack) {
+          console.error("Error stack:", error.stack);
+        }
+      } else {
+        errorMessage = String(error);
+      }
+      
+      setLoadingError(errorMessage);
+      
       toast({
         title: "Error Loading Users",
-        description: "Failed to load user data. Please try again.",
+        description: "Failed to load user data. See console for details.",
         variant: "destructive"
       });
+      
+      if (onPermissionError) {
+        onPermissionError(error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -214,6 +251,18 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
           {isLoading ? "Loading..." : "Refresh Users"}
         </button>
       </div>
+      
+      {loadingError && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription className="space-y-2">
+            <p><strong>Failed to load users:</strong> {loadingError}</p>
+            <p className="text-sm">
+              Check the browser console for more detailed error information.
+              This could be due to MongoDB connection issues or missing permissions.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
       
       <div className="bg-amber-50 p-3 rounded-md border border-amber-200 mb-4">
         <p className="text-amber-800 text-sm">

@@ -1,8 +1,8 @@
-
 import { User as UserModel } from '../../models/User';
 import { User, UserRole } from "../../types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { saveUserToAllUsersList } from "./authStorage";
+import { connectToMongoDB } from '../../config/mongodb';
 
 export const updateUserRole = async (user: User, role: UserRole) => {
   if (!user) {
@@ -145,7 +145,16 @@ export const getAllUsers = async (): Promise<User[]> => {
   try {
     console.log("Fetching ALL users from MongoDB collection");
     
+    // First ensure MongoDB is connected
+    console.log("Checking MongoDB connection...");
+    const connected = await connectToMongoDB();
+    if (!connected) {
+      throw new Error("Could not connect to MongoDB database");
+    }
+    console.log("MongoDB connection verified");
+    
     // Get all users from MongoDB, ordered by creation date
+    console.log("Executing User.find() query...");
     const mongoUsers = await UserModel.find().sort({ createdAt: -1 });
     
     console.log(`Query executed, got ${mongoUsers.length} users`);
@@ -156,7 +165,7 @@ export const getAllUsers = async (): Promise<User[]> => {
     }
     
     const users: User[] = mongoUsers.map(mongoUser => {
-      console.log("User data from MongoDB:", mongoUser.uid, mongoUser);
+      console.log("Processing user data from MongoDB:", mongoUser.uid, mongoUser);
       
       // Ensure name is a string - Fix TypeScript never type error
       let displayName: string | null = null;
@@ -195,24 +204,36 @@ export const getAllUsers = async (): Promise<User[]> => {
     
     console.log(`Successfully fetched ${users.length} users from MongoDB`);
     
-    // Log each user to verify all are being processed
-    users.forEach((user, index) => {
-      console.log(`User ${index + 1}:`, {
-        id: user.id,
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        name: user.name,
-        isAdmin: user.isAdmin
-      });
-    });
-    
     // Ensure we're correctly saving to localStorage
     localStorage.setItem('all_users_data', JSON.stringify(users));
     
     return users;
   } catch (error) {
     console.error("Error getting all users from MongoDB:", error);
+    
+    // More detailed error logging
+    if (error instanceof Error) {
+      console.error(`Error name: ${error.name}`);
+      console.error(`Error message: ${error.message}`);
+      console.error(`Error stack: ${error.stack}`);
+    }
+    
+    // Check for specific MongoDB connection errors
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes("ECONNREFUSED") || errorMessage.includes("connect ETIMEDOUT")) {
+      console.error("MongoDB connection error: Could not connect to the MongoDB server");
+    } else if (errorMessage.includes("Authentication failed")) {
+      console.error("MongoDB authentication error: Invalid credentials");
+    }
+    
+    // Check if model is registered
+    try {
+      const isModelRegistered = UserModel.modelName ? true : false;
+      console.log("User model registered:", isModelRegistered);
+    } catch (modelError) {
+      console.error("Error checking model registration:", modelError);
+    }
+    
     const fallbackUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
     console.log("Falling back to cached users:", fallbackUsers.length);
     
@@ -229,7 +250,8 @@ export const getAllUsers = async (): Promise<User[]> => {
       createdAt: user.createdAt
     }));
     
-    return conformedUsers;
+    // Re-throw the error with more context for better debugging
+    throw new Error(`Failed to fetch users from MongoDB: ${errorMessage}`);
   }
 };
 
