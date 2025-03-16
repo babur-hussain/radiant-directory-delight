@@ -93,7 +93,9 @@ export async function saveSubscriptionPackage(packageData: ISubscriptionPackage)
       advancePaymentMonths: Number(packageData.advancePaymentMonths || 0),
       popular: Boolean(packageData.popular),
       // Ensure paymentType is always set
-      paymentType: packageData.paymentType || "recurring"
+      paymentType: packageData.paymentType || "recurring",
+      // Ensure termsAndConditions is set
+      termsAndConditions: packageData.termsAndConditions || "",
     };
     
     // Update or create the package in MongoDB

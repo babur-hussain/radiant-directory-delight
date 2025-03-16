@@ -13,7 +13,7 @@ export interface ISubscriptionPackage {
   features: string[];
   popular: boolean;
   type: "Business" | "Influencer";
-  termsAndConditions: string;
+  termsAndConditions?: string; // Changed to optional
   paymentType: "recurring" | "one-time";
   billingCycle?: "monthly" | "yearly";
   advancePaymentMonths?: number;
@@ -31,7 +31,7 @@ const SubscriptionPackageSchema = new mongoose.Schema<ISubscriptionPackage>({
   features: [{ type: String }],
   popular: { type: Boolean, default: false },
   type: { type: String, enum: ['Business', 'Influencer'], required: true },
-  termsAndConditions: { type: String, default: '' },
+  termsAndConditions: { type: String, default: '' }, // Default empty string
   paymentType: { type: String, enum: ['recurring', 'one-time'], default: 'recurring' },
   billingCycle: { type: String, enum: ['monthly', 'yearly'] },
   advancePaymentMonths: { type: Number, default: 0 }

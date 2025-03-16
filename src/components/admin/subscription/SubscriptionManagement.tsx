@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { PlusCircle, Pencil, Trash2, Loader2, RefreshCw } from "lucide-react";
 import { nanoid } from "nanoid";
-import { SubscriptionPackage as SubscriptionPackageType } from "@/data/subscriptionData";
+import { ISubscriptionPackage } from "@/models/SubscriptionPackage"; // Import the correct type
 import { fetchSubscriptionPackages, saveSubscriptionPackage, deleteSubscriptionPackage } from "@/lib/mongodb-utils";
 import SubscriptionPackageForm from "./SubscriptionPackageForm";
 import { useToast } from "@/hooks/use-toast";
@@ -37,13 +38,13 @@ interface SubscriptionPackageManagementProps {
 export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps> = ({ 
   onPermissionError 
 }) => {
-  const [packages, setPackages] = useState<SubscriptionPackageType[]>([]);
-  const [filteredPackages, setFilteredPackages] = useState<SubscriptionPackageType[]>([]);
+  const [packages, setPackages] = useState<ISubscriptionPackage[]>([]); // Changed type to ISubscriptionPackage
+  const [filteredPackages, setFilteredPackages] = useState<ISubscriptionPackage[]>([]); // Changed type to ISubscriptionPackage
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState<SubscriptionPackageType | null>(null);
-  const [packageToDelete, setPackageToDelete] = useState<SubscriptionPackageType | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null); // Changed type to ISubscriptionPackage
+  const [packageToDelete, setPackageToDelete] = useState<ISubscriptionPackage | null>(null); // Changed type to ISubscriptionPackage
   const [activeTab, setActiveTab] = useState("business");
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -97,7 +98,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     setIsFormOpen(true);
   };
 
-  const handleEditPackage = (pkg: SubscriptionPackageType) => {
+  const handleEditPackage = (pkg: ISubscriptionPackage) => { // Changed type to ISubscriptionPackage
     console.log("Editing package:", pkg);
     setSelectedPackage({...pkg}); // Clone to prevent direct state mutation
     setIsFormOpen(true);
@@ -108,7 +109,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     setSelectedPackage(null);
   };
 
-  const handleOpenDeleteDialog = (pkg: SubscriptionPackageType) => {
+  const handleOpenDeleteDialog = (pkg: ISubscriptionPackage) => { // Changed type to ISubscriptionPackage
     setPackageToDelete(pkg);
   };
 
@@ -153,7 +154,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     }
   };
 
-  const handleSavePackage = async (packageData: SubscriptionPackageType) => {
+  const handleSavePackage = async (packageData: ISubscriptionPackage) => { // Changed type to ISubscriptionPackage
     setIsSaving(true);
     setPermissionError(null);
     try {
@@ -165,13 +166,14 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
       }
       
       // Ensure numbers are properly converted
-      const validatedPackageData = {
+      const validatedPackageData: ISubscriptionPackage = {
         ...packageData,
         price: Number(packageData.price),
         monthlyPrice: Number(packageData.monthlyPrice || 0),
         setupFee: Number(packageData.setupFee || 0),
         durationMonths: Number(packageData.durationMonths || 12),
-        advancePaymentMonths: Number(packageData.advancePaymentMonths || 0)
+        advancePaymentMonths: Number(packageData.advancePaymentMonths || 0),
+        termsAndConditions: packageData.termsAndConditions || '',
       };
       
       // Make sure paymentType is set properly
@@ -357,7 +359,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     </Card>
   );
 
-  function renderPackagesTable(packages: SubscriptionPackageType[], loading: boolean) {
+  function renderPackagesTable(packages: ISubscriptionPackage[], loading: boolean) { // Changed type to ISubscriptionPackage
     if (loading) {
       return (
         <div className="flex justify-center items-center py-8">
@@ -392,7 +394,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
             <TableRow key={pkg.id}>
               <TableCell className="font-medium">{pkg.title}</TableCell>
               <TableCell>{pkg.price}</TableCell>
-              <TableCell>{pkg.setupFee}</TableCell>
+              <TableCell>{pkg.setupFee || 0}</TableCell>
               <TableCell>
                 <Badge variant="outline">{pkg.paymentType === "one-time" ? "One-time" : "Recurring"}</Badge>
               </TableCell>
