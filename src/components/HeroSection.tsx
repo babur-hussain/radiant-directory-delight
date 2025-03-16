@@ -6,8 +6,13 @@ import PopularSearchTerms from './search/PopularSearchTerms';
 
 const HeroSection: React.FC = () => {
   const [resultsVisible, setResultsVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   console.log("Rendering HeroSection component");
+  
+  const handleTermClick = (term: string) => {
+    setSearchQuery(term);
+  };
   
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-primary/10 to-background pt-10 md:pt-16 pb-8">
@@ -16,12 +21,13 @@ const HeroSection: React.FC = () => {
         
         <div className="mt-8 md:mt-12 w-full max-w-4xl mx-auto z-20 relative">
           <SearchBar 
+            initialQuery={searchQuery}
             onResultsVisibilityChange={setResultsVisible}
           />
           
           {!resultsVisible && (
             <div className="mt-4 text-center">
-              <PopularSearchTerms />
+              <PopularSearchTerms onTermClick={handleTermClick} />
             </div>
           )}
         </div>
