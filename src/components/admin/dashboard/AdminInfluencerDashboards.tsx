@@ -1,89 +1,69 @@
 
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Eye, Pencil } from "lucide-react";
-import { Business } from "@/lib/csv-utils";
-import BusinessDetailsDialog from "../table/BusinessDetailsDialog";
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface AdminInfluencerDashboardsProps {
-  influencers: Business[];
-  onEdit?: (influencer: Business) => void;
+export interface AdminInfluencerDashboardsProps {
+  influencers?: any[];
 }
 
-const AdminInfluencerDashboards: React.FC<AdminInfluencerDashboardsProps> = ({
-  influencers,
-  onEdit
+const AdminInfluencerDashboards: React.FC<AdminInfluencerDashboardsProps> = ({ 
+  influencers = [] 
 }) => {
-  const [selectedInfluencer, setSelectedInfluencer] = useState<Business | null>(null);
-  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-
-  // Handle viewing influencer details
-  const handleViewDetails = (influencer: Business) => {
-    setSelectedInfluencer(influencer);
-    setShowDetailsDialog(true);
-  };
-
   return (
-    <>
+    <div className="space-y-4">
+      <h2 className="text-2xl font-bold">Influencer Dashboards</h2>
+      <p className="text-muted-foreground">
+        Configure and manage influencer dashboards
+      </p>
+
       <Card>
         <CardHeader>
-          <CardTitle>Influencer Dashboards</CardTitle>
+          <CardTitle>Influencer Dashboard Overview</CardTitle>
+          <CardDescription>
+            Manage customization options for influencer dashboards
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {influencers.length === 0 ? (
-            <p className="text-center text-muted-foreground py-6">No influencers found</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {influencers.map((influencer) => (
-                  <TableRow key={influencer.id || influencer.email}>
-                    <TableCell className="font-medium">{influencer.name}</TableCell>
-                    <TableCell>{influencer.email}</TableCell>
-                    <TableCell>{influencer.category}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleViewDetails(influencer)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {onEdit && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onEdit(influencer)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <p>
+            This section allows you to customize how the dashboard appears for all influencers.
+            To customize individual influencer dashboards, use the Dashboard Customization tab.
+          </p>
         </CardContent>
       </Card>
 
-      {selectedInfluencer && (
-        <BusinessDetailsDialog
-          business={selectedInfluencer}
-          open={showDetailsDialog}
-          onOpenChange={setShowDetailsDialog}
-        />
-      )}
-    </>
+      <Tabs defaultValue="elements" className="w-full">
+        <TabsList className="grid grid-cols-3 mb-4">
+          <TabsTrigger value="elements">Dashboard Elements</TabsTrigger>
+          <TabsTrigger value="defaults">Default Layouts</TabsTrigger>
+          <TabsTrigger value="advanced">Advanced Settings</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="elements">
+          <Card>
+            <CardContent className="p-6">
+              <p>Configure which dashboard elements are available for influencers.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="defaults">
+          <Card>
+            <CardContent className="p-6">
+              <p>Set default dashboard layouts for influencer accounts.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="advanced">
+          <Card>
+            <CardContent className="p-6">
+              <p>Configure advanced settings for influencer dashboards.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
