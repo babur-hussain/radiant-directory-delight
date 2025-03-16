@@ -1,6 +1,6 @@
 
 import { ISubscription, Subscription } from '../models/Subscription';
-import mongoose from '../config/mongodb';
+import { mongoose } from '../config/mongodb';
 import { nanoid } from 'nanoid';
 import { autoInitMongoDB } from '../utils/setupMongoDB';
 

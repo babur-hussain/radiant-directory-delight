@@ -14,7 +14,7 @@ let mongoConnected = false;
 export const connectToMongoDB = async () => {
   try {
     // Check if already connected
-    if (mongoose.connection && mongoose.connection.readyState === 1) {
+    if (mongoose.connection.readyState === 1) {
       console.log('Already connected to MongoDB');
       mongoConnected = true;
       return true;
@@ -29,7 +29,7 @@ export const connectToMongoDB = async () => {
         await new Promise(resolve => setTimeout(resolve, 500));
         attempts++;
       }
-      return mongoose.connection && mongoose.connection.readyState === 1;
+      return mongoose.connection.readyState === 1;
     }
     
     isConnecting = true;
@@ -55,6 +55,7 @@ export const connectToMongoDB = async () => {
     mongoConnected = false;
     console.error('MongoDB connection error:', error);
     
+    // More detailed error logging
     if (error instanceof Error) {
       console.error(`Error name: ${error.name}`);
       console.error(`Error message: ${error.message}`);
@@ -70,5 +71,5 @@ export const isMongoDBConnected = () => {
   return mongoose.connection && mongoose.connection.readyState === 1;
 };
 
-// Export mongoose for use in other files
-export default mongoose;
+// Export mongoose instance directly (not the default export)
+export { mongoose };

@@ -1,6 +1,5 @@
 
-import mongoose from 'mongoose';
-import { connectToMongoDB, isMongoDBConnected } from '../config/mongodb';
+import { mongoose, connectToMongoDB, isMongoDBConnected } from '../config/mongodb';
 
 // Function to auto-initialize MongoDB when needed
 export const autoInitMongoDB = async () => {

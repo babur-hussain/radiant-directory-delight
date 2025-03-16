@@ -1,5 +1,5 @@
-import { connectToMongoDB } from '../config/mongodb';
-import mongoose from '../config/mongodb';
+
+import { connectToMongoDB, mongoose } from '../config/mongodb';
 import { SubscriptionPackage, ISubscriptionPackage } from '../models/SubscriptionPackage';
 import { Business, IBusiness } from '../models/Business';
 import { setupMongoDB } from '@/utils/setupMongoDB';
