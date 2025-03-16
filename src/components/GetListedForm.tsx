@@ -4,15 +4,13 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Building, MapPin, Phone, X } from "lucide-react";
-import { db } from "@/config/firebase";
-import { collection, addDoc, doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { saveBusiness } from "@/lib/firebase-utils";
-import { initializeData, generateUniqueId } from "@/lib/csv-utils";
+import { saveBusiness } from "@/lib/mongodb-utils";
+import { generateUniqueId } from "@/lib/csv-utils";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Business name must be at least 2 characters" }),
@@ -69,11 +67,8 @@ const GetListedForm = ({ isOpen, setIsOpen }: GetListedFormProps) => {
         image: "/placeholder.svg",
       };
       
-      // Save to Firebase
+      // Save to MongoDB instead of Firebase
       await saveBusiness(newBusiness);
-      
-      // Refresh local data
-      await initializeData();
       
       toast({
         title: "Business Listed Successfully",

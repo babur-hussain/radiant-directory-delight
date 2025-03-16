@@ -5,14 +5,13 @@ import UnauthorizedView from "@/components/admin/UnauthorizedView";
 import { useToast } from "@/hooks/use-toast";
 import { useState as useReactState } from "react";
 import { useBusinessListings } from "@/hooks/useBusinessListings";
-import { Business } from "@/lib/csv-utils";
+import { IBusiness } from "@/models/Business";
 import { BusinessFormValues } from "@/components/admin/BusinessForm";
 import AdminPermissionError from "@/components/admin/dashboard/AdminPermissionError";
 import AdminDashboardTabs from "@/components/admin/dashboard/AdminDashboardTabs";
-import { loadAllUsers, debugRefreshUsers } from "@/features/auth/authStorage";
-import { ensureTestUsers } from "@/features/auth/userManagement";
 import Loading from "@/components/ui/loading";
 import { autoInitMongoDB } from "@/utils/setupMongoDB";
+import { fetchUsers } from "@/lib/mongodb-utils";
 
 const AdminDashboardPage = () => {
   const { user, isAuthenticated, initialized } = useAuth();
@@ -24,9 +23,9 @@ const AdminDashboardPage = () => {
   const [showUploadDialog, setShowUploadDialog] = useReactState(false);
   const [showBusinessFormDialog, setShowBusinessFormDialog] = useReactState(false);
   const [businessCount, setBusinessCount] = useReactState(0);
-  const [currentBusinessToEdit, setCurrentBusinessToEdit] = useReactState<Business | null>(null);
+  const [currentBusinessToEdit, setCurrentBusinessToEdit] = useReactState<IBusiness | null>(null);
   const [isSubmitting, setIsSubmitting] = useReactState(false);
-  const [selectedBusiness, setSelectedBusiness] = useReactState<Business | null>(null);
+  const [selectedBusiness, setSelectedBusiness] = useReactState<IBusiness | null>(null);
   
   // State for users tab
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
@@ -80,22 +79,20 @@ const AdminDashboardPage = () => {
         description: "Initializing user data...",
       });
       
-      console.log("Admin Dashboard: Ensuring test users exist first");
-      await ensureTestUsers();
+      console.log("Admin Dashboard: Loading users from MongoDB");
+      const users = await fetchUsers();
       
-      console.log("Admin Dashboard: Now refreshing all users");
-      const userCount = await debugRefreshUsers();
-      console.log(`Admin Dashboard: Found ${userCount} users`);
+      console.log(`Admin Dashboard: Found ${users.length} users in MongoDB`);
       
       toast({
         title: "Users Refreshed",
-        description: `Successfully loaded ${userCount} users`,
+        description: `Successfully loaded ${users.length} users`,
       });
     } catch (error) {
       console.error("Error loading users data:", error);
       toast({
         title: "Error Loading Users",
-        description: "Could not load users from Firebase",
+        description: "Could not load users from MongoDB",
         variant: "destructive",
       });
     } finally {
@@ -143,13 +140,13 @@ const AdminDashboardPage = () => {
     setShowBusinessFormDialog(true);
   };
   
-  const handleEditBusiness = (business: Business) => {
+  const handleEditBusiness = (business: IBusiness) => {
     console.log("Edit business clicked in AdminDashboardPage:", business);
     setCurrentBusinessToEdit(business);
     setShowBusinessFormDialog(true);
   };
   
-  const handleViewBusinessDetails = (business: Business) => {
+  const handleViewBusinessDetails = (business: IBusiness) => {
     console.log("View business details clicked in AdminDashboardPage:", business);
     setSelectedBusiness(business);
   };

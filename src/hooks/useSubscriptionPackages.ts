@@ -23,15 +23,21 @@ export const useSubscriptionPackages = (userRole: UserRole) => {
       try {
         console.log(`Loading subscription packages for role: ${userRole}`);
         
+        // Convert UserRole to expected type
+        const role: "Business" | "Influencer" = 
+          userRole === "Business" || userRole === "Influencer" 
+            ? userRole 
+            : "Business"; // Default to Business for other roles
+        
         // Get packages for the specific role from MongoDB
-        const rolePackages = await fetchSubscriptionPackagesByType(userRole);
+        const rolePackages = await fetchSubscriptionPackagesByType(role);
         
         if (rolePackages && rolePackages.length > 0) {
           setPackages(rolePackages);
-          console.log(`Loaded ${rolePackages.length} ${userRole} packages from MongoDB`);
+          console.log(`Loaded ${rolePackages.length} ${role} packages from MongoDB`);
         } else {
-          console.warn(`No ${userRole} packages found in MongoDB`);
-          setError(`No subscription packages available for ${userRole} role`);
+          console.warn(`No ${role} packages found in MongoDB`);
+          setError(`No subscription packages available for ${role} role`);
         }
       } catch (err) {
         console.error('Error loading subscription packages:', err);

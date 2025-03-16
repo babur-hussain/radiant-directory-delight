@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Check, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -136,7 +137,7 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
                   <Badge variant="secondary" className="mb-2 self-start bg-amber-100 text-amber-800">One-Time Payment</Badge>
                   <CardTitle className="text-xl">{pkg.title}</CardTitle>
                   <div className="flex items-end gap-1">
-                    <span className="text-3xl font-bold">₹{pkg.price}</span>
+                    <span className="text-3xl font-bold">₹{pkg.price || 999}</span>
                     <span className="text-muted-foreground mb-1">one-time</span>
                   </div>
                   <CardDescription>{pkg.shortDescription}</CardDescription>

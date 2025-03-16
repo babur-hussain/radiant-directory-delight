@@ -59,7 +59,7 @@ export const setupMongoDB = async (
         delete mongoose.models[modelName];
       });
       
-      // In newer mongoose versions, modelSchemas is not directly accessible
+      // Note: In newer mongoose versions, modelSchemas is not directly accessible
       // We'll just rely on clearing the models which is sufficient
     } catch (cacheError) {
       console.error('Error clearing mongoose model cache:', cacheError);
@@ -132,7 +132,11 @@ export const setupMongoDB = async (
       // Add each package to MongoDB
       const seedPromises = allPackages.map(async (pkg) => {
         try {
-          // Ensure one-time payment packages have proper price set
+          // Explicitly ensure one-time payment packages have proper price set (never 0)
+          const price = pkg.paymentType === "one-time" 
+            ? (pkg.price && pkg.price > 0 ? pkg.price : 999) // Default to 999 if price is 0 or undefined
+            : pkg.price;
+            
           const packageToSave = {
             ...pkg,
             features: pkg.features || [],
@@ -142,12 +146,11 @@ export const setupMongoDB = async (
             durationMonths: pkg.durationMonths || 12,
             termsAndConditions: pkg.termsAndConditions || "",
             paymentType: pkg.paymentType || "recurring",
-            // Ensure one-time payments have proper price
-            price: pkg.paymentType === "one-time" ? (pkg.price || 999) : pkg.price
+            price: price // Use the corrected price
           };
           
           await SubscriptionPackageModel.create(packageToSave);
-          console.log(`Seeded package: ${pkg.title}`);
+          console.log(`Seeded package: ${pkg.title} with price: ${price}`);
           return true;
         } catch (err) {
           console.error(`Error seeding package ${pkg.title}:`, err);
@@ -190,6 +193,105 @@ export const setupMongoDB = async (
       console.log('Indexes successfully created');
     } catch (indexError) {
       console.error('Error creating indexes:', indexError);
+    }
+    
+    // Seed dummy businesses
+    progressCallback?.(98, 'Seeding dummy businesses');
+    try {
+      // Create dummy businesses
+      const BusinessModel = mongoose.model('Business');
+      
+      // Remove existing businesses first
+      await BusinessModel.deleteMany({});
+      
+      // Create dummy businesses
+      const dummyBusinesses = [
+        {
+          id: "1",
+          name: "Spice Bazaar",
+          category: "Restaurant",
+          address: "123 Main St, Mumbai",
+          phone: "9876543210",
+          email: "contact@spicebazaar.com",
+          website: "www.spicebazaar.com",
+          description: "Authentic Indian cuisine in the heart of Mumbai.",
+          rating: 4.5,
+          reviews: 120,
+          latitude: 19.0760,
+          longitude: 72.8777,
+          hours: {
+            monday: "10:00 AM - 10:00 PM",
+            tuesday: "10:00 AM - 10:00 PM",
+            wednesday: "10:00 AM - 10:00 PM",
+            thursday: "10:00 AM - 10:00 PM",
+            friday: "10:00 AM - 11:00 PM",
+            saturday: "10:00 AM - 11:00 PM",
+            sunday: "11:00 AM - 10:00 PM"
+          },
+          tags: ["restaurant", "indian", "spicy", "vegetarian"],
+          featured: true,
+          image: "/placeholder.svg",
+        },
+        {
+          id: "2",
+          name: "Tech Solutions",
+          category: "IT Services",
+          address: "456 Tech Park, Bangalore",
+          phone: "8765432109",
+          email: "support@techsolutions.com",
+          website: "www.techsolutions.com",
+          description: "Professional IT services and software development.",
+          rating: 4.8,
+          reviews: 85,
+          latitude: 12.9716,
+          longitude: 77.5946,
+          hours: {
+            monday: "9:00 AM - 6:00 PM",
+            tuesday: "9:00 AM - 6:00 PM",
+            wednesday: "9:00 AM - 6:00 PM",
+            thursday: "9:00 AM - 6:00 PM",
+            friday: "9:00 AM - 6:00 PM",
+            saturday: "10:00 AM - 2:00 PM",
+            sunday: "Closed"
+          },
+          tags: ["it", "software", "tech", "consulting"],
+          featured: false,
+          image: "/placeholder.svg",
+        },
+        {
+          id: "3",
+          name: "Fashion Trends",
+          category: "Retail",
+          address: "789 Shopping Mall, Delhi",
+          phone: "7654321098",
+          email: "info@fashiontrends.com",
+          website: "www.fashiontrends.com",
+          description: "Latest fashion trends and accessories.",
+          rating: 4.2,
+          reviews: 150,
+          latitude: 28.6139,
+          longitude: 77.2090,
+          hours: {
+            monday: "11:00 AM - 9:00 PM",
+            tuesday: "11:00 AM - 9:00 PM",
+            wednesday: "11:00 AM - 9:00 PM",
+            thursday: "11:00 AM - 9:00 PM",
+            friday: "11:00 AM - 10:00 PM",
+            saturday: "10:00 AM - 10:00 PM",
+            sunday: "12:00 PM - 8:00 PM"
+          },
+          tags: ["fashion", "retail", "clothing", "accessories"],
+          featured: true,
+          image: "/placeholder.svg",
+        }
+      ];
+      
+      // Insert dummy businesses
+      await BusinessModel.insertMany(dummyBusinesses);
+      
+      console.log(`Seeded ${dummyBusinesses.length} dummy businesses`);
+    } catch (error) {
+      console.error('Error seeding dummy businesses:', error);
     }
     
     progressCallback?.(100, 'MongoDB setup completed');

@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, CreditCard, Shield } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { SubscriptionPackage } from '@/data/subscriptionData';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { loadRazorpayScript } from '@/lib/razorpay-utils';
 import { useAuth } from '@/hooks/useAuth';
 
 interface RazorpayPaymentProps {
-  selectedPackage: SubscriptionPackage;
+  selectedPackage: ISubscriptionPackage;
   onSuccess: (response: any) => void;
   onFailure: (error: any) => void;
 }
@@ -27,8 +27,9 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
   
   // Calculate the amount based on payment type
+  // Ensure one-time packages have proper pricing
   const paymentAmount = isOneTimePackage 
-    ? selectedPackage.price 
+    ? (selectedPackage.price || 999) // Default to 999 if price is 0 or undefined
     : (selectedPackage.setupFee || 0);
   
   useEffect(() => {
@@ -80,7 +81,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       prefill: {
         name: user.displayName || user.name || '',
         email: user.email || '',
-        contact: user.phone || ''
+        contact: user.phoneNumber || '' // Fixed: use phoneNumber instead of phone
       },
       notes: {
         package_id: selectedPackage.id,
@@ -128,7 +129,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
             <span className="font-medium">{selectedPackage.title}</span>
             <span className="font-medium">
               {isOneTimePackage 
-                ? `₹${selectedPackage.price}` 
+                ? `₹${selectedPackage.price || 999}` // Default to 999 if price is 0
                 : `₹${selectedPackage.setupFee || 0}`}
             </span>
           </div>
@@ -146,7 +147,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           
           <div className="flex justify-between pt-2 font-medium text-primary">
             <span>Total Amount</span>
-            <span>₹{paymentAmount}</span>
+            <span>₹{isOneTimePackage ? (selectedPackage.price || 999) : paymentAmount}</span>
           </div>
         </div>
         
@@ -166,7 +167,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         >
           <CreditCard className="mr-2 h-4 w-4" />
           {isOneTimePackage 
-            ? `Pay ₹${selectedPackage.price}` 
+            ? `Pay ₹${selectedPackage.price || 999}` // Default to 999 if price is 0
             : `Pay ₹${selectedPackage.setupFee || 0}`}
         </Button>
         <p className="text-xs text-center text-muted-foreground">

@@ -37,7 +37,18 @@ export const fetchSubscriptionPackages = async (): Promise<ISubscriptionPackage[
       console.warn("No subscription packages found in MongoDB");
     }
     
-    return packages;
+    // Make sure all one-time packages have valid price
+    const validatedPackages = packages.map(pkg => {
+      if (pkg.paymentType === "one-time" && (!pkg.price || pkg.price <= 0)) {
+        return {
+          ...pkg,
+          price: 999 // Set default price for one-time packages if missing or 0
+        };
+      }
+      return pkg;
+    });
+    
+    return validatedPackages;
   } catch (error) {
     console.error("Error fetching subscription packages:", error);
     throw error;
@@ -74,7 +85,18 @@ export const fetchSubscriptionPackagesByType = async (type: "Business" | "Influe
       console.warn(`No ${type} subscription packages found in MongoDB`);
     }
     
-    return packages;
+    // Make sure all one-time packages have valid price
+    const validatedPackages = packages.map(pkg => {
+      if (pkg.paymentType === "one-time" && (!pkg.price || pkg.price <= 0)) {
+        return {
+          ...pkg,
+          price: 999 // Set default price for one-time packages if missing or 0
+        };
+      }
+      return pkg;
+    });
+    
+    return validatedPackages;
   } catch (error) {
     console.error(`Error fetching ${type} subscription packages:`, error);
     throw error;
@@ -105,8 +127,9 @@ export const saveSubscriptionPackage = async (packageData: ISubscriptionPackage)
     }
     
     // Fix one-time payment price if it's not set correctly
+    let sanitizedPackage = { ...packageData };
     if (packageData.paymentType === "one-time" && (!packageData.price || packageData.price <= 0)) {
-      packageData.price = packageData.price || 999; // Default to 999 if not set
+      sanitizedPackage.price = 999; // Default to 999 if not set
     }
     
     // Check if package with this ID already exists
@@ -116,13 +139,13 @@ export const saveSubscriptionPackage = async (packageData: ISubscriptionPackage)
       // Update existing package
       const updated = await packageModel.findOneAndUpdate(
         { id: packageData.id },
-        packageData,
+        sanitizedPackage,
         { new: true }
       );
       return updated;
     } else {
       // Create new package
-      const newPackage = await packageModel.create(packageData);
+      const newPackage = await packageModel.create(sanitizedPackage);
       return newPackage;
     }
   } catch (error) {
@@ -203,7 +226,7 @@ export async function saveBusiness(business: IBusiness): Promise<void> {
 /**
  * Deletes a business from MongoDB
  */
-export async function deleteBusiness(businessId: number): Promise<void> {
+export async function deleteBusiness(businessId: string): Promise<void> {
   try {
     // Ensure MongoDB is initialized
     const connected = await connectToMongoDB();
