@@ -3,13 +3,21 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import BusinessFormDialog from './BusinessFormDialog';
-import TableBusinessContent from './TableBusinessContent';
-import CSVUploadDialog from './CSVUploadDialog';
 import BusinessTableLoading from './table/BusinessTableLoading';
 import { useBusinessListings } from '@/hooks/useBusinessListings';
 import { IBusiness } from '@/models/Business';
 import DeleteBusinessDialog from './table/DeleteBusinessDialog';
 import BusinessPermissionError from './table/BusinessPermissionError';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import CSVUploadDialog from './CSVUploadDialog';
+import BusinessTableRow from './table/BusinessTableRow';
 
 const TableBusinessListings = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -53,46 +61,75 @@ const TableBusinessListings = () => {
       </div>
 
       {error ? (
-        <BusinessPermissionError message={error} />
+        <BusinessPermissionError errorMessage={error} />
       ) : isLoading ? (
         <BusinessTableLoading />
       ) : (
-        <TableBusinessContent 
-          businesses={businesses}
-          onEdit={(business) => {
-            setSelectedBusiness(business);
-            setIsFormOpen(true);
-          }}
-          onDelete={openDeleteDialog}
-          onRefresh={refreshData}
-        />
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[80px]">ID</TableHead>
+                <TableHead>Business Name</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead className="hidden md:table-cell">Address</TableHead>
+                <TableHead>Rating</TableHead>
+                <TableHead className="hidden md:table-cell">Phone</TableHead>
+                <TableHead className="w-[150px] text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {!businesses || businesses.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center">
+                    No businesses found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                businesses.map((business) => (
+                  <BusinessTableRow 
+                    key={business.id}
+                    business={business}
+                    onViewDetails={() => {}}
+                    onEditBusiness={() => {
+                      setSelectedBusiness(business);
+                      setIsFormOpen(true);
+                    }}
+                    onDeleteBusiness={() => openDeleteDialog(business)}
+                  />
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       <BusinessFormDialog 
-        isOpen={isFormOpen} 
+        show={isFormOpen} 
         onClose={() => {
           setIsFormOpen(false);
           setSelectedBusiness(null);
         }}
-        onSave={async () => {
+        onSubmit={async () => {
           await refreshData();
           setIsFormOpen(false);
           setSelectedBusiness(null);
         }}
-        initialData={selectedBusiness}
+        business={selectedBusiness}
+        isSubmitting={false}
       />
 
       <CSVUploadDialog 
-        isOpen={isUploadOpen} 
+        show={isUploadOpen} 
         onClose={() => setIsUploadOpen(false)} 
-        onSuccess={refreshData}
+        onUploadComplete={() => refreshData()}
       />
 
       <DeleteBusinessDialog
-        isOpen={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)}
-        onDelete={() => selectedBusiness && handleDeleteBusiness(selectedBusiness.id)}
-        businessName={selectedBusiness?.name || ""}
+        business={selectedBusiness}
+        open={isDeleteDialogOpen}
+        onOpenChange={() => setIsDeleteDialogOpen(false)}
+        onConfirmDelete={() => selectedBusiness && handleDeleteBusiness(selectedBusiness.id)}
       />
     </div>
   );

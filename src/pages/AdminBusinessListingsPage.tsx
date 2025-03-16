@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { getAllBusinesses, addBusiness, updateBusiness, Business } from "@/lib/csv-utils";
 import { BusinessFormValues } from "@/components/admin/BusinessForm";
-import { TableBusinessListings } from "@/components/admin/TableBusinessListings";
+import TableBusinessListings from "@/components/admin/TableBusinessListings";
 import UnauthorizedView from "@/components/admin/UnauthorizedView";
 import BusinessListingsHeader from "@/components/admin/BusinessListingsHeader";
 import BusinessFormDialog from "@/components/admin/BusinessFormDialog";
