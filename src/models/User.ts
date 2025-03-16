@@ -1,3 +1,4 @@
+
 import mongoose from '../config/mongodb';
 
 export interface IUser {

@@ -1,7 +1,6 @@
 
-import { ISubscription } from '../models/Subscription';
+import { ISubscription, Subscription } from '../models/Subscription';
 import mongoose from '../config/mongodb';
-import { Subscription } from '../models/Subscription';
 import { nanoid } from 'nanoid';
 
 // Create a new subscription
@@ -9,7 +8,7 @@ export const createSubscription = async (subscriptionData: Omit<ISubscription, '
   try {
     const subscription = new Subscription({
       ...subscriptionData,
-      _id: subscriptionData.id || nanoid()
+      id: subscriptionData.id || nanoid()
     });
     await subscription.save();
     return subscription;
@@ -22,7 +21,7 @@ export const createSubscription = async (subscriptionData: Omit<ISubscription, '
 // Get a subscription by ID
 export const getSubscription = async (id: string): Promise<ISubscription> => {
   try {
-    const subscription = await Subscription.findById(id);
+    const subscription = await Subscription.findOne({ id });
     if (!subscription) {
       throw new Error(`Subscription with ID ${id} not found`);
     }
@@ -45,16 +44,17 @@ export const getSubscriptions = async (): Promise<ISubscription[]> => {
 };
 
 // Update a subscription
-export const updateSubscription = async (id: string, subscriptionData: Partial<ISubscription>): Promise<ISubscription> => {
+export const updateSubscription = async (id: string, subscriptionData: Partial<ISubscection>): Promise<ISubscription> => {
   try {
-    const subscription = await Subscription.findByIdAndUpdate(
-      id,
+    const subscription = await Subscription.findOneAndUpdate(
+      { id },
       { $set: subscriptionData },
       { new: true }
     );
     if (!subscription) {
       throw new Error(`Subscription with ID ${id} not found`);
     }
+    Subscription.findById
     return subscription;
   } catch (error) {
     console.error(`Error updating subscription with ID ${id}:`, error);
@@ -65,7 +65,7 @@ export const updateSubscription = async (id: string, subscriptionData: Partial<I
 // Delete a subscription
 export const deleteSubscription = async (id: string): Promise<void> => {
   try {
-    const result = await Subscription.findByIdAndDelete(id);
+    const result = await Subscription.findOneAndDelete({ id });
     if (!result) {
       throw new Error(`Subscription with ID ${id} not found`);
     }

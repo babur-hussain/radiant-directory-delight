@@ -1,13 +1,13 @@
 
 import mongoose from 'mongoose';
 
-const MONGODB_URI = 'mongodb+srv://growbharatvyapaar:KShEQVp120dMJGvr@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://growbharatvyapaar:KShEQVp120dMJGvr@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
 // Initialize MongoDB connection
 export const connectToMongoDB = async () => {
   try {
-    // Check connection state
-    if (mongoose.connection && mongoose.connection.readyState === 1) {
+    // Check if already connected
+    if (mongoose.connection.readyState === 1) {
       console.log('Already connected to MongoDB');
       return true;
     }
@@ -24,6 +24,3 @@ export const connectToMongoDB = async () => {
 
 // Export mongoose for use in other files
 export default mongoose;
-
-// Don't automatically connect here as it can cause issues in some environments
-// connectToMongoDB();
