@@ -1,3 +1,4 @@
+
 import { User as UserModel } from '../../models/User';
 import { User, UserRole } from "../../types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
@@ -158,8 +159,22 @@ export const getAllUsers = async (): Promise<User[]> => {
     const connected = await connectToMongoDB();
     if (!connected) {
       console.error("MongoDB connection failed - could not establish connection");
-      throw new Error("Could not connect to MongoDB database");
+      // Instead of throwing an error, let's fall back to localStorage
+      console.log("Falling back to localStorage for user data");
+      const localUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
+      return localUsers.map((user: any) => ({
+        uid: user.id || user.uid,
+        id: user.id || user.uid,
+        email: user.email,
+        displayName: user.name || user.displayName,
+        name: user.name || user.displayName,
+        photoURL: user.photoURL,
+        role: user.role,
+        isAdmin: user.isAdmin,
+        createdAt: user.createdAt || new Date().toISOString()
+      }));
     }
+    
     console.log("MongoDB connection verified");
     
     // Get all users from MongoDB, ordered by creation date
@@ -169,7 +184,26 @@ export const getAllUsers = async (): Promise<User[]> => {
     console.log(`Query executed, got ${mongoUsers.length} users`);
     
     if (mongoUsers.length === 0) {
-      console.log("No users found in MongoDB");
+      console.log("No users found in MongoDB, checking localStorage");
+      const localUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
+      
+      if (localUsers.length > 0) {
+        console.log(`Found ${localUsers.length} users in localStorage`);
+        // Format localStorage users to match User interface
+        return localUsers.map((user: any) => ({
+          uid: user.id || user.uid,
+          id: user.id || user.uid,
+          email: user.email,
+          displayName: user.name || user.displayName,
+          name: user.name || user.displayName,
+          photoURL: user.photoURL,
+          role: user.role,
+          isAdmin: user.isAdmin,
+          createdAt: user.createdAt || new Date().toISOString()
+        }));
+      }
+      
+      console.log("No users found in localStorage either");
       return [];
     }
     
@@ -225,8 +259,20 @@ export const getAllUsers = async (): Promise<User[]> => {
       console.error(`Error stack: ${error.stack}`);
     }
     
-    // Re-throw the error with better context, as our error handling will help us handle it downstream
-    throw new Error(`Failed to fetch users from MongoDB: ${error instanceof Error ? error.message : String(error)}`);
+    // Fall back to localStorage
+    console.log("Falling back to localStorage for user data due to error");
+    const localUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
+    return localUsers.map((user: any) => ({
+      uid: user.id || user.uid,
+      id: user.id || user.uid,
+      email: user.email,
+      displayName: user.name || user.displayName,
+      name: user.name || user.displayName,
+      photoURL: user.photoURL,
+      role: user.role,
+      isAdmin: user.isAdmin,
+      createdAt: user.createdAt || new Date().toISOString()
+    }));
   }
 };
 
@@ -262,6 +308,13 @@ export const createTestUser = async (userData: TestUserData): Promise<User> => {
     // Then save to MongoDB with explicit error handling
     try {
       console.log("Attempting to save user to MongoDB with ID:", userId);
+      
+      // Make sure we're connected to MongoDB
+      const connected = await connectToMongoDB();
+      if (!connected) {
+        console.warn("MongoDB connection failed, user only saved to localStorage");
+        return user;
+      }
       
       // Create the user document in MongoDB
       await UserModel.create({
