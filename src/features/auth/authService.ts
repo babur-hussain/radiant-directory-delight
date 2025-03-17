@@ -1,11 +1,12 @@
 
 import { User as FirebaseUser } from 'firebase/auth';
-import { User, IUser } from '../../models/User';
+import { fetchUserByUid, createOrUpdateUser, updateUserLoginTimestamp, updateUserRole as apiUpdateUserRole, getAllUsers as apiGetAllUsers } from '../../api/mongoAPI';
+import { IUser } from '../../models/User';
 
 // Get user by Firebase UID from MongoDB
 export const getUserByUid = async (uid: string): Promise<IUser | null> => {
   try {
-    const user = await User.findOne({ uid });
+    const user = await fetchUserByUid(uid);
     return user;
   } catch (error) {
     console.error('Error getting user by UID:', error);
@@ -17,7 +18,7 @@ export const getUserByUid = async (uid: string): Promise<IUser | null> => {
 export const createUserIfNotExists = async (firebaseUser: any): Promise<IUser | null> => {
   try {
     // Check if user already exists
-    let user = await User.findOne({ uid: firebaseUser.uid });
+    let user = await fetchUserByUid(firebaseUser.uid);
     
     // If user doesn't exist, create new user
     if (!user) {
@@ -57,7 +58,7 @@ export const createUserIfNotExists = async (firebaseUser: any): Promise<IUser | 
         zipCode: firebaseUser.address.zipCode || null
       } : undefined;
 
-      user = await User.create({
+      const userData = {
         uid: firebaseUser.uid,
         name: firebaseUser.displayName,
         email: firebaseUser.email,
@@ -66,7 +67,9 @@ export const createUserIfNotExists = async (firebaseUser: any): Promise<IUser | 
         lastLogin: new Date(),
         ...additionalData,
         ...(address ? { address } : {})
-      });
+      };
+
+      user = await createOrUpdateUser(userData);
       console.log('New user created in MongoDB:', user);
     }
     
@@ -80,10 +83,7 @@ export const createUserIfNotExists = async (firebaseUser: any): Promise<IUser | 
 // Update user's last login timestamp
 export const updateUserLoginTimestamp = async (uid: string): Promise<void> => {
   try {
-    await User.updateOne(
-      { uid },
-      { $set: { lastLogin: new Date() } }
-    );
+    await updateUserLoginTimestamp(uid);
   } catch (error) {
     console.error('Error updating user login timestamp:', error);
   }
@@ -92,7 +92,7 @@ export const updateUserLoginTimestamp = async (uid: string): Promise<void> => {
 // Get all users (admin function)
 export const getAllUsers = async (): Promise<IUser[]> => {
   try {
-    const users = await User.find().sort({ createdAt: -1 });
+    const users = await apiGetAllUsers();
     return users;
   } catch (error) {
     console.error('Error getting all users:', error);
@@ -103,11 +103,7 @@ export const getAllUsers = async (): Promise<IUser[]> => {
 // Update user role
 export const updateUserRole = async (uid: string, role: string, isAdmin: boolean = false): Promise<IUser | null> => {
   try {
-    const user = await User.findOneAndUpdate(
-      { uid },
-      { $set: { role, isAdmin } },
-      { new: true }
-    );
+    const user = await apiUpdateUserRole(uid, role, isAdmin);
     return user;
   } catch (error) {
     console.error('Error updating user role:', error);
@@ -118,11 +114,15 @@ export const updateUserRole = async (uid: string, role: string, isAdmin: boolean
 // Update user profile
 export const updateUserProfile = async (uid: string, profileData: Partial<IUser>): Promise<IUser | null> => {
   try {
-    const user = await User.findOneAndUpdate(
-      { uid },
-      { $set: profileData },
-      { new: true }
-    );
+    // Get existing user data
+    const existingUser = await fetchUserByUid(uid);
+    if (!existingUser) return null;
+    
+    // Merge existing data with new profile data
+    const updatedUser = { ...existingUser, ...profileData };
+    
+    // Update the user
+    const user = await createOrUpdateUser(updatedUser);
     return user;
   } catch (error) {
     console.error('Error updating user profile:', error);

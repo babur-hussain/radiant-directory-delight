@@ -1,10 +1,20 @@
 
-import { connectToMongoDB, mongoose } from '../config/mongodb';
-import { SubscriptionPackage, ISubscriptionPackage } from '../models/SubscriptionPackage';
-import { Business, IBusiness } from '../models/Business';
-import { setupMongoDB } from '@/utils/setupMongoDB';
-import { Subscription, ISubscription } from '@/models/Subscription';
-import { User, IUser } from '@/models/User';
+import { 
+  fetchSubscriptionPackages as apiFetchSubscriptionPackages,
+  fetchSubscriptionPackagesByType as apiFetchSubscriptionPackagesByType,
+  saveSubscriptionPackage as apiSaveSubscriptionPackage,
+  deleteSubscriptionPackage as apiDeleteSubscriptionPackage,
+  saveBusiness as apiSaveBusiness,
+  deleteBusiness as apiDeleteBusiness,
+  getAllUsers as apiFetchUsers,
+  fetchUserByUid as apiFetchUserByUid,
+  getUserSubscription as apiFetchUserSubscriptions,
+  fetchBusinesses as apiFetchBusinesses
+} from '../api/mongoAPI';
+import { ISubscriptionPackage } from '../models/SubscriptionPackage';
+import { IBusiness } from '../models/Business';
+import { IUser } from '../models/User';
+import { ISubscription } from '@/models/Subscription';
 import { syncPackageToFirebase } from '@/utils/syncMongoFirebase';
 
 /**
@@ -12,26 +22,7 @@ import { syncPackageToFirebase } from '@/utils/syncMongoFirebase';
  */
 export const fetchSubscriptionPackages = async (): Promise<ISubscriptionPackage[]> => {
   try {
-    // First ensure MongoDB is connected
-    const connected = await connectToMongoDB();
-    if (!connected) {
-      throw new Error("Could not connect to MongoDB");
-    }
-    
-    // Attempt to get the SubscriptionPackage model
-    let packageModel;
-    try {
-      packageModel = mongoose.model('SubscriptionPackage');
-    } catch (modelError) {
-      console.error("Model not found, initializing MongoDB:", modelError);
-      // If model not found, try to initialize MongoDB first
-      await setupMongoDB();
-      // Then try again
-      packageModel = mongoose.model('SubscriptionPackage');
-    }
-    
-    // Now fetch all packages
-    const packages = await packageModel.find().lean();
+    const packages = await apiFetchSubscriptionPackages();
     
     if (!packages || packages.length === 0) {
       console.warn("No subscription packages found in MongoDB");
@@ -62,26 +53,7 @@ export const fetchSubscriptionPackages = async (): Promise<ISubscriptionPackage[
  */
 export const fetchSubscriptionPackagesByType = async (type: "Business" | "Influencer"): Promise<ISubscriptionPackage[]> => {
   try {
-    // First ensure MongoDB is connected
-    const connected = await connectToMongoDB();
-    if (!connected) {
-      throw new Error("Could not connect to MongoDB");
-    }
-    
-    // Get the SubscriptionPackage model
-    let packageModel;
-    try {
-      packageModel = mongoose.model('SubscriptionPackage');
-    } catch (modelError) {
-      console.error("Model not found, initializing MongoDB:", modelError);
-      // If model not found, try to initialize MongoDB first
-      await setupMongoDB();
-      // Then try again
-      packageModel = mongoose.model('SubscriptionPackage');
-    }
-    
-    // Query by type
-    const packages = await packageModel.find({ type }).lean();
+    const packages = await apiFetchSubscriptionPackagesByType(type);
     
     if (!packages || packages.length === 0) {
       console.warn(`No ${type} subscription packages found in MongoDB`);
@@ -110,24 +82,6 @@ export const fetchSubscriptionPackagesByType = async (type: "Business" | "Influe
  */
 export const saveSubscriptionPackage = async (packageData: ISubscriptionPackage): Promise<ISubscriptionPackage> => {
   try {
-    // First ensure MongoDB is connected
-    const connected = await connectToMongoDB();
-    if (!connected) {
-      throw new Error("Could not connect to MongoDB");
-    }
-    
-    // Get the SubscriptionPackage model
-    let packageModel;
-    try {
-      packageModel = mongoose.model('SubscriptionPackage');
-    } catch (modelError) {
-      console.error("Model not found, initializing MongoDB:", modelError);
-      // If model not found, try to initialize MongoDB first
-      await setupMongoDB();
-      // Then try again
-      packageModel = mongoose.model('SubscriptionPackage');
-    }
-    
     console.log("Original package data to save:", packageData);
     
     // Ensure price is properly set for one-time payment packages
@@ -154,28 +108,13 @@ export const saveSubscriptionPackage = async (packageData: ISubscriptionPackage)
     
     console.log("Sanitized package data to save:", sanitizedPackage);
     
-    // Check if package with this ID already exists
-    const existingPackage = await packageModel.findOne({ id: packageData.id });
-    
-    let savedPackage;
-    if (existingPackage) {
-      // Update existing package
-      console.log("Updating existing package with ID:", packageData.id);
-      savedPackage = await packageModel.findOneAndUpdate(
-        { id: packageData.id },
-        sanitizedPackage,
-        { new: true }
-      );
-    } else {
-      // Create new package
-      console.log("Creating new package with ID:", packageData.id);
-      savedPackage = await packageModel.create(sanitizedPackage);
-    }
+    // Save to MongoDB via API
+    const savedPackage = await apiSaveSubscriptionPackage(sanitizedPackage);
     
     // Sync the package to Firebase
     try {
       console.log("Syncing package to Firebase:", packageData.id);
-      await syncPackageToFirebase(savedPackage.toObject());
+      await syncPackageToFirebase(savedPackage);
       console.log("Successfully synced package to Firebase");
     } catch (syncError) {
       console.error("Error syncing package to Firebase:", syncError);
@@ -195,22 +134,7 @@ export const saveSubscriptionPackage = async (packageData: ISubscriptionPackage)
  */
 export const deleteSubscriptionPackage = async (packageId: string): Promise<{ success: boolean }> => {
   try {
-    // First ensure MongoDB is connected
-    const connected = await connectToMongoDB();
-    if (!connected) {
-      throw new Error("Could not connect to MongoDB");
-    }
-    
-    // Get the SubscriptionPackage model
-    const packageModel = mongoose.model('SubscriptionPackage');
-    
-    // Delete the package
-    const result = await packageModel.deleteOne({ id: packageId });
-    
-    if (result.deletedCount === 0) {
-      throw new Error(`Package with ID ${packageId} not found`);
-    }
-    
+    await apiDeleteSubscriptionPackage(packageId);
     return { success: true };
   } catch (error) {
     console.error("Error deleting subscription package:", error);
@@ -223,12 +147,6 @@ export const deleteSubscriptionPackage = async (packageId: string): Promise<{ su
  */
 export async function saveBusiness(business: IBusiness): Promise<void> {
   try {
-    // Ensure MongoDB is initialized
-    const connected = await connectToMongoDB();
-    if (!connected) {
-      throw new Error("Failed to connect to MongoDB");
-    }
-    
     console.log("Saving business to MongoDB:", business);
     
     // Validate required fields
@@ -236,21 +154,20 @@ export async function saveBusiness(business: IBusiness): Promise<void> {
       throw new Error("Business name is required");
     }
     
-    // Update or create the business in MongoDB
-    await Business.findOneAndUpdate(
-      { id: business.id },
-      {
-        ...business,
-        // Ensure numeric fields are stored as numbers
-        rating: Number(business.rating),
-        reviews: Number(business.reviews),
-        latitude: Number(business.latitude || 0),
-        longitude: Number(business.longitude || 0),
-        // Ensure boolean fields are stored as booleans
-        featured: Boolean(business.featured)
-      },
-      { upsert: true, new: true }
-    );
+    // Format business data
+    const formattedBusiness = {
+      ...business,
+      // Ensure numeric fields are stored as numbers
+      rating: Number(business.rating),
+      reviews: Number(business.reviews),
+      latitude: Number(business.latitude || 0),
+      longitude: Number(business.longitude || 0),
+      // Ensure boolean fields are stored as booleans
+      featured: Boolean(business.featured)
+    };
+    
+    // Save to MongoDB via API
+    await apiSaveBusiness(formattedBusiness);
     
     console.log("Business saved successfully with ID:", business.id);
   } catch (error) {
@@ -264,14 +181,8 @@ export async function saveBusiness(business: IBusiness): Promise<void> {
  */
 export async function deleteBusiness(businessId: string): Promise<void> {
   try {
-    // Ensure MongoDB is initialized
-    const connected = await connectToMongoDB();
-    if (!connected) {
-      throw new Error("Failed to connect to MongoDB");
-    }
-    
     console.log("Deleting business with ID:", businessId);
-    await Business.deleteOne({ id: businessId });
+    await apiDeleteBusiness(businessId);
     console.log("Business deleted successfully");
   } catch (error) {
     console.error("Error deleting business:", error);
@@ -284,14 +195,7 @@ export async function deleteBusiness(businessId: string): Promise<void> {
  */
 export const fetchUsers = async (): Promise<IUser[]> => {
   try {
-    // Ensure MongoDB is connected
-    const connected = await connectToMongoDB();
-    if (!connected) {
-      throw new Error("Could not connect to MongoDB");
-    }
-    
-    // Get users from MongoDB
-    const users = await User.find().lean();
+    const users = await apiFetchUsers();
     return users;
   } catch (error) {
     console.error("Error fetching users:", error);
@@ -304,14 +208,7 @@ export const fetchUsers = async (): Promise<IUser[]> => {
  */
 export const fetchUserByUid = async (uid: string): Promise<IUser | null> => {
   try {
-    // Ensure MongoDB is connected
-    const connected = await connectToMongoDB();
-    if (!connected) {
-      throw new Error("Could not connect to MongoDB");
-    }
-    
-    // Get user from MongoDB
-    const user = await User.findOne({ uid }).lean();
+    const user = await apiFetchUserByUid(uid);
     return user;
   } catch (error) {
     console.error(`Error fetching user with UID ${uid}:`, error);
@@ -324,15 +221,8 @@ export const fetchUserByUid = async (uid: string): Promise<IUser | null> => {
  */
 export const fetchUserSubscriptions = async (userId: string): Promise<ISubscription[]> => {
   try {
-    // Ensure MongoDB is connected
-    const connected = await connectToMongoDB();
-    if (!connected) {
-      throw new Error("Could not connect to MongoDB");
-    }
-    
-    // Get subscriptions from MongoDB
-    const subscriptions = await Subscription.find({ userId }).lean();
-    return subscriptions;
+    const subscription = await apiFetchUserSubscriptions(userId);
+    return subscription ? [subscription] : [];
   } catch (error) {
     console.error(`Error fetching subscriptions for user ${userId}:`, error);
     throw error;
@@ -344,17 +234,12 @@ export const fetchUserSubscriptions = async (userId: string): Promise<ISubscript
  */
 export const fetchBusinesses = async (): Promise<IBusiness[]> => {
   try {
-    // Ensure MongoDB is connected
-    const connected = await connectToMongoDB();
-    if (!connected) {
-      throw new Error("Could not connect to MongoDB");
-    }
-    
-    // Get businesses from MongoDB
-    const businesses = await Business.find().lean();
+    const businesses = await apiFetchBusinesses();
     return businesses;
   } catch (error) {
     console.error("Error fetching businesses:", error);
     throw error;
   }
 };
+
+// Note: Additional utility functions will be added as needed
