@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RefreshCw, Save, Info, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -74,23 +75,25 @@ const PackageSectionsList: React.FC<PackageSectionsListProps> = ({
           
           {selectedPackage && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {availableSections.map((section) => (
-                  <div key={section} className="flex items-center justify-between space-x-2 p-2 border rounded">
-                    <Label htmlFor={`package-${section}`} className="flex-1 cursor-pointer">
-                      {section.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </Label>
-                    <Switch
-                      id={`package-${section}`}
-                      checked={packageSections.includes(section)}
-                      onCheckedChange={() => togglePackageSection(section)}
-                    />
-                  </div>
-                ))}
-              </div>
+              <ScrollArea className="max-h-[400px] pr-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {availableSections.map((section) => (
+                    <div key={section} className="flex items-center justify-between space-x-2 p-3 border rounded hover:bg-slate-50 transition-colors">
+                      <Label htmlFor={`package-${section}`} className="flex-1 cursor-pointer">
+                        {section.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Label>
+                      <Switch
+                        id={`package-${section}`}
+                        checked={packageSections.includes(section)}
+                        onCheckedChange={() => togglePackageSection(section)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
               
               <div className="flex justify-end mt-4">
-                <Button onClick={savePackageSections}>
+                <Button onClick={savePackageSections} className="mt-4">
                   <Save className="h-4 w-4 mr-2" />
                   Save Package Settings
                 </Button>

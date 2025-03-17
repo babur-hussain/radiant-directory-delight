@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -271,72 +270,76 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ registerType, onBack, onClo
       {registerType === "Influencer" && (
         <Form {...influencerForm}>
           <form onSubmit={influencerForm.handleSubmit(handleInfluencerSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name*</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="John Doe"
-                  className="pl-10"
-                  {...influencerForm.register("fullName")}
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name*</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="John Doe"
+                    className="pl-10"
+                    {...influencerForm.register("fullName")}
+                  />
+                </div>
+                {influencerForm.formState.errors.fullName && (
+                  <p className="text-sm text-red-500">{influencerForm.formState.errors.fullName.message}</p>
+                )}
               </div>
-              {influencerForm.formState.errors.fullName && (
-                <p className="text-sm text-red-500">{influencerForm.formState.errors.fullName.message}</p>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="email">Email*</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  className="pl-10"
-                  {...influencerForm.register("email")}
-                />
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">Email*</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    className="pl-10"
+                    {...influencerForm.register("email")}
+                  />
+                </div>
+                {influencerForm.formState.errors.email && (
+                  <p className="text-sm text-red-500">{influencerForm.formState.errors.email.message}</p>
+                )}
               </div>
-              {influencerForm.formState.errors.email && (
-                <p className="text-sm text-red-500">{influencerForm.formState.errors.email.message}</p>
-              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone*</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+1 (555) 000-0000"
-                  className="pl-10"
-                  {...influencerForm.register("phone")}
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone*</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="+1 (555) 000-0000"
+                    className="pl-10"
+                    {...influencerForm.register("phone")}
+                  />
+                </div>
+                {influencerForm.formState.errors.phone && (
+                  <p className="text-sm text-red-500">{influencerForm.formState.errors.phone.message}</p>
+                )}
               </div>
-              {influencerForm.formState.errors.phone && (
-                <p className="text-sm text-red-500">{influencerForm.formState.errors.phone.message}</p>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Password*</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  className="pl-10"
-                  {...influencerForm.register("password")}
-                />
+              
+              <div className="space-y-2">
+                <Label htmlFor="password">Password*</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    className="pl-10"
+                    {...influencerForm.register("password")}
+                  />
+                </div>
+                {influencerForm.formState.errors.password && (
+                  <p className="text-sm text-red-500">{influencerForm.formState.errors.password.message}</p>
+                )}
               </div>
-              {influencerForm.formState.errors.password && (
-                <p className="text-sm text-red-500">{influencerForm.formState.errors.password.message}</p>
-              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -369,44 +372,46 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ registerType, onBack, onClo
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="niche">Niche/Category*</Label>
-              <Select 
-                onValueChange={(value) => influencerForm.setValue("niche", value)}
-                defaultValue={influencerForm.getValues("niche")}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your niche" />
-                </SelectTrigger>
-                <SelectContent>
-                  {influencerNiches.map((niche) => (
-                    <SelectItem key={niche} value={niche}>{niche}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {influencerForm.formState.errors.niche && (
-                <p className="text-sm text-red-500">{influencerForm.formState.errors.niche.message}</p>
-              )}
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="niche">Niche/Category*</Label>
+                <Select 
+                  onValueChange={(value) => influencerForm.setValue("niche", value)}
+                  defaultValue={influencerForm.getValues("niche")}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your niche" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {influencerNiches.map((niche) => (
+                      <SelectItem key={niche} value={niche}>{niche}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {influencerForm.formState.errors.niche && (
+                  <p className="text-sm text-red-500">{influencerForm.formState.errors.niche.message}</p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="followersCount">Followers Count*</Label>
-              <Select 
-                onValueChange={(value) => influencerForm.setValue("followersCount", value)}
-                defaultValue={influencerForm.getValues("followersCount")}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select followers range" />
-                </SelectTrigger>
-                <SelectContent>
-                  {followersRanges.map((range) => (
-                    <SelectItem key={range} value={range}>{range}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {influencerForm.formState.errors.followersCount && (
-                <p className="text-sm text-red-500">{influencerForm.formState.errors.followersCount.message}</p>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="followersCount">Followers Count*</Label>
+                <Select 
+                  onValueChange={(value) => influencerForm.setValue("followersCount", value)}
+                  defaultValue={influencerForm.getValues("followersCount")}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select followers range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {followersRanges.map((range) => (
+                      <SelectItem key={range} value={range}>{range}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {influencerForm.formState.errors.followersCount && (
+                  <p className="text-sm text-red-500">{influencerForm.formState.errors.followersCount.message}</p>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -513,109 +518,115 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ registerType, onBack, onClo
       {registerType === "Business" && (
         <Form {...businessForm}>
           <form onSubmit={businessForm.handleSubmit(handleBusinessSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="businessName">Business Name*</Label>
-              <div className="relative">
-                <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="businessName"
-                  type="text"
-                  placeholder="Your Business Name"
-                  className="pl-10"
-                  {...businessForm.register("businessName")}
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="businessName">Business Name*</Label>
+                <div className="relative">
+                  <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="businessName"
+                    type="text"
+                    placeholder="Your Business Name"
+                    className="pl-10"
+                    {...businessForm.register("businessName")}
+                  />
+                </div>
+                {businessForm.formState.errors.businessName && (
+                  <p className="text-sm text-red-500">{businessForm.formState.errors.businessName.message}</p>
+                )}
               </div>
-              {businessForm.formState.errors.businessName && (
-                <p className="text-sm text-red-500">{businessForm.formState.errors.businessName.message}</p>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="ownerName">Owner Name*</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="ownerName"
-                  type="text"
-                  placeholder="John Doe"
-                  className="pl-10"
-                  {...businessForm.register("ownerName")}
-                />
+              <div className="space-y-2">
+                <Label htmlFor="ownerName">Owner Name*</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="ownerName"
+                    type="text"
+                    placeholder="John Doe"
+                    className="pl-10"
+                    {...businessForm.register("ownerName")}
+                  />
+                </div>
+                {businessForm.formState.errors.ownerName && (
+                  <p className="text-sm text-red-500">{businessForm.formState.errors.ownerName.message}</p>
+                )}
               </div>
-              {businessForm.formState.errors.ownerName && (
-                <p className="text-sm text-red-500">{businessForm.formState.errors.ownerName.message}</p>
-              )}
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="email">Email*</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="business@example.com"
-                  className="pl-10"
-                  {...businessForm.register("email")}
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email*</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="business@example.com"
+                    className="pl-10"
+                    {...businessForm.register("email")}
+                  />
+                </div>
+                {businessForm.formState.errors.email && (
+                  <p className="text-sm text-red-500">{businessForm.formState.errors.email.message}</p>
+                )}
               </div>
-              {businessForm.formState.errors.email && (
-                <p className="text-sm text-red-500">{businessForm.formState.errors.email.message}</p>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone*</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+1 (555) 000-0000"
-                  className="pl-10"
-                  {...businessForm.register("phone")}
-                />
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone*</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="+1 (555) 000-0000"
+                    className="pl-10"
+                    {...businessForm.register("phone")}
+                  />
+                </div>
+                {businessForm.formState.errors.phone && (
+                  <p className="text-sm text-red-500">{businessForm.formState.errors.phone.message}</p>
+                )}
               </div>
-              {businessForm.formState.errors.phone && (
-                <p className="text-sm text-red-500">{businessForm.formState.errors.phone.message}</p>
-              )}
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="password">Password*</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  className="pl-10"
-                  {...businessForm.register("password")}
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="password">Password*</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    className="pl-10"
+                    {...businessForm.register("password")}
+                  />
+                </div>
+                {businessForm.formState.errors.password && (
+                  <p className="text-sm text-red-500">{businessForm.formState.errors.password.message}</p>
+                )}
               </div>
-              {businessForm.formState.errors.password && (
-                <p className="text-sm text-red-500">{businessForm.formState.errors.password.message}</p>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="businessCategory">Business Category*</Label>
-              <Select 
-                onValueChange={(value) => businessForm.setValue("businessCategory", value)}
-                defaultValue={businessForm.getValues("businessCategory")}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select business category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {businessCategories.map((category) => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {businessForm.formState.errors.businessCategory && (
-                <p className="text-sm text-red-500">{businessForm.formState.errors.businessCategory.message}</p>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="businessCategory">Business Category*</Label>
+                <Select 
+                  onValueChange={(value) => businessForm.setValue("businessCategory", value)}
+                  defaultValue={businessForm.getValues("businessCategory")}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select business category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {businessCategories.map((category) => (
+                      <SelectItem key={category} value={category}>{category}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {businessForm.formState.errors.businessCategory && (
+                  <p className="text-sm text-red-500">{businessForm.formState.errors.businessCategory.message}</p>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
