@@ -34,8 +34,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
     }
   };
 
+  // Handle close with cleanup
+  const handleClose = (open: boolean) => {
+    if (!open) {
+      // Reset state when closing modal
+      setTimeout(() => {
+        setAuthTab("login");
+        setRegisterType(null);
+      }, 200); // Delay to allow animation to complete
+    }
+    onOpenChange(open);
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 sticky top-0 bg-background z-10">
           <DialogTitle className="text-xl font-bold text-center">
