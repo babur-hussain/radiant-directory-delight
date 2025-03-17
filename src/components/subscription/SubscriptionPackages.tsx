@@ -1,6 +1,6 @@
 
 import React, { useEffect } from "react";
-import { Check, AlertCircle } from "lucide-react";
+import { Check, AlertCircle, Info } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserRole } from "@/contexts/AuthContext";
@@ -60,12 +60,12 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
   if (!packages || packages.length === 0) {
     return (
       <div className="text-center py-10">
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
+        <Alert className="max-w-xl mx-auto">
+          <Info className="h-4 w-4" />
           <AlertTitle>No packages available</AlertTitle>
           <AlertDescription>
             No subscription packages are currently available for {userRole}s.
-            Please contact an administrator to set up subscription packages.
+            Please check back later or contact an administrator.
           </AlertDescription>
         </Alert>
       </div>

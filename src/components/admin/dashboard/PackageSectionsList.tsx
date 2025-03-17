@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, Save } from "lucide-react";
+import { RefreshCw, Save, Info } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface PackageSectionsListProps {
   packages: any[];
@@ -45,44 +46,57 @@ const PackageSectionsList: React.FC<PackageSectionsListProps> = ({
         </Button>
       </div>
       
-      <Select value={selectedPackage} onValueChange={setSelectedPackage}>
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select a package" />
-        </SelectTrigger>
-        <SelectContent>
-          {packages.map((pkg) => (
-            <SelectItem key={pkg.id} value={pkg.id}>
-              {pkg.title} ({pkg.type})
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      
-      <Separator className="my-4" />
-      
-      {selectedPackage && (
+      {packages.length === 0 ? (
+        <Alert className="my-4">
+          <Info className="h-4 w-4" />
+          <AlertTitle>No packages available</AlertTitle>
+          <AlertDescription>
+            No subscription packages have been created yet. Please add packages through the Subscription Management 
+            section before configuring dashboard sections.
+          </AlertDescription>
+        </Alert>
+      ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {availableSections.map((section) => (
-              <div key={section} className="flex items-center justify-between space-x-2 p-2 border rounded">
-                <Label htmlFor={`package-${section}`} className="flex-1 cursor-pointer">
-                  {section.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </Label>
-                <Switch
-                  id={`package-${section}`}
-                  checked={packageSections.includes(section)}
-                  onCheckedChange={() => togglePackageSection(section)}
-                />
-              </div>
-            ))}
-          </div>
+          <Select value={selectedPackage} onValueChange={setSelectedPackage}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a package" />
+            </SelectTrigger>
+            <SelectContent>
+              {packages.map((pkg) => (
+                <SelectItem key={pkg.id} value={pkg.id}>
+                  {pkg.title} ({pkg.type})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           
-          <div className="flex justify-end mt-4">
-            <Button onClick={savePackageSections}>
-              <Save className="h-4 w-4 mr-2" />
-              Save Package Settings
-            </Button>
-          </div>
+          <Separator className="my-4" />
+          
+          {selectedPackage && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {availableSections.map((section) => (
+                  <div key={section} className="flex items-center justify-between space-x-2 p-2 border rounded">
+                    <Label htmlFor={`package-${section}`} className="flex-1 cursor-pointer">
+                      {section.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </Label>
+                    <Switch
+                      id={`package-${section}`}
+                      checked={packageSections.includes(section)}
+                      onCheckedChange={() => togglePackageSection(section)}
+                    />
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex justify-end mt-4">
+                <Button onClick={savePackageSections}>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Package Settings
+                </Button>
+              </div>
+            </>
+          )}
         </>
       )}
     </>
