@@ -87,6 +87,13 @@ const mongoose = {
   }
 };
 
+// Define an interface for our document methods
+interface MockDocumentMethods {
+  save: () => Promise<any>;
+  toObject: () => any;
+  [key: string]: any;
+}
+
 // Helper to create a model mock
 function createModelMock(name: string) {
   // Create mock collection methods
@@ -101,19 +108,26 @@ function createModelMock(name: string) {
   };
 
   // Create a constructor function that returns a document
-  const Constructor = function(this: any, data: any) {
+  // Fixed constructor by properly typing it and ensuring methods are added
+  function Constructor(this: MockDocumentMethods, data: any) {
     if (!(this instanceof Constructor)) {
       return new (Constructor as any)(data);
     }
     
+    // Copy all data properties to this instance
     Object.assign(this, data);
     
-    // Add common document methods
-    this.save = () => Promise.resolve(this);
-    this.toObject = () => ({ ...data });
+    // Add document methods explicitly
+    this.save = function() {
+      return Promise.resolve(this);
+    };
+    
+    this.toObject = function() {
+      return { ...data };
+    };
     
     return this;
-  };
+  }
   
   // Add static methods to constructor
   Object.assign(Constructor, {
