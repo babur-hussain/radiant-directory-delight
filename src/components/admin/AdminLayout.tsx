@@ -17,7 +17,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   return (
-    <div className="admin-layout flex min-h-screen w-full bg-gray-50 dark:bg-gray-900 pt-16">
+    <div className="admin-layout flex min-h-screen w-full bg-gray-50 dark:bg-gray-900">
       {/* Desktop Sidebar - fixed position so it doesn't collapse */}
       <div className="hidden md:block md:w-64 flex-shrink-0">
         <div className="fixed h-screen w-64 overflow-y-auto border-r bg-white dark:bg-gray-800 pt-16">
@@ -37,8 +37,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                   <span className="sr-only">Toggle menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-64 z-[99999]">
-                <div className="h-full overflow-y-auto pt-16">
+              <SheetContent side="left" className="p-0 w-64 pt-16 z-[99999]">
+                <div className="h-full overflow-y-auto">
                   <AdminSidebar onItemClick={() => setIsMobileMenuOpen(false)} />
                 </div>
               </SheetContent>

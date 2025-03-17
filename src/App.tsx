@@ -37,7 +37,7 @@ const App = () => {
           <AuthProvider>
             <div className="relative min-h-screen bg-background">
               <Header />
-              <main className="min-h-[50vh]">
+              <main>
                 <Suspense fallback={
                   <div className="flex items-center justify-center min-h-[80vh]">
                     <Loading size="lg" message="Loading content..." />

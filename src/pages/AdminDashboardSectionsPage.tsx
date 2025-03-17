@@ -26,11 +26,11 @@ const AdminDashboardSectionsPage = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6 w-full max-w-full">
+      <div className="space-y-6 w-full">
         <div className="flex justify-between items-center flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <ListChecks className="h-6 w-6 text-primary" />
-            <h1 className="text-3xl font-bold">Dashboard Sections</h1>
+            <h1 className="text-2xl md:text-3xl font-bold">Dashboard Sections</h1>
           </div>
           <Button 
             className="flex items-center gap-2"
@@ -46,14 +46,14 @@ const AdminDashboardSectionsPage = () => {
           </Button>
         </div>
         
-        <Card className="bg-card border shadow-sm">
+        <Card className="bg-card border shadow-sm w-full">
           <CardHeader>
             <CardTitle>Dashboard Section Management</CardTitle>
             <CardDescription>
               Configure and manage dashboard sections for different user types and subscription packages
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-0 sm:p-6">
+          <CardContent className="p-0 sm:p-6 overflow-x-hidden">
             <AdminDashboardTabs />
           </CardContent>
         </Card>
