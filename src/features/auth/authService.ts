@@ -1,6 +1,6 @@
 
 import { User as FirebaseUser } from 'firebase/auth';
-import { fetchUserByUid, createOrUpdateUser, updateUserLoginTimestamp, updateUserRole as apiUpdateUserRole, getAllUsers as apiGetAllUsers } from '../../api/mongoAPI';
+import { fetchUserByUid, createOrUpdateUser, updateUserLoginTimestamp as apiUpdateUserLoginTimestamp, updateUserRole as apiUpdateUserRole, getAllUsers as apiGetAllUsers } from '../../api/mongoAPI';
 import { IUser } from '../../models/User';
 
 // Get user by Firebase UID from MongoDB
@@ -81,9 +81,9 @@ export const createUserIfNotExists = async (firebaseUser: any): Promise<IUser | 
 };
 
 // Update user's last login timestamp
-export const updateUserLoginTimestamp = async (uid: string): Promise<void> => {
+export const updateUserLogin = async (uid: string): Promise<void> => {
   try {
-    await updateUserLoginTimestamp(uid);
+    await apiUpdateUserLoginTimestamp(uid);
   } catch (error) {
     console.error('Error updating user login timestamp:', error);
   }

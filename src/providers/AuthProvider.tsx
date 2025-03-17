@@ -1,3 +1,4 @@
+
 import React, { 
   createContext, 
   useEffect, 
@@ -17,7 +18,7 @@ import { auth } from '../config/firebase';
 import { 
   getUserByUid, 
   createUserIfNotExists, 
-  updateUserLoginTimestamp,
+  updateUserLogin,
   updateUserRole as updateUserRoleService
 } from '../features/auth/authService';
 import { User, UserRole, AuthContextType } from '../types/auth';
@@ -53,7 +54,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             user = await createUserIfNotExists(firebaseUser);
           } else {
             // Update last login time
-            await updateUserLoginTimestamp(firebaseUser.uid);
+            await updateUserLogin(firebaseUser.uid);
           }
 
           // Special case for development
