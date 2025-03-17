@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,23 +53,19 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     const initAndLoad = async () => {
       setIsLoading(true);
       try {
-        // Ensure MongoDB is connected first
         const connected = await connectToMongoDB();
         if (!connected) {
           throw new Error("Could not connect to MongoDB");
         }
         
-        // Initialize MongoDB if needed
         try {
           await setupMongoDB((progress, message) => {
             console.log(`MongoDB setup: ${progress}% - ${message}`);
           });
         } catch (initError) {
           console.error("Error during MongoDB initialization:", initError);
-          // Continue to try loading packages even if initialization fails
         }
         
-        // Now try to load packages
         await loadPackages();
       } catch (error) {
         console.error("Error initializing MongoDB and loading packages:", error);
@@ -142,7 +137,8 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
 
   const handleEditPackage = (pkg: ISubscriptionPackage) => {
     console.log("Editing package:", pkg);
-    setSelectedPackage({...pkg});
+    const packageCopy = JSON.parse(JSON.stringify(pkg));
+    setSelectedPackage(packageCopy);
     setIsFormOpen(true);
   };
 
@@ -326,7 +322,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
           </TabsContent>
         </Tabs>
         
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <Dialog open={isFormOpen} onOpenChange={handleCloseForm}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -423,12 +419,12 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
           {packages.map((pkg) => (
             <TableRow key={pkg.id}>
               <TableCell className="font-medium">{pkg.title}</TableCell>
-              <TableCell>{pkg.price}</TableCell>
-              <TableCell>{pkg.setupFee || 0}</TableCell>
+              <TableCell>₹{pkg.price}</TableCell>
+              <TableCell>₹{pkg.setupFee || 0}</TableCell>
               <TableCell>
                 <Badge variant="outline">{pkg.paymentType === "one-time" ? "One-time" : "Recurring"}</Badge>
               </TableCell>
-              <TableCell>{pkg.paymentType === "one-time" ? "N/A" : `${pkg.durationMonths} months`}</TableCell>
+              <TableCell>{pkg.durationMonths ? `${pkg.durationMonths} months` : 'N/A'}</TableCell>
               <TableCell>
                 {pkg.popular ? (
                   <Badge>Popular</Badge>

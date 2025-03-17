@@ -1,4 +1,3 @@
-
 export interface SubscriptionPackage {
   id: string;
   title: string;
@@ -255,4 +254,9 @@ export const getPackageById = (packageId: string, packages?: SubscriptionPackage
     return packages.find(pkg => pkg.id === packageId);
   }
   return [...businessPackages, ...influencerPackages].find(pkg => pkg.id === packageId);
+};
+
+// Function to format price with ₹ symbol
+export const formatPrice = (price: number): string => {
+  return `₹${price.toLocaleString('en-IN')}`;
 };

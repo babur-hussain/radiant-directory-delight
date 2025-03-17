@@ -2,10 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, CreditCard, Shield } from 'lucide-react';
+import { AlertCircle, CreditCard, Shield, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import { loadRazorpayScript } from '@/lib/razorpay-utils';
+import { loadRazorpayScript, isRazorpayAvailable } from '@/utils/razorpay';
 import { useAuth } from '@/hooks/useAuth';
 
 interface RazorpayPaymentProps {
@@ -21,7 +21,9 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
 }) => {
   const { user } = useAuth();
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+  const [isLoadingScript, setIsLoadingScript] = useState(true);
   const [scriptError, setScriptError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   // Determine if this is a one-time package
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
@@ -34,26 +36,46 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   
   useEffect(() => {
     const loadScript = async () => {
+      setIsLoadingScript(true);
       try {
         await loadRazorpayScript();
         setIsScriptLoaded(true);
+        setScriptError(null);
       } catch (error) {
-        setScriptError('Failed to load payment gateway. Please try again later.');
         console.error('Error loading Razorpay script:', error);
+        setScriptError('Failed to load payment gateway. Please try again later.');
+      } finally {
+        setIsLoadingScript(false);
       }
     };
     
     loadScript();
-  }, []);
+    
+    // Retry loading if it failed initially
+    if (scriptError) {
+      const retryTimeout = setTimeout(() => {
+        console.log("Retrying Razorpay script load");
+        loadScript();
+      }, 3000);
+      
+      return () => clearTimeout(retryTimeout);
+    }
+  }, [scriptError]);
   
   const handlePayment = () => {
-    if (!window.Razorpay) {
-      setScriptError('Payment gateway is not available. Please try again later.');
+    if (isProcessing) return;
+    
+    setIsProcessing(true);
+    
+    if (!isRazorpayAvailable()) {
+      setScriptError('Payment gateway is not available. Please try refreshing the page.');
+      setIsProcessing(false);
       return;
     }
     
     if (!user) {
       onFailure(new Error('User authentication required'));
+      setIsProcessing(false);
       return;
     }
     
@@ -76,12 +98,13 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       handler: function(response: any) {
         // Add payment type to the response
         response.paymentType = selectedPackage.paymentType || "recurring";
+        setIsProcessing(false);
         onSuccess(response);
       },
       prefill: {
         name: user.displayName || user.name || '',
         email: user.email || '',
-        contact: '' // Remove phoneNumber reference as it doesn't exist in User type
+        contact: user.phoneNumber || ''
       },
       notes: {
         package_id: selectedPackage.id,
@@ -94,6 +117,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       modal: {
         ondismiss: function() {
           console.log('Payment modal dismissed');
+          setIsProcessing(false);
         }
       }
     };
@@ -103,6 +127,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       razorpay.open();
     } catch (error) {
       console.error('Error opening Razorpay:', error);
+      setIsProcessing(false);
       onFailure(error);
     }
   };
@@ -112,7 +137,17 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Payment Error</AlertTitle>
-        <AlertDescription>{scriptError}</AlertDescription>
+        <AlertDescription>
+          {scriptError}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mt-2 w-full"
+            onClick={() => setScriptError(null)}
+          >
+            Try Again
+          </Button>
+        </AlertDescription>
       </Alert>
     );
   }
@@ -128,9 +163,9 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           <div className="flex justify-between border-b pb-2">
             <span className="font-medium">{selectedPackage.title}</span>
             <span className="font-medium">
-              {isOneTimePackage 
-                ? `₹${selectedPackage.price || 999}` // Default to 999 if price is 0
-                : `₹${selectedPackage.setupFee || 0}`}
+              ₹{isOneTimePackage 
+                ? (selectedPackage.price || 999) // Default to 999 if price is 0
+                : (selectedPackage.setupFee || 0)}
             </span>
           </div>
           
@@ -163,12 +198,21 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         <Button 
           onClick={handlePayment} 
           className="w-full" 
-          disabled={!isScriptLoaded}
+          disabled={!isScriptLoaded || isLoadingScript || isProcessing}
         >
-          <CreditCard className="mr-2 h-4 w-4" />
-          {isOneTimePackage 
-            ? `Pay ₹${selectedPackage.price || 999}` // Default to 999 if price is 0
-            : `Pay ₹${selectedPackage.setupFee || 0}`}
+          {isLoadingScript || isProcessing ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {isLoadingScript ? 'Loading...' : 'Processing...'}
+            </>
+          ) : (
+            <>
+              <CreditCard className="mr-2 h-4 w-4" />
+              {isOneTimePackage 
+                ? `Pay ₹${selectedPackage.price || 999}` // Default to 999 if price is 0
+                : `Pay ₹${selectedPackage.setupFee || 0}`}
+            </>
+          )}
         </Button>
         <p className="text-xs text-center text-muted-foreground">
           By proceeding, you agree to our Terms of Service and Privacy Policy

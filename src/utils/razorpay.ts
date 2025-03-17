@@ -23,6 +23,13 @@ export interface RazorpayError {
   };
 }
 
+// Define Razorpay window interface
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
 /**
  * Load the Razorpay script
  * @returns A promise that resolves when the script is loaded

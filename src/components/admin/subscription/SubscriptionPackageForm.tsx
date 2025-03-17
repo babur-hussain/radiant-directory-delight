@@ -265,7 +265,7 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
                   />
                 </FormControl>
                 <FormDescription>
-                  {paymentType === "one-time" && "The full one-time payment amount for this package"}
+                  {paymentType === "one-time" && "The full one-time payment amount for this package (₹)"}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
