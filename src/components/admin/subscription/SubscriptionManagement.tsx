@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -137,12 +138,16 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
 
   const handleEditPackage = (pkg: ISubscriptionPackage) => {
     console.log("Editing package:", pkg);
+    // Make a deep copy to avoid reference issues
     const packageCopy = JSON.parse(JSON.stringify(pkg));
     setSelectedPackage(packageCopy);
+    // Explicitly set the form to open
     setIsFormOpen(true);
+    console.log("Form open state after edit click:", isFormOpen);
   };
 
   const handleCloseForm = () => {
+    console.log("Closing form");
     setIsFormOpen(false);
     setSelectedPackage(null);
   };
@@ -322,7 +327,8 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
           </TabsContent>
         </Tabs>
         
-        <Dialog open={isFormOpen} onOpenChange={handleCloseForm}>
+        {/* Use controlled approach for Dialog */}
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -332,25 +338,27 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
                 Fill in the details for the subscription package
               </DialogDescription>
             </DialogHeader>
-            <SubscriptionPackageForm
-              initialData={selectedPackage || {
-                id: nanoid(),
-                title: "",
-                price: 0,
-                monthlyPrice: 0,
-                setupFee: 0,
-                durationMonths: 12,
-                shortDescription: "",
-                fullDescription: "",
-                features: [],
-                popular: false,
-                type: activeTab === "business" ? "Business" : "Influencer",
-                termsAndConditions: "",
-                paymentType: "recurring"
-              }}
-              onSubmit={handleSavePackage}
-              onCancel={handleCloseForm}
-            />
+            {isFormOpen && (
+              <SubscriptionPackageForm
+                initialData={selectedPackage || {
+                  id: nanoid(),
+                  title: "",
+                  price: 0,
+                  monthlyPrice: 0,
+                  setupFee: 0,
+                  durationMonths: 12,
+                  shortDescription: "",
+                  fullDescription: "",
+                  features: [],
+                  popular: false,
+                  type: activeTab === "business" ? "Business" : "Influencer",
+                  termsAndConditions: "",
+                  paymentType: "recurring"
+                }}
+                onSubmit={handleSavePackage}
+                onCancel={handleCloseForm}
+              />
+            )}
           </DialogContent>
         </Dialog>
         
