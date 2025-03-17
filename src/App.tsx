@@ -8,28 +8,25 @@ import AuthProvider from "./providers/AuthProvider";
 import AppRoutes from "./routes";
 import Header from "./components/Header";
 import "./App.css";
-import { Suspense, useEffect } from "react";
+import { Suspense } from "react";
 import Loading from "./components/ui/loading";
 
-// Create a new QueryClient with more lenient settings
+// Create a new QueryClient with lenient settings for better error handling
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: 10000,
+      onError: (error) => {
+        console.log("Query error:", error);
+      }
     },
   },
 });
 
 const App = () => {
-  useEffect(() => {
-    console.log("App component mounted");
-    
-    return () => {
-      console.log("App component unmounting");
-    };
-  }, []);
+  console.log("App component rendering");
 
   return (
     <QueryClientProvider client={queryClient}>

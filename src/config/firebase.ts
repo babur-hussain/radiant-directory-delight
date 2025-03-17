@@ -4,7 +4,7 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Your web app's Firebase configuration
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCqX6BZYpwqf0iLeCRNmjB2NP_MEr4kDWw",
   authDomain: "grow-bharat-vyapaar.firebaseapp.com",
@@ -15,11 +15,8 @@ const firebaseConfig = {
   measurementId: "G-0QDRL2SSJ1"
 };
 
-let app;
-let auth;
-let db;
-let storage;
-let googleProvider;
+// Initialize Firebase services with safe fallbacks
+let app, auth, db, storage, googleProvider;
 let analytics = {
   logEvent: (...args) => {
     console.log("Analytics event (stub):", args);
@@ -27,48 +24,27 @@ let analytics = {
   }
 };
 
+// Suppress the specific error about emitWarning
+window.console.warn = function(...args) {
+  if (args[0] && typeof args[0] === 'string' && 
+     (args[0].includes('emitWarning') || 
+      args[0].includes('enableMultiTabIndexedDbPersistence'))) {
+    return; // Skip these warnings
+  }
+  // @ts-ignore
+  return originalWarn.apply(this, args);
+};
+
 try {
-  // Initialize Firebase
-  console.log("Initializing Firebase...");
   app = initializeApp(firebaseConfig);
-  
-  // Initialize services
-  try { auth = getAuth(app); console.log("Firebase Auth initialized"); } 
-  catch (error) { console.error("Failed to initialize Firebase Auth:", error); auth = {}; }
-  
-  try { db = getFirestore(app); console.log("Firestore initialized"); } 
-  catch (error) { console.error("Failed to initialize Firestore:", error); db = {}; }
-  
-  try { storage = getStorage(app); console.log("Firebase Storage initialized"); } 
-  catch (error) { console.error("Failed to initialize Firebase Storage:", error); storage = {}; }
-  
-  try {
-    googleProvider = new GoogleAuthProvider();
-    googleProvider.setCustomParameters({ prompt: 'select_account' });
-    console.log("Google Auth Provider initialized");
-  } catch (error) {
-    console.error("Failed to initialize Google Auth Provider:", error);
-    googleProvider = {};
-  }
-  
-  // Suppress the warning that causes the emitWarning error
-  // This is a workaround for the "emitWarning is not a function" error
-  if (window && window.console) {
-    const originalWarn = window.console.warn;
-    window.console.warn = (...args) => {
-      // Skip warnings about emitWarning
-      if (args[0] && typeof args[0] === 'string' && 
-          (args[0].includes('emitWarning') || 
-           args[0].includes('enableMultiTabIndexedDbPersistence'))) {
-        return;
-      }
-      originalWarn.apply(window.console, args);
-    };
-  }
-  
-  console.log("Firebase services initialized successfully");
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
+  googleProvider = new GoogleAuthProvider();
+  console.log("Firebase initialized successfully");
 } catch (error) {
-  console.error("Failed to initialize Firebase:", error);
+  console.error("Firebase initialization error:", error);
+  // Create empty objects as fallbacks
   app = {};
   auth = {};
   db = {};

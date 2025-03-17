@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import React from 'react';
 import Footer from '@/components/Footer';
 import HeroSection from '@/components/HeroSection';
 import CategorySection from '@/components/CategorySection';
@@ -9,19 +9,10 @@ import CallToAction from '@/components/CallToAction';
 import CtaSection from '@/components/CtaSection';
 
 const Index = () => {
-  // Scroll to top when component mounts
-  useEffect(() => {
-    console.log("Index page mounted");
-    window.scrollTo(0, 0);
-    
-    return () => {
-      console.log("Index page unmounting");
-    };
-  }, []);
-
-  console.log("Rendering Index page content");
+  console.log("Rendering Index page");
+  
   return (
-    <>
+    <div className="index-page">
       <HeroSection />
       <CtaSection />
       <CategorySection />
@@ -29,7 +20,7 @@ const Index = () => {
       <TestimonialSection />
       <CallToAction />
       <Footer />
-    </>
+    </div>
   );
 };
 
