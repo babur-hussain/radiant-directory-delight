@@ -20,7 +20,7 @@ export interface IBusiness {
   image: string;
 }
 
-const BusinessSchema = new mongoose.Schema<IBusiness>({
+const BusinessSchema = new mongoose.Schema({
   id: { type: Number, required: true, unique: true },
   name: { type: String, required: true },
   description: { type: String, default: '' },
@@ -33,7 +33,7 @@ const BusinessSchema = new mongoose.Schema<IBusiness>({
   reviews: { type: Number, default: 0 },
   latitude: { type: Number, default: 0 },
   longitude: { type: Number, default: 0 },
-  hours: { type: Map, of: String, default: {} },
+  hours: { type: Object, default: {} },
   tags: [{ type: String }],
   featured: { type: Boolean, default: false },
   image: { type: String, default: '' }
@@ -44,4 +44,4 @@ BusinessSchema.index({ category: 1 });
 BusinessSchema.index({ featured: 1 });
 BusinessSchema.index({ name: 1 });
 
-export const Business = mongoose.model<IBusiness>('Business', BusinessSchema);
+export const Business = mongoose.model('Business', BusinessSchema);

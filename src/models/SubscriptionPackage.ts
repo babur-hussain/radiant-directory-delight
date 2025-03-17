@@ -21,7 +21,7 @@ export interface ISubscriptionPackage {
   dashboardSections?: string[];
 }
 
-const SubscriptionPackageSchema = new mongoose.Schema<ISubscriptionPackage>({
+const SubscriptionPackageSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   title: { type: String, required: true },
   price: { type: Number, required: true },
@@ -68,7 +68,9 @@ SubscriptionPackageSchema.pre('save', function(next) {
       this.billingCycle = 'yearly';
     }
   }
-  next();
+  
+  // Mock next function for browser environment
+  if (typeof next === 'function') next();
 });
 
-export const SubscriptionPackage = mongoose.model<ISubscriptionPackage>('SubscriptionPackage', SubscriptionPackageSchema);
+export const SubscriptionPackage = mongoose.model('SubscriptionPackage', SubscriptionPackageSchema);

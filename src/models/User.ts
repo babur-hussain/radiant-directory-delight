@@ -10,7 +10,7 @@ export interface IUser {
   photoURL: string | null;
   createdAt: Date;
   lastLogin: Date;
-  subscription?: mongoose.Types.ObjectId | null;
+  subscription?: string | null; // Changed from mongoose.Types.ObjectId
   subscriptionId?: string;
   subscriptionStatus?: string;
   subscriptionPackage?: string;
@@ -18,7 +18,7 @@ export interface IUser {
   customDashboardSections?: string[];
 }
 
-const UserSchema = new mongoose.Schema<IUser>({
+const UserSchema = new mongoose.Schema({
   uid: { type: String, required: true, unique: true },
   name: { type: String, default: null },
   email: { type: String, default: null },
@@ -27,7 +27,7 @@ const UserSchema = new mongoose.Schema<IUser>({
   photoURL: { type: String, default: null },
   createdAt: { type: Date, default: Date.now },
   lastLogin: { type: Date, default: Date.now },
-  subscription: { type: mongoose.Schema.Types.ObjectId, ref: 'Subscription', default: null },
+  subscription: { type: String, default: null }, // Changed from mongoose.Schema.Types.ObjectId
   subscriptionId: { type: String, default: null },
   subscriptionStatus: { type: String, default: null },
   subscriptionPackage: { type: String, default: null },
@@ -51,4 +51,4 @@ UserSchema.methods.isUserAdmin = function(): boolean {
   return this.isAdmin === true || this.role === 'Admin' || this.role === 'admin';
 };
 
-export const User = mongoose.model<IUser>('User', UserSchema);
+export const User = mongoose.model('User', UserSchema);
