@@ -26,7 +26,7 @@ export interface ISubscription {
 }
 
 // Create a schema using the mongoose mock
-const SubscriptionSchema = new mongoose.Schema({
+const SubscriptionSchema = mongoose.Schema({
   id: { type: String, required: true, unique: true },
   packageId: { type: String, required: true },
   packageName: { type: String, required: true },

@@ -4,8 +4,6 @@ import SearchBar from './search/SearchBar';
 import PopularSearchTerms from './search/PopularSearchTerms';
 
 const HeroSection: React.FC = () => {
-  console.log("Rendering HeroSection component");
-  
   const handleTermClick = (term: string) => {
     console.log("Search term clicked:", term);
   };

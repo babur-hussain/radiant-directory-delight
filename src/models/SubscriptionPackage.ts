@@ -22,7 +22,7 @@ export interface ISubscriptionPackage {
 }
 
 // Create a schema using the mongoose mock
-const SubscriptionPackageSchema = new mongoose.Schema({
+const SubscriptionPackageSchema = mongoose.Schema({
   id: { type: String, required: true, unique: true },
   title: { type: String, required: true },
   price: { type: Number, required: true },
@@ -48,7 +48,7 @@ SubscriptionPackageSchema.index({ paymentType: 1 });
 SubscriptionPackageSchema.index({ price: 1 });
 
 // Pre-save middleware to ensure one-time packages have proper setup
-SubscriptionPackageSchema.pre('save', function(next) {
+SubscriptionPackageSchema.pre('save', function() {
   if (this.paymentType === 'one-time') {
     // For one-time packages, ensure price is set correctly
     if (!this.price || this.price <= 0) {

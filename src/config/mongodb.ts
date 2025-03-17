@@ -4,35 +4,66 @@ const mongoose = {
   connection: null,
   connect: () => Promise.resolve(true),
   Schema: function(schema: any) {
-    return {
-      index: () => ({}),
-      pre: (event: string, callback: Function) => {
-        if (typeof callback === 'function') callback();
-        return {};
+    const schemaObj = {
+      // Convert the schema definition to a usable object
+      ...schema,
+      // Add schema methods
+      index: () => schemaObj,
+      pre: (event: string, callback: any) => {
+        if (typeof callback === 'function') {
+          // Mock pre-save hook execution
+          try {
+            callback.call(schemaObj);
+          } catch (err) {
+            console.error("Error in pre hook:", err);
+          }
+        }
+        return schemaObj;
       },
       virtual: (name: string) => ({ 
-        get: (fn: Function) => ({}) 
+        get: (fn: Function) => schemaObj 
       }),
-      methods: {},
-      ...schema
+      methods: {}
     };
+    
+    return schemaObj;
   },
   model: function(name: string, schema: any) {
+    // Create a mock document that will be returned by queries
+    const createMockDocument = (data: any = {}) => {
+      return {
+        ...data,
+        toObject: () => ({ ...data }),
+        save: () => Promise.resolve(data)
+      };
+    };
+    
+    // Create a mock return with all required methods for model
     return {
-      find: () => ({ 
+      // Find methods
+      find: (query = {}) => ({ 
         lean: () => Promise.resolve([]),
         sort: () => ({ lean: () => Promise.resolve([]) })
       }),
-      findOne: () => ({ lean: () => Promise.resolve(null) }),
-      findOneAndUpdate: () => Promise.resolve({}),
-      deleteOne: () => Promise.resolve({ deletedCount: 1 }),
-      findOneAndDelete: () => Promise.resolve({}),
-      updateOne: () => Promise.resolve({ modifiedCount: 1 }),
-      countDocuments: () => Promise.resolve(0),
-      create: (data: any) => Promise.resolve({ 
-        ...data, 
-        toObject: () => data 
-      })
+      findOne: (query = {}) => ({ 
+        lean: () => Promise.resolve(null) 
+      }),
+      findOneAndUpdate: (query = {}, update = {}, options = {}) => Promise.resolve(createMockDocument()),
+      deleteOne: (query = {}) => Promise.resolve({ deletedCount: 1 }),
+      findOneAndDelete: (query = {}) => Promise.resolve(createMockDocument()),
+      updateOne: (query = {}, update = {}) => Promise.resolve({ modifiedCount: 1 }),
+      countDocuments: (query = {}) => Promise.resolve(0),
+      
+      // Create method
+      create: (data: any) => {
+        const doc = createMockDocument(data);
+        return Promise.resolve(doc);
+      },
+      
+      // Direct instantiation (new Model())
+      new: function(data: any) {
+        return createMockDocument(data);
+      }
     };
   },
   Types: {

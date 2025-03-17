@@ -19,7 +19,7 @@ export interface IUser {
 }
 
 // Create a schema using the mongoose mock
-const UserSchema = new mongoose.Schema({
+const UserSchema = mongoose.Schema({
   uid: { type: String, required: true, unique: true },
   name: { type: String, default: null },
   email: { type: String, default: null },

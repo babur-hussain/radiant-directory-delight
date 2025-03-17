@@ -9,8 +9,6 @@ import CallToAction from '@/components/CallToAction';
 import CtaSection from '@/components/CtaSection';
 
 const Index = () => {
-  console.log("Rendering Index page");
-  
   return (
     <div className="index-page">
       <HeroSection />
