@@ -116,11 +116,30 @@ export const saveSubscription = async (subscriptionData: any) => {
 
 // MongoDB initialization
 export const initializeMongoDB = async () => {
-  const response = await api.post('/initialize-mongodb');
-  return response.data;
+  try {
+    const response = await api.post('/initialize-mongodb');
+    return response.data;
+  } catch (error) {
+    console.error("Error initializing MongoDB:", error);
+    // Return structured error response
+    return {
+      success: false,
+      collections: [],
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
 };
 
 export const testMongoDBConnection = async () => {
-  const response = await api.get('/test-connection');
-  return response.data;
+  try {
+    const response = await api.get('/test-connection');
+    return response.data;
+  } catch (error) {
+    console.error("Error testing MongoDB connection:", error);
+    // Return structured error response
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : String(error)
+    };
+  }
 };
