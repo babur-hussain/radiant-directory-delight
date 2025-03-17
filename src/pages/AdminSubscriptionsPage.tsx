@@ -22,11 +22,19 @@ const AdminSubscriptionsPage = () => {
 
   const initializeDatabase = async () => {
     setIsConnecting(true);
+    setError(null);
+    
     try {
+      console.log("Connecting to MongoDB...");
       const connected = await connectToMongoDB();
       
       if (!connected) {
         setError("Could not connect to MongoDB database");
+        toast({
+          title: "Database Error",
+          description: "Failed to connect to MongoDB. Using fallback data.",
+          variant: "destructive"
+        });
         return;
       }
       
@@ -35,7 +43,11 @@ const AdminSubscriptionsPage = () => {
       });
       
       setDbInitialized(true);
-      setError(null);
+      
+      toast({
+        title: "Database Connected",
+        description: "Successfully connected to MongoDB database.",
+      });
     } catch (err) {
       console.error("Error initializing database:", err);
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -63,6 +75,7 @@ const AdminSubscriptionsPage = () => {
 
   const handleRetry = () => {
     setError(null);
+    setDbInitialized(false);
     initializeDatabase();
     toast({
       title: "Retrying Connection",
@@ -100,6 +113,7 @@ const AdminSubscriptionsPage = () => {
           <CardContent className="pt-6">
             <SubscriptionPackageManagement 
               onPermissionError={handlePermissionError} 
+              dbInitialized={dbInitialized}
             />
           </CardContent>
         </Card>

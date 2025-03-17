@@ -34,10 +34,12 @@ import SubscriptionError from "./SubscriptionError";
 
 interface SubscriptionPackageManagementProps {
   onPermissionError?: (error: any) => void;
+  dbInitialized?: boolean;
 }
 
 export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps> = ({ 
-  onPermissionError 
+  onPermissionError,
+  dbInitialized = false
 }) => {
   const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);
   const [filteredPackages, setFilteredPackages] = useState<ISubscriptionPackage[]>([]);
@@ -51,8 +53,16 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
   const { toast } = useToast();
 
   useEffect(() => {
-    loadPackages();
-  }, []);
+    if (dbInitialized) {
+      loadPackages();
+    } else {
+      // If MongoDB not initialized, still try to load packages after a delay
+      const timer = setTimeout(() => {
+        loadPackages();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [dbInitialized]);
 
   useEffect(() => {
     if (packages && packages.length > 0) {
@@ -69,18 +79,39 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     setIsLoading(true);
     setPermissionError(null);
     try {
+      console.log("Fetching subscription packages from MongoDB...");
       const data = await fetchSubscriptionPackages();
       console.log("Fetched subscription packages from MongoDB:", data);
       
       if (data && Array.isArray(data) && data.length > 0) {
-        setPackages(data);
-        const filtered = data.filter(pkg => 
+        // Ensure all packages have required fields
+        const validatedPackages = data.map(pkg => ({
+          id: pkg.id || nanoid(),
+          title: pkg.title || "Untitled Package",
+          price: Number(pkg.price) || 0,
+          monthlyPrice: Number(pkg.monthlyPrice) || 0,
+          setupFee: Number(pkg.setupFee) || 0,
+          durationMonths: Number(pkg.durationMonths) || 12,
+          type: pkg.type || "Business",
+          shortDescription: pkg.shortDescription || "",
+          fullDescription: pkg.fullDescription || "",
+          features: Array.isArray(pkg.features) ? pkg.features : [],
+          popular: !!pkg.popular,
+          termsAndConditions: pkg.termsAndConditions || "",
+          paymentType: pkg.paymentType || "recurring"
+        }));
+        
+        setPackages(validatedPackages);
+        
+        const filtered = validatedPackages.filter(pkg => 
           pkg.type && pkg.type.toLowerCase() === activeTab
         );
+        
         setFilteredPackages(filtered);
+        console.log(`Loaded ${validatedPackages.length} subscription packages, filtered to ${filtered.length} ${activeTab} packages`);
       } else {
         console.warn("No subscription packages found in MongoDB");
-        // Set an empty array instead of undefined
+        // Set default empty arrays
         setPackages([]);
         setFilteredPackages([]);
         
@@ -131,7 +162,9 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
   const handleCloseForm = () => {
     console.log("Closing form");
     setIsFormOpen(false);
-    setSelectedPackage(null);
+    setTimeout(() => {
+      setSelectedPackage(null);
+    }, 100);
   };
 
   const handleOpenDeleteDialog = (pkg: ISubscriptionPackage) => {
@@ -189,12 +222,14 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
       
       const validatedPackageData: ISubscriptionPackage = {
         ...packageData,
-        price: Number(packageData.price),
+        id: packageData.id || nanoid(),
+        price: Number(packageData.price) || 0,
         monthlyPrice: Number(packageData.monthlyPrice || 0),
         setupFee: Number(packageData.setupFee || 0),
         durationMonths: Number(packageData.durationMonths || 12),
         advancePaymentMonths: Number(packageData.advancePaymentMonths || 0),
         termsAndConditions: packageData.termsAndConditions || '',
+        features: Array.isArray(packageData.features) ? packageData.features : [],
       };
       
       if (!validatedPackageData.paymentType) {
@@ -221,7 +256,9 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
       });
       
       setIsFormOpen(false);
-      setSelectedPackage(null);
+      setTimeout(() => {
+        setSelectedPackage(null);
+      }, 100);
       
       setTimeout(() => {
         loadPackages();
@@ -341,11 +378,14 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
         </Tabs>
         
         {/* Dialog for editing/creating packages */}
-        <Dialog open={isFormOpen} onOpenChange={(open) => {
-          if (!open) {
-            handleCloseForm();
-          }
-        }}>
+        <Dialog 
+          open={isFormOpen} 
+          onOpenChange={(open) => {
+            if (!open) {
+              handleCloseForm();
+            }
+          }}
+        >
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -374,6 +414,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
                 }}
                 onSubmit={handleSavePackage}
                 onCancel={handleCloseForm}
+                isSaving={isSaving}
               />
             )}
           </DialogContent>
