@@ -27,8 +27,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       
       {/* Main content */}
       <div className="flex-1 md:ml-64 flex flex-col min-h-screen w-full">
-        {/* Mobile header with sheet sidebar - this one is now hidden on CSS */}
-        <header className="admin-header md:hidden sticky top-16 left-0 right-0 z-40 bg-white dark:bg-gray-800 shadow-sm">
+        {/* Mobile header with sheet sidebar */}
+        <header className="md:hidden sticky top-16 left-0 right-0 z-40 bg-white dark:bg-gray-800 shadow-sm">
           <div className="p-4 border-b flex items-center justify-between">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -44,15 +44,14 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               </SheetContent>
             </Sheet>
             
-            {/* This heading will be hidden by CSS */}
-            <h1 className="text-xl font-semibold">Admin Panel</h1>
+            <h1 className="text-xl font-semibold">Admin Dashboard</h1>
             
             {/* Empty div to balance the flex layout */}
             <div className="w-9"></div>
           </div>
         </header>
         
-        <main className="p-4 md:p-6 w-full flex-grow">
+        <main className="p-4 md:p-6 w-full flex-grow overflow-x-hidden">
           {children}
         </main>
       </div>

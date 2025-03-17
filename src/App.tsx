@@ -19,7 +19,7 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       staleTime: 10000,
       meta: {
-        errorHandler: (error: Error) => {
+        errorHandler: (error: any) => {
           console.log("Query error:", error);
         }
       }

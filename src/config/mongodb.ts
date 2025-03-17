@@ -12,20 +12,20 @@ const createMockDocument = (data: any = {}) => {
 // Create a mock collection with chainable methods
 const createMockCollection = () => {
   const mockFind = (query?: any) => ({
-    lean: () => Promise.resolve([]),
+    lean: () => Promise.resolve([createMockDocument(query || {})]),
     sort: () => ({
-      lean: () => Promise.resolve([])
+      lean: () => Promise.resolve([createMockDocument(query || {})])
     })
   });
 
   return {
     find: (query?: any) => mockFind(query),
     findOne: (query?: any) => ({
-      lean: () => Promise.resolve(null)
+      lean: () => Promise.resolve(createMockDocument(query || {}))
     }),
-    findOneAndUpdate: (query?: any, update?: any, options?: any) => Promise.resolve(createMockDocument()),
+    findOneAndUpdate: (query?: any, update?: any, options?: any) => Promise.resolve(createMockDocument(query || {})),
     deleteOne: (query?: any) => Promise.resolve({ deletedCount: 1 }),
-    findOneAndDelete: (query?: any) => Promise.resolve(createMockDocument()),
+    findOneAndDelete: (query?: any) => Promise.resolve(createMockDocument(query || {})),
     updateOne: (query?: any, update?: any) => Promise.resolve({ modifiedCount: 1 }),
     countDocuments: (query?: any) => Promise.resolve(0)
   };
@@ -108,7 +108,6 @@ function createModelMock(name: string) {
   };
 
   // Create a constructor function that returns a document
-  // Fixed constructor by properly typing it and ensuring methods are added
   function Constructor(this: MockDocumentMethods, data: any) {
     if (!(this instanceof Constructor)) {
       return new (Constructor as any)(data);
