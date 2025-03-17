@@ -1,5 +1,40 @@
 
 // Create a more comprehensive mock version that supports required interfaces
+const createMockDocument = (data: any = {}) => {
+  return {
+    ...data,
+    toObject: () => ({ ...data }),
+    save: () => Promise.resolve(data),
+    lean: () => Promise.resolve(data)
+  };
+};
+
+// Create a mock collection with chainable methods
+const createMockCollection = () => {
+  const mockFind = (query?: any) => ({
+    lean: () => Promise.resolve([]),
+    sort: () => ({
+      lean: () => Promise.resolve([])
+    })
+  });
+
+  return {
+    find: (query?: any) => mockFind(query),
+    findOne: (query?: any) => ({
+      lean: () => Promise.resolve(null)
+    }),
+    findOneAndUpdate: (query?: any, update?: any, options?: any) => Promise.resolve(createMockDocument()),
+    deleteOne: (query?: any) => Promise.resolve({ deletedCount: 1 }),
+    findOneAndDelete: (query?: any) => Promise.resolve(createMockDocument()),
+    updateOne: (query?: any, update?: any) => Promise.resolve({ modifiedCount: 1 }),
+    countDocuments: (query?: any) => Promise.resolve(0)
+  };
+};
+
+// Stores mock models to ensure we return consistent instances
+const mockModels: Record<string, any> = {};
+
+// Mock mongoose instance
 const mongoose = {
   connection: null,
   connect: () => Promise.resolve(true),
@@ -28,48 +63,67 @@ const mongoose = {
     
     return schemaObj;
   },
-  model: function(name: string, schema: any) {
-    // Create a mock document that will be returned by queries
-    const createMockDocument = (data: any = {}) => {
-      return {
-        ...data,
-        toObject: () => ({ ...data }),
-        save: () => Promise.resolve(data)
-      };
-    };
-    
-    // Create a mock return with all required methods for model
-    return {
-      // Find methods
-      find: (query = {}) => ({ 
-        lean: () => Promise.resolve([]),
-        sort: () => ({ lean: () => Promise.resolve([]) })
-      }),
-      findOne: (query = {}) => ({ 
-        lean: () => Promise.resolve(null) 
-      }),
-      findOneAndUpdate: (query = {}, update = {}, options = {}) => Promise.resolve(createMockDocument()),
-      deleteOne: (query = {}) => Promise.resolve({ deletedCount: 1 }),
-      findOneAndDelete: (query = {}) => Promise.resolve(createMockDocument()),
-      updateOne: (query = {}, update = {}) => Promise.resolve({ modifiedCount: 1 }),
-      countDocuments: (query = {}) => Promise.resolve(0),
-      
-      // Create method
-      create: (data: any) => {
-        const doc = createMockDocument(data);
-        return Promise.resolve(doc);
-      },
-      
-      // Direct instantiation (new Model())
-      new: function(data: any) {
-        return createMockDocument(data);
-      }
-    };
+  model: function(name: string, schema?: any) {
+    // Return existing model if already created
+    if (mockModels[name]) {
+      return mockModels[name];
+    }
+
+    // For direct model retrievals without a schema
+    if (!schema) {
+      // Create a mock model on-the-fly if not found
+      const mockModel = createModelMock(name);
+      mockModels[name] = mockModel;
+      return mockModel;
+    }
+
+    // Create a new model with the schema
+    const mockModel = createModelMock(name);
+    mockModels[name] = mockModel;
+    return mockModel;
   },
   Types: {
     ObjectId: String
   }
 };
+
+// Helper to create a model mock
+function createModelMock(name: string) {
+  // Create mock collection methods
+  const collection = createMockCollection();
+  
+  // Add create method that returns proper document
+  const createMethod = (data: any) => {
+    if (Array.isArray(data)) {
+      return Promise.resolve(data.map(item => createMockDocument(item)));
+    }
+    return Promise.resolve(createMockDocument(data));
+  };
+
+  // Create a constructor function that returns a document
+  const Constructor = function(this: any, data: any) {
+    if (!(this instanceof Constructor)) {
+      return new (Constructor as any)(data);
+    }
+    
+    Object.assign(this, data);
+    
+    // Add common document methods
+    this.save = () => Promise.resolve(this);
+    this.toObject = () => ({ ...data });
+    
+    return this;
+  };
+  
+  // Add static methods to constructor
+  Object.assign(Constructor, {
+    ...collection,
+    create: createMethod,
+    new: (data: any) => new (Constructor as any)(data)
+  });
+  
+  return Constructor;
+}
 
 // Set a very safe connection string with faster timeouts
 const MONGODB_URI = 'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';

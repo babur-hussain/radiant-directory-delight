@@ -19,7 +19,6 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       staleTime: 10000,
       meta: {
-        // Use meta.errorHandler instead of onError which is now deprecated
         errorHandler: (error: Error) => {
           console.log("Query error:", error);
         }
