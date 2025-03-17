@@ -26,6 +26,7 @@ import { Switch } from "@/components/ui/switch";
 import { nanoid } from "nanoid";
 import { featuresToString, stringToFeatures } from "@/lib/subscription-utils";
 import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   id: z.string().min(1, "ID is required"),
@@ -49,6 +50,7 @@ type SubscriptionPackageFormProps = {
   initialData?: ISubscriptionPackage;
   onSubmit: (data: ISubscriptionPackage) => void;
   onCancel: () => void;
+  isSaving?: boolean; // Added the missing isSaving prop
 };
 
 type FormValues = z.infer<typeof formSchema>;
@@ -56,7 +58,8 @@ type FormValues = z.infer<typeof formSchema>;
 const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   initialData,
   onSubmit,
-  onCancel
+  onCancel,
+  isSaving = false // Added with a default value of false
 }) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -477,11 +480,18 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
         />
 
         <div className="flex justify-end space-x-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving}>
             Cancel
           </Button>
-          <Button type="submit">
-            {initialData ? "Update Package" : "Create Package"}
+          <Button type="submit" disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {initialData ? "Updating..." : "Creating..."}
+              </>
+            ) : (
+              initialData ? "Update Package" : "Create Package"
+            )}
           </Button>
         </div>
       </form>
