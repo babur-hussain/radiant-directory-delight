@@ -10,7 +10,7 @@ export interface IUser {
   photoURL: string | null;
   createdAt: Date;
   lastLogin: Date;
-  subscription?: string | null; // Changed from mongoose.Types.ObjectId
+  subscription?: string | null;
   subscriptionId?: string;
   subscriptionStatus?: string;
   subscriptionPackage?: string;
@@ -18,6 +18,7 @@ export interface IUser {
   customDashboardSections?: string[];
 }
 
+// Create a schema using the mongoose mock
 const UserSchema = new mongoose.Schema({
   uid: { type: String, required: true, unique: true },
   name: { type: String, default: null },
@@ -27,7 +28,7 @@ const UserSchema = new mongoose.Schema({
   photoURL: { type: String, default: null },
   createdAt: { type: Date, default: Date.now },
   lastLogin: { type: Date, default: Date.now },
-  subscription: { type: String, default: null }, // Changed from mongoose.Schema.Types.ObjectId
+  subscription: { type: String, default: null },
   subscriptionId: { type: String, default: null },
   subscriptionStatus: { type: String, default: null },
   subscriptionPackage: { type: String, default: null },

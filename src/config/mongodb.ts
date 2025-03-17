@@ -3,31 +3,40 @@
 const mongoose = {
   connection: null,
   connect: () => Promise.resolve(true),
-  Schema: function(schema) {
+  Schema: function(schema: any) {
     return {
       index: () => ({}),
-      pre: () => ({}),
-      virtual: () => ({ get: () => ({}) }),
+      pre: (event: string, callback: Function) => {
+        if (typeof callback === 'function') callback();
+        return {};
+      },
+      virtual: (name: string) => ({ 
+        get: (fn: Function) => ({}) 
+      }),
       methods: {},
       ...schema
     };
   },
-  model: function(name, schema) {
+  model: function(name: string, schema: any) {
     return {
-      find: () => ({ lean: () => Promise.resolve([]) }),
+      find: () => ({ 
+        lean: () => Promise.resolve([]),
+        sort: () => ({ lean: () => Promise.resolve([]) })
+      }),
       findOne: () => ({ lean: () => Promise.resolve(null) }),
       findOneAndUpdate: () => Promise.resolve({}),
       deleteOne: () => Promise.resolve({ deletedCount: 1 }),
-      create: (data) => Promise.resolve({ ...data, toObject: () => data })
+      findOneAndDelete: () => Promise.resolve({}),
+      updateOne: () => Promise.resolve({ modifiedCount: 1 }),
+      countDocuments: () => Promise.resolve(0),
+      create: (data: any) => Promise.resolve({ 
+        ...data, 
+        toObject: () => data 
+      })
     };
   },
   Types: {
     ObjectId: String
-  },
-  Schema: {
-    Types: {
-      ObjectId: { type: String, ref: (collection) => collection }
-    }
   }
 };
 

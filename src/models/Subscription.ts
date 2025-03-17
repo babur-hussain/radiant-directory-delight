@@ -25,6 +25,7 @@ export interface ISubscription {
   [key: string]: any;
 }
 
+// Create a schema using the mongoose mock
 const SubscriptionSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   packageId: { type: String, required: true },

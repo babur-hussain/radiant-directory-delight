@@ -14,6 +14,13 @@ const Index = () => {
   return (
     <div className="index-page">
       <HeroSection />
+      <div className="py-8">
+        <h2 className="text-2xl font-bold text-center mb-4">Welcome to Grow Bharat Vyapaar</h2>
+        <p className="text-center text-gray-600 max-w-2xl mx-auto">
+          Discover and connect with Indian businesses from various sectors. Our platform helps 
+          businesses grow and reach new customers.
+        </p>
+      </div>
       <CtaSection />
       <CategorySection />
       <FeaturedBusinesses />
