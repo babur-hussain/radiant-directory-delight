@@ -29,8 +29,8 @@ import { fetchSubscriptionPackages, saveSubscriptionPackage, deleteSubscriptionP
 import SubscriptionPackageForm from "./SubscriptionPackageForm";
 import { useToast } from "@/hooks/use-toast";
 import AdminPermissionError from "../dashboard/AdminPermissionError";
-import { setupMongoDB } from "@/utils/setupMongoDB";
-import { connectToMongoDB } from "@/config/mongodb";
+import BusinessTableLoading from "../table/BusinessTableLoading";
+import SubscriptionError from "./SubscriptionError";
 
 interface SubscriptionPackageManagementProps {
   onPermissionError?: (error: any) => void;
@@ -51,44 +51,17 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
   const { toast } = useToast();
 
   useEffect(() => {
-    const initAndLoad = async () => {
-      setIsLoading(true);
-      try {
-        const connected = await connectToMongoDB();
-        if (!connected) {
-          throw new Error("Could not connect to MongoDB");
-        }
-        
-        try {
-          await setupMongoDB((progress, message) => {
-            console.log(`MongoDB setup: ${progress}% - ${message}`);
-          });
-        } catch (initError) {
-          console.error("Error during MongoDB initialization:", initError);
-        }
-        
-        await loadPackages();
-      } catch (error) {
-        console.error("Error initializing MongoDB and loading packages:", error);
-        setPermissionError("Failed to initialize MongoDB and load packages. Please try again.");
-        toast({
-          title: "Error",
-          description: "Failed to initialize database. Please try again.",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    initAndLoad();
+    loadPackages();
   }, []);
 
   useEffect(() => {
-    if (packages.length > 0) {
-      setFilteredPackages(packages.filter(pkg => 
-        pkg.type.toLowerCase() === activeTab
-      ));
+    if (packages && packages.length > 0) {
+      const filtered = packages.filter(pkg => 
+        pkg.type && pkg.type.toLowerCase() === activeTab
+      );
+      setFilteredPackages(filtered);
+    } else {
+      setFilteredPackages([]);
     }
   }, [packages, activeTab]);
 
@@ -99,15 +72,22 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
       const data = await fetchSubscriptionPackages();
       console.log("Fetched subscription packages from MongoDB:", data);
       
-      if (data && data.length > 0) {
+      if (data && Array.isArray(data) && data.length > 0) {
         setPackages(data);
-        setFilteredPackages(data.filter(pkg => pkg.type.toLowerCase() === activeTab));
+        const filtered = data.filter(pkg => 
+          pkg.type && pkg.type.toLowerCase() === activeTab
+        );
+        setFilteredPackages(filtered);
       } else {
         console.warn("No subscription packages found in MongoDB");
+        // Set an empty array instead of undefined
+        setPackages([]);
+        setFilteredPackages([]);
+        
         toast({
           title: "No Packages Found",
-          description: "No subscription packages found in the database.",
-          variant: "destructive"
+          description: "No subscription packages found in the database. Try creating one.",
+          variant: "default"
         });
       }
     } catch (error) {
@@ -126,6 +106,10 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
           variant: "destructive"
         });
       }
+      
+      // Set empty arrays to prevent undefined errors
+      setPackages([]);
+      setFilteredPackages([]);
     } finally {
       setIsLoading(false);
     }
@@ -141,9 +125,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     // Make a deep copy to avoid reference issues
     const packageCopy = JSON.parse(JSON.stringify(pkg));
     setSelectedPackage(packageCopy);
-    // Explicitly set the form to open
     setIsFormOpen(true);
-    console.log("Form open state after edit click:", isFormOpen);
   };
 
   const handleCloseForm = () => {
@@ -276,6 +258,37 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     setPermissionError(null);
   };
 
+  if (isLoading) {
+    return <BusinessTableLoading />;
+  }
+
+  // Early return if there's a permission error
+  if (permissionError) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Subscription Packages</CardTitle>
+          <CardDescription>
+            Manage subscription packages for businesses and influencers
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SubscriptionError 
+            error={permissionError}
+            onRetry={() => {
+              dismissError();
+              loadPackages();
+            }}
+          />
+          <Button onClick={handleCreatePackage} className="mt-4">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Create New Package
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -289,12 +302,12 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
           <Button 
             variant="outline" 
             onClick={handleRefresh} 
-            disabled={isLoading}
+            disabled={isLoading || isSaving}
             title="Refresh package data"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
-          <Button onClick={handleCreatePackage} disabled={isLoading}>
+          <Button onClick={handleCreatePackage} disabled={isLoading || isSaving}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Create Package
           </Button>
@@ -327,8 +340,12 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
           </TabsContent>
         </Tabs>
         
-        {/* Use controlled approach for Dialog */}
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        {/* Dialog for editing/creating packages */}
+        <Dialog open={isFormOpen} onOpenChange={(open) => {
+          if (!open) {
+            handleCloseForm();
+          }
+        }}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -362,6 +379,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
           </DialogContent>
         </Dialog>
         
+        {/* Alert Dialog for confirming package deletion */}
         <AlertDialog open={!!packageToDelete} onOpenChange={open => !open && handleCloseDeleteDialog()}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -402,7 +420,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
       );
     }
     
-    if (packages.length === 0) {
+    if (!packages || packages.length === 0) {
       return (
         <p className="text-center py-8 text-muted-foreground">
           No packages found. Click "Create Package" to add one.
