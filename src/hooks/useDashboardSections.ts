@@ -30,10 +30,11 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
   // Load data when user or package changes
   useEffect(() => {
     if (selectedUser) {
-      loadUserSections(selectedUser.id);
+      loadUserSections(selectedUser.uid || selectedUser.id);
       loadAvailableSections(selectedUser.role || "Business");
+    } else {
+      loadPackages();
     }
-    loadPackages();
   }, [selectedUser]);
 
   // Load sections when package changes
@@ -44,6 +45,8 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
   }, [selectedPackage]);
 
   const loadUserSections = async (userId: string) => {
+    if (!userId) return;
+    
     setIsLoading(true);
     setLoadingMessage("Loading user dashboard sections...");
     try {
@@ -52,12 +55,17 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
     } catch (err) {
       console.error("Error loading user sections:", err);
       setError("Failed to load user dashboard sections");
+      
+      // Fallback to empty sections
+      setUserSections([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   const loadPackageSections = async (packageId: string) => {
+    if (!packageId) return;
+    
     setIsLoading(true);
     setLoadingMessage("Loading package dashboard sections...");
     try {
@@ -66,19 +74,29 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
       if (packageData) {
         setPackageSections(packageData.dashboardSections || []);
         // Set available sections based on package type
-        const role = packageData.type;
-        setAvailableSections(role === "Business" ? BUSINESS_DASHBOARD_SECTIONS : INFLUENCER_DASHBOARD_SECTIONS);
+        const role = packageData.type || "Business";
+        loadAvailableSections(role);
+      } else {
+        // Fallback if package not found
+        setPackageSections([]);
+        setError("Package not found");
       }
     } catch (err) {
       console.error("Error loading package sections:", err);
       setError("Failed to load package dashboard sections");
+      
+      // Fallback to empty sections
+      setPackageSections([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   const loadAvailableSections = (role: string) => {
-    setAvailableSections(role === "Business" ? BUSINESS_DASHBOARD_SECTIONS : INFLUENCER_DASHBOARD_SECTIONS);
+    const sections = role.toLowerCase() === "business" || role === "Business" 
+      ? BUSINESS_DASHBOARD_SECTIONS 
+      : INFLUENCER_DASHBOARD_SECTIONS;
+    setAvailableSections(sections);
   };
 
   const loadPackages = async () => {
@@ -87,13 +105,23 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
     try {
       await connectToMongoDB();
       const allPackages = await SubscriptionPackage.find().sort({ title: 1 });
-      setPackages(allPackages);
-      if (allPackages.length > 0 && !selectedPackage) {
-        setSelectedPackage(allPackages[0].id);
+      
+      if (allPackages && allPackages.length > 0) {
+        setPackages(allPackages);
+        if (!selectedPackage) {
+          setSelectedPackage(allPackages[0].id);
+        }
+      } else {
+        // Fallback if no packages found
+        setPackages([]);
+        setError("No subscription packages found");
       }
     } catch (err) {
       console.error("Error loading packages:", err);
       setError("Failed to load subscription packages");
+      
+      // Fallback to empty packages
+      setPackages([]);
     } finally {
       setIsLoading(false);
     }
@@ -121,12 +149,13 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
     setIsLoading(true);
     setLoadingMessage("Saving user dashboard sections...");
     try {
-      const success = await updateUserDashboardSections(selectedUser.id, userSections);
+      const userId = selectedUser.uid || selectedUser.id;
+      const success = await updateUserDashboardSections(userId, userSections);
+      
       if (success) {
         toast({
           title: "Success",
           description: "User dashboard sections updated successfully",
-          variant: "success",
         });
       } else {
         throw new Error("Failed to update user dashboard sections");
@@ -151,11 +180,11 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
     setLoadingMessage("Saving package dashboard sections...");
     try {
       const success = await updatePackageDashboardSections(selectedPackage, packageSections);
+      
       if (success) {
         toast({
           title: "Success",
           description: "Package dashboard sections updated successfully",
-          variant: "success",
         });
       } else {
         throw new Error("Failed to update package dashboard sections");
@@ -174,10 +203,15 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
   };
 
   const refreshData = () => {
+    setError(null);
     if (activeTab === "user" && selectedUser) {
-      loadUserSections(selectedUser.id);
-    } else if (activeTab === "package" && selectedPackage) {
-      loadPackageSections(selectedPackage);
+      const userId = selectedUser.uid || selectedUser.id;
+      loadUserSections(userId);
+    } else if (activeTab === "package") {
+      loadPackages();
+      if (selectedPackage) {
+        loadPackageSections(selectedPackage);
+      }
     }
   };
 

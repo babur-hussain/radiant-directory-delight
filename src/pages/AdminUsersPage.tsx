@@ -55,8 +55,26 @@ const AdminUsersPage = () => {
       console.log('Fetching all users from userManagement...');
       const allUsers = await getAllUsers();
       console.log('Users fetched:', allUsers);
-      setUsers(allUsers);
-      setFilteredUsers(allUsers);
+      
+      if (Array.isArray(allUsers) && allUsers.length > 0) {
+        // Sort users by creation date (newest first)
+        const sortedUsers = [...allUsers].sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateB - dateA;
+        });
+        
+        setUsers(sortedUsers);
+        setFilteredUsers(sortedUsers);
+      } else {
+        toast({
+          title: "No users found",
+          description: "The system didn't return any users",
+          variant: "destructive"
+        });
+        setUsers([]);
+        setFilteredUsers([]);
+      }
     } catch (err) {
       console.error('Error fetching users:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch users');
@@ -93,8 +111,11 @@ const AdminUsersPage = () => {
         description: `User ${newUserName} has been created`,
       });
 
-      // Add the new user to the list
-      setUsers((prevUsers) => [newUser, ...prevUsers]);
+      // Add the new user to the list and sort (newest first)
+      setUsers((prevUsers) => {
+        const updatedUsers = [newUser, ...prevUsers];
+        return updatedUsers;
+      });
       
       // Reset form and close dialog
       setNewUserEmail('');
