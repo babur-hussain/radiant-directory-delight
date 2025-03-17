@@ -8,11 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Edit, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { SubscriptionPackage } from "@/data/subscriptionData";
+import { SubscriptionPackage, convertToSubscriptionPackage } from "@/data/subscriptionData";
 import { fetchSubscriptionPackages, fetchSubscriptionPackagesByType } from "@/lib/mongodb-utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import AdvancedSubscriptionControls from "./AdvancedSubscriptionControls";
 import { useAuth } from "@/hooks/useAuth";
+import SubscriptionPackageForm from "./SubscriptionPackageForm";
 
 export const CentralizedSubscriptionManager = () => {
   const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
@@ -53,11 +54,13 @@ export const CentralizedSubscriptionManager = () => {
       const allPackages = await fetchSubscriptionPackages();
       
       if (allPackages && allPackages.length > 0) {
-        setPackages(allPackages);
+        // Convert ISubscriptionPackage to SubscriptionPackage
+        const convertedPackages = allPackages.map(pkg => convertToSubscriptionPackage(pkg));
+        setPackages(convertedPackages);
         
         // Split packages by type
-        const business = allPackages.filter(pkg => pkg.type === "Business");
-        const influencer = allPackages.filter(pkg => pkg.type === "Influencer");
+        const business = convertedPackages.filter(pkg => pkg.type === "Business");
+        const influencer = convertedPackages.filter(pkg => pkg.type === "Influencer");
         
         setBusinessPkgs(business);
         setInfluencerPkgs(influencer);

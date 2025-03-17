@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RefreshCw, Save, Info, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { SubscriptionPackage, convertToSubscriptionPackage } from "@/data/subscriptionData";
 
 interface PackageSectionsListProps {
   packages: any[];
@@ -30,6 +31,9 @@ const PackageSectionsList: React.FC<PackageSectionsListProps> = ({
   savePackageSections,
   refreshData,
 }) => {
+  // Convert packages to ensure type compatibility
+  const convertedPackages = packages.map(pkg => convertToSubscriptionPackage(pkg));
+
   return (
     <>
       <div className="flex items-center justify-between mb-4">
@@ -47,7 +51,7 @@ const PackageSectionsList: React.FC<PackageSectionsListProps> = ({
         </Button>
       </div>
       
-      {packages.length === 0 ? (
+      {convertedPackages.length === 0 ? (
         <Alert className="my-4">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>No packages available</AlertTitle>
@@ -63,7 +67,7 @@ const PackageSectionsList: React.FC<PackageSectionsListProps> = ({
               <SelectValue placeholder="Select a package" />
             </SelectTrigger>
             <SelectContent>
-              {packages.map((pkg) => (
+              {convertedPackages.map((pkg) => (
                 <SelectItem key={pkg.id} value={pkg.id}>
                   {pkg.title} ({pkg.type})
                 </SelectItem>

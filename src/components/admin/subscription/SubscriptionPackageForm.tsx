@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,9 +23,19 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { nanoid } from "nanoid";
-import { featuresToString, stringToFeatures } from "@/lib/subscription-utils";
-import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
+import { SubscriptionPackage } from "@/data/subscriptionData";
 import { Loader2 } from "lucide-react";
+
+const featuresToString = (features?: string[]): string => {
+  return features && Array.isArray(features) ? features.join('\n') : '';
+};
+
+const stringToFeatures = (featuresString: string): string[] => {
+  return featuresString
+    .split('\n')
+    .map(feature => feature.trim())
+    .filter(feature => feature.length > 0);
+};
 
 const formSchema = z.object({
   id: z.string().min(1, "ID is required"),
@@ -47,10 +56,10 @@ const formSchema = z.object({
 });
 
 type SubscriptionPackageFormProps = {
-  initialData?: ISubscriptionPackage;
-  onSubmit: (data: ISubscriptionPackage) => void;
+  initialData?: SubscriptionPackage;
+  onSubmit: (data: SubscriptionPackage) => void;
   onCancel: () => void;
-  isSaving?: boolean; // Added the missing isSaving prop
+  isSaving?: boolean;
 };
 
 type FormValues = z.infer<typeof formSchema>;
@@ -59,7 +68,7 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   initialData,
   onSubmit,
   onCancel,
-  isSaving = false // Added with a default value of false
+  isSaving = false
 }) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -86,7 +95,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   const paymentType = form.watch("paymentType");
 
   useEffect(() => {
-    // Only set up price relationship for recurring subscriptions
     if (paymentType === "recurring") {
       const subscription = form.watch((value, { name }) => {
         if (name === "price" && value.price) {
@@ -105,20 +113,11 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   const handleSubmit = (values: FormValues) => {
     const featureArray = stringToFeatures(values.featuresString);
     
-    // Ensure price is properly set for one-time payment packages
     const price = Number(values.price);
     const monthlyPrice = paymentType === "recurring" ? Number(values.monthlyPrice) : undefined;
     const setupFee = paymentType === "recurring" ? Number(values.setupFee) : 0;
     
-    console.log("Form submitted with data:", {
-      ...values,
-      price,
-      monthlyPrice,
-      setupFee,
-      paymentType: values.paymentType
-    });
-    
-    const packageData: ISubscriptionPackage = {
+    const packageData: SubscriptionPackage = {
       id: values.id,
       title: values.title,
       price: price,
@@ -136,7 +135,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
       paymentType: values.paymentType
     };
     
-    console.log("Final package data being submitted:", packageData);
     onSubmit(packageData);
   };
 
@@ -254,7 +252,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
                     onChange={(e) => {
                       field.onChange(e);
                       
-                      // Only calculate relationships for recurring subscriptions
                       if (paymentType === "recurring") {
                         if (billingCycle === "monthly") {
                           const yearlyPrice = Number(e.target.value) * 12;

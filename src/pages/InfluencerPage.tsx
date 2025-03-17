@@ -4,12 +4,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { CheckCircle, Users, Star, TrendingUp, Award, Zap, CheckSquare, ArrowRight, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { influencerPackages } from '@/data/subscriptionData';
+import { SubscriptionPackage, convertToSubscriptionPackage } from '@/data/subscriptionData';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
 import { fetchSubscriptionPackagesByType } from '@/lib/mongodb-utils';
-import { SubscriptionPackage } from '@/data/subscriptionData';
 
 const InfluencerPage = () => {
   const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
@@ -26,8 +25,10 @@ const InfluencerPage = () => {
     const loadPackages = async () => {
       setIsLoading(true);
       try {
-        const packages = await fetchSubscriptionPackagesByType('Influencer');
-        setPackages(packages);
+        const fetchedPackages = await fetchSubscriptionPackagesByType('Influencer');
+        // Convert the packages to the correct type
+        const convertedPackages = fetchedPackages.map(pkg => convertToSubscriptionPackage(pkg));
+        setPackages(convertedPackages);
       } catch (error) {
         console.error('Error loading packages:', error);
         toast({
