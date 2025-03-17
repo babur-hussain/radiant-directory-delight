@@ -1,3 +1,4 @@
+
 #root {
   width: 100%;
   min-height: 100vh;
@@ -29,12 +30,13 @@ header.main-header {
 /* Main content styling with proper padding */
 main {
   width: 100%;
+  padding-top: 64px; /* Add padding to account for fixed header height */
 }
 
 /* Layout specific styles */
 .admin-layout,
 .dashboard-layout {
-  padding-top: 64px;
+  padding-top: 0; /* Reset padding as these layouts handle their own spacing */
   min-height: calc(100vh - 64px);
   width: 100% !important;
   max-width: 100% !important;
