@@ -143,7 +143,7 @@ const CtaSection = () => {
                   ))}
                 </ul>
                 
-                <Link to="/subscription">
+                <Link to="/business">
                   <Button 
                     className={`w-full bg-blue-500 hover:bg-blue-600 group ${hoveredBusiness ? 'bg-blue-600' : ''}`}
                     size="lg"

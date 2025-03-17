@@ -33,6 +33,7 @@ const AppRoutes = () => {
       <Route path="/" element={<Index />} />
       <Route path="/businesses" element={<BusinessesPage />} />
       <Route path="/business/:id" element={<BusinessPage />} />
+      <Route path="/business" element={<BusinessPage />} /> {/* New dedicated route for business page */}
       <Route path="/categories" element={<CategoriesPage />} />
       <Route path="/influencer" element={<InfluencerPage />} />
       <Route path="/profile" element={<ProfilePage />} />
