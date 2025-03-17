@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
 import { businessPackages, influencerPackages } from "@/data/subscriptionData";
+import Loading from "@/components/ui/loading";
 
 interface SubscriptionPackagesProps {
   userRole: UserRole;
@@ -23,19 +24,19 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
   const { packages, isLoading, error } = useSubscriptionPackages(userRole);
 
   // Fallback to static packages if no packages are loaded from MongoDB
-  const displayPackages = packages.length > 0 ? packages : 
+  const displayPackages = packages && packages.length > 0 ? packages : 
     (userRole === "Influencer" ? influencerPackages : businessPackages);
 
   // Log for debugging
   useEffect(() => {
     console.log("SubscriptionPackages loaded", { 
       userRole, 
-      packagesCount: packages.length,
-      displayPackagesCount: displayPackages.length,
+      packagesCount: packages?.length || 0,
+      displayPackagesCount: displayPackages?.length || 0,
       isLoading,
       error
     });
-  }, [userRole, packages, displayPackages.length, isLoading, error]);
+  }, [userRole, packages, displayPackages?.length, isLoading, error]);
 
   const handleSubscribe = (packageId: string) => {
     navigate(`/subscription/details/${packageId}`);
@@ -43,29 +44,22 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
   
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {Array(4).fill(0).map((_, index) => (
-          <Card key={index} className="flex flex-col">
-            <CardHeader className="pb-1">
-              <Skeleton className="h-6 w-20 mb-2" />
-              <Skeleton className="h-8 w-24 mb-1" />
-              <Skeleton className="h-4 w-full" />
-            </CardHeader>
-            <CardContent className="flex-grow">
-              <ul className="space-y-2 mb-4">
-                {Array(4).fill(0).map((_, i) => (
-                  <li key={i} className="flex items-start">
-                    <Skeleton className="h-4 w-4 mr-2 mt-1" />
-                    <Skeleton className="h-4 w-full" />
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-            <CardFooter>
-              <Skeleton className="h-10 w-full" />
-            </CardFooter>
-          </Card>
-        ))}
+      <div className="flex justify-center items-center py-20">
+        <Loading size="lg" message="Loading subscription packages..." />
+      </div>
+    );
+  }
+  
+  if (!displayPackages || displayPackages.length === 0) {
+    return (
+      <div className="text-center py-10">
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>No packages available</AlertTitle>
+          <AlertDescription>
+            We couldn't load any subscription packages. Please try again later.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -132,7 +126,7 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
       </div>
       
       {/* One-Time Payment Packages */}
-      {oneTimePackages.length > 0 && (
+      {oneTimePackages && oneTimePackages.length > 0 && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">One-Time Packages</h2>
           <p className="text-muted-foreground">Pay once for a fixed duration of service</p>
@@ -151,7 +145,7 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
                 </CardHeader>
                 <CardContent className="flex-grow">
                   <ul className="space-y-2 mb-4">
-                    {pkg.features.map((feature, i) => (
+                    {pkg.features && pkg.features.map((feature, i) => (
                       <li key={i} className="flex items-start">
                         <Check className="mr-2 h-4 w-4 text-amber-600 mt-1 flex-shrink-0" />
                         <span>{feature}</span>

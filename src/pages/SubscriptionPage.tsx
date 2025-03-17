@@ -4,11 +4,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { SubscriptionPackages } from "@/components/subscription/SubscriptionPackages";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserRole } from "@/contexts/AuthContext";
+import Loading from "@/components/ui/loading";
 
 const SubscriptionPage = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   
-  // Default to Business role when coming from the CTA section
+  // Default to Business role when coming from the CTA section or when user is not authenticated
   const userRole: UserRole = user?.role || "Business";
   
   useEffect(() => {
@@ -16,9 +17,18 @@ const SubscriptionPage = () => {
     console.log("Subscription page loaded", { 
       isAuthenticated, 
       userRole,
-      user
+      user,
+      loading
     });
-  }, [isAuthenticated, userRole, user]);
+  }, [isAuthenticated, userRole, user, loading]);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-20 flex justify-center">
+        <Loading size="lg" message="Loading subscription information..." />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-10">
