@@ -1,4 +1,3 @@
-
 import React, { 
   createContext, 
   useEffect, 
@@ -124,7 +123,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
   };
 
-  const signup = async (email: string, password: string, name: string, role: UserRole) => {
+  const signup = async (email: string, password: string, name: string, role: UserRole, additionalData: any = {}) => {
     try {
       // Create user in Firebase
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -135,11 +134,15 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         displayName: name
       });
       
-      // Create user in MongoDB with role
-      const user = await createUserIfNotExists({
+      // Prepare user data with additional fields
+      const userData = {
         ...firebaseUser,
         displayName: name,
-      });
+        ...additionalData
+      };
+      
+      // Create user in MongoDB with role and additional data
+      const user = await createUserIfNotExists(userData);
       
       // Update user role
       if (user) {
@@ -178,18 +181,18 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
   };
 
-  const updateUserPermission = async (userId: string, isUserAdmin: boolean) => {
+  const updateUserPermission = async (userId: string, isAdmin: boolean) => {
     try {
       // Get current role
       const user = await getUserByUid(userId);
       if (!user) throw new Error("User not found");
       
       // Update role with admin status
-      await updateUserRoleService(userId, user.role as UserRole, isUserAdmin);
+      await updateUserRoleService(userId, user.role as UserRole, isAdmin);
       
       // If updating current user, also update state
       if (currentUser && currentUser.uid === userId) {
-        setIsAdmin(isUserAdmin);
+        setIsAdmin(isAdmin);
         setCurrentUser(prev => {
           if (!prev) return prev;
           return {

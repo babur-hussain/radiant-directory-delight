@@ -1,3 +1,4 @@
+
 // Define types for our auth context
 export type UserRole = "Business" | "Influencer" | "Admin" | "User" | "admin" | "staff" | null;
 
@@ -13,6 +14,33 @@ export interface User {
   subscription?: any; // For storing subscription information
   createdAt?: Date | string; // For storing user creation date
   lastLogin?: Date | string; // For storing user's last login date
+  
+  // Additional fields for user profiles
+  phone?: string;
+  instagramHandle?: string;
+  facebookHandle?: string;
+  verified?: boolean;
+  city?: string;
+  country?: string;
+  
+  // Influencer specific fields
+  niche?: string;
+  followersCount?: string;
+  bio?: string;
+  
+  // Business specific fields
+  businessName?: string;
+  ownerName?: string;
+  businessCategory?: string;
+  website?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    zipCode?: string;
+  };
+  gstNumber?: string;
 }
 
 export interface Subscription {
@@ -45,7 +73,7 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle?: () => Promise<void>;
-  signup?: (email: string, password: string, name: string, role: UserRole) => Promise<any>;
+  signup?: (email: string, password: string, name: string, role: UserRole, additionalData?: any) => Promise<any>;
   updateUserRole?: (role: UserRole) => Promise<void>;
   updateUserPermission?: (userId: string, isAdmin: boolean) => Promise<void>;
   isAuthenticated?: boolean;

@@ -14,13 +14,49 @@ export const getUserByUid = async (uid: string): Promise<IUser | null> => {
 };
 
 // Create user in MongoDB if not exists
-export const createUserIfNotExists = async (firebaseUser: FirebaseUser): Promise<IUser | null> => {
+export const createUserIfNotExists = async (firebaseUser: any): Promise<IUser | null> => {
   try {
     // Check if user already exists
     let user = await User.findOne({ uid: firebaseUser.uid });
     
     // If user doesn't exist, create new user
     if (!user) {
+      // Extract additional data if it exists
+      const additionalData = {
+        // Default fields
+        role: 'User',
+        isAdmin: false,
+        
+        // Shared fields that might be in additionalData
+        phone: firebaseUser.phone || null,
+        instagramHandle: firebaseUser.instagramHandle || null,
+        facebookHandle: firebaseUser.facebookHandle || null,
+        verified: firebaseUser.verified || false,
+        city: firebaseUser.city || null,
+        country: firebaseUser.country || null,
+        
+        // Influencer specific fields
+        niche: firebaseUser.niche || null,
+        followersCount: firebaseUser.followersCount || null,
+        bio: firebaseUser.bio || null,
+        
+        // Business specific fields
+        businessName: firebaseUser.businessName || null,
+        ownerName: firebaseUser.ownerName || null,
+        businessCategory: firebaseUser.businessCategory || null,
+        website: firebaseUser.website || null,
+        gstNumber: firebaseUser.gstNumber || null
+      };
+
+      // Handle address object if it exists
+      const address = firebaseUser.address ? {
+        street: firebaseUser.address.street || null,
+        city: firebaseUser.address.city || null,
+        state: firebaseUser.address.state || null,
+        country: firebaseUser.address.country || null,
+        zipCode: firebaseUser.address.zipCode || null
+      } : undefined;
+
       user = await User.create({
         uid: firebaseUser.uid,
         name: firebaseUser.displayName,
@@ -28,8 +64,8 @@ export const createUserIfNotExists = async (firebaseUser: FirebaseUser): Promise
         photoURL: firebaseUser.photoURL,
         createdAt: new Date(),
         lastLogin: new Date(),
-        role: 'user', // Default role
-        isAdmin: false, // Default admin status
+        ...additionalData,
+        ...(address ? { address } : {})
       });
       console.log('New user created in MongoDB:', user);
     }
@@ -75,6 +111,21 @@ export const updateUserRole = async (uid: string, role: string, isAdmin: boolean
     return user;
   } catch (error) {
     console.error('Error updating user role:', error);
+    return null;
+  }
+};
+
+// Update user profile
+export const updateUserProfile = async (uid: string, profileData: Partial<IUser>): Promise<IUser | null> => {
+  try {
+    const user = await User.findOneAndUpdate(
+      { uid },
+      { $set: profileData },
+      { new: true }
+    );
+    return user;
+  } catch (error) {
+    console.error('Error updating user profile:', error);
     return null;
   }
 };
