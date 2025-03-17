@@ -42,6 +42,24 @@ main {
   max-width: 100% !important;
 }
 
+/* Auth modal scrolling fix */
+.auth-modal-content {
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.auth-modal-body {
+  max-height: calc(90vh - 120px);
+  overflow-y: auto;
+}
+
+/* Form scrolling fix */
+.scrollable-form-container {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
 /* Admin and dashboard headers */
 .dashboard-header, 
 .admin-header {
@@ -85,6 +103,17 @@ main {
   display: none !important;
 }
 
+/* Dialog scrolling fix */
+[data-radix-dialog-content] {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-radix-scroll-area-viewport] {
+  height: 100% !important;
+}
+
 /* Ensure main content has proper spacing and width */
 .admin-layout main,
 .dashboard-layout main {
@@ -109,6 +138,15 @@ main {
   .admin-layout .tabs-container,
   .dashboard-layout .tabs-container {
     overflow-x: auto !important;
+  }
+
+  /* Mobile auth modal fixes */
+  .auth-modal-content {
+    max-height: 100vh;
+  }
+
+  .auth-modal-body {
+    max-height: calc(100vh - 100px);
   }
 }
 
