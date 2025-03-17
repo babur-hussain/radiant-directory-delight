@@ -102,12 +102,16 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
                 </CardHeader>
                 <CardContent className="flex-grow">
                   <ul className="space-y-2 mb-4">
-                    {pkg.features.map((feature, i) => (
-                      <li key={i} className="flex items-start">
-                        <Check className="mr-2 h-4 w-4 text-primary mt-1 flex-shrink-0" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
+                    {pkg.features && pkg.features.length > 0 ? (
+                      pkg.features.map((feature, i) => (
+                        <li key={i} className="flex items-start">
+                          <Check className="mr-2 h-4 w-4 text-primary mt-1 flex-shrink-0" />
+                          <span>{feature}</span>
+                        </li>
+                      ))
+                    ) : (
+                      <li className="text-muted-foreground">No features listed</li>
+                    )}
                   </ul>
                 </CardContent>
                 <CardFooter>
@@ -145,15 +149,19 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
                 </CardHeader>
                 <CardContent className="flex-grow">
                   <ul className="space-y-2 mb-4">
-                    {pkg.features && pkg.features.map((feature, i) => (
-                      <li key={i} className="flex items-start">
-                        <Check className="mr-2 h-4 w-4 text-amber-600 mt-1 flex-shrink-0" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
+                    {pkg.features && pkg.features.length > 0 ? (
+                      pkg.features.map((feature, i) => (
+                        <li key={i} className="flex items-start">
+                          <Check className="mr-2 h-4 w-4 text-amber-600 mt-1 flex-shrink-0" />
+                          <span>{feature}</span>
+                        </li>
+                      ))
+                    ) : (
+                      <li className="text-muted-foreground">No features listed</li>
+                    )}
                   </ul>
                   <p className="text-sm text-amber-700 mt-2">
-                    Valid for {pkg.durationMonths} months
+                    Valid for {pkg.durationMonths || 12} months
                   </p>
                 </CardContent>
                 <CardFooter>

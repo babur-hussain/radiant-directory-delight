@@ -13,7 +13,8 @@ export const useSubscriptionPackages = (userRole: UserRole) => {
   useEffect(() => {
     const loadPackages = async () => {
       if (!userRole) {
-        setPackages([]);
+        console.log("No user role provided, using default Business packages");
+        setPackages(businessPackages);
         setIsLoading(false);
         return;
       }
