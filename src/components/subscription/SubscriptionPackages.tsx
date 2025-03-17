@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Check, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { useSubscriptionPackages } from "@/hooks/useSubscriptionPackages";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
+import { businessPackages, influencerPackages } from "@/data/subscriptionData";
 
 interface SubscriptionPackagesProps {
   userRole: UserRole;
@@ -21,14 +22,20 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
   // Use our hook to fetch packages
   const { packages, isLoading, error } = useSubscriptionPackages(userRole);
 
-  if (!userRole) {
-    return (
-      <div className="text-center p-8">
-        <h2 className="text-xl font-semibold mb-4">Please select a role first</h2>
-        <p>You need to complete your profile and select a role (Business or Influencer) before viewing subscription plans.</p>
-      </div>
-    );
-  }
+  // Fallback to static packages if no packages are loaded from MongoDB
+  const displayPackages = packages.length > 0 ? packages : 
+    (userRole === "Influencer" ? influencerPackages : businessPackages);
+
+  // Log for debugging
+  useEffect(() => {
+    console.log("SubscriptionPackages loaded", { 
+      userRole, 
+      packagesCount: packages.length,
+      displayPackagesCount: displayPackages.length,
+      isLoading,
+      error
+    });
+  }, [userRole, packages, displayPackages.length, isLoading, error]);
 
   const handleSubscribe = (packageId: string) => {
     navigate(`/subscription/details/${packageId}`);
@@ -64,8 +71,8 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
   }
   
   // Split packages into recurring and one-time
-  const recurringPackages = packages.filter(pkg => pkg.paymentType === "recurring" || !pkg.paymentType);
-  const oneTimePackages = packages.filter(pkg => pkg.paymentType === "one-time");
+  const recurringPackages = displayPackages.filter(pkg => pkg.paymentType === "recurring" || !pkg.paymentType);
+  const oneTimePackages = displayPackages.filter(pkg => pkg.paymentType === "one-time");
   
   return (
     <div className="space-y-10">

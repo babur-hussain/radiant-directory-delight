@@ -37,7 +37,7 @@ const AppRoutes = () => {
       <Route path="/influencer" element={<InfluencerPage />} />
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/subscription" element={<SubscriptionPage />} />
-      <Route path="/subscription/details" element={<SubscriptionDetailsPage />} />
+      <Route path="/subscription/details/:packageId" element={<SubscriptionDetailsPage />} />
       
       {/* Admin Routes */}
       <Route path="/admin/login" element={<AdminLoginPage />} />

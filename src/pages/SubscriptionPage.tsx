@@ -1,29 +1,24 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { SubscriptionPackages } from "@/components/subscription/SubscriptionPackages";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { UserRole } from "@/contexts/AuthContext";
 
 const SubscriptionPage = () => {
   const { user, isAuthenticated } = useAuth();
   
-  if (!isAuthenticated) {
-    return (
-      <div className="container mx-auto px-4 py-10">
-        <Card>
-          <CardHeader>
-            <CardTitle>Subscription Plans</CardTitle>
-            <CardDescription>
-              Please sign in to view and subscribe to our plans
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>You need to be logged in to access subscription plans.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Default to Business role when coming from the CTA section
+  const userRole: UserRole = user?.role || "Business";
+  
+  useEffect(() => {
+    // Log page load to help with debugging
+    console.log("Subscription page loaded", { 
+      isAuthenticated, 
+      userRole,
+      user
+    });
+  }, [isAuthenticated, userRole, user]);
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -34,7 +29,7 @@ const SubscriptionPage = () => {
         </p>
       </div>
       
-      <SubscriptionPackages userRole={user?.role} />
+      <SubscriptionPackages userRole={userRole} />
     </div>
   );
 };
