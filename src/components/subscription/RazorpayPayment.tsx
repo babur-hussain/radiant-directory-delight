@@ -104,7 +104,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       prefill: {
         name: user.displayName || user.name || '',
         email: user.email || '',
-        contact: user.mobile || '' // Fixed: Changed from phoneNumber to mobile, or use empty string if neither exists
+        contact: '' // Removed the mobile property since it doesn't exist on User type
       },
       notes: {
         package_id: selectedPackage.id,
