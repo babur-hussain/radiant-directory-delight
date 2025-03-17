@@ -32,6 +32,17 @@ SubscriptionPackageSchema.pre('save', function(next) {
   // Ensure required fields have values
   if (!this.shortDescription && this.fullDescription) {
     this.shortDescription = this.fullDescription.substring(0, 100);
+  } else if (!this.shortDescription) {
+    this.shortDescription = this.title;
+  }
+  
+  if (!this.fullDescription && this.shortDescription) {
+    this.fullDescription = this.shortDescription;
+  }
+  
+  // Ensure price is valid
+  if (!this.price || this.price <= 0) {
+    this.price = 999;
   }
   
   next();

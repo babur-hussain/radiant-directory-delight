@@ -54,6 +54,7 @@ export const fetchSubscriptionPackages = async (): Promise<ISubscriptionPackage[
  */
 export const fetchSubscriptionPackagesByType = async (type: "Business" | "Influencer"): Promise<ISubscriptionPackage[]> => {
   try {
+    console.log(`Fetching ${type} subscription packages from MongoDB API...`);
     const packages = await apiFetchSubscriptionPackagesByType(type);
     
     if (!packages || packages.length === 0) {
@@ -61,15 +62,40 @@ export const fetchSubscriptionPackagesByType = async (type: "Business" | "Influe
       return [];
     }
     
-    // Make sure all one-time packages have valid price
+    console.log(`Fetched ${packages.length} ${type} packages:`, packages);
+    
+    // Make sure all packages have valid and required fields
     const validatedPackages = packages.map(pkg => {
-      if (pkg.paymentType === "one-time" && (!pkg.price || pkg.price <= 0)) {
-        return {
-          ...pkg,
-          price: 999 // Set default price for one-time packages if missing or 0
-        };
+      // Create a new object with defaults for missing fields
+      const validatedPkg = {
+        ...pkg,
+        id: pkg.id || `pkg_${Date.now()}`,
+        title: pkg.title || 'Untitled Package',
+        price: Number(pkg.price) || 999,
+        durationMonths: Number(pkg.durationMonths) || 12,
+        shortDescription: pkg.shortDescription || pkg.title || '',
+        fullDescription: pkg.fullDescription || pkg.shortDescription || '',
+        features: Array.isArray(pkg.features) ? pkg.features : [],
+        popular: !!pkg.popular,
+        type: pkg.type || type,
+        paymentType: pkg.paymentType || "recurring"
+      };
+      
+      // Special handling for one-time packages
+      if (validatedPkg.paymentType === "one-time") {
+        if (!validatedPkg.price || validatedPkg.price <= 0) {
+          validatedPkg.price = 999; // Set default price for one-time packages if missing or 0
+        }
+        // One-time packages don't need these fields
+        validatedPkg.billingCycle = undefined;
+        validatedPkg.setupFee = 0;
+      } else {
+        // Set defaults for recurring packages
+        validatedPkg.billingCycle = validatedPkg.billingCycle || "yearly";
+        validatedPkg.setupFee = Number(validatedPkg.setupFee) || 0;
       }
-      return pkg;
+      
+      return validatedPkg;
     });
     
     return validatedPackages;

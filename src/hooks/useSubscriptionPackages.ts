@@ -41,8 +41,18 @@ export const useSubscriptionPackages = (userRole: UserRole) => {
           const rolePackages = await fetchSubscriptionPackagesByType(role);
           
           if (rolePackages && rolePackages.length > 0) {
-            setPackages(rolePackages);
-            console.log(`Loaded ${rolePackages.length} ${role} packages from MongoDB`);
+            // Ensure all packages have required fields for display
+            const formattedPackages = rolePackages.map(pkg => ({
+              ...pkg,
+              shortDescription: pkg.shortDescription || pkg.title || '',
+              fullDescription: pkg.fullDescription || pkg.shortDescription || '',
+              features: Array.isArray(pkg.features) ? pkg.features : [],
+              durationMonths: pkg.durationMonths || 12,
+              title: pkg.title || 'Subscription Package',
+            }));
+            
+            setPackages(formattedPackages);
+            console.log(`Loaded ${formattedPackages.length} ${role} packages from MongoDB`);
           } else {
             console.warn(`No ${role} packages found in MongoDB`);
             setPackages([]);

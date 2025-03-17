@@ -22,9 +22,10 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
 
   // Log for debugging
   useEffect(() => {
-    console.log("SubscriptionPackages loaded", { 
+    console.log("SubscriptionPackages component", { 
       userRole, 
       packagesCount: packages?.length || 0,
+      packages,
       isLoading,
       error
     });
@@ -38,6 +39,20 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
     return (
       <div className="flex justify-center items-center py-20">
         <Loading size="lg" message="Loading subscription packages..." />
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="text-center py-10">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error loading packages</AlertTitle>
+          <AlertDescription>
+            {error}
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -63,21 +78,13 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
   
   return (
     <div className="space-y-10">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      
       {/* Recurring Subscription Packages */}
       {recurringPackages.length > 0 && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Recurring Subscriptions</h2>
           <p className="text-muted-foreground">Pay monthly or yearly for continuous service</p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {recurringPackages.map((pkg) => (
               <Card key={pkg.id} className={`flex flex-col ${pkg.popular ? 'border-primary shadow-lg' : ''}`}>
                 <CardHeader className="pb-1">
@@ -124,7 +131,7 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
           <h2 className="text-2xl font-bold">One-Time Packages</h2>
           <p className="text-muted-foreground">Pay once for a fixed duration of service</p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {oneTimePackages.map((pkg) => (
               <Card key={pkg.id} className="flex flex-col border-amber-200 bg-amber-50/30">
                 <CardHeader className="pb-1">
