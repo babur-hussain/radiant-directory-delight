@@ -197,7 +197,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           if (!prev) return prev;
           return {
             ...prev,
-            isAdmin: isUserAdmin
+            isAdmin
           };
         });
       }
