@@ -26,6 +26,7 @@ export const fetchSubscriptionPackages = async (): Promise<ISubscriptionPackage[
     
     if (!packages || packages.length === 0) {
       console.warn("No subscription packages found in MongoDB");
+      return [];
     }
     
     console.log("Fetched packages:", packages);
@@ -57,6 +58,7 @@ export const fetchSubscriptionPackagesByType = async (type: "Business" | "Influe
     
     if (!packages || packages.length === 0) {
       console.warn(`No ${type} subscription packages found in MongoDB`);
+      return [];
     }
     
     // Make sure all one-time packages have valid price

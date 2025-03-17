@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { UserRole } from '@/contexts/AuthContext';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { fetchSubscriptionPackagesByType } from '@/lib/mongodb-utils';
-import { businessPackages, influencerPackages } from '@/data/subscriptionData';
 
 export const useSubscriptionPackages = (userRole: UserRole) => {
   const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);
@@ -13,8 +12,7 @@ export const useSubscriptionPackages = (userRole: UserRole) => {
   useEffect(() => {
     const loadPackages = async () => {
       if (!userRole) {
-        console.log("No user role provided, using default Business packages");
-        setPackages(businessPackages);
+        console.log("No user role provided");
         setIsLoading(false);
         return;
       }
@@ -35,7 +33,7 @@ export const useSubscriptionPackages = (userRole: UserRole) => {
         } else {
           // Default to Business for Admin, User, staff, or any other role
           role = "Business";
-          console.log(`Using default 'Business' packages for role: ${userRole}`);
+          console.log(`Using 'Business' packages for role: ${userRole}`);
         }
         
         try {
@@ -46,27 +44,18 @@ export const useSubscriptionPackages = (userRole: UserRole) => {
             setPackages(rolePackages);
             console.log(`Loaded ${rolePackages.length} ${role} packages from MongoDB`);
           } else {
-            console.warn(`No ${role} packages found in MongoDB, falling back to static data`);
-            // Fall back to static packages
-            const staticPackages = role === "Influencer" ? influencerPackages : businessPackages;
-            setPackages(staticPackages);
-            console.log(`Loaded ${staticPackages.length} ${role} packages from static data`);
+            console.warn(`No ${role} packages found in MongoDB`);
+            setPackages([]);
           }
         } catch (dbErr) {
           console.error('Error loading packages from MongoDB:', dbErr);
-          // Fall back to static packages
-          const staticPackages = role === "Influencer" ? influencerPackages : businessPackages;
-          setPackages(staticPackages);
-          console.log(`Loaded ${staticPackages.length} ${role} packages from static data due to DB error`);
+          setError('Failed to load subscription packages from database');
+          setPackages([]);
         }
       } catch (err) {
         console.error('Error in subscription packages hook:', err);
         setError('Failed to load subscription packages. Please try again later.');
-        
-        // Fall back to static packages as a last resort
-        const fallbackPackages = userRole === "Influencer" ? influencerPackages : businessPackages;
-        setPackages(fallbackPackages);
-        console.log(`Loaded ${fallbackPackages.length} fallback packages from static data`);
+        setPackages([]);
       } finally {
         setIsLoading(false);
       }
