@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, Save, Info } from "lucide-react";
+import { RefreshCw, Save, Info, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface PackageSectionsListProps {
@@ -48,7 +48,7 @@ const PackageSectionsList: React.FC<PackageSectionsListProps> = ({
       
       {packages.length === 0 ? (
         <Alert className="my-4">
-          <Info className="h-4 w-4" />
+          <AlertCircle className="h-4 w-4" />
           <AlertTitle>No packages available</AlertTitle>
           <AlertDescription>
             No subscription packages have been created yet. Please add packages through the Subscription Management 

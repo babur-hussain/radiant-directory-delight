@@ -9,9 +9,7 @@ import { Plus, Edit, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
-import { businessPackages, influencerPackages } from "@/data/subscriptionData";
-import SubscriptionPackageForm from "./SubscriptionPackageForm";
-import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
+import { fetchSubscriptionPackages, fetchSubscriptionPackagesByType } from "@/lib/mongodb-utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import AdvancedSubscriptionControls from "./AdvancedSubscriptionControls";
 import { useAuth } from "@/hooks/useAuth";
@@ -51,37 +49,37 @@ export const CentralizedSubscriptionManager = () => {
     setError(null);
     
     try {
-      // Try to fetch from Firebase
-      const fetchedPackages = await fetchSubscriptionPackages();
+      // Fetch packages from MongoDB
+      const allPackages = await fetchSubscriptionPackages();
       
-      if (fetchedPackages && fetchedPackages.length > 0) {
-        setPackages(fetchedPackages);
+      if (allPackages && allPackages.length > 0) {
+        setPackages(allPackages);
         
         // Split packages by type
-        const business = fetchedPackages.filter(pkg => pkg.type === "Business");
-        const influencer = fetchedPackages.filter(pkg => pkg.type === "Influencer");
+        const business = allPackages.filter(pkg => pkg.type === "Business");
+        const influencer = allPackages.filter(pkg => pkg.type === "Influencer");
         
-        setBusinessPkgs(business.length > 0 ? business : businessPackages);
-        setInfluencerPkgs(influencer.length > 0 ? influencer : influencerPackages);
+        setBusinessPkgs(business);
+        setInfluencerPkgs(influencer);
       } else {
-        // Use default packages if Firebase fetch fails or returns empty
-        setBusinessPkgs(businessPackages);
-        setInfluencerPkgs(influencerPackages);
-        setPackages([...businessPackages, ...influencerPackages]);
+        // If no packages found
+        setBusinessPkgs([]);
+        setInfluencerPkgs([]);
+        setPackages([]);
         
         toast({
-          title: "Using Default Packages",
-          description: "Could not load packages from database. Using default packages.",
+          title: "No Packages Found",
+          description: "No subscription packages found in the database.",
         });
       }
     } catch (err) {
       console.error("Error loading packages:", err);
-      setError("Failed to load subscription packages. Using default packages.");
+      setError("Failed to load subscription packages.");
       
-      // Set default packages as fallback
-      setBusinessPkgs(businessPackages);
-      setInfluencerPkgs(influencerPackages);
-      setPackages([...businessPackages, ...influencerPackages]);
+      // Set empty arrays as fallback
+      setBusinessPkgs([]);
+      setInfluencerPkgs([]);
+      setPackages([]);
     } finally {
       setIsLoading(false);
     }
@@ -217,7 +215,16 @@ export const CentralizedSubscriptionManager = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {displayedPackages.length > 0 ? (
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center">
+                        <div className="flex justify-center items-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+                          <span className="ml-2">Loading packages...</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : displayedPackages.length > 0 ? (
                     displayedPackages.map((pkg) => (
                       <TableRow key={pkg.id}>
                         <TableCell>

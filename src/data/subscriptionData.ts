@@ -17,6 +17,10 @@ export interface SubscriptionPackage {
   paymentType: "recurring" | "one-time";
 }
 
+// Empty arrays for backward compatibility with existing code
+export const businessPackages: SubscriptionPackage[] = [];
+export const influencerPackages: SubscriptionPackage[] = [];
+
 // Function to get package by ID
 export const getPackageById = (packageId: string, packages?: SubscriptionPackage[]): SubscriptionPackage | undefined => {
   if (packages) {

@@ -6,6 +6,7 @@ import { adminAssignSubscription } from '@/lib/subscription/admin-subscription';
 import { User } from '@/types/auth';
 import { useToast } from './use-toast';
 import { getPackageById } from '@/data/subscriptionData';
+import { fetchSubscriptionPackages } from '@/lib/mongodb-utils';
 
 export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packageId: string) => void) => {
   const { user: currentUser } = useAuth();
@@ -20,18 +21,18 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Load packages
-        const packageData = await import('@/data/subscriptionData');
+        // Load packages from MongoDB based on user role
+        let fetchedPackages = [];
         const userRole = targetUser?.role || 'User';
         
-        if (userRole === 'Business') {
-          setPackages(packageData.businessPackages);
-        } else if (userRole === 'Influencer') {
-          setPackages(packageData.influencerPackages);
+        if (userRole === 'Business' || userRole === 'Influencer') {
+          fetchedPackages = await fetchSubscriptionPackages(userRole);
         } else {
-          // Default to business packages if no specific role
-          setPackages([...packageData.businessPackages, ...packageData.influencerPackages]);
+          // Default to all packages if no specific role
+          fetchedPackages = await fetchSubscriptionPackages();
         }
+        
+        setPackages(fetchedPackages);
         
         // Load current subscription if available
         if (targetUser?.subscription) {

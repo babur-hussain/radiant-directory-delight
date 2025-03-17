@@ -4,9 +4,67 @@ import { User } from '../models/User';
 import { Business } from '../models/Business';
 import { Subscription } from '../models/Subscription';
 import { SubscriptionPackage } from '../models/SubscriptionPackage';
-import { businessPackages, influencerPackages } from '../data/subscriptionData';
 import { createTestUser } from '../features/auth/userManagement';
 import { UserRole } from '../types/auth';
+
+// Default package templates for seeding if needed
+const defaultBusinessPackages = [
+  {
+    id: "business-basic",
+    title: "Basic Business",
+    price: 9999,
+    shortDescription: "Essential tools for small businesses",
+    fullDescription: "Get started with the essential tools every small business needs to establish an online presence.",
+    features: ["Business profile listing", "Basic analytics", "Email support"],
+    popular: false,
+    setupFee: 1999,
+    durationMonths: 12,
+    type: "Business",
+    paymentType: "recurring"
+  },
+  {
+    id: "business-pro",
+    title: "Business Pro",
+    price: 19999,
+    shortDescription: "Advanced tools for growing businesses",
+    fullDescription: "Comprehensive tools and features for businesses looking to expand their reach and customer base.",
+    features: ["Everything in Basic", "Priority business listing", "Advanced analytics", "Priority support", "Marketing toolkit"],
+    popular: true,
+    setupFee: 999,
+    durationMonths: 12,
+    type: "Business",
+    paymentType: "recurring"
+  }
+];
+
+const defaultInfluencerPackages = [
+  {
+    id: "influencer-starter",
+    title: "Influencer Starter",
+    price: 4999,
+    shortDescription: "Essential tools for new influencers",
+    fullDescription: "Get started with the essential tools every influencer needs to connect with businesses.",
+    features: ["Influencer profile listing", "Basic analytics", "Email support"],
+    popular: false,
+    setupFee: 999,
+    durationMonths: 12,
+    type: "Influencer",
+    paymentType: "recurring"
+  },
+  {
+    id: "influencer-pro",
+    title: "Influencer Pro",
+    price: 9999,
+    shortDescription: "Advanced tools for serious influencers",
+    fullDescription: "Comprehensive tools and features for influencers looking to monetize their audience and grow their brand.",
+    features: ["Everything in Starter", "Priority profile listing", "Advanced analytics", "Priority support", "Brand partnership toolkit"],
+    popular: true,
+    setupFee: 499,
+    durationMonths: 12,
+    type: "Influencer",
+    paymentType: "recurring"
+  }
+];
 
 // Generate a random date within the last year
 const getRandomDate = () => {
@@ -158,7 +216,7 @@ export const seedDummySubscriptionPackages = async (): Promise<{ success: boolea
     }
     
     // Combine business and influencer packages
-    const allPackages = [...businessPackages, ...influencerPackages];
+    const allPackages = [...defaultBusinessPackages, ...defaultInfluencerPackages];
     let createdCount = 0;
     
     // Add each package to MongoDB
