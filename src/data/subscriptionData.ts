@@ -46,7 +46,7 @@ export const convertToSubscriptionPackage = (pkg: any): SubscriptionPackage => {
     fullDescription: pkg.fullDescription || pkg.shortDescription || '',
     features: Array.isArray(pkg.features) ? pkg.features : [],
     popular: !!pkg.popular,
-    setupFee: pkg.setupFee || 0,
+    setupFee: typeof pkg.setupFee === 'number' ? pkg.setupFee : 0,
     durationMonths: pkg.durationMonths || 12,
     termsAndConditions: pkg.termsAndConditions,
     type: pkg.type || 'Business',

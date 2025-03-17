@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 import AdminPermissionError from "../dashboard/AdminPermissionError";
 import BusinessTableLoading from "../table/BusinessTableLoading";
 import SubscriptionError from "./SubscriptionError";
+import { convertToSubscriptionPackage, SubscriptionPackage } from "@/data/subscriptionData";
 
 interface SubscriptionPackageManagementProps {
   onPermissionError?: (error: any) => void;
@@ -41,13 +41,13 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
   onPermissionError,
   dbInitialized = false
 }) => {
-  const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);
-  const [filteredPackages, setFilteredPackages] = useState<ISubscriptionPackage[]>([]);
+  const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
+  const [filteredPackages, setFilteredPackages] = useState<SubscriptionPackage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
-  const [packageToDelete, setPackageToDelete] = useState<ISubscriptionPackage | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<SubscriptionPackage | null>(null);
+  const [packageToDelete, setPackageToDelete] = useState<SubscriptionPackage | null>(null);
   const [activeTab, setActiveTab] = useState("business");
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -56,7 +56,6 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     if (dbInitialized) {
       loadPackages();
     } else {
-      // If MongoDB not initialized, still try to load packages after a delay
       const timer = setTimeout(() => {
         loadPackages();
       }, 1000);
@@ -84,34 +83,17 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
       console.log("Fetched subscription packages from MongoDB:", data);
       
       if (data && Array.isArray(data) && data.length > 0) {
-        // Ensure all packages have required fields
-        const validatedPackages = data.map(pkg => ({
-          id: pkg.id || nanoid(),
-          title: pkg.title || "Untitled Package",
-          price: Number(pkg.price) || 0,
-          monthlyPrice: Number(pkg.monthlyPrice) || 0,
-          setupFee: Number(pkg.setupFee) || 0,
-          durationMonths: Number(pkg.durationMonths) || 12,
-          type: pkg.type || "Business",
-          shortDescription: pkg.shortDescription || "",
-          fullDescription: pkg.fullDescription || "",
-          features: Array.isArray(pkg.features) ? pkg.features : [],
-          popular: !!pkg.popular,
-          termsAndConditions: pkg.termsAndConditions || "",
-          paymentType: pkg.paymentType || "recurring"
-        }));
+        const convertedPackages = data.map(pkg => convertToSubscriptionPackage(pkg));
+        setPackages(convertedPackages);
         
-        setPackages(validatedPackages);
-        
-        const filtered = validatedPackages.filter(pkg => 
+        const filtered = convertedPackages.filter(pkg => 
           pkg.type && pkg.type.toLowerCase() === activeTab
         );
         
         setFilteredPackages(filtered);
-        console.log(`Loaded ${validatedPackages.length} subscription packages, filtered to ${filtered.length} ${activeTab} packages`);
+        console.log(`Loaded ${convertedPackages.length} subscription packages, filtered to ${filtered.length} ${activeTab} packages`);
       } else {
         console.warn("No subscription packages found in MongoDB");
-        // Set default empty arrays
         setPackages([]);
         setFilteredPackages([]);
         
@@ -138,7 +120,6 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
         });
       }
       
-      // Set empty arrays to prevent undefined errors
       setPackages([]);
       setFilteredPackages([]);
     } finally {
@@ -151,9 +132,8 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     setIsFormOpen(true);
   };
 
-  const handleEditPackage = (pkg: ISubscriptionPackage) => {
+  const handleEditPackage = (pkg: SubscriptionPackage) => {
     console.log("Editing package:", pkg);
-    // Make a deep copy to avoid reference issues
     const packageCopy = JSON.parse(JSON.stringify(pkg));
     setSelectedPackage(packageCopy);
     setIsFormOpen(true);
@@ -167,7 +147,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     }, 100);
   };
 
-  const handleOpenDeleteDialog = (pkg: ISubscriptionPackage) => {
+  const handleOpenDeleteDialog = (pkg: SubscriptionPackage) => {
     setPackageToDelete(pkg);
   };
 
@@ -210,7 +190,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     }
   };
 
-  const handleSavePackage = async (packageData: ISubscriptionPackage) => {
+  const handleSavePackage = async (packageData: SubscriptionPackage) => {
     setIsSaving(true);
     setPermissionError(null);
     try {
@@ -220,33 +200,17 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
         throw new Error("Package title is required");
       }
       
-      const validatedPackageData: ISubscriptionPackage = {
-        ...packageData,
-        id: packageData.id || nanoid(),
-        price: Number(packageData.price) || 0,
-        monthlyPrice: Number(packageData.monthlyPrice || 0),
-        setupFee: Number(packageData.setupFee || 0),
-        durationMonths: Number(packageData.durationMonths || 12),
-        advancePaymentMonths: Number(packageData.advancePaymentMonths || 0),
-        termsAndConditions: packageData.termsAndConditions || '',
-        features: Array.isArray(packageData.features) ? packageData.features : [],
-      };
-      
-      if (!validatedPackageData.paymentType) {
-        validatedPackageData.paymentType = "recurring";
-      }
-      
-      await saveSubscriptionPackage(validatedPackageData);
+      await saveSubscriptionPackage(packageData);
       console.log("Package saved successfully to MongoDB");
       
       setPackages(prev => {
-        const existingIndex = prev.findIndex(p => p.id === validatedPackageData.id);
+        const existingIndex = prev.findIndex(p => p.id === packageData.id);
         if (existingIndex >= 0) {
           const updated = [...prev];
-          updated[existingIndex] = validatedPackageData;
+          updated[existingIndex] = packageData;
           return updated;
         } else {
-          return [...prev, validatedPackageData];
+          return [...prev, packageData];
         }
       });
       
@@ -299,7 +263,6 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     return <BusinessTableLoading />;
   }
 
-  // Early return if there's a permission error
   if (permissionError) {
     return (
       <Card>
@@ -377,7 +340,6 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
           </TabsContent>
         </Tabs>
         
-        {/* Dialog for editing/creating packages */}
         <Dialog 
           open={isFormOpen} 
           onOpenChange={(open) => {
@@ -420,7 +382,6 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
           </DialogContent>
         </Dialog>
         
-        {/* Alert Dialog for confirming package deletion */}
         <AlertDialog open={!!packageToDelete} onOpenChange={open => !open && handleCloseDeleteDialog()}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -452,7 +413,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     </Card>
   );
 
-  function renderPackagesTable(packages: ISubscriptionPackage[], loading: boolean) {
+  function renderPackagesTable(packages: SubscriptionPackage[], loading: boolean) {
     if (loading) {
       return (
         <div className="flex justify-center items-center py-8">

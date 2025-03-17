@@ -16,6 +16,7 @@ import { IBusiness } from '../models/Business';
 import { IUser } from '../models/User';
 import { ISubscription } from '@/models/Subscription';
 import { syncPackageToFirebase } from '@/utils/syncMongoFirebase';
+import { SubscriptionPackage, convertToSubscriptionPackage } from '@/data/subscriptionData';
 
 /**
  * Fetches all subscription packages from MongoDB
@@ -108,12 +109,17 @@ export const fetchSubscriptionPackagesByType = async (type: "Business" | "Influe
 /**
  * Saves a subscription package to MongoDB and syncs to Firebase
  */
-export const saveSubscriptionPackage = async (packageData: ISubscriptionPackage): Promise<ISubscriptionPackage> => {
+export const saveSubscriptionPackage = async (packageData: SubscriptionPackage | ISubscriptionPackage): Promise<ISubscriptionPackage> => {
   try {
     console.log("Original package data to save:", packageData);
     
     // Ensure price is properly set for one-time payment packages
     let sanitizedPackage = { ...packageData };
+    
+    // Make sure setupFee is set if undefined
+    if (sanitizedPackage.setupFee === undefined) {
+      sanitizedPackage.setupFee = 0;
+    }
     
     if (packageData.paymentType === "one-time") {
       // Make sure one-time packages have required fields
