@@ -72,7 +72,7 @@ export const useRazorpayPayment = () => {
       };
       
       const options = {
-        key: RAZORPAY_KEY_ID,
+        key: RAZORPAY_KEY_ID, // Using the provided API key from utils
         amount: order.amount,
         currency: order.currency,
         name: 'Grow Bharat Vyapaar',
@@ -81,6 +81,8 @@ export const useRazorpayPayment = () => {
         handler: function(response: any) {
           // Add payment type to the response
           response.paymentType = selectedPackage.paymentType || "recurring";
+          
+          console.log("Payment successful, Razorpay response:", response);
           
           // Show success toast
           toast({
@@ -95,7 +97,7 @@ export const useRazorpayPayment = () => {
         prefill: {
           name: user.displayName || user.name || '',
           email: user.email || '',
-          contact: ''
+          contact: user.phone || user.phoneNumber || ''
         },
         notes: {
           package_id: selectedPackage.id,
@@ -115,15 +117,35 @@ export const useRazorpayPayment = () => {
               description: "You've cancelled the payment process.",
               variant: "default"
             });
+            
+            onFailure({ message: "Payment cancelled by user" });
           }
         }
       };
       
+      console.log("Opening Razorpay with options:", options);
+      
       const razorpay = new window.Razorpay(options);
+      razorpay.on('payment.failed', function(response: any) {
+        console.error('Payment failed:', response.error);
+        
+        const errorMessage = response.error.description || 'Payment failed. Please try again.';
+        
+        toast({
+          title: "Payment Failed",
+          description: errorMessage,
+          variant: "destructive"
+        });
+        
+        setIsLoading(false);
+        setError(errorMessage);
+        onFailure(response.error);
+      });
+      
       razorpay.open();
       
       // Log for debugging
-      console.log("Opening Razorpay with options:", {
+      console.log("Opened Razorpay with options:", {
         packageId: selectedPackage.id,
         packageTitle: selectedPackage.title,
         amount: paymentAmount,
@@ -141,7 +163,6 @@ export const useRazorpayPayment = () => {
       });
       
       onFailure(error);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -152,3 +173,4 @@ export const useRazorpayPayment = () => {
     initiatePayment
   };
 };
+

@@ -42,15 +42,25 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     initiatePayment({
       selectedPackage,
       onSuccess: (response) => {
+        console.log("Payment success in RazorpayPayment:", response);
         onSuccess(response);
         setIsProcessing(false);
       },
       onFailure: (error) => {
+        console.error("Payment failure in RazorpayPayment:", error);
         onFailure(error);
         setIsProcessing(false);
       }
     });
   };
+  
+  useEffect(() => {
+    // Automatically trigger payment when component mounts
+    // This makes the flow smoother
+    if (!isProcessing && !isLoading && !error) {
+      handlePayment();
+    }
+  }, []);
   
   if (error) {
     return (
@@ -143,3 +153,4 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
 };
 
 export default RazorpayPayment;
+
