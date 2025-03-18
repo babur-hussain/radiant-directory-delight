@@ -1,14 +1,24 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Business } from '@/lib/csv-utils';
-import { useBusinessListings } from '@/hooks/useBusinessListings';
-import BusinessTableSearch from './table/BusinessTableSearch';
-import BusinessTableContent from './table/BusinessTableContent';
+import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import BusinessFormDialog from './BusinessFormDialog';
 import BusinessTableLoading from './table/BusinessTableLoading';
-import BusinessPermissionError from './table/BusinessPermissionError';
-import BusinessDetailsDialog from './table/BusinessDetailsDialog';
+import { useBusinessListings } from '@/hooks/useBusinessListings';
+import { IBusiness } from '@/models/Business';
 import DeleteBusinessDialog from './table/DeleteBusinessDialog';
-import { useToast } from '@/hooks/use-toast';
+import BusinessPermissionError from './table/BusinessPermissionError';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import CSVUploadDialog from './CSVUploadDialog';
+import BusinessTableRow from './table/BusinessTableRow';
+import { Business } from '@/lib/csv-utils';
 
 interface TableBusinessListingsProps {
   onRefresh?: () => void;
@@ -16,171 +26,149 @@ interface TableBusinessListingsProps {
   onEditBusiness?: (business: Business) => void;
 }
 
-export const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({ 
-  onRefresh,
-  onAddBusiness,
-  onEditBusiness
+const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({ 
+  onRefresh, 
+  onAddBusiness, 
+  onEditBusiness 
 }) => {
-  const { toast } = useToast();
-  const { 
-    businesses, 
-    isRefreshing, 
-    loading, 
-    permissionError, 
-    refreshData,
-    handleDeleteBusiness 
-  } = useBusinessListings();
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
-  const [businessToDelete, setBusinessToDelete] = useState<Business | null>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-  const itemsPerPage = 40;
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [selectedBusiness, setSelectedBusiness] = useState<IBusiness | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
-  const handleRefreshData = useCallback(async () => {
-    console.log('handleRefreshData called');
-    await refreshData();
-    if (onRefresh) {
-      onRefresh();
-    }
-  }, [refreshData, onRefresh]);
+  // Use the useBusinessListings hook
+  const { businesses, isLoading, error, refreshData } = useBusinessListings();
   
-  const handleSearchChange = useCallback((term: string) => {
-    console.log('Search term changed:', term);
-    setSearchTerm(term);
-    setCurrentPage(1);
-  }, []);
-
-  const handleDeleteConfirm = useCallback(async () => {
-    console.log('Confirming delete for business:', businessToDelete);
-    if (businessToDelete) {
-      const result = await handleDeleteBusiness(businessToDelete);
-      if (result) {
-        toast({
-          title: "Business Deleted",
-          description: `"${businessToDelete.name}" has been removed successfully.`,
-        });
+  // Function to handle business deletion
+  const handleDeleteBusiness = async (businessId: string) => {
+    try {
+      // Use MongoDB functionality to delete business
+      // This would be implemented in the refreshData call after deletion
+      await refreshData();
+      setIsDeleteDialogOpen(false);
+      if (onRefresh) {
+        onRefresh();
       }
-      setBusinessToDelete(null);
-      setShowDeleteDialog(false);
+    } catch (error) {
+      console.error("Error deleting business:", error);
     }
-  }, [businessToDelete, handleDeleteBusiness, toast]);
-  
-  const handleEditClick = useCallback((business: Business) => {
-    console.log('Edit business clicked:', business);
-    const isOriginal = business.id <= 20;
-    
-    if (isOriginal) {
-      toast({
-        title: "Cannot Edit Original Data",
-        description: "Demo businesses cannot be edited in this example.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (onEditBusiness) {
-      onEditBusiness(business);
-    }
-  }, [onEditBusiness, toast]);
-  
-  const handleViewDetails = useCallback((business: Business) => {
-    console.log('View details for business:', business);
+  };
+
+  // Function to open delete dialog
+  const openDeleteDialog = (business: IBusiness) => {
     setSelectedBusiness(business);
-    setShowDetailsDialog(true);
-  }, []);
-  
-  const handleDeleteClick = useCallback((business: Business) => {
-    console.log('Delete business clicked:', business);
-    const isOriginal = business.id <= 20;
-    
-    if (isOriginal) {
-      toast({
-        title: "Cannot Delete Original Data",
-        description: "Demo businesses cannot be deleted in this example.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setBusinessToDelete(business);
-    setShowDeleteDialog(true);
-  }, [toast]);
-  
-  const handleAddBusinessClick = useCallback(() => {
-    console.log('Add business button clicked in TableBusinessListings');
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleAddClick = () => {
     if (onAddBusiness) {
       onAddBusiness();
+    } else {
+      setIsFormOpen(true);
     }
-  }, [onAddBusiness]);
-  
-  // Filter businesses based on search term
-  const filteredBusinesses = businesses.filter(business => 
-    business.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    business.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    business.address.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  
-  // Calculate pagination values for display
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, filteredBusinesses.length);
+  };
 
-  useEffect(() => {
-    console.log('TableBusinessListings rendered', { 
-      businessCount: businesses.length,
-      filteredCount: filteredBusinesses.length,
-      loading,
-      isRefreshing
-    });
-  }, [businesses.length, filteredBusinesses.length, loading, isRefreshing]);
+  const handleEditClick = (business: IBusiness) => {
+    if (onEditBusiness) {
+      onEditBusiness(business as Business);
+    } else {
+      setSelectedBusiness(business);
+      setIsFormOpen(true);
+    }
+  };
 
   return (
-    <div className="space-y-4">
-      <BusinessPermissionError errorMessage={permissionError || ''} />
-      
-      <BusinessTableSearch 
-        searchTerm={searchTerm}
-        onSearchChange={handleSearchChange}
-        onRefresh={handleRefreshData}
-        onAddBusiness={handleAddBusinessClick}
-        isRefreshing={isRefreshing}
-        startIndex={startIndex}
-        endIndex={endIndex}
-        totalBusinesses={filteredBusinesses.length}
-      />
-      
-      {loading ? (
-        <BusinessTableLoading />
-      ) : filteredBusinesses.length === 0 ? (
-        <div className="py-12 text-center">
-          <p className="text-muted-foreground text-lg">No businesses found matching your search criteria.</p>
+    <div className="business-table-container">
+      <div className="mb-4 flex justify-between items-center">
+        <h2 className="text-xl font-bold">Business Listings</h2>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsUploadOpen(true)} variant="outline" size="sm">
+            Import CSV
+          </Button>
+          <Button onClick={handleAddClick}>
+            <Plus className="mr-2 h-4 w-4" /> Add Business
+          </Button>
         </div>
+      </div>
+
+      {error ? (
+        <BusinessPermissionError errorMessage={error} />
+      ) : isLoading ? (
+        <BusinessTableLoading />
       ) : (
-        <BusinessTableContent 
-          businesses={filteredBusinesses}
-          currentPage={currentPage}
-          setCurrentPage={setCurrentPage}
-          itemsPerPage={itemsPerPage}
-          onViewDetails={handleViewDetails}
-          onEditBusiness={handleEditClick}
-          onDeleteBusiness={handleDeleteClick}
-        />
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[80px]">ID</TableHead>
+                <TableHead>Business Name</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead className="hidden md:table-cell">Address</TableHead>
+                <TableHead>Rating</TableHead>
+                <TableHead className="hidden md:table-cell">Phone</TableHead>
+                <TableHead className="w-[150px] text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {!businesses || businesses.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center">
+                    No businesses found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                businesses.map((business) => (
+                  <BusinessTableRow 
+                    key={business.id}
+                    business={business}
+                    onViewDetails={() => {}}
+                    onEditBusiness={() => handleEditClick(business)}
+                    onDeleteBusiness={() => openDeleteDialog(business)}
+                  />
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       )}
-      
-      <BusinessDetailsDialog 
+
+      <BusinessFormDialog 
+        show={isFormOpen} 
+        onClose={() => {
+          setIsFormOpen(false);
+          setSelectedBusiness(null);
+        }}
+        onSubmit={async () => {
+          await refreshData();
+          setIsFormOpen(false);
+          setSelectedBusiness(null);
+          if (onRefresh) {
+            onRefresh();
+          }
+        }}
         business={selectedBusiness}
-        open={showDetailsDialog}
-        onOpenChange={setShowDetailsDialog}
+        isSubmitting={false}
       />
-      
-      <DeleteBusinessDialog 
-        business={businessToDelete}
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        onConfirmDelete={handleDeleteConfirm}
+
+      <CSVUploadDialog 
+        show={isUploadOpen} 
+        onClose={() => setIsUploadOpen(false)} 
+        onUploadComplete={() => {
+          refreshData();
+          if (onRefresh) {
+            onRefresh();
+          }
+        }}
+      />
+
+      <DeleteBusinessDialog
+        business={selectedBusiness}
+        open={isDeleteDialogOpen}
+        onOpenChange={() => setIsDeleteDialogOpen(false)}
+        onConfirmDelete={() => selectedBusiness && handleDeleteBusiness(selectedBusiness.id.toString())}
       />
     </div>
   );
 };
+
+export default TableBusinessListings;

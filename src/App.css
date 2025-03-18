@@ -9,30 +9,173 @@ body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
-}
-
-/* Header styling */
-header {
-  position: fixed;
-  top: 0;
-  left: 0;
   width: 100%;
-  background-color: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  height: 64px;
 }
 
-/* Main content styling with proper padding to avoid header overlap */
+/* Header styling to ensure it's visible */
+header.main-header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  z-index: 9999 !important;
+  height: 64px !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Main content styling with proper padding */
 main {
-  padding-top: 64px; /* Add padding equal to header height */
-  margin-top: 0;
+  width: 100%;
+  padding-top: 64px; /* Add padding to account for fixed header height */
 }
 
-/* Hero section styling to align properly */
-.hero-section {
-  padding-top: 0; /* Remove the padding from hero as main already has padding */
-  margin-top: 0;
+/* Layout specific styles */
+.admin-layout,
+.dashboard-layout {
+  padding-top: 0; /* Reset padding as these layouts handle their own spacing */
+  min-height: calc(100vh - 64px);
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Auth modal scrolling fix */
+.auth-modal-content {
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.auth-modal-body {
+  max-height: calc(90vh - 120px);
+  overflow-y: auto;
+}
+
+/* Form scrolling fix */
+.scrollable-form-container {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+/* Admin and dashboard headers */
+.dashboard-header, 
+.admin-header {
+  position: sticky !important;
+  top: 64px !important;
+  z-index: 40 !important;
+  width: 100% !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Proper z-index hierarchy */
+.radix-sheet-content,
+.radix-dropdown-menu-content,
+.radix-popover-content {
+  z-index: 99999 !important;
+}
+
+/* Fix for button click issues in admin panels */
+.admin-layout button,
+.dashboard-layout button {
+  position: relative !important;
+  z-index: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Fix for navigation items */
+.admin-layout nav button,
+.dashboard-layout nav button {
+  width: 100% !important;
+  text-align: left !important;
+  display: flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+}
+
+/* Fix for admin panel duplicate headers */
+.admin-layout .p-4.border-b h1.text-xl,
+.admin-layout .flex h1.text-xl {
+  display: none !important;
+}
+
+/* Dialog scrolling fix */
+[data-radix-dialog-content] {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-radix-scroll-area-viewport] {
+  height: 100% !important;
+}
+
+/* Ensure main content has proper spacing and width */
+.admin-layout main,
+.dashboard-layout main {
+  padding-top: 20px !important;
+  width: 100% !important;
+}
+
+/* Admin tabs container fix */
+.admin-layout .tabs-container,
+.dashboard-layout .tabs-container {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Better responsive behavior for admin dashboard */
+@media (max-width: 768px) {
+  .admin-layout main,
+  .dashboard-layout main {
+    padding: 16px !important;
+  }
+  
+  .admin-layout .tabs-container,
+  .dashboard-layout .tabs-container {
+    overflow-x: auto !important;
+  }
+
+  /* Mobile auth modal fixes */
+  .auth-modal-content {
+    max-height: 100vh;
+  }
+
+  .auth-modal-body {
+    max-height: calc(100vh - 100px);
+  }
+}
+
+/* Fix for width issues */
+.admin-layout .w-full,
+.admin-layout .card,
+.admin-layout .space-y-6,
+.admin-layout .card-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+/* Fix text overflow in dashboard components */
+.admin-layout p, 
+.admin-layout h2, 
+.admin-layout h3,
+.admin-layout .card-description {
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  max-width: 100% !important;
+}
+
+/* Fix tab content overflow */
+.admin-layout .tabs-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
 }
 
 /* Other styles */

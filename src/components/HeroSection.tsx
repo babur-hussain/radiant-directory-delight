@@ -1,73 +1,36 @@
 
-import { useState, useEffect } from 'react';
+import React from 'react';
 import SearchBar from './search/SearchBar';
 import PopularSearchTerms from './search/PopularSearchTerms';
-import HeroContent from './hero/HeroContent';
-import GetListedForm from './GetListedForm';
-import { useIsMobile } from '@/hooks/use-mobile';
 
-const HeroSection = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isSearchResultsVisible, setIsSearchResultsVisible] = useState(false);
-  const [isListingFormOpen, setIsListingFormOpen] = useState(false);
-  const isMobile = useIsMobile();
-
-  const handlePopularTermClick = (term: string) => {
-    setSearchTerm(term);
+const HeroSection: React.FC = () => {
+  const handleTermClick = (term: string) => {
+    console.log("Search term clicked:", term);
   };
   
-  // Lock body scroll when search results are visible on mobile
-  useEffect(() => {
-    if (isSearchResultsVisible && isMobile) {
-      document.body.style.overflow = 'hidden';
-      // Calculate scrollbar width to prevent layout shift
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      if (scrollbarWidth > 0) {
-        document.body.style.paddingRight = `${scrollbarWidth}px`;
-      }
-    } else {
-      document.body.style.overflow = '';
-      document.body.style.paddingRight = '';
-    }
-
-    return () => {
-      document.body.style.overflow = '';
-      document.body.style.paddingRight = '';
-    };
-  }, [isSearchResultsVisible, isMobile]);
-  
   return (
-    <div className="relative min-h-[85vh] flex items-center justify-center overflow-hidden hero-section">
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-white"></div>
-        <div 
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: 'url("data:image/svg+xml,%3Csvg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z" fill="%23000000" fill-opacity="1" fill-rule="evenodd"/%3E%3C/svg%3E")',
-            backgroundSize: '600px 600px',
-          }}
-        ></div>
-      </div>
-
-      <div className="container max-w-7xl mx-auto px-4 sm:px-6 z-10 animate-fade-up">
-        <HeroContent />
-
-        <div className="max-w-3xl mx-auto relative z-30">
-          <SearchBar 
-            initialQuery={searchTerm} 
-            onResultsVisibilityChange={setIsSearchResultsVisible}
-          />
-          {!isSearchResultsVisible && (
-            <PopularSearchTerms onTermClick={handlePopularTermClick} />
-          )}
+    <section className="relative bg-gradient-to-b from-primary/10 to-background pt-10 md:pt-16 pb-8">
+      <div className="container mx-auto px-4">
+        <div className="hero-content text-center">
+          <h1 className="text-4xl font-bold mb-4">Grow Bharat Vyapaar</h1>
+          <p className="text-xl mb-6">Discover Indian businesses</p>
+          <p className="text-base text-gray-600 max-w-2xl mx-auto">
+            Find and connect with the best businesses across India. Our platform helps
+            you discover quality products and services from local entrepreneurs.
+          </p>
+        </div>
+        
+        <div className="mt-8 w-full max-w-4xl mx-auto">
+          <div className="bg-white p-4 rounded-lg shadow-md">
+            <SearchBar initialQuery="" onResultsVisibilityChange={() => {}} />
+            
+            <div className="mt-4 text-center">
+              <PopularSearchTerms onTermClick={handleTermClick} />
+            </div>
+          </div>
         </div>
       </div>
-      
-      <GetListedForm 
-        isOpen={isListingFormOpen}
-        setIsOpen={setIsListingFormOpen}
-      />
-    </div>
+    </section>
   );
 };
 

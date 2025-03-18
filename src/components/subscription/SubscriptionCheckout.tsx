@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { ShoppingCart, ArrowLeft, Loader2 } from "lucide-react";
-import { useSubscription } from "@/hooks/useSubscription";
+import { useSubscription } from "@/hooks";
 import RazorpayPayment from "./RazorpayPayment";
 
 interface SubscriptionCheckoutProps {

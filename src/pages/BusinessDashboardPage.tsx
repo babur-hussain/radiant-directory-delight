@@ -1,51 +1,93 @@
-// This is a partial fix just to address the specific error
-// The actual implementation might vary depending on your project structure
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { getUserSubscription } from '@/lib/subscription';
-
-// This is a temporary fix for the missing function
-export const listenToUserSubscription = (userId: string, callback: (subscription: any) => void) => {
-  // This would normally set up a real-time listener
-  // For now, just fetch the subscription once
-  getUserSubscription(userId)
-    .then(subscription => {
-      if (subscription) {
-        callback(subscription);
-      }
-    })
-    .catch(error => {
-      console.error("Error fetching subscription:", error);
-    });
-  
-  // Return a function to unsubscribe (no-op in this case)
-  return () => {};
-};
+import { Navigate } from 'react-router-dom';
+import { Card, CardContent } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import BusinessDashboard from '@/components/dashboard/business/BusinessDashboard';
+import AccessDenied from '@/components/dashboard/AccessDenied';
+import { getUserSubscription, listenToUserSubscription } from '@/lib/subscription';
 
 const BusinessDashboardPage = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [subscription, setSubscription] = useState<any>(null);
-  
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    if (user?.id) {
-      // Use the function to listen for subscription changes
-      const unsubscribe = listenToUserSubscription(user.id, (data) => {
-        setSubscription(data);
-      });
+    let unsubscribe: (() => void) | undefined;
+
+    const fetchSubscription = async () => {
+      if (!user?.id) return;
       
-      // Clean up listener on unmount
-      return () => {
-        unsubscribe();
-      };
+      try {
+        // Get initial subscription data
+        const initialSubscription = await getUserSubscription(user.id);
+        setSubscription(initialSubscription);
+        
+        // Set up real-time listener for subscription changes
+        unsubscribe = listenToUserSubscription(user.id, (data) => {
+          console.log('Subscription updated:', data);
+          setSubscription(data);
+        });
+      } catch (error) {
+        console.error('Error fetching subscription:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user?.id) {
+      fetchSubscription();
+    } else if (!authLoading) {
+      setIsLoading(false);
     }
-  }, [user?.id]);
-  
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [user?.id, authLoading]);
+
+  // Redirect if not authenticated
+  if (!authLoading && !user) {
+    return <Navigate to="/admin/login" replace />;
+  }
+
+  // Show loading state
+  if (authLoading || isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+          <h3 className="text-xl font-medium">Loading dashboard</h3>
+          <p className="text-muted-foreground">Please wait while we fetch your data</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Check if user is a business or has admin privileges
+  const isBusinessOrAdmin = 
+    user?.role === 'Business' || 
+    user?.role === 'Admin' || 
+    user?.isAdmin === true;
+
+  // Show access denied if not a business user or admin
+  if (!isBusinessOrAdmin) {
+    return (
+      <DashboardLayout>
+        <AccessDenied message="You don't have access to the Business Dashboard. This dashboard is only available for Business accounts or Administrators" />
+      </DashboardLayout>
+    );
+  }
+
   return (
-    <div>
-      <h1>Business Dashboard</h1>
-      {/* ... rest of the component */}
-    </div>
+    <DashboardLayout>
+      <BusinessDashboard 
+        userId={user.id} 
+        subscriptionStatus={subscription?.status} 
+      />
+    </DashboardLayout>
   );
 };
 

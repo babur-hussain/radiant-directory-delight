@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,9 +22,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { SubscriptionPackage } from "@/data/subscriptionData";
 import { nanoid } from "nanoid";
-import { featuresToString, stringToFeatures } from "@/lib/subscription-utils";
+import { SubscriptionPackage } from "@/data/subscriptionData";
+import { Loader2 } from "lucide-react";
+
+const featuresToString = (features?: string[]): string => {
+  return features && Array.isArray(features) ? features.join('\n') : '';
+};
+
+const stringToFeatures = (featuresString: string): string[] => {
+  return featuresString
+    .split('\n')
+    .map(feature => feature.trim())
+    .filter(feature => feature.length > 0);
+};
 
 const formSchema = z.object({
   id: z.string().min(1, "ID is required"),
@@ -49,6 +59,7 @@ type SubscriptionPackageFormProps = {
   initialData?: SubscriptionPackage;
   onSubmit: (data: SubscriptionPackage) => void;
   onCancel: () => void;
+  isSaving?: boolean;
 };
 
 type FormValues = z.infer<typeof formSchema>;
@@ -56,7 +67,8 @@ type FormValues = z.infer<typeof formSchema>;
 const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   initialData,
   onSubmit,
-  onCancel
+  onCancel,
+  isSaving = false
 }) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -83,7 +95,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   const paymentType = form.watch("paymentType");
 
   useEffect(() => {
-    // Only setup the price/monthly price synchronization for recurring subscriptions
     if (paymentType === "recurring") {
       const subscription = form.watch((value, { name }) => {
         if (name === "price" && value.price) {
@@ -103,8 +114,8 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
     const featureArray = stringToFeatures(values.featuresString);
     
     const price = Number(values.price);
-    const monthlyPrice = Number(values.monthlyPrice);
-    const setupFee = Number(values.setupFee);
+    const monthlyPrice = paymentType === "recurring" ? Number(values.monthlyPrice) : undefined;
+    const setupFee = paymentType === "recurring" ? Number(values.setupFee) : 0;
     
     const packageData: SubscriptionPackage = {
       id: values.id,
@@ -119,12 +130,11 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
       popular: values.popular,
       type: values.type,
       termsAndConditions: values.termsAndConditions || "",
-      billingCycle: values.billingCycle,
-      advancePaymentMonths: Number(values.advancePaymentMonths),
+      billingCycle: paymentType === "recurring" ? values.billingCycle : undefined,
+      advancePaymentMonths: paymentType === "recurring" ? Number(values.advancePaymentMonths) : 0,
       paymentType: values.paymentType
     };
     
-    console.log("Form submitted with data:", packageData);
     onSubmit(packageData);
   };
 
@@ -240,10 +250,8 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
                     step="1" 
                     {...field} 
                     onChange={(e) => {
-                      // For one-time payments, just update the price without recalculation
                       field.onChange(e);
                       
-                      // Only perform automatic calculation for recurring subscriptions
                       if (paymentType === "recurring") {
                         if (billingCycle === "monthly") {
                           const yearlyPrice = Number(e.target.value) * 12;
@@ -256,6 +264,9 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
                     }}
                   />
                 </FormControl>
+                <FormDescription>
+                  {paymentType === "one-time" && "The full one-time payment amount for this package (₹)"}
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -328,25 +339,24 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
             />
           )}
 
-          {/* Only show duration field for recurring subscriptions */}
-          {paymentType === "recurring" && (
-            <FormField
-              control={form.control}
-              name="durationMonths"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Duration (months)</FormLabel>
-                  <FormControl>
-                    <Input type="number" min="1" step="1" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Duration of the subscription
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
+          <FormField
+            control={form.control}
+            name="durationMonths"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Duration (months)</FormLabel>
+                <FormControl>
+                  <Input type="number" min="1" step="1" {...field} />
+                </FormControl>
+                <FormDescription>
+                  {paymentType === "one-time" 
+                    ? "How long this package will be valid after purchase" 
+                    : "Duration of the subscription"}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           {paymentType === "recurring" && (
             <FormField
@@ -467,11 +477,18 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
         />
 
         <div className="flex justify-end space-x-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving}>
             Cancel
           </Button>
-          <Button type="submit">
-            {initialData ? "Update Package" : "Create Package"}
+          <Button type="submit" disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {initialData ? "Updating..." : "Creating..."}
+              </>
+            ) : (
+              initialData ? "Update Package" : "Create Package"
+            )}
           </Button>
         </div>
       </form>

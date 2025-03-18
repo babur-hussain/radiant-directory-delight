@@ -1,217 +1,409 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import UnauthorizedView from "@/components/admin/UnauthorizedView";
-import { useToast } from "@/hooks/use-toast";
-import { useState as useReactState } from "react";
-import { useBusinessListings } from "@/hooks/useBusinessListings";
-import { Business } from "@/lib/csv-utils";
-import { BusinessFormValues } from "@/components/admin/BusinessForm";
-import AdminPermissionError from "@/components/admin/dashboard/AdminPermissionError";
-import AdminDashboardTabs from "@/components/admin/dashboard/AdminDashboardTabs";
-import { loadAllUsers, debugRefreshUsers } from "@/features/auth/authStorage";
-import { ensureTestUsers } from "@/features/auth/userManagement";
-import Loading from "@/components/ui/loading";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { setupMongoDB, autoInitMongoDB } from '@/utils/setupMongoDB';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { CheckCircle2, AlertCircle, RefreshCw, Database, Activity } from 'lucide-react';
+import Loading from '@/components/ui/loading';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import MongoDBInitializationPanel from '@/components/admin/MongoDBInitializationPanel';
+import SubscriptionPackageManagement from '@/components/admin/subscription/SubscriptionManagement';
+import MigrationUtility from '@/components/admin/MigrationUtility';
+import SeedDataPanel from '@/components/admin/dashboard/SeedDataPanel';
+import { useToast } from '@/hooks/use-toast';
+import { connectToMongoDB, isMongoDBConnected } from '@/config/mongodb';
+import { fullSyncPackages } from '@/utils/syncMongoFirebase';
+import { diagnoseMongoDbConnection, testConnectionWithRetry } from '@/utils/mongoDebug';
+import AdminDashboardTabs from '@/components/admin/dashboard/AdminDashboardTabs';
+import AdminLayout from '@/components/admin/AdminLayout';
 
-const AdminDashboardPage = () => {
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("businesses");
-  const [permissionError, setPermissionError] = useState<string | null>(null);
+const Dashboard = () => {
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const [statusMessage, setStatusMessage] = useState('Connecting to MongoDB...');
+  const [dbStatus, setDbStatus] = useState<{success: boolean; message: string; collections: string[]} | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
+  const [diagnosticResults, setDiagnosticResults] = useState<any>(null);
   const { toast } = useToast();
-  
-  // State for business management
-  const [showUploadDialog, setShowUploadDialog] = useReactState(false);
-  const [showBusinessFormDialog, setShowBusinessFormDialog] = useReactState(false);
-  const [businessCount, setBusinessCount] = useReactState(0);
-  const [currentBusinessToEdit, setCurrentBusinessToEdit] = useReactState<Business | null>(null);
-  const [isSubmitting, setIsSubmitting] = useReactState(false);
-  const [selectedBusiness, setSelectedBusiness] = useReactState<Business | null>(null);
-  
-  // State for users tab
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
-  
-  const { businesses, isRefreshing, refreshData } = useBusinessListings();
-
-  // Check if user is authorized (admin or staff)
-  const isAuthorized = user && (user.role === "Admin" || user.role === "staff" || user.isAdmin);
-
-  // Function to load users data
-  const loadUsersData = async () => {
-    setIsLoadingUsers(true);
-    try {
-      // Show loading toast
-      toast({
-        title: "Loading Users",
-        description: "Initializing user data...",
-      });
-      
-      console.log("Admin Dashboard: Ensuring test users exist first");
-      await ensureTestUsers();
-      
-      console.log("Admin Dashboard: Now refreshing all users");
-      const userCount = await debugRefreshUsers();
-      console.log(`Admin Dashboard: Found ${userCount} users`);
-      
-      toast({
-        title: "Users Refreshed",
-        description: `Successfully loaded ${userCount} users`,
-      });
-    } catch (error) {
-      console.error("Error loading users data:", error);
-      toast({
-        title: "Error Loading Users",
-        description: "Could not load users from Firebase",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingUsers(false);
-    }
-  };
 
   useEffect(() => {
-    // Clear any permission errors when changing tabs
-    setPermissionError(null);
-    
-    // Load users data when in users tab
-    if (activeTab === "users") {
-      loadUsersData();
-    }
-  }, [activeTab]);
-  
-  // Set business count when businesses array changes
-  useEffect(() => {
-    setBusinessCount(businesses.length);
-  }, [businesses]);
+    const initDb = async () => {
+      try {
+        setConnectionError(null);
+        console.log('Testing MongoDB connection with retry...');
+        const connected = await testConnectionWithRetry(3, 2000);
+        
+        if (!connected) {
+          const errorMsg = 'Failed to connect to MongoDB after multiple attempts. Please check your connection string and network.';
+          setConnectionError(errorMsg);
+          throw new Error(errorMsg);
+        }
+        console.log('MongoDB connection established');
+      } catch (connError) {
+        console.error('MongoDB connection error:', connError);
+        setConnectionError(connError instanceof Error ? connError.message : String(connError));
+        toast({
+          title: "MongoDB Connection Error",
+          description: String(connError),
+          variant: "destructive"
+        });
+      }
 
-  // Error handler for permission issues
-  const handlePermissionError = (error: any) => {
-    console.error("Permission error in admin dashboard:", error);
-    const errorMessage = error instanceof Error ? error.message : "Access denied. You don't have sufficient permissions.";
+      setIsInitializing(true);
+      setProgress(0);
+      setStatusMessage('Setting up MongoDB collections...');
+      
+      try {
+        console.log('Admin Dashboard: Forcefully initializing MongoDB...');
+        
+        const result = await setupMongoDB((progressValue, message) => {
+          setProgress(progressValue);
+          setStatusMessage(message);
+        });
+        
+        console.log('MongoDB initialization result:', result);
+        
+        setDbStatus({
+          success: result.success,
+          message: 'MongoDB initialized successfully',
+          collections: result.collections
+        });
+
+        toast({
+          title: "MongoDB Initialized",
+          description: `Successfully created ${result.collections.length} collections`,
+        });
+      } catch (error) {
+        console.error('Failed to initialize MongoDB:', error);
+        setDbStatus({
+          success: false,
+          message: `MongoDB initialization failed: ${error instanceof Error ? error.message : String(error)}`,
+          collections: []
+        });
+        
+        toast({
+          title: "MongoDB Initialization Failed",
+          description: error instanceof Error ? error.message : String(error),
+          variant: "destructive"
+        });
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    initDb();
+  }, [toast]);
+
+  const handleRetryInitialization = () => {
+    setIsInitializing(true);
+    setProgress(0);
+    setStatusMessage('Connecting to MongoDB...');
+    setConnectionError(null);
     
-    setPermissionError(errorMessage);
-    
-    toast({
-      title: "Permission Error",
-      description: errorMessage,
-      variant: "destructive",
+    setupMongoDB((progressValue, message) => {
+      setProgress(progressValue);
+      setStatusMessage(message);
+    })
+    .then(result => {
+      console.log('MongoDB initialization retry result:', result);
+      setDbStatus({
+        success: result.success,
+        message: 'MongoDB initialized successfully',
+        collections: result.collections
+      });
+      
+      toast({
+        title: "MongoDB Reinitialized",
+        description: `Successfully created ${result.collections.length} collections`,
+      });
+    })
+    .catch(error => {
+      console.error('Failed to initialize MongoDB on retry:', error);
+      setDbStatus({
+        success: false,
+        message: `MongoDB initialization failed: ${error instanceof Error ? error.message : String(error)}`,
+        collections: []
+      });
+      
+      toast({
+        title: "MongoDB Initialization Failed",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive"
+      });
+    })
+    .finally(() => {
+      setIsInitializing(false);
     });
   };
 
-  // Function to dismiss error
-  const dismissError = () => {
-    setPermissionError(null);
-  };
-  
-  const handleAddBusiness = () => {
-    console.log("Add business button clicked in AdminDashboardPage");
-    setCurrentBusinessToEdit(null);
-    setShowBusinessFormDialog(true);
-  };
-  
-  const handleEditBusiness = (business: Business) => {
-    console.log("Edit business clicked in AdminDashboardPage:", business);
-    setCurrentBusinessToEdit(business);
-    setShowBusinessFormDialog(true);
-  };
-  
-  const handleViewBusinessDetails = (business: Business) => {
-    console.log("View business details clicked in AdminDashboardPage:", business);
-    setSelectedBusiness(business);
-  };
-  
-  const handleUploadComplete = (success: boolean, message: string, count?: number) => {
-    if (success) {
-      toast({
-        title: "Upload Successful",
-        description: `${count} businesses have been imported successfully.`,
-        variant: "default",
-      });
-    } else {
-      toast({
-        title: "Upload Failed",
-        description: message,
-        variant: "destructive",
-      });
-    }
-  };
-  
-  // Update the handleBusinessFormSubmit to return a Promise
-  const handleBusinessFormSubmit = async (values: BusinessFormValues): Promise<void> => {
-    setIsSubmitting(true);
-    
+  const handleDiagnoseMongoDB = async () => {
+    setIsDiagnosing(true);
     try {
-      // Handle submission logic would go here
-      toast({
-        title: currentBusinessToEdit ? "Business Updated" : "Business Added",
-        description: `${values.name} has been ${currentBusinessToEdit ? 'updated' : 'added'} successfully.`,
-      });
+      const diagnostics = await diagnoseMongoDbConnection();
+      setDiagnosticResults(diagnostics);
       
-      setShowBusinessFormDialog(false);
-      setCurrentBusinessToEdit(null);
-    } catch (error) {
-      console.error("Error saving business:", error);
       toast({
-        title: "Operation Failed",
-        description: `Error: ${error instanceof Error ? error.message : String(error)}`,
-        variant: "destructive",
+        title: "MongoDB Diagnostics Complete",
+        description: `Current connection state: ${diagnosticResults.connectionState}`,
+      });
+    } catch (error) {
+      console.error("Error running MongoDB diagnostics:", error);
+      toast({
+        title: "Diagnostics Failed",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive"
       });
     } finally {
-      setIsSubmitting(false);
+      setIsDiagnosing(false);
     }
   };
 
-  // Function to manually refresh user data
-  const handleRefreshUsers = () => {
-    if (activeTab === "users") {
-      loadUsersData();
+  const handleSyncPackages = async () => {
+    setIsSyncing(true);
+    try {
+      // First check if MongoDB is connected
+      if (!isMongoDBConnected()) {
+        const connected = await connectToMongoDB();
+        if (!connected) {
+          throw new Error("Failed to connect to MongoDB. Cannot sync without database connection.");
+        }
+      }
+      
+      const result = await fullSyncPackages();
+      
+      if (result.success) {
+        toast({
+          title: "Sync Successful",
+          description: `Synced ${result.mongoToFirebase} packages to Firebase and ${result.firebaseToMongo} packages to MongoDB`,
+        });
+      } else {
+        toast({
+          title: "Sync Partially Failed",
+          description: `Some packages may not have been synced properly. Check console for details.`,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error syncing packages:", error);
+      toast({
+        title: "Sync Failed",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive"
+      });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
-  if (!isAuthorized) {
-    return <UnauthorizedView />;
-  }
+  const handleManualConnect = async () => {
+    try {
+      setStatusMessage('Manually connecting to MongoDB...');
+      setConnectionError(null);
+      
+      const connected = await testConnectionWithRetry(3, 2000);
+      if (!connected) {
+        const errorMsg = 'Failed to manually connect to MongoDB after multiple attempts';
+        setConnectionError(errorMsg);
+        throw new Error(errorMsg);
+      }
+      
+      toast({
+        title: "Connection Successful",
+        description: "Successfully connected to MongoDB database",
+      });
+      
+      // If we're connected, try to initialize
+      handleRetryInitialization();
+    } catch (error) {
+      console.error("Manual connection error:", error);
+      setConnectionError(error instanceof Error ? error.message : String(error));
+      toast({
+        title: "Connection Failed",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
-    <div className="container mx-auto px-4 py-10">
-      <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
-      
-      <AdminPermissionError 
-        permissionError={permissionError} 
-        dismissError={dismissError} 
-      />
-      
-      {isLoadingUsers && activeTab === "users" && (
-        <div className="mb-4">
-          <Loading 
-            size="md" 
-            message="Loading users data..." 
-            className="my-4"
-          />
+    <AdminLayout>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleDiagnoseMongoDB} 
+              variant="outline"
+              disabled={isDiagnosing}
+              className="flex items-center gap-2"
+            >
+              <Activity className={`h-4 w-4 ${isDiagnosing ? 'animate-pulse' : ''}`} />
+              {isDiagnosing ? 'Diagnosing...' : 'Diagnose MongoDB'}
+            </Button>
+            
+            <Button 
+              onClick={handleManualConnect} 
+              variant="outline"
+              disabled={isInitializing}
+              className="flex items-center gap-2"
+            >
+              <Database className="h-4 w-4" />
+              Connect to MongoDB
+            </Button>
+            
+            <Button 
+              onClick={handleSyncPackages} 
+              disabled={isSyncing || isInitializing}
+              className="flex items-center gap-2"
+            >
+              {isSyncing ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4" />
+                  Sync MongoDB ↔ Firebase
+                </>
+              )}
+            </Button>
+          </div>
         </div>
-      )}
-      
-      <AdminDashboardTabs 
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        businessCount={businessCount}
-        showBusinessFormDialog={showBusinessFormDialog}
-        setShowBusinessFormDialog={setShowBusinessFormDialog}
-        showUploadDialog={showUploadDialog}
-        setShowUploadDialog={setShowUploadDialog}
-        currentBusinessToEdit={currentBusinessToEdit}
-        isSubmitting={isSubmitting}
-        handleBusinessFormSubmit={handleBusinessFormSubmit}
-        handleUploadComplete={handleUploadComplete}
-        handleAddBusiness={handleAddBusiness}
-        handleEditBusiness={handleEditBusiness}
-        handlePermissionError={handlePermissionError}
-        onViewDetails={handleViewBusinessDetails}
-        businesses={businesses}
-        isRefreshing={isRefreshing}
-        refreshBusinesses={refreshData}
-        onRefreshUsers={handleRefreshUsers}
-      />
-    </div>
+        
+        {diagnosticResults && (
+          <Alert className="bg-blue-50 border-blue-200">
+            <Activity className="h-4 w-4" />
+            <AlertTitle>MongoDB Diagnostic Results</AlertTitle>
+            <AlertDescription>
+              <div className="space-y-1 text-sm">
+                <p><strong>Environment:</strong> {diagnosticResults.environment}</p>
+                <p><strong>Connection State:</strong> {diagnosticResults.connectionState}</p>
+                <p><strong>URI:</strong> {diagnosticResults.uri}</p>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {connectionError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Connection Error</AlertTitle>
+            <AlertDescription>
+              <div className="space-y-2">
+                <p>{connectionError}</p>
+                <Button 
+                  onClick={handleManualConnect} 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Retry Connection
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {isInitializing && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Database className="h-5 w-5 mr-2" />
+                Initializing MongoDB...
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Progress value={progress} className="w-full h-2" />
+              <p className="text-sm text-muted-foreground">{statusMessage}</p>
+            </CardContent>
+          </Card>
+        )}
+        
+        {!isInitializing && dbStatus && (
+          <Alert variant={dbStatus.success ? "default" : "destructive"}>
+            {dbStatus.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+            <AlertTitle>{dbStatus.success ? "Success" : "Error"}</AlertTitle>
+            <AlertDescription>
+              <div className="space-y-2">
+                <p>{dbStatus.message}</p>
+                {dbStatus.success && (
+                  <p className="text-sm text-muted-foreground">
+                    Collections created: {dbStatus.collections.join(', ')}
+                  </p>
+                )}
+                {!dbStatus.success && (
+                  <Button 
+                    onClick={handleRetryInitialization} 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Retry Initialization
+                  </Button>
+                )}
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        <Tabs defaultValue="dashboards" className="w-full">
+          <TabsList className="w-full md:w-auto">
+            <TabsTrigger value="dashboards">Dashboards</TabsTrigger>
+            <TabsTrigger value="db">Database</TabsTrigger>
+            <TabsTrigger value="migration">Migration</TabsTrigger>
+            <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+            <TabsTrigger value="seed">Seed Data</TabsTrigger>
+            <TabsTrigger value="stats">Statistics</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="dashboards" className="space-y-4">
+            <AdminDashboardTabs />
+          </TabsContent>
+          
+          <TabsContent value="db" className="space-y-4">
+            <MongoDBInitializationPanel />
+          </TabsContent>
+          
+          <TabsContent value="migration" className="space-y-4">
+            <MigrationUtility />
+          </TabsContent>
+          
+          <TabsContent value="subscriptions" className="space-y-4">
+            <SubscriptionPackageManagement 
+              onPermissionError={(error) => {
+                toast({
+                  title: "Permission Error",
+                  description: String(error),
+                  variant: "destructive"
+                });
+              }} 
+            />
+          </TabsContent>
+          
+          <TabsContent value="seed" className="space-y-4">
+            <SeedDataPanel />
+          </TabsContent>
+          
+          <TabsContent value="stats" className="space-y-4">
+            <Card className="bg-white border-gray-200 shadow-sm">
+              <CardHeader>
+                <CardTitle>Dashboard Statistics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>Statistics dashboard coming soon...</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </AdminLayout>
   );
 };
 
-export default AdminDashboardPage;
+export default Dashboard;

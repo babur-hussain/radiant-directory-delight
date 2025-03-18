@@ -10,7 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getPackageById } from "@/data/subscriptionData";
 import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { SubscriptionPackage } from "@/data/subscriptionData";
-import { useSubscription } from "@/hooks/useSubscription";
+import { useSubscription } from "@/hooks";
 import { toast } from "@/hooks/use-toast";
 import RazorpayPayment from "./RazorpayPayment";
 

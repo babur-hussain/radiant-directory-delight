@@ -15,11 +15,11 @@ import PerformanceMetrics from "./widgets/PerformanceMetrics";
 import LeadsGenerated from "./widgets/LeadsGenerated";
 import InfluencerRank from "./widgets/InfluencerRank";
 import { useDashboardServices } from "@/hooks/useDashboardServices";
-import { useSubscription } from "@/hooks/useSubscription";
+import { useSubscription } from "@/hooks";
 import { useToast } from "@/hooks/use-toast";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/config/firebase";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks";
 
 interface InfluencerDashboardProps {
   userId: string;
@@ -31,68 +31,68 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
   const navigate = useNavigate();
   const { toast } = useToast();
   const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "Influencer");
-  const { getUserSubscription } = useSubscription();
+  const { getUserSubscription, getUserDashboardFeatures } = useSubscription();
   const { user } = useAuth();
   
-  // Load subscription data when component mounts
   useEffect(() => {
     const fetchSubscription = async () => {
+      if (!userId) {
+        setIsLoading(false);
+        return;
+      }
+      
+      setIsLoading(true);
+      
       try {
+        console.log(`InfluencerDashboard: Fetching subscription for user ${userId}`);
         const subscription = await getUserSubscription();
-        setSubscriptionData(subscription);
+        
+        if (subscription) {
+          console.log("InfluencerDashboard: Got subscription from MongoDB:", subscription);
+          setSubscriptionData(subscription);
+        } else {
+          console.log("InfluencerDashboard: No subscription found in MongoDB, checking Firebase");
+          
+          // If not found in MongoDB, try Firebase as fallback
+          try {
+            const userRef = doc(db, "users", userId);
+            const docSnapshot = await new Promise((resolve) => {
+              const unsubscribe = onSnapshot(userRef, (snapshot) => {
+                unsubscribe();
+                resolve(snapshot);
+              }, (error) => {
+                console.error("Error getting user doc from Firebase:", error);
+                resolve(null);
+              });
+            });
+            
+            if (docSnapshot && (docSnapshot as any).exists()) {
+              const userData = (docSnapshot as any).data();
+              if (userData?.subscription || userData?.subscriptionPackage) {
+                console.log("InfluencerDashboard: Got subscription from Firebase:", userData.subscription || userData.subscriptionPackage);
+                setSubscriptionData(userData.subscription || {
+                  id: 'firebase-subscription',
+                  status: 'active',
+                  packageId: userData.subscriptionPackage
+                });
+              } else {
+                console.log("InfluencerDashboard: No subscription found in Firebase either");
+                setSubscriptionData(null);
+              }
+            }
+          } catch (firebaseError) {
+            console.error("Error checking Firebase for subscription:", firebaseError);
+          }
+        }
       } catch (error) {
-        console.error("Failed to fetch subscription:", error);
+        console.error("InfluencerDashboard: Error fetching subscription:", error);
+        setSubscriptionData(null);
+      } finally {
+        setIsLoading(false);
       }
     };
     
     fetchSubscription();
-  }, [getUserSubscription]);
-  
-  // Set up a Firestore listener for real-time subscription updates
-  useEffect(() => {
-    if (!userId) {
-      setIsLoading(false);
-      return;
-    }
-    
-    const userRef = doc(db, "users", userId);
-    const unsubscribe = onSnapshot(userRef, async (docSnapshot) => {
-      if (docSnapshot.exists()) {
-        const userData = docSnapshot.data();
-        // Use subscription data from Firestore if available
-        if (userData?.subscription || userData?.subscriptionPackage) {
-          console.log("✅ Got subscription from Firestore:", userData.subscription || userData.subscriptionPackage);
-          setSubscriptionData(userData.subscription);
-        } else {
-          console.log("No subscription found in Firestore, fetching again");
-          try {
-            const subscription = await getUserSubscription();
-            setSubscriptionData(subscription);
-          } catch (error) {
-            console.error("Error fetching subscription:", error);
-          }
-        }
-      }
-      
-      // In any case, finish loading
-      setIsLoading(false);
-    }, (error) => {
-      console.error("Error getting real-time subscription updates:", error);
-      // Fall back to local subscription data if Firestore listener fails
-      fetchLocalSubscription();
-      setIsLoading(false);
-    });
-    
-    const fetchLocalSubscription = async () => {
-      try {
-        const subscription = await getUserSubscription();
-        setSubscriptionData(subscription);
-      } catch (error) {
-        console.error("Error fetching local subscription:", error);
-      }
-    };
-    
-    return () => unsubscribe();
   }, [userId, getUserSubscription]);
   
   const handleExportData = (format: string) => {
@@ -137,18 +137,18 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
         </div>
         <h3 className="text-xl font-medium">Error loading dashboard</h3>
         <p className="text-muted-foreground mb-4">{error}</p>
-        <Button onClick={handleRefreshData}>Try Again</Button>
+        <Button onClick={() => window.location.reload()}>Try Again</Button>
       </div>
     );
   }
 
-  // Check if user is admin - if so, they always have access regardless of subscription
   const isAdmin = user?.role === "Admin" || user?.isAdmin;
   
-  // Check if subscription is active or if user is admin
-  const hasActiveSubscription = isAdmin || (subscriptionData && subscriptionData.status === "active");
+  const hasActiveSubscription = isAdmin || 
+    (subscriptionData && 
+      (subscriptionData.status === "active" || 
+       (typeof subscriptionData === 'object' && 'active' in subscriptionData && subscriptionData.active)));
 
-  // If no active subscription and not admin
   if (!hasActiveSubscription) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-xl mx-auto text-center">

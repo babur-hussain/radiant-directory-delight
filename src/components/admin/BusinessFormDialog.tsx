@@ -3,6 +3,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import BusinessForm, { BusinessFormValues } from './BusinessForm';
 import { Business } from '@/lib/csv-utils';
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export interface BusinessFormDialogProps {
   show: boolean;
@@ -32,16 +33,20 @@ const BusinessFormDialog: React.FC<BusinessFormDialogProps> = ({
     <Dialog open={isDialogOpen} onOpenChange={(open) => {
       if (!open) onClose();
     }}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{businessData ? 'Edit Business' : 'Add New Business'}</DialogTitle>
         </DialogHeader>
         
-        <BusinessForm 
-          currentBusiness={businessData}
-          onSubmit={onSubmit}
-          isSubmitting={isSubmitting}
-        />
+        <ScrollArea className="max-h-[calc(90vh-100px)]">
+          <div className="p-1">
+            <BusinessForm 
+              currentBusiness={businessData}
+              onSubmit={onSubmit}
+              isSubmitting={isSubmitting}
+            />
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

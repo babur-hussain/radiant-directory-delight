@@ -1,15 +1,14 @@
 
-import { useState, useEffect } from "react";
-import { SubscriptionPackage, businessPackages, influencerPackages } from "@/data/subscriptionData";
-import { fetchSubscriptionPackagesByType } from "@/lib/firebase-utils";
-import { UserRole } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from 'react';
+import { fetchSubscriptionPackagesByType } from '@/lib/mongodb-utils';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
+import { SubscriptionPackage, convertToSubscriptionPackage } from '@/data/subscriptionData';
+import { UserRole } from '@/contexts/AuthContext';
 
-export const useSubscriptionPackages = (role: UserRole) => {
+export const useSubscriptionPackages = (userRole: UserRole | string) => {
   const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     const loadPackages = async () => {
@@ -17,67 +16,39 @@ export const useSubscriptionPackages = (role: UserRole) => {
       setError(null);
       
       try {
-        console.log("Fetching subscription packages for role:", role);
+        console.log(`Loading subscription packages for role: ${userRole}`);
         
-        // Determine package type based on user role
-        const packageType = role === "Business" ? "Business" : "Influencer";
+        // Convert userRole to appropriate type format for API
+        // For business page, we need to ensure it always passes "Business" as the type
+        const type = userRole === 'Admin' 
+          ? 'Business' 
+          : userRole === 'Influencer' 
+            ? 'Influencer' 
+            : 'Business';
         
-        // Fetch packages by type directly from Firebase
-        const fetchedPackages = await fetchSubscriptionPackagesByType(packageType);
-        console.log(`Fetched ${fetchedPackages.length} ${packageType} packages from Firebase`);
+        console.log(`Fetching packages for type: ${type}`);
+        const fetchedPackages = await fetchSubscriptionPackagesByType(type as "Business" | "Influencer");
+        console.log(`Fetched ${fetchedPackages.length} ${type} packages:`, fetchedPackages);
         
-        // If no packages found for the role, use default packages
-        if (fetchedPackages.length === 0) {
-          console.log("No packages found for role, using default packages");
-          setPackages(role === "Business" ? businessPackages : influencerPackages);
-          
-          // Show toast notification
-          toast({
-            title: "Using Default Packages",
-            description: "No custom packages found. Showing default packages.",
-          });
+        if (!fetchedPackages || fetchedPackages.length === 0) {
+          console.log(`No ${type} packages found`);
+          setPackages([]);
         } else {
-          setPackages(fetchedPackages);
+          // Convert to SubscriptionPackage type
+          const convertedPackages = fetchedPackages.map(pkg => convertToSubscriptionPackage(pkg));
+          console.log('Converted packages:', convertedPackages);
+          setPackages(convertedPackages);
         }
       } catch (err) {
-        console.error("Error fetching subscription packages:", err);
-        
-        // Check if this is a permission error
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        const isPermissionError = errorMessage.includes("Permission denied") || 
-                                 errorMessage.includes("insufficient permissions");
-        
-        if (isPermissionError) {
-          setError("Permission denied. Using default packages instead.");
-          
-          // Show permission error toast
-          toast({
-            title: "Permission Error",
-            description: "You don't have access to view subscription packages. Using default packages.",
-            variant: "destructive",
-          });
-        } else {
-          setError("Failed to load packages. Using default packages instead.");
-          
-          // Show general error toast
-          toast({
-            title: "Error Loading Packages",
-            description: "Failed to load custom packages. Using default packages instead.",
-            variant: "destructive",
-          });
-        }
-        
-        // Use default packages as fallback
-        setPackages(role === "Business" ? businessPackages : influencerPackages);
+        console.error('Error loading subscription packages:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load subscription packages');
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (role) {
-      loadPackages();
-    }
-  }, [role, toast]);
+    loadPackages();
+  }, [userRole]);
 
   return { packages, isLoading, error };
 };

@@ -1,363 +1,230 @@
 
-import React, { createContext, useState, useEffect } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth, db } from "../config/firebase";
-import { toast } from "@/hooks/use-toast";
-import { User, UserRole, AuthContextType } from "../types/auth";
+import React, { 
+  createContext, 
+  useEffect, 
+  useState 
+} from 'react';
 import { 
-  getRoleKey, 
-  getAdminKey, 
-  initializeDefaultAdmin, 
-  saveUserToAllUsersList 
-} from "../features/auth/authStorage";
+  User as FirebaseUser, 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  signOut,
+  GoogleAuthProvider,
+  signInWithPopup,
+  createUserWithEmailAndPassword,
+  updateProfile
+} from 'firebase/auth';
+import { auth } from '../config/firebase';
 import { 
-  login, 
-  loginWithGoogle, 
-  signup, 
-  logoutUser,
-  saveUserToFirestore
-} from "../features/auth/authService";
-import { 
-  updateUserRole as updateRole, 
-  updateUserPermission as updatePermission,
-  getAllUsers
-} from "../features/auth/userManagement";
-import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
+  getUserByUid, 
+  createUserIfNotExists, 
+  updateUserLogin,
+  updateUserRole as updateUserRoleService
+} from '../features/auth/authService';
+import { User, UserRole, AuthContextType } from '../types/auth';
 
-const defaultContextValue: AuthContextType = {
-  user: null,
-  isAuthenticated: false,
-  login: async () => {},
-  loginWithGoogle: async () => {},
-  signup: async () => {},
-  logout: async () => {},
-  updateUserRole: async () => {},
-  updateUserPermission: async () => {},
+export const AuthContext = createContext<AuthContextType>({
+  currentUser: null,
   loading: true,
-  initialized: false
-};
+  userRole: null,
+  isAdmin: false,
+  isAuthenticated: false,
+  initialized: false,
+  user: null,
+  logout: () => Promise.resolve(),
+  login: () => Promise.resolve(),
+});
 
-const AuthContext = createContext<AuthContextType>(defaultContextValue);
+const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [initialized, setInitialized] = useState<boolean>(false);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
-  
   useEffect(() => {
-    initializeDefaultAdmin();
-  }, []);
-  
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
-        const roleKey = getRoleKey(firebaseUser.uid);
-        const userRole = localStorage.getItem(roleKey) as UserRole || null;
-        
-        const adminKey = getAdminKey(firebaseUser.uid);
-        const isAdmin = localStorage.getItem(adminKey) === 'true';
-        
-        const isDefaultAdmin = firebaseUser.email === "baburhussain660@gmail.com";
-        
         try {
-          const userDoc = doc(db, "users", firebaseUser.uid);
-          const userSnapshot = await getDoc(userDoc);
+          // Check if user exists in MongoDB
+          let user = await getUserByUid(firebaseUser.uid);
           
-          let firestoreData = null;
-          
-          if (userSnapshot.exists()) {
-            firestoreData = userSnapshot.data();
-            
-            await setDoc(userDoc, {
-              lastLogin: serverTimestamp()
-            }, { merge: true });
+          // If not, create the user in MongoDB
+          if (!user) {
+            user = await createUserIfNotExists(firebaseUser);
           } else {
-            console.log("User not found in Firestore, creating:", firebaseUser.uid);
-            
-            // Use the correct role type
-            const userRoleToUse: UserRole = isDefaultAdmin ? 'Admin' : (userRole || 'User');
-            
-            // Save to Firestore
-            await saveUserToFirestore(
-              firebaseUser.uid,
-              firebaseUser.email,
-              firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-              userRoleToUse,
-              firebaseUser.photoURL,
-              isDefaultAdmin || isAdmin
-            );
-            
-            // Get the newly created user data
-            const newUserSnapshot = await getDoc(userDoc);
-            if (newUserSnapshot.exists()) {
-              firestoreData = newUserSnapshot.data();
-              console.log("Created and retrieved new user document in Firestore:", firebaseUser.uid);
-            }
+            // Update last login time
+            await updateUserLogin(firebaseUser.uid);
           }
-          
-          const userData: User = {
-            id: firebaseUser.uid,
+
+          // Special case for development
+          const isSpecialUser = firebaseUser.email === "baburhussain660@gmail.com";
+          const adminStatus = isSpecialUser ? true : (user?.isAdmin || false);
+
+          // Set user state
+          const userData = {
+            uid: firebaseUser.uid,
             email: firebaseUser.email,
-            name: firestoreData?.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-            role: isDefaultAdmin ? 'Admin' : firestoreData?.role || userRole || 'User',
-            photoURL: firestoreData?.photoURL || firebaseUser.photoURL,
-            isAdmin: isDefaultAdmin || firestoreData?.isAdmin || isAdmin
-          };
-          
-          if (firestoreData?.role) {
-            localStorage.setItem(roleKey, firestoreData.role);
-          }
-          
-          if (firestoreData?.isAdmin !== undefined) {
-            localStorage.setItem(adminKey, firestoreData.isAdmin ? 'true' : 'false');
-          }
-          
-          // Make sure user is properly saved to the users list in localStorage
-          saveUserToAllUsersList(userData);
-          
-          // After logging in, refresh all users list
-          getAllUsers().then(() => {
-            console.log("Updated all users list after login");
-          }).catch(err => {
-            console.error("Failed to update all users list:", err);
-          });
-          
-          console.log("Auth state changed: User logged in", userData);
-          
-          setUser(userData);
-        } catch (error) {
-          console.error("Error fetching/updating user in Firestore:", error);
-          
-          const userData: User = {
-            id: firebaseUser.uid,
-            email: firebaseUser.email,
-            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-            role: isDefaultAdmin ? 'Admin' : userRole || 'User',
+            displayName: firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
-            isAdmin: isDefaultAdmin || isAdmin
+            role: isSpecialUser ? "Admin" as UserRole : (user?.role as UserRole || null),
+            isAdmin: adminStatus
           };
           
-          saveUserToAllUsersList(userData);
-          setUser(userData);
+          console.log("Auth Provider: Setting user with admin status:", adminStatus, userData);
+          
+          setCurrentUser(userData);
+          setUserRole(isSpecialUser ? "Admin" as UserRole : (user?.role as UserRole || null));
+          setIsAdmin(adminStatus);
+        } catch (error) {
+          console.error("Error processing user authentication:", error);
+          setCurrentUser(null);
+          setUserRole(null);
+          setIsAdmin(false);
         }
       } else {
-        setUser(null);
-        console.log("Auth state changed: User logged out");
+        setCurrentUser(null);
+        setUserRole(null);
+        setIsAdmin(false);
       }
       setLoading(false);
       setInitialized(true);
     });
-    
+
     return () => unsubscribe();
   }, []);
 
-  const handleLogin = async (email: string, password: string) => {
+  const logout = async () => {
     try {
-      setLoading(true);
-      await login(email, password);
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
-    } catch (error: any) {
-      console.error("Login error:", error.code, error.message);
-      
-      let errorMessage = "Please check your credentials and try again.";
-      if (error.code === 'auth/unauthorized-domain') {
-        errorMessage = "This domain is not authorized for authentication. Please try again later or contact support.";
-      } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        errorMessage = "Invalid email or password.";
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = "Too many unsuccessful login attempts. Please try again later.";
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = "Invalid email format.";
-      }
-      
-      toast({
-        title: "Login failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      throw error;
-    } finally {
-      setLoading(false);
+      await signOut(auth);
+      setCurrentUser(null);
+      setUserRole(null);
+      setIsAdmin(false);
+    } catch (error) {
+      console.error("Error logging out:", error);
     }
   };
 
-  const handleLoginWithGoogle = async () => {
+  const login = async (email: string, password: string) => {
     try {
-      setLoading(true);
-      await loginWithGoogle();
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
-    } catch (error: any) {
-      console.error("Google login error:", error.code, error.message);
-      
-      let errorMessage = "There was an error signing in with Google.";
-      if (error.code === 'auth/unauthorized-domain') {
-        errorMessage = "This domain is not authorized for authentication. Please try from an authorized domain or contact support.";
-      } else if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = "Login popup was closed. Please try again.";
-      } else if (error.code === 'auth/cancelled-popup-request') {
-        errorMessage = "Multiple popup requests were made. Please try again.";
-      } else if (error.code === 'auth/popup-blocked') {
-        errorMessage = "The authentication popup was blocked by your browser. Please allow popups for this website and try again.";
-      }
-      
-      toast({
-        title: "Google login failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      console.error("Error logging in:", error);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleSignup = async (email: string, password: string, name: string, role: UserRole) => {
+  const loginWithGoogle = async () => {
     try {
-      setLoading(true);
-      const firebaseUser = await signup(email, password, name, role);
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("Error with Google login:", error);
+      throw error;
+    }
+  };
+
+  const signup = async (email: string, password: string, name: string, role: UserRole, additionalData: any = {}) => {
+    try {
+      // Create user in Firebase
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
       
-      if (firebaseUser) {
-        const userData: User = {
-          id: firebaseUser.uid,
-          email: firebaseUser.email,
-          name: name || firebaseUser.email?.split('@')[0] || 'User',
-          role: role,
-          photoURL: null,
-          isAdmin: false
+      // Update profile
+      await updateProfile(firebaseUser, {
+        displayName: name
+      });
+      
+      // Prepare user data with additional fields
+      const userData = {
+        ...firebaseUser,
+        displayName: name,
+        ...additionalData
+      };
+      
+      // Create user in MongoDB with role and additional data
+      const user = await createUserIfNotExists(userData);
+      
+      // Update user role
+      if (user) {
+        await updateUserRoleService(firebaseUser.uid, role, role === "Admin");
+      }
+      
+      return user;
+    } catch (error) {
+      console.error("Error during signup:", error);
+      throw error;
+    }
+  };
+
+  const updateUserRole = async (role: UserRole) => {
+    if (!currentUser) return;
+    
+    try {
+      const isUserAdmin = role === "Admin";
+      await updateUserRoleService(currentUser.uid, role, isUserAdmin);
+      
+      setUserRole(role);
+      setIsAdmin(isUserAdmin);
+      
+      // Update the current user object
+      setCurrentUser(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          role,
+          isAdmin: isUserAdmin
         };
-        
-        saveUserToAllUsersList(userData);
-        console.log("Saving new registered user to all users list:", userData);
-      }
-      
-      toast({
-        title: "Registration successful",
-        description: `You have successfully registered as a ${role}.`,
       });
-      
-      return firebaseUser;
-    } catch (error: any) {
-      console.error("Registration error:", error.code, error.message);
-      
-      let errorMessage = "There was an error processing your registration.";
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = "This email is already registered. Please login instead.";
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = "Password is too weak. Please use a stronger password.";
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = "Invalid email format.";
-      } else if (error.code === 'auth/unauthorized-domain') {
-        errorMessage = "This domain is not authorized for authentication. Please try from an authorized domain.";
-      }
-      
-      toast({
-        title: "Registration failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
+    } catch (error) {
+      console.error("Error updating user role:", error);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleLogout = async () => {
+  const updateUserPermission = async (userId: string, isAdmin: boolean) => {
     try {
-      await logoutUser();
-      toast({
-        title: "Logged out",
-        description: "You have been successfully logged out.",
-      });
-    } catch (error: any) {
-      console.error("Logout error:", error);
-      toast({
-        title: "Logout failed",
-        description: error.message || "There was an error logging out.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleUpdateUserRole = async (role: UserRole) => {
-    try {
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      // Get current role
+      const user = await getUserByUid(userId);
+      if (!user) throw new Error("User not found");
       
-      const updatedUser = await updateRole(user, role);
-      setUser(updatedUser);
+      // Update role with admin status
+      await updateUserRoleService(userId, user.role as UserRole, isAdmin);
       
-      toast({
-        title: "Role updated",
-        description: `Your account type has been updated to ${role}.`,
-      });
-      
-      return Promise.resolve();
-    } catch (error: any) {
-      console.error("Role update error:", error);
-      toast({
-        title: "Update failed",
-        description: error.message || "There was an error updating your role.",
-        variant: "destructive",
-      });
-      return Promise.reject(error);
-    }
-  };
-
-  const handleUpdateUserPermission = async (userId: string, isAdmin: boolean) => {
-    try {
-      await updatePermission(userId, isAdmin);
-      
-      if (user && user.id === userId) {
-        setUser({
-          ...user,
-          isAdmin
+      // If updating current user, also update state
+      if (currentUser && currentUser.uid === userId) {
+        setIsAdmin(isAdmin);
+        setCurrentUser(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            isAdmin
+          };
         });
       }
-      
-      toast({
-        title: "Permission updated",
-        description: `Admin permission ${isAdmin ? 'granted' : 'removed'}.`,
-      });
-      
-      return Promise.resolve();
-    } catch (error: any) {
-      console.error("Permission update error:", error);
-      toast({
-        title: "Update failed",
-        description: error.message || "There was an error updating permissions.",
-        variant: "destructive",
-      });
-      return Promise.reject(error);
+    } catch (error) {
+      console.error("Error updating user permissions:", error);
+      throw error;
     }
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        login: handleLogin,
-        loginWithGoogle: handleLoginWithGoogle,
-        signup: handleSignup,
-        logout: handleLogout,
-        updateUserRole: handleUpdateUserRole,
-        updateUserPermission: handleUpdateUserPermission,
-        loading,
-        initialized
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
-};
+  const value = {
+    currentUser,
+    loading,
+    userRole,
+    isAdmin,
+    logout,
+    login,
+    loginWithGoogle,
+    signup,
+    updateUserRole,
+    updateUserPermission,
+    isAuthenticated: !!currentUser,
+    initialized,
+    user: currentUser,
+  };
 
-export { AuthContext };
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
 
 export default AuthProvider;

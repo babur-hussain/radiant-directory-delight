@@ -1,181 +1,131 @@
 
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  signOut,
-  updateProfile
-} from "firebase/auth";
-import { auth, db, googleProvider } from "../../config/firebase";
-import { UserRole } from "../../types/auth";
-import { getRoleKey, saveUserToAllUsersList } from "./authStorage";
-import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
+import { User as FirebaseUser } from 'firebase/auth';
+import { fetchUserByUid, createOrUpdateUser, updateUserLoginTimestamp as apiUpdateUserLoginTimestamp, updateUserRole as apiUpdateUserRole, getAllUsers as apiGetAllUsers } from '../../api/mongoAPI';
+import { IUser } from '../../models/User';
 
-// Helper function to save user to Firestore
-const saveUserToFirestore = async (
-  userId: string, 
-  email: string | null, 
-  name: string | null, 
-  role: UserRole = "User", 
-  photoURL: string | null = null, 
-  isAdmin: boolean = false
-) => {
+// Get user by Firebase UID from MongoDB
+export const getUserByUid = async (uid: string): Promise<IUser | null> => {
   try {
-    console.log(`Saving user to Firestore: ${userId}, ${email}, ${role}`);
-    const userDoc = doc(db, "users", userId);
-    
-    // Ensure name is a string - Fix TypeScript never type error
-    let displayName: string;
-    if (name === null) {
-      displayName = email?.split('@')[0] || 'User';
-    } else if (typeof name === 'string') {
-      displayName = name;
-    } else if (typeof name === 'boolean') {
-      displayName = 'User';
-    } else if (name) {
-      // Only call toString if name exists and is not null
-      try {
-        displayName = String(name);
-      } catch {
-        displayName = 'User';
-      }
-    } else {
-      displayName = 'User';
-    }
-    
-    // Ensure isAdmin is a boolean
-    let adminStatus = false;
-    if (typeof isAdmin === 'boolean') {
-      adminStatus = isAdmin;
-    } else if (typeof isAdmin === 'string') {
-      // Safely convert string to boolean without using toLowerCase
-      adminStatus = isAdmin === 'true' || isAdmin === 'TRUE';
-    } else {
-      // For any other type, use Boolean conversion
-      adminStatus = Boolean(isAdmin);
-    }
-    
-    await setDoc(userDoc, {
-      email: email,
-      name: displayName,
-      role: role,
-      photoURL: photoURL,
-      isAdmin: adminStatus,
-      createdAt: serverTimestamp(),
-      lastLogin: serverTimestamp()
-    }, { merge: true });
-    
-    console.log(`User successfully saved to Firestore: ${userId}`);
-    return true;
+    const user = await fetchUserByUid(uid);
+    return user;
   } catch (error) {
-    console.error("Error saving user to Firestore:", error);
-    return false;
+    console.error('Error getting user by UID:', error);
+    return null;
   }
 };
 
-export const login = async (email: string, password: string) => {
-  const userCredential = await signInWithEmailAndPassword(auth, email, password);
-  
-  // Update the user's last login in Firestore
+// Create user in MongoDB if not exists
+export const createUserIfNotExists = async (firebaseUser: any): Promise<IUser | null> => {
   try {
-    const userDoc = doc(db, "users", userCredential.user.uid);
-    const docSnapshot = await getDoc(userDoc);
+    // Check if user already exists
+    let user = await fetchUserByUid(firebaseUser.uid);
     
-    if (docSnapshot.exists()) {
-      // Update last login if document exists
-      await setDoc(userDoc, {
-        lastLogin: serverTimestamp()
-      }, { merge: true });
-      console.log("Updated user last login in Firestore:", userCredential.user.uid);
-    } else {
-      // Create the user document if it doesn't exist
-      await saveUserToFirestore(
-        userCredential.user.uid,
-        userCredential.user.email,
-        userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'User',
-        'User',
-        userCredential.user.photoURL,
-        false
-      );
+    // If user doesn't exist, create new user
+    if (!user) {
+      // Extract additional data if it exists
+      const additionalData = {
+        // Default fields
+        role: 'User',
+        isAdmin: false,
+        
+        // Shared fields that might be in additionalData
+        phone: firebaseUser.phone || null,
+        instagramHandle: firebaseUser.instagramHandle || null,
+        facebookHandle: firebaseUser.facebookHandle || null,
+        verified: firebaseUser.verified || false,
+        city: firebaseUser.city || null,
+        country: firebaseUser.country || null,
+        
+        // Influencer specific fields
+        niche: firebaseUser.niche || null,
+        followersCount: firebaseUser.followersCount || null,
+        bio: firebaseUser.bio || null,
+        
+        // Business specific fields
+        businessName: firebaseUser.businessName || null,
+        ownerName: firebaseUser.ownerName || null,
+        businessCategory: firebaseUser.businessCategory || null,
+        website: firebaseUser.website || null,
+        gstNumber: firebaseUser.gstNumber || null
+      };
+
+      // Handle address object if it exists
+      const address = firebaseUser.address ? {
+        street: firebaseUser.address.street || null,
+        city: firebaseUser.address.city || null,
+        state: firebaseUser.address.state || null,
+        country: firebaseUser.address.country || null,
+        zipCode: firebaseUser.address.zipCode || null
+      } : undefined;
+
+      const userData = {
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName,
+        email: firebaseUser.email,
+        photoURL: firebaseUser.photoURL,
+        createdAt: new Date(),
+        lastLogin: new Date(),
+        ...additionalData,
+        ...(address ? { address } : {})
+      };
+
+      user = await createOrUpdateUser(userData);
+      console.log('New user created in MongoDB:', user);
     }
+    
+    return user;
   } catch (error) {
-    console.error("Error updating user in Firestore during login:", error);
+    console.error('Error creating user:', error);
+    return null;
   }
-  
-  return userCredential;
 };
 
-export const loginWithGoogle = async () => {
-  const userCredential = await signInWithPopup(auth, googleProvider);
-  
-  // Save or update the Google user in Firestore
+// Update user's last login timestamp
+export const updateUserLogin = async (uid: string): Promise<void> => {
   try {
-    const userDoc = doc(db, "users", userCredential.user.uid);
-    const docSnapshot = await getDoc(userDoc);
-    
-    if (docSnapshot.exists()) {
-      // Update last login if document exists
-      await setDoc(userDoc, {
-        lastLogin: serverTimestamp(),
-        photoURL: userCredential.user.photoURL // Update photo URL which might have changed
-      }, { merge: true });
-      console.log("Updated Google user in Firestore:", userCredential.user.uid);
-    } else {
-      // Create new user document for Google sign-in
-      await saveUserToFirestore(
-        userCredential.user.uid,
-        userCredential.user.email,
-        userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'User',
-        'User',
-        userCredential.user.photoURL,
-        false
-      );
-    }
+    await apiUpdateUserLoginTimestamp(uid);
   } catch (error) {
-    console.error("Error updating user in Firestore during Google login:", error);
+    console.error('Error updating user login timestamp:', error);
   }
-  
-  return userCredential;
 };
 
-export const signup = async (email: string, password: string, name: string, role: UserRole) => {
-  // Create the user in Firebase Authentication
-  const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
-  
-  // Set display name
-  if (firebaseUser) {
-    await updateProfile(firebaseUser, {
-      displayName: name
-    });
+// Get all users (admin function)
+export const getAllUsers = async (): Promise<IUser[]> => {
+  try {
+    const users = await apiGetAllUsers();
+    return users;
+  } catch (error) {
+    console.error('Error getting all users:', error);
+    return [];
+  }
+};
+
+// Update user role
+export const updateUserRole = async (uid: string, role: string, isAdmin: boolean = false): Promise<IUser | null> => {
+  try {
+    const user = await apiUpdateUserRole(uid, role, isAdmin);
+    return user;
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    return null;
+  }
+};
+
+// Update user profile
+export const updateUserProfile = async (uid: string, profileData: Partial<IUser>): Promise<IUser | null> => {
+  try {
+    // Get existing user data
+    const existingUser = await fetchUserByUid(uid);
+    if (!existingUser) return null;
     
-    // Store user data in Firestore
-    try {
-      await saveUserToFirestore(
-        firebaseUser.uid,
-        firebaseUser.email,
-        name || firebaseUser.email?.split('@')[0] || 'User',
-        role,
-        null,
-        false
-      );
-      console.log(`User ${firebaseUser.uid} added to Firestore during signup`);
-    } catch (error) {
-      console.error("Error saving user to Firestore:", error);
-      throw new Error(`Failed to save user data: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    // Merge existing data with new profile data
+    const updatedUser = { ...existingUser, ...profileData };
+    
+    // Update the user
+    const user = await createOrUpdateUser(updatedUser);
+    return user;
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    return null;
   }
-  
-  // Store role information in localStorage
-  if (role && firebaseUser) {
-    localStorage.setItem(getRoleKey(firebaseUser.uid), role as string);
-  }
-  
-  return firebaseUser;
 };
-
-export const logoutUser = async () => {
-  return await signOut(auth);
-};
-
-// Export the helper function for use in other components
-export { saveUserToFirestore };
