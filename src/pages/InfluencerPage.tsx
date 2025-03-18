@@ -9,6 +9,8 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
 import { fetchSubscriptionPackagesByType } from '@/lib/mongodb-utils';
+import { SubscriptionPackages } from '@/components/subscription/SubscriptionPackages';
+import Loading from '@/components/ui/loading';
 
 const InfluencerPage = () => {
   const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
@@ -26,6 +28,7 @@ const InfluencerPage = () => {
       setIsLoading(true);
       try {
         const fetchedPackages = await fetchSubscriptionPackagesByType('Influencer');
+        console.log('Fetched influencer packages:', fetchedPackages);
         // Convert the packages to the correct type
         const convertedPackages = fetchedPackages.map(pkg => convertToSubscriptionPackage(pkg));
         setPackages(convertedPackages);
@@ -43,8 +46,6 @@ const InfluencerPage = () => {
     
     loadPackages();
   }, [toast]);
-
-  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
 
   const benefits = [
     {
@@ -81,12 +82,9 @@ const InfluencerPage = () => {
 
   const navigate = useNavigate();
 
-  const handleSubscribe = (packageId: string) => {
-    navigate(`/subscription/details/${packageId}`);
-  };
-
   return (
     <div className="flex flex-col min-h-screen">
+      <Header />
       <main className="flex-grow">
         <section className="relative py-20 md:py-28 bg-gradient-to-br from-primary/10 to-blue-400/10 overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-50"></div>
@@ -99,7 +97,12 @@ const InfluencerPage = () => {
               <p className="text-xl text-gray-600 mb-8">
                 Join our platform and turn your passion into profit by connecting with brands that value your unique voice and audience.
               </p>
-              <Button size="lg" className="animate-pulse">
+              <Button size="lg" className="animate-pulse" onClick={() => {
+                const packagesSection = document.getElementById('subscription-packages');
+                if (packagesSection) {
+                  packagesSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}>
                 Start Your Journey <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -129,7 +132,7 @@ const InfluencerPage = () => {
           </div>
         </section>
 
-        <section className="py-20 bg-gray-50">
+        <section id="subscription-packages" className="py-20 bg-gray-50">
           <div className="container px-4 mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl font-bold mb-4 text-gray-900">Choose Your Influencer Package</h2>
@@ -139,64 +142,11 @@ const InfluencerPage = () => {
             </div>
 
             {isLoading ? (
-              <div className="text-center py-10">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                <p className="mt-4 text-gray-600">Loading subscription packages...</p>
-              </div>
-            ) : packages.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-                {packages.map((pkg) => (
-                  <Card 
-                    key={pkg.id} 
-                    className={`flex flex-col transition-all duration-300 ${
-                      pkg.popular ? 'border-primary shadow-lg relative' : 
-                      selectedPackage === pkg.id ? 'border-primary/50 shadow-md' : ''
-                    }`}
-                    onClick={() => setSelectedPackage(pkg.id)}
-                  >
-                    {pkg.popular && (
-                      <div className="absolute top-0 right-0 bg-primary text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
-                        MOST POPULAR
-                      </div>
-                    )}
-                    <CardHeader className="pb-1">
-                      <CardTitle className="text-xl">{pkg.title}</CardTitle>
-                      <div className="flex items-end gap-1">
-                        <span className="text-3xl font-bold">₹{pkg.price}</span>
-                        <span className="text-muted-foreground mb-1">/year</span>
-                      </div>
-                      <CardDescription>{pkg.shortDescription}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-grow">
-                      <ul className="space-y-2 mb-4">
-                        {pkg.features && pkg.features.length > 0 ? (
-                          pkg.features.map((feature, i) => (
-                            <li key={i} className="flex items-start">
-                              <Check className="mr-2 h-4 w-4 text-primary mt-1 flex-shrink-0" />
-                              <span className="text-sm">{feature}</span>
-                            </li>
-                          ))
-                        ) : (
-                          <li className="text-sm text-muted-foreground">No features listed</li>
-                        )}
-                      </ul>
-                    </CardContent>
-                    <CardFooter>
-                      <Button 
-                        className="w-full" 
-                        variant={pkg.popular ? 'default' : 'outline'}
-                        onClick={() => handleSubscribe(pkg.id)}
-                      >
-                        Subscribe Now
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
+              <div className="flex justify-center items-center py-20">
+                <Loading size="lg" message="Loading subscription packages..." />
               </div>
             ) : (
-              <div className="text-center py-10">
-                <p className="text-gray-600">No subscription packages are currently available. Please check back later.</p>
-              </div>
+              <SubscriptionPackages userRole="Influencer" />
             )}
           </div>
         </section>
@@ -211,7 +161,12 @@ const InfluencerPage = () => {
               size="lg" 
               variant="outline" 
               className="bg-white text-primary hover:bg-white/90 border-white"
-              onClick={() => navigate("/subscription")}
+              onClick={() => {
+                const packagesSection = document.getElementById('subscription-packages');
+                if (packagesSection) {
+                  packagesSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
             >
               Join Now <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
