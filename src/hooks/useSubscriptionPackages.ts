@@ -19,6 +19,7 @@ export const useSubscriptionPackages = (userRole: UserRole | string) => {
         console.log(`Loading subscription packages for role: ${userRole}`);
         
         // Convert userRole to appropriate type format for API
+        // For business page, we need to ensure it always passes "Business" as the type
         const type = userRole === 'Admin' 
           ? 'Business' 
           : userRole === 'Influencer' 

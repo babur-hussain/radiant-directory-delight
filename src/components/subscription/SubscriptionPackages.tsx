@@ -12,7 +12,7 @@ import Loading from "@/components/ui/loading";
 import SubscriptionDialog from "./SubscriptionDialog";
 
 interface SubscriptionPackagesProps {
-  userRole: UserRole;
+  userRole: UserRole | string;
 }
 
 export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ userRole }) => {
@@ -45,7 +45,7 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-20">
-        <Loading size="lg" message="Loading subscription packages..." />
+        <Loading size="lg" message={`Loading ${userRole} subscription packages...`} />
       </div>
     );
   }
@@ -191,4 +191,3 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
     </div>
   );
 };
-
