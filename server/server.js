@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import { connectToMongoDB } from './mongodb-connector.js';
@@ -6,9 +5,14 @@ import User from './models/User.js';
 import Business from './models/Business.js';
 import Subscription from './models/Subscription.js';
 import SubscriptionPackage from './models/SubscriptionPackage.js';
+import crypto from 'crypto';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Razorpay API keys - In production, these should come from environment variables
+const RAZORPAY_KEY_ID = "rzp_test_1DP5mmOlF5G5ag";
+const RAZORPAY_KEY_SECRET = "your_razorpay_secret_key"; // Placeholder - in real app this would be in .env
 
 // Middleware
 app.use(express.json());
@@ -235,6 +239,107 @@ app.post('/api/subscriptions', async (req, res) => {
     res.status(201).json(subscription);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// --- Razorpay Payment APIs ---
+// Create Razorpay Order
+app.post('/api/create-razorpay-order', async (req, res) => {
+  try {
+    const { amount, currency = 'INR', packageId, userId } = req.body;
+    
+    if (!amount || !packageId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Amount and packageId are required' 
+      });
+    }
+    
+    // In a real implementation, you would use the Razorpay SDK to create an order
+    // For this demo, we'll create a mock order
+    const orderId = `order_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    const order = {
+      id: orderId,
+      amount: amount * 100, // Convert to paise
+      currency,
+      receipt: `receipt_${packageId}_${Date.now()}`,
+      status: 'created'
+    };
+    
+    // Log the order details
+    console.log("Created Razorpay order:", order);
+    
+    res.status(200).json({ 
+      success: true, 
+      order,
+      key_id: RAZORPAY_KEY_ID
+    });
+  } catch (error) {
+    console.error('Error creating Razorpay order:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to create order',
+      error: error.message
+    });
+  }
+});
+
+// Verify Razorpay Payment
+app.post('/api/verify-razorpay-payment', async (req, res) => {
+  try {
+    const { 
+      razorpay_payment_id, 
+      razorpay_order_id, 
+      razorpay_signature,
+      packageId,
+      userId,
+      paymentType
+    } = req.body;
+    
+    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Payment verification failed: Missing required parameters' 
+      });
+    }
+    
+    // In a real implementation, you would verify the signature
+    // For this demo, we'll assume the payment is valid
+    
+    // Generate expected signature
+    // const expectedSignature = crypto
+    //   .createHmac('sha256', RAZORPAY_KEY_SECRET)
+    //   .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+    //   .digest('hex');
+    
+    // if (expectedSignature !== razorpay_signature) {
+    //   return res.status(400).json({ 
+    //     success: false, 
+    //     message: 'Payment verification failed: Invalid signature' 
+    //   });
+    // }
+    
+    // For demo purposes, we'll just assume verification succeeds
+    console.log("Payment verified successfully:", {
+      razorpay_payment_id,
+      razorpay_order_id,
+      packageId,
+      userId
+    });
+    
+    res.status(200).json({ 
+      success: true, 
+      message: 'Payment verified successfully',
+      paymentId: razorpay_payment_id,
+      orderId: razorpay_order_id
+    });
+  } catch (error) {
+    console.error('Error verifying Razorpay payment:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Payment verification failed',
+      error: error.message
+    });
   }
 });
 

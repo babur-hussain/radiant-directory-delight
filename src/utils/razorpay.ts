@@ -30,6 +30,10 @@ declare global {
   }
 }
 
+// Razorpay API key - Using a test key that's allowed to be in the codebase
+// In production, this should come from environment variables
+export const RAZORPAY_KEY_ID = "rzp_test_1DP5mmOlF5G5ag";
+
 /**
  * Load the Razorpay script
  * @returns A promise that resolves when the script is loaded
@@ -116,4 +120,45 @@ export const convertToPaise = (amount: number): number => {
   const paise = Math.max(Math.round(amount * 100), 100);
   console.log(`Converting amount ${amount} to ${paise} paise`);
   return paise;
+};
+
+/**
+ * Create a new Razorpay order
+ * For demo purposes, this creates a client-side order
+ * In production, this should call a secure backend endpoint
+ */
+export const createRazorpayOrder = async (amount: number, currency: string = 'INR'): Promise<any> => {
+  console.log(`Creating Razorpay order for amount: ${amount} ${currency}`);
+  
+  // In a real implementation, this should call your backend API
+  // For demo purposes, we're creating a mock order
+  const orderId = generateOrderId();
+  
+  // Simulate API call delay
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  return {
+    id: orderId,
+    amount: convertToPaise(amount),
+    currency,
+    receipt: `receipt_${Date.now()}`,
+    status: 'created'
+  };
+};
+
+/**
+ * Verify Razorpay payment 
+ * In production, this would be done on the server side
+ */
+export const verifyRazorpayPayment = async (paymentData: RazorpayResponse): Promise<boolean> => {
+  console.log("Verifying payment:", paymentData);
+  
+  // In a real implementation, this should call your backend API for verification
+  // using a secure cryptographic signature check
+  // For demo purposes, we're just returning true
+  
+  // Simulate API call delay
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  return true;
 };

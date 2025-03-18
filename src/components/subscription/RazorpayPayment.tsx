@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AlertCircle, CreditCard, Shield, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import { loadRazorpayScript, isRazorpayAvailable } from '@/utils/razorpay';
+import { loadRazorpayScript, isRazorpayAvailable, RAZORPAY_KEY_ID } from '@/utils/razorpay';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 interface RazorpayPaymentProps {
   selectedPackage: ISubscriptionPackage;
@@ -20,6 +21,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   onFailure 
 }) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
   const [isLoadingScript, setIsLoadingScript] = useState(true);
   const [scriptError, setScriptError] = useState<string | null>(null);
@@ -89,7 +91,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     };
     
     const options = {
-      key: 'rzp_test_1DP5mmOlF5G5ag', // Replace with your actual key
+      key: RAZORPAY_KEY_ID, // Using the key from our utils file
       amount: order.amount,
       currency: order.currency,
       name: 'Grow Bharat Vyapaar',
@@ -98,6 +100,14 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       handler: function(response: any) {
         // Add payment type to the response
         response.paymentType = selectedPackage.paymentType || "recurring";
+        
+        // Show success toast
+        toast({
+          title: "Payment Successful",
+          description: `Your payment for ${selectedPackage.title} was successful.`,
+          variant: "default"
+        });
+        
         setIsProcessing(false);
         onSuccess(response);
       },
@@ -118,6 +128,12 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         ondismiss: function() {
           console.log('Payment modal dismissed');
           setIsProcessing(false);
+          
+          toast({
+            title: "Payment Cancelled",
+            description: "You've cancelled the payment process.",
+            variant: "default"
+          });
         }
       }
     };
@@ -125,9 +141,25 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     try {
       const razorpay = new window.Razorpay(options);
       razorpay.open();
+      
+      // Log for debugging
+      console.log("Opening Razorpay with options:", {
+        packageId: selectedPackage.id,
+        packageTitle: selectedPackage.title,
+        amount: paymentAmount,
+        orderId: order.id
+      });
+      
     } catch (error) {
       console.error('Error opening Razorpay:', error);
       setIsProcessing(false);
+      
+      toast({
+        title: "Payment Error",
+        description: "Could not open payment gateway. Please try again later.",
+        variant: "destructive"
+      });
+      
       onFailure(error);
     }
   };
