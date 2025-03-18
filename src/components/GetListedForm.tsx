@@ -4,14 +4,15 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Building, MapPin, Phone, X } from "lucide-react";
+import { db } from "@/config/firebase";
+import { collection, addDoc, doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { saveBusiness } from "@/lib/mongodb-utils";
-import { generateUniqueId } from "@/lib/csv-utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { saveBusiness } from "@/lib/firebase-utils";
+import { initializeData, generateUniqueId } from "@/lib/csv-utils";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Business name must be at least 2 characters" }),
@@ -68,8 +69,11 @@ const GetListedForm = ({ isOpen, setIsOpen }: GetListedFormProps) => {
         image: "/placeholder.svg",
       };
       
-      // Save to MongoDB instead of Firebase
+      // Save to Firebase
       await saveBusiness(newBusiness);
+      
+      // Refresh local data
+      await initializeData();
       
       toast({
         title: "Business Listed Successfully",
@@ -94,7 +98,7 @@ const GetListedForm = ({ isOpen, setIsOpen }: GetListedFormProps) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Get Listed Now</DialogTitle>
           <DialogDescription>
@@ -102,91 +106,87 @@ const GetListedForm = ({ isOpen, setIsOpen }: GetListedFormProps) => {
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="max-h-[calc(90vh-120px)]">
-          <div className="px-1 py-2">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Business Name</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input placeholder="Enter business name" {...field} />
-                          <Building className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Restaurant, Retail, Services" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Address</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input placeholder="Enter full address" {...field} />
-                          <MapPin className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input placeholder="Enter phone number" {...field} />
-                          <Phone className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Submitting..." : "Submit Listing"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </div>
-        </ScrollArea>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Business Name</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input placeholder="Enter business name" {...field} />
+                      <Building className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Restaurant, Retail, Services" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Address</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input placeholder="Enter full address" {...field} />
+                      <MapPin className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input placeholder="Enter phone number" {...field} />
+                      <Phone className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="flex justify-end gap-2 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setIsOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Submitting..." : "Submit Listing"}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

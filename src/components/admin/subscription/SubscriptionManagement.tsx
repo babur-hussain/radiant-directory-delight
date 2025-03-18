@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,23 +24,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { PlusCircle, Pencil, Trash2, Loader2, RefreshCw } from "lucide-react";
 import { nanoid } from "nanoid";
-import { ISubscriptionPackage } from "@/models/SubscriptionPackage"; 
-import { fetchSubscriptionPackages, saveSubscriptionPackage, deleteSubscriptionPackage } from "@/lib/mongodb-utils";
+import { SubscriptionPackage } from "@/data/subscriptionData";
+import { fetchSubscriptionPackages, saveSubscriptionPackage, deleteSubscriptionPackage } from "@/lib/firebase-utils";
 import SubscriptionPackageForm from "./SubscriptionPackageForm";
 import { useToast } from "@/hooks/use-toast";
 import AdminPermissionError from "../dashboard/AdminPermissionError";
-import BusinessTableLoading from "../table/BusinessTableLoading";
-import SubscriptionError from "./SubscriptionError";
-import { convertToSubscriptionPackage, SubscriptionPackage } from "@/data/subscriptionData";
 
 interface SubscriptionPackageManagementProps {
   onPermissionError?: (error: any) => void;
-  dbInitialized?: boolean;
 }
 
 export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps> = ({ 
-  onPermissionError,
-  dbInitialized = false
+  onPermissionError 
 }) => {
   const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
   const [filteredPackages, setFilteredPackages] = useState<SubscriptionPackage[]>([]);
@@ -53,24 +49,14 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
   const { toast } = useToast();
 
   useEffect(() => {
-    if (dbInitialized) {
-      loadPackages();
-    } else {
-      const timer = setTimeout(() => {
-        loadPackages();
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [dbInitialized]);
+    loadPackages();
+  }, []);
 
   useEffect(() => {
-    if (packages && packages.length > 0) {
-      const filtered = packages.filter(pkg => 
-        pkg.type && pkg.type.toLowerCase() === activeTab
-      );
-      setFilteredPackages(filtered);
-    } else {
-      setFilteredPackages([]);
+    if (packages.length > 0) {
+      setFilteredPackages(packages.filter(pkg => 
+        pkg.type.toLowerCase() === activeTab
+      ));
     }
   }, [packages, activeTab]);
 
@@ -78,36 +64,18 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     setIsLoading(true);
     setPermissionError(null);
     try {
-      console.log("Fetching subscription packages from MongoDB...");
       const data = await fetchSubscriptionPackages();
-      console.log("Fetched subscription packages from MongoDB:", data);
-      
-      if (data && Array.isArray(data) && data.length > 0) {
-        const convertedPackages = data.map(pkg => convertToSubscriptionPackage(pkg));
-        setPackages(convertedPackages);
-        
-        const filtered = convertedPackages.filter(pkg => 
-          pkg.type && pkg.type.toLowerCase() === activeTab
-        );
-        
-        setFilteredPackages(filtered);
-        console.log(`Loaded ${convertedPackages.length} subscription packages, filtered to ${filtered.length} ${activeTab} packages`);
-      } else {
-        console.warn("No subscription packages found in MongoDB");
-        setPackages([]);
-        setFilteredPackages([]);
-        
-        toast({
-          title: "No Packages Found",
-          description: "No subscription packages found in the database. Try creating one.",
-          variant: "default"
-        });
-      }
+      console.log("Fetched subscription packages:", data);
+      setPackages(data);
+      setFilteredPackages(data.filter(pkg => pkg.type.toLowerCase() === activeTab));
     } catch (error) {
       console.error("Error loading packages:", error);
       
-      if (error instanceof Error) {
-        const errorMessage = "Error loading subscription packages: " + error.message;
+      // Handle permission error
+      if (error instanceof Error && 
+          (error.message.includes("Permission denied") || 
+           error.message.includes("Missing or insufficient permissions"))) {
+        const errorMessage = "You don't have admin rights to view subscription packages.";
         setPermissionError(errorMessage);
         if (onPermissionError) {
           onPermissionError(error);
@@ -119,9 +87,6 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
           variant: "destructive"
         });
       }
-      
-      setPackages([]);
-      setFilteredPackages([]);
     } finally {
       setIsLoading(false);
     }
@@ -134,17 +99,13 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
 
   const handleEditPackage = (pkg: SubscriptionPackage) => {
     console.log("Editing package:", pkg);
-    const packageCopy = JSON.parse(JSON.stringify(pkg));
-    setSelectedPackage(packageCopy);
+    setSelectedPackage({...pkg}); // Clone to prevent direct state mutation
     setIsFormOpen(true);
   };
 
   const handleCloseForm = () => {
-    console.log("Closing form");
     setIsFormOpen(false);
-    setTimeout(() => {
-      setSelectedPackage(null);
-    }, 100);
+    setSelectedPackage(null);
   };
 
   const handleOpenDeleteDialog = (pkg: SubscriptionPackage) => {
@@ -163,6 +124,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     try {
       await deleteSubscriptionPackage(packageToDelete.id);
       
+      // Update state
       setPackages(prev => prev.filter(p => p.id !== packageToDelete.id));
       
       toast({
@@ -172,18 +134,22 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     } catch (error) {
       console.error("Error deleting package:", error);
       
-      const errorMessage = "Error deleting subscription package: " + 
-        (error instanceof Error ? error.message : String(error));
-      setPermissionError(errorMessage);
-      if (onPermissionError) {
-        onPermissionError(error);
+      // Handle permission error
+      if (error instanceof Error && 
+          (error.message.includes("Permission denied") || 
+           error.message.includes("Missing or insufficient permissions"))) {
+        const errorMessage = "You don't have admin rights to delete subscription packages.";
+        setPermissionError(errorMessage);
+        if (onPermissionError) {
+          onPermissionError(error);
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete package. Please try again later.",
+          variant: "destructive"
+        });
       }
-      
-      toast({
-        title: "Error",
-        description: "Failed to delete package. Please try again later.",
-        variant: "destructive"
-      });
     } finally {
       setIsLoading(false);
       setPackageToDelete(null);
@@ -194,23 +160,42 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     setIsSaving(true);
     setPermissionError(null);
     try {
-      console.log("Saving package data to MongoDB:", packageData);
+      console.log("Saving package data:", packageData);
       
+      // Validate required fields
       if (!packageData.title || packageData.title.trim() === '') {
         throw new Error("Package title is required");
       }
       
-      await saveSubscriptionPackage(packageData);
-      console.log("Package saved successfully to MongoDB");
+      // Ensure numbers are properly converted
+      const validatedPackageData = {
+        ...packageData,
+        price: Number(packageData.price),
+        monthlyPrice: Number(packageData.monthlyPrice || 0),
+        setupFee: Number(packageData.setupFee || 0),
+        durationMonths: Number(packageData.durationMonths || 12),
+        advancePaymentMonths: Number(packageData.advancePaymentMonths || 0)
+      };
       
+      // Make sure paymentType is set properly
+      if (!validatedPackageData.paymentType) {
+        validatedPackageData.paymentType = "recurring";
+      }
+      
+      await saveSubscriptionPackage(validatedPackageData);
+      console.log("Package saved successfully to Firebase");
+      
+      // Update local state with validated data
       setPackages(prev => {
-        const existingIndex = prev.findIndex(p => p.id === packageData.id);
+        const existingIndex = prev.findIndex(p => p.id === validatedPackageData.id);
         if (existingIndex >= 0) {
+          // Update existing package
           const updated = [...prev];
-          updated[existingIndex] = packageData;
+          updated[existingIndex] = validatedPackageData;
           return updated;
         } else {
-          return [...prev, packageData];
+          // Add new package
+          return [...prev, validatedPackageData];
         }
       });
       
@@ -220,28 +205,37 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
       });
       
       setIsFormOpen(false);
-      setTimeout(() => {
-        setSelectedPackage(null);
-      }, 100);
+      setSelectedPackage(null);
       
+      // Refresh the package list to confirm changes were saved
       setTimeout(() => {
         loadPackages();
       }, 1000);
     } catch (error) {
       console.error("Error saving package:", error);
       
-      const errorMessage = "Error saving subscription package: " + 
-        (error instanceof Error ? error.message : String(error));
-      setPermissionError(errorMessage);
-      if (onPermissionError) {
-        onPermissionError(error);
+      // Handle permission error
+      if (error instanceof Error && 
+          (error.message.includes("Permission denied") || 
+           error.message.includes("Missing or insufficient permissions"))) {
+        const errorMessage = "You don't have admin rights to create or update subscription packages.";
+        setPermissionError(errorMessage);
+        if (onPermissionError) {
+          onPermissionError(error);
+        }
+      } else {
+        let errorMessage = "Failed to save package. Please try again later.";
+        
+        if (error instanceof Error) {
+          errorMessage = error.message || errorMessage;
+        }
+        
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive"
+        });
       }
-      
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
     } finally {
       setIsSaving(false);
     }
@@ -259,36 +253,6 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     setPermissionError(null);
   };
 
-  if (isLoading) {
-    return <BusinessTableLoading />;
-  }
-
-  if (permissionError) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Subscription Packages</CardTitle>
-          <CardDescription>
-            Manage subscription packages for businesses and influencers
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SubscriptionError 
-            error={permissionError}
-            onRetry={() => {
-              dismissError();
-              loadPackages();
-            }}
-          />
-          <Button onClick={handleCreatePackage} className="mt-4">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create New Package
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -302,12 +266,12 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
           <Button 
             variant="outline" 
             onClick={handleRefresh} 
-            disabled={isLoading || isSaving}
+            disabled={isLoading}
             title="Refresh package data"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
-          <Button onClick={handleCreatePackage} disabled={isLoading || isSaving}>
+          <Button onClick={handleCreatePackage} disabled={isLoading}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Create Package
           </Button>
@@ -340,14 +304,8 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
           </TabsContent>
         </Tabs>
         
-        <Dialog 
-          open={isFormOpen} 
-          onOpenChange={(open) => {
-            if (!open) {
-              handleCloseForm();
-            }
-          }}
-        >
+        {/* Package form dialog */}
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -357,31 +315,29 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
                 Fill in the details for the subscription package
               </DialogDescription>
             </DialogHeader>
-            {isFormOpen && (
-              <SubscriptionPackageForm
-                initialData={selectedPackage || {
-                  id: nanoid(),
-                  title: "",
-                  price: 0,
-                  monthlyPrice: 0,
-                  setupFee: 0,
-                  durationMonths: 12,
-                  shortDescription: "",
-                  fullDescription: "",
-                  features: [],
-                  popular: false,
-                  type: activeTab === "business" ? "Business" : "Influencer",
-                  termsAndConditions: "",
-                  paymentType: "recurring"
-                }}
-                onSubmit={handleSavePackage}
-                onCancel={handleCloseForm}
-                isSaving={isSaving}
-              />
-            )}
+            <SubscriptionPackageForm
+              initialData={selectedPackage || {
+                id: nanoid(),
+                title: "",
+                price: 0,
+                monthlyPrice: 0,
+                setupFee: 0,
+                durationMonths: 12,
+                shortDescription: "",
+                fullDescription: "",
+                features: [],
+                popular: false,
+                type: activeTab === "business" ? "Business" : "Influencer",
+                termsAndConditions: "",
+                paymentType: "recurring" // Ensuring paymentType is set
+              }}
+              onSubmit={handleSavePackage}
+              onCancel={handleCloseForm}
+            />
           </DialogContent>
         </Dialog>
         
+        {/* Delete confirmation dialog */}
         <AlertDialog open={!!packageToDelete} onOpenChange={open => !open && handleCloseDeleteDialog()}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -422,7 +378,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
       );
     }
     
-    if (!packages || packages.length === 0) {
+    if (packages.length === 0) {
       return (
         <p className="text-center py-8 text-muted-foreground">
           No packages found. Click "Create Package" to add one.
@@ -447,12 +403,12 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
           {packages.map((pkg) => (
             <TableRow key={pkg.id}>
               <TableCell className="font-medium">{pkg.title}</TableCell>
-              <TableCell>₹{pkg.price}</TableCell>
-              <TableCell>₹{pkg.setupFee || 0}</TableCell>
+              <TableCell>{pkg.price}</TableCell>
+              <TableCell>{pkg.setupFee}</TableCell>
               <TableCell>
                 <Badge variant="outline">{pkg.paymentType === "one-time" ? "One-time" : "Recurring"}</Badge>
               </TableCell>
-              <TableCell>{pkg.durationMonths ? `${pkg.durationMonths} months` : 'N/A'}</TableCell>
+              <TableCell>{pkg.paymentType === "one-time" ? "N/A" : `${pkg.durationMonths} months`}</TableCell>
               <TableCell>
                 {pkg.popular ? (
                   <Badge>Popular</Badge>

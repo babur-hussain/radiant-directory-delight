@@ -1,8 +1,7 @@
 
-import { Subscription, ISubscription } from '../../models/Subscription';
-import { User } from '../../models/User';
+import { doc, setDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/config/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { SubscriptionData } from "./types";
 
 export const adminAssignSubscription = async (userId: string, subscriptionData: any): Promise<boolean> => {
   try {
@@ -15,7 +14,7 @@ export const adminAssignSubscription = async (userId: string, subscriptionData: 
     const subscriptionId = subscriptionData.id || `sub_${Date.now()}`;
     
     // Prepare subscription data
-    const subscription: ISubscription = {
+    const subscription: SubscriptionData = {
       id: subscriptionId,
       userId: userId,
       packageId: subscriptionData.packageId || subscriptionData.id,
@@ -24,8 +23,8 @@ export const adminAssignSubscription = async (userId: string, subscriptionData: 
       startDate: subscriptionData.startDate || new Date().toISOString(),
       endDate: subscriptionData.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       status: subscriptionData.status || "active",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
       assignedBy: subscriptionData.assignedBy || "admin",
       assignedAt: subscriptionData.assignedAt || new Date().toISOString(),
       advancePaymentMonths: subscriptionData.advancePaymentMonths || 0,
@@ -38,58 +37,11 @@ export const adminAssignSubscription = async (userId: string, subscriptionData: 
       paymentType: subscriptionData.paymentType || "recurring" // Default to recurring if not specified
     };
     
-    // Save to MongoDB with better logging
-    console.log(`Attempting to save subscription ${subscriptionId} to MongoDB for user ${userId}`, subscription);
+    // Set the document in Firestore with better logging
+    const docRef = doc(db, "subscriptions", subscriptionId);
+    console.log(`Attempting to save subscription ${subscriptionId} to Firestore for user ${userId}`, subscription);
     
-    // Update or create the subscription in MongoDB
-    await Subscription.findOneAndUpdate(
-      { id: subscriptionId },
-      subscription,
-      { upsert: true, new: true }
-    );
-    
-    // Also update the user's subscription reference in MongoDB
-    await User.findOneAndUpdate(
-      { uid: userId },
-      { 
-        subscription: subscriptionId,
-        $set: {
-          'subscriptionStatus': subscription.status,
-          'subscriptionPackage': subscription.packageId
-        }
-      },
-      { new: true }
-    );
-    
-    // Also save to Firebase
-    try {
-      console.log(`Saving subscription ${subscriptionId} to Firebase`);
-      
-      // Clean the subscription object for Firebase
-      const firebaseSubscription = {
-        ...subscription,
-        createdAt: subscription.createdAt.toISOString(),
-        updatedAt: subscription.updatedAt.toISOString()
-      };
-      
-      // Save to Firebase
-      const subscriptionRef = doc(db, 'subscriptions', subscriptionId);
-      await setDoc(subscriptionRef, firebaseSubscription);
-      
-      // Update user in Firebase as well
-      const userRef = doc(db, 'users', userId);
-      await setDoc(userRef, { 
-        subscription: subscriptionId,
-        subscriptionStatus: subscription.status,
-        subscriptionPackage: subscription.packageId,
-        lastUpdated: new Date().toISOString()
-      }, { merge: true });
-      
-      console.log(`Successfully saved subscription ${subscriptionId} to Firebase`);
-    } catch (firebaseError) {
-      console.error('Error saving subscription to Firebase:', firebaseError);
-      // We continue even if Firebase save fails
-    }
+    await setDoc(docRef, subscription);
     
     console.log(`Subscription ${subscriptionId} assigned to user ${userId}`);
     return true;
@@ -99,7 +51,7 @@ export const adminAssignSubscription = async (userId: string, subscriptionData: 
   }
 };
 
-// Adding this function to maintain compatibility with the existing code
+// Adding this function to fix reference errors
 export const adminCancelSubscription = async (userId: string, subscriptionId: string): Promise<boolean> => {
   try {
     if (!userId || !subscriptionId) {
@@ -107,54 +59,16 @@ export const adminCancelSubscription = async (userId: string, subscriptionId: st
       return false;
     }
     
-    // Update the subscription with cancelled status in MongoDB
-    await Subscription.findOneAndUpdate(
-      { id: subscriptionId },
-      {
-        status: "cancelled",
-        cancelledAt: new Date().toISOString(),
-        cancelReason: "admin_cancelled",
-        updatedAt: new Date()
-      }
-    );
+    // Get the subscription document
+    const docRef = doc(db, "subscriptions", subscriptionId);
     
-    // Also update the user's subscription status in MongoDB
-    await User.findOneAndUpdate(
-      { uid: userId },
-      { 
-        $set: {
-          'subscriptionStatus': 'cancelled',
-          'subscriptionCancelledAt': new Date()
-        }
-      }
-    );
-    
-    // Also update in Firebase
-    try {
-      console.log(`Updating cancelled subscription ${subscriptionId} in Firebase`);
-      
-      // Update subscription in Firebase
-      const subscriptionRef = doc(db, 'subscriptions', subscriptionId);
-      await setDoc(subscriptionRef, {
-        status: "cancelled",
-        cancelledAt: new Date().toISOString(),
-        cancelReason: "admin_cancelled",
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-      
-      // Update user in Firebase
-      const userRef = doc(db, 'users', userId);
-      await setDoc(userRef, { 
-        subscriptionStatus: 'cancelled',
-        subscriptionCancelledAt: new Date().toISOString(),
-        lastUpdated: new Date().toISOString()
-      }, { merge: true });
-      
-      console.log(`Successfully updated cancelled subscription ${subscriptionId} in Firebase`);
-    } catch (firebaseError) {
-      console.error('Error updating cancelled subscription in Firebase:', firebaseError);
-      // We continue even if Firebase update fails
-    }
+    // Update with cancelled status
+    await setDoc(docRef, {
+      status: "cancelled",
+      cancelledAt: new Date().toISOString(),
+      cancelReason: "admin_cancelled",
+      updatedAt: Timestamp.now()
+    }, { merge: true });
     
     console.log(`Subscription ${subscriptionId} cancelled for user ${userId}`);
     return true;

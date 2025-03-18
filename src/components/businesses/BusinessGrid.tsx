@@ -30,7 +30,7 @@ const BusinessGrid = ({ businesses, resetFilters, loading = false }: BusinessGri
         ) : (
           <div className="col-span-full text-center py-12">
             <h3 className="text-xl font-medium text-gray-900 mb-2">No businesses found</h3>
-            <p className="text-gray-600 mb-4">Try adjusting your filters or add businesses through the admin dashboard</p>
+            <p className="text-gray-600 mb-4">Try adjusting your filters or view all businesses</p>
             <Button onClick={resetFilters}>Reset Filters</Button>
           </div>
         )}

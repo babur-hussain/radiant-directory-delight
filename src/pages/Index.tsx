@@ -1,5 +1,5 @@
 
-import React from 'react';
+import { useEffect } from 'react';
 import Footer from '@/components/Footer';
 import HeroSection from '@/components/HeroSection';
 import CategorySection from '@/components/CategorySection';
@@ -7,25 +7,38 @@ import FeaturedBusinesses from '@/components/FeaturedBusinesses';
 import TestimonialSection from '@/components/TestimonialSection';
 import CallToAction from '@/components/CallToAction';
 import CtaSection from '@/components/CtaSection';
+import { initializeData } from '@/lib/csv-utils';
 
 const Index = () => {
+  // Smooth scroll to top on page load and initialize data
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+    
+    // Initialize business data on page load
+    const loadData = async () => {
+      try {
+        await initializeData();
+      } catch (error) {
+        console.error("Error initializing data:", error);
+      }
+    };
+    
+    loadData();
+  }, []);
+
   return (
-    <div className="index-page">
+    <>
       <HeroSection />
-      <div className="py-8">
-        <h2 className="text-2xl font-bold text-center mb-4">Welcome to Grow Bharat Vyapaar</h2>
-        <p className="text-center text-gray-600 max-w-2xl mx-auto">
-          Discover and connect with Indian businesses from various sectors. Our platform helps 
-          businesses grow and reach new customers.
-        </p>
-      </div>
       <CtaSection />
       <CategorySection />
       <FeaturedBusinesses />
       <TestimonialSection />
       <CallToAction />
       <Footer />
-    </div>
+    </>
   );
 };
 

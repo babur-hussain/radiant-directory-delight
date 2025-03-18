@@ -8,12 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Edit, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { SubscriptionPackage, convertToSubscriptionPackage } from "@/data/subscriptionData";
-import { fetchSubscriptionPackages, fetchSubscriptionPackagesByType } from "@/lib/mongodb-utils";
+import { SubscriptionPackage } from "@/data/subscriptionData";
+import { businessPackages, influencerPackages } from "@/data/subscriptionData";
+import SubscriptionPackageForm from "./SubscriptionPackageForm";
+import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import AdvancedSubscriptionControls from "./AdvancedSubscriptionControls";
 import { useAuth } from "@/hooks/useAuth";
-import SubscriptionPackageForm from "./SubscriptionPackageForm";
 
 export const CentralizedSubscriptionManager = () => {
   const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
@@ -50,39 +51,37 @@ export const CentralizedSubscriptionManager = () => {
     setError(null);
     
     try {
-      // Fetch packages from MongoDB
-      const allPackages = await fetchSubscriptionPackages();
+      // Try to fetch from Firebase
+      const fetchedPackages = await fetchSubscriptionPackages();
       
-      if (allPackages && allPackages.length > 0) {
-        // Convert ISubscriptionPackage to SubscriptionPackage
-        const convertedPackages = allPackages.map(pkg => convertToSubscriptionPackage(pkg));
-        setPackages(convertedPackages);
+      if (fetchedPackages && fetchedPackages.length > 0) {
+        setPackages(fetchedPackages);
         
         // Split packages by type
-        const business = convertedPackages.filter(pkg => pkg.type === "Business");
-        const influencer = convertedPackages.filter(pkg => pkg.type === "Influencer");
+        const business = fetchedPackages.filter(pkg => pkg.type === "Business");
+        const influencer = fetchedPackages.filter(pkg => pkg.type === "Influencer");
         
-        setBusinessPkgs(business);
-        setInfluencerPkgs(influencer);
+        setBusinessPkgs(business.length > 0 ? business : businessPackages);
+        setInfluencerPkgs(influencer.length > 0 ? influencer : influencerPackages);
       } else {
-        // If no packages found
-        setBusinessPkgs([]);
-        setInfluencerPkgs([]);
-        setPackages([]);
+        // Use default packages if Firebase fetch fails or returns empty
+        setBusinessPkgs(businessPackages);
+        setInfluencerPkgs(influencerPackages);
+        setPackages([...businessPackages, ...influencerPackages]);
         
         toast({
-          title: "No Packages Found",
-          description: "No subscription packages found in the database.",
+          title: "Using Default Packages",
+          description: "Could not load packages from database. Using default packages.",
         });
       }
     } catch (err) {
       console.error("Error loading packages:", err);
-      setError("Failed to load subscription packages.");
+      setError("Failed to load subscription packages. Using default packages.");
       
-      // Set empty arrays as fallback
-      setBusinessPkgs([]);
-      setInfluencerPkgs([]);
-      setPackages([]);
+      // Set default packages as fallback
+      setBusinessPkgs(businessPackages);
+      setInfluencerPkgs(influencerPackages);
+      setPackages([...businessPackages, ...influencerPackages]);
     } finally {
       setIsLoading(false);
     }
@@ -218,16 +217,7 @@ export const CentralizedSubscriptionManager = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
-                        <div className="flex justify-center items-center">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
-                          <span className="ml-2">Loading packages...</span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : displayedPackages.length > 0 ? (
+                  {displayedPackages.length > 0 ? (
                     displayedPackages.map((pkg) => (
                       <TableRow key={pkg.id}>
                         <TableCell>

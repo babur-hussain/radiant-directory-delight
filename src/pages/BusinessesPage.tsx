@@ -1,11 +1,9 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { 
   getAllBusinesses,
   addDataChangeListener,
   removeDataChangeListener,
-  initializeData,
-  Business
+  initializeData
 } from "@/lib/csv-utils";
 import { businessesData } from "@/data/businessesData";
 import TablePagination from "@/components/admin/table/TablePagination";
@@ -16,11 +14,6 @@ import BusinessesGrid from "@/components/businesses/BusinessesPage/BusinessesGri
 
 type LocationFilter = string | null;
 type SortOption = "relevance" | "rating" | "reviews";
-
-// Extended business type that includes location field
-interface ExtendedBusiness extends Business {
-  location: string;
-}
 
 const getCustomCategories = (): string[] => {
   const storedCategories = localStorage.getItem("businessCategories");
@@ -42,7 +35,7 @@ const getCustomLocations = (): string[] => {
 
 const BusinessesPage = () => {
   const [loading, setLoading] = useState(true);
-  const [businesses, setBusinesses] = useState<ExtendedBusiness[]>(businessesData as ExtendedBusiness[]);
+  const [businesses, setBusinesses] = useState(businessesData);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedRating, setSelectedRating] = useState<string>("");
@@ -62,17 +55,7 @@ const BusinessesPage = () => {
       setLoading(true);
       try {
         await initializeData();
-        const fetchedBusinesses = getAllBusinesses();
-        // Add location from address if missing
-        const extendedBusinesses = fetchedBusinesses.map(business => {
-          // Extract location from address
-          const addressParts = business.address?.split(',') || [];
-          const extractedLocation = addressParts.length > 1 
-            ? addressParts[addressParts.length - 1].trim()
-            : 'Unknown';
-          return { ...business, location: extractedLocation };
-        });
-        setBusinesses(extendedBusinesses);
+        setBusinesses(getAllBusinesses());
       } catch (error) {
         console.error("Error loading businesses:", error);
       } finally {
@@ -83,17 +66,7 @@ const BusinessesPage = () => {
     loadData();
     
     const handleDataChanged = () => {
-      const fetchedBusinesses = getAllBusinesses();
-      // Add location from address if missing
-      const extendedBusinesses = fetchedBusinesses.map(business => {
-        // Extract location from address
-        const addressParts = business.address?.split(',') || [];
-        const extractedLocation = addressParts.length > 1 
-          ? addressParts[addressParts.length - 1].trim()
-          : 'Unknown';
-        return { ...business, location: extractedLocation };
-      });
-      setBusinesses(extendedBusinesses);
+      setBusinesses(getAllBusinesses());
     };
     
     addDataChangeListener(handleDataChanged);
@@ -123,15 +96,11 @@ const BusinessesPage = () => {
   }, [businesses, customCategories]);
   
   const locations = useMemo(() => {
-    const extractedLocations = businesses.map(b => {
-      // Use location field if available, otherwise extract from address
-      if (b.location) return b.location;
-      
-      const parts = b.address?.split(',') || [];
-      return parts.length > 1 ? parts[parts.length - 1].trim() : parts[0]?.trim() || 'Unknown';
-    });
+    const businessLocations = Array.from(new Set(businesses.map(b => {
+      const parts = b.address.split(',');
+      return parts.length > 1 ? parts[1].trim() : parts[0].trim();
+    })));
     
-    const businessLocations = Array.from(new Set(extractedLocations));
     const allLocations = [...new Set([...customLocations, ...businessLocations])].filter(Boolean);
     return allLocations;
   }, [businesses, customLocations]);
@@ -169,9 +138,7 @@ const BusinessesPage = () => {
         
       const matchesFeatured = !featuredOnly || business.featured;
       
-      const matchesLocation = !selectedLocation || 
-        (business.location && business.location.includes(selectedLocation)) || 
-        business.address.includes(selectedLocation);
+      const matchesLocation = !selectedLocation || business.address.includes(selectedLocation);
       
       const matchesTags = activeTags.length === 0 || 
         activeTags.some(tag => business.tags.includes(tag));
@@ -299,7 +266,7 @@ const BusinessesPage = () => {
       />
       
       <BusinessesGrid 
-        businesses={currentBusinesses as unknown as Business[]}
+        businesses={currentBusinesses}
         clearAllFilters={clearAllFilters}
       />
       

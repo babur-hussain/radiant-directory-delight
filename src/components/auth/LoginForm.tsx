@@ -7,7 +7,6 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
 import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
 import SocialLoginButtons from "./SocialLoginButtons";
-import { useToast } from "@/hooks/use-toast";
 
 interface LoginFormProps {
   onClose: () => void;
@@ -18,7 +17,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
   const [loginPassword, setLoginPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login, loginWithGoogle, loading } = useAuth();
-  const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,18 +24,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
 
     try {
       await login(loginEmail, loginPassword);
-      toast({
-        title: "Login successful",
-        description: "You have been logged in successfully",
-      });
       onClose();
     } catch (error) {
-      console.error("Login error:", error);
-      toast({
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "Please check your credentials and try again",
-        variant: "destructive",
-      });
+      // Error handling is in the context
     } finally {
       setIsSubmitting(false);
     }
@@ -47,18 +36,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
     setIsSubmitting(true);
     try {
       await loginWithGoogle();
-      toast({
-        title: "Login successful",
-        description: "You have been logged in with Google successfully",
-      });
       onClose();
     } catch (error) {
-      console.error("Google login error:", error);
-      toast({
-        title: "Google login failed",
-        description: error instanceof Error ? error.message : "An error occurred during Google login",
-        variant: "destructive",
-      });
+      // Error handling is in the context
     } finally {
       setIsSubmitting(false);
     }
@@ -105,10 +85,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
             Logging in...
           </>
         ) : (
-          <>
-            <LogIn className="mr-2 h-4 w-4" />
-            Login
-          </>
+          "Login"
         )}
       </Button>
 

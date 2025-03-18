@@ -8,6 +8,7 @@ const BusinessTableLoading: React.FC = () => {
       <Loading 
         size="lg" 
         message="Loading businesses..."
+        variant="primary"
       />
     </div>
   );

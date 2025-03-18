@@ -23,10 +23,9 @@ import {
 
 interface DashboardSidebarProps {
   userRole: UserRole;
-  onItemClick?: () => void;
 }
 
-const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ userRole, onItemClick }) => {
+const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ userRole }) => {
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -152,14 +151,6 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ userRole, onItemCli
   
   const navItems = getNavItems();
   
-  const handleItemClick = (href: string) => {
-    navigate(href);
-    // Call the onItemClick handler if provided (for mobile drawer)
-    if (onItemClick) {
-      onItemClick();
-    }
-  };
-  
   return (
     <div className="hidden border-r bg-card md:flex md:w-64 md:flex-col">
       <div className="flex h-16 items-center border-b px-6">
@@ -178,7 +169,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ userRole, onItemCli
                 "w-full justify-start gap-2",
                 location.pathname === item.href && "bg-secondary"
               )}
-              onClick={() => handleItemClick(item.href)}
+              onClick={() => navigate(item.href)}
             >
               {item.icon}
               {item.title}
@@ -190,7 +181,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ userRole, onItemCli
         <Button 
           variant="outline" 
           className="w-full justify-start gap-2" 
-          onClick={() => handleItemClick("/subscription")}
+          onClick={() => navigate("/subscription")}
         >
           <Award className="h-5 w-5" />
           Upgrade Plan

@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from "react";
-import { useAuth } from "@/hooks";
-import { useSubscription } from "@/hooks";
+import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -98,6 +99,7 @@ const SubscriptionDetailsPage = () => {
     );
   }
 
+  // Format dates
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -106,6 +108,7 @@ const SubscriptionDetailsPage = () => {
     });
   };
 
+  // Check if this is a one-time payment
   const isOneTime = subscription.paymentType === "one-time";
 
   return (
