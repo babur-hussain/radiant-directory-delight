@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Check, AlertCircle, Info } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useSubscriptionPackages } from "@/hooks/useSubscriptionPackages";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Loading from "@/components/ui/loading";
+import SubscriptionDialog from "./SubscriptionDialog";
 
 interface SubscriptionPackagesProps {
   userRole: UserRole;
@@ -16,6 +17,10 @@ interface SubscriptionPackagesProps {
 
 export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ userRole }) => {
   const navigate = useNavigate();
+  
+  // State for managing the subscription dialog
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<any>(null);
   
   // Use our hook to fetch packages from MongoDB
   const { packages, isLoading, error } = useSubscriptionPackages(userRole);
@@ -31,8 +36,10 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
     });
   }, [userRole, packages, isLoading, error]);
 
-  const handleSubscribe = (packageId: string) => {
-    navigate(`/subscription/details/${packageId}`);
+  const handleSubscribe = (pkg: any) => {
+    console.log("Selected package:", pkg);
+    setSelectedPackage(pkg);
+    setIsDialogOpen(true);
   };
   
   if (isLoading) {
@@ -78,6 +85,13 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
   
   return (
     <div className="space-y-10">
+      {/* Subscription Dialog */}
+      <SubscriptionDialog 
+        isOpen={isDialogOpen} 
+        setIsOpen={setIsDialogOpen} 
+        selectedPackage={selectedPackage} 
+      />
+      
       {/* Recurring Subscription Packages */}
       {recurringPackages.length > 0 && (
         <div className="space-y-4">
@@ -112,7 +126,7 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
                 </CardContent>
                 <CardFooter>
                   <Button 
-                    onClick={() => handleSubscribe(pkg.id)} 
+                    onClick={() => handleSubscribe(pkg)} 
                     className="w-full" 
                     variant={pkg.popular ? 'default' : 'outline'}
                   >
@@ -162,7 +176,7 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
                 </CardContent>
                 <CardFooter>
                   <Button 
-                    onClick={() => handleSubscribe(pkg.id)} 
+                    onClick={() => handleSubscribe(pkg)} 
                     className="w-full" 
                     variant="outline"
                   >

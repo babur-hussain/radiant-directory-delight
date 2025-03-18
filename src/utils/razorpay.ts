@@ -30,9 +30,8 @@ declare global {
   }
 }
 
-// Razorpay API key - Using a test key that's allowed to be in the codebase
-// In production, this should come from environment variables
-export const RAZORPAY_KEY_ID = "rzp_test_1DP5mmOlF5G5ag";
+// Razorpay API key - Using the provided live key
+export const RAZORPAY_KEY_ID = "rzp_live_8PGS0Ug3QeCb2I";
 
 /**
  * Load the Razorpay script

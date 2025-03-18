@@ -8,6 +8,7 @@ import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { loadRazorpayScript, isRazorpayAvailable, RAZORPAY_KEY_ID } from '@/utils/razorpay';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useRazorpayPayment } from '@/hooks/useRazorpayPayment';
 
 interface RazorpayPaymentProps {
   selectedPackage: ISubscriptionPackage;
@@ -22,9 +23,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
-  const [isLoadingScript, setIsLoadingScript] = useState(true);
-  const [scriptError, setScriptError] = useState<string | null>(null);
+  const { initiatePayment, isLoading, error } = useRazorpayPayment();
   const [isProcessing, setIsProcessing] = useState(false);
   
   // Determine if this is a one-time package
@@ -36,146 +35,35 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     ? (selectedPackage.price || 999) // Default to 999 if price is 0 or undefined
     : (selectedPackage.setupFee || 0);
   
-  useEffect(() => {
-    const loadScript = async () => {
-      setIsLoadingScript(true);
-      try {
-        await loadRazorpayScript();
-        setIsScriptLoaded(true);
-        setScriptError(null);
-      } catch (error) {
-        console.error('Error loading Razorpay script:', error);
-        setScriptError('Failed to load payment gateway. Please try again later.');
-      } finally {
-        setIsLoadingScript(false);
-      }
-    };
-    
-    loadScript();
-    
-    // Retry loading if it failed initially
-    if (scriptError) {
-      const retryTimeout = setTimeout(() => {
-        console.log("Retrying Razorpay script load");
-        loadScript();
-      }, 3000);
-      
-      return () => clearTimeout(retryTimeout);
-    }
-  }, [scriptError]);
-  
   const handlePayment = () => {
     if (isProcessing) return;
-    
     setIsProcessing(true);
     
-    if (!isRazorpayAvailable()) {
-      setScriptError('Payment gateway is not available. Please try refreshing the page.');
-      setIsProcessing(false);
-      return;
-    }
-    
-    if (!user) {
-      onFailure(new Error('User authentication required'));
-      setIsProcessing(false);
-      return;
-    }
-    
-    // Create a mock order for demonstration
-    // In a real app, this would come from your backend
-    const order = {
-      id: `order_${Date.now()}`,
-      amount: paymentAmount * 100, // Amount in smallest currency unit (paise)
-      currency: 'INR',
-      receipt: `receipt_${Date.now()}`
-    };
-    
-    const options = {
-      key: RAZORPAY_KEY_ID, // Using the key from our utils file
-      amount: order.amount,
-      currency: order.currency,
-      name: 'Grow Bharat Vyapaar',
-      description: `Payment for ${selectedPackage.title}`,
-      order_id: order.id,
-      handler: function(response: any) {
-        // Add payment type to the response
-        response.paymentType = selectedPackage.paymentType || "recurring";
-        
-        // Show success toast
-        toast({
-          title: "Payment Successful",
-          description: `Your payment for ${selectedPackage.title} was successful.`,
-          variant: "default"
-        });
-        
-        setIsProcessing(false);
+    initiatePayment({
+      selectedPackage,
+      onSuccess: (response) => {
         onSuccess(response);
+        setIsProcessing(false);
       },
-      prefill: {
-        name: user.displayName || user.name || '',
-        email: user.email || '',
-        contact: '' // Removed the mobile property since it doesn't exist on User type
-      },
-      notes: {
-        package_id: selectedPackage.id,
-        package_type: selectedPackage.type,
-        payment_type: selectedPackage.paymentType || "recurring"
-      },
-      theme: {
-        color: '#2563EB'
-      },
-      modal: {
-        ondismiss: function() {
-          console.log('Payment modal dismissed');
-          setIsProcessing(false);
-          
-          toast({
-            title: "Payment Cancelled",
-            description: "You've cancelled the payment process.",
-            variant: "default"
-          });
-        }
+      onFailure: (error) => {
+        onFailure(error);
+        setIsProcessing(false);
       }
-    };
-    
-    try {
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
-      
-      // Log for debugging
-      console.log("Opening Razorpay with options:", {
-        packageId: selectedPackage.id,
-        packageTitle: selectedPackage.title,
-        amount: paymentAmount,
-        orderId: order.id
-      });
-      
-    } catch (error) {
-      console.error('Error opening Razorpay:', error);
-      setIsProcessing(false);
-      
-      toast({
-        title: "Payment Error",
-        description: "Could not open payment gateway. Please try again later.",
-        variant: "destructive"
-      });
-      
-      onFailure(error);
-    }
+    });
   };
   
-  if (scriptError) {
+  if (error) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Payment Error</AlertTitle>
         <AlertDescription>
-          {scriptError}
+          {error}
           <Button 
             variant="outline" 
             size="sm" 
             className="mt-2 w-full"
-            onClick={() => setScriptError(null)}
+            onClick={() => window.location.reload()}
           >
             Try Again
           </Button>
@@ -230,12 +118,12 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         <Button 
           onClick={handlePayment} 
           className="w-full" 
-          disabled={!isScriptLoaded || isLoadingScript || isProcessing}
+          disabled={isLoading || isProcessing}
         >
-          {isLoadingScript || isProcessing ? (
+          {isLoading || isProcessing ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {isLoadingScript ? 'Loading...' : 'Processing...'}
+              {isLoading ? 'Loading...' : 'Processing...'}
             </>
           ) : (
             <>
