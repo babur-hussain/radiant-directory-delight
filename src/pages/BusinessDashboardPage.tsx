@@ -10,7 +10,7 @@ import AccessDenied from '@/components/dashboard/AccessDenied';
 import { getUserSubscription, listenToUserSubscription } from '@/lib/subscription';
 
 const BusinessDashboardPage = () => {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [subscription, setSubscription] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -76,10 +76,7 @@ const BusinessDashboardPage = () => {
   if (!isBusinessOrAdmin) {
     return (
       <DashboardLayout>
-        <AccessDenied
-          message="You don't have access to the Business Dashboard"
-          description="This dashboard is only available for Business accounts or Administrators"
-        />
+        <AccessDenied message="You don't have access to the Business Dashboard. This dashboard is only available for Business accounts or Administrators" />
       </DashboardLayout>
     );
   }

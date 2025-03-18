@@ -7,9 +7,10 @@ import { AlertCircle } from "lucide-react";
 
 interface AccessDeniedProps {
   message: string;
+  description?: string; // Make description optional
 }
 
-const AccessDenied: React.FC<AccessDeniedProps> = ({ message }) => {
+const AccessDenied: React.FC<AccessDeniedProps> = ({ message, description }) => {
   const navigate = useNavigate();
   
   return (
@@ -24,6 +25,7 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({ message }) => {
         </CardHeader>
         <CardContent>
           <p>{message}</p>
+          {description && <p className="mt-2 text-muted-foreground text-sm">{description}</p>}
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button variant="outline" onClick={() => navigate("/")}>
