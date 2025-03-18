@@ -97,7 +97,7 @@ export const useRazorpayPayment = () => {
         prefill: {
           name: user.displayName || user.name || '',
           email: user.email || '',
-          contact: user.phone || user.phoneNumber || ''
+          contact: user.phone || '' // Fixed: Removed reference to non-existent phoneNumber property
         },
         notes: {
           package_id: selectedPackage.id,
@@ -173,4 +173,3 @@ export const useRazorpayPayment = () => {
     initiatePayment
   };
 };
-
