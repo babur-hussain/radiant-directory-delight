@@ -88,9 +88,9 @@ const Header = () => {
 
   console.log("Header fully rendered"); // Debug log
 
-  // Stronger inline styles for header elements
+  // Correctly typed inline styles for header elements
   const headerStyle = {
-    position: 'fixed',
+    position: 'fixed' as const, // Use 'as const' to satisfy TypeScript Position type
     top: 0,
     left: 0,
     width: '100%',
@@ -99,7 +99,7 @@ const Header = () => {
     display: 'flex',
     alignItems: 'center',
     height: '64px',
-    visibility: 'visible',
+    visibility: 'visible' as const,
     opacity: 1,
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
   };
@@ -185,7 +185,7 @@ const Header = () => {
         style={{
           maxHeight: isMobileMenuOpen ? '500px' : '0',
           opacity: isMobileMenuOpen ? '1' : '0',
-          visibility: isMobileMenuOpen ? 'visible' : 'hidden',
+          visibility: isMobileMenuOpen ? 'visible' as const : 'hidden' as const,
           zIndex: 9998
         }}
       >

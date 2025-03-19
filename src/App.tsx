@@ -37,7 +37,12 @@ const App = () => {
           <AuthProvider>
             <div className="relative min-h-screen bg-background">
               {/* Force Header to be visible with inline style */}
-              <div style={{position: 'relative', zIndex: 9999, visibility: 'visible', display: 'block'}}>
+              <div style={{
+                position: 'relative' as const, 
+                zIndex: 9999, 
+                visibility: 'visible' as const, 
+                display: 'block'
+              }}>
                 <Header />
               </div>
               <main>
