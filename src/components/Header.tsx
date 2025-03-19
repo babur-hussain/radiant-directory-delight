@@ -49,7 +49,7 @@ const Header = () => {
       navigate("/dashboard/business");
     } else if (user.role === "Influencer") {
       navigate("/dashboard/influencer");
-    } else if (user.isAdmin || user.role === "Admin") {
+    } else if (user.role === "Admin" || user.isAdmin) {
       navigate("/admin/dashboard");
     } else {
       // Default fallback for users with unspecified roles
