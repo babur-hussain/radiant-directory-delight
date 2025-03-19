@@ -19,6 +19,7 @@ import CSVUploadDialog from './CSVUploadDialog';
 import BusinessTableRow from './table/BusinessTableRow';
 import { Business } from '@/lib/csv-utils';
 import { fetchBusinesses } from '@/api/mongoAPI';
+import { useToast } from '@/hooks/use-toast';
 
 interface TableBusinessListingsProps {
   onRefresh?: () => void;
@@ -38,16 +39,33 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
   const [businesses, setBusinesses] = useState<IBusiness[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
   
   const loadBusinesses = async () => {
     setIsLoading(true);
     setError(null);
     try {
+      // First try to fetch from MongoDB
       const data = await fetchBusinesses();
       setBusinesses(data);
     } catch (err) {
-      console.error("Error fetching businesses:", err);
-      setError(err instanceof Error ? err.message : "Failed to load businesses");
+      console.error("Error fetching businesses from MongoDB:", err);
+      
+      // Fallback to CSV data
+      try {
+        const { getAllBusinesses } = await import('@/lib/csv-utils');
+        const csvBusinesses = getAllBusinesses();
+        setBusinesses(csvBusinesses);
+        toast({
+          title: "Using local data",
+          description: "Could not connect to MongoDB. Using local data instead.",
+          variant: "warning"
+        });
+      } catch (fallbackErr) {
+        console.error("Error fetching fallback businesses:", fallbackErr);
+        setError(fallbackErr instanceof Error ? fallbackErr.message : "Failed to load businesses");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -60,12 +78,26 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
   // Function to handle business deletion
   const handleDeleteBusiness = async (businessId: string) => {
     try {
-      await fetch(`http://localhost:3001/api/businesses/${businessId}`, {
-        method: 'DELETE'
-      });
+      setIsSubmitting(true);
+      // Try deleting from MongoDB
+      try {
+        await fetch(`http://localhost:3001/api/businesses/${businessId}`, {
+          method: 'DELETE'
+        });
+      } catch (err) {
+        console.error("MongoDB deletion failed, falling back to local deletion:", err);
+        // Fallback to local deletion
+        const { deleteBusiness } = await import('@/lib/csv-utils');
+        deleteBusiness(parseInt(businessId));
+      }
       
       await loadBusinesses();
       setIsDeleteDialogOpen(false);
+      
+      toast({
+        title: "Business Deleted",
+        description: "The business has been successfully deleted.",
+      });
       
       if (onRefresh) {
         onRefresh();
@@ -73,6 +105,13 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
     } catch (error) {
       console.error("Error deleting business:", error);
       setError("Failed to delete business");
+      toast({
+        title: "Deletion Failed",
+        description: "There was an error deleting the business.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -99,11 +138,83 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
     }
   };
 
+  const handleFormSubmit = async (values: any) => {
+    setIsSubmitting(true);
+    try {
+      // Try to save to MongoDB first
+      try {
+        const { saveBusiness } = await import('@/api/mongoAPI');
+        await saveBusiness({
+          ...selectedBusiness,
+          ...values,
+          tags: Array.isArray(values.tags) ? values.tags : values.tags.split(',').map((tag: string) => tag.trim())
+        });
+      } catch (err) {
+        console.error("MongoDB save failed, falling back to local save:", err);
+        
+        // Fallback to local save
+        const { updateBusiness, addBusiness } = await import('@/lib/csv-utils');
+        if (selectedBusiness) {
+          updateBusiness({
+            ...selectedBusiness,
+            ...values,
+            tags: Array.isArray(values.tags) ? values.tags : values.tags.split(',').map((tag: string) => tag.trim())
+          });
+        } else {
+          const randomReviews = Math.floor(Math.random() * 500) + 50;
+          addBusiness({
+            name: values.name,
+            category: values.category,
+            address: values.address,
+            phone: values.phone,
+            rating: values.rating,
+            description: values.description,
+            featured: values.featured,
+            tags: Array.isArray(values.tags) ? values.tags : values.tags.split(',').map((tag: string) => tag.trim()),
+            reviews: randomReviews,
+            image: values.image || `https://source.unsplash.com/random/500x350/?${values.category.toLowerCase().replace(/\s+/g, ",")}`
+          });
+        }
+      }
+      
+      await loadBusinesses();
+      setIsFormOpen(false);
+      setSelectedBusiness(null);
+      
+      toast({
+        title: selectedBusiness ? "Business Updated" : "Business Added",
+        description: `The business has been successfully ${selectedBusiness ? "updated" : "added"}.`,
+      });
+      
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error("Error saving business:", error);
+      toast({
+        title: "Operation Failed",
+        description: `There was an error ${selectedBusiness ? "updating" : "adding"} the business.`,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const refreshData = async () => {
     await loadBusinesses();
     if (onRefresh) {
       onRefresh();
     }
+  };
+
+  const handleUploadComplete = () => {
+    refreshData();
+    setIsUploadOpen(false);
+    toast({
+      title: "CSV Upload Complete",
+      description: "Businesses have been successfully imported.",
+    });
   };
 
   return (
@@ -167,21 +278,15 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
           setIsFormOpen(false);
           setSelectedBusiness(null);
         }}
-        onSubmit={async () => {
-          await refreshData();
-          setIsFormOpen(false);
-          setSelectedBusiness(null);
-        }}
+        onSubmit={handleFormSubmit}
         business={selectedBusiness}
-        isSubmitting={false}
+        isSubmitting={isSubmitting}
       />
 
       <CSVUploadDialog 
         show={isUploadOpen} 
         onClose={() => setIsUploadOpen(false)} 
-        onUploadComplete={() => {
-          refreshData();
-        }}
+        onUploadComplete={handleUploadComplete}
       />
 
       <DeleteBusinessDialog
@@ -189,6 +294,7 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
         open={isDeleteDialogOpen}
         onOpenChange={() => setIsDeleteDialogOpen(false)}
         onConfirmDelete={() => selectedBusiness && handleDeleteBusiness(selectedBusiness.id.toString())}
+        isDeleting={isSubmitting}
       />
     </div>
   );

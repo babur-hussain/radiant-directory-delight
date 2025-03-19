@@ -1,12 +1,11 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, LogIn, LayoutDashboard } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import AuthModal from './auth/AuthModal';
 import UserMenu from './UserMenu';
 import { useAuth } from '@/hooks/useAuth';
-import { useSubscription } from '@/hooks/useSubscription';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -83,7 +82,7 @@ const Header = () => {
             <Button 
               variant="outline" 
               size="sm" 
-              className="rounded-full"
+              className="dashboard-btn rounded-full"
               onClick={handleDashboardClick}
             >
               <LayoutDashboard className="h-4 w-4 mr-2" />
