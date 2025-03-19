@@ -159,7 +159,7 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
       const typedRole = newRole as UserRole;
       console.log(`Updating role for user ${userId} to ${typedRole}`);
       
-      await updateUserRole(user, typedRole);
+      await updateUserRole(userId, typedRole);
       
       const updatedUsers = users.map(u => 
         (u.id === userId || u.uid === userId) ? { ...u, role: typedRole } : u

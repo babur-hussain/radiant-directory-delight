@@ -113,7 +113,7 @@ export const getAllUsers = async (): Promise<IUser[]> => {
   }
 };
 
-// Update user role - ensure it expects uid, role, and optional isAdmin parameter
+// Update user role - fixed to expect uid and role parameters
 export const updateUserRole = async (uid: string, role: string, isAdmin: boolean = false): Promise<IUser | null> => {
   try {
     const user = await apiUpdateUserRole(uid, role, isAdmin);

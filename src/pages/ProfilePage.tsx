@@ -95,7 +95,7 @@ const ProfilePage = () => {
     
     try {
       if (values.role !== user?.role && user?.uid) {
-        await updateUserRole(user.uid, values.role as UserRole);
+        await updateUserRole(user.uid, values.role);
       }
       
       console.log("Updating profile:", values);
