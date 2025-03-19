@@ -96,9 +96,6 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
       advancePaymentMonths: 0,
       paymentType: 'recurring',
       popular: false,
-      // Additional properties
-      createdAt: new Date(),
-      updatedAt: new Date(),
       isActive: true,
       maxBusinesses: 1,
       maxInfluencers: 1
