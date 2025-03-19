@@ -113,7 +113,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAuthenticated: !!user,
     loading,
     loginWithGoogle,
-    signOut
+    logout: signOut, // Changed from signOut to logout to match the interface
+    currentUser: user
   };
 
   if (loading) {
