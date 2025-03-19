@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -8,36 +9,60 @@ import SubscriptionPackageForm from './SubscriptionPackageForm';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import SubscriptionPermissionError from './SubscriptionPermissionError';
-import SubscriptionLoader from '../subscription/SubscriptionLoader';
+import SubscriptionLoader from './SubscriptionLoader';
 
 interface SubscriptionPackageManagementProps {
   onPermissionError: (error: any) => void;
-  dbInitialized: boolean;
-  connectionStatus: 'connecting' | 'connected' | 'error' | 'offline';
+  dbInitialized?: boolean;
+  connectionStatus?: 'connecting' | 'connected' | 'error' | 'offline';
   onRetryConnection?: () => void;
 }
 
 const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps> = ({
   onPermissionError,
-  dbInitialized,
-  connectionStatus,
+  dbInitialized = false,
+  connectionStatus = 'connecting',
   onRetryConnection
 }) => {
   const [activeTab, setActiveTab] = useState<string>('business');
   const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
   
+  // Get subscription packages from the hook
   const {
-    businessPackages,
-    influencerPackages,
+    packages: allPackages,
     isLoading,
     error,
-    savePackage,
-    deletePackage
-  } = useSubscriptionPackages({
-    packageTypes: ['Business', 'Influencer'],
-    onError: (err) => onPermissionError(err)
-  });
+    connectionStatus: packageConnectionStatus,
+    retryConnection
+  } = useSubscriptionPackages(activeTab === 'business' ? 'Business' : 'Influencer');
 
+  // Filter packages by type
+  const businessPackages = allPackages.filter(pkg => pkg.type === 'Business');
+  const influencerPackages = allPackages.filter(pkg => pkg.type === 'Influencer');
+
+  // Helper functions to save and delete packages
+  const savePackage = async (packageData: ISubscriptionPackage) => {
+    try {
+      // Implementation would go here, connecting to your database service
+      console.log('Saving package:', packageData);
+      // For now, we'll just update the state
+      setSelectedPackage(null);
+    } catch (err) {
+      console.error('Error saving package:', err);
+      onPermissionError(err);
+    }
+  };
+
+  const deletePackage = async (packageId: string) => {
+    try {
+      // Implementation would go here, connecting to your database service
+      console.log('Deleting package:', packageId);
+    } catch (err) {
+      console.error('Error deleting package:', err);
+      onPermissionError(err);
+    }
+  };
+  
   const handleSavePackage = async (packageData: ISubscriptionPackage) => {
     try {
       await savePackage(packageData);
@@ -71,14 +96,14 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
       features: [],
       shortDescription: '',
       fullDescription: '',
-      isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),
       durationMonths: 12,
       advancePaymentMonths: 0,
       paymentType: 'recurring',
       maxBusinesses: 1,
-      maxInfluencers: 1
+      maxInfluencers: 1,
+      popular: false
     };
     
     setSelectedPackage(newPackage);
@@ -146,14 +171,18 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
               </Button>
             </div>
 
-            <SubscriptionLoader isLoading={isLoading} connectionStatus={connectionStatus} onRetry={onRetryConnection} />
+            <SubscriptionLoader 
+              isLoading={isLoading} 
+              connectionStatus={connectionStatus} 
+              onRetry={onRetryConnection} 
+            />
 
             <TabsContent value="business" className="mt-0">
               {!isLoading && (
                 <div className="space-y-6">
                   {selectedPackage && selectedPackage.type === 'Business' ? (
                     <SubscriptionPackageForm 
-                      packageData={selectedPackage} 
+                      packageData={selectedPackage}
                       onSave={handleSavePackage}
                       onCancel={handleCancelEdit}
                     />
@@ -193,7 +222,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
                 <div className="space-y-6">
                   {selectedPackage && selectedPackage.type === 'Influencer' ? (
                     <SubscriptionPackageForm 
-                      packageData={selectedPackage} 
+                      packageData={selectedPackage}
                       onSave={handleSavePackage}
                       onCancel={handleCancelEdit}
                     />

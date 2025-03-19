@@ -1,498 +1,284 @@
-import React, { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  Form, 
-  FormControl, 
-  FormDescription, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from "@/components/ui/form";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { nanoid } from "nanoid";
-import { SubscriptionPackage } from "@/data/subscriptionData";
-import { Loader2 } from "lucide-react";
 
-const featuresToString = (features?: string[]): string => {
-  return features && Array.isArray(features) ? features.join('\n') : '';
-};
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Card, CardContent } from '@/components/ui/card';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
+import { X, Plus } from 'lucide-react';
 
-const stringToFeatures = (featuresString: string): string[] => {
-  return featuresString
-    .split('\n')
-    .map(feature => feature.trim())
-    .filter(feature => feature.length > 0);
-};
-
-const formSchema = z.object({
-  id: z.string().min(1, "ID is required"),
-  title: z.string().min(1, "Title is required"),
-  price: z.coerce.number().min(0, "Price must be a positive number"),
-  monthlyPrice: z.coerce.number().min(0, "Monthly price must be a positive number"),
-  setupFee: z.coerce.number().min(0, "Setup fee must be a positive number"),
-  durationMonths: z.coerce.number().min(1, "Duration must be at least 1 month"),
-  shortDescription: z.string().min(1, "Short description is required"),
-  fullDescription: z.string().min(1, "Full description is required"),
-  termsAndConditions: z.string().optional(),
-  featuresString: z.string(),
-  popular: z.boolean().default(false),
-  type: z.enum(["Business", "Influencer"]),
-  billingCycle: z.enum(["monthly", "yearly"]).default("yearly"),
-  advancePaymentMonths: z.coerce.number().min(0).default(0),
-  paymentType: z.enum(["recurring", "one-time"]).default("recurring")
-});
-
-type SubscriptionPackageFormProps = {
-  initialData?: SubscriptionPackage;
-  onSubmit: (data: SubscriptionPackage) => void;
+interface SubscriptionPackageFormProps {
+  packageData: ISubscriptionPackage;
+  onSave: (packageData: ISubscriptionPackage) => Promise<void>;
   onCancel: () => void;
-  isSaving?: boolean;
-};
-
-type FormValues = z.infer<typeof formSchema>;
+}
 
 const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
-  initialData,
-  onSubmit,
-  onCancel,
-  isSaving = false
+  packageData,
+  onSave,
+  onCancel
 }) => {
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      id: initialData?.id || nanoid(),
-      title: initialData?.title || "",
-      price: initialData?.price || 0,
-      monthlyPrice: initialData?.monthlyPrice || (initialData ? Math.round(initialData.price / 12) : 0),
-      setupFee: initialData?.setupFee || 0,
-      durationMonths: initialData?.durationMonths || 12,
-      shortDescription: initialData?.shortDescription || "",
-      fullDescription: initialData?.fullDescription || "",
-      termsAndConditions: initialData?.termsAndConditions || "",
-      featuresString: featuresToString(initialData?.features),
-      popular: initialData?.popular || false,
-      type: initialData?.type || "Business",
-      billingCycle: initialData?.billingCycle || "yearly",
-      advancePaymentMonths: initialData?.advancePaymentMonths || 0,
-      paymentType: initialData?.paymentType || "recurring"
+  const [formData, setFormData] = useState<ISubscriptionPackage>(packageData);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newFeature, setNewFeature] = useState('');
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value === '' ? 0 : Number(value)
+    }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleToggleChange = (name: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: checked
+    }));
+  };
+
+  const handleAddFeature = () => {
+    if (newFeature.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        features: [...prev.features, newFeature.trim()]
+      }));
+      setNewFeature('');
     }
-  });
+  };
 
-  const billingCycle = form.watch("billingCycle");
-  const paymentType = form.watch("paymentType");
+  const handleRemoveFeature = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      features: prev.features.filter((_, i) => i !== index)
+    }));
+  };
 
-  useEffect(() => {
-    if (paymentType === "recurring") {
-      const subscription = form.watch((value, { name }) => {
-        if (name === "price" && value.price) {
-          const monthlyPrice = Math.round(Number(value.price) / 12);
-          form.setValue("monthlyPrice", monthlyPrice);
-        } else if (name === "monthlyPrice" && value.monthlyPrice) {
-          const yearlyPrice = Number(value.monthlyPrice) * 12;
-          form.setValue("price", yearlyPrice);
-        }
-      });
-      
-      return () => subscription.unsubscribe();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      await onSave(formData);
+    } catch (error) {
+      console.error('Error saving package:', error);
+    } finally {
+      setIsSubmitting(false);
     }
-  }, [form, paymentType]);
-
-  const handleSubmit = (values: FormValues) => {
-    const featureArray = stringToFeatures(values.featuresString);
-    
-    const price = Number(values.price);
-    const monthlyPrice = paymentType === "recurring" ? Number(values.monthlyPrice) : undefined;
-    const setupFee = paymentType === "recurring" ? Number(values.setupFee) : 0;
-    
-    const packageData: SubscriptionPackage = {
-      id: values.id,
-      title: values.title,
-      price: price,
-      monthlyPrice: monthlyPrice,
-      setupFee: setupFee,
-      durationMonths: Number(values.durationMonths),
-      shortDescription: values.shortDescription,
-      fullDescription: values.fullDescription,
-      features: featureArray,
-      popular: values.popular,
-      type: values.type,
-      termsAndConditions: values.termsAndConditions || "",
-      billingCycle: paymentType === "recurring" ? values.billingCycle : undefined,
-      advancePaymentMonths: paymentType === "recurring" ? Number(values.advancePaymentMonths) : 0,
-      paymentType: values.paymentType
-    };
-    
-    onSubmit(packageData);
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Package Title</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. Basic Plan" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="type"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Package Type</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
+    <Card>
+      <CardContent className="pt-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="title">Package Title</Label>
+                <Input
+                  id="title"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="shortDescription">Short Description</Label>
+                <Input
+                  id="shortDescription"
+                  name="shortDescription"
+                  value={formData.shortDescription}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="fullDescription">Full Description</Label>
+                <Textarea
+                  id="fullDescription"
+                  name="fullDescription"
+                  value={formData.fullDescription}
+                  onChange={handleChange}
+                  rows={3}
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="price">Price (₹)</Label>
+                <Input
+                  id="price"
+                  name="price"
+                  type="number"
+                  value={formData.price}
+                  onChange={handleNumberChange}
+                  required
+                  min={0}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="paymentType">Payment Type</Label>
+                <Select 
+                  value={formData.paymentType}
+                  onValueChange={(value) => handleSelectChange('paymentType', value)}
                 >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                  </FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select payment type" />
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Business">Business</SelectItem>
-                    <SelectItem value="Influencer">Influencer</SelectItem>
+                    <SelectItem value="recurring">Recurring</SelectItem>
+                    <SelectItem value="one-time">One-time</SelectItem>
                   </SelectContent>
                 </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="paymentType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Payment Type</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select payment type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="recurring">Recurring Subscription</SelectItem>
-                    <SelectItem value="one-time">One-time Payment</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  Choose whether this is a subscription with recurring payments or a one-time purchase
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {paymentType === "recurring" && (
-            <FormField
-              control={form.control}
-              name="billingCycle"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Billing Cycle</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={paymentType !== "recurring"}
-                  >
-                    <FormControl>
+              </div>
+              
+              {formData.paymentType === 'recurring' && (
+                <>
+                  <div>
+                    <Label htmlFor="billingCycle">Billing Cycle</Label>
+                    <Select 
+                      value={formData.billingCycle || 'yearly'}
+                      onValueChange={(value) => handleSelectChange('billingCycle', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select billing cycle" />
                       </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="yearly">Yearly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
+                      <SelectContent>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="setupFee">Setup Fee (₹)</Label>
+                    <Input
+                      id="setupFee"
+                      name="setupFee"
+                      type="number"
+                      value={formData.setupFee || 0}
+                      onChange={handleNumberChange}
+                      min={0}
+                    />
+                  </div>
+                </>
               )}
-            />
-          )}
-
-          <FormField
-            control={form.control}
-            name="price"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{paymentType === "one-time" ? "Price (₹)" : (billingCycle === "monthly" ? "Monthly Price (₹)" : "Annual Price (₹)")}</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    min="0" 
-                    step="1" 
-                    {...field} 
+              
+              <div>
+                <Label htmlFor="durationMonths">Duration (Months)</Label>
+                <Input
+                  id="durationMonths"
+                  name="durationMonths"
+                  type="number"
+                  value={formData.durationMonths}
+                  onChange={handleNumberChange}
+                  required
+                  min={1}
+                />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="popular"
+                  checked={formData.popular}
+                  onCheckedChange={(checked) => handleToggleChange('popular', checked)}
+                />
+                <Label htmlFor="popular">Mark as Popular</Label>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <Label>Features</Label>
+            <div className="space-y-2 mt-2">
+              {formData.features.map((feature, index) => (
+                <div key={index} className="flex items-center">
+                  <Input
+                    value={feature}
                     onChange={(e) => {
-                      field.onChange(e);
-                      
-                      if (paymentType === "recurring") {
-                        if (billingCycle === "monthly") {
-                          const yearlyPrice = Number(e.target.value) * 12;
-                          form.setValue("price", yearlyPrice);
-                        } else if (billingCycle === "yearly") {
-                          const monthlyPrice = Math.round(Number(e.target.value) / 12);
-                          form.setValue("monthlyPrice", monthlyPrice);
-                        }
-                      }
+                      const updatedFeatures = [...formData.features];
+                      updatedFeatures[index] = e.target.value;
+                      setFormData(prev => ({
+                        ...prev,
+                        features: updatedFeatures
+                      }));
                     }}
+                    className="flex-1"
                   />
-                </FormControl>
-                <FormDescription>
-                  {paymentType === "one-time" && "The full one-time payment amount for this package (₹)"}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {paymentType === "recurring" && billingCycle === "monthly" && (
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Annual Price (₹)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      min="0" 
-                      step="1" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    The annual price is calculated automatically (monthly × 12)
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
-          {paymentType === "recurring" && billingCycle === "yearly" && (
-            <FormField
-              control={form.control}
-              name="monthlyPrice"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Monthly Price (₹)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      min="0" 
-                      step="1" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    The monthly price is calculated automatically (yearly ÷ 12)
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
-          {paymentType === "recurring" && (
-            <FormField
-              control={form.control}
-              name="setupFee"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Setup Fee (₹)</FormLabel>
-                  <FormControl>
-                    <Input type="number" min="0" step="1" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    One-time fee charged at subscription start
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
-          <FormField
-            control={form.control}
-            name="durationMonths"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Duration (months)</FormLabel>
-                <FormControl>
-                  <Input type="number" min="1" step="1" {...field} />
-                </FormControl>
-                <FormDescription>
-                  {paymentType === "one-time" 
-                    ? "How long this package will be valid after purchase" 
-                    : "Duration of the subscription"}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {paymentType === "recurring" && (
-            <FormField
-              control={form.control}
-              name="advancePaymentMonths"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Advance Payment (months)</FormLabel>
-                  <FormControl>
-                    <Input type="number" min="0" step="1" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Number of months to be paid in advance (0 for no advance payment)
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
-          <FormField
-            control={form.control}
-            name="popular"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                <div className="space-y-0.5">
-                  <FormLabel>Mark as Popular</FormLabel>
-                  <FormDescription>
-                    Highlight this package in the subscription page
-                  </FormDescription>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveFeature(index)}
+                    className="ml-2"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="shortDescription"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Short Description</FormLabel>
-              <FormControl>
-                <Input placeholder="Brief description of the package" {...field} />
-              </FormControl>
-              <FormDescription>
-                This will appear in the package card in the subscription page
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="fullDescription"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Full Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Detailed description of the package"
-                  className="min-h-[100px]"
-                  {...field}
+              ))}
+              
+              <div className="flex items-center">
+                <Input
+                  value={newFeature}
+                  onChange={(e) => setNewFeature(e.target.value)}
+                  placeholder="Add a new feature"
+                  className="flex-1"
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="featuresString"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Features (one per line)</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="List the features of this package (one per line)"
-                  className="min-h-[150px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                Enter each feature on a new line. These will be displayed as bullet points.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="termsAndConditions"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Terms & Conditions</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Package terms and conditions"
-                  className="min-h-[150px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                Terms and conditions for this subscription package
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex justify-end space-x-4">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isSaving}>
-            {isSaving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {initialData ? "Updating..." : "Creating..."}
-              </>
-            ) : (
-              initialData ? "Update Package" : "Create Package"
-            )}
-          </Button>
-        </div>
-      </form>
-    </Form>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleAddFeature}
+                  className="ml-2"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-end space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Saving...' : 'Save Package'}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

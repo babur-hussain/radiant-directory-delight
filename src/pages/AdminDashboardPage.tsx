@@ -27,6 +27,7 @@ const Dashboard = () => {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [isDiagnosing, setIsDiagnosing] = useState(false);
   const [diagnosticResults, setDiagnosticResults] = useState<any>(null);
+  const [connectionStatus, setConnectionStatus] = useState('Not Connected');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -388,7 +389,10 @@ const Dashboard = () => {
                   description: String(error),
                   variant: "destructive"
                 });
-              }} 
+              }}
+              dbInitialized={dbStatus?.success || false}
+              connectionStatus={connectionStatus}
+              onRetryConnection={handleRetryInitialization}
             />
           </TabsContent>
           
