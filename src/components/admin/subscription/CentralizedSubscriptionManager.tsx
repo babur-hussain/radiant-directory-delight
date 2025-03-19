@@ -1,203 +1,268 @@
-
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import SubscriptionPackageForm from './SubscriptionPackageForm';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import SubscriptionPackageForm from './SubscriptionPackageForm';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Edit, Trash2 } from 'lucide-react';
-import { DataTable } from '@/components/ui/data-table';
-import { ColumnDef } from '@tanstack/react-table';
+import { Check, Edit, Trash2, Plus, AlertCircle, WifiOff } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface CentralizedSubscriptionManagerProps {
   packages: ISubscriptionPackage[];
-  onSave: (packageData: ISubscriptionPackage) => Promise<void>;
+  onSave: (packageData: ISubscriptionPackage) => Promise<any>;
   onDelete: (packageId: string) => Promise<void>;
+  isOffline?: boolean;
 }
 
-const CentralizedSubscriptionManager: React.FC<CentralizedSubscriptionManagerProps> = ({ 
-  packages, 
-  onSave, 
-  onDelete 
+const CentralizedSubscriptionManager: React.FC<CentralizedSubscriptionManagerProps> = ({
+  packages,
+  onSave,
+  onDelete,
+  isOffline = false
 }) => {
-  const [isCreating, setIsCreating] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [initialData, setInitialData] = useState<ISubscriptionPackage>({
-    name: '',
-    description: '',
-    price: 0,
-    type: 'business',
-    duration: 1,
-    isActive: true,
-  });
-  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [packageToDelete, setPackageToDelete] = useState<ISubscriptionPackage | null>(null);
   const { toast } = useToast();
 
-  const handleCreate = () => {
-    setInitialData({
-      name: '',
-      description: '',
-      price: 0,
-      type: 'business',
-      duration: 1,
-      isActive: true,
-    });
-    setIsCreating(true);
-    setIsEditing(false);
+  const handleAddNew = () => {
+    setSelectedPackage(null);
+    setIsFormDialogOpen(true);
   };
 
-  const handleEdit = (packageId: string) => {
-    const packageToEdit = packages.find(p => p.id === packageId);
-    if (packageToEdit) {
-      setInitialData(packageToEdit);
-      setSelectedPackageId(packageId);
-      setIsEditing(true);
-      setIsCreating(false);
-    }
+  const handleEdit = (pkg: ISubscriptionPackage) => {
+    setSelectedPackage(pkg);
+    setIsFormDialogOpen(true);
   };
 
-  const handleDelete = async (packageId: string) => {
+  const handleSave = async (packageData: ISubscriptionPackage) => {
     try {
-      await onDelete(packageId);
-      toast({
-        title: "Package Deleted",
-        description: "Subscription package deleted successfully.",
-      });
-    } catch (error) {
-      console.error("Error deleting package:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete subscription package.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleSubmit = async (data: ISubscriptionPackage) => {
-    try {
-      await onSave(data);
-      toast({
-        title: "Package Saved",
-        description: "Subscription package saved successfully.",
-      });
-      handleCancelEdit();
+      await onSave(packageData);
+      setIsFormDialogOpen(false);
     } catch (error) {
       console.error("Error saving package:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save subscription package.",
-        variant: "destructive",
-      });
+      // Form will stay open to allow user to retry
     }
   };
 
-  const handleCancelEdit = () => {
-    setIsCreating(false);
-    setIsEditing(false);
-    setSelectedPackageId(null);
+  const handleDeleteConfirm = (pkg: ISubscriptionPackage) => {
+    setPackageToDelete(pkg);
+    setIsDeleteDialogOpen(true);
   };
 
-  const columns: ColumnDef<ISubscriptionPackage>[] = [
-    {
-      accessorKey: "name",
-      header: "Name",
-    },
-    {
-      accessorKey: "type",
-      header: "Type",
-    },
-    {
-      accessorKey: "price",
-      header: "Price",
-      cell: ({ row }) => `₹${row.getValue("price")}`,
-    },
-    {
-      accessorKey: "duration",
-      header: "Duration",
-      cell: ({ row }) => `${row.getValue("duration")} months`,
-    },
-    {
-      accessorKey: "isActive",
-      header: "Status",
-      cell: ({ row }) => {
-        const isActive = row.getValue("isActive");
-        return (
-          <Badge variant={isActive ? "outline" : "secondary"}>
-            {isActive ? "Active" : "Inactive"}
-          </Badge>
-        );
-      },
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        const packageId = row.original.id;
-        return (
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleEdit(packageId || '')}
-            >
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-red-500">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the subscription package from our servers.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => handleDelete(packageId || '')}>Delete</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        );
-      },
-    },
-  ];
+  const handleDeleteSubmit = async () => {
+    if (!packageToDelete) return;
+    
+    try {
+      await onDelete(packageToDelete.id || '');
+      setIsDeleteDialogOpen(false);
+      setPackageToDelete(null);
+    } catch (error) {
+      console.error("Error deleting package:", error);
+      setIsDeleteDialogOpen(false);
+      setPackageToDelete(null);
+    }
+  };
+
+  // Group packages by type
+  const businessPackages = packages.filter(pkg => pkg.type === 'Business');
+  const influencerPackages = packages.filter(pkg => pkg.type === 'Influencer');
+  const otherPackages = packages.filter(pkg => pkg.type !== 'Business' && pkg.type !== 'Influencer');
 
   return (
-    <div>
-      <div className="mb-4 flex justify-end">
-        <Button onClick={handleCreate}>Create New Package</Button>
+    <div className="space-y-8">
+      {isOffline && (
+        <Alert variant="warning" className="mb-4">
+          <WifiOff className="h-4 w-4" />
+          <AlertDescription>
+            You're in offline mode. Viewing packages only - changes won't be saved.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Subscription Packages</h2>
+        <Button onClick={handleAddNew} disabled={isOffline}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add New Package
+        </Button>
       </div>
 
-      {isCreating || isEditing ? (
-        <SubscriptionPackageForm 
-          packageData={initialData}
-          onSave={handleSubmit}
-          onCancel={handleCancelEdit}
-        />
-      ) : (
+      {/* Business Packages */}
+      {businessPackages.length > 0 && (
         <div>
-          <DataTable columns={columns} data={packages} />
+          <h3 className="text-xl font-semibold mb-4">Business Packages</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {businessPackages.map((pkg) => (
+              <PackageCard
+                key={pkg.id || pkg.name}
+                packageData={pkg}
+                onEdit={handleEdit}
+                onDelete={handleDeleteConfirm}
+                isOffline={isOffline}
+              />
+            ))}
+          </div>
         </div>
       )}
+
+      {/* Influencer Packages */}
+      {influencerPackages.length > 0 && (
+        <div>
+          <h3 className="text-xl font-semibold mb-4">Influencer Packages</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {influencerPackages.map((pkg) => (
+              <PackageCard
+                key={pkg.id || pkg.name}
+                packageData={pkg}
+                onEdit={handleEdit}
+                onDelete={handleDeleteConfirm}
+                isOffline={isOffline}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Other Packages */}
+      {otherPackages.length > 0 && (
+        <div>
+          <h3 className="text-xl font-semibold mb-4">Other Packages</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {otherPackages.map((pkg) => (
+              <PackageCard
+                key={pkg.id || pkg.name}
+                packageData={pkg}
+                onEdit={handleEdit}
+                onDelete={handleDeleteConfirm}
+                isOffline={isOffline}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {packages.length === 0 && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-8">
+            <AlertCircle className="h-10 w-10 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No subscription packages found</p>
+            <Button onClick={handleAddNew} className="mt-4" disabled={isOffline}>
+              Add First Package
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Edit/Add Form Dialog */}
+      <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedPackage ? 'Edit Package' : 'Add New Package'}
+            </DialogTitle>
+          </DialogHeader>
+          <SubscriptionPackageForm
+            packageData={selectedPackage}
+            onSubmit={handleSave}
+            onCancel={() => setIsFormDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Package</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the package "{packageToDelete?.name || packageToDelete?.title}"?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteSubmit}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+  );
+};
+
+interface PackageCardProps {
+  packageData: ISubscriptionPackage;
+  onEdit: (pkg: ISubscriptionPackage) => void;
+  onDelete: (pkg: ISubscriptionPackage) => void;
+  isOffline?: boolean;
+}
+
+const PackageCard: React.FC<PackageCardProps> = ({ packageData, onEdit, onDelete, isOffline }) => {
+  const title = packageData.title || packageData.name;
+  const price = packageData.price || 0;
+  const description = packageData.shortDescription || packageData.description || '';
+  const isPopular = packageData.isPopular || packageData.popular;
+  const paymentType = packageData.paymentType || 'recurring';
+
+  return (
+    <Card className={isPopular ? 'border-primary' : ''}>
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-start">
+          <CardTitle className="text-lg">{title}</CardTitle>
+          {isPopular && <Badge variant="default">Popular</Badge>}
+        </div>
+        <div className="flex mt-1">
+          <span className="text-2xl font-bold">₹{price}</span>
+          <span className="text-muted-foreground ml-1 self-end mb-1">
+            /{paymentType === 'one-time' ? 'one-time' : (packageData.billingCycle || 'year')}
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <p className="text-muted-foreground mb-3">{description}</p>
+        
+        {packageData.features && packageData.features.length > 0 && (
+          <ul className="space-y-1 mb-4">
+            {packageData.features.slice(0, 3).map((feature, idx) => (
+              <li key={idx} className="flex items-start">
+                <Check className="h-4 w-4 text-green-500 mr-2 mt-1 flex-shrink-0" />
+                <span className="text-sm">{feature}</span>
+              </li>
+            ))}
+            {packageData.features.length > 3 && (
+              <li className="text-sm text-muted-foreground pl-6">
+                +{packageData.features.length - 3} more features
+              </li>
+            )}
+          </ul>
+        )}
+        
+        <div className="flex justify-end space-x-2 mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onEdit(packageData)}
+            disabled={isOffline}
+          >
+            <Edit className="h-4 w-4 mr-1" />
+            Edit
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => onDelete(packageData)}
+            disabled={isOffline}
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            Delete
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
