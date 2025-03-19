@@ -1,16 +1,9 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { DataGrid, GridColDef, GridRenderCellParams, GridRowParams } from '@mui/x-data-grid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from '@/hooks/use-toast';
 import { 
   createSubscriptionPackage, 
@@ -21,7 +14,6 @@ import {
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import SubscriptionLoader from './SubscriptionLoader';
 import SubscriptionPermissionError from './SubscriptionPermissionError';
-import SubscriptionPackageForm from './SubscriptionPackageForm';
 import CentralizedSubscriptionManager from './CentralizedSubscriptionManager';
 
 interface SubscriptionManagementProps {
@@ -77,8 +69,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
     setIsDialogOpen(true);
   };
 
-  const handleEdit = (params: GridRowParams) => {
-    const packageData = params.row as ISubscriptionPackage;
+  const handleEdit = (packageData: ISubscriptionPackage) => {
     setSelectedPackage(packageData);
     setIsEditing(true);
     setIsDialogOpen(true);
@@ -141,47 +132,6 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
     setIsDialogOpen(false);
   };
 
-  const columns: GridColDef[] = [
-    { field: 'name', headerName: 'Name', width: 200 },
-    { field: 'type', headerName: 'Type', width: 120 },
-    { field: 'price', headerName: 'Price', width: 100, valueFormatter: ({ value }) => `₹${value}` },
-    { field: 'duration', headerName: 'Duration', width: 100, valueFormatter: ({ value }) => `${value} months` },
-    { field: 'isActive', headerName: 'Active', type: 'boolean', width: 80, editable: true },
-    {
-      field: 'updatedAt',
-      headerName: 'Last Updated',
-      width: 150,
-      renderCell: (params: GridRenderCellParams) => {
-        const date = new Date(params.value as string);
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-        });
-      },
-    },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      width: 200,
-      renderCell: (params: GridRenderCellParams) => (
-        <div>
-          <Button variant="outline" size="sm" onClick={() => handleEdit(params)}>
-            Edit
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => handleDelete((params.row as ISubscriptionPackage).id || '')}
-            className="ml-2"
-          >
-            Delete
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
   const sortedPackages = [...packages].sort((a, b) => {
     const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
     const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
@@ -194,6 +144,16 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
     price: 0,
     type: 'business',
     duration: 1,
+  };
+
+  const formatDate = (dateStr?: string | Date) => {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   };
 
   return (
@@ -214,14 +174,63 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
       )}
 
       {!isLoading && !error && (
-        <div style={{ height: 500, width: '100%' }}>
-          <DataGrid
-            rows={sortedPackages}
-            columns={columns}
-            getRowId={(row) => row.id || ''}
-            disableSelectionOnClick
-            onRowDoubleClick={handleEdit}
-          />
+        <div className="rounded-md border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Last Updated</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedPackages.length > 0 ? (
+                sortedPackages.map((pkg) => (
+                  <TableRow key={pkg.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleEdit(pkg)}>
+                    <TableCell className="font-medium">{pkg.name}</TableCell>
+                    <TableCell>{pkg.type}</TableCell>
+                    <TableCell>₹{pkg.price}</TableCell>
+                    <TableCell>{pkg.duration} months</TableCell>
+                    <TableCell>
+                      <Badge variant={pkg.isActive ? "default" : "secondary"}>
+                        {pkg.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{formatDate(pkg.updatedAt)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="outline" size="sm" onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(pkg);
+                      }}>
+                        Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(pkg.id || '');
+                        }}
+                        className="ml-2"
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center">
+                    No subscription packages found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
       )}
 
@@ -230,8 +239,8 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
         setIsDialogOpen={setIsDialogOpen}
         isEditing={isEditing}
         selectedPackage={selectedPackage}
-        handleSave={handleSave}
-        handleCancelEdit={handleCancelEdit}
+        onSave={handleSave}
+        onCancel={handleCancelEdit}
         initialData={initialData}
       />
     </div>
