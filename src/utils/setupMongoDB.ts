@@ -15,10 +15,10 @@ interface SetupMongoDBResult {
 export const testConnectionWithRetry = async (maxAttempts: number, delayMs: number): Promise<boolean> => {
   let attempts = 0;
   
-  // First check if server is even running
-  const serverAvailable = await isServerRunning();
+  // First check if server is even running - try both remote and local
+  const serverAvailable = await isServerRunning(true);
   if (!serverAvailable) {
-    console.log('Server is not available, skipping connection test');
+    console.log('No MongoDB server is available, skipping connection test');
     return false;
   }
   
@@ -53,8 +53,8 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback): Promise
       progressCallback(10, "Testing MongoDB connection...");
     }
     
-    // Check if server is running with shorter timeout
-    const serverAvailable = await isServerRunning();
+    // Check if server is running with shorter timeout - try both remote and local
+    const serverAvailable = await isServerRunning(true);
     if (!serverAvailable) {
       if (progressCallback) {
         progressCallback(100, "MongoDB server is not available");
@@ -67,7 +67,7 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback): Promise
     }
     
     // Only attempt connection if server is available
-    const connectionResult = await testConnectionWithRetry(1, 1000); // Reduced retries for faster fallback
+    const connectionResult = await testConnectionWithRetry(2, 1000);
     
     if (!connectionResult) {
       if (progressCallback) {
@@ -122,10 +122,10 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback): Promise
 // Auto-initialize MongoDB when needed with local data fallbacks
 export const autoInitMongoDB = async (): Promise<boolean> => {
   try {
-    // Check if server is running first with a short timeout
-    const serverAvailable = await isServerRunning();
+    // Check if server is running first with a short timeout - try both remote and local
+    const serverAvailable = await isServerRunning(true);
     if (!serverAvailable) {
-      console.log("Server is not available, skipping auto-initialization");
+      console.log("No MongoDB server is available, skipping auto-initialization");
       return false;
     }
     

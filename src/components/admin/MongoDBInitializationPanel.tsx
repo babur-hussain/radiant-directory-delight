@@ -4,14 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { Database, Server, Activity, RefreshCw, Info, ExternalLink } from 'lucide-react';
+import { Database, Server, Activity, RefreshCw, Info, ExternalLink, AlertCircle } from 'lucide-react';
 import { setupMongoDB } from '@/utils/setupMongoDB';
 import { diagnoseMongoDbConnection, testConnectionWithRetry } from '@/utils/mongoDebug';
 import { connectToMongoDB } from '@/config/mongodb';
-import { isServerRunning } from '@/api/mongoAPI';
-
-// Import API_BASE_URL from the mongoAPI file
-import { API_BASE_URL } from '@/api/mongoAPI';
+import { isServerRunning, API_BASE_URL, LOCAL_API_URL } from '@/api/mongoAPI';
 
 const MongoDBInitializationPanel: React.FC = () => {
   const [status, setStatus] = useState<'idle' | 'processing' | 'completed' | 'error'>('idle');
@@ -25,6 +22,7 @@ const MongoDBInitializationPanel: React.FC = () => {
   const [diagnosticResults, setDiagnosticResults] = useState<any>(null);
   const [isDiagnosing, setIsDiagnosing] = useState(false);
   const [serverAvailable, setServerAvailable] = useState<boolean | null>(null);
+  const [attemptingLocalServer, setAttemptingLocalServer] = useState(false);
 
   useEffect(() => {
     // Check server status on component mount
@@ -34,8 +32,17 @@ const MongoDBInitializationPanel: React.FC = () => {
   }, []);
 
   const checkServerStatus = async () => {
-    const available = await isServerRunning();
-    setServerAvailable(available);
+    setAttemptingLocalServer(true);
+    try {
+      // Try both remote and local servers
+      const available = await isServerRunning(true);
+      setServerAvailable(available);
+    } catch (error) {
+      console.error("Error checking server status:", error);
+      setServerAvailable(false);
+    } finally {
+      setAttemptingLocalServer(false);
+    }
   };
 
   const checkConnectionStatus = async () => {
@@ -82,8 +89,9 @@ const MongoDBInitializationPanel: React.FC = () => {
     });
 
     try {
-      // Check if server is available
-      const isAvailable = await isServerRunning();
+      // Check if server is available (try both remote and local)
+      setCurrentTask('Checking server availability...');
+      const isAvailable = await isServerRunning(true);
       setServerAvailable(isAvailable);
       
       if (!isAvailable) {
@@ -94,7 +102,7 @@ const MongoDBInitializationPanel: React.FC = () => {
       setProgress(10);
       setCurrentTask('Establishing MongoDB connection');
       
-      const connected = await testConnectionWithRetry(2, 1500);
+      const connected = await testConnectionWithRetry(3, 1500);
       if (!connected) {
         throw new Error('Failed to connect to MongoDB after multiple attempts');
       }
@@ -152,12 +160,22 @@ const MongoDBInitializationPanel: React.FC = () => {
       </CardHeader>
       
       <CardContent className="space-y-4">
+        {attemptingLocalServer && (
+          <Alert variant="default" className="bg-blue-50 border-blue-200">
+            <Activity className="h-4 w-4 animate-spin" />
+            <AlertTitle>Checking Servers</AlertTitle>
+            <AlertDescription>
+              Attempting to connect to MongoDB servers...
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {serverAvailable === false && (
           <Alert variant="warning" className="bg-amber-50 border-amber-200">
             <Info className="h-4 w-4" />
             <AlertTitle>Server Not Available</AlertTitle>
             <AlertDescription>
-              <p className="mb-2">The MongoDB server at {API_BASE_URL} is not available.</p>
+              <p className="mb-2">The MongoDB server is not available.</p>
               <p>You have two options:</p>
               <ul className="list-disc pl-5 mt-2 space-y-1 text-sm">
                 <li className="flex items-start">
@@ -177,6 +195,22 @@ const MongoDBInitializationPanel: React.FC = () => {
                   <li>Ensure it's running on port 3001</li>
                 </ul>
               </ul>
+              <div className="mt-3 flex justify-end">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={checkServerStatus} 
+                  className="flex items-center gap-1"
+                  disabled={attemptingLocalServer}
+                >
+                  {attemptingLocalServer ? (
+                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                  )}
+                  {attemptingLocalServer ? "Checking..." : "Check Again"}
+                </Button>
+              </div>
               <p className="mt-2">Until then, the application will use local fallback data.</p>
             </AlertDescription>
           </Alert>

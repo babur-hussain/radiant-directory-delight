@@ -11,15 +11,40 @@ export const connectToMongoDB = async () => {
       console.log('✅ Already connected to MongoDB');
       return true;
     }
+    
+    // Add connection attempt log
     console.log('🚀 Connecting to MongoDB...');
+    console.log(`MongoDB URI: ${MONGODB_URI.replace(/:[^:@]+@/, ':****@')}`); // Hide password in logs
+    
+    // Set up connection with better error handling
     await mongoose.connect(MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 30000, // Increased timeout for better reliability
-      socketTimeoutMS: 75000, // Increased socket timeout
-      connectTimeoutMS: 30000, // Added connect timeout
+      serverSelectionTimeoutMS: 15000, // Increased timeout for better reliability
+      socketTimeoutMS: 45000, // More reasonable socket timeout
+      connectTimeoutMS: 15000, // Reduced connect timeout
+      heartbeatFrequencyMS: 30000, // Add heartbeat to keep connection alive
+      retryWrites: true, // Enable retry writes
+      w: 'majority', // Write concern
     });
+    
+    // Add successful connection log with more details
     console.log(`✅ MongoDB Connected: ${mongoose.connection.host}/${mongoose.connection.name}`);
+    console.log(`Connection state: ${mongoose.connection.readyState}`);
+    
+    // Add connection event listeners for better debugging
+    mongoose.connection.on('error', (err) => {
+      console.error('❌ MongoDB connection error:', err);
+    });
+    
+    mongoose.connection.on('disconnected', () => {
+      console.warn('⚠️ MongoDB disconnected');
+    });
+    
+    mongoose.connection.on('reconnected', () => {
+      console.log('✅ MongoDB reconnected');
+    });
+    
     return true;
   } catch (error) {
     console.error('❌ MongoDB Connection Error:', error);

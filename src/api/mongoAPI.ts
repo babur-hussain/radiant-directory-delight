@@ -7,10 +7,13 @@ export const API_BASE_URL = typeof process !== 'undefined' && process.env.NEXT_P
   ? process.env.NEXT_PUBLIC_API_BASE_URL 
   : 'https://gbv-backend.onrender.com/api'; // Updated to use a deployed server instead of localhost
 
-// Create axios instance with shorter timeout
+// Alternative local development URL
+export const LOCAL_API_URL = 'http://localhost:3001/api';
+
+// Create axios instance with configurable timeout
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 2000, // Further reduced timeout to fail faster when server is unreachable
+  timeout: 2000, // Short timeout to fail faster when server is unreachable
   headers: {
     'Content-Type': 'application/json'
   }
@@ -38,18 +41,33 @@ api.interceptors.response.use(
 );
 
 // Check if the server is running with a very short timeout
-export const isServerRunning = async () => {
-  try {
-    console.log(`Checking if server is running at ${API_BASE_URL}/test-connection`);
-    const response = await axios.get(`${API_BASE_URL}/test-connection`, { 
-      timeout: 1500 // Even shorter timeout for faster fallback
-    });
-    console.log("Server status check response:", response.data);
-    return true;
-  } catch (error) {
-    console.warn("Server is not available:", error.message);
-    return false;
+export const isServerRunning = async (useLocalFallback = false) => {
+  const urls = useLocalFallback 
+    ? [LOCAL_API_URL, API_BASE_URL] 
+    : [API_BASE_URL, LOCAL_API_URL];
+  
+  for (const url of urls) {
+    try {
+      console.log(`Checking if server is running at ${url}/test-connection`);
+      const response = await axios.get(`${url}/test-connection`, { 
+        timeout: 1500 // Short timeout for faster fallback
+      });
+      console.log(`Server status check response for ${url}:`, response.data);
+      
+      // Update the baseURL if the working URL is different from the default
+      if (url !== api.defaults.baseURL) {
+        console.log(`Switching API base URL to ${url}`);
+        api.defaults.baseURL = url;
+      }
+      
+      return true;
+    } catch (error) {
+      console.warn(`Server at ${url} is not available:`, error.message);
+    }
   }
+  
+  console.warn("All server options are unavailable. Using local fallback data.");
+  return false;
 };
 
 // Users API
