@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect } from 'react';
 import { 
   GoogleAuthProvider, 
@@ -21,8 +22,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [initialized, setInitialized] = useState<boolean>(false);
 
+  // Default admin email - consistent definition
+  const DEFAULT_ADMIN_EMAIL = "baburhussain660@gmail.com";
+
   const isDefaultAdmin = (email: string | null) => {
-    return email === "baburhussain660@gmail.com";
+    return email === DEFAULT_ADMIN_EMAIL;
   };
 
   const processUser = async (firebaseUser: FirebaseUser | null) => {
@@ -34,64 +38,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const isUserDefaultAdmin = isDefaultAdmin(firebaseUser.email);
       
-      let mongoUser = await fetchUserByUid(firebaseUser.uid);
+      // Try to fetch user from MongoDB, but don't wait too long
+      let mongoUser;
+      try {
+        mongoUser = await Promise.race([
+          fetchUserByUid(firebaseUser.uid),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("MongoDB fetch timeout")), 5000)
+          )
+        ]);
+      } catch (error) {
+        console.warn("Error fetching user from MongoDB:", error.message);
+        // Continue with local data if MongoDB is unavailable
+        mongoUser = null;
+      }
       
-      const userData = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        name: firebaseUser.displayName,
-        photoURL: firebaseUser.photoURL,
-        lastLogin: new Date(),
-        isAdmin: isUserDefaultAdmin ? true : undefined,
-        role: isUserDefaultAdmin ? "Admin" as UserRole : undefined
-      };
-      
-      if (!mongoUser) {
-        console.log("Creating new user in MongoDB");
-        try {
-          mongoUser = await createOrUpdateUser({
-            ...userData,
-            role: isUserDefaultAdmin ? "Admin" as UserRole : "User" as UserRole,
-            isAdmin: isUserDefaultAdmin ? true : false,
-            createdAt: new Date()
-          });
-        } catch (error) {
-          console.error("Error creating user in MongoDB:", error);
-          mongoUser = {
-            uid: firebaseUser.uid,
-            role: isUserDefaultAdmin ? "Admin" as UserRole : "User" as UserRole,
-            isAdmin: isUserDefaultAdmin ? true : false
-          };
-        }
-      } else if (isUserDefaultAdmin && (!mongoUser.isAdmin || mongoUser.role !== "Admin")) {
-        console.log("Updating default admin privileges in MongoDB");
-        try {
-          mongoUser = await createOrUpdateUser({
-            ...mongoUser,
-            role: "Admin" as UserRole,
-            isAdmin: true
-          });
-        } catch (error) {
-          console.error("Error updating default admin privileges:", error);
-        }
-      } else {
-        try {
-          await updateUserLoginTimestamp(firebaseUser.uid);
-        } catch (error) {
-          console.error("Error updating login timestamp:", error);
+      // For default admin, always ensure admin privileges
+      if (isUserDefaultAdmin) {
+        // Store admin status in localStorage for resilience
+        localStorage.setItem(`admin_user_${firebaseUser.email?.replace(/[.@]/g, '_')}`, 'true');
+        
+        // If MongoDB is available, try to update user
+        if (!mongoUser) {
+          try {
+            mongoUser = await createOrUpdateUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              name: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+              lastLogin: new Date(),
+              isAdmin: true,
+              role: "Admin" as UserRole,
+              createdAt: new Date()
+            });
+          } catch (error) {
+            console.warn("Couldn't save admin status to MongoDB:", error);
+            // Continue with local data
+          }
         }
       }
       
+      // Set user with admin privileges if default admin, otherwise use MongoDB data if available
       setUser({
         uid: firebaseUser.uid,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName,
         photoURL: firebaseUser.photoURL,
-        isAdmin: isUserDefaultAdmin ? true : (mongoUser.isAdmin || false),
-        role: isUserDefaultAdmin ? 'Admin' as UserRole : ((mongoUser.role as UserRole) || 'User' as UserRole)
+        isAdmin: isUserDefaultAdmin ? true : (mongoUser?.isAdmin || false),
+        role: isUserDefaultAdmin ? 'Admin' as UserRole : ((mongoUser?.role as UserRole) || 'User' as UserRole)
       });
+      
+      // For non-default admin, try to update login timestamp, but don't block on it
+      if (!isUserDefaultAdmin && mongoUser) {
+        updateUserLoginTimestamp(firebaseUser.uid).catch(error => {
+          console.warn("Couldn't update login timestamp:", error);
+        });
+      }
     } catch (error) {
       console.error("Error processing user:", error);
+      
+      // Fallback: Set basic user info with admin privileges if default admin
       const isUserDefaultAdmin = isDefaultAdmin(firebaseUser.email);
       
       setUser({
@@ -111,7 +117,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await processUser(firebaseUser);
       } catch (error) {
         console.error("Error in auth state change:", error);
-        setUser(null);
+        
+        // On error, still set user as admin if default admin email
+        if (firebaseUser && isDefaultAdmin(firebaseUser.email)) {
+          setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            isAdmin: true,
+            role: 'Admin' as UserRole
+          });
+        } else {
+          setUser(null);
+        }
       } finally {
         setLoading(false);
         setInitialized(true);
@@ -119,13 +138,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
+    // Reduce timeout for better user experience
     const initTimeout = setTimeout(() => {
       if (!initialized) {
         console.log("Auth initialization timeout reached, marking as initialized");
         setInitialized(true);
         setLoading(false);
       }
-    }, 5000);
+    }, 3000); // Reduced from 5000ms to 3000ms
 
     return () => {
       unsubscribe();
@@ -163,15 +183,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      await processUser(userCredential.user);
-      
-      console.log("Email/password login successful");
-      
+      // For default admin, immediately set user with admin privileges
       if (isUserDefaultAdmin) {
+        setUser({
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
+          displayName: userCredential.user.displayName,
+          photoURL: userCredential.user.photoURL,
+          isAdmin: true,
+          role: 'Admin' as UserRole
+        });
+        
+        // Store admin status in localStorage
         const adminUserKey = `user_admin_${email.replace(/[.@]/g, '_')}`;
         localStorage.setItem(adminUserKey, 'true');
         
+        // Initialize default admin in storage
         initializeDefaultAdmin();
+        
+        console.log("Email/password login successful (default admin)");
+      } else {
+        // For non-admin users, process normally
+        await processUser(userCredential.user);
+        console.log("Email/password login successful");
       }
     } catch (error: any) {
       console.error("Email/password login error:", error);

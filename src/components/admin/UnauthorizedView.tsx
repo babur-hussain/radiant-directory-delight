@@ -4,14 +4,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const UnauthorizedView: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, login } = useAuth();
   
   // Check for default admin email
   const isDefaultAdmin = (email: string | null) => {
     return email === "baburhussain660@gmail.com";
+  };
+
+  const handleLoginAsDefaultAdmin = async () => {
+    try {
+      // If already logged in with correct email but not admin,
+      // redirect to admin dashboard anyway (should be fixed there)
+      if (isAuthenticated && isDefaultAdmin(user?.email)) {
+        navigate("/admin/dashboard");
+        return;
+      }
+      
+      // If email is default admin but not logged in, show login prompt
+      navigate("/admin");
+    } catch (error) {
+      console.error("Error handling default admin login:", error);
+    }
   };
   
   return (
@@ -36,9 +54,26 @@ const UnauthorizedView: React.FC = () => {
                   <span> but you need admin privileges to access this page.</span>
                 )}
               </p>
-              <Button onClick={() => navigate("/admin")} className="mr-2">
-                Go to Admin Login
-              </Button>
+              
+              {isDefaultAdmin(user?.email) && (
+                <Alert variant="info" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    You are using the default admin email. Click the button below to access the admin dashboard.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {isDefaultAdmin(user?.email) ? (
+                <Button onClick={handleLoginAsDefaultAdmin} className="mr-2">
+                  Access Admin Dashboard
+                </Button>
+              ) : (
+                <Button onClick={() => navigate("/admin")} className="mr-2">
+                  Go to Admin Login
+                </Button>
+              )}
+              
               <Button onClick={() => navigate("/")} variant="outline">
                 Return to Homepage
               </Button>
