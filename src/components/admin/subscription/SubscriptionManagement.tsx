@@ -1,675 +1,237 @@
-import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle 
-} from "@/components/ui/dialog";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Pencil, Trash2, Loader2, RefreshCw, ServerOff } from "lucide-react";
-import { nanoid } from "nanoid";
-import { ISubscriptionPackage } from "@/models/SubscriptionPackage"; 
-import { fetchSubscriptionPackages, saveSubscriptionPackage, deleteSubscriptionPackage } from "@/lib/mongodb-utils";
-import SubscriptionPackageForm from "./SubscriptionPackageForm";
-import { useToast } from "@/hooks/use-toast";
-import AdminPermissionError from "../dashboard/AdminPermissionError";
-import BusinessTableLoading from "../table/BusinessTableLoading";
-import SubscriptionError from "./SubscriptionError";
-import { convertToSubscriptionPackage, SubscriptionPackage } from "@/data/subscriptionData";
-import SubscriptionLoader from "./SubscriptionLoader";
-
-const fallbackBusinessPackages = [
-  {
-    id: "business-basic-fallback",
-    title: "Basic Business (Offline)",
-    price: 9999,
-    shortDescription: "Essential tools for small businesses",
-    fullDescription: "Get started with the essential tools every small business needs to establish an online presence.",
-    features: ["Business profile listing", "Basic analytics", "Email support"],
-    popular: false,
-    setupFee: 1999,
-    durationMonths: 12,
-    type: "Business",
-    paymentType: "recurring",
-    billingCycle: "yearly"
-  },
-  {
-    id: "business-pro-fallback",
-    title: "Business Pro (Offline)",
-    price: 19999,
-    shortDescription: "Advanced tools for growing businesses",
-    fullDescription: "Comprehensive tools and features for businesses looking to expand their reach and customer base.",
-    features: ["Everything in Basic", "Priority business listing", "Advanced analytics", "Priority support"],
-    popular: true,
-    setupFee: 999,
-    durationMonths: 12,
-    type: "Business",
-    paymentType: "recurring",
-    billingCycle: "yearly"
-  }
-];
-
-const fallbackInfluencerPackages = [
-  {
-    id: "influencer-starter-fallback",
-    title: "Influencer Starter (Offline)",
-    price: 4999,
-    shortDescription: "Essential tools for new influencers",
-    fullDescription: "Get started with the essential tools every influencer needs to connect with businesses.",
-    features: ["Influencer profile listing", "Basic analytics"],
-    popular: false,
-    setupFee: 999,
-    durationMonths: 12,
-    type: "Influencer",
-    paymentType: "recurring",
-    billingCycle: "yearly"
-  },
-  {
-    id: "influencer-pro-fallback",
-    title: "Influencer Pro (Offline)",
-    price: 9999,
-    shortDescription: "Advanced tools for serious influencers",
-    fullDescription: "Comprehensive tools and features for influencers looking to monetize their audience.",
-    features: ["Everything in Starter", "Priority profile listing", "Advanced analytics"],
-    popular: true,
-    setupFee: 499,
-    durationMonths: 12,
-    type: "Influencer", 
-    paymentType: "recurring",
-    billingCycle: "yearly"
-  }
-];
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { RefreshCw, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import SubscriptionPackageForm from './SubscriptionPackageForm';
+import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
+import SubscriptionPermissionError from './SubscriptionPermissionError';
+import SubscriptionLoader from '../subscription/SubscriptionLoader';
 
 interface SubscriptionPackageManagementProps {
-  onPermissionError?: (error: any) => void;
-  dbInitialized?: boolean;
-  connectionStatus?: 'connecting' | 'connected' | 'error' | 'offline';
+  onPermissionError: (error: any) => void;
+  dbInitialized: boolean;
+  connectionStatus: 'connecting' | 'connected' | 'error' | 'offline';
+  onRetryConnection?: () => void;
 }
 
-export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps> = ({ 
+const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps> = ({
   onPermissionError,
-  dbInitialized = false,
-  connectionStatus = 'connecting'
+  dbInitialized,
+  connectionStatus,
+  onRetryConnection
 }) => {
-  const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
-  const [filteredPackages, setFilteredPackages] = useState<SubscriptionPackage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState<SubscriptionPackage | null>(null);
-  const [packageToDelete, setPackageToDelete] = useState<SubscriptionPackage | null>(null);
-  const [activeTab, setActiveTab] = useState("business");
-  const [permissionError, setPermissionError] = useState<string | null>(null);
-  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<string>('business');
+  const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
+  
+  const {
+    businessPackages,
+    influencerPackages,
+    isLoading,
+    error,
+    savePackage,
+    deletePackage
+  } = useSubscriptionPackages({
+    packageTypes: ['Business', 'Influencer'],
+    onError: (err) => onPermissionError(err)
+  });
 
-  useEffect(() => {
-    if (dbInitialized) {
-      loadPackages();
-    } else {
-      const timer = setTimeout(() => {
-        loadPackages();
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [dbInitialized, connectionStatus]);
-
-  useEffect(() => {
-    if (packages && packages.length > 0) {
-      const filtered = packages.filter(pkg => 
-        pkg.type && pkg.type.toLowerCase() === activeTab
-      );
-      setFilteredPackages(filtered);
-    } else {
-      setFilteredPackages([]);
-    }
-  }, [packages, activeTab]);
-
-  const loadPackages = async () => {
-    setIsLoading(true);
-    setPermissionError(null);
-    
+  const handleSavePackage = async (packageData: ISubscriptionPackage) => {
     try {
-      if (connectionStatus === 'offline') {
-        console.log("Using offline subscription package fallback data");
-        
-        const fallbackPackages = [
-          ...fallbackBusinessPackages, 
-          ...fallbackInfluencerPackages
-        ].map(pkg => convertToSubscriptionPackage(pkg));
-        
-        setPackages(fallbackPackages);
-        
-        const filtered = fallbackPackages.filter(pkg => 
-          pkg.type && pkg.type.toLowerCase() === activeTab
-        );
-        
-        setFilteredPackages(filtered);
-        
-        toast({
-          title: "Offline Mode",
-          description: "Using offline subscription package data.",
-          variant: "default"
-        });
-        
-        setIsLoading(false);
-        return;
-      }
-      
-      console.log("Fetching subscription packages from MongoDB...");
-      const data = await fetchSubscriptionPackages();
-      console.log("Fetched subscription packages from MongoDB:", data);
-      
-      if (data && Array.isArray(data) && data.length > 0) {
-        const convertedPackages = data.map(pkg => convertToSubscriptionPackage(pkg));
-        setPackages(convertedPackages);
-        
-        const filtered = convertedPackages.filter(pkg => 
-          pkg.type && pkg.type.toLowerCase() === activeTab
-        );
-        
-        setFilteredPackages(filtered);
-        console.log(`Loaded ${convertedPackages.length} subscription packages, filtered to ${filtered.length} ${activeTab} packages`);
-      } else {
-        console.warn("No subscription packages found in MongoDB");
-        setPackages([]);
-        setFilteredPackages([]);
-        
-        toast({
-          title: "No Packages Found",
-          description: "No subscription packages found in the database. Try creating one.",
-          variant: "default"
-        });
-      }
-    } catch (error) {
-      console.error("Error loading packages:", error);
-      
-      if (connectionStatus === 'error' || connectionStatus === 'offline') {
-        console.log("Connection error, using fallback subscription package data");
-        
-        const fallbackPackages = [
-          ...fallbackBusinessPackages, 
-          ...fallbackInfluencerPackages
-        ].map(pkg => convertToSubscriptionPackage(pkg));
-        
-        setPackages(fallbackPackages);
-        
-        const filtered = fallbackPackages.filter(pkg => 
-          pkg.type && pkg.type.toLowerCase() === activeTab
-        );
-        
-        setFilteredPackages(filtered);
-        
-        toast({
-          title: "Using Fallback Data",
-          description: "Database connection failed. Using offline data instead.",
-          variant: "default"
-        });
-      } else {
-        if (error instanceof Error) {
-          const errorMessage = "Error loading subscription packages: " + error.message;
-          setPermissionError(errorMessage);
-          if (onPermissionError) {
-            onPermissionError(error);
-          }
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to load subscription packages. Please try again later.",
-            variant: "destructive"
-          });
-        }
-        
-        setPackages([]);
-        setFilteredPackages([]);
-      }
-    } finally {
-      setIsLoading(false);
+      await savePackage(packageData);
+      setSelectedPackage(null);
+    } catch (err) {
+      console.error('Error saving package:', err);
+    }
+  };
+
+  const handleEditPackage = (pkg: ISubscriptionPackage) => {
+    setSelectedPackage(pkg);
+  };
+
+  const handleDeletePackage = async (packageId: string) => {
+    try {
+      await deletePackage(packageId);
+    } catch (err) {
+      console.error('Error deleting package:', err);
     }
   };
 
   const handleCreatePackage = () => {
+    // Create a new package based on the active tab
+    const newPackage: ISubscriptionPackage = {
+      id: '',
+      title: 'Untitled Package',
+      type: activeTab === 'business' ? 'Business' : 'Influencer',
+      price: 0,
+      setupFee: 0,
+      billingCycle: 'yearly',
+      features: [],
+      shortDescription: '',
+      fullDescription: '',
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      durationMonths: 12,
+      advancePaymentMonths: 0,
+      paymentType: 'recurring',
+      maxBusinesses: 1,
+      maxInfluencers: 1
+    };
+    
+    setSelectedPackage(newPackage);
+  };
+
+  const handleCancelEdit = () => {
     setSelectedPackage(null);
-    setIsFormOpen(true);
   };
 
-  const handleEditPackage = (pkg: SubscriptionPackage) => {
-    console.log("Editing package:", pkg);
-    const packageCopy = JSON.parse(JSON.stringify(pkg));
-    setSelectedPackage(packageCopy);
-    setIsFormOpen(true);
-  };
-
-  const handleCloseForm = () => {
-    console.log("Closing form");
-    setIsFormOpen(false);
-    setTimeout(() => {
-      setSelectedPackage(null);
-    }, 100);
-  };
-
-  const handleOpenDeleteDialog = (pkg: SubscriptionPackage) => {
-    setPackageToDelete(pkg);
-  };
-
-  const handleCloseDeleteDialog = () => {
-    setPackageToDelete(null);
-  };
-
-  const handleDeletePackage = async () => {
-    if (!packageToDelete) return;
-    
-    setIsLoading(true);
-    setPermissionError(null);
-    
-    try {
-      if (connectionStatus === 'offline' || connectionStatus === 'error') {
-        console.log("Offline mode: Removing package from local state only");
-        
-        setPackages(prev => prev.filter(p => p.id !== packageToDelete.id));
-        
-        toast({
-          title: "Success (Offline)",
-          description: "Package deleted in offline mode. Changes will be synced when online.",
-        });
-        
-        setIsLoading(false);
-        setPackageToDelete(null);
-        return;
-      }
-      
-      await deleteSubscriptionPackage(packageToDelete.id);
-      
-      setPackages(prev => prev.filter(p => p.id !== packageToDelete.id));
-      
-      toast({
-        title: "Success",
-        description: "Package deleted successfully",
-      });
-    } catch (error) {
-      console.error("Error deleting package:", error);
-      
-      const errorMessage = "Error deleting subscription package: " + 
-        (error instanceof Error ? error.message : String(error));
-      setPermissionError(errorMessage);
-      if (onPermissionError) {
-        onPermissionError(error);
-      }
-      
-      toast({
-        title: "Error",
-        description: "Failed to delete package. Please try again later.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-      setPackageToDelete(null);
-    }
-  };
-
-  const handleSavePackage = async (packageData: SubscriptionPackage) => {
-    setIsSaving(true);
-    setPermissionError(null);
-    
-    try {
-      console.log("Saving package data:", packageData);
-      
-      if (!packageData.title || packageData.title.trim() === '') {
-        throw new Error("Package title is required");
-      }
-      
-      if (connectionStatus === 'offline' || connectionStatus === 'error') {
-        console.log("Offline mode: Saving package to local state only");
-        
-        setPackages(prev => {
-          const existingIndex = prev.findIndex(p => p.id === packageData.id);
-          if (existingIndex >= 0) {
-            const updated = [...prev];
-            updated[existingIndex] = packageData;
-            return updated;
-          } else {
-            return [...prev, packageData];
-          }
-        });
-        
-        toast({
-          title: "Success (Offline)",
-          description: `Package ${selectedPackage ? 'updated' : 'created'} in offline mode. Changes will be synced when online.`,
-        });
-        
-        setIsFormOpen(false);
-        setTimeout(() => {
-          setSelectedPackage(null);
-        }, 100);
-        
-        setIsSaving(false);
-        return;
-      }
-      
-      await saveSubscriptionPackage(packageData);
-      console.log("Package saved successfully to MongoDB");
-      
-      setPackages(prev => {
-        const existingIndex = prev.findIndex(p => p.id === packageData.id);
-        if (existingIndex >= 0) {
-          const updated = [...prev];
-          updated[existingIndex] = packageData;
-          return updated;
-        } else {
-          return [...prev, packageData];
-        }
-      });
-      
-      toast({
-        title: "Success",
-        description: `Package ${selectedPackage ? 'updated' : 'created'} successfully`,
-      });
-      
-      setIsFormOpen(false);
-      setTimeout(() => {
-        setSelectedPackage(null);
-      }, 100);
-      
-      setTimeout(() => {
-        loadPackages();
-      }, 1000);
-    } catch (error) {
-      console.error("Error saving package:", error);
-      
-      const errorMessage = "Error saving subscription package: " + 
-        (error instanceof Error ? error.message : String(error));
-      setPermissionError(errorMessage);
-      if (onPermissionError) {
-        onPermissionError(error);
-      }
-      
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleRefresh = () => {
-    loadPackages();
-    toast({
-      title: "Refreshing",
-      description: "Refreshing subscription package data",
-    });
-  };
-
-  const dismissError = () => {
-    setPermissionError(null);
-  };
-
-  if (isLoading) {
-    return <SubscriptionLoader isLoading={true} connectionStatus={connectionStatus} />;
+  if (error) {
+    return <SubscriptionPermissionError error={error} />;
   }
 
-  if (permissionError) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Subscription Packages</CardTitle>
-          <CardDescription>
-            Manage subscription packages for businesses and influencers
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SubscriptionError 
-            error={permissionError}
-            onRetry={() => {
-              dismissError();
-              loadPackages();
-            }}
-          />
-          <Button onClick={handleCreatePackage} className="mt-4">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create New Package
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
+  const currentPackages = activeTab === 'business' ? businessPackages : influencerPackages;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Subscription Packages</CardTitle>
-          <CardDescription>
-            Manage subscription packages for businesses and influencers
-            {connectionStatus === 'offline' && (
-              <span className="ml-2 text-amber-600 inline-flex items-center">
-                <ServerOff className="h-3 w-3 mr-1" /> Offline Mode
-              </span>
+    <div className="space-y-6">
+      {connectionStatus === 'offline' && (
+        <Alert variant="warning">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Offline Mode</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2">
+            <p>MongoDB server is not available. Operating in offline mode with limited functionality.</p>
+            <p>You can still view and modify subscription packages, but changes will only be stored locally until a connection is established.</p>
+            {onRetryConnection && (
+              <Button variant="outline" size="sm" className="w-fit" onClick={onRetryConnection}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try to reconnect
+              </Button>
             )}
-          </CardDescription>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={handleRefresh} 
-            disabled={isLoading || isSaving}
-            title="Refresh package data"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </Button>
-          <Button onClick={handleCreatePackage} disabled={isLoading || isSaving}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create Package
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {permissionError && (
-          <AdminPermissionError 
-            permissionError={permissionError} 
-            dismissError={dismissError} 
-          />
-        )}
-        
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          className="w-full"
-        >
-          <TabsList className="mb-4 w-full grid grid-cols-2">
-            <TabsTrigger value="business">Business Packages</TabsTrigger>
-            <TabsTrigger value="influencer">Influencer Packages</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="business" className="w-full">
-            {renderPackagesTable(filteredPackages, isLoading)}
-          </TabsContent>
-          
-          <TabsContent value="influencer" className="w-full">
-            {renderPackagesTable(filteredPackages, isLoading)}
-          </TabsContent>
-        </Tabs>
-        
-        <Dialog 
-          open={isFormOpen} 
-          onOpenChange={(open) => {
-            if (!open) {
-              handleCloseForm();
-            }
-          }}
-        >
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {selectedPackage ? "Edit Package" : "Create New Package"}
-                {connectionStatus === 'offline' && (
-                  <span className="ml-2 text-amber-600 inline-flex items-center text-sm">
-                    <ServerOff className="h-3 w-3 mr-1" /> Offline Mode
-                  </span>
-                )}
-              </DialogTitle>
-              <DialogDescription>
-                Fill in the details for the subscription package
-                {connectionStatus === 'offline' && (
-                  <span className="block text-sm text-amber-600 mt-1">
-                    Changes will be stored locally until connection is restored
-                  </span>
-                )}
-              </DialogDescription>
-            </DialogHeader>
-            {isFormOpen && (
-              <SubscriptionPackageForm
-                initialData={selectedPackage || {
-                  id: nanoid(),
-                  title: "",
-                  price: 0,
-                  monthlyPrice: 0,
-                  setupFee: 0,
-                  durationMonths: 12,
-                  shortDescription: "",
-                  fullDescription: "",
-                  features: [],
-                  popular: false,
-                  type: activeTab === "business" ? "Business" : "Influencer",
-                  termsAndConditions: "",
-                  paymentType: "recurring"
-                }}
-                onSubmit={handleSavePackage}
-                onCancel={handleCloseForm}
-                isSaving={isSaving}
-              />
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {connectionStatus === 'error' && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Connection Error</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2">
+            <p>Failed to connect to MongoDB. Using locally cached data.</p>
+            {onRetryConnection && (
+              <Button variant="outline" size="sm" className="w-fit" onClick={onRetryConnection}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry connection
+              </Button>
             )}
-          </DialogContent>
-        </Dialog>
-        
-        <AlertDialog open={!!packageToDelete} onOpenChange={open => !open && handleCloseDeleteDialog()}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Are you sure?
-                {connectionStatus === 'offline' && (
-                  <span className="ml-2 text-amber-600 inline-flex items-center text-sm">
-                    <ServerOff className="h-3 w-3 mr-1" /> Offline Mode
-                  </span>
-                )}
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                This will{connectionStatus === 'offline' ? ' locally' : ''} delete the package "{packageToDelete?.title}".
-                {connectionStatus === 'offline' 
-                  ? ' This action will be synced when connection is restored.'
-                  : ' This action cannot be undone.'}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction 
-                onClick={handleDeletePackage} 
-                className="bg-destructive text-destructive-foreground"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  "Delete"
-                )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </CardContent>
-    </Card>
-  );
+          </AlertDescription>
+        </Alert>
+      )}
 
-  function renderPackagesTable(packages: SubscriptionPackage[], loading: boolean) {
-    if (loading) {
-      return (
-        <div className="flex justify-center items-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      );
-    }
-    
-    if (!packages || packages.length === 0) {
-      return (
-        <p className="text-center py-8 text-muted-foreground">
-          No packages found. Click "Create Package" to add one.
-        </p>
-      );
-    }
-    
-    return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Title</TableHead>
-            <TableHead>Price (₹)</TableHead>
-            <TableHead>Setup Fee (₹)</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Duration</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {packages.map((pkg) => (
-            <TableRow key={pkg.id}>
-              <TableCell className="font-medium">{pkg.title}</TableCell>
-              <TableCell>₹{pkg.price}</TableCell>
-              <TableCell>₹{pkg.setupFee || 0}</TableCell>
-              <TableCell>
-                <Badge variant="outline">{pkg.paymentType === "one-time" ? "One-time" : "Recurring"}</Badge>
-              </TableCell>
-              <TableCell>{pkg.durationMonths ? `${pkg.durationMonths} months` : 'N/A'}</TableCell>
-              <TableCell>
-                {pkg.popular ? (
-                  <Badge>Popular</Badge>
-                ) : (
-                  <Badge variant="outline">Standard</Badge>
-                )}
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditPackage(pkg)}
-                    disabled={isLoading || isSaving}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleOpenDeleteDialog(pkg)}
-                    disabled={isLoading || isSaving}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Subscription Packages</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <div className="flex justify-between items-center mb-4">
+              <TabsList>
+                <TabsTrigger value="business">Business</TabsTrigger>
+                <TabsTrigger value="influencer">Influencer</TabsTrigger>
+              </TabsList>
+              
+              <Button onClick={handleCreatePackage}>
+                Create New Package
+              </Button>
+            </div>
+
+            <SubscriptionLoader isLoading={isLoading} connectionStatus={connectionStatus} onRetry={onRetryConnection} />
+
+            <TabsContent value="business" className="mt-0">
+              {!isLoading && (
+                <div className="space-y-6">
+                  {selectedPackage && selectedPackage.type === 'Business' ? (
+                    <SubscriptionPackageForm 
+                      packageData={selectedPackage} 
+                      onSave={handleSavePackage}
+                      onCancel={handleCancelEdit}
+                    />
+                  ) : (
+                    
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {businessPackages.map((pkg) => (
+                        <div key={pkg.id} className="border rounded-lg p-4 relative">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-medium">{pkg.title}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">{pkg.shortDescription}</p>
+                              <div className="mt-2">
+                                <span className="font-medium">₹{pkg.price}</span>
+                                <span className="text-sm text-muted-foreground"> / {pkg.billingCycle || 'year'}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center mt-4 pt-4 border-t">
+                            <Button variant="outline" size="sm" className="mr-2" onClick={() => handleEditPackage(pkg)}>
+                              Edit
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={() => handleDeletePackage(pkg.id)}>
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    );
-  }
+              )}
+            </TabsContent>
+
+            <TabsContent value="influencer" className="mt-0">
+              {!isLoading && (
+                <div className="space-y-6">
+                  {selectedPackage && selectedPackage.type === 'Influencer' ? (
+                    <SubscriptionPackageForm 
+                      packageData={selectedPackage} 
+                      onSave={handleSavePackage}
+                      onCancel={handleCancelEdit}
+                    />
+                  ) : (
+                    
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {influencerPackages.map((pkg) => (
+                        <div key={pkg.id} className="border rounded-lg p-4 relative">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-medium">{pkg.title}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">{pkg.shortDescription}</p>
+                              <div className="mt-2">
+                                <span className="font-medium">₹{pkg.price}</span>
+                                <span className="text-sm text-muted-foreground"> / {pkg.billingCycle || 'year'}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center mt-4 pt-4 border-t">
+                            <Button variant="outline" size="sm" className="mr-2" onClick={() => handleEditPackage(pkg)}>
+                              Edit
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={() => handleDeletePackage(pkg.id)}>
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
+  );
 };
 
 export default SubscriptionPackageManagement;

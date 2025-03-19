@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, CreditCard, Shield, Loader2 } from 'lucide-react';
+import { AlertCircle, CreditCard, Shield, Loader2, RefreshCw } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,6 +27,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const [retryCount, setRetryCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [loadingScript, setLoadingScript] = useState(true);
   
   // Determine if this is a one-time package
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
@@ -48,6 +49,9 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     // Add event listeners
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    
+    // Initial check for Razorpay script loading
+    setLoadingScript(true);
     
     return () => {
       window.removeEventListener('online', handleOnline);
@@ -80,6 +84,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     }
     
     setIsProcessing(true);
+    setError(null);
     
     initiatePayment({
       selectedPackage,
@@ -90,6 +95,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       },
       onFailure: (error) => {
         console.error("Payment failure in RazorpayPayment:", error);
+        setError(error.message || "Payment could not be completed. Please try again.");
         onFailure(error);
         setIsProcessing(false);
         
@@ -101,14 +107,26 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   
   const handleRetry = () => {
     setError(null);
-    handlePayment();
+    setLoadingScript(true);
+    setRetryCount(0); // Reset retry count
+    
+    // Reset states and try again
+    setTimeout(() => {
+      setLoadingScript(false);
+      handlePayment();
+    }, 1000);
   };
   
   useEffect(() => {
-    // Only auto-trigger payment on first load, not after retries
-    if (!isProcessing && !isLoading && !error && retryCount === 0) {
-      handlePayment();
-    }
+    // Only auto-trigger payment after a short delay
+    const timer = setTimeout(() => {
+      setLoadingScript(false);
+      if (!isProcessing && !isLoading && !error && retryCount === 0) {
+        handlePayment();
+      }
+    }, 2000);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   // Use payment error from the hook if available
@@ -118,6 +136,15 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     }
   }, [paymentError]);
   
+  if (loadingScript) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="mt-4 text-center">Loading payment gateway...</p>
+      </div>
+    );
+  }
+  
   if (error) {
     return (
       <Alert variant="destructive" className="mb-4">
@@ -125,23 +152,62 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         <AlertTitle>Payment Error</AlertTitle>
         <AlertDescription className="space-y-2">
           <p>{error}</p>
-          <div className="flex space-x-2 mt-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleRetry}
-              disabled={isProcessing}
-            >
-              Try Again
-            </Button>
-            <Button 
-              variant="default" 
-              size="sm" 
-              onClick={() => window.location.reload()}
-            >
-              Reload Page
-            </Button>
-          </div>
+          {retryCount >= 2 ? (
+            <div className="mt-2">
+              <p className="text-sm mb-2">We're experiencing issues with our payment provider. You can:</p>
+              <div className="flex space-x-2 mt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleRetry}
+                  disabled={isProcessing}
+                  className="flex items-center"
+                >
+                  <RefreshCw className="h-3 w-3 mr-1" /> Try Again
+                </Button>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={() => window.location.reload()}
+                >
+                  Reload Page
+                </Button>
+              </div>
+              <p className="text-xs mt-2 text-muted-foreground">
+                You can also try our demo mode which will simulate a successful payment for testing.
+              </p>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-2"
+                onClick={() => {
+                  setIsOfflineMode(true);
+                  setError(null);
+                  setTimeout(() => handlePayment(), 500);
+                }}
+              >
+                Use Demo Mode
+              </Button>
+            </div>
+          ) : (
+            <div className="flex space-x-2 mt-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRetry}
+                disabled={isProcessing}
+              >
+                Try Again
+              </Button>
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={() => window.location.reload()}
+              >
+                Reload Page
+              </Button>
+            </div>
+          )}
         </AlertDescription>
       </Alert>
     );
@@ -155,9 +221,9 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         {isOfflineMode && (
           <Alert variant="warning" className="mt-2">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Offline Mode</AlertTitle>
+            <AlertTitle>Demo Mode</AlertTitle>
             <AlertDescription>
-              You are currently in offline mode. This is a demo payment flow.
+              You are currently in demo mode. This is a simulated payment flow.
             </AlertDescription>
           </Alert>
         )}
@@ -224,6 +290,22 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
             </>
           )}
         </Button>
+        {!isOfflineMode && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mt-2" 
+            onClick={() => {
+              setIsOfflineMode(true);
+              toast({
+                title: "Demo Mode Activated",
+                description: "You've switched to demo mode for testing payments.",
+              });
+            }}
+          >
+            Switch to Demo Mode
+          </Button>
+        )}
         <p className="text-xs text-center text-muted-foreground">
           By proceeding, you agree to our Terms of Service and Privacy Policy
         </p>

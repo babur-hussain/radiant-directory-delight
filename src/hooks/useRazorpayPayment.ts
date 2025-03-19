@@ -114,6 +114,7 @@ export const useRazorpayPayment = () => {
       
       console.log(`Setting up payment for ${selectedPackage.title} with amount ${paymentAmount} (${amountInPaise} paise)`);
       
+      // Enhanced Razorpay configuration with additional options to improve reliability
       const options = {
         key: RAZORPAY_KEY_ID,
         amount: amountInPaise,
@@ -122,9 +123,9 @@ export const useRazorpayPayment = () => {
         description: `Payment for ${selectedPackage.title}`,
         order_id: orderId,
         prefill: {
-          name: user.displayName || user.name || '',
-          email: user.email || '',
-          contact: user.phone || ''
+          name: user.displayName || user.name || 'Customer',
+          email: user.email || 'customer@example.com',
+          contact: user.phone || '9999999999'
         },
         notes: {
           package_id: selectedPackage.id,
@@ -134,6 +135,13 @@ export const useRazorpayPayment = () => {
         theme: {
           color: '#2563EB'
         },
+        // Added this to prevent issues with errors
+        retry: {
+          enabled: true,
+          max_count: 3
+        },
+        remember_customer: false, // Don't remember customer to avoid caching issues
+        send_sms_hash: false, // Disable SMS hash to avoid waiting for SMS
         handler: function(response: any) {
           // Add payment type to the response
           response.paymentType = selectedPackage.paymentType || "recurring";
@@ -188,6 +196,23 @@ export const useRazorpayPayment = () => {
         setIsLoading(false);
         setError(errorMessage);
         onFailure(response.error);
+      });
+      
+      // Add a more generic error handler
+      razorpay.on('payment.error', function(response: any) {
+        console.error('Payment error:', response);
+        
+        const errorMessage = response.error?.description || 'An error occurred with the payment gateway.';
+        
+        toast({
+          title: "Payment Error",
+          description: errorMessage,
+          variant: "destructive"
+        });
+        
+        setIsLoading(false);
+        setError(errorMessage);
+        onFailure(response.error || response);
       });
       
       // Open the Razorpay checkout
