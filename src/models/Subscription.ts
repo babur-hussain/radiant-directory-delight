@@ -61,5 +61,5 @@ SubscriptionSchema.index({ userId: 1 });
 SubscriptionSchema.index({ status: 1 });
 SubscriptionSchema.index({ packageId: 1 });
 
-// Export the model correctly
-export const Subscription = mongoose.model<ISubscription>('Subscription', SubscriptionSchema);
+// Export the model correctly - fixed by removing generic type argument
+export const Subscription = mongoose.model('Subscription', SubscriptionSchema);
