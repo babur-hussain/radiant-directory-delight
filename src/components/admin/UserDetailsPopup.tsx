@@ -148,7 +148,6 @@ const UserDetailsPopup: React.FC<UserDetailsPopupProps> = ({ isOpen, onClose, us
               <h4 className="font-semibold text-md mb-2">Subscription Information</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <DetailItem label="Subscription" value={user.subscription} />
-                <DetailItem label="Subscription Package" value={user.subscriptionPackage} />
               </div>
             </>
           )}
@@ -162,7 +161,7 @@ const UserDetailsPopup: React.FC<UserDetailsPopupProps> = ({ isOpen, onClose, us
   );
 };
 
-const DetailItem = ({ label, value, highlight = false }) => (
+const DetailItem = ({ label, value, highlight = false }: { label: string; value: any; highlight?: boolean }) => (
   <div className="space-y-1">
     <p className="text-sm font-medium text-gray-700">{label}</p>
     <p className={`text-sm ${highlight ? 'bg-amber-50 font-medium p-1 rounded-md' : ''}`}>

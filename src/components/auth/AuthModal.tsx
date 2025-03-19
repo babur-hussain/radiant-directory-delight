@@ -8,7 +8,7 @@ import {
   DialogTitle, 
   DialogDescription 
 } from "@/components/ui/dialog";
-import { UserRole } from "@/contexts/AuthContext";
+import { UserRole } from "@/types/auth";
 import { LogIn, UserPlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -84,7 +84,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
                   <RegisterTypeSelector onSelectType={setRegisterType} />
                 ) : (
                   <RegisterForm 
-                    registerType={registerType} 
+                    onSignup={() => {}}  
                     onBack={() => setRegisterType(null)} 
                     onClose={() => onOpenChange(false)} 
                   />
