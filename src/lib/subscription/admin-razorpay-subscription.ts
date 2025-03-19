@@ -1,8 +1,7 @@
 
 // This file needs updating to include paymentType
-import { doc, setDoc, Timestamp } from "firebase/firestore";
-import { db } from "@/config/firebase";
 import { SubscriptionData } from "./types";
+import axios from 'axios';
 
 export const adminAssignRazorpaySubscription = async (userId: string, packageDetails: any, paymentDetails: any): Promise<boolean> => {
   try {
@@ -35,8 +34,8 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
       startDate: new Date().toISOString(),
       endDate: endDate.toISOString(),
       status: "active",
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
       assignedBy: "admin",
       assignedAt: new Date().toISOString(),
       advancePaymentMonths: packageDetails.advancePaymentMonths || 0,
@@ -56,12 +55,15 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
       subscription.razorpaySubscriptionId = paymentDetails.subscriptionId;
     }
     
-    // Set the document in Firestore
-    const docRef = doc(db, "subscriptions", subscriptionId);
-    await setDoc(docRef, subscription);
-    
-    console.log(`Razorpay subscription ${subscriptionId} assigned to user ${userId}`);
-    return true;
+    // Save to MongoDB
+    try {
+      await axios.post('http://localhost:3001/api/subscriptions', subscription);
+      console.log(`Razorpay subscription ${subscriptionId} assigned to user ${userId}`);
+      return true;
+    } catch (error) {
+      console.error("Error saving subscription to MongoDB:", error);
+      return false;
+    }
   } catch (error) {
     console.error("Error assigning Razorpay subscription:", error);
     return false;

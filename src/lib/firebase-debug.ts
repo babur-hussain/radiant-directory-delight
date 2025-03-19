@@ -1,10 +1,8 @@
 
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
-import { db } from "@/config/firebase";
 import { User } from "@/types/auth";
 
-// Define a type for the raw Firestore user data
-interface FirestoreUserData {
+// Define a type for user data
+interface UserData {
   id: string;
   email?: string | null;
   name?: string | null;
@@ -15,55 +13,20 @@ interface FirestoreUserData {
 }
 
 /**
- * Debug utility to get raw users data from Firestore
- * This can be called in the browser console to debug firestore issues
+ * Debug utility to get users data (MongoDB version)
+ * Note: This is a stub since we migrated from Firestore to MongoDB
  */
-export const debugFirestoreUsers = async (): Promise<FirestoreUserData[]> => {
-  try {
-    const usersCollection = collection(db, "users");
-    const q = query(usersCollection, orderBy("createdAt", "desc"));
-    const querySnapshot = await getDocs(q);
-    
-    console.log(`Firestore debug: Found ${querySnapshot.size} users`);
-    
-    const users = querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        // Convert Firestore timestamp to ISO string if needed
-        createdAt: data.createdAt && typeof data.createdAt.toDate === 'function' 
-          ? data.createdAt.toDate().toISOString() 
-          : data.createdAt
-      } as FirestoreUserData;
-    });
-    
-    // Log each user individually for better debugging
-    users.forEach((user, index) => {
-      console.log(`Firestore user ${index + 1}:`, {
-        id: user.id,
-        email: user.email || 'N/A',
-        name: user.name || 'N/A',
-        role: user.role || 'N/A',
-        isAdmin: user.isAdmin || false
-      });
-    });
-    
-    console.log("Raw Firestore users:", users);
-    
-    return users;
-  } catch (error) {
-    console.error("Error in debugFirestoreUsers:", error);
-    return [];
-  }
+export const debugFirestoreUsers = async (): Promise<UserData[]> => {
+  console.log("Using MongoDB for data storage - this Firestore debug function is now a stub");
+  return [];
 };
 
 /**
  * Debug utility to check localStorage stored users
  */
-export const debugLocalStorageUsers = (): FirestoreUserData[] => {
+export const debugLocalStorageUsers = (): UserData[] => {
   try {
-    const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]') as FirestoreUserData[];
+    const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]') as UserData[];
     console.log(`LocalStorage debug: Found ${allUsers.length} users`);
     
     // Log each user individually for better debugging
@@ -86,41 +49,15 @@ export const debugLocalStorageUsers = (): FirestoreUserData[] => {
 };
 
 /**
- * Compare Firestore and localStorage users to identify discrepancies
+ * Compare data sources (MongoDB now the source of truth)
  */
 export const compareUserSources = async () => {
-  const firestoreUsers = await debugFirestoreUsers();
-  const localStorageUsers = debugLocalStorageUsers();
-  
-  console.log('------ User Source Comparison ------');
-  console.log(`Firestore: ${firestoreUsers.length} users`);
-  console.log(`LocalStorage: ${localStorageUsers.length} users`);
-  
-  // Check for users in Firestore but not in localStorage
-  const missingInLocalStorage = firestoreUsers.filter(
-    fsUser => !localStorageUsers.some(lsUser => lsUser.id === fsUser.id)
-  );
-  
-  if (missingInLocalStorage.length > 0) {
-    console.log(`Found ${missingInLocalStorage.length} users in Firestore but missing in localStorage:`, 
-      missingInLocalStorage.map(user => ({ id: user.id, email: user.email || 'N/A' })));
-  }
-  
-  // Check for users in localStorage but not in Firestore
-  const missingInFirestore = localStorageUsers.filter(
-    lsUser => !firestoreUsers.some(fsUser => fsUser.id === lsUser.id)
-  );
-  
-  if (missingInFirestore.length > 0) {
-    console.log(`Found ${missingInFirestore.length} users in localStorage but missing in Firestore:`, 
-      missingInFirestore.map(user => ({ id: user.id, email: user.email || 'N/A' })));
-  }
-  
+  console.log('Data migration to MongoDB is complete. Use MongoDB utilities for debugging.');
   return {
-    firestoreUsers,
-    localStorageUsers,
-    missingInLocalStorage,
-    missingInFirestore
+    firestoreUsers: [],
+    localStorageUsers: debugLocalStorageUsers(),
+    missingInLocalStorage: [],
+    missingInFirestore: []
   };
 };
 

@@ -1,6 +1,6 @@
+
 import { User, UserRole } from "../../types/auth";
-import { db } from "../../config/firebase";
-import { collection, getDocs, doc, setDoc } from "firebase/firestore";
+import axios from 'axios';
 
 // Keys for storing user data in localStorage
 export const getRoleKey = (userId: string) => `user_role_${userId}`;
@@ -22,28 +22,24 @@ export const initializeDefaultAdmin = () => {
     const adminExists = allUsers.some((user: any) => user.email === adminEmail);
     
     if (!adminExists) {
-      allUsers.push({
+      const adminUser = {
         id: adminEmail.replace(/[.@]/g, '_'),
         email: adminEmail,
         name: 'Admin User',
         role: 'Admin',
         isAdmin: true,
         createdAt: new Date().toISOString()
-      });
+      };
+      
+      allUsers.push(adminUser);
       localStorage.setItem(ALL_USERS_KEY, JSON.stringify(allUsers));
       
-      // Also try to save to Firebase if available
+      // Also save to MongoDB
       try {
-        const userDoc = doc(db, "users", adminEmail.replace(/[.@]/g, '_'));
-        setDoc(userDoc, {
-          email: adminEmail,
-          name: 'Admin User',
-          role: 'Admin',
-          isAdmin: true,
-          createdAt: new Date().toISOString()
-        }, { merge: true }).catch(err => console.error("Could not save admin to Firebase:", err));
+        axios.post('http://localhost:3001/api/users', adminUser)
+          .catch(err => console.error("Could not save admin to MongoDB:", err));
       } catch (error) {
-        console.error("Error saving admin to Firebase:", error);
+        console.error("Error saving admin to MongoDB:", error);
       }
     }
   }
@@ -65,49 +61,37 @@ export const saveUserToAllUsersList = (userData: User) => {
     const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
     const existingSubscription = userSubscriptions[userData.id] || null;
     
+    const updatedUserData = {
+      id: userData.id,
+      email: userData.email,
+      name: userData.name,
+      role: userData.role,
+      isAdmin: userData.isAdmin || false,
+      createdAt: createdAtTimestamp,
+      subscription: existingSubscription || null,
+      lastUpdated: new Date().toISOString()
+    };
+    
     if (existingUserIndex >= 0) {
       // Update existing user
       allUsers[existingUserIndex] = {
         ...allUsers[existingUserIndex],
-        name: userData.name || allUsers[existingUserIndex].name,
-        role: userData.role || allUsers[existingUserIndex].role,
-        isAdmin: userData.isAdmin || allUsers[existingUserIndex].isAdmin || false,
-        email: userData.email || allUsers[existingUserIndex].email,
-        createdAt: createdAtTimestamp,
-        subscription: existingSubscription || allUsers[existingUserIndex].subscription || null,
-        lastUpdated: new Date().toISOString()
+        ...updatedUserData
       };
     } else {
       // Add new user
-      allUsers.push({
-        id: userData.id,
-        email: userData.email,
-        name: userData.name,
-        role: userData.role,
-        isAdmin: userData.isAdmin || false,
-        createdAt: createdAtTimestamp,
-        subscription: existingSubscription || null,
-        lastUpdated: new Date().toISOString()
-      });
+      allUsers.push(updatedUserData);
     }
     
     localStorage.setItem(ALL_USERS_KEY, JSON.stringify(allUsers));
     console.log("Updated all users list:", allUsers);
     
-    // Also try to save to Firebase if available
+    // Also save to MongoDB
     try {
-      const userDoc = doc(db, "users", userData.id);
-      setDoc(userDoc, {
-        email: userData.email,
-        name: userData.name,
-        role: userData.role,
-        isAdmin: userData.isAdmin || false,
-        createdAt: createdAtTimestamp,
-        subscription: existingSubscription || null,
-        lastUpdated: new Date().toISOString()
-      }, { merge: true }).catch(err => console.error("Could not save user to Firebase:", err));
+      axios.post('http://localhost:3001/api/users', updatedUserData)
+        .catch(err => console.error("Could not save user to MongoDB:", err));
     } catch (error) {
-      console.error("Error saving user to Firebase:", error);
+      console.error("Error saving user to MongoDB:", error);
     }
     
     return allUsers;
@@ -118,25 +102,30 @@ export const saveUserToAllUsersList = (userData: User) => {
 };
 
 // Load all users data
-export const loadAllUsers = (): User[] => {
+export const loadAllUsers = async (): Promise<User[]> => {
   try {
-    console.log("Loading all users from localStorage");
-    const allUsersJson = localStorage.getItem(ALL_USERS_KEY);
-    if (allUsersJson) {
-      const parsedUsers = JSON.parse(allUsersJson);
-      console.log("Loaded users count:", parsedUsers.length);
+    console.log("Loading all users from MongoDB");
+    
+    // First try MongoDB
+    try {
+      const response = await axios.get('http://localhost:3001/api/users');
+      const users = response.data;
+      console.log("Loaded users from MongoDB:", users.length);
       
-      // Also load subscription data and merge with users
-      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
+      // Update localStorage with MongoDB data
+      localStorage.setItem(ALL_USERS_KEY, JSON.stringify(users));
       
-      const usersWithSubscriptions = parsedUsers.map((user: any) => {
-        return {
-          ...user,
-          subscription: userSubscriptions[user.id] || user.subscription || null
-        };
-      });
+      return users;
+    } catch (mongoError) {
+      console.error("Error loading users from MongoDB:", mongoError);
       
-      return usersWithSubscriptions;
+      // Fall back to localStorage
+      const allUsersJson = localStorage.getItem(ALL_USERS_KEY);
+      if (allUsersJson) {
+        const parsedUsers = JSON.parse(allUsersJson);
+        console.log("Loaded users from localStorage:", parsedUsers.length);
+        return parsedUsers;
+      }
     }
   } catch (error) {
     console.error("Error loading users:", error);
@@ -148,115 +137,48 @@ export const loadAllUsers = (): User[] => {
 export const debugRefreshUsers = async () => {
   console.log("Forcing refresh of users data");
   try {
-    // First try to fetch users from Firebase
-    try {
-      const usersCollection = collection(db, "users");
-      const snapshot = await getDocs(usersCollection);
+    // Fetch users from MongoDB
+    const response = await axios.get('http://localhost:3001/api/users');
+    const mongoUsers = response.data;
+    
+    if (mongoUsers.length > 0) {
+      // Get subscription data
+      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
       
-      if (!snapshot.empty) {
-        const firebaseUsers = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            email: data.email || null,
-            name: data.name || data.displayName || null,
-            role: data.role || null,
-            isAdmin: data.isAdmin || false,
-            createdAt: data.createdAt || new Date().toISOString(),
-            subscription: data.subscription || null,
-            lastUpdated: data.lastUpdated || new Date().toISOString()
-          };
-        });
-        
-        // Get subscription data
-        const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
-        
-        // Merge subscription data with users
-        const usersWithSubscriptions = firebaseUsers.map(user => {
-          return {
-            ...user,
-            subscription: userSubscriptions[user.id] || user.subscription || null
-          };
-        });
-        
-        // Save Firebase users to localStorage
-        localStorage.setItem(ALL_USERS_KEY, JSON.stringify(usersWithSubscriptions));
-        console.log("Updated all users list from Firebase:", usersWithSubscriptions);
-        return usersWithSubscriptions.length;
-      }
-    } catch (error) {
-      console.error("Error fetching users from Firebase:", error);
-    }
-    
-    // Get all auth users from localStorage and merge with subscription data
-    const allUsers = JSON.parse(localStorage.getItem(ALL_USERS_KEY) || '[]');
-    const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
-    
-    // Check for duplicate emails and merge data if needed
-    const uniqueUserMap = new Map();
-    
-    allUsers.forEach((user: User) => {
-      if (user.email) {
-        const key = user.email.toLowerCase();
-        
-        if (uniqueUserMap.has(key)) {
-          // Merge with existing user data
-          const existingUser = uniqueUserMap.get(key);
-          uniqueUserMap.set(key, {
-            ...existingUser,
-            ...user,
-            isAdmin: existingUser.isAdmin || user.isAdmin || false,
-            role: user.role || existingUser.role,
-            createdAt: existingUser.createdAt || user.createdAt || new Date().toISOString(),
-            subscription: userSubscriptions[user.id] || existingUser.subscription || null,
-            lastUpdated: new Date().toISOString()
-          });
-        } else {
-          uniqueUserMap.set(key, {
-            ...user,
-            createdAt: user.createdAt || new Date().toISOString(),
-            subscription: userSubscriptions[user.id] || user.subscription || null,
-            lastUpdated: new Date().toISOString()
-          });
-        }
-      }
-    });
-    
-    // Convert back to array
-    const dedupedUsers = Array.from(uniqueUserMap.values());
-    
-    // Save back to localStorage
-    localStorage.setItem(ALL_USERS_KEY, JSON.stringify(dedupedUsers));
-    
-    // Try to sync with Firebase
-    try {
-      dedupedUsers.forEach(async (user: any) => {
-        if (user.id) {
-          const userDoc = doc(db, "users", user.id);
-          await setDoc(userDoc, {
-            email: user.email,
-            name: user.name,
-            role: user.role,
-            isAdmin: user.isAdmin || false,
-            createdAt: user.createdAt || new Date().toISOString(),
-            subscription: user.subscription || null,
-            lastUpdated: new Date().toISOString()
-          }, { merge: true });
-        }
+      // Merge subscription data with users
+      const usersWithSubscriptions = mongoUsers.map((user: any) => {
+        return {
+          ...user,
+          subscription: userSubscriptions[user.id] || user.subscription || null
+        };
       });
-    } catch (error) {
-      console.error("Error syncing users to Firebase:", error);
+      
+      // Save to localStorage
+      localStorage.setItem(ALL_USERS_KEY, JSON.stringify(usersWithSubscriptions));
+      console.log("Updated all users list from MongoDB:", usersWithSubscriptions);
+      return usersWithSubscriptions.length;
     }
     
-    console.log("Current users after deduplication:", dedupedUsers);
-    return dedupedUsers.length;
+    // If MongoDB is empty, use localStorage data
+    const allUsers = JSON.parse(localStorage.getItem(ALL_USERS_KEY) || '[]');
+    
+    // Sync localStorage users to MongoDB
+    for (const user of allUsers) {
+      try {
+        await axios.post('http://localhost:3001/api/users', user);
+      } catch (error) {
+        console.error("Error syncing user to MongoDB:", error);
+      }
+    }
+    
+    return allUsers.length;
   } catch (error) {
     console.error("Error refreshing users:", error);
     return 0;
   }
 };
 
-// Function to sync a specific user across localStorage and Firebase
+// Function to sync a specific user
 export const syncUserData = async (userId: string, userData: any) => {
   try {
     // First update in localStorage
@@ -288,30 +210,24 @@ export const syncUserData = async (userId: string, userData: any) => {
     // Save updated users to localStorage
     localStorage.setItem(ALL_USERS_KEY, JSON.stringify(allUsers));
     
-    // Then sync to Firebase
-    const userDoc = doc(db, "users", userId);
+    // Update MongoDB
+    await axios.post('http://localhost:3001/api/users', updatedUserData);
     
-    // First apply the original update
-    await setDoc(userDoc, updatedUserData, { merge: true });
-    
-    // If there's subscription data, ensure it's properly stored with all possible paths
+    // If there's subscription data, ensure it's properly stored
     if (userData.subscription) {
-      console.log("Syncing subscription data to Firestore:", userData.subscription);
-      
-      // Explicitly update subscription field to make sure it's not getting lost
-      await setDoc(userDoc, {
-        subscription: userData.subscription,
-        // Also add these fields for backward compatibility
-        subscriptionPackage: userData.subscription.packageId,
-        subscriptionStatus: userData.subscription.status,
-        subscriptionAssignedAt: userData.subscription.startDate || userData.subscription.assignedAt || new Date().toISOString(),
-        lastUpdated: new Date().toISOString()
-      }, { merge: true });
+      console.log("Syncing subscription data to MongoDB:", userData.subscription);
       
       // Update userSubscriptions in localStorage too
       const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
       userSubscriptions[userId] = userData.subscription;
       localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
+      
+      // Update subscription in MongoDB
+      try {
+        await axios.post('http://localhost:3001/api/subscriptions', userData.subscription);
+      } catch (subscriptionError) {
+        console.error("Error syncing subscription to MongoDB:", subscriptionError);
+      }
     }
     
     return true;

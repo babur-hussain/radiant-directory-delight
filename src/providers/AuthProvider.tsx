@@ -8,9 +8,19 @@ import {
   User as FirebaseUser 
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
-import { AuthContextType, AuthUser } from '@/types/auth';
+import { AuthContextType } from '@/types/auth';
 import { createOrUpdateUser, fetchUserByUid, updateUserLoginTimestamp } from '@/api/mongoAPI';
 import Loading from '@/components/ui/loading';
+
+// Define the AuthUser type locally since it's not exported from @/types/auth
+interface AuthUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  isAdmin: boolean;
+  role: string;
+}
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -90,7 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const signInWithGoogle = async () => {
+  const loginWithGoogle = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       await processUser(result.user);
@@ -116,7 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     isAuthenticated: !!user,
     loading,
-    signInWithGoogle,
+    loginWithGoogle,
     signOut
   };
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,8 +16,6 @@ import InfluencerRank from "./widgets/InfluencerRank";
 import { useDashboardServices } from "@/hooks/useDashboardServices";
 import { useSubscription } from "@/hooks";
 import { useToast } from "@/hooks/use-toast";
-import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "@/config/firebase";
 import { useAuth } from "@/hooks";
 
 interface InfluencerDashboardProps {
@@ -51,38 +48,8 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
           console.log("InfluencerDashboard: Got subscription from MongoDB:", subscription);
           setSubscriptionData(subscription);
         } else {
-          console.log("InfluencerDashboard: No subscription found in MongoDB, checking Firebase");
-          
-          // If not found in MongoDB, try Firebase as fallback
-          try {
-            const userRef = doc(db, "users", userId);
-            const docSnapshot = await new Promise((resolve) => {
-              const unsubscribe = onSnapshot(userRef, (snapshot) => {
-                unsubscribe();
-                resolve(snapshot);
-              }, (error) => {
-                console.error("Error getting user doc from Firebase:", error);
-                resolve(null);
-              });
-            });
-            
-            if (docSnapshot && (docSnapshot as any).exists()) {
-              const userData = (docSnapshot as any).data();
-              if (userData?.subscription || userData?.subscriptionPackage) {
-                console.log("InfluencerDashboard: Got subscription from Firebase:", userData.subscription || userData.subscriptionPackage);
-                setSubscriptionData(userData.subscription || {
-                  id: 'firebase-subscription',
-                  status: 'active',
-                  packageId: userData.subscriptionPackage
-                });
-              } else {
-                console.log("InfluencerDashboard: No subscription found in Firebase either");
-                setSubscriptionData(null);
-              }
-            }
-          } catch (firebaseError) {
-            console.error("Error checking Firebase for subscription:", firebaseError);
-          }
+          console.log("InfluencerDashboard: No subscription found");
+          setSubscriptionData(null);
         }
       } catch (error) {
         console.error("InfluencerDashboard: Error fetching subscription:", error);

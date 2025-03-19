@@ -38,4 +38,5 @@ try {
   googleProvider = {};
 }
 
+// Export only what we need for authentication, not Firestore
 export { auth, googleProvider, analytics, storage, app };
