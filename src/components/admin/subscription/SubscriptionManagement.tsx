@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Pencil, Trash2, Loader2, RefreshCw } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Loader2, RefreshCw, ServerOff } from "lucide-react";
 import { nanoid } from "nanoid";
 import { ISubscriptionPackage } from "@/models/SubscriptionPackage"; 
 import { fetchSubscriptionPackages, saveSubscriptionPackage, deleteSubscriptionPackage } from "@/lib/mongodb-utils";
@@ -31,15 +31,80 @@ import AdminPermissionError from "../dashboard/AdminPermissionError";
 import BusinessTableLoading from "../table/BusinessTableLoading";
 import SubscriptionError from "./SubscriptionError";
 import { convertToSubscriptionPackage, SubscriptionPackage } from "@/data/subscriptionData";
+import SubscriptionLoader from "./SubscriptionLoader";
+
+const fallbackBusinessPackages = [
+  {
+    id: "business-basic-fallback",
+    title: "Basic Business (Offline)",
+    price: 9999,
+    shortDescription: "Essential tools for small businesses",
+    fullDescription: "Get started with the essential tools every small business needs to establish an online presence.",
+    features: ["Business profile listing", "Basic analytics", "Email support"],
+    popular: false,
+    setupFee: 1999,
+    durationMonths: 12,
+    type: "Business",
+    paymentType: "recurring",
+    billingCycle: "yearly"
+  },
+  {
+    id: "business-pro-fallback",
+    title: "Business Pro (Offline)",
+    price: 19999,
+    shortDescription: "Advanced tools for growing businesses",
+    fullDescription: "Comprehensive tools and features for businesses looking to expand their reach and customer base.",
+    features: ["Everything in Basic", "Priority business listing", "Advanced analytics", "Priority support"],
+    popular: true,
+    setupFee: 999,
+    durationMonths: 12,
+    type: "Business",
+    paymentType: "recurring",
+    billingCycle: "yearly"
+  }
+];
+
+const fallbackInfluencerPackages = [
+  {
+    id: "influencer-starter-fallback",
+    title: "Influencer Starter (Offline)",
+    price: 4999,
+    shortDescription: "Essential tools for new influencers",
+    fullDescription: "Get started with the essential tools every influencer needs to connect with businesses.",
+    features: ["Influencer profile listing", "Basic analytics"],
+    popular: false,
+    setupFee: 999,
+    durationMonths: 12,
+    type: "Influencer",
+    paymentType: "recurring",
+    billingCycle: "yearly"
+  },
+  {
+    id: "influencer-pro-fallback",
+    title: "Influencer Pro (Offline)",
+    price: 9999,
+    shortDescription: "Advanced tools for serious influencers",
+    fullDescription: "Comprehensive tools and features for influencers looking to monetize their audience.",
+    features: ["Everything in Starter", "Priority profile listing", "Advanced analytics"],
+    popular: true,
+    setupFee: 499,
+    durationMonths: 12,
+    type: "Influencer", 
+    paymentType: "recurring",
+    billingCycle: "yearly"
+  }
+];
 
 interface SubscriptionPackageManagementProps {
   onPermissionError?: (error: any) => void;
   dbInitialized?: boolean;
+  connectionStatus?: 'connecting' | 'connected' | 'error' | 'offline';
 }
 
 export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps> = ({ 
   onPermissionError,
-  dbInitialized = false
+  dbInitialized = false,
+  connectionStatus = 'connecting'
 }) => {
   const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
   const [filteredPackages, setFilteredPackages] = useState<SubscriptionPackage[]>([]);
@@ -61,7 +126,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [dbInitialized]);
+  }, [dbInitialized, connectionStatus]);
 
   useEffect(() => {
     if (packages && packages.length > 0) {
@@ -77,7 +142,34 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
   const loadPackages = async () => {
     setIsLoading(true);
     setPermissionError(null);
+    
     try {
+      if (connectionStatus === 'offline') {
+        console.log("Using offline subscription package fallback data");
+        
+        const fallbackPackages = [
+          ...fallbackBusinessPackages, 
+          ...fallbackInfluencerPackages
+        ].map(pkg => convertToSubscriptionPackage(pkg));
+        
+        setPackages(fallbackPackages);
+        
+        const filtered = fallbackPackages.filter(pkg => 
+          pkg.type && pkg.type.toLowerCase() === activeTab
+        );
+        
+        setFilteredPackages(filtered);
+        
+        toast({
+          title: "Offline Mode",
+          description: "Using offline subscription package data.",
+          variant: "default"
+        });
+        
+        setIsLoading(false);
+        return;
+      }
+      
       console.log("Fetching subscription packages from MongoDB...");
       const data = await fetchSubscriptionPackages();
       console.log("Fetched subscription packages from MongoDB:", data);
@@ -106,22 +198,45 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     } catch (error) {
       console.error("Error loading packages:", error);
       
-      if (error instanceof Error) {
-        const errorMessage = "Error loading subscription packages: " + error.message;
-        setPermissionError(errorMessage);
-        if (onPermissionError) {
-          onPermissionError(error);
-        }
-      } else {
+      if (connectionStatus === 'error' || connectionStatus === 'offline') {
+        console.log("Connection error, using fallback subscription package data");
+        
+        const fallbackPackages = [
+          ...fallbackBusinessPackages, 
+          ...fallbackInfluencerPackages
+        ].map(pkg => convertToSubscriptionPackage(pkg));
+        
+        setPackages(fallbackPackages);
+        
+        const filtered = fallbackPackages.filter(pkg => 
+          pkg.type && pkg.type.toLowerCase() === activeTab
+        );
+        
+        setFilteredPackages(filtered);
+        
         toast({
-          title: "Error",
-          description: "Failed to load subscription packages. Please try again later.",
-          variant: "destructive"
+          title: "Using Fallback Data",
+          description: "Database connection failed. Using offline data instead.",
+          variant: "default"
         });
+      } else {
+        if (error instanceof Error) {
+          const errorMessage = "Error loading subscription packages: " + error.message;
+          setPermissionError(errorMessage);
+          if (onPermissionError) {
+            onPermissionError(error);
+          }
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to load subscription packages. Please try again later.",
+            variant: "destructive"
+          });
+        }
+        
+        setPackages([]);
+        setFilteredPackages([]);
       }
-      
-      setPackages([]);
-      setFilteredPackages([]);
     } finally {
       setIsLoading(false);
     }
@@ -160,7 +275,23 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
     
     setIsLoading(true);
     setPermissionError(null);
+    
     try {
+      if (connectionStatus === 'offline' || connectionStatus === 'error') {
+        console.log("Offline mode: Removing package from local state only");
+        
+        setPackages(prev => prev.filter(p => p.id !== packageToDelete.id));
+        
+        toast({
+          title: "Success (Offline)",
+          description: "Package deleted in offline mode. Changes will be synced when online.",
+        });
+        
+        setIsLoading(false);
+        setPackageToDelete(null);
+        return;
+      }
+      
       await deleteSubscriptionPackage(packageToDelete.id);
       
       setPackages(prev => prev.filter(p => p.id !== packageToDelete.id));
@@ -193,11 +324,40 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
   const handleSavePackage = async (packageData: SubscriptionPackage) => {
     setIsSaving(true);
     setPermissionError(null);
+    
     try {
-      console.log("Saving package data to MongoDB:", packageData);
+      console.log("Saving package data:", packageData);
       
       if (!packageData.title || packageData.title.trim() === '') {
         throw new Error("Package title is required");
+      }
+      
+      if (connectionStatus === 'offline' || connectionStatus === 'error') {
+        console.log("Offline mode: Saving package to local state only");
+        
+        setPackages(prev => {
+          const existingIndex = prev.findIndex(p => p.id === packageData.id);
+          if (existingIndex >= 0) {
+            const updated = [...prev];
+            updated[existingIndex] = packageData;
+            return updated;
+          } else {
+            return [...prev, packageData];
+          }
+        });
+        
+        toast({
+          title: "Success (Offline)",
+          description: `Package ${selectedPackage ? 'updated' : 'created'} in offline mode. Changes will be synced when online.`,
+        });
+        
+        setIsFormOpen(false);
+        setTimeout(() => {
+          setSelectedPackage(null);
+        }, 100);
+        
+        setIsSaving(false);
+        return;
       }
       
       await saveSubscriptionPackage(packageData);
@@ -260,7 +420,7 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
   };
 
   if (isLoading) {
-    return <BusinessTableLoading />;
+    return <SubscriptionLoader isLoading={true} connectionStatus={connectionStatus} />;
   }
 
   if (permissionError) {
@@ -296,6 +456,11 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
           <CardTitle>Subscription Packages</CardTitle>
           <CardDescription>
             Manage subscription packages for businesses and influencers
+            {connectionStatus === 'offline' && (
+              <span className="ml-2 text-amber-600 inline-flex items-center">
+                <ServerOff className="h-3 w-3 mr-1" /> Offline Mode
+              </span>
+            )}
           </CardDescription>
         </div>
         <div className="flex gap-2">
@@ -352,9 +517,19 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
             <DialogHeader>
               <DialogTitle>
                 {selectedPackage ? "Edit Package" : "Create New Package"}
+                {connectionStatus === 'offline' && (
+                  <span className="ml-2 text-amber-600 inline-flex items-center text-sm">
+                    <ServerOff className="h-3 w-3 mr-1" /> Offline Mode
+                  </span>
+                )}
               </DialogTitle>
               <DialogDescription>
                 Fill in the details for the subscription package
+                {connectionStatus === 'offline' && (
+                  <span className="block text-sm text-amber-600 mt-1">
+                    Changes will be stored locally until connection is restored
+                  </span>
+                )}
               </DialogDescription>
             </DialogHeader>
             {isFormOpen && (
@@ -385,10 +560,19 @@ export const SubscriptionPackageManagement: React.FC<SubscriptionPackageManageme
         <AlertDialog open={!!packageToDelete} onOpenChange={open => !open && handleCloseDeleteDialog()}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogTitle>
+                Are you sure?
+                {connectionStatus === 'offline' && (
+                  <span className="ml-2 text-amber-600 inline-flex items-center text-sm">
+                    <ServerOff className="h-3 w-3 mr-1" /> Offline Mode
+                  </span>
+                )}
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently delete the package "{packageToDelete?.title}".
-                This action cannot be undone.
+                This will{connectionStatus === 'offline' ? ' locally' : ''} delete the package "{packageToDelete?.title}".
+                {connectionStatus === 'offline' 
+                  ? ' This action will be synced when connection is restored.'
+                  : ' This action cannot be undone.'}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
