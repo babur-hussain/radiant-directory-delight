@@ -13,31 +13,6 @@ import { SubscriptionPackage } from "@/data/subscriptionData";
 import { useSubscription } from "@/hooks";
 import { toast } from "@/hooks/use-toast";
 import RazorpayPayment from "./RazorpayPayment";
-import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
-
-const convertToISubscriptionPackage = (pkg: SubscriptionPackage): ISubscriptionPackage => {
-  return {
-    id: pkg.id || '',
-    name: pkg.title || '',
-    description: pkg.shortDescription || '',
-    price: pkg.price || 0,
-    type: pkg.type || 'Business',
-    duration: pkg.durationMonths || 12,
-    title: pkg.title,
-    shortDescription: pkg.shortDescription,
-    fullDescription: pkg.fullDescription,
-    features: pkg.features,
-    setupFee: pkg.setupFee,
-    durationMonths: pkg.durationMonths,
-    paymentType: pkg.paymentType,
-    billingCycle: pkg.billingCycle,
-    advancePaymentMonths: pkg.advancePaymentMonths,
-    monthlyPrice: pkg.monthlyPrice,
-    popular: pkg.popular,
-    isPopular: pkg.popular,
-    dashboardSections: pkg.dashboardSections
-  };
-};
 
 const SubscriptionDetails = () => {
   const { packageId } = useParams();
@@ -58,12 +33,14 @@ const SubscriptionDetails = () => {
       setError(null);
       
       try {
+        // Try to fetch packages from Firebase first
         const allPackages = await fetchSubscriptionPackages();
         const foundPackage = allPackages.find(pkg => pkg.id === packageId);
         
         if (foundPackage) {
           setSelectedPackage(foundPackage);
         } else {
+          // Fallback to default packages if not found in Firebase
           const defaultPackage = getPackageById(packageId);
           
           if (defaultPackage) {
@@ -75,6 +52,7 @@ const SubscriptionDetails = () => {
       } catch (err) {
         console.error("Error fetching package:", err);
         
+        // Fallback to default packages
         const defaultPackage = getPackageById(packageId);
         
         if (defaultPackage) {
@@ -114,6 +92,7 @@ const SubscriptionDetails = () => {
     console.log("Payment successful:", paymentResponse);
     
     if (selectedPackage) {
+      // Now initiate the subscription with payment details
       await initiateSubscription(selectedPackage.id, {
         paymentId: paymentResponse.razorpay_payment_id,
         orderId: paymentResponse.razorpay_order_id,
@@ -169,8 +148,6 @@ const SubscriptionDetails = () => {
     );
   }
 
-  const packageData = convertToISubscriptionPackage(selectedPackage);
-
   if (showPaymentUI) {
     return (
       <div className="container mx-auto px-4 py-10 max-w-4xl">
@@ -186,7 +163,7 @@ const SubscriptionDetails = () => {
           <CardHeader>
             <CardTitle>Process Payment</CardTitle>
             <CardDescription>
-              {packageData.paymentType === "one-time" 
+              {selectedPackage.paymentType === "one-time" 
                 ? "Complete your one-time payment to activate your package" 
                 : "Complete your payment to activate your subscription"}
             </CardDescription>
@@ -199,7 +176,7 @@ const SubscriptionDetails = () => {
               </div>
             ) : (
               <RazorpayPayment 
-                selectedPackage={packageData}
+                selectedPackage={selectedPackage}
                 onSuccess={handlePaymentSuccess}
                 onFailure={handlePaymentFailure}
               />
@@ -210,7 +187,8 @@ const SubscriptionDetails = () => {
     );
   }
 
-  const isOneTimePackage = packageData.paymentType === "one-time";
+  // Determine if this is a one-time package
+  const isOneTimePackage = selectedPackage.paymentType === "one-time";
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-4xl">
@@ -225,26 +203,26 @@ const SubscriptionDetails = () => {
       <Card className="mb-6">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <CardTitle className="text-xl">{packageData.title || packageData.name}</CardTitle>
+            <CardTitle className="text-xl">{selectedPackage.title}</CardTitle>
             {isOneTimePackage && (
               <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2 py-1 rounded">
                 One-time payment
               </span>
             )}
           </div>
-          <CardDescription>{packageData.shortDescription || packageData.description}</CardDescription>
+          <CardDescription>{selectedPackage.shortDescription}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-medium mb-2">About this Plan</h3>
-              <p className="text-gray-700">{packageData.fullDescription || packageData.description}</p>
+              <p className="text-gray-700">{selectedPackage.fullDescription}</p>
             </div>
             
             <div>
               <h3 className="text-lg font-medium mb-2">Features</h3>
               <ul className="space-y-2">
-                {packageData.features?.map((feature, index) => (
+                {selectedPackage.features.map((feature, index) => (
                   <li key={index} className="flex items-start">
                     <Check className="h-4 w-4 text-primary mr-2 mt-1" />
                     <span>{feature}</span>
@@ -257,27 +235,29 @@ const SubscriptionDetails = () => {
               <h3 className="text-lg font-medium mb-2">Pricing</h3>
               <div className="space-y-2 text-sm">
                 {isOneTimePackage ? (
+                  // One-time payment pricing display
                   <div className="border-t pt-2 flex justify-between font-medium">
                     <span>One-time payment</span>
-                    <span>₹{packageData.price}</span>
+                    <span>₹{selectedPackage.price}</span>
                   </div>
                 ) : (
+                  // Subscription pricing display
                   <>
                     <div className="flex justify-between">
                       <span>One-time setup fee</span>
-                      <span>₹{packageData.setupFee}</span>
+                      <span>₹{selectedPackage.setupFee}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Annual subscription</span>
-                      <span>₹{packageData.price}</span>
+                      <span>₹{selectedPackage.price}</span>
                     </div>
                     <div className="border-t pt-2 flex justify-between font-medium">
                       <span>Initial payment</span>
-                      <span>₹{packageData.setupFee}</span>
+                      <span>₹{selectedPackage.setupFee}</span>
                     </div>
                     <div className="flex justify-between font-medium">
                       <span>Annual recurring payment</span>
-                      <span>₹{packageData.price}</span>
+                      <span>₹{selectedPackage.price}</span>
                     </div>
                   </>
                 )}
@@ -291,7 +271,7 @@ const SubscriptionDetails = () => {
                   <div>
                     <h4 className="font-medium text-amber-800">One-time Purchase</h4>
                     <p className="text-sm text-amber-700">
-                      This is a one-time purchase valid for {packageData.durationMonths || packageData.duration} months. 
+                      This is a one-time purchase valid for {selectedPackage.durationMonths} months. 
                       You will not be automatically charged again after purchase.
                     </p>
                   </div>

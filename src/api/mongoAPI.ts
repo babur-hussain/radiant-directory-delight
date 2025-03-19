@@ -7,10 +7,10 @@ export const API_BASE_URL = typeof process !== 'undefined' && process.env.NEXT_P
   ? process.env.NEXT_PUBLIC_API_BASE_URL 
   : 'https://gbv-backend.onrender.com/api'; // Updated to use a deployed server instead of localhost
 
-// Create axios instance with reduced timeout
+// Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000, // Reduced timeout to 10 seconds for better user experience
+  timeout: 30000, // Increased timeout for slower connections
   headers: {
     'Content-Type': 'application/json'
   }
@@ -22,27 +22,23 @@ api.interceptors.response.use(
   (error) => {
     // Only log errors and show toast for non-connection issues
     // For connection issues, we'll handle them gracefully in the calling code
-    if (!error.message.includes('Network Error') && 
-        !error.message.includes('Connection refused') && 
-        !error.message.includes('timeout')) {
+    if (!error.message.includes('Network Error') && !error.message.includes('Connection refused')) {
       console.error('API Error:', error.response?.data || error.message);
       toast({
         title: 'API Error',
         description: error.response?.data?.message || error.message || 'Something went wrong',
         variant: 'destructive'
       });
-    } else {
-      console.warn('Connection issue:', error.message);
     }
     return Promise.reject(error);
   }
 );
 
-// Check if the server is running with shorter timeout
+// Check if the server is running
 export const isServerRunning = async () => {
   try {
     console.log(`Checking if server is running at ${API_BASE_URL}/test-connection`);
-    const response = await axios.get(`${API_BASE_URL}/test-connection`, { timeout: 3000 });
+    const response = await axios.get(`${API_BASE_URL}/test-connection`, { timeout: 8000 });
     console.log("Server status check response:", response.data);
     return true;
   } catch (error) {

@@ -19,13 +19,8 @@ const AdminLoginPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Check for default admin email to bypass regular admin checks
-  const isDefaultAdmin = (email: string) => {
-    return email === "baburhussain660@gmail.com";
-  };
-
   useEffect(() => {
-    if (isAuthenticated && (user?.isAdmin || isDefaultAdmin(user?.email || ''))) {
+    if (isAuthenticated && user?.isAdmin) {
       navigate("/admin/dashboard");
     }
   }, [isAuthenticated, user, navigate]);
@@ -38,19 +33,8 @@ const AdminLoginPage = () => {
     try {
       await login(email, password);
       
-      // Check if user is default admin or has admin role
-      if (user?.isAdmin || isDefaultAdmin(email)) {
-        // Apply admin privileges to the default admin if needed
-        if (isDefaultAdmin(email) && !user?.isAdmin) {
-          console.log("Setting default admin privileges for:", email);
-          // The user will be treated as admin in the dashboard
-        }
-        
+      if (user?.isAdmin || email === "baburhussain660@gmail.com") {
         navigate("/admin/dashboard");
-        toast({
-          title: "Login successful",
-          description: "Welcome to the admin dashboard",
-        });
       } else {
         setError("You don't have admin privileges. Please contact an administrator for access.");
         toast({

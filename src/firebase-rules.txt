@@ -15,17 +15,15 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
-    // Check if the current user is an admin - improved with direct email check for default admin
+    // Check if the current user is an admin - improved and more permissive check
     function isAdmin() {
       return isAuthenticated() && (
         // Check admin collection reference
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        // Check isAdmin flag in user document
+        // Check isAdmin flag in user document - more permissive check
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
-        // Check role field
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "Admin" ||
-        // Direct check for default admin email
-        request.auth.token.email == "baburhussain660@gmail.com"
+        // Check role field also
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "Admin"
       );
     }
     

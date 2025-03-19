@@ -14,7 +14,6 @@ export const initializeDefaultAdmin = () => {
   
   // Check if we've already set up the admin
   if (!localStorage.getItem(adminUserKey)) {
-    console.log("Setting up default admin user:", adminEmail);
     // Store admin status for this email
     localStorage.setItem(adminUserKey, 'true');
     
@@ -25,7 +24,6 @@ export const initializeDefaultAdmin = () => {
     if (!adminExists) {
       const adminUser = {
         id: adminEmail.replace(/[.@]/g, '_'),
-        uid: adminEmail.replace(/[.@]/g, '_'), // Ensure uid is also set
         email: adminEmail,
         name: 'Admin User',
         role: 'Admin',
@@ -39,7 +37,6 @@ export const initializeDefaultAdmin = () => {
       // Also save to MongoDB
       try {
         axios.post('http://localhost:3001/api/users', adminUser)
-          .then(() => console.log("Default admin saved to MongoDB"))
           .catch(err => console.error("Could not save admin to MongoDB:", err));
       } catch (error) {
         console.error("Error saving admin to MongoDB:", error);
