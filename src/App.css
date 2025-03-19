@@ -12,8 +12,8 @@ body {
   width: 100%;
 }
 
-/* Header styling to ensure it's visible */
-header.main-header {
+/* Essential header styling with !important to override any conflicting styles */
+.main-header {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
@@ -27,34 +27,39 @@ header.main-header {
   justify-content: space-between !important;
   visibility: visible !important;
   opacity: 1 !important;
-  color: #000000 !important;
 }
 
-/* Make sure all content within the header is visible */
-header.main-header > div,
-header.main-header nav,
-header.main-header a,
-header.main-header button,
-header.main-header span {
+/* Force all header elements to be visible */
+.main-header *,
+.main-header > *,
+.main-header div,
+.main-header nav,
+.main-header a,
+.main-header button,
+.main-header span {
+  visibility: visible !important;
+  opacity: 1 !important;
   display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  z-index: 10000 !important;
+}
+
+/* Ensure text is visible with proper color */
+.main-header span,
+.main-header a,
+.main-header button,
+.main-header div {
   color: #000000 !important;
 }
 
-/* Fix for text inside links and buttons */
-header.main-header a *,
-header.main-header button * {
-  color: #000000 !important;
-  visibility: visible !important;
-  opacity: 1 !important;
+/* Fix for login/register button text */
+.main-header button[variant="default"] span {
+  color: #ffffff !important;
 }
 
-/* Fix z-index and display for menu elements */
-header .mobile-menu {
+/* Fix z-index and display for mobile menu */
+.mobile-menu {
   z-index: 9998 !important;
-  top: 64px !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 /* Main content styling with proper padding */
