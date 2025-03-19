@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect } from 'react';
 import { 
   GoogleAuthProvider, 
@@ -21,7 +20,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [initialized, setInitialized] = useState<boolean>(false);
 
-  // Convert Firebase user to our User type and save to MongoDB
+  const isDefaultAdmin = (email: string | null) => {
+    return email === "baburhussain660@gmail.com";
+  };
+
   const processUser = async (firebaseUser: FirebaseUser | null) => {
     if (!firebaseUser) {
       setUser(null);
@@ -29,66 +31,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      // First, check if user exists in MongoDB
+      const isUserDefaultAdmin = isDefaultAdmin(firebaseUser.email);
+      
       let mongoUser = await fetchUserByUid(firebaseUser.uid);
       
-      // Prepare the user data
       const userData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
         name: firebaseUser.displayName,
         photoURL: firebaseUser.photoURL,
-        lastLogin: new Date()
+        lastLogin: new Date(),
+        isAdmin: isUserDefaultAdmin ? true : undefined,
+        role: isUserDefaultAdmin ? "Admin" as UserRole : undefined
       };
       
-      // If user doesn't exist, create a new one
       if (!mongoUser) {
         console.log("Creating new user in MongoDB");
         try {
           mongoUser = await createOrUpdateUser({
             ...userData,
-            role: "User" as UserRole, // Cast as UserRole to satisfy type constraint
-            isAdmin: false,
+            role: isUserDefaultAdmin ? "Admin" as UserRole : "User" as UserRole,
+            isAdmin: isUserDefaultAdmin ? true : false,
             createdAt: new Date()
           });
         } catch (error) {
           console.error("Error creating user in MongoDB:", error);
-          // Use a default user object if MongoDB is unavailable
           mongoUser = {
             uid: firebaseUser.uid,
-            role: "User" as UserRole,
-            isAdmin: false
+            role: isUserDefaultAdmin ? "Admin" as UserRole : "User" as UserRole,
+            isAdmin: isUserDefaultAdmin ? true : false
           };
         }
+      } else if (isUserDefaultAdmin && (!mongoUser.isAdmin || mongoUser.role !== "Admin")) {
+        console.log("Updating default admin privileges in MongoDB");
+        try {
+          mongoUser = await createOrUpdateUser({
+            ...mongoUser,
+            role: "Admin" as UserRole,
+            isAdmin: true
+          });
+        } catch (error) {
+          console.error("Error updating default admin privileges:", error);
+        }
       } else {
-        // Just update the last login time
         try {
           await updateUserLoginTimestamp(firebaseUser.uid);
         } catch (error) {
           console.error("Error updating login timestamp:", error);
-          // Continue anyway - non-critical operation
         }
       }
       
-      // Set the user in the context with proper type casting
       setUser({
         uid: firebaseUser.uid,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName,
         photoURL: firebaseUser.photoURL,
-        isAdmin: mongoUser.isAdmin || false,
-        role: (mongoUser.role as UserRole) || 'User' as UserRole
+        isAdmin: isUserDefaultAdmin ? true : (mongoUser.isAdmin || false),
+        role: isUserDefaultAdmin ? 'Admin' as UserRole : ((mongoUser.role as UserRole) || 'User' as UserRole)
       });
     } catch (error) {
       console.error("Error processing user:", error);
-      // Still set the basic user info even if MongoDB operations fail
+      const isUserDefaultAdmin = isDefaultAdmin(firebaseUser.email);
+      
       setUser({
         uid: firebaseUser.uid,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName,
         photoURL: firebaseUser.photoURL,
-        isAdmin: false,
-        role: 'User' as UserRole
+        isAdmin: isUserDefaultAdmin ? true : false,
+        role: isUserDefaultAdmin ? 'Admin' as UserRole : 'User' as UserRole
       });
     }
   };
@@ -107,7 +118,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    // Set a timeout to ensure we mark as initialized even if Firebase auth is slow
     const initTimeout = setTimeout(() => {
       if (!initialized) {
         console.log("Auth initialization timeout reached, marking as initialized");
@@ -128,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await processUser(result.user);
     } catch (error) {
       console.error("Google sign-in error:", error);
-      throw error; // Re-throw to allow handling in UI components
+      throw error;
     }
   };
 
@@ -142,25 +152,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Implement email/password login
   const login = async (email: string, password: string): Promise<void> => {
     try {
-      // Validate input
       if (!email || !password) {
         throw new Error("Email and password are required");
       }
       
-      // Sign in with Firebase
+      const isUserDefaultAdmin = isDefaultAdmin(email);
+      
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // Process the user data
       await processUser(userCredential.user);
       
       console.log("Email/password login successful");
+      
+      if (isUserDefaultAdmin) {
+        const adminUserKey = `user_admin_${email.replace(/[.@]/g, '_')}`;
+        localStorage.setItem(adminUserKey, 'true');
+        
+        initializeDefaultAdmin();
+      }
     } catch (error: any) {
       console.error("Email/password login error:", error);
       
-      // Provide more user-friendly error messages
       if (error.code === 'auth/user-not-found') {
         throw new Error("User not found. Please check your email or register a new account.");
       } else if (error.code === 'auth/wrong-password') {
@@ -170,24 +184,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (error.code === 'auth/too-many-requests') {
         throw new Error("Too many failed login attempts. Please try again later.");
       } else {
-        throw error; // Re-throw the original error if it's not one we can provide a better message for
+        throw error;
       }
     }
   };
 
-  // Implement signup with email/password
   const signup = async (email: string, password: string, name: string, role: UserRole, additionalData?: any): Promise<User> => {
     try {
-      // Validate input
       if (!email || !password) {
         throw new Error("Email and password are required");
       }
       
-      // Create user with Firebase
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
       
-      // Create user data object
       const userData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
@@ -200,20 +210,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...additionalData
       };
       
-      // Save to MongoDB
       try {
         await createOrUpdateUser(userData);
       } catch (error) {
         console.error("Error saving user to MongoDB:", error);
-        // Continue anyway - Firebase auth is established
       }
       
-      // Process the user to update the context
       await processUser(firebaseUser);
       
       console.log("Signup successful");
       
-      // Return the newly created user
       return {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
@@ -225,7 +231,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error("Signup error:", error);
       
-      // Provide more user-friendly error messages
       if (error.code === 'auth/email-already-in-use') {
         throw new Error("Email already in use. Please log in or use a different email.");
       } else if (error.code === 'auth/invalid-email') {
@@ -244,14 +249,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     try {
-      // Update in MongoDB
       await createOrUpdateUser({
         uid: user.uid,
         role,
         isAdmin: role === "Admin"
       });
       
-      // Update local state
       setUser({
         ...user,
         role,

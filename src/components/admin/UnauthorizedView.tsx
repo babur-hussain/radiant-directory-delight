@@ -9,6 +9,11 @@ const UnauthorizedView: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   
+  // Check for default admin email
+  const isDefaultAdmin = (email: string | null) => {
+    return email === "baburhussain660@gmail.com";
+  };
+  
   return (
     <div className="container mx-auto px-4 py-10">
       <Card>
@@ -25,7 +30,11 @@ const UnauthorizedView: React.FC = () => {
             <>
               <p className="mb-4">
                 You are logged in as <strong>{user?.email}</strong> with role <strong>{user?.role || "not set"}</strong>,
-                but you need admin privileges to access this page.
+                {isDefaultAdmin(user?.email) ? (
+                  <span className="text-green-600 font-medium"> (Default Admin)</span>
+                ) : (
+                  <span> but you need admin privileges to access this page.</span>
+                )}
               </p>
               <Button onClick={() => navigate("/admin")} className="mr-2">
                 Go to Admin Login

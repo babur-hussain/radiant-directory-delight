@@ -12,6 +12,11 @@ const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [permissionError, setPermissionError] = useState<any>(null);
 
+  // Check for default admin email
+  const isDefaultAdmin = (email: string | null) => {
+    return email === "baburhussain660@gmail.com";
+  };
+
   useEffect(() => {
     if (initialized && !isAuthenticated) {
       navigate('/admin');
@@ -22,7 +27,8 @@ const AdminDashboardPage: React.FC = () => {
     return <div>Loading...</div>;
   }
 
-  if (!isAuthenticated || !user?.isAdmin) {
+  // Allow both regular admins and the default admin email
+  if (!isAuthenticated || (!user?.isAdmin && !isDefaultAdmin(user?.email))) {
     return <UnauthorizedView />;
   }
 
