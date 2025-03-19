@@ -114,7 +114,7 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback): Promise
 // Auto-initialize MongoDB when needed - simplified version for client
 export const autoInitMongoDB = async (): Promise<boolean> => {
   try {
-    // Check if server is running first
+    // Check if server is running first with a short timeout
     const serverAvailable = await isServerRunning();
     if (!serverAvailable) {
       console.log("Server is not available, skipping auto-initialization");

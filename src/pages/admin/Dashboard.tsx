@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import SubscriptionPackageManagement from '../../components/admin/subscription/SubscriptionManagement';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Database, ServerOff } from 'lucide-react';
 import { autoInitMongoDB } from '@/utils/setupMongoDB';
 import { Button } from '@/components/ui/button';
 
@@ -19,6 +19,7 @@ const Dashboard = () => {
     const initMongoDB = async () => {
       try {
         setIsInitializing(true);
+        // Use a short timeout to quickly determine server availability
         const result = await autoInitMongoDB();
         if (!result) {
           setIsMongoDBError(true);
@@ -38,7 +39,19 @@ const Dashboard = () => {
       }
     };
 
+    // Set a timeout to prevent indefinite loading if connection takes too long
+    const timeoutId = setTimeout(() => {
+      if (isInitializing) {
+        setIsMongoDBError(true);
+        setErrorMessage("Connection timeout. Using local fallback data.");
+        setConnectionStatus('offline');
+        setIsInitializing(false);
+      }
+    }, 5000); // 5 second timeout
+
     initMongoDB();
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const handlePermissionError = (error: any) => {
@@ -79,10 +92,18 @@ const Dashboard = () => {
   };
 
   return (
-    <div>
-      {isMongoDBError && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertCircle className="h-4 w-4" />
+    <div className="space-y-4">
+      {isInitializing ? (
+        <Alert className="bg-blue-50 border-blue-200">
+          <Database className="h-4 w-4 animate-pulse text-blue-500" />
+          <AlertTitle>Connecting to Database</AlertTitle>
+          <AlertDescription>
+            Attempting to connect to MongoDB...
+          </AlertDescription>
+        </Alert>
+      ) : isMongoDBError ? (
+        <Alert variant="destructive">
+          <ServerOff className="h-4 w-4" />
           <AlertTitle>Database Connection Error</AlertTitle>
           <AlertDescription className="flex flex-col gap-2">
             {errorMessage || "Could not connect to MongoDB. Using local fallback data."}
@@ -100,6 +121,14 @@ const Dashboard = () => {
               )}
               {isInitializing ? "Connecting..." : "Retry Connection"}
             </Button>
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <Alert className="bg-green-50 border-green-200">
+          <Database className="h-4 w-4 text-green-500" />
+          <AlertTitle>Connected to Database</AlertTitle>
+          <AlertDescription>
+            Successfully connected to MongoDB.
           </AlertDescription>
         </Alert>
       )}
