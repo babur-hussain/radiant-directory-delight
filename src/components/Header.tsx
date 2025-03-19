@@ -82,9 +82,8 @@ const Header = () => {
     return true; // Simplified for debugging
   };
 
-  // Don't render a null header when auth isn't initialized - render a simple header instead
+  // Simple header when auth isn't initialized
   if (!initialized) {
-    console.log("Auth not initialized yet - rendering simple header"); // Debug log
     return (
       <header className="main-header">
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
@@ -121,16 +120,16 @@ const Header = () => {
 
         <nav className="hidden md:flex items-center space-x-8">
           <Link to="/" className="text-sm font-medium hover:text-primary transition-smooth">
-            <span>Home</span>
+            Home
           </Link>
           <Link to="/categories" className="text-sm font-medium hover:text-primary transition-smooth">
-            <span>Categories</span>
+            Categories
           </Link>
           <Link to="/businesses" className="text-sm font-medium hover:text-primary transition-smooth">
-            <span>Businesses</span>
+            Businesses
           </Link>
           <Link to="/about" className="text-sm font-medium hover:text-primary transition-smooth">
-            <span>About</span>
+            About
           </Link>
         </nav>
 
@@ -143,7 +142,7 @@ const Header = () => {
               onClick={handleDashboardClick}
             >
               <LayoutDashboard className="h-4 w-4 mr-2" />
-              <span>Dashboard</span>
+              Dashboard
             </Button>
           )}
           
@@ -159,7 +158,7 @@ const Header = () => {
               onClick={() => setIsAuthModalOpen(true)} 
             >
               <LogIn className="h-4 w-4 mr-2" />
-              <span>Login / Register</span>
+              Login / Register
             </Button>
           )}
         </div>
@@ -177,20 +176,20 @@ const Header = () => {
       </div>
 
       <div 
-        className={`mobile-menu md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-sm transition-all duration-300 overflow-hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`}
+        className={`mobile-menu md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-sm ${isMobileMenuOpen ? 'block' : 'hidden'}`}
       >
         <div className="container max-w-7xl mx-auto px-4 py-4 flex flex-col space-y-4">
           <Link to="/" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
-            <span>Home</span>
+            Home
           </Link>
           <Link to="/categories" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
-            <span>Categories</span>
+            Categories
           </Link>
           <Link to="/businesses" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
-            <span>Businesses</span>
+            Businesses
           </Link>
           <Link to="/about" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
-            <span>About</span>
+            About
           </Link>
           <div className="pt-2 flex flex-col space-y-3">
             {shouldShowDashboard() && (
@@ -200,7 +199,7 @@ const Header = () => {
                 onClick={handleDashboardClick}
               >
                 <LayoutDashboard className="h-4 w-4 mr-2" />
-                <span>Dashboard</span>
+                Dashboard
               </Button>
             )}
             
@@ -211,7 +210,7 @@ const Header = () => {
                 onClick={handleMobileLogout}
               >
                 <LogIn className="h-4 w-4 mr-2" />
-                <span>Logout</span>
+                Logout
               </Button>
             ) : (
               <Button 
@@ -223,7 +222,7 @@ const Header = () => {
                 }}
               >
                 <LogIn className="h-4 w-4 mr-2" />
-                <span>Login / Register</span>
+                Login / Register
               </Button>
             )}
           </div>

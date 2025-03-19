@@ -1,4 +1,3 @@
-
 #root {
   width: 100%;
   min-height: 100vh;
@@ -12,7 +11,7 @@ body {
   width: 100%;
 }
 
-/* Essential header styling with !important to override any conflicting styles */
+/* Reset header styles */
 .main-header {
   position: fixed !important;
   top: 0 !important;
@@ -25,47 +24,74 @@ body {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  visibility: visible !important;
-  opacity: 1 !important;
 }
 
-/* Force all header elements to be visible */
-.main-header *,
-.main-header > *,
-.main-header div,
-.main-header nav,
-.main-header a,
-.main-header button,
-.main-header span {
-  visibility: visible !important;
-  opacity: 1 !important;
+/* Hide redundant link display in mobile menu when it's not open */
+.main-header > .container > nav > a {
   display: flex !important;
 }
 
-/* Ensure text is visible with proper color */
-.main-header span,
-.main-header a,
-.main-header button,
-.main-header div {
-  color: #000000 !important;
+.main-header > .container > .flex {
+  display: flex !important;
 }
 
-/* Fix for login/register button text */
-.main-header button[variant="default"] span {
-  color: #ffffff !important;
+/* Only show mobile menu when it's actually open */
+.mobile-menu.hidden {
+  display: none !important;
 }
 
-/* Fix z-index and display for mobile menu */
+.mobile-menu:not(.hidden) {
+  display: block !important;
+}
+
+/* Fix mobile menu display */
 .mobile-menu {
+  position: absolute !important;
+  top: 64px !important; /* Header height */
+  width: 100% !important;
   z-index: 9998 !important;
-  visibility: visible !important;
-  opacity: 1 !important;
+  background-color: white !important;
 }
 
-/* Main content styling with proper padding */
+/* Fix container styling */
+.main-header .container {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Fix navigation links display */
+.main-header nav {
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Main content padding */
 main {
   width: 100%;
-  padding-top: 64px; /* Add padding to account for fixed header height */
+  padding-top: 64px; /* Match header height */
+}
+
+/* Fix link colors */
+.main-header a, 
+.main-header button,
+.main-header .font-bold {
+  color: #000000 !important;
+  text-decoration: none !important;
+}
+
+/* Fix button display in header */
+.main-header button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Fix for user menu dropdown */
+.radix-dropdown-menu-content {
+  z-index: 10000 !important;
 }
 
 /* Layout specific styles */
