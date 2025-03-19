@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -28,8 +27,6 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  console.log("App component rendering");
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -37,7 +34,7 @@ const App = () => {
           <AuthProvider>
             <div className="relative min-h-screen bg-background">
               <Header />
-              <main className="pt-16"> {/* Fixed padding for header space */}
+              <main>
                 <Suspense fallback={
                   <div className="flex items-center justify-center min-h-[80vh]">
                     <Loading size="lg" message="Loading content..." />

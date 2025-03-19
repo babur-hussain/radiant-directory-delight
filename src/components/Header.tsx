@@ -9,12 +9,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 
 const Header = () => {
-  console.log("Header component rendering start"); // Debug log
-
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const navigate = useNavigate();
   
   // Get auth context with safe defaults
@@ -27,43 +23,24 @@ const Header = () => {
   const isAuthenticated = !!currentUser;
   const user = currentUser;
   
-  const { getUserSubscription } = useSubscription();
-  
-  useEffect(() => {
-    console.log("Header useEffect for subscription");
-    const fetchSubscription = async () => {
-      if (user?.uid) {
-        try {
-          const subscription = await getUserSubscription();
-          console.log("Fetched subscription:", subscription);
-          setSubscriptionStatus(subscription?.status || null);
-        } catch (error) {
-          console.error("Failed to fetch subscription:", error);
-          setSubscriptionStatus(null);
-        }
-      } else {
-        setSubscriptionStatus(null);
-      }
-    };
-    
-    if (initialized) {
-      fetchSubscription();
-    }
-  }, [getUserSubscription, user?.uid, initialized]);
-  
-  useEffect(() => {
-    console.log("Header useEffect for scroll");
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const handleMobileLogout = async () => {
-    await logout();
-    setIsMobileMenuOpen(false);
-  };
+  // Simple header when auth isn't initialized
+  if (!initialized) {
+    return (
+      <header className="main-header">
+        <div className="container">
+          <div className="logo-container">
+            <Link to="/" className="logo-text">
+              Grow Bharat Vyapaar
+            </Link>
+          </div>
+          
+          <div className="actions">
+            <span className="text-sm">Loading...</span>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   const handleDashboardClick = () => {
     if (!isAuthenticated || !user) return;
@@ -79,66 +56,34 @@ const Header = () => {
 
   const shouldShowDashboard = () => {
     if (!isAuthenticated || !user) return false;
-    return true; // Simplified for debugging
+    return true;
   };
-
-  // Simple header when auth isn't initialized
-  if (!initialized) {
-    return (
-      <header className="main-header">
-        <div className="container max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2">
-            <span className="font-bold text-2xl">
-              Grow Bharat Vyapaar
-            </span>
-          </Link>
-          
-          <div className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-sm font-medium hover:text-primary transition-smooth">
-              <span>Home</span>
-            </Link>
-          </div>
-          
-          <div className="flex items-center">
-            <span className="text-sm">Loading...</span>
-          </div>
-        </div>
-      </header>
-    );
-  }
-
-  console.log("Header fully rendered"); // Debug log
 
   return (
     <header className="main-header">
-      <div className="container max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
-        <Link to="/" className="flex items-center space-x-2">
-          <span className="font-bold text-2xl">
+      <div className="container">
+        {/* Logo */}
+        <div className="logo-container">
+          <Link to="/" className="logo-text">
             Grow Bharat Vyapaar
-          </span>
-        </Link>
+          </Link>
+        </div>
 
-        <nav className="hidden md:flex items-center space-x-8">
-          <Link to="/" className="text-sm font-medium hover:text-primary transition-smooth">
-            Home
-          </Link>
-          <Link to="/categories" className="text-sm font-medium hover:text-primary transition-smooth">
-            Categories
-          </Link>
-          <Link to="/businesses" className="text-sm font-medium hover:text-primary transition-smooth">
-            Businesses
-          </Link>
-          <Link to="/about" className="text-sm font-medium hover:text-primary transition-smooth">
-            About
-          </Link>
+        {/* Navigation */}
+        <nav>
+          <Link to="/">Home</Link>
+          <Link to="/categories">Categories</Link>
+          <Link to="/businesses">Businesses</Link>
+          <Link to="/about">About</Link>
         </nav>
 
-        <div className="hidden md:flex items-center space-x-4">
+        {/* Actions */}
+        <div className="actions">
           {shouldShowDashboard() && (
             <Button 
               variant="outline" 
               size="sm" 
-              className="rounded-full transition-smooth" 
+              className="rounded-full"
               onClick={handleDashboardClick}
             >
               <LayoutDashboard className="h-4 w-4 mr-2" />
@@ -147,14 +92,12 @@ const Header = () => {
           )}
           
           {isAuthenticated ? (
-            <div>
-              <UserMenu />
-            </div>
+            <UserMenu />
           ) : (
             <Button 
               variant="default" 
               size="sm" 
-              className="rounded-full transition-smooth" 
+              className="rounded-full" 
               onClick={() => setIsAuthModalOpen(true)} 
             >
               <LogIn className="h-4 w-4 mr-2" />
@@ -163,8 +106,9 @@ const Header = () => {
           )}
         </div>
 
+        {/* Mobile Menu Button */}
         <button 
-          className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-smooth"
+          className="mobile-menu-button p-2 rounded-md text-gray-600 hover:text-gray-900"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? (
@@ -175,58 +119,46 @@ const Header = () => {
         </button>
       </div>
 
-      <div 
-        className={`mobile-menu md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-sm ${isMobileMenuOpen ? 'block' : 'hidden'}`}
-      >
-        <div className="container max-w-7xl mx-auto px-4 py-4 flex flex-col space-y-4">
-          <Link to="/" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
-            Home
-          </Link>
-          <Link to="/categories" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
-            Categories
-          </Link>
-          <Link to="/businesses" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
-            Businesses
-          </Link>
-          <Link to="/about" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
-            About
-          </Link>
-          <div className="pt-2 flex flex-col space-y-3">
-            {shouldShowDashboard() && (
-              <Button 
-                variant="outline" 
-                className="justify-start rounded-full w-full transition-smooth" 
-                onClick={handleDashboardClick}
-              >
-                <LayoutDashboard className="h-4 w-4 mr-2" />
-                Dashboard
-              </Button>
-            )}
-            
-            {isAuthenticated ? (
-              <Button 
-                variant="default" 
-                className="justify-start rounded-full w-full transition-smooth" 
-                onClick={handleMobileLogout}
-              >
-                <LogIn className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            ) : (
-              <Button 
-                variant="default" 
-                className="justify-start rounded-full w-full transition-smooth" 
-                onClick={() => {
-                  setIsAuthModalOpen(true);
-                  setIsMobileMenuOpen(false);
-                }}
-              >
-                <LogIn className="h-4 w-4 mr-2" />
-                Login / Register
-              </Button>
-            )}
-          </div>
-        </div>
+      {/* Mobile Menu */}
+      <div className={`mobile-menu ${isMobileMenuOpen ? 'visible' : ''}`}>
+        <Link to="/">Home</Link>
+        <Link to="/categories">Categories</Link>
+        <Link to="/businesses">Businesses</Link>
+        <Link to="/about">About</Link>
+        
+        {shouldShowDashboard() && (
+          <Button 
+            variant="outline" 
+            className="justify-start w-full mt-4" 
+            onClick={handleDashboardClick}
+          >
+            <LayoutDashboard className="h-4 w-4 mr-2" />
+            Dashboard
+          </Button>
+        )}
+        
+        {isAuthenticated ? (
+          <Button 
+            variant="default" 
+            className="justify-start w-full mt-2" 
+            onClick={logout}
+          >
+            <LogIn className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
+        ) : (
+          <Button 
+            variant="default" 
+            className="justify-start w-full mt-2" 
+            onClick={() => {
+              setIsAuthModalOpen(true);
+              setIsMobileMenuOpen(false);
+            }}
+          >
+            <LogIn className="h-4 w-4 mr-2" />
+            Login / Register
+          </Button>
+        )}
       </div>
 
       <AuthModal isOpen={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
