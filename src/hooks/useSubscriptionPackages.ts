@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 
-interface UseSubscriptionPackagesOptions {
+export interface UseSubscriptionPackagesOptions {
   initialOfflineMode?: boolean;
 }
 

@@ -23,7 +23,7 @@ api.interceptors.response.use(
     // Only log errors and show toast for non-connection issues
     // For connection issues, we'll handle them gracefully in the calling code
     if (!error.message.includes('Network Error') && !error.message.includes('Connection refused') && 
-        !error.message.includes('timeout') && !error.code === 'ECONNABORTED') {
+        !error.message.includes('timeout') && error.code !== 'ECONNABORTED') {
       console.error('API Error:', error.response?.data || error.message);
       toast({
         title: 'API Error',
