@@ -388,7 +388,10 @@ const Dashboard = () => {
                   description: String(error),
                   variant: "destructive"
                 });
-              }} 
+              }}
+              dbInitialized={dbStatus?.success || false}
+              connectionStatus={connectionError ? 'error' : 'connected'}
+              onRetryConnection={handleRetryInitialization}
             />
           </TabsContent>
           

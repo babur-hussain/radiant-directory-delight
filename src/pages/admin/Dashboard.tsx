@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -383,7 +382,10 @@ const Dashboard = () => {
                   description: String(error),
                   variant: "destructive"
                 });
-              }} 
+              }}
+              dbInitialized={dbStatus?.success || false}
+              connectionStatus={connectionError ? 'error' : 'connected'}
+              onRetryConnection={handleRetryInitialization}
             />
           </TabsContent>
           

@@ -17,8 +17,13 @@ export interface ISubscriptionPackage {
   paymentType: "recurring" | "one-time";
   billingCycle?: "monthly" | "yearly";
   advancePaymentMonths?: number;
-  // New fields for dashboard customization
   dashboardSections?: string[];
+  // Add missing properties
+  isActive?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+  maxBusinesses?: number;
+  maxInfluencers?: number;
 }
 
 // Create a schema using the mongoose mock
