@@ -39,7 +39,7 @@ const mongoose = {
   connection: {
     readyState: 0, // Disconnected by default
     host: 'localhost',
-    name: 'mockdb'
+    name: 'test' // Set database name to 'test' as requested
   },
   connect: () => {
     mongoose.connection.readyState = 1; // Set to connected
@@ -125,6 +125,30 @@ function createModelMock(name: string) {
     
     // Add document methods explicitly
     this.save = function() {
+      // Store the data in localStorage for persistence
+      const collectionKey = `mongodb_${name}`;
+      try {
+        const collection = JSON.parse(localStorage.getItem(collectionKey) || '[]');
+        // Check if item exists by id or uid
+        const idField = data.id || data.uid;
+        const index = collection.findIndex((item: any) => 
+          (item.id && item.id === idField) || (item.uid && item.uid === idField)
+        );
+        
+        if (index >= 0) {
+          // Update existing item
+          collection[index] = { ...collection[index], ...data };
+        } else {
+          // Add new item
+          collection.push(data);
+        }
+        
+        localStorage.setItem(collectionKey, JSON.stringify(collection));
+        console.log(`Saved document to ${name} collection:`, data);
+      } catch (error) {
+        console.error(`Error saving to ${name} collection:`, error);
+      }
+      
       return Promise.resolve(this);
     };
     
@@ -145,21 +169,51 @@ function createModelMock(name: string) {
   return Constructor;
 }
 
-// Set a connection string with environment variable support - handle the browser case
-const MONGODB_URI = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_MONGODB_URI 
-  ? process.env.NEXT_PUBLIC_MONGODB_URI 
-  : 'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+// Set connection string for MongoDB Atlas cluster
+const MONGODB_URI = 'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/test?retryWrites=true&w=majority&appName=Cluster0';
 
-// Track connection state
 let isConnected = false;
 
-// Connect to MongoDB with browser-safe implementation
+// Connect to MongoDB with better error handling
 export const connectToMongoDB = async () => {
-  console.log('MongoDB connection requested, but running in browser');
-  // For browser environment, we just simulate success
-  isConnected = true;
-  mongoose.connection.readyState = 1; // Set to connected
-  return true;
+  if (isConnected) {
+    console.log('Already connected to MongoDB');
+    return true;
+  }
+
+  try {
+    // In browser environment, simulate connection and use localStorage
+    console.log('Connecting to MongoDB (simulated in browser)');
+    isConnected = true;
+    mongoose.connection.readyState = 1;
+
+    // Initialize default admin user if not exists
+    const userCollection = JSON.parse(localStorage.getItem('mongodb_User') || '[]');
+    const adminExists = userCollection.some((user: any) => 
+      user.email === 'baburhussain660@gmail.com' && user.isAdmin
+    );
+
+    if (!adminExists) {
+      const adminUser = {
+        uid: 'admin_' + Date.now(),
+        email: 'baburhussain660@gmail.com',
+        name: 'Admin User',
+        role: 'Admin',
+        isAdmin: true,
+        createdAt: new Date(),
+        lastLogin: new Date()
+      };
+
+      userCollection.push(adminUser);
+      localStorage.setItem('mongodb_User', JSON.stringify(userCollection));
+      console.log('Default admin user created:', adminUser);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error connecting to MongoDB:', error);
+    return false;
+  }
 };
 
 // Check if MongoDB is connected

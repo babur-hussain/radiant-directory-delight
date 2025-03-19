@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect } from 'react';
 import { 
   GoogleAuthProvider, 
@@ -31,49 +30,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      // Force connection to MongoDB before proceeding
+      // await connectToMongoDB();
+
+      // Check if user is the default admin
+      const isDefaultAdmin = firebaseUser.email === 'baburhussain660@gmail.com';
+
       // Create or update user in MongoDB with all profile fields
-      const mongoUser = await createUserIfNotExists(firebaseUser, additionalFields);
-      
-      // Set the user in the context with proper type casting and all available fields
-      setUser({
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName,
-        photoURL: firebaseUser.photoURL,
-        isAdmin: mongoUser?.isAdmin || false,
-        role: (mongoUser?.role as UserRole) || 'User' as UserRole,
-        employeeCode: mongoUser?.employeeCode || additionalFields?.employeeCode || null,
-        // Include additional fields
-        name: mongoUser?.name || firebaseUser.displayName,
-        phone: mongoUser?.phone || additionalFields?.phone,
-        instagramHandle: mongoUser?.instagramHandle || additionalFields?.instagramHandle,
-        facebookHandle: mongoUser?.facebookHandle || additionalFields?.facebookHandle,
-        niche: mongoUser?.niche || additionalFields?.niche,
-        followersCount: mongoUser?.followersCount || additionalFields?.followersCount,
-        bio: mongoUser?.bio || additionalFields?.bio,
-        businessName: mongoUser?.businessName || additionalFields?.businessName,
-        ownerName: mongoUser?.ownerName || additionalFields?.ownerName,
-        businessCategory: mongoUser?.businessCategory || additionalFields?.businessCategory,
-        website: mongoUser?.website || additionalFields?.website,
-        gstNumber: mongoUser?.gstNumber || additionalFields?.gstNumber,
-        city: mongoUser?.city || additionalFields?.city,
-        country: mongoUser?.country || additionalFields?.country,
-        verified: mongoUser?.verified || additionalFields?.verified || false,
-        // Subscription-related fields
-        subscription: mongoUser?.subscription,
-        subscriptionStatus: mongoUser?.subscriptionStatus,
-        subscriptionPackage: mongoUser?.subscriptionPackage,
+      const mongoUser = await createUserIfNotExists(firebaseUser, {
+        ...additionalFields,
+        isAdmin: isDefaultAdmin || additionalFields?.isAdmin,
+        role: isDefaultAdmin ? 'Admin' : (additionalFields?.role || 'User')
       });
+      
+      if (mongoUser) {
+        // Set the user in the context with proper type casting and all available fields
+        setUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+          isAdmin: isDefaultAdmin || mongoUser.isAdmin,
+          role: (mongoUser.role as UserRole) || (isDefaultAdmin ? 'Admin' : 'User'),
+          employeeCode: mongoUser?.employeeCode || additionalFields?.employeeCode || null,
+          // Include additional fields
+          name: mongoUser?.name || firebaseUser.displayName,
+          phone: mongoUser?.phone || additionalFields?.phone,
+          instagramHandle: mongoUser?.instagramHandle || additionalFields?.instagramHandle,
+          facebookHandle: mongoUser?.facebookHandle || additionalFields?.facebookHandle,
+          niche: mongoUser?.niche || additionalFields?.niche,
+          followersCount: mongoUser?.followersCount || additionalFields?.followersCount,
+          bio: mongoUser?.bio || additionalFields?.bio,
+          businessName: mongoUser?.businessName || additionalFields?.businessName,
+          ownerName: mongoUser?.ownerName || additionalFields?.ownerName,
+          businessCategory: mongoUser?.businessCategory || additionalFields?.businessCategory,
+          website: mongoUser?.website || additionalFields?.website,
+          gstNumber: mongoUser?.gstNumber || additionalFields?.gstNumber,
+          city: mongoUser?.city || additionalFields?.city,
+          country: mongoUser?.country || additionalFields?.country,
+          verified: mongoUser?.verified || additionalFields?.verified || false,
+          // Subscription-related fields
+          subscription: mongoUser?.subscription,
+          subscriptionStatus: mongoUser?.subscriptionStatus,
+          subscriptionPackage: mongoUser?.subscriptionPackage,
+        });
+
+        // Update login timestamp
+        await updateUserLoginTimestamp(firebaseUser.uid);
+      }
     } catch (error) {
       console.error("Error processing user:", error);
-      // Still set the basic user info even if MongoDB operations fail
+      // Still set basic user info even if MongoDB operations fail
       setUser({
         uid: firebaseUser.uid,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName,
         photoURL: firebaseUser.photoURL,
-        isAdmin: false,
-        role: additionalFields?.role || 'User' as UserRole,
+        isAdmin: firebaseUser.email === 'baburhussain660@gmail.com',
+        role: firebaseUser.email === 'baburhussain660@gmail.com' ? 'Admin' : 'User',
         employeeCode: additionalFields?.employeeCode || null,
         // Add any additional fields we have
         ...(additionalFields || {})
