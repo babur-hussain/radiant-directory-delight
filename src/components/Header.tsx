@@ -45,12 +45,12 @@ const Header = () => {
     if (!isAuthenticated || !user) return;
     
     // Navigate to the appropriate dashboard based on user role
-    if (user.role === "Business") {
-      navigate("/dashboard/business");
+    if (user.role === "Admin" || user.isAdmin) {
+      navigate("/admin/dashboard");
     } else if (user.role === "Influencer") {
       navigate("/dashboard/influencer");
-    } else if (user.role === "Admin" || user.isAdmin) {
-      navigate("/admin/dashboard");
+    } else if (user.role === "Business") {
+      navigate("/dashboard/business");
     } else {
       // Default fallback for users with unspecified roles
       navigate("/profile");
