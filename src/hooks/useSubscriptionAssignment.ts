@@ -92,7 +92,9 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
         assignedAt: new Date().toISOString(),
         isPausable: !isOneTime,
         isUserCancellable: !isOneTime,
-        paymentType: isOneTime ? "one-time" : "recurring"
+        paymentType: isOneTime ? "one-time" : "recurring",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
       
       // Assign subscription
@@ -161,7 +163,9 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
         ...userCurrentSubscription,
         status: "cancelled",
         cancelledAt: new Date().toISOString(),
-        cancelReason: "admin_cancelled"
+        cancelReason: "admin_cancelled",
+        createdAt: userCurrentSubscription.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
       
       const success = await updateUserSubscription(targetUser.id || targetUser.uid, updatedSubscription);

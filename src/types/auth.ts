@@ -19,7 +19,17 @@ export interface UserSubscription {
   cancelledAt?: string;
   cancelReason?: string;
   paymentType?: "recurring" | "one-time";
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
   [key: string]: any; // Allow additional properties
+}
+
+// Function to check if a subscription is a UserSubscription object
+export function isUserSubscription(subscription: any): subscription is UserSubscription {
+  return subscription && 
+         typeof subscription === 'object' && 
+         'packageId' in subscription && 
+         'status' in subscription;
 }
 
 // Extended User interface
@@ -54,6 +64,7 @@ export interface User {
   country?: string;
   
   // Influencer specific fields
+  fullName?: string;
   niche?: string;
   followersCount?: string;
   bio?: string;

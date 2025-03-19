@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,28 +13,74 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import RegisterTypeSelector from "./RegisterTypeSelector";
 import { UserRole } from "@/types/auth";
 import { useToast } from "@/hooks/use-toast";
-import { MailCheck, Loader2, IdCard } from "lucide-react";
+import { MailCheck, Loader2, IdCard, MapPin, Briefcase, User, Instagram, Facebook, Phone } from "lucide-react";
 import SocialLoginButtons from "./SocialLoginButtons";
 
-const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
+// Create a base schema with common fields
+const baseSchema = {
   email: z.string().email("Please enter a valid email address"),
   password: z
     .string()
     .min(6, "Password must be at least 6 characters")
     .max(50, "Password must be at most 50 characters"),
   confirmPassword: z.string(),
+  phone: z.string().min(10, "Please enter a valid phone number"),
   employeeCode: z.string().optional(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
+};
+
+// Role-specific schemas
+const userSchema = z.object({
+  ...baseSchema,
+  name: z.string().min(2, "Name must be at least 2 characters"),
 });
 
-type FormData = z.infer<typeof formSchema>;
+const influencerSchema = z.object({
+  ...baseSchema,
+  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  instagramHandle: z.string().optional(),
+  facebookHandle: z.string().optional(),
+  niche: z.string().min(2, "Please select a niche"),
+  followersCount: z.string().min(1, "Please enter your followers count"),
+  country: z.string().min(2, "Please select your country"),
+  city: z.string().min(2, "Please enter your city"),
+  bio: z.string().optional(),
+});
+
+const businessSchema = z.object({
+  ...baseSchema,
+  businessName: z.string().min(2, "Business name must be at least 2 characters"),
+  ownerName: z.string().min(2, "Owner name must be at least 2 characters"),
+  businessCategory: z.string().min(2, "Please select a business category"),
+  website: z.string().optional(),
+  instagramHandle: z.string().optional(),
+  facebookHandle: z.string().optional(),
+  street: z.string().optional(),
+  city: z.string().min(2, "Please enter your city"),
+  state: z.string().optional(),
+  country: z.string().min(2, "Please select your country"),
+  zipCode: z.string().optional(),
+  gstNumber: z.string().optional(),
+});
+
+// Function to select the appropriate schema based on user role
+const getSchemaForRole = (role: UserRole) => {
+  switch (role) {
+    case "Influencer":
+      return influencerSchema;
+    case "Business":
+      return businessSchema;
+    default:
+      return userSchema;
+  }
+};
+
+type FormData = z.infer<typeof influencerSchema> | z.infer<typeof businessSchema> | z.infer<typeof userSchema>;
 
 interface RegisterFormProps {
   onSignup: (
@@ -45,7 +91,7 @@ interface RegisterFormProps {
     additionalData?: any
   ) => Promise<void>;
   onClose: () => void;
-  registerType?: UserRole; // Made optional with default
+  registerType?: UserRole;
   onBack?: () => void;
 }
 
@@ -59,32 +105,150 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
   const [userType, setUserType] = useState<UserRole>(registerType || "User");
   const { toast } = useToast();
 
+  // Define available niches for influencers
+  const niches = [
+    "Fashion", "Beauty", "Fitness", "Travel", "Food", "Technology", 
+    "Photography", "Art", "Lifestyle", "Gaming", "Education", "Business", "Other"
+  ];
+
+  // Define business categories
+  const businessCategories = [
+    "Restaurant", "Retail", "Technology", "Health", "Beauty", "Fitness", 
+    "Education", "Professional Services", "Entertainment", "Real Estate", "Other"
+  ];
+
+  // Define countries
+  const countries = [
+    "India", "United States", "United Kingdom", "Canada", "Australia", 
+    "Germany", "France", "Japan", "China", "Brazil", "Other"
+  ];
+
   // Update local state when registerType prop changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (registerType) {
       setUserType(registerType);
+      resetForm();
     }
   }, [registerType]);
 
+  // Initialize the form with the appropriate schema
   const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
+    resolver: zodResolver(getSchemaForRole(userType)),
+    defaultValues: getDefaultValuesForRole(userType),
+  });
+
+  // Function to reset the form when the role changes
+  const resetForm = () => {
+    form.reset(getDefaultValuesForRole(userType));
+  };
+
+  // Function to get default values based on the selected role
+  function getDefaultValuesForRole(role: UserRole) {
+    const baseValues = {
       email: "",
       password: "",
       confirmPassword: "",
+      phone: "",
       employeeCode: "",
-    },
-  });
+    };
 
+    switch (role) {
+      case "Influencer":
+        return {
+          ...baseValues,
+          fullName: "",
+          instagramHandle: "",
+          facebookHandle: "",
+          niche: "",
+          followersCount: "",
+          country: "",
+          city: "",
+          bio: "",
+        };
+      case "Business":
+        return {
+          ...baseValues,
+          businessName: "",
+          ownerName: "",
+          businessCategory: "",
+          website: "",
+          instagramHandle: "",
+          facebookHandle: "",
+          street: "",
+          city: "",
+          state: "",
+          country: "",
+          zipCode: "",
+          gstNumber: "",
+        };
+      default:
+        return {
+          ...baseValues,
+          name: "",
+        };
+    }
+  }
+
+  // Handle form submission
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
+    
     try {
-      const additionalData = {
+      // Create additionalData object based on role
+      let additionalData: any = {
         employeeCode: data.employeeCode || null,
+        phone: data.phone || null,
       };
       
-      await onSignup(data.email, data.password, data.name, userType, additionalData);
+      let displayName = "";
+      
+      if (userType === "Influencer") {
+        const influencerData = data as z.infer<typeof influencerSchema>;
+        displayName = influencerData.fullName;
+        
+        additionalData = {
+          ...additionalData,
+          name: influencerData.fullName,
+          instagramHandle: influencerData.instagramHandle || null,
+          facebookHandle: influencerData.facebookHandle || null,
+          niche: influencerData.niche,
+          followersCount: influencerData.followersCount,
+          country: influencerData.country,
+          city: influencerData.city,
+          bio: influencerData.bio || null,
+          createdAt: new Date().toISOString(),
+          verified: false,
+        };
+      } else if (userType === "Business") {
+        const businessData = data as z.infer<typeof businessSchema>;
+        displayName = businessData.businessName;
+        
+        additionalData = {
+          ...additionalData,
+          businessName: businessData.businessName,
+          ownerName: businessData.ownerName,
+          businessCategory: businessData.businessCategory,
+          website: businessData.website || null,
+          instagramHandle: businessData.instagramHandle || null,
+          facebookHandle: businessData.facebookHandle || null,
+          address: {
+            street: businessData.street || null,
+            city: businessData.city,
+            state: businessData.state || null,
+            country: businessData.country,
+            zipCode: businessData.zipCode || null,
+          },
+          gstNumber: businessData.gstNumber || null,
+          createdAt: new Date().toISOString(),
+          verified: false,
+        };
+      } else {
+        const userData = data as z.infer<typeof userSchema>;
+        displayName = userData.name;
+      }
+      
+      await onSignup(data.email, data.password, displayName, userType, additionalData);
+      
       toast({
         title: "Registration successful",
         description: "Your account has been created successfully",
@@ -102,12 +266,465 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
     }
   };
 
+  // Render appropriate fields based on the selected user role
+  const renderRoleSpecificFields = () => {
+    switch (userType) {
+      case "Influencer":
+        return (
+          <>
+            <FormField
+              control={form.control}
+              name="fullName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name*</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input placeholder="Enter your full name" {...field} />
+                      <User className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number*</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input placeholder="Enter your phone number" {...field} />
+                        <Phone className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="niche"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Niche/Category*</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your niche" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {niches.map((niche) => (
+                          <SelectItem key={niche} value={niche}>
+                            {niche}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="followersCount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Followers Count*</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. 10000" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="instagramHandle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Instagram Handle</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input placeholder="e.g. @username" {...field} />
+                        <Instagram className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="facebookHandle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Facebook Handle</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input placeholder="e.g. username" {...field} />
+                        <Facebook className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="country"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country*</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your country" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {countries.map((country) => (
+                          <SelectItem key={country} value={country}>
+                            {country}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City*</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input placeholder="Enter your city" {...field} />
+                        <MapPin className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="bio"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bio</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Tell us about yourself and your content" 
+                      className="resize-none"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
+        );
+      case "Business":
+        return (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="businessName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Business Name*</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input placeholder="Enter business name" {...field} />
+                        <Briefcase className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="ownerName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Owner Name*</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input placeholder="Enter owner's name" {...field} />
+                        <User className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number*</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input placeholder="Enter business phone" {...field} />
+                        <Phone className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="businessCategory"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Business Category*</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select business category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {businessCategories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="website"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. https://yourbusiness.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="gstNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>GST Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter GST number if applicable" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="instagramHandle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Instagram Handle</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input placeholder="e.g. @yourbusiness" {...field} />
+                        <Instagram className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="facebookHandle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Facebook Handle</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input placeholder="e.g. yourbusiness" {...field} />
+                        <Facebook className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <h3 className="text-md font-medium mt-4 mb-2">Business Address</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="street"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Street Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter street address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City*</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter city" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="state"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>State</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter state" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="country"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country*</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {countries.map((country) => (
+                          <SelectItem key={country} value={country}>
+                            {country}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="zipCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ZIP/Postal Code</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter ZIP code" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </>
+        );
+      default:
+        return (
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Full Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="John Doe" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        );
+    }
+  };
+
   return (
     <div>
       {!registerType ? (
         <RegisterTypeSelector
           selectedType={userType}
-          onSelectType={(type) => setUserType(type)}
+          onSelectType={(type) => {
+            setUserType(type);
+            resetForm();
+          }}
         />
       ) : (
         <>
@@ -124,26 +741,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           <div className="mt-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="John Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {renderRoleSpecificFields()}
 
                 <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Email*</FormLabel>
                       <FormControl>
                         <Input
                           type="email"
@@ -156,33 +761,35 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password*</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirm Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm Password*</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <FormField
                   control={form.control}
