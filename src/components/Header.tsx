@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, LogIn, LayoutDashboard } from 'lucide-react';
@@ -28,7 +27,6 @@ const Header = () => {
   
   const { getUserSubscription } = useSubscription();
   
-  // Fetch subscription data when user changes
   useEffect(() => {
     console.log("Header useEffect for subscription");
     const fetchSubscription = async () => {
@@ -80,7 +78,6 @@ const Header = () => {
     return true; // Simplified for debugging
   };
 
-  // Make sure we don't show anything until auth is initialized
   if (!initialized) {
     console.log("Auth not initialized yet"); // Debug log
     return null;
@@ -88,69 +85,45 @@ const Header = () => {
 
   console.log("Header fully rendered"); // Debug log
 
-  // Correctly typed inline styles for header elements
-  const headerStyle = {
-    position: 'fixed' as const, // Use 'as const' to satisfy TypeScript Position type
-    top: 0,
-    left: 0,
-    width: '100%',
-    backgroundColor: '#ffffff',
-    zIndex: 9999,
-    display: 'flex',
-    alignItems: 'center',
-    height: '64px',
-    visibility: 'visible' as const,
-    opacity: 1,
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-  };
-
-  const textStyle = {
-    color: '#000000',
-    visibility: 'visible' as const,
-    opacity: 1,
-    display: 'inline-block'
-  };
-  
   return (
-    <header className="main-header" style={headerStyle}>
-      <div className="container max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between" style={{visibility: 'visible', display: 'flex', zIndex: 9999}}>
-        <Link to="/" className="flex items-center space-x-2" style={{visibility: 'visible', display: 'flex'}}>
-          <span className="font-bold text-2xl" style={textStyle}>
+    <header className="main-header">
+      <div className="container max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
+        <Link to="/" className="flex items-center space-x-2">
+          <span className="font-bold text-2xl">
             Grow Bharat Vyapaar
           </span>
         </Link>
 
-        <nav className="hidden md:flex items-center space-x-8" style={{visibility: 'visible', display: 'flex'}}>
-          <Link to="/" className="text-sm font-medium hover:text-primary transition-smooth" style={{visibility: 'visible', display: 'flex'}}>
-            <span style={textStyle}>Home</span>
+        <nav className="hidden md:flex items-center space-x-8">
+          <Link to="/" className="text-sm font-medium hover:text-primary transition-smooth">
+            <span>Home</span>
           </Link>
-          <Link to="/categories" className="text-sm font-medium hover:text-primary transition-smooth" style={{visibility: 'visible', display: 'flex'}}>
-            <span style={textStyle}>Categories</span>
+          <Link to="/categories" className="text-sm font-medium hover:text-primary transition-smooth">
+            <span>Categories</span>
           </Link>
-          <Link to="/businesses" className="text-sm font-medium hover:text-primary transition-smooth" style={{visibility: 'visible', display: 'flex'}}>
-            <span style={textStyle}>Businesses</span>
+          <Link to="/businesses" className="text-sm font-medium hover:text-primary transition-smooth">
+            <span>Businesses</span>
           </Link>
-          <Link to="/about" className="text-sm font-medium hover:text-primary transition-smooth" style={{visibility: 'visible', display: 'flex'}}>
-            <span style={textStyle}>About</span>
+          <Link to="/about" className="text-sm font-medium hover:text-primary transition-smooth">
+            <span>About</span>
           </Link>
         </nav>
 
-        <div className="hidden md:flex items-center space-x-4" style={{visibility: 'visible', display: 'flex'}}>
+        <div className="hidden md:flex items-center space-x-4">
           {shouldShowDashboard() && (
             <Button 
               variant="outline" 
               size="sm" 
               className="rounded-full transition-smooth" 
               onClick={handleDashboardClick}
-              style={{visibility: 'visible', display: 'flex'}}
             >
-              <LayoutDashboard className="h-4 w-4 mr-2" style={{visibility: 'visible'}} />
-              <span style={textStyle}>Dashboard</span>
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              <span>Dashboard</span>
             </Button>
           )}
           
           {isAuthenticated ? (
-            <div style={{visibility: 'visible', display: 'flex'}}>
+            <div>
               <UserMenu />
             </div>
           ) : (
@@ -159,10 +132,9 @@ const Header = () => {
               size="sm" 
               className="rounded-full transition-smooth" 
               onClick={() => setIsAuthModalOpen(true)} 
-              style={{visibility: 'visible', display: 'flex'}}
             >
-              <LogIn className="h-4 w-4 mr-2" style={{visibility: 'visible'}} />
-              <span style={{color: '#ffffff', visibility: 'visible', display: 'inline-block'}}>Login / Register</span>
+              <LogIn className="h-4 w-4 mr-2" />
+              <span>Login / Register</span>
             </Button>
           )}
         </div>
@@ -170,48 +142,40 @@ const Header = () => {
         <button 
           className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-smooth"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          style={{visibility: 'visible', display: 'flex', color: '#000000'}}
         >
           {isMobileMenuOpen ? (
-            <X size={20} style={{visibility: 'visible'}} />
+            <X size={20} />
           ) : (
-            <Menu size={20} style={{visibility: 'visible'}} />
+            <Menu size={20} />
           )}
         </button>
       </div>
 
       <div 
-        className={`mobile-menu md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-sm transition-all duration-300 overflow-hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`} 
-        style={{
-          maxHeight: isMobileMenuOpen ? '500px' : '0',
-          opacity: isMobileMenuOpen ? '1' : '0',
-          visibility: isMobileMenuOpen ? 'visible' as const : 'hidden' as const,
-          zIndex: 9998
-        }}
+        className={`mobile-menu md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-sm transition-all duration-300 overflow-hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`}
       >
-        <div className="container max-w-7xl mx-auto px-4 py-4 flex flex-col space-y-4" style={{visibility: 'visible', display: 'flex'}}>
-          <Link to="/" className="py-2 text-lg font-medium hover:text-primary transition-smooth" style={{visibility: 'visible', display: 'flex'}}>
-            <span style={textStyle}>Home</span>
+        <div className="container max-w-7xl mx-auto px-4 py-4 flex flex-col space-y-4">
+          <Link to="/" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
+            <span>Home</span>
           </Link>
-          <Link to="/categories" className="py-2 text-lg font-medium hover:text-primary transition-smooth" style={{visibility: 'visible', display: 'flex'}}>
-            <span style={textStyle}>Categories</span>
+          <Link to="/categories" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
+            <span>Categories</span>
           </Link>
-          <Link to="/businesses" className="py-2 text-lg font-medium hover:text-primary transition-smooth" style={{visibility: 'visible', display: 'flex'}}>
-            <span style={textStyle}>Businesses</span>
+          <Link to="/businesses" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
+            <span>Businesses</span>
           </Link>
-          <Link to="/about" className="py-2 text-lg font-medium hover:text-primary transition-smooth" style={{visibility: 'visible', display: 'flex'}}>
-            <span style={textStyle}>About</span>
+          <Link to="/about" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
+            <span>About</span>
           </Link>
-          <div className="pt-2 flex flex-col space-y-3" style={{visibility: 'visible', display: 'flex'}}>
+          <div className="pt-2 flex flex-col space-y-3">
             {shouldShowDashboard() && (
               <Button 
                 variant="outline" 
                 className="justify-start rounded-full w-full transition-smooth" 
                 onClick={handleDashboardClick}
-                style={{visibility: 'visible', display: 'flex'}}
               >
-                <LayoutDashboard className="h-4 w-4 mr-2" style={{visibility: 'visible'}} />
-                <span style={textStyle}>Dashboard</span>
+                <LayoutDashboard className="h-4 w-4 mr-2" />
+                <span>Dashboard</span>
               </Button>
             )}
             
@@ -219,11 +183,10 @@ const Header = () => {
               <Button 
                 variant="default" 
                 className="justify-start rounded-full w-full transition-smooth" 
-                onClick={handleMobileLogout} 
-                style={{visibility: 'visible', display: 'flex'}}
+                onClick={handleMobileLogout}
               >
-                <LogIn className="h-4 w-4 mr-2" style={{visibility: 'visible'}} />
-                <span style={{color: '#ffffff', visibility: 'visible', display: 'inline-block'}}>Logout</span>
+                <LogIn className="h-4 w-4 mr-2" />
+                <span>Logout</span>
               </Button>
             ) : (
               <Button 
@@ -232,11 +195,10 @@ const Header = () => {
                 onClick={() => {
                   setIsAuthModalOpen(true);
                   setIsMobileMenuOpen(false);
-                }} 
-                style={{visibility: 'visible', display: 'flex'}}
+                }}
               >
-                <LogIn className="h-4 w-4 mr-2" style={{visibility: 'visible'}} />
-                <span style={{color: '#ffffff', visibility: 'visible', display: 'inline-block'}}>Login / Register</span>
+                <LogIn className="h-4 w-4 mr-2" />
+                <span>Login / Register</span>
               </Button>
             )}
           </div>

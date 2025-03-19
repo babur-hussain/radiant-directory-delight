@@ -36,15 +36,7 @@ const App = () => {
         <BrowserRouter>
           <AuthProvider>
             <div className="relative min-h-screen bg-background">
-              {/* Force Header to be visible with inline style */}
-              <div style={{
-                position: 'relative' as const, 
-                zIndex: 9999, 
-                visibility: 'visible' as const, 
-                display: 'block'
-              }}>
-                <Header />
-              </div>
+              <Header />
               <main>
                 <Suspense fallback={
                   <div className="flex items-center justify-center min-h-[80vh]">
