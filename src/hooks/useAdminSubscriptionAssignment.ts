@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createSubscription, updateSubscription, deleteSubscription } from '@/services/subscriptionService';
@@ -17,7 +16,6 @@ const useAdminSubscriptionAssignment = () => {
       }
 
       const subscription = await createSubscription({
-        id: nanoid(), // Generate an ID if it doesn't exist
         ...subscriptionData,
         // Ensure all required fields are present
         status: subscriptionData.status || 'active',

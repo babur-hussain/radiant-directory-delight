@@ -12,8 +12,8 @@ autoInitMongoDB()
 // Create a new subscription
 export const createSubscription = async (subscriptionData: Omit<ISubscription, 'id'>): Promise<ISubscription> => {
   try {
-    // Generate a unique ID if not provided
-    const subscriptionId = subscriptionData.id || nanoid();
+    // Generate a unique ID
+    const subscriptionId = nanoid();
     
     const subscription = new Subscription({
       ...subscriptionData,

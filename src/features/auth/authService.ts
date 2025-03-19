@@ -1,4 +1,3 @@
-
 import { User as FirebaseUser } from 'firebase/auth';
 import { fetchUserByUid, createOrUpdateUser, updateUserLoginTimestamp as apiUpdateUserLoginTimestamp, updateUserRole as apiUpdateUserRole, getAllUsers as apiGetAllUsers } from '../../api/mongoAPI';
 import { IUser } from '../../models/User';
@@ -114,7 +113,7 @@ export const getAllUsers = async (): Promise<IUser[]> => {
   }
 };
 
-// Update user role
+// Update user role - ensure it expects uid, role, and optional isAdmin parameter
 export const updateUserRole = async (uid: string, role: string, isAdmin: boolean = false): Promise<IUser | null> => {
   try {
     const user = await apiUpdateUserRole(uid, role, isAdmin);
