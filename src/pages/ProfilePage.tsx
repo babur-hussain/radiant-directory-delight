@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -41,9 +42,11 @@ const ProfilePage = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  // Define allowed roles
   const allowedRoles = ["Business", "Influencer", "Admin"] as const;
   type AllowedRole = typeof allowedRoles[number];
 
+  // Profile form schema
   const profileFormSchema = z.object({
     name: z.string().min(2, {
       message: "Name must be at least 2 characters.",
@@ -56,6 +59,7 @@ const ProfilePage = () => {
     }),
   });
 
+  // Password form schema
   const passwordFormSchema = z.object({
     currentPassword: z.string().min(6, {
       message: "Current password must be at least 6 characters.",
@@ -71,6 +75,7 @@ const ProfilePage = () => {
     path: ["confirmPassword"],
   });
 
+  // Initialize the profile form
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -82,6 +87,7 @@ const ProfilePage = () => {
     },
   });
 
+  // Initialize the password form
   const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: {
@@ -91,6 +97,7 @@ const ProfilePage = () => {
     },
   });
 
+  // Handle profile form submission
   const onProfileSubmit = async (values: z.infer<typeof profileFormSchema>) => {
     setIsUpdating(true);
     
@@ -116,6 +123,7 @@ const ProfilePage = () => {
     }
   };
 
+  // Handle password form submission
   const onPasswordSubmit = (values: z.infer<typeof passwordFormSchema>) => {
     setIsUpdating(true);
     
@@ -281,6 +289,7 @@ const ProfilePage = () => {
                               <Select
                                 onValueChange={field.onChange}
                                 defaultValue={field.value}
+                                value={field.value}
                               >
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Select your account type" />
