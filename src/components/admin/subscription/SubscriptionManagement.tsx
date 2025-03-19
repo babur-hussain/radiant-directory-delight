@@ -110,7 +110,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
 
   // Use error from hook
   if (error) {
-    return <SubscriptionPermissionError error={error} onRetry={retryConnection} />;
+    return <SubscriptionPermissionError error={error} onRetry={() => retryConnection && retryConnection()} />;
   }
 
   // Determine which connection status to use
@@ -172,7 +172,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
             <SubscriptionLoader 
               isLoading={isLoading} 
               connectionStatus={effectiveConnectionStatus} 
-              onRetry={onRetryConnection || retryConnection} 
+              onRetry={onRetryConnection || (retryConnection ? () => retryConnection() : undefined)} 
             />
 
             <TabsContent value="business" className="mt-0">
