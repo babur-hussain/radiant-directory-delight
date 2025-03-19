@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { toast } from '@/hooks/use-toast';
 
@@ -13,7 +12,7 @@ export const LOCAL_API_URL = 'http://localhost:3001/api';
 // Create axios instance with configurable timeout
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 2000, // Short timeout to fail faster when server is unreachable
+  timeout: 8000, // Increased timeout to handle slower connections
   headers: {
     'Content-Type': 'application/json'
   }
@@ -79,17 +78,30 @@ export const fetchUserByUid = async (uid: string) => {
     if (axios.isAxiosError(error) && error.response?.status === 404) {
       return null;
     }
-    throw error;
+    console.warn('Error fetching user from database:', error.message);
+    // Return null instead of throwing to allow graceful fallback
+    return null;
   }
 };
 
 export const createOrUpdateUser = async (userData: any) => {
-  const response = await api.post('/users', userData);
-  return response.data;
+  try {
+    const response = await api.post('/users', userData);
+    return response.data;
+  } catch (error) {
+    console.warn('Error saving user to database:', error.message);
+    // Return the original userData so app can continue
+    return userData;
+  }
 };
 
 export const updateUserLoginTimestamp = async (uid: string) => {
-  await api.put(`/users/${uid}/login`);
+  try {
+    await api.put(`/users/${uid}/login`);
+  } catch (error) {
+    console.warn('Error updating login timestamp:', error.message);
+    // Non-critical operation, can continue without it
+  }
 };
 
 export const updateUserRole = async (uid: string, role: string, isAdmin: boolean = false) => {

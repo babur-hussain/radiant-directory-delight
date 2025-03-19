@@ -1,83 +1,44 @@
 
-// Define types for our auth context
-export type UserRole = "Business" | "Influencer" | "Admin" | "User" | "admin" | "staff" | null;
+import { User as FirebaseUser } from 'firebase/auth';
 
+// User roles enum for type safety
+export type UserRole = 'Admin' | 'Business' | 'Influencer' | 'User' | 'staff' | null;
+
+// Extended User interface
 export interface User {
   uid: string;
-  id?: string; // Alias for uid for compatibility
   email: string | null;
-  displayName: string | null; 
-  name?: string | null; // Alias for displayName for compatibility
+  displayName: string | null;
   photoURL: string | null;
-  role?: UserRole;
-  isAdmin?: boolean;
-  subscription?: any; // For storing subscription information
-  createdAt?: Date | string; // For storing user creation date
-  lastLogin?: Date | string; // For storing user's last login date
-  employeeCode?: string; // Added employee code field
-  
-  // Additional fields for user profiles
-  phone?: string;
-  instagramHandle?: string;
-  facebookHandle?: string;
-  verified?: boolean;
-  city?: string;
-  country?: string;
-  
-  // Influencer specific fields
-  niche?: string;
-  followersCount?: string;
-  bio?: string;
-  
-  // Business specific fields
-  businessName?: string;
-  ownerName?: string;
-  businessCategory?: string;
-  website?: string;
-  address?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    zipCode?: string;
-  };
-  gstNumber?: string;
-}
-
-export interface Subscription {
-  id: string;
-  userId: string;
-  packageId: string;
-  packageName: string;
-  amount: number;
-  startDate: Date | string;
-  endDate: Date | string;
-  status: string;
-  // New fields for Razorpay integration - making all optional for backward compatibility
-  advancePaymentMonths?: number;
-  signupFee?: number;
-  actualStartDate?: Date | string;
-  isPaused?: boolean;
-  isPausable?: boolean;
-  isUserCancellable?: boolean;
-  invoiceIds?: string[];
-  pausedAt?: Date | string;
-  resumedAt?: Date | string;
-  paymentType?: "recurring" | "one-time";
-}
-
-export interface AuthContextType {
-  currentUser: User | null;
-  loading: boolean;
-  userRole: UserRole | null;
   isAdmin: boolean;
-  logout: () => Promise<void>;
+  role: UserRole;
+  employeeCode?: string | null;
+  createdAt?: string;
+}
+
+// Auth context type for the context provider
+export interface AuthContextType {
+  user: User | null;
+  currentUser: User | null; // Alias for user for compatibility
+  isAuthenticated: boolean;
+  loading: boolean;
+  initialized: boolean;
+  userRole: UserRole;
+  isAdmin: boolean;
+  
+  // Auth methods
   login: (email: string, password: string, employeeCode?: string) => Promise<void>;
-  loginWithGoogle?: () => Promise<void>;
-  signup?: (email: string, password: string, name: string, role: UserRole, additionalData?: any) => Promise<any>;
-  updateUserRole?: (role: UserRole) => Promise<void>;
-  updateUserPermission?: (userId: string, isAdmin: boolean) => Promise<void>;
-  isAuthenticated?: boolean;
-  initialized?: boolean;
-  user?: User | null;
+  loginWithGoogle: () => Promise<void>;
+  logout: () => Promise<void>;
+  signup: (
+    email: string, 
+    password: string, 
+    name: string, 
+    role: UserRole, 
+    additionalData?: any
+  ) => Promise<void>;
+  
+  // Optional properties for role management (may be implemented)
+  updateUserRole?: (user: User, role: UserRole) => Promise<User>;
+  updateUserPermission?: (userId: string, isAdmin: boolean) => Promise<{userId: string, isAdmin: boolean}>;
 }

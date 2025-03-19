@@ -5,6 +5,8 @@ import {
   onAuthStateChanged, 
   signInWithPopup, 
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
   signOut as firebaseSignOut,
   User as FirebaseUser 
 } from 'firebase/auth';
@@ -93,9 +95,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: firebaseUser.email,
         displayName: firebaseUser.displayName,
         photoURL: firebaseUser.photoURL,
-        isAdmin: mongoUser.isAdmin || false,
-        role: (mongoUser.role as UserRole) || 'User' as UserRole,
-        employeeCode: mongoUser.employeeCode || employeeCode || null
+        isAdmin: mongoUser?.isAdmin || false,
+        role: (mongoUser?.role as UserRole) || 'User' as UserRole,
+        employeeCode: mongoUser?.employeeCode || employeeCode || null
       });
     } catch (error) {
       console.error("Error processing user:", error);
@@ -173,6 +175,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Add signup function to complete the AuthContextType
+  const signup = async (
+    email: string, 
+    password: string, 
+    name: string, 
+    role: UserRole = 'User', 
+    additionalData?: any
+  ): Promise<void> => {
+    try {
+      // Create user with Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+      
+      // Update profile with display name
+      if (name) {
+        await updateProfile(firebaseUser, { displayName: name });
+      }
+      
+      // Process the new user with role and additional data
+      const mongoUser = await createOrUpdateUser({
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        name: name, 
+        role: role,
+        isAdmin: role === 'Admin', // Set isAdmin based on role
+        createdAt: new Date(),
+        lastLogin: new Date(),
+        ...additionalData
+      });
+      
+      // Process the user to update context
+      await processUser(firebaseUser, additionalData?.employeeCode);
+      
+      console.log("User signup complete:", { email, role });
+    } catch (error) {
+      console.error("Signup error:", error);
+      throw error; // Re-throw to allow handling in the UI
+    }
+  };
+
   const contextValue: AuthContextType = {
     user,
     currentUser: user,
@@ -181,12 +223,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loginWithGoogle,
     logout: signOut,
     login,
+    signup, // Added signup function
     initialized,
     // Add missing properties from AuthContextType
     userRole: user?.role || null,
     isAdmin: user?.isAdmin || false,
-    // We can leave these as optional properties according to the interface
-    // signup, updateUserRole, and updateUserPermission are marked as optional with ?
   };
 
   // Don't show loading screen - the header will handle this now

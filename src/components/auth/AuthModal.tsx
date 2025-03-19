@@ -11,6 +11,8 @@ import {
 import { UserRole } from "@/contexts/AuthContext";
 import { LogIn, UserPlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 // Import refactored components
 import LoginForm from "./LoginForm";
@@ -25,6 +27,8 @@ type AuthModalProps = {
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
   const [authTab, setAuthTab] = useState<string>("login");
   const [registerType, setRegisterType] = useState<UserRole>(null);
+  const { signup } = useAuth();
+  const { toast } = useToast();
 
   // Reset registration type when switching tabs
   const handleTabChange = (value: string) => {
@@ -46,7 +50,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
     onOpenChange(open);
   };
 
-  // Mock onSignup function that returns a promise
+  // Handle signup using the auth context
   const handleSignup = async (
     email: string,
     password: string,
@@ -54,10 +58,23 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
     role: UserRole,
     additionalData?: any
   ): Promise<void> => {
-    // This is a placeholder. In a real app, this would call the auth provider's signup method
-    console.log("Sign up called with:", { email, password, name, role, additionalData });
-    // Always return a Promise
-    return Promise.resolve();
+    try {
+      await signup(email, password, name, role, additionalData);
+      toast({
+        title: "Registration successful",
+        description: `Your account has been created as a ${role}.`,
+      });
+      onOpenChange(false);
+      return Promise.resolve();
+    } catch (error) {
+      console.error("Error in handleSignup:", error);
+      toast({
+        title: "Registration failed",
+        description: error instanceof Error ? error.message : "An error occurred during registration",
+        variant: "destructive"
+      });
+      return Promise.reject(error);
+    }
   };
 
   return (
@@ -95,7 +112,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
 
               <TabsContent value="register" className="m-0 mt-2">
                 {!registerType ? (
-                  <RegisterTypeSelector onSelectType={setRegisterType} />
+                  <RegisterTypeSelector onSelectType={setRegisterType} selectedType={registerType} />
                 ) : (
                   <RegisterForm 
                     registerType={registerType} 
