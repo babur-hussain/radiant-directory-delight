@@ -8,7 +8,7 @@ import {
   DialogTitle, 
   DialogDescription 
 } from "@/components/ui/dialog";
-import { UserRole } from "@/contexts/AuthContext";
+import { UserRole } from "@/types/auth";
 import { LogIn, UserPlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";

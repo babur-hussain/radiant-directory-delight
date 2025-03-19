@@ -148,6 +148,7 @@ const UserDetailsPopup: React.FC<UserDetailsPopupProps> = ({ isOpen, onClose, us
               <h4 className="font-semibold text-md mb-2">Subscription Information</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <DetailItem label="Subscription" value={user.subscription} renderFieldValue={renderFieldValue} />
+                <DetailItem label="Package" value={user.subscriptionPackage} renderFieldValue={renderFieldValue} />
               </div>
             </>
           )}

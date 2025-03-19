@@ -45,7 +45,7 @@ interface RegisterFormProps {
     additionalData?: any
   ) => Promise<void>;
   onClose: () => void;
-  registerType?: UserRole;
+  registerType?: UserRole; // Made optional with default
   onBack?: () => void;
 }
 

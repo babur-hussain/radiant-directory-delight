@@ -14,6 +14,43 @@ export interface User {
   role: UserRole;
   employeeCode?: string | null;
   createdAt?: string;
+  
+  // Added fields from MongoDB model
+  name?: string | null;
+  id?: string; // Virtual field for compatibility with Firestore IDs
+  lastLogin?: Date | string;
+  subscription?: string | null;
+  subscriptionId?: string;
+  subscriptionStatus?: string;
+  subscriptionPackage?: string;
+  customDashboardSections?: string[];
+  
+  // Shared fields
+  phone?: string;
+  instagramHandle?: string;
+  facebookHandle?: string;
+  verified?: boolean;
+  city?: string;
+  country?: string;
+  
+  // Influencer specific fields
+  niche?: string;
+  followersCount?: string;
+  bio?: string;
+  
+  // Business specific fields
+  businessName?: string;
+  ownerName?: string;
+  businessCategory?: string;
+  website?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    zipCode?: string;
+  };
+  gstNumber?: string;
 }
 
 // Auth context type for the context provider
