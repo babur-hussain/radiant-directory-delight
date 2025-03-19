@@ -6,7 +6,7 @@ import CSVUploader from './CSVUploader';
 interface CSVUploadDialogProps {
   show: boolean;
   onClose: () => void;
-  onUploadComplete: () => void;
+  onUploadComplete: (success?: boolean, message?: string, count?: number) => void;
 }
 
 const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ show, onClose, onUploadComplete }) => {
@@ -16,10 +16,10 @@ const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ show, onClose, onUplo
     setIsUploading(true);
   };
 
-  const handleUploadComplete = (success: boolean, message: string) => {
+  const handleUploadComplete = (success: boolean, message: string, count?: number) => {
     setIsUploading(false);
     if (success) {
-      onUploadComplete();
+      onUploadComplete(success, message, count);
     }
   };
 

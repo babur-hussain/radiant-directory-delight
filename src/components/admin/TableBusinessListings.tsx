@@ -36,7 +36,7 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState<IBusiness | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [businesses, setBusinesses] = useState<IBusiness[]>([]);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,7 +48,8 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
     try {
       // First try to fetch from MongoDB
       const data = await fetchBusinesses();
-      setBusinesses(data);
+      // Convert IBusiness[] to Business[] to match the state type
+      setBusinesses(data as unknown as Business[]);
     } catch (err) {
       console.error("Error fetching businesses from MongoDB:", err);
       
@@ -116,8 +117,8 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
   };
 
   // Function to open delete dialog
-  const openDeleteDialog = (business: IBusiness) => {
-    setSelectedBusiness(business);
+  const openDeleteDialog = (business: Business) => {
+    setSelectedBusiness(business as unknown as IBusiness);
     setIsDeleteDialogOpen(true);
   };
 
@@ -129,11 +130,11 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
     }
   };
 
-  const handleEditClick = (business: IBusiness) => {
+  const handleEditClick = (business: Business) => {
     if (onEditBusiness) {
-      onEditBusiness(business as unknown as Business);
+      onEditBusiness(business);
     } else {
-      setSelectedBusiness(business);
+      setSelectedBusiness(business as unknown as IBusiness);
       setIsFormOpen(true);
     }
   };
@@ -159,7 +160,7 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
             ...selectedBusiness,
             ...values,
             tags: Array.isArray(values.tags) ? values.tags : values.tags.split(',').map((tag: string) => tag.trim())
-          });
+          } as Business);
         } else {
           const randomReviews = Math.floor(Math.random() * 500) + 50;
           addBusiness({
@@ -208,7 +209,7 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
     }
   };
 
-  const handleUploadComplete = () => {
+  const handleUploadComplete = (success: boolean, message: string, count?: number) => {
     refreshData();
     setIsUploadOpen(false);
     toast({
