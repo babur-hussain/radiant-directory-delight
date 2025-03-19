@@ -1,250 +1,237 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { RefreshCw, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from '@/hooks/use-toast';
-import { 
-  createSubscriptionPackage, 
-  getAllSubscriptionPackages, 
-  updateSubscriptionPackage, 
-  deleteSubscriptionPackage 
-} from '@/api/mongoAPI';
+import SubscriptionPackageForm from './SubscriptionPackageForm';
+import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import SubscriptionLoader from './SubscriptionLoader';
 import SubscriptionPermissionError from './SubscriptionPermissionError';
-import CentralizedSubscriptionManager from './CentralizedSubscriptionManager';
+import SubscriptionLoader from '../subscription/SubscriptionLoader';
 
-interface SubscriptionManagementProps {
+interface SubscriptionPackageManagementProps {
   onPermissionError: (error: any) => void;
   dbInitialized: boolean;
   connectionStatus: 'connecting' | 'connected' | 'error' | 'offline';
-  onRetryConnection: () => void;
+  onRetryConnection?: () => void;
 }
 
-const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ 
+const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps> = ({
   onPermissionError,
   dbInitialized,
   connectionStatus,
   onRetryConnection
 }) => {
-  const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('business');
   const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
-  const { toast } = useToast();
-  const [error, setError] = useState<any>(null);
+  
+  const {
+    businessPackages,
+    influencerPackages,
+    isLoading,
+    error,
+    savePackage,
+    deletePackage
+  } = useSubscriptionPackages({
+    packageTypes: ['Business', 'Influencer'],
+    onError: (err) => onPermissionError(err)
+  });
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  const handleSavePackage = async (packageData: ISubscriptionPackage) => {
     try {
-      const data = await getAllSubscriptionPackages();
-      setPackages(data);
+      await savePackage(packageData);
+      setSelectedPackage(null);
     } catch (err) {
-      console.error("Error fetching subscription packages:", err);
-      setError(err);
-      onPermissionError(err);
-      toast({
-        title: "Failed to load packages",
-        description: "Failed to load subscription packages. Check console for details.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [onPermissionError, toast]);
-
-  useEffect(() => {
-    if (dbInitialized) {
-      fetchData();
-    }
-  }, [fetchData, dbInitialized]);
-
-  const handleCreate = () => {
-    setSelectedPackage(null);
-    setIsEditing(false);
-    setIsDialogOpen(true);
-  };
-
-  const handleEdit = (packageData: ISubscriptionPackage) => {
-    setSelectedPackage(packageData);
-    setIsEditing(true);
-    setIsDialogOpen(true);
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteSubscriptionPackage(id);
-      setPackages(packages.filter(p => p.id !== id));
-      toast({
-        title: "Package deleted",
-        description: "Subscription package deleted successfully.",
-      });
-    } catch (err) {
-      console.error("Error deleting subscription package:", err);
-      setError(err);
-      onPermissionError(err);
-      toast({
-        title: "Failed to delete package",
-        description: "Failed to delete subscription package. Check console for details.",
-        variant: "destructive",
-      });
+      console.error('Error saving package:', err);
     }
   };
 
-  const handleSave = async (packageData: ISubscriptionPackage) => {
+  const handleEditPackage = (pkg: ISubscriptionPackage) => {
+    setSelectedPackage(pkg);
+  };
+
+  const handleDeletePackage = async (packageId: string) => {
     try {
-      if (isEditing && selectedPackage?.id) {
-        // Update existing package
-        await updateSubscriptionPackage(selectedPackage.id, packageData);
-        setPackages(packages.map(p => (p.id === selectedPackage.id ? { ...p, ...packageData } : p)));
-        toast({
-          title: "Package updated",
-          description: "Subscription package updated successfully.",
-        });
-      } else {
-        // Create new package
-        await createSubscriptionPackage(packageData);
-        setPackages([...packages, packageData]);
-        toast({
-          title: "Package created",
-          description: "Subscription package created successfully.",
-        });
-      }
-      setIsDialogOpen(false);
-      fetchData(); // Refresh data
+      await deletePackage(packageId);
     } catch (err) {
-      console.error("Error saving subscription package:", err);
-      setError(err);
-      onPermissionError(err);
-      toast({
-        title: "Failed to save package",
-        description: "Failed to save subscription package. Check console for details.",
-        variant: "destructive",
-      });
+      console.error('Error deleting package:', err);
     }
+  };
+
+  const handleCreatePackage = () => {
+    // Create a new package based on the active tab
+    const newPackage: ISubscriptionPackage = {
+      id: '',
+      title: 'Untitled Package',
+      type: activeTab === 'business' ? 'Business' : 'Influencer',
+      price: 0,
+      setupFee: 0,
+      billingCycle: 'yearly',
+      features: [],
+      shortDescription: '',
+      fullDescription: '',
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      durationMonths: 12,
+      advancePaymentMonths: 0,
+      paymentType: 'recurring',
+      maxBusinesses: 1,
+      maxInfluencers: 1
+    };
+    
+    setSelectedPackage(newPackage);
   };
 
   const handleCancelEdit = () => {
-    setIsDialogOpen(false);
+    setSelectedPackage(null);
   };
 
-  const sortedPackages = [...packages].sort((a, b) => {
-    const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-    const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-    return bTime - aTime;
-  });
+  if (error) {
+    return <SubscriptionPermissionError error={error} />;
+  }
 
-  const initialData: ISubscriptionPackage = {
-    name: '',
-    description: '',
-    price: 0,
-    type: 'business',
-    duration: 1,
-  };
-
-  const formatDate = (dateStr?: string | Date) => {
-    if (!dateStr) return 'N/A';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+  const currentPackages = activeTab === 'business' ? businessPackages : influencerPackages;
 
   return (
-    <div>
-      <div className="mb-4 flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Subscription Packages</h2>
-        <Button onClick={handleCreate}>Create New</Button>
-      </div>
-
-      <SubscriptionLoader 
-        isLoading={isLoading} 
-        connectionStatus={connectionStatus}
-        onRetry={onRetryConnection}
-      />
+    <div className="space-y-6">
+      {connectionStatus === 'offline' && (
+        <Alert variant="warning">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Offline Mode</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2">
+            <p>MongoDB server is not available. Operating in offline mode with limited functionality.</p>
+            <p>You can still view and modify subscription packages, but changes will only be stored locally until a connection is established.</p>
+            {onRetryConnection && (
+              <Button variant="outline" size="sm" className="w-fit" onClick={onRetryConnection}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try to reconnect
+              </Button>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
       
-      {error && !isLoading && (
-        <SubscriptionPermissionError error={error} onRetry={fetchData} />
+      {connectionStatus === 'error' && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Connection Error</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2">
+            <p>Failed to connect to MongoDB. Using locally cached data.</p>
+            {onRetryConnection && (
+              <Button variant="outline" size="sm" className="w-fit" onClick={onRetryConnection}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry connection
+              </Button>
+            )}
+          </AlertDescription>
+        </Alert>
       )}
 
-      {!isLoading && !error && (
-        <div className="rounded-md border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last Updated</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedPackages.length > 0 ? (
-                sortedPackages.map((pkg) => (
-                  <TableRow key={pkg.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleEdit(pkg)}>
-                    <TableCell className="font-medium">{pkg.name}</TableCell>
-                    <TableCell>{pkg.type}</TableCell>
-                    <TableCell>₹{pkg.price}</TableCell>
-                    <TableCell>{pkg.duration} months</TableCell>
-                    <TableCell>
-                      <Badge variant={pkg.isActive ? "default" : "secondary"}>
-                        {pkg.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatDate(pkg.updatedAt)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={(e) => {
-                        e.stopPropagation();
-                        handleEdit(pkg);
-                      }}>
-                        Edit
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(pkg.id || '');
-                        }}
-                        className="ml-2"
-                      >
-                        Delete
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
-                    No subscription packages found.
-                  </TableCell>
-                </TableRow>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Subscription Packages</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <div className="flex justify-between items-center mb-4">
+              <TabsList>
+                <TabsTrigger value="business">Business</TabsTrigger>
+                <TabsTrigger value="influencer">Influencer</TabsTrigger>
+              </TabsList>
+              
+              <Button onClick={handleCreatePackage}>
+                Create New Package
+              </Button>
+            </div>
+
+            <SubscriptionLoader isLoading={isLoading} connectionStatus={connectionStatus} onRetry={onRetryConnection} />
+
+            <TabsContent value="business" className="mt-0">
+              {!isLoading && (
+                <div className="space-y-6">
+                  {selectedPackage && selectedPackage.type === 'Business' ? (
+                    <SubscriptionPackageForm 
+                      packageData={selectedPackage} 
+                      onSave={handleSavePackage}
+                      onCancel={handleCancelEdit}
+                    />
+                  ) : (
+                    
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {businessPackages.map((pkg) => (
+                        <div key={pkg.id} className="border rounded-lg p-4 relative">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-medium">{pkg.title}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">{pkg.shortDescription}</p>
+                              <div className="mt-2">
+                                <span className="font-medium">₹{pkg.price}</span>
+                                <span className="text-sm text-muted-foreground"> / {pkg.billingCycle || 'year'}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center mt-4 pt-4 border-t">
+                            <Button variant="outline" size="sm" className="mr-2" onClick={() => handleEditPackage(pkg)}>
+                              Edit
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={() => handleDeletePackage(pkg.id)}>
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+            </TabsContent>
 
-      <CentralizedSubscriptionManager 
-        isDialogOpen={isDialogOpen}
-        setIsDialogOpen={setIsDialogOpen}
-        isEditing={isEditing}
-        selectedPackage={selectedPackage}
-        onSave={handleSave}
-        onCancel={handleCancelEdit}
-        initialData={initialData}
-      />
+            <TabsContent value="influencer" className="mt-0">
+              {!isLoading && (
+                <div className="space-y-6">
+                  {selectedPackage && selectedPackage.type === 'Influencer' ? (
+                    <SubscriptionPackageForm 
+                      packageData={selectedPackage} 
+                      onSave={handleSavePackage}
+                      onCancel={handleCancelEdit}
+                    />
+                  ) : (
+                    
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {influencerPackages.map((pkg) => (
+                        <div key={pkg.id} className="border rounded-lg p-4 relative">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-medium">{pkg.title}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">{pkg.shortDescription}</p>
+                              <div className="mt-2">
+                                <span className="font-medium">₹{pkg.price}</span>
+                                <span className="text-sm text-muted-foreground"> / {pkg.billingCycle || 'year'}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center mt-4 pt-4 border-t">
+                            <Button variant="outline" size="sm" className="mr-2" onClick={() => handleEditPackage(pkg)}>
+                              Edit
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={() => handleDeletePackage(pkg.id)}>
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };
 
-export default SubscriptionManagement;
+export default SubscriptionPackageManagement;

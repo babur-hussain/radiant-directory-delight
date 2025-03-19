@@ -5,9 +5,7 @@ import {
   onAuthStateChanged, 
   signInWithPopup, 
   signOut as firebaseSignOut,
-  User as FirebaseUser,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword
+  User as FirebaseUser 
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
 import { AuthContextType, User, UserRole } from '@/types/auth';
@@ -128,7 +126,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await processUser(result.user);
     } catch (error) {
       console.error("Google sign-in error:", error);
-      throw error; // Re-throw to allow handling in UI components
     }
   };
 
@@ -138,129 +135,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
     } catch (error) {
       console.error("Sign out error:", error);
-      throw error;
     }
   };
 
-  // Implement email/password login
+  // Placeholder for the required login method
   const login = async (email: string, password: string): Promise<void> => {
-    try {
-      // Validate input
-      if (!email || !password) {
-        throw new Error("Email and password are required");
-      }
-      
-      // Sign in with Firebase
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
-      // Process the user data
-      await processUser(userCredential.user);
-      
-      console.log("Email/password login successful");
-    } catch (error: any) {
-      console.error("Email/password login error:", error);
-      
-      // Provide more user-friendly error messages
-      if (error.code === 'auth/user-not-found') {
-        throw new Error("User not found. Please check your email or register a new account.");
-      } else if (error.code === 'auth/wrong-password') {
-        throw new Error("Incorrect password. Please try again.");
-      } else if (error.code === 'auth/invalid-email') {
-        throw new Error("Invalid email format.");
-      } else if (error.code === 'auth/too-many-requests') {
-        throw new Error("Too many failed login attempts. Please try again later.");
-      } else {
-        throw error; // Re-throw the original error if it's not one we can provide a better message for
-      }
-    }
-  };
-
-  // Implement signup with email/password
-  const signup = async (email: string, password: string, name: string, role: UserRole, additionalData?: any): Promise<User> => {
-    try {
-      // Validate input
-      if (!email || !password) {
-        throw new Error("Email and password are required");
-      }
-      
-      // Create user with Firebase
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-      
-      // Create user data object
-      const userData = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        name: name || firebaseUser.displayName,
-        photoURL: firebaseUser.photoURL,
-        role: role || "User" as UserRole,
-        isAdmin: role === "Admin",
-        createdAt: new Date(),
-        lastLogin: new Date(),
-        ...additionalData
-      };
-      
-      // Save to MongoDB
-      try {
-        await createOrUpdateUser(userData);
-      } catch (error) {
-        console.error("Error saving user to MongoDB:", error);
-        // Continue anyway - Firebase auth is established
-      }
-      
-      // Process the user to update the context
-      await processUser(firebaseUser);
-      
-      console.log("Signup successful");
-      
-      // Return the newly created user
-      return {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: name || firebaseUser.displayName,
-        photoURL: firebaseUser.photoURL,
-        isAdmin: role === "Admin",
-        role: role || "User" as UserRole
-      };
-    } catch (error: any) {
-      console.error("Signup error:", error);
-      
-      // Provide more user-friendly error messages
-      if (error.code === 'auth/email-already-in-use') {
-        throw new Error("Email already in use. Please log in or use a different email.");
-      } else if (error.code === 'auth/invalid-email') {
-        throw new Error("Invalid email format.");
-      } else if (error.code === 'auth/weak-password') {
-        throw new Error("Password is too weak. Please use a stronger password.");
-      } else {
-        throw error;
-      }
-    }
-  };
-
-  const updateUserRole = async (role: UserRole): Promise<void> => {
-    if (!user || !user.uid) {
-      throw new Error("No authenticated user found");
-    }
-    
-    try {
-      // Update in MongoDB
-      await createOrUpdateUser({
-        uid: user.uid,
-        role,
-        isAdmin: role === "Admin"
-      });
-      
-      // Update local state
-      setUser({
-        ...user,
-        role,
-        isAdmin: role === "Admin"
-      });
-    } catch (error) {
-      console.error("Error updating user role:", error);
-      throw error;
-    }
+    console.warn("Email/password login not implemented");
+    throw new Error("Email/password login not implemented");
   };
 
   const contextValue: AuthContextType = {
@@ -271,13 +152,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loginWithGoogle,
     logout: signOut,
     login,
-    signup,
-    updateUserRole,
     initialized,
+    // Add missing properties from AuthContextType
     userRole: user?.role || null,
     isAdmin: user?.isAdmin || false,
+    // We can leave these as optional properties according to the interface
+    // signup, updateUserRole, and updateUserPermission are marked as optional with ?
   };
 
+  // Don't show loading screen - the header will handle this now
   return (
     <AuthContext.Provider value={contextValue}>
       {children}
