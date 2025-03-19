@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { toast } from '@/hooks/use-toast';
 
@@ -9,7 +10,7 @@ export const API_BASE_URL = typeof process !== 'undefined' && process.env.NEXT_P
 // Create axios instance with shorter timeout
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 3000, // Further reduced timeout to fail faster when server is unreachable
+  timeout: 2000, // Further reduced timeout to fail faster when server is unreachable
   headers: {
     'Content-Type': 'application/json'
   }
@@ -41,7 +42,7 @@ export const isServerRunning = async () => {
   try {
     console.log(`Checking if server is running at ${API_BASE_URL}/test-connection`);
     const response = await axios.get(`${API_BASE_URL}/test-connection`, { 
-      timeout: 2000 // Even shorter timeout for faster fallback
+      timeout: 1500 // Even shorter timeout for faster fallback
     });
     console.log("Server status check response:", response.data);
     return true;

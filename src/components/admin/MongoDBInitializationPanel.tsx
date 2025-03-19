@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { Database, Server, Activity, RefreshCw, Info } from 'lucide-react';
+import { Database, Server, Activity, RefreshCw, Info, ExternalLink } from 'lucide-react';
 import { setupMongoDB } from '@/utils/setupMongoDB';
 import { diagnoseMongoDbConnection, testConnectionWithRetry } from '@/utils/mongoDebug';
 import { connectToMongoDB } from '@/config/mongodb';
@@ -86,14 +87,14 @@ const MongoDBInitializationPanel: React.FC = () => {
       setServerAvailable(isAvailable);
       
       if (!isAvailable) {
-        throw new Error('MongoDB server is not available. Please start the server or use local data.');
+        throw new Error('MongoDB server is not available. Please check server status or use local data.');
       }
       
       // First establish connection with retries
       setProgress(10);
       setCurrentTask('Establishing MongoDB connection');
       
-      const connected = await testConnectionWithRetry(3, 2000);
+      const connected = await testConnectionWithRetry(2, 1500);
       if (!connected) {
         throw new Error('Failed to connect to MongoDB after multiple attempts');
       }
@@ -110,6 +111,10 @@ const MongoDBInitializationPanel: React.FC = () => {
         setProgress(30 + (progressValue * 0.7)); // Scale to remaining 70%
         setCurrentTask(message);
       });
+      
+      if (!setupResult.success) {
+        throw new Error(setupResult.error || "MongoDB initialization failed with unknown error");
+      }
       
       setResults(prev => ({
         ...prev,
@@ -153,11 +158,24 @@ const MongoDBInitializationPanel: React.FC = () => {
             <AlertTitle>Server Not Available</AlertTitle>
             <AlertDescription>
               <p className="mb-2">The MongoDB server at {API_BASE_URL} is not available.</p>
-              <p>To use MongoDB features:</p>
+              <p>You have two options:</p>
               <ul className="list-disc pl-5 mt-2 space-y-1 text-sm">
-                <li>Start your server with <code>npm run server</code> in your project directory</li>
-                <li>Ensure it's running on port 3001</li>
-                <li>Check for any server-side errors in the console</li>
+                <li className="flex items-start">
+                  <span className="mr-1">1. Use the deployed server (currently offline):</span>
+                  <a 
+                    href="https://gbv-backend.onrender.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline inline-flex items-center"
+                  >
+                    Check status <ExternalLink className="h-3 w-3 ml-1" />
+                  </a>
+                </li>
+                <li>2. Run a local server with:</li>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li><code className="bg-gray-100 px-1 rounded">npm run server</code> in your project directory</li>
+                  <li>Ensure it's running on port 3001</li>
+                </ul>
               </ul>
               <p className="mt-2">Until then, the application will use local fallback data.</p>
             </AlertDescription>
