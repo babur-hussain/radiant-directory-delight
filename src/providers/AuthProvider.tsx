@@ -4,6 +4,7 @@ import {
   GoogleAuthProvider, 
   onAuthStateChanged, 
   signInWithPopup, 
+  signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   User as FirebaseUser 
 } from 'firebase/auth';
@@ -132,6 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await processUser(result.user);
     } catch (error) {
       console.error("Google sign-in error:", error);
+      throw error; // Re-throw to allow handling in the UI
     }
   };
 
@@ -141,13 +143,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
     } catch (error) {
       console.error("Sign out error:", error);
+      throw error; // Re-throw to allow handling in the UI
     }
   };
 
-  // Placeholder for the required login method
+  // Implement proper email/password login method
   const login = async (email: string, password: string): Promise<void> => {
-    console.warn("Email/password login not implemented");
-    throw new Error("Email/password login not implemented");
+    try {
+      console.log(`Attempting to login with email: ${email}`);
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      await processUser(result.user);
+    } catch (error) {
+      console.error("Email/password login error:", error);
+      throw error; // Re-throw to allow handling in the UI
+    }
   };
 
   const contextValue: AuthContextType = {

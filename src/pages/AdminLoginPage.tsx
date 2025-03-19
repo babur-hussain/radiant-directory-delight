@@ -33,7 +33,12 @@ const AdminLoginPage = () => {
     try {
       await login(email, password);
       
+      // Check admin privileges after successful login
       if (user?.isAdmin || email === "baburhussain660@gmail.com") {
+        toast({
+          title: "Login successful",
+          description: "Welcome to the admin dashboard",
+        });
         navigate("/admin/dashboard");
       } else {
         setError("You don't have admin privileges. Please contact an administrator for access.");
@@ -51,6 +56,12 @@ const AdminLoginPage = () => {
       } else {
         setError("Authentication failed. Please check your credentials and try again.");
       }
+      
+      toast({
+        title: "Login failed",
+        description: error instanceof Error ? error.message : "Authentication failed",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
