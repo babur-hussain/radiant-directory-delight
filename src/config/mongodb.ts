@@ -145,9 +145,10 @@ function createModelMock(name: string) {
   return Constructor;
 }
 
-// Set a connection string with environment variable support
-const MONGODB_URI = process.env.NEXT_PUBLIC_MONGODB_URI || 
-  'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+// Set a connection string with environment variable support - handle the browser case
+const MONGODB_URI = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_MONGODB_URI 
+  ? process.env.NEXT_PUBLIC_MONGODB_URI 
+  : 'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
 // Track connection state
 let isConnected = false;

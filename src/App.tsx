@@ -21,9 +21,17 @@ const queryClient = new QueryClient({
       meta: {
         errorHandler: (error: any) => {
           console.log("Query error:", error);
+          // Don't show errors to users, they'll be handled at component level
         }
       }
     },
+    mutations: {
+      // Add retry and fallback handling for mutations too
+      retry: 1,
+      onError: (error) => {
+        console.log("Mutation error:", error);
+      }
+    }
   },
 });
 
@@ -42,6 +50,13 @@ const App = () => {
       ];
       localStorage.setItem("businessCategories", JSON.stringify(sampleCategories));
     }
+    
+    // Add error boundary for the entire app
+    window.addEventListener('error', (event) => {
+      console.error('Global error caught:', event.error);
+      // Prevent the browser from showing its own error dialog
+      event.preventDefault();
+    });
   }, []);
 
   return (

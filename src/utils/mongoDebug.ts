@@ -10,8 +10,9 @@ export const diagnoseMongoDbConnection = async () => {
   console.log(`Running in ${isNodeEnv ? 'Node.js' : 'Browser'} environment`);
   
   // Get MongoDB URI
-  const uri = process.env.MONGODB_URI || 
-    'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+  const uri = typeof process !== 'undefined' && process.env.MONGODB_URI 
+    ? process.env.MONGODB_URI 
+    : 'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
   
   // Parse the URI
   try {
