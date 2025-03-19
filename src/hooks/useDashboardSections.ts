@@ -50,7 +50,8 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
     setIsLoading(true);
     setLoadingMessage("Loading user dashboard sections...");
     try {
-      const sections = await getUserDashboardSections(userId);
+      const userRole = selectedUser?.role || "Business";
+      const sections = await getUserDashboardSections(userId, userRole);
       setUserSections(sections);
     } catch (err) {
       console.error("Error loading user sections:", err);

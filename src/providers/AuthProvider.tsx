@@ -90,25 +90,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = async (): Promise<void> => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       await processUser(result.user);
-      return true;
     } catch (error) {
       console.error("Google sign-in error:", error);
-      return false;
     }
   };
 
-  const signOut = async () => {
+  const signOut = async (): Promise<void> => {
     try {
       await firebaseSignOut(auth);
       setUser(null);
-      // Return void instead of boolean to match interface
     } catch (error) {
       console.error("Sign out error:", error);
-      // Return void instead of boolean to match interface
     }
   };
 
@@ -116,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     isAuthenticated: !!user,
     loading,
-    loginWithGoogle, // Make sure this matches the expected property name
+    loginWithGoogle,
     signOut
   };
 

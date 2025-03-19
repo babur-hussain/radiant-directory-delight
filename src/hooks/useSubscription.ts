@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { ISubscription } from '@/models/Subscription';
 import { createSubscription as createSubscriptionAPI, updateSubscription as updateSubscriptionAPI, getSubscription as getSubscriptionAPI, getSubscriptions as getSubscriptionsAPI, deleteSubscription as deleteSubscriptionAPI, getUserSubscriptions as getUserSubscriptionsAPI, getActiveUserSubscription } from '@/services/subscriptionService';
@@ -163,7 +164,9 @@ export const useSubscription = () => {
     }
     
     try {
-      return await getUserDashboardSections(userId);
+      // Use the user's role if available, otherwise default to Business
+      const userRole = "Business"; // Default role
+      return await getUserDashboardSections(userId, userRole);
     } catch (error) {
       console.error("Error getting user dashboard features:", error);
       return [];

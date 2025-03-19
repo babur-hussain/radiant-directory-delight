@@ -38,7 +38,7 @@ export const useDashboardServices = (userId: string, role: UserRole) => {
         }
         
         // Try to fetch sections from the database first
-        const userSections = await getUserDashboardSections(userId);
+        const userSections = await getUserDashboardSections(userId, role);
         
         if (userSections && userSections.length > 0) {
           console.log(`Found ${userSections.length} dashboard sections for user ${userId}`);

@@ -7,7 +7,7 @@ import { UploadIcon, CheckCircleIcon, XCircleIcon } from 'lucide-react';
 interface CSVUploadDialogProps {
   show: boolean;
   onClose: () => void;
-  onUploadComplete: () => void;
+  onUploadComplete: (success: boolean, message: string, count?: number) => void;
 }
 
 const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ show, onClose, onUploadComplete }) => {
@@ -29,7 +29,7 @@ const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ show, onClose, onUplo
     
     if (success) {
       // Notify parent component about successful upload
-      onUploadComplete();
+      onUploadComplete(success, message, count);
       
       // Close dialog after 2 seconds of showing success message
       setTimeout(() => {

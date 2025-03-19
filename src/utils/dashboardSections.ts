@@ -2,12 +2,35 @@
 import axios from 'axios';
 import { toast } from '@/hooks/use-toast';
 
+// Define dashboard sections for each role
+export const BUSINESS_DASHBOARD_SECTIONS = [
+  "ratings",
+  "creatives",
+  "google_listing",
+  "reels",
+  "seo",
+  "growth",
+  "leads",
+  "campaigns"
+];
+
+export const INFLUENCER_DASHBOARD_SECTIONS = [
+  "reels",
+  "creatives",
+  "ratings",
+  "seo",
+  "google_listing",
+  "performance",
+  "leads",
+  "rank"
+];
+
 // Function to get dashboard sections for a user
-export const getUserDashboardSections = async (userId: string, role: string) => {
+export const getUserDashboardSections = async (userId: string, role?: string) => {
   try {
-    console.log(`Fetching dashboard sections for user ${userId} with role ${role} from MongoDB`);
+    console.log(`Fetching dashboard sections for user ${userId} ${role ? `with role ${role}` : ''} from MongoDB`);
     
-    const response = await axios.get(`http://localhost:3001/api/dashboard-sections?userId=${userId}&role=${role}`);
+    const response = await axios.get(`http://localhost:3001/api/dashboard-sections?userId=${userId}${role ? `&role=${role}` : ''}`);
     return response.data;
   } catch (error) {
     console.error("Error fetching dashboard sections:", error);
@@ -19,27 +42,9 @@ export const getUserDashboardSections = async (userId: string, role: string) => 
     
     // Return default sections based on role
     if (role === "Business") {
-      return [
-        "ratings",
-        "creatives",
-        "google_listing",
-        "reels",
-        "seo",
-        "growth",
-        "leads",
-        "campaigns"
-      ];
+      return BUSINESS_DASHBOARD_SECTIONS;
     } else if (role === "Influencer") {
-      return [
-        "reels",
-        "creatives",
-        "ratings",
-        "seo",
-        "google_listing",
-        "performance",
-        "leads",
-        "rank"
-      ];
+      return INFLUENCER_DASHBOARD_SECTIONS;
     }
     
     return [];
@@ -47,13 +52,12 @@ export const getUserDashboardSections = async (userId: string, role: string) => 
 };
 
 // Function to save dashboard sections for a user
-export const saveDashboardSections = async (userId: string, role: string, sections: string[]) => {
+export const updateUserDashboardSections = async (userId: string, sections: string[]) => {
   try {
-    console.log(`Saving dashboard sections for user ${userId} with role ${role} to MongoDB`);
+    console.log(`Saving dashboard sections for user ${userId} to MongoDB`);
     
     await axios.post('http://localhost:3001/api/dashboard-sections', {
       userId,
-      role,
       sections
     });
     
@@ -63,6 +67,28 @@ export const saveDashboardSections = async (userId: string, role: string, sectio
     toast({
       title: "Error",
       description: "Failed to save dashboard sections.",
+      variant: "destructive"
+    });
+    return false;
+  }
+};
+
+// Function to save dashboard sections for a package
+export const updatePackageDashboardSections = async (packageId: string, sections: string[]) => {
+  try {
+    console.log(`Saving dashboard sections for package ${packageId} to MongoDB`);
+    
+    await axios.post('http://localhost:3001/api/package-sections', {
+      packageId,
+      sections
+    });
+    
+    return true;
+  } catch (error) {
+    console.error("Error saving package dashboard sections:", error);
+    toast({
+      title: "Error",
+      description: "Failed to save package dashboard sections.",
       variant: "destructive"
     });
     return false;
