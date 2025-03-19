@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -26,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { UserRole } from "@/types/auth";
+import { UserRole, User } from "@/types/auth";
 
 const ProfilePage = () => {
   const { user, isAuthenticated, logout, updateUserRole } = useAuth();
@@ -95,7 +96,13 @@ const ProfilePage = () => {
     
     try {
       if (values.role !== user?.role) {
-        await updateUserRole(values.role as UserRole, {});
+        // Create a minimal user object with just the role field to update
+        const userToUpdate = {
+          ...(user || {}),
+          role: values.role as UserRole
+        } as User;
+        
+        await updateUserRole(userToUpdate, {});
       }
       
       console.log("Updating profile:", values);

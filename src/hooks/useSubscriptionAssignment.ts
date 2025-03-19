@@ -84,8 +84,8 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
         packageId: packageDetails.id,
         packageName: packageDetails.title,
         amount: packageDetails.price,
-        startDate: new Date().toISOString(),
-        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        startDate: new Date().toISOString(), // Ensure this is a string, not a Date object
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // Ensure this is a string, not a Date object
         status: "active",
         userId: targetUser.id || targetUser.uid,
         assignedBy: currentUser.id || currentUser.uid,
@@ -93,8 +93,8 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
         isPausable: !isOneTime,
         isUserCancellable: !isOneTime,
         paymentType: isOneTime ? "one-time" : "recurring",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(), // Convert Date to string
+        updatedAt: new Date().toISOString(), // Convert Date to string
       };
       
       // Assign subscription
@@ -164,11 +164,24 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
         status: "cancelled",
         cancelledAt: new Date().toISOString(),
         cancelReason: "admin_cancelled",
-        createdAt: userCurrentSubscription.createdAt || new Date().toISOString(),
+        createdAt: typeof userCurrentSubscription.createdAt === 'object' 
+          ? userCurrentSubscription.createdAt.toISOString() 
+          : userCurrentSubscription.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
       
-      const success = await updateUserSubscription(targetUser.id || targetUser.uid, updatedSubscription);
+      // Ensure startDate and endDate are strings
+      const finalSubscription = {
+        ...updatedSubscription,
+        startDate: typeof updatedSubscription.startDate === 'object' 
+          ? updatedSubscription.startDate.toISOString() 
+          : updatedSubscription.startDate,
+        endDate: typeof updatedSubscription.endDate === 'object' 
+          ? updatedSubscription.endDate.toISOString() 
+          : updatedSubscription.endDate
+      };
+      
+      const success = await updateUserSubscription(targetUser.id || targetUser.uid, finalSubscription);
       
       if (success) {
         toast({
@@ -176,7 +189,7 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
           description: "Successfully cancelled the subscription.",
         });
         
-        setUserCurrentSubscription(updatedSubscription as UserSubscription);
+        setUserCurrentSubscription(finalSubscription as UserSubscription);
       } else {
         throw new Error("Failed to cancel subscription");
       }
