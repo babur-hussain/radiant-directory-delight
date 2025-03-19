@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { Button } from "@/components/ui/button";
@@ -388,4 +389,65 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
                     Select which dashboard sections are available with this package
                   </p>
                   
-                  <
+                  <div className="border rounded-md p-4">
+                    <p className="text-sm text-muted-foreground">
+                      Dashboard sections configuration will be available soon
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="isActive"
+                    checked={packageData.isActive !== false}
+                    onCheckedChange={(checked) => handleSwitchChange('isActive', checked)}
+                  />
+                  <Label htmlFor="isActive">Package Active</Label>
+                </div>
+                
+                <div>
+                  <Label htmlFor="maxBusinesses">Max Businesses</Label>
+                  <Input
+                    id="maxBusinesses"
+                    name="maxBusinesses"
+                    type="number"
+                    value={packageData.maxBusinesses || 1}
+                    onChange={handleNumberChange}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="maxInfluencers">Max Influencers</Label>
+                  <Input
+                    id="maxInfluencers"
+                    name="maxInfluencers"
+                    type="number"
+                    value={packageData.maxInfluencers || 1}
+                    onChange={handleNumberChange}
+                  />
+                </div>
+              </div>
+            </TabsContent>
+          </CardContent>
+        </Tabs>
+        
+        <CardFooter className="flex justify-between pt-2">
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSaving} className="flex items-center gap-2">
+            {isSaving ? 'Saving...' : (
+              <>
+                <Save className="h-4 w-4" />
+                Save Package
+              </>
+            )}
+          </Button>
+        </CardFooter>
+      </Card>
+    </form>
+  );
+};
+
+export default SubscriptionPackageForm;
