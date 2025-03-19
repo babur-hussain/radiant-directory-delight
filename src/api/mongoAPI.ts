@@ -1,8 +1,9 @@
+
 import axios from 'axios';
 import { toast } from '@/hooks/use-toast';
 
 // API base URL with environment fallback and more robust fallback mechanism
-const API_BASE_URL = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE_URL 
+export const API_BASE_URL = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE_URL 
   ? process.env.NEXT_PUBLIC_API_BASE_URL 
   : 'http://localhost:3001/api';
 

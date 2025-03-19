@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,9 @@ import { setupMongoDB } from '@/utils/setupMongoDB';
 import { diagnoseMongoDbConnection, testConnectionWithRetry } from '@/utils/mongoDebug';
 import { connectToMongoDB } from '@/config/mongodb';
 import { isServerRunning } from '@/api/mongoAPI';
+
+// Import API_BASE_URL from the mongoAPI file
+import { API_BASE_URL } from '@/api/mongoAPI';
 
 const MongoDBInitializationPanel: React.FC = () => {
   const [status, setStatus] = useState<'idle' | 'processing' | 'completed' | 'error'>('idle');
