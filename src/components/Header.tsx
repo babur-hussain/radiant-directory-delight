@@ -112,7 +112,9 @@ const Header = () => {
     <header className="fixed top-0 left-0 w-full z-[9999] bg-white shadow-sm h-16 main-header">
       <div className="container max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-2">
-          <span className="logo-text font-bold text-2xl bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">Grow Bharat Vyapaar</span>
+          <span className="logo-text font-bold text-2xl bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent" style={{ color: 'rgba(0, 0, 0, 0.8)' }}>
+            Grow Bharat Vyapaar
+          </span>
         </Link>
 
         <nav className="hidden md:flex items-center space-x-8">
@@ -139,13 +141,13 @@ const Header = () => {
               onClick={handleDashboardClick}
             >
               <LayoutDashboard className="h-4 w-4 mr-2" />
-              Dashboard
+              <span className="text-gray-800">Dashboard</span>
             </Button>
           )}
           
           {isAuthenticated ? <UserMenu /> : <Button variant="default" size="sm" className="rounded-full transition-smooth" onClick={() => setIsAuthModalOpen(true)}>
               <LogIn className="h-4 w-4 mr-2" />
-              Login / Register
+              <span>Login / Register</span>
             </Button>}
         </div>
 
@@ -164,16 +166,16 @@ const Header = () => {
            }}>
         <div className="container max-w-7xl mx-auto px-4 py-4 flex flex-col space-y-4">
           <Link to="/" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
-            Home
+            <span className="text-gray-800">Home</span>
           </Link>
           <Link to="/categories" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
-            Categories
+            <span className="text-gray-800">Categories</span>
           </Link>
           <Link to="/businesses" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
-            Businesses
+            <span className="text-gray-800">Businesses</span>
           </Link>
           <Link to="/about" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
-            About
+            <span className="text-gray-800">About</span>
           </Link>
           <div className="pt-2 flex flex-col space-y-3">
             {shouldShowDashboard() && (
@@ -183,19 +185,19 @@ const Header = () => {
                 onClick={handleDashboardClick}
               >
                 <LayoutDashboard className="h-4 w-4 mr-2" />
-                Dashboard
+                <span className="text-gray-800">Dashboard</span>
               </Button>
             )}
             
             {isAuthenticated ? <Button variant="default" className="justify-start rounded-full w-full transition-smooth" onClick={handleMobileLogout}>
                 <LogIn className="h-4 w-4 mr-2" />
-                Logout
+                <span>Logout</span>
               </Button> : <Button variant="default" className="justify-start rounded-full w-full transition-smooth" onClick={() => {
                 setIsAuthModalOpen(true);
                 setIsMobileMenuOpen(false);
               }}>
                 <LogIn className="h-4 w-4 mr-2" />
-                Login / Register
+                <span>Login / Register</span>
               </Button>}
           </div>
         </div>

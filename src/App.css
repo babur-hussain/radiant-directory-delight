@@ -22,7 +22,9 @@ header.main-header {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
   z-index: 9999 !important;
   height: 64px !important;
-  display: flex !important;  /* Changed from block to flex */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   visibility: visible !important;
   opacity: 1 !important;
 }
@@ -31,11 +33,13 @@ header.main-header {
 header.main-header > div,
 header.main-header nav,
 header.main-header a,
-header.main-header button {
+header.main-header button,
+header.main-header span {
   display: flex !important;
   visibility: visible !important;
   opacity: 1 !important;
   z-index: 10000 !important;
+  color: inherit !important;
 }
 
 /* Fix z-index and display for menu elements */
