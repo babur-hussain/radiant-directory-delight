@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { UserRole, User } from "@/types/auth";
+import { updateUserRole } from "@/features/auth/authService";
 
 const ProfilePage = () => {
   const { user, isAuthenticated, logout, updateUserRole } = useAuth();
@@ -95,6 +97,7 @@ const ProfilePage = () => {
     
     try {
       if (values.role !== user?.role && user?.uid) {
+        // Fixed: Pass uid and role as separate arguments
         await updateUserRole(user.uid, values.role);
       }
       

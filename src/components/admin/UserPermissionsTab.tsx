@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -17,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { updateUserRole, updateUserPermission, getAllUsers, ensureTestUsers } from "@/features/auth/userManagement";
+import { updateUserRole as userManagementUpdateRole, updateUserPermission, getAllUsers, ensureTestUsers } from "@/features/auth/userManagement";
 import UserSubscriptionAssignment from "./UserSubscriptionAssignment";
 import { UserRole } from "@/types/auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -159,7 +160,11 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
       const typedRole = newRole as UserRole;
       console.log(`Updating role for user ${userId} to ${typedRole}`);
       
-      await updateUserRole(userId, typedRole);
+      // Fixed: updateUserRole expects only userId as parameter now
+      await userManagementUpdateRole({
+        ...user,
+        role: typedRole
+      });
       
       const updatedUsers = users.map(u => 
         (u.id === userId || u.uid === userId) ? { ...u, role: typedRole } : u

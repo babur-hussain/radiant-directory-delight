@@ -61,5 +61,5 @@ SubscriptionSchema.index({ userId: 1 });
 SubscriptionSchema.index({ status: 1 });
 SubscriptionSchema.index({ packageId: 1 });
 
-// Export the model - Fix: use the correct syntax for mongoose model with interface
-export const Subscription = mongoose.model<ISubscription>('Subscription', SubscriptionSchema);
+// Export the model - Fix: use the correct syntax for mongoose model
+export const Subscription = mongoose.model('Subscription', SubscriptionSchema);
