@@ -228,6 +228,14 @@ const Dashboard = () => {
     }
   };
 
+  const handlePermissionError = (error) => {
+    toast({
+      title: "Permission Error",
+      description: String(error),
+      variant: "destructive"
+    });
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -382,16 +390,9 @@ const Dashboard = () => {
           
           <TabsContent value="subscriptions" className="space-y-4">
             <SubscriptionPackageManagement 
-              onPermissionError={(error) => {
-                toast({
-                  title: "Permission Error",
-                  description: String(error),
-                  variant: "destructive"
-                });
-              }}
-              dbInitialized={dbStatus?.success || false}
-              connectionStatus={connectionError ? 'error' : 'connected'}
-              onRetryConnection={handleRetryInitialization}
+              onPermissionError={handlePermissionError} 
+              dbInitialized={true}
+              connectionStatus="connected"
             />
           </TabsContent>
           

@@ -31,7 +31,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // Generate a new ID if this is a new package
     if (!packageData.id) {
       setPackageData(prev => ({
         ...prev,
@@ -69,7 +68,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
       [name]: value
     }));
 
-    // Handle special cases
     if (name === 'paymentType') {
       if (value === 'one-time') {
         setPackageData(prev => ({
@@ -390,60 +388,4 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
                     Select which dashboard sections are available with this package
                   </p>
                   
-                  {/* This would be a more complex component in a real implementation */}
-                  <div className="border rounded-md p-4">
-                    <p className="text-sm text-muted-foreground">
-                      Dashboard section configuration will be implemented in a future update
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-          </CardContent>
-        </Tabs>
-        
-        <CardFooter className="flex justify-between">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={onCancel}
-            className="flex items-center gap-1"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Cancel
-          </Button>
-          
-          <div className="flex gap-2">
-            {packageData.id && (
-              <Button 
-                type="button" 
-                variant="destructive"
-                className="flex items-center gap-1"
-                onClick={() => {
-                  // This would typically show a confirmation dialog
-                  if (confirm("Are you sure you want to delete this package?")) {
-                    // Handle deletion
-                  }
-                }}
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </Button>
-            )}
-            
-            <Button 
-              type="submit" 
-              disabled={isSaving}
-              className="flex items-center gap-1"
-            >
-              <Save className="h-4 w-4" />
-              {isSaving ? 'Saving...' : 'Save Package'}
-            </Button>
-          </div>
-        </CardFooter>
-      </Card>
-    </form>
-  );
-};
-
-export default SubscriptionPackageForm;
+                  <

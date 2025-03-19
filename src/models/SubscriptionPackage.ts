@@ -18,7 +18,6 @@ export interface ISubscriptionPackage {
   billingCycle?: "monthly" | "yearly";
   advancePaymentMonths?: number;
   dashboardSections?: string[];
-  // Add missing properties
   isActive?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -43,8 +42,12 @@ const SubscriptionPackageSchema = mongoose.Schema({
   paymentType: { type: String, enum: ['recurring', 'one-time'], default: 'recurring', required: true },
   billingCycle: { type: String, enum: ['monthly', 'yearly'] },
   advancePaymentMonths: { type: Number, default: 0 },
-  // Add dashboardSections field to schema
-  dashboardSections: [{ type: String }]
+  dashboardSections: [{ type: String }],
+  isActive: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+  maxBusinesses: { type: Number, default: 1 },
+  maxInfluencers: { type: Number, default: 1 }
 });
 
 // Create indexes for frequently queried fields
