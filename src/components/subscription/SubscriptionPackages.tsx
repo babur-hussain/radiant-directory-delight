@@ -23,7 +23,10 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
   
   // Use our hook to fetch packages from MongoDB
-  const { packages, isLoading, error } = useSubscriptionPackages(userRole);
+  const { packages, isLoading, error } = useSubscriptionPackages({ 
+    type: userRole as string,
+    initialOfflineMode: false
+  });
 
   // Log for debugging
   useEffect(() => {

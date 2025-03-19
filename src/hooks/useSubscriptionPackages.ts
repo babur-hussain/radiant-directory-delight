@@ -5,6 +5,7 @@ import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 
 export interface UseSubscriptionPackagesOptions {
   initialOfflineMode?: boolean;
+  type?: string;
 }
 
 export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions = {}) => {
@@ -31,7 +32,7 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
     try {
       // In a real app, this would be an API call
       // Mock data for now
-      const mockPackages: ISubscriptionPackage[] = [
+      let mockPackages: ISubscriptionPackage[] = [
         {
           id: 'business-1',
           title: 'Business Basic',
@@ -70,6 +71,11 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
         }
       ];
 
+      // Filter by type if provided
+      if (options.type) {
+        mockPackages = mockPackages.filter(pkg => pkg.type === options.type);
+      }
+
       // Simulate some delay
       setTimeout(() => {
         setPackages(mockPackages);
@@ -86,7 +92,7 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
 
   useEffect(() => {
     fetchPackages();
-  }, []);
+  }, [options.type]); // Re-fetch when type changes
 
   return {
     packages,
