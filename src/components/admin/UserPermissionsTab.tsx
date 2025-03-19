@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -20,13 +19,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { updateUserRole, updateUserPermission, getAllUsers, ensureTestUsers } from "@/features/auth/userManagement";
 import UserSubscriptionAssignment from "./UserSubscriptionAssignment";
-import { UserRole, User } from "@/types/auth";
+import { UserRole } from "@/types/auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { connectToMongoDB } from "@/config/mongodb";
-import { AlertCircle, Loader2, RefreshCw, UserCheck, Search, Eye } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import UserDetailsPopup from "./UserDetailsPopup";
+import { AlertCircle, Loader2, RefreshCw, UserCheck } from "lucide-react";
 import axios from "axios";
 
 interface UserPermissionsTabProps {
@@ -38,35 +35,17 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
   onRefresh,
   onPermissionError 
 }) => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [mongoConnected, setMongoConnected] = useState<boolean | null>(null);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
-  const [employeeCodeFilter, setEmployeeCodeFilter] = useState("");
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isUserDetailsOpen, setIsUserDetailsOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     checkMongoConnection();
     loadUsers();
   }, []);
-
-  useEffect(() => {
-    // Filter users based on the employee code
-    if (!employeeCodeFilter) {
-      setFilteredUsers(users);
-      return;
-    }
-
-    const filtered = users.filter(user => 
-      user.employeeCode && 
-      user.employeeCode.toLowerCase().includes(employeeCodeFilter.toLowerCase())
-    );
-    setFilteredUsers(filtered);
-  }, [employeeCodeFilter, users]);
 
   const checkMongoConnection = async () => {
     try {
@@ -134,7 +113,6 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
         });
         
         setUsers(sortedUsers);
-        setFilteredUsers(sortedUsers);
       } else {
         console.warn("No users returned from getAllUsers()");
         setLoadingError("No users found in database");
@@ -188,11 +166,6 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
       );
       
       setUsers(updatedUsers);
-      setFilteredUsers(
-        filteredUsers.map(u => 
-          (u.id === userId || u.uid === userId) ? { ...u, role: typedRole } : u
-        )
-      );
       
       try {
         // Update in MongoDB instead of Firestore
@@ -242,11 +215,6 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
       );
       
       setUsers(updatedUsers);
-      setFilteredUsers(
-        filteredUsers.map(u => 
-          (u.id === userId || u.uid === userId) ? { ...u, isAdmin } : u
-        )
-      );
       
       try {
         // Update in MongoDB instead of Firestore
@@ -320,11 +288,6 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
     } finally {
       setUpdatingUserId(null);
     }
-  };
-
-  const handleViewUserDetails = (user: User) => {
-    setSelectedUser(user);
-    setIsUserDetailsOpen(true);
   };
 
   return (
@@ -401,35 +364,20 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
         </p>
       </div>
 
-      {/* Employee Code Filter */}
-      <div className="flex items-center mb-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Filter by Employee Code"
-            value={employeeCodeFilter}
-            onChange={(e) => setEmployeeCodeFilter(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
-
       <div className="rounded-md border shadow">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>User</TableHead>
-              <TableHead>Employee Code</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Admin</TableHead>
               <TableHead>Subscription</TableHead>
-              <TableHead className="w-[80px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={4} className="h-24 text-center">
                   <div className="flex justify-center items-center">
                     <Loader2 className="h-6 w-6 animate-spin mr-2" />
                     <span>Loading users...</span>
@@ -438,23 +386,14 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
               </TableRow>
             )}
             
-            {!isLoading && filteredUsers.length > 0 ? (
-              filteredUsers.map((user) => (
+            {!isLoading && users.length > 0 ? (
+              users.map((user) => (
                 <TableRow key={user.id || user.uid}>
                   <TableCell>
                     <div>
                       <p className="font-medium">{user.name || user.displayName || "N/A"}</p>
                       <p className="text-sm text-muted-foreground">{user.email}</p>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    {user.employeeCode ? (
-                      <Badge variant="outline" className="bg-blue-50 text-blue-800">
-                        {user.employeeCode}
-                      </Badge>
-                    ) : (
-                      <span className="text-gray-400 text-sm">Not provided</span>
-                    )}
                   </TableCell>
                   <TableCell>
                     <Select
@@ -501,25 +440,13 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
                       disabled={isLoading || updatingUserId === (user.id || user.uid)}
                     />
                   </TableCell>
-                  <TableCell>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      onClick={() => handleViewUserDetails(user)}
-                      title="View user details"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
                 </TableRow>
               ))
             ) : (
               !isLoading && (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
-                    {employeeCodeFilter ? 
-                      "No users matching the employee code filter" : 
-                      loadingError ? "Error loading users" : "No users found"}
+                  <TableCell colSpan={4} className="h-24 text-center">
+                    {loadingError ? "Error loading users" : "No users found"}
                   </TableCell>
                 </TableRow>
               )
@@ -527,13 +454,6 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
           </TableBody>
         </Table>
       </div>
-
-      {/* User details popup */}
-      <UserDetailsPopup 
-        isOpen={isUserDetailsOpen} 
-        onClose={() => setIsUserDetailsOpen(false)} 
-        user={selectedUser} 
-      />
     </div>
   );
 };

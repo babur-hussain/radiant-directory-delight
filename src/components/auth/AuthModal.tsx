@@ -8,7 +8,7 @@ import {
   DialogTitle, 
   DialogDescription 
 } from "@/components/ui/dialog";
-import { UserRole } from "@/types/auth";
+import { UserRole } from "@/contexts/AuthContext";
 import { LogIn, UserPlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -44,18 +44,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
       }, 200); // Delay to allow animation to complete
     }
     onOpenChange(open);
-  };
-
-  // Create an empty signup handler that returns a Promise
-  const handleSignup = async (
-    email: string,
-    password: string,
-    name: string,
-    role: UserRole,
-    additionalData?: any
-  ): Promise<void> => {
-    // This is a placeholder function that returns a Promise
-    return Promise.resolve();
   };
 
   return (
@@ -96,7 +84,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
                   <RegisterTypeSelector onSelectType={setRegisterType} />
                 ) : (
                   <RegisterForm 
-                    onSignup={handleSignup}  
+                    registerType={registerType} 
                     onBack={() => setRegisterType(null)} 
                     onClose={() => onOpenChange(false)} 
                   />

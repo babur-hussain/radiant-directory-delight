@@ -45,10 +45,9 @@ interface RegisterFormProps {
     additionalData?: any
   ) => Promise<void>;
   onClose: () => void;
-  onBack?: () => void;
 }
 
-const RegisterForm: React.FC<RegisterFormProps> = ({ onSignup, onClose, onBack }) => {
+const RegisterForm: React.FC<RegisterFormProps> = ({ onSignup, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userType, setUserType] = useState<UserRole>("User");
   const { toast } = useToast();
@@ -92,6 +91,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSignup, onClose, onBack }
   return (
     <div>
       <RegisterTypeSelector
+        selectedType={userType}
         onSelectType={(type) => setUserType(type)}
       />
 
