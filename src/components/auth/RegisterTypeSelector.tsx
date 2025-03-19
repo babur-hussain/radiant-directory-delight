@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Store, Users } from "lucide-react";
@@ -5,9 +6,13 @@ import { UserRole } from "@/types/auth";
 
 interface RegisterTypeSelectorProps {
   onSelectType: (type: UserRole) => void;
+  selectedType?: UserRole;
 }
 
-const RegisterTypeSelector: React.FC<RegisterTypeSelectorProps> = ({ onSelectType }) => {
+const RegisterTypeSelector: React.FC<RegisterTypeSelectorProps> = ({ 
+  onSelectType,
+  selectedType = null 
+}) => {
   return (
     <div className="space-y-4">
       <p className="text-center text-sm text-muted-foreground mb-4">
@@ -15,7 +20,7 @@ const RegisterTypeSelector: React.FC<RegisterTypeSelectorProps> = ({ onSelectTyp
       </p>
       <Button 
         onClick={() => onSelectType("Business")} 
-        variant="outline" 
+        variant={selectedType === "Business" ? "default" : "outline"}
         className="w-full mb-2 py-6"
       >
         <Store className="mr-2 h-5 w-5" />
@@ -23,7 +28,7 @@ const RegisterTypeSelector: React.FC<RegisterTypeSelectorProps> = ({ onSelectTyp
       </Button>
       <Button 
         onClick={() => onSelectType("Influencer")} 
-        variant="outline" 
+        variant={selectedType === "Influencer" ? "default" : "outline"} 
         className="w-full py-6"
       >
         <Users className="mr-2 h-5 w-5" />

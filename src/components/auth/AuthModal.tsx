@@ -46,6 +46,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
     onOpenChange(open);
   };
 
+  // Mock onSignup function that returns a promise
+  const handleSignup = async (
+    email: string,
+    password: string,
+    name: string,
+    role: UserRole,
+    additionalData?: any
+  ): Promise<void> => {
+    // This is a placeholder. In a real app, this would call the auth provider's signup method
+    console.log("Sign up called with:", { email, password, name, role, additionalData });
+    // Always return a Promise
+    return Promise.resolve();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden p-0">
@@ -87,6 +101,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
                     registerType={registerType} 
                     onBack={() => setRegisterType(null)} 
                     onClose={() => onOpenChange(false)} 
+                    onSignup={handleSignup}
                   />
                 )}
               </TabsContent>

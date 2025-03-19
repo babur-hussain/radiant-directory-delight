@@ -45,12 +45,26 @@ interface RegisterFormProps {
     additionalData?: any
   ) => Promise<void>;
   onClose: () => void;
+  registerType?: UserRole;
+  onBack?: () => void;
 }
 
-const RegisterForm: React.FC<RegisterFormProps> = ({ onSignup, onClose }) => {
+const RegisterForm: React.FC<RegisterFormProps> = ({ 
+  onSignup, 
+  onClose,
+  registerType = null,
+  onBack
+}) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [userType, setUserType] = useState<UserRole>("User");
+  const [userType, setUserType] = useState<UserRole>(registerType || "User");
   const { toast } = useToast();
+
+  // Update local state when registerType prop changes
+  React.useEffect(() => {
+    if (registerType) {
+      setUserType(registerType);
+    }
+  }, [registerType]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -90,130 +104,144 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSignup, onClose }) => {
 
   return (
     <div>
-      <RegisterTypeSelector
-        selectedType={userType}
-        onSelectType={(type) => setUserType(type)}
-      />
-
-      <div className="mt-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="you@example.com"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirm Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="employeeCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-1">
-                    <IdCard className="h-4 w-4" />
-                    Employee Code (Optional)
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Enter your employee code if applicable"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isSubmitting}
+      {!registerType ? (
+        <RegisterTypeSelector
+          selectedType={userType}
+          onSelectType={(type) => setUserType(type)}
+        />
+      ) : (
+        <>
+          {onBack && (
+            <Button 
+              variant="ghost" 
+              className="mb-4" 
+              onClick={onBack}
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating Account...
-                </>
-              ) : (
-                <>
-                  <MailCheck className="mr-2 h-4 w-4" />
-                  Register as {userType}
-                </>
-              )}
+              ← Back to type selection
             </Button>
-          </form>
-        </Form>
-      </div>
+          )}
+          
+          <div className="mt-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <Separator className="w-full" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">
-            Or continue with
-          </span>
-        </div>
-      </div>
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="you@example.com"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-      <SocialLoginButtons
-        onGoogleLogin={() => {}}
-        isDisabled={isSubmitting}
-      />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirm Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="employeeCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1">
+                        <IdCard className="h-4 w-4" />
+                        Employee Code (Optional)
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Enter your employee code if applicable"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating Account...
+                    </>
+                  ) : (
+                    <>
+                      <MailCheck className="mr-2 h-4 w-4" />
+                      Register as {userType}
+                    </>
+                  )}
+                </Button>
+              </form>
+            </Form>
+          </div>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <Separator className="w-full" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <SocialLoginButtons
+            onGoogleLogin={() => {}}
+            isDisabled={isSubmitting}
+          />
+        </>
+      )}
     </div>
   );
 };
