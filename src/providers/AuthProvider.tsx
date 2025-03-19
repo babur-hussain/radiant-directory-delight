@@ -8,27 +8,17 @@ import {
   User as FirebaseUser 
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
-import { AuthContextType } from '@/types/auth';
+import { AuthContextType, User, UserRole } from '@/types/auth';
 import { createOrUpdateUser, fetchUserByUid, updateUserLoginTimestamp } from '@/api/mongoAPI';
 import Loading from '@/components/ui/loading';
-
-// Define the AuthUser type locally since it's not exported from @/types/auth
-interface AuthUser {
-  uid: string;
-  email: string | null;
-  displayName: string | null;
-  photoURL: string | null;
-  isAdmin: boolean;
-  role: string;
-}
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Convert Firebase user to our AuthUser type and save to MongoDB
+  // Convert Firebase user to our User type and save to MongoDB
   const processUser = async (firebaseUser: FirebaseUser | null) => {
     if (!firebaseUser) {
       setUser(null);
@@ -53,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log("Creating new user in MongoDB");
         mongoUser = await createOrUpdateUser({
           ...userData,
-          role: "user",
+          role: "User" as UserRole, // Cast as UserRole to satisfy type constraint
           isAdmin: false,
           createdAt: new Date()
         });
@@ -62,14 +52,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await updateUserLoginTimestamp(firebaseUser.uid);
       }
       
-      // Set the user in the context
+      // Set the user in the context with proper type casting
       setUser({
         uid: firebaseUser.uid,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName,
         photoURL: firebaseUser.photoURL,
         isAdmin: mongoUser.isAdmin || false,
-        role: mongoUser.role || 'user'
+        role: (mongoUser.role as UserRole) || 'User' as UserRole
       });
     } catch (error) {
       console.error("Error processing user:", error);
@@ -80,7 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         displayName: firebaseUser.displayName,
         photoURL: firebaseUser.photoURL,
         isAdmin: false,
-        role: 'user'
+        role: 'User' as UserRole
       });
     }
   };
@@ -115,10 +105,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await firebaseSignOut(auth);
       setUser(null);
-      return true;
+      // Return void instead of boolean to match interface
     } catch (error) {
       console.error("Sign out error:", error);
-      return false;
+      // Return void instead of boolean to match interface
     }
   };
 
@@ -126,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     isAuthenticated: !!user,
     loading,
-    loginWithGoogle,
+    loginWithGoogle, // Make sure this matches the expected property name
     signOut
   };
 

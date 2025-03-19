@@ -10,6 +10,7 @@ interface BusinessListingsHeaderProps {
   handleRefresh: () => void;
   handleAddBusiness: () => void;
   isRefreshing: boolean;
+  // Update the type definition to match expected parameters
   handleUploadComplete: (success: boolean, message: string, count?: number) => void;
 }
 
@@ -67,7 +68,7 @@ const BusinessListingsHeader: React.FC<BusinessListingsHeaderProps> = ({
         </Button>
       </div>
       
-      {/* Pass the handleUploadComplete function to CSVUploadDialog */}
+      {/* Make sure the onUploadComplete properly passes all the expected arguments */}
       <CSVUploadDialog 
         show={showUploadDialog}
         onClose={() => setShowUploadDialog(false)}

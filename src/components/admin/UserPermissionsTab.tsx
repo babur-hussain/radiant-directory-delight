@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -20,13 +19,12 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { updateUserRole, updateUserPermission, getAllUsers, ensureTestUsers } from "@/features/auth/userManagement";
 import UserSubscriptionAssignment from "./UserSubscriptionAssignment";
-import { db } from "@/config/firebase";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { UserRole } from "@/types/auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { connectToMongoDB } from "@/config/mongodb";
 import { AlertCircle, Loader2, RefreshCw, UserCheck } from "lucide-react";
+import axios from "axios";
 
 interface UserPermissionsTabProps {
   onRefresh?: () => void;
@@ -170,17 +168,15 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
       setUsers(updatedUsers);
       
       try {
-        // Also update in Firestore if available
-        const userDocId = userId;
-        const userDoc = doc(db, "users", userDocId);
-        await updateDoc(userDoc, { 
+        // Update in MongoDB instead of Firestore
+        await axios.post('http://localhost:3001/api/users', {
+          id: userId,
           role: typedRole,
-          lastUpdated: serverTimestamp()
+          lastUpdated: new Date()
         });
-        console.log(`✅ User role updated in Firestore: ${typedRole} for ${userId}`);
-      } catch (firestoreError) {
-        console.error("❌ Firestore update failed:", firestoreError);
-        // Continue even if Firestore update fails
+        console.log(`✅ User role updated in MongoDB: ${typedRole} for ${userId}`);
+      } catch (mongoError) {
+        console.error("❌ MongoDB update failed:", mongoError);
       }
       
       toast({
@@ -221,17 +217,15 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
       setUsers(updatedUsers);
       
       try {
-        // Also update in Firestore if available
-        const userDocId = userId;
-        const userDoc = doc(db, "users", userDocId);
-        await updateDoc(userDoc, { 
+        // Update in MongoDB instead of Firestore
+        await axios.post('http://localhost:3001/api/users', {
+          id: userId,
           isAdmin: isAdmin,
-          lastUpdated: serverTimestamp()
+          lastUpdated: new Date()
         });
-        console.log(`✅ Admin status updated in Firestore: ${isAdmin} for ${userId}`);
-      } catch (firestoreError) {
-        console.error("❌ Firestore update failed:", firestoreError);
-        // Continue even if Firestore update fails
+        console.log(`✅ Admin status updated in MongoDB: ${isAdmin} for ${userId}`);
+      } catch (mongoError) {
+        console.error("❌ MongoDB update failed:", mongoError);
       }
       
       toast({
@@ -269,18 +263,16 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
       });
       
       try {
-        // Also update in Firestore if available
-        const userDocId = userId;
-        const userDoc = doc(db, "users", userDocId);
-        await updateDoc(userDoc, {
+        // Update in MongoDB instead of Firestore
+        await axios.post('http://localhost:3001/api/users', {
+          id: userId,
           subscriptionPackage: packageId,
-          subscriptionAssignedAt: serverTimestamp(),
-          lastUpdated: serverTimestamp()
+          subscriptionAssignedAt: new Date(),
+          lastUpdated: new Date()
         });
-        console.log(`✅ Subscription assigned in Firestore: ${packageId} to ${userId}`);
-      } catch (firestoreError) {
-        console.error("❌ Failed to assign subscription in Firestore:", firestoreError);
-        // Continue even if Firestore update fails
+        console.log(`✅ Subscription assigned in MongoDB: ${packageId} to ${userId}`);
+      } catch (mongoError) {
+        console.error("❌ Failed to assign subscription in MongoDB:", mongoError);
       }
       
       if (onRefresh) {

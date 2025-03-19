@@ -1,191 +1,99 @@
 
-import { User } from '../models/User';
-import { SubscriptionPackage } from '../models/SubscriptionPackage';
-import { connectToMongoDB } from '../config/mongodb';
-import { db } from '@/config/firebase';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import axios from 'axios';
+import { toast } from '@/hooks/use-toast';
 
-// Available dashboard sections for Business users
-export const BUSINESS_DASHBOARD_SECTIONS = [
-  'marketing',
-  'reels',
-  'creatives',
-  'ratings',
-  'seo',
-  'google_listing',
-  'growth',
-  'leads',
-  'reach'
-];
-
-// Available dashboard sections for Influencer users
-export const INFLUENCER_DASHBOARD_SECTIONS = [
-  'reels',
-  'creatives',
-  'ratings',
-  'seo',
-  'google_listing',
-  'performance',
-  'leads',
-  'rank'
-];
-
-// Get dashboard sections for a specific role
-export const getDashboardSectionsByRole = (role: string): string[] => {
-  if (role === 'Business' || role.toLowerCase() === 'business') {
-    return BUSINESS_DASHBOARD_SECTIONS;
-  } else {
-    return INFLUENCER_DASHBOARD_SECTIONS;
-  }
-};
-
-// Get dashboard sections for a specific user
-export const getUserDashboardSections = async (userId: string): Promise<string[]> => {
-  if (!userId) {
-    console.error('No user ID provided');
+// Function to get dashboard sections for a user
+export const getUserDashboardSections = async (userId: string, role: string) => {
+  try {
+    console.log(`Fetching dashboard sections for user ${userId} with role ${role} from MongoDB`);
+    
+    const response = await axios.get(`http://localhost:3001/api/dashboard-sections?userId=${userId}&role=${role}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching dashboard sections:", error);
+    toast({
+      title: "Error",
+      description: "Failed to load dashboard sections. Using defaults.",
+      variant: "destructive"
+    });
+    
+    // Return default sections based on role
+    if (role === "Business") {
+      return [
+        "ratings",
+        "creatives",
+        "google_listing",
+        "reels",
+        "seo",
+        "growth",
+        "leads",
+        "campaigns"
+      ];
+    } else if (role === "Influencer") {
+      return [
+        "reels",
+        "creatives",
+        "ratings",
+        "seo",
+        "google_listing",
+        "performance",
+        "leads",
+        "rank"
+      ];
+    }
+    
     return [];
   }
-  
+};
+
+// Function to save dashboard sections for a user
+export const saveDashboardSections = async (userId: string, role: string, sections: string[]) => {
   try {
-    // First try to get sections from Firebase
-    try {
-      const userDocRef = doc(db, 'users', userId);
-      const userDocSnapshot = await getDoc(userDocRef);
-      
-      if (userDocSnapshot.exists()) {
-        const userData = userDocSnapshot.data();
-        if (userData.customDashboardSections && Array.isArray(userData.customDashboardSections)) {
-          console.log(`Found custom dashboard sections in Firebase for user ${userId}:`, userData.customDashboardSections);
-          return userData.customDashboardSections;
-        }
-      }
-    } catch (firebaseError) {
-      console.error('Error getting user dashboard sections from Firebase:', firebaseError);
-    }
+    console.log(`Saving dashboard sections for user ${userId} with role ${role} to MongoDB`);
     
-    // Then try MongoDB
-    try {
-      await connectToMongoDB();
-      
-      // Find the user
-      const user = await User.findOne({ uid: userId });
-      
-      if (!user) {
-        console.error(`User with ID ${userId} not found in MongoDB`);
-      } else {
-        // If the user has custom dashboard sections, return those
-        if (user.customDashboardSections && user.customDashboardSections.length > 0) {
-          console.log(`Found custom dashboard sections in MongoDB for user ${userId}:`, user.customDashboardSections);
-          return user.customDashboardSections;
-        }
-        
-        // If the user has a subscription package, get the sections from there
-        if (user.subscriptionPackage) {
-          const packageData = await SubscriptionPackage.findOne({ id: user.subscriptionPackage });
-          
-          if (packageData && packageData.dashboardSections && packageData.dashboardSections.length > 0) {
-            console.log(`Found dashboard sections from subscription package for user ${userId}:`, packageData.dashboardSections);
-            return packageData.dashboardSections;
-          }
-        }
-        
-        // Return default sections based on user role
-        const sections = getDashboardSectionsByRole(user.role || 'Business');
-        console.log(`Using default sections based on role for user ${userId}:`, sections);
-        return sections;
-      }
-    } catch (mongoError) {
-      console.error('Error getting user dashboard sections from MongoDB:', mongoError);
-    }
+    await axios.post('http://localhost:3001/api/dashboard-sections', {
+      userId,
+      role,
+      sections
+    });
     
-    // Fallback to default sections based on mock role
-    // Use the last digit of userId to determine a mock role for testing
-    const lastChar = userId.charAt(userId.length - 1);
-    const mockRole = parseInt(lastChar) % 2 === 0 ? 'Business' : 'Influencer';
-    const defaultSections = getDashboardSectionsByRole(mockRole);
-    console.log(`Using fallback default sections for user ${userId}:`, defaultSections);
-    return defaultSections;
-    
+    return true;
   } catch (error) {
-    console.error('Error getting user dashboard sections:', error);
-    return getDashboardSectionsByRole('Business'); // Default fallback
+    console.error("Error saving dashboard sections:", error);
+    toast({
+      title: "Error",
+      description: "Failed to save dashboard sections.",
+      variant: "destructive"
+    });
+    return false;
   }
 };
 
-// Update user's custom dashboard sections
-export const updateUserDashboardSections = async (userId: string, sections: string[]): Promise<boolean> => {
-  if (!userId) {
-    console.error('No user ID provided');
-    return false;
+// Function to get available sections for a role
+export const getAvailableSectionsForRole = (role: string) => {
+  if (role === "Business") {
+    return [
+      { id: "ratings", name: "Business Ratings" },
+      { id: "creatives", name: "Creative Designs" },
+      { id: "google_listing", name: "Google Business Listing" },
+      { id: "reels", name: "Reels & Ads" },
+      { id: "seo", name: "SEO Optimization" },
+      { id: "growth", name: "Growth Analytics" },
+      { id: "leads", name: "Leads & Inquiries" },
+      { id: "campaigns", name: "Marketing Campaigns" }
+    ];
+  } else if (role === "Influencer") {
+    return [
+      { id: "reels", name: "Reels Progress" },
+      { id: "creatives", name: "Creatives Tracker" },
+      { id: "ratings", name: "Ratings & Reviews" },
+      { id: "seo", name: "SEO Progress" },
+      { id: "google_listing", name: "Google Listing Status" },
+      { id: "performance", name: "Performance Metrics" },
+      { id: "leads", name: "Leads Generated" },
+      { id: "rank", name: "Influencer Rank" }
+    ];
   }
   
-  let success = false;
-  
-  // First try to update in Firebase
-  try {
-    const userDocRef = doc(db, 'users', userId);
-    const userDocSnapshot = await getDoc(userDocRef);
-    
-    if (userDocSnapshot.exists()) {
-      await updateDoc(userDocRef, {
-        customDashboardSections: sections
-      });
-      console.log(`Updated custom dashboard sections in Firebase for user ${userId}:`, sections);
-      success = true;
-    } else {
-      await setDoc(userDocRef, {
-        customDashboardSections: sections,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-      console.log(`Created custom dashboard sections in Firebase for user ${userId}:`, sections);
-      success = true;
-    }
-  } catch (firebaseError) {
-    console.error('Error updating user dashboard sections in Firebase:', firebaseError);
-  }
-  
-  // Then try MongoDB
-  if (!success) {
-    try {
-      await connectToMongoDB();
-      
-      const result = await User.findOneAndUpdate(
-        { uid: userId },
-        { $set: { customDashboardSections: sections } },
-        { new: true }
-      );
-      
-      if (result) {
-        console.log(`Updated custom dashboard sections in MongoDB for user ${userId}:`, sections);
-        success = true;
-      }
-    } catch (mongoError) {
-      console.error('Error updating user dashboard sections in MongoDB:', mongoError);
-    }
-  }
-  
-  return success;
-};
-
-// Update subscription package dashboard sections
-export const updatePackageDashboardSections = async (packageId: string, sections: string[]): Promise<boolean> => {
-  if (!packageId) {
-    console.error('No package ID provided');
-    return false;
-  }
-  
-  try {
-    await connectToMongoDB();
-    
-    const result = await SubscriptionPackage.findOneAndUpdate(
-      { id: packageId },
-      { $set: { dashboardSections: sections } },
-      { new: true }
-    );
-    
-    return !!result;
-  } catch (error) {
-    console.error('Error updating package dashboard sections:', error);
-    return false;
-  }
+  return [];
 };

@@ -17,6 +17,7 @@ import { useDashboardServices } from "@/hooks/useDashboardServices";
 import { useSubscription } from "@/hooks";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks";
+import axios from "axios";
 
 interface InfluencerDashboardProps {
   userId: string;
