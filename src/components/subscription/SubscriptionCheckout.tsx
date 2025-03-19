@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,13 +18,25 @@ interface SubscriptionCheckoutProps {
 
 const convertToISubscriptionPackage = (pkg: SubscriptionPackage): ISubscriptionPackage => {
   return {
-    id: pkg.id,
-    name: pkg.name || pkg.title || '',
-    description: pkg.description || pkg.shortDescription || '',
+    id: pkg.id || '',
+    name: pkg.title || '',
+    description: pkg.shortDescription || '',
     price: pkg.price || 0,
     type: pkg.type || 'Business',
-    duration: pkg.duration || pkg.durationMonths || 12,
-    ...(pkg as any)
+    duration: pkg.durationMonths || 12,
+    title: pkg.title,
+    shortDescription: pkg.shortDescription,
+    fullDescription: pkg.fullDescription,
+    features: pkg.features,
+    setupFee: pkg.setupFee,
+    durationMonths: pkg.durationMonths,
+    paymentType: pkg.paymentType,
+    billingCycle: pkg.billingCycle,
+    advancePaymentMonths: pkg.advancePaymentMonths,
+    monthlyPrice: pkg.monthlyPrice,
+    popular: pkg.popular,
+    isPopular: pkg.popular,
+    dashboardSections: pkg.dashboardSections
   };
 };
 

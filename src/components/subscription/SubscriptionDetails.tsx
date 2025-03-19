@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, ShieldCheck, Loader2 } from "lucide-react";
@@ -16,13 +17,25 @@ import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
 
 const convertToISubscriptionPackage = (pkg: SubscriptionPackage): ISubscriptionPackage => {
   return {
-    id: pkg.id,
-    name: pkg.name || pkg.title || '',
-    description: pkg.description || pkg.shortDescription || '',
+    id: pkg.id || '',
+    name: pkg.title || '',
+    description: pkg.shortDescription || '',
     price: pkg.price || 0,
     type: pkg.type || 'Business',
-    duration: pkg.duration || pkg.durationMonths || 12,
-    ...(pkg as any)
+    duration: pkg.durationMonths || 12,
+    title: pkg.title,
+    shortDescription: pkg.shortDescription,
+    fullDescription: pkg.fullDescription,
+    features: pkg.features,
+    setupFee: pkg.setupFee,
+    durationMonths: pkg.durationMonths,
+    paymentType: pkg.paymentType,
+    billingCycle: pkg.billingCycle,
+    advancePaymentMonths: pkg.advancePaymentMonths,
+    monthlyPrice: pkg.monthlyPrice,
+    popular: pkg.popular,
+    isPopular: pkg.popular,
+    dashboardSections: pkg.dashboardSections
   };
 };
 
