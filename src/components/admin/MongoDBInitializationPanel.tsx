@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { Database, Server, Activity, RefreshCw } from 'lucide-react';
+import { Database, Server, Activity, RefreshCw, Info } from 'lucide-react';
 import { setupMongoDB } from '@/utils/setupMongoDB';
 import { diagnoseMongoDbConnection, testConnectionWithRetry } from '@/utils/mongoDebug';
 import { connectToMongoDB } from '@/config/mongodb';
+import { isServerRunning } from '@/api/mongoAPI';
 
 const MongoDBInitializationPanel: React.FC = () => {
   const [status, setStatus] = useState<'idle' | 'processing' | 'completed' | 'error'>('idle');
@@ -20,11 +21,19 @@ const MongoDBInitializationPanel: React.FC = () => {
   });
   const [diagnosticResults, setDiagnosticResults] = useState<any>(null);
   const [isDiagnosing, setIsDiagnosing] = useState(false);
+  const [serverAvailable, setServerAvailable] = useState<boolean | null>(null);
 
   useEffect(() => {
+    // Check server status on component mount
+    checkServerStatus();
     // Check connection status on component mount
     checkConnectionStatus();
   }, []);
+
+  const checkServerStatus = async () => {
+    const available = await isServerRunning();
+    setServerAvailable(available);
+  };
 
   const checkConnectionStatus = async () => {
     try {
@@ -45,6 +54,7 @@ const MongoDBInitializationPanel: React.FC = () => {
   const handleDiagnostics = async () => {
     setIsDiagnosing(true);
     try {
+      await checkServerStatus();
       const diagnostics = await diagnoseMongoDbConnection();
       setDiagnosticResults(diagnostics);
     } catch (error) {
@@ -69,6 +79,14 @@ const MongoDBInitializationPanel: React.FC = () => {
     });
 
     try {
+      // Check if server is available
+      const isAvailable = await isServerRunning();
+      setServerAvailable(isAvailable);
+      
+      if (!isAvailable) {
+        throw new Error('MongoDB server is not available. Please start the server or use local data.');
+      }
+      
       // First establish connection with retries
       setProgress(10);
       setCurrentTask('Establishing MongoDB connection');
@@ -127,6 +145,23 @@ const MongoDBInitializationPanel: React.FC = () => {
       </CardHeader>
       
       <CardContent className="space-y-4">
+        {serverAvailable === false && (
+          <Alert variant="warning" className="bg-amber-50 border-amber-200">
+            <Info className="h-4 w-4" />
+            <AlertTitle>Server Not Available</AlertTitle>
+            <AlertDescription>
+              <p className="mb-2">The MongoDB server at {API_BASE_URL} is not available.</p>
+              <p>To use MongoDB features:</p>
+              <ul className="list-disc pl-5 mt-2 space-y-1 text-sm">
+                <li>Start your server with <code>npm run server</code> in your project directory</li>
+                <li>Ensure it's running on port 3001</li>
+                <li>Check for any server-side errors in the console</li>
+              </ul>
+              <p className="mt-2">Until then, the application will use local fallback data.</p>
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <div className="flex justify-end mb-2">
           <Button
             variant="outline"
@@ -149,6 +184,7 @@ const MongoDBInitializationPanel: React.FC = () => {
                 <p><strong>Environment:</strong> {diagnosticResults.environment}</p>
                 <p><strong>Connection State:</strong> {diagnosticResults.connectionState}</p>
                 <p><strong>URI:</strong> {diagnosticResults.uri}</p>
+                <p><strong>Server Available:</strong> {serverAvailable ? 'Yes' : 'No'}</p>
               </div>
             </AlertDescription>
           </Alert>
@@ -228,7 +264,7 @@ const MongoDBInitializationPanel: React.FC = () => {
         
         <Button
           onClick={handleInitialization}
-          disabled={status === 'processing'}
+          disabled={status === 'processing' || serverAvailable === false}
           className="w-full"
         >
           {status === 'idle' ? 'Setup MongoDB Collections' : 

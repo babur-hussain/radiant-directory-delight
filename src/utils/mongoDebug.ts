@@ -1,6 +1,7 @@
 
 import { connectToMongoDB, mongoose } from '../config/mongodb';
 import dns from 'dns';
+import { isServerRunning } from '../api/mongoAPI';
 
 export const diagnoseMongoDbConnection = async () => {
   console.log("Starting MongoDB connection diagnostics...");
@@ -8,6 +9,10 @@ export const diagnoseMongoDbConnection = async () => {
   // Check if Node.js environment
   const isNodeEnv = typeof process !== 'undefined' && process.versions && process.versions.node;
   console.log(`Running in ${isNodeEnv ? 'Node.js' : 'Browser'} environment`);
+  
+  // Check if server is available
+  const serverRunning = await isServerRunning();
+  console.log(`MongoDB server available: ${serverRunning ? 'Yes' : 'No'}`);
   
   // Get MongoDB URI
   const uri = typeof process !== 'undefined' && process.env.MONGODB_URI 
@@ -62,13 +67,10 @@ export const diagnoseMongoDbConnection = async () => {
     console.log(`Test connection ${connected ? 'succeeded' : 'failed'}`);
     
     if (connected && mongoose.connection) {
-      // Try a simple query - modify this part to avoid the db property access
+      // Try a simple query - make this browser-compatible
       try {
         console.log("Connection is established, but skipping admin ping in browser environment");
-        // In a real server environment, we would do:
-        // const admin = mongoose.connection.db.admin();
-        // const result = await admin.ping();
-        // But for our mock/browser environment, we'll just log success
+        // In a browser environment, we can't do DB admin pings, so we just log success
         console.log("Connection verification completed");
       } catch (pingError) {
         console.error("Error verifying connection:", pingError);
@@ -82,6 +84,7 @@ export const diagnoseMongoDbConnection = async () => {
     environment: isNodeEnv ? 'Node.js' : 'Browser',
     connectionState: stateMap[connectionState as keyof typeof stateMap] || 'unknown',
     uri: uri.replace(/:([^:@]+)@/, ':****@'), // Hide password
+    serverRunning
   };
 };
 
