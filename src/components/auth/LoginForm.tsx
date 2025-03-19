@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
-import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
+import { LogIn, Mail, Lock, Loader2, Info } from "lucide-react";
 import SocialLoginButtons from "./SocialLoginButtons";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface LoginFormProps {
   onClose: () => void;
@@ -17,12 +18,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const { login, loginWithGoogle, loading } = useAuth();
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setLoginError(null);
 
     try {
       await login(loginEmail, loginPassword);
@@ -33,6 +36,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
       onClose();
     } catch (error) {
       console.error("Login error:", error);
+      setLoginError(error instanceof Error ? error.message : "Please check your credentials and try again");
       toast({
         title: "Login failed",
         description: error instanceof Error ? error.message : "Please check your credentials and try again",
@@ -45,6 +49,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
 
   const handleGoogleLogin = async () => {
     setIsSubmitting(true);
+    setLoginError(null);
+    
     try {
       await loginWithGoogle();
       toast({
@@ -54,6 +60,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
       onClose();
     } catch (error) {
       console.error("Google login error:", error);
+      setLoginError(error instanceof Error ? error.message : "An error occurred during Google login");
       toast({
         title: "Google login failed",
         description: error instanceof Error ? error.message : "An error occurred during Google login",
@@ -66,6 +73,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
 
   return (
     <form onSubmit={handleLogin} className="space-y-4">
+      {loginError && (
+        <Alert variant="destructive">
+          <Info className="h-4 w-4" />
+          <AlertTitle>Login Failed</AlertTitle>
+          <AlertDescription>{loginError}</AlertDescription>
+        </Alert>
+      )}
+      
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <div className="relative">
@@ -78,6 +93,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
             value={loginEmail}
             onChange={(e) => setLoginEmail(e.target.value)}
             required
+            disabled={isSubmitting || loading}
           />
         </div>
       </div>
@@ -94,6 +110,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
             value={loginPassword}
             onChange={(e) => setLoginPassword(e.target.value)}
             required
+            disabled={isSubmitting || loading}
           />
         </div>
       </div>
