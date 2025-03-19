@@ -108,13 +108,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Placeholder for the required login method
+  const login = async (email: string, password: string): Promise<void> => {
+    console.warn("Email/password login not implemented");
+    throw new Error("Email/password login not implemented");
+  };
+
   const contextValue: AuthContextType = {
     user,
+    currentUser: user,
     isAuthenticated: !!user,
     loading,
     loginWithGoogle,
-    logout: signOut, // Changed from signOut to logout to match the interface
-    currentUser: user
+    logout: signOut,
+    login,
+    // Add missing properties from AuthContextType
+    userRole: user?.role || null,
+    isAdmin: user?.isAdmin || false,
+    // We can leave these as optional properties according to the interface
+    // signup, updateUserRole, and updateUserPermission are marked as optional with ?
   };
 
   if (loading) {
