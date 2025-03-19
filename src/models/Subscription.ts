@@ -29,7 +29,7 @@ export interface ISubscription {
 }
 
 // Create the Mongoose schema
-const SubscriptionSchema = new mongoose.Schema({
+const SubscriptionSchema = mongoose.Schema({
   id: { type: String, required: true, unique: true },
   packageId: { type: String, required: true },
   packageName: { type: String, required: true },
@@ -61,5 +61,5 @@ SubscriptionSchema.index({ userId: 1 });
 SubscriptionSchema.index({ status: 1 });
 SubscriptionSchema.index({ packageId: 1 });
 
-// Export the model - Fix: use the correct syntax for mongoose model
+// Export the model correctly
 export const Subscription = mongoose.model('Subscription', SubscriptionSchema);
