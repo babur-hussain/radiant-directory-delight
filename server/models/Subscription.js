@@ -1,27 +1,32 @@
 
-import mongoose from '../mongodb-connector.js';
+import mongoose from 'mongoose';
 
 const SubscriptionSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
-  userId: { type: String, required: true },
   packageId: { type: String, required: true },
   packageName: { type: String, required: true },
+  userId: { type: String, required: true },
   amount: { type: Number, required: true },
-  startDate: { type: Date, required: true },
-  endDate: { type: Date, required: true },
-  status: { type: String, required: true },
-  advancePaymentMonths: { type: Number },
-  signupFee: { type: Number },
-  actualStartDate: { type: Date },
+  startDate: { type: String, required: true },
+  endDate: { type: String, required: true },
+  status: { type: String, required: true, default: 'active' },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+  assignedBy: { type: String },
+  assignedAt: { type: String },
+  advancePaymentMonths: { type: Number, default: 0 },
+  signupFee: { type: Number, default: 0 },
+  actualStartDate: { type: String },
   isPaused: { type: Boolean, default: false },
-  isPausable: { type: Boolean, default: false },
-  isUserCancellable: { type: Boolean, default: false },
+  isPausable: { type: Boolean, default: true },
+  isUserCancellable: { type: Boolean, default: true },
   invoiceIds: [{ type: String }],
-  pausedAt: { type: Date },
-  resumedAt: { type: Date },
-  paymentType: { type: String, enum: ['recurring', 'one-time'] }
+  paymentType: { type: String, enum: ['recurring', 'one-time'], default: 'recurring' }
 });
 
-const Subscription = mongoose.model('Subscription', SubscriptionSchema);
+// Create indexes for frequently queried fields
+SubscriptionSchema.index({ userId: 1 });
+SubscriptionSchema.index({ status: 1 });
+SubscriptionSchema.index({ packageId: 1 });
 
-export default Subscription;
+export default mongoose.model('Subscription', SubscriptionSchema);

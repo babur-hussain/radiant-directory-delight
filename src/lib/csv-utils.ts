@@ -1,504 +1,231 @@
-import { businessesData } from '@/data/businessesData';
-import { db } from '@/config/firebase';
-import { 
-  collection, 
-  getDocs, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  query, 
-  orderBy, 
-  where,
-  writeBatch
-} from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
 
-// Define the business type based on the existing data structure
+import Papa from 'papaparse';
+import { saveBusiness, fetchBusinesses } from './mongodb-utils';
+import { IBusiness } from '@/models/Business';
+import { generateId } from '@/utils/id-generator';
+
 export interface Business {
   id: number;
   name: string;
-  category: string;
-  image: string;
+  description?: string;
+  category?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
   rating: number;
-  reviews: number;
-  address: string;
-  phone: string;
-  description: string;
-  featured: boolean;
-  tags: string[];
-  priority?: number; // Added priority field (optional)
-  latitude?: number; // Added latitude field
-  longitude?: number; // Added longitude field
-  email?: string; // Added email field
-  website?: string; // Added website field
-  hours?: Record<string, any>; // Added hours field
+  reviews?: number;
+  latitude?: number;
+  longitude?: number;
+  hours?: Record<string, string>;
+  tags?: string[];
+  featured?: boolean;
+  image?: string;
 }
 
-// Default business data to use when Firebase data is unavailable
-export const DEFAULT_BUSINESSES_DATA: Business[] = [
-  {
-    id: 1,
-    name: "The Coffee Hub",
-    category: "Coffee Shop",
-    image: "https://images.unsplash.com/photo-1559925393-8be0ec4767c8?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8Y29mZmVlJTIwc2hvcHxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=500&q=60",
-    rating: 4.8,
-    reviews: 230,
-    address: "123 Main St, Portland, OR",
-    phone: "(503) 555-1234",
-    description: "A cozy coffee shop with a wide selection of specialty drinks and pastries. Free WiFi and plenty of seating make it perfect for remote work or casual meetings.",
-    featured: true,
-    tags: ["Coffee", "Breakfast", "WiFi", "Pastries"]
-  },
-  {
-    id: 2,
-    name: "Green Leaf Restaurant",
-    category: "Restaurant",
-    image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NHx8cmVzdGF1cmFudHxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=500&q=60",
-    rating: 4.5,
-    reviews: 187,
-    address: "456 Park Ave, Portland, OR",
-    phone: "(503) 555-5678",
-    description: "Farm-to-table restaurant focusing on locally sourced ingredients and seasonal menus. Known for innovative dishes and warm, inviting atmosphere.",
-    featured: true,
-    tags: ["Dinner", "Lunch", "Organic", "Local"]
-  },
-  {
-    id: 3,
-    name: "Fitness First Gym",
-    category: "Fitness",
-    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8Z3ltfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60",
-    rating: 4.7,
-    reviews: 156,
-    address: "789 Fitness Way, Portland, OR",
-    phone: "(503) 555-9012",
-    description: "Modern gym with state-of-the-art equipment, personal training, and group fitness classes. Open 24/7 with monthly and annual membership options.",
-    featured: false,
-    tags: ["Gym", "Personal Training", "24/7", "Classes"]
-  },
-  {
-    id: 4,
-    name: "City Bookstore",
-    category: "Retail",
-    image: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8Ym9va3N0b3JlfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60",
-    rating: 4.9,
-    reviews: 203,
-    address: "321 Book Lane, Portland, OR",
-    phone: "(503) 555-3456",
-    description: "Independent bookstore with a curated selection of books, magazines, and gifts. Hosts author events and book clubs throughout the year.",
-    featured: true,
-    tags: ["Books", "Gifts", "Events", "Local"]
-  },
-  {
-    id: 5,
-    name: "Tech Solutions",
-    category: "Technology",
-    image: "https://images.unsplash.com/photo-1535303311164-664fc9ec6532?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8dGVjaHxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=500&q=60",
-    rating: 4.2,
-    reviews: 78,
-    address: "555 Tech Blvd, Portland, OR",
-    phone: "(503) 555-7890",
-    description: "Computer repair, IT consulting, and tech support for individuals and small businesses. Certified technicians and quick turnaround times.",
-    featured: false,
-    tags: ["Tech Support", "Repairs", "Consulting", "IT Services"]
-  },
-  {
-    id: 6,
-    name: "Fresh Cuts Salon",
-    category: "Beauty",
-    image: "https://images.unsplash.com/photo-1562322140-8baeececf3df?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NHx8aGFpcnNhbG9ufGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60",
-    rating: 4.6,
-    reviews: 112,
-    address: "888 Beauty Lane, Portland, OR",
-    phone: "(503) 555-2345",
-    description: "Full-service hair salon offering cuts, color, and styling for all hair types. Expert stylists and a relaxing atmosphere.",
-    featured: true,
-    tags: ["Hair", "Beauty", "Color", "Styling"]
-  }
-];
+let businessesCache: Business[] = [];
+const dataChangeListeners: Function[] = [];
 
-// Firestore collection name
-const BUSINESSES_COLLECTION = 'businesses';
-
-// Store the uploaded businesses in this array (in-memory cache)
-export let uploadedBusinesses: Business[] = [];
-let isUsingDefaultData = false;
-
-// Default image to use when business image is unavailable
-export const DEFAULT_BUSINESS_IMAGE = "https://source.unsplash.com/photo-1518770660439-4636190af475";
-
-// Add event listeners for data updates
-const dataChangeListeners: (() => void)[] = [];
-
-export const addDataChangeListener = (listener: () => void) => {
-  dataChangeListeners.push(listener);
-};
-
-export const removeDataChangeListener = (listener: () => void) => {
-  const index = dataChangeListeners.indexOf(listener);
-  if (index !== -1) {
-    dataChangeListeners.splice(index, 1);
-  }
-};
-
-export const notifyDataChanged = () => {
-  dataChangeListeners.forEach(listener => listener());
-};
-
-// Initialize data by loading from Firestore
+// Function to initialize data from MongoDB
 export const initializeData = async (): Promise<void> => {
   try {
-    const businessesCollection = collection(db, BUSINESSES_COLLECTION);
-    const businessesQuery = query(businessesCollection, orderBy('id', 'asc'));
-    const snapshot = await getDocs(businessesQuery);
-    
-    // Clear the current array
-    uploadedBusinesses = [];
-    isUsingDefaultData = false;
-    
-    // Add each business from Firestore to the array
-    snapshot.forEach(doc => {
-      const businessData = doc.data() as Business;
-      businessData.id = Number(businessData.id); // Ensure ID is a number
-      
-      // Add the Firestore document ID as a property for later use
-      (businessData as any).docId = doc.id;
-      
-      uploadedBusinesses.push(businessData);
-    });
-
-    // If no businesses were loaded from Firestore, check if we should use default data
-    if (uploadedBusinesses.length === 0 && businessesData.length === 0) {
-      console.warn("No businesses found in Firestore and businessesData is empty. Using default business data.");
-      isUsingDefaultData = true;
-    }
-    
-    notifyDataChanged();
+    console.log("Initializing business data from MongoDB...");
+    const businesses = await fetchBusinesses();
+    businessesCache = businesses as Business[];
+    console.log(`Loaded ${businessesCache.length} businesses from MongoDB`);
+    notifyDataChangeListeners();
   } catch (error) {
-    console.error("Error initializing data from Firestore:", error);
+    console.error("Error initializing data from MongoDB:", error);
+    businessesCache = [];
+  }
+};
+
+// Process CSV data and upload to MongoDB
+export const processCsvData = async (csvContent: string): Promise<{ success: boolean, businesses: Business[], message: string }> => {
+  try {
+    console.log("Processing CSV data...");
     
-    // Check for permission issues
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes("permission-denied") || 
-        errorMessage.includes("Permission denied") ||
-        errorMessage.includes("insufficient permissions")) {
-      console.warn("Permission denied when accessing businesses. Using default business data.");
-      isUsingDefaultData = true;
-      
-      // Display a toast notification if available
+    const results = Papa.parse(csvContent, {
+      header: true,
+      skipEmptyLines: true
+    });
+    
+    if (results.errors.length > 0) {
+      console.error("CSV parsing errors:", results.errors);
+      return { 
+        success: false, 
+        businesses: [], 
+        message: `CSV parsing error: ${results.errors[0].message}` 
+      };
+    }
+    
+    const businesses: Business[] = [];
+    
+    for (const row of results.data as any[]) {
       try {
-        const event = new CustomEvent('businessPermissionError', {
-          detail: { message: "Permission denied when accessing businesses. Using default business data." }
-        });
-        window.dispatchEvent(event);
-      } catch (e) {
-        console.error("Failed to dispatch permission error event:", e);
+        // Validate required fields
+        if (!row.name) {
+          console.warn("Skipping row without business name:", row);
+          continue;
+        }
+        
+        // Generate a unique numeric ID
+        const businessId = parseInt(await generateUniqueId());
+        
+        // Create business object
+        const business: Business = {
+          id: businessId,
+          name: row.name,
+          category: row.category || "",
+          description: row.description || `${row.name} is a business in the ${row.category || "various"} category.`,
+          address: row.address || "",
+          phone: row.phone || "",
+          email: row.email || "",
+          website: row.website || "",
+          rating: parseFloat(row.rating) || 0,
+          reviews: parseInt(row.reviews) || 0,
+          latitude: parseFloat(row.latitude) || 0,
+          longitude: parseFloat(row.longitude) || 0,
+          tags: row.tags ? row.tags.split(',').map((tag: string) => tag.trim()) : [row.category || ""],
+          featured: row.featured === "true" || row.featured === true,
+          image: row.image || `/placeholder-${Math.floor(Math.random() * 5) + 1}.jpg`
+        };
+        
+        // Save to MongoDB
+        await saveBusiness(business as IBusiness);
+        businesses.push(business);
+      } catch (rowError) {
+        console.error("Error processing CSV row:", rowError);
       }
     }
     
-    notifyDataChanged();
+    // Update the cache after successfully saving to MongoDB
+    if (businesses.length > 0) {
+      // Refresh the entire cache from MongoDB
+      await initializeData();
+    }
+    
+    return { 
+      success: true, 
+      businesses, 
+      message: `Successfully processed ${businesses.length} businesses` 
+    };
+  } catch (error) {
+    console.error("Error processing CSV data:", error);
+    return { 
+      success: false, 
+      businesses: [], 
+      message: `Error: ${error instanceof Error ? error.message : String(error)}` 
+    };
   }
 };
 
-// Call initialize immediately to load data
-initializeData();
-
+// Get all businesses from cache
 export const getAllBusinesses = (): Business[] => {
-  // If we're using default data due to permission issues or no data
-  if (isUsingDefaultData) {
-    return DEFAULT_BUSINESSES_DATA;
-  }
-  
-  // If businessesData has content, use it as the base
-  if (businessesData.length > 0) {
-    // Combine the original businesses with the uploaded ones
-    const allBusinesses = [...businessesData, ...uploadedBusinesses];
-    
-    // Sort businesses by priority (lower numbers first)
-    // Businesses without priority (undefined) will be after those with priority
-    return allBusinesses.sort((a, b) => {
-      // If both have priority, compare them (ASCENDING order - lower numbers first)
-      if (a.priority !== undefined && b.priority !== undefined) {
-        return a.priority - b.priority;
-      }
-      // If only a has priority, a comes first
-      if (a.priority !== undefined) {
-        return -1;
-      }
-      // If only b has priority, b comes first
-      if (b.priority !== undefined) {
-        return 1;
-      }
-      // If neither has priority, maintain the original order (featured businesses first)
-      return b.featured === a.featured ? 0 : b.featured ? 1 : -1;
-    });
-  }
-  
-  // If businessesData is empty but we have uploaded businesses, just return those
-  if (uploadedBusinesses.length > 0) {
-    // Sort uploaded businesses by priority
-    return uploadedBusinesses.sort((a, b) => {
-      // If both have priority, compare them (ASCENDING order - lower numbers first)
-      if (a.priority !== undefined && b.priority !== undefined) {
-        return a.priority - b.priority;
-      }
-      // If only a has priority, a comes first
-      if (a.priority !== undefined) {
-        return -1;
-      }
-      // If only b has priority, b comes first
-      if (b.priority !== undefined) {
-        return 1;
-      }
-      // If neither has priority, maintain the original order
-      return 0;
-    });
-  }
-  
-  // If no data anywhere, return default data
-  return DEFAULT_BUSINESSES_DATA;
+  return [...businessesCache];
 };
 
-// Add a new business manually
-export const addBusiness = async (business: Omit<Business, "id">): Promise<Business> => {
+// Add a business
+export const addBusiness = async (businessData: Partial<Business>): Promise<Business> => {
   try {
-    // Generate a new ID
-    const lastBusinessId = Math.max(
-      ...businessesData.map(b => b.id), 
-      ...uploadedBusinesses.map(b => b.id), 
-      0
-    );
+    // Ensure ID exists
+    const businessId = businessData.id || parseInt(await generateUniqueId());
     
-    const newBusiness: Business = {
-      ...business,
-      id: lastBusinessId + 1
+    // Create complete business object
+    const business: Business = {
+      id: businessId,
+      name: businessData.name || "Unnamed Business",
+      description: businessData.description || `${businessData.name} is a business in the ${businessData.category || "various"} category.`,
+      category: businessData.category || "",
+      address: businessData.address || "",
+      phone: businessData.phone || "",
+      email: businessData.email || "",
+      website: businessData.website || "",
+      rating: businessData.rating || 0,
+      reviews: businessData.reviews || 0,
+      latitude: businessData.latitude || 0,
+      longitude: businessData.longitude || 0,
+      hours: businessData.hours || {},
+      tags: businessData.tags || [businessData.category || ""],
+      featured: businessData.featured || false,
+      image: businessData.image || `/placeholder-${Math.floor(Math.random() * 5) + 1}.jpg`
     };
     
-    // Add to Firestore
-    const businessesCollection = collection(db, BUSINESSES_COLLECTION);
-    const docRef = await addDoc(businessesCollection, newBusiness);
+    // Save to MongoDB
+    await saveBusiness(business as IBusiness);
     
-    // Add docId for later reference
-    (newBusiness as any).docId = docRef.id;
+    // Update cache
+    businessesCache.push(business);
+    notifyDataChangeListeners();
     
-    // Add to local array
-    uploadedBusinesses.push(newBusiness);
-    notifyDataChanged();
-    
-    return newBusiness;
+    return business;
   } catch (error) {
-    console.error("Error adding business to Firestore:", error);
+    console.error("Error adding business:", error);
     throw error;
   }
 };
 
 // Update an existing business
-export const updateBusiness = async (updatedBusiness: Business): Promise<Business | null> => {
+export const updateBusiness = async (businessData: Business): Promise<boolean> => {
   try {
-    // Check if it's in the uploadedBusinesses array
-    const index = uploadedBusinesses.findIndex(b => b.id === updatedBusiness.id);
+    // Save to MongoDB
+    await saveBusiness(businessData as IBusiness);
     
+    // Update cache
+    const index = businessesCache.findIndex(b => b.id === businessData.id);
     if (index !== -1) {
-      // Get the document ID
-      const docId = (uploadedBusinesses[index] as any).docId;
-      
-      if (!docId) {
-        console.error("No document ID found for business:", updatedBusiness);
-        return null;
-      }
-      
-      // Update in Firestore
-      const businessRef = doc(db, BUSINESSES_COLLECTION, docId);
-      await updateDoc(businessRef, { ...updatedBusiness });
-      
-      // Update the business in the uploaded businesses array
-      uploadedBusinesses[index] = updatedBusiness;
-      (uploadedBusinesses[index] as any).docId = docId;
-      
-      // Force a re-sort by notifying data changed
-      notifyDataChanged();
-      return updatedBusiness;
+      businessesCache[index] = businessData;
+    } else {
+      businessesCache.push(businessData);
     }
     
-    // We can't update businesses from the original dataset in this demo
-    // In a real app with a database, you would update any business
-    return null;
+    notifyDataChangeListeners();
+    return true;
   } catch (error) {
-    console.error("Error updating business in Firestore:", error);
-    return null;
+    console.error("Error updating business:", error);
+    throw error;
   }
 };
 
 // Delete a business
 export const deleteBusiness = async (id: number): Promise<boolean> => {
   try {
-    const initialLength = uploadedBusinesses.length;
-    const businessToDelete = uploadedBusinesses.find(b => b.id === id);
+    await fetch(`http://localhost:3001/api/businesses/${id}`, {
+      method: 'DELETE'
+    });
     
-    if (businessToDelete) {
-      const docId = (businessToDelete as any).docId;
-      
-      if (!docId) {
-        console.error("No document ID found for business with ID:", id);
-        return false;
-      }
-      
-      // Delete from Firestore
-      const businessRef = doc(db, BUSINESSES_COLLECTION, docId);
-      await deleteDoc(businessRef);
-    }
-    
-    // Update local array
-    uploadedBusinesses = uploadedBusinesses.filter(b => b.id !== id);
-    
-    const deleted = initialLength > uploadedBusinesses.length;
-    
-    if (deleted) {
-      notifyDataChanged();
-    }
-    
-    return deleted;
+    // Update cache
+    businessesCache = businessesCache.filter(b => b.id !== id);
+    notifyDataChangeListeners();
+    return true;
   } catch (error) {
-    console.error("Error deleting business from Firestore:", error);
+    console.error("Error deleting business:", error);
     return false;
   }
 };
 
-export const processCsvData = async (csvContent: string): Promise<{ 
-  success: boolean; 
-  businesses: Business[]; 
-  message: string;
-}> => {
-  try {
-    // Parse CSV content
-    const lines = csvContent.split('\n');
-    
-    // Check if file is empty
-    if (lines.length <= 1) {
-      return { 
-        success: false, 
-        businesses: [], 
-        message: "The CSV file is empty or contains only headers." 
-      };
-    }
-    
-    // Get headers
-    const headers = lines[0].split(',').map(header => header.trim().toLowerCase());
-    
-    // Validate required headers
-    const requiredHeaders = ['name', 'category', 'address', 'review', 'mobile'];
-    const missingHeaders = requiredHeaders.filter(required => 
-      !headers.some(header => header.includes(required))
-    );
-    
-    if (missingHeaders.length > 0) {
-      return { 
-        success: false, 
-        businesses: [], 
-        message: `Missing required columns: ${missingHeaders.join(', ')}. Please ensure your CSV includes columns for Business Name, Category, Address, Review, and Mobile Number.` 
-      };
-    }
-    
-    // Process rows
-    const businesses: Business[] = [];
-    let lastBusinessId = Math.max(...businessesData.map(b => b.id), ...uploadedBusinesses.map(b => b.id), 0);
-    
-    // Start from index 1 to skip headers
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue; // Skip empty lines
-      
-      // Split the line into values
-      // This is a simple split by comma, but in a real app,
-      // you'd need to handle more complex CSV parsing (quotes, commas in values, etc.)
-      const values = line.split(',').map(value => value.trim());
-      
-      // Get the index for each required field based on headers
-      const nameIndex = headers.findIndex(h => h.includes('name'));
-      const categoryIndex = headers.findIndex(h => h.includes('category'));
-      const addressIndex = headers.findIndex(h => h.includes('address'));
-      const reviewIndex = headers.findIndex(h => h.includes('review'));
-      const mobileIndex = headers.findIndex(h => h.includes('mobile'));
-      
-      // Validate if all fields are present in this row
-      if (values.length < Math.max(nameIndex, categoryIndex, addressIndex, reviewIndex, mobileIndex) + 1) {
-        return { 
-          success: false, 
-          businesses: [], 
-          message: `Row ${i} is missing one or more required fields. Please check your CSV format.` 
-        };
-      }
-      
-      // Create a business object
-      const business: Business = {
-        id: ++lastBusinessId,
-        name: values[nameIndex],
-        category: values[categoryIndex],
-        address: values[addressIndex],
-        phone: values[mobileIndex],
-        rating: parseFloat(values[reviewIndex]) || 0,
-        reviews: Math.floor(Math.random() * 500) + 50, // Random number for demonstration
-        image: `https://source.unsplash.com/random/500x350/?${values[categoryIndex].toLowerCase().replace(/\s+/g, ',')}`,
-        description: `${values[nameIndex]} is a ${values[categoryIndex]} business located in ${values[addressIndex]}.`,
-        featured: Math.random() > 0.8, // 20% chance of being featured
-        tags: [values[categoryIndex], "New", "Imported"]
-      };
-      
-      businesses.push(business);
-    }
-    
-    try {
-      // Batch write to Firestore for better performance
-      const batch = writeBatch(db);
-      const businessesCollection = collection(db, BUSINESSES_COLLECTION);
-      
-      // Add each business to the batch
-      for (const business of businesses) {
-        const docRef = doc(businessesCollection);
-        batch.set(docRef, business);
-        
-        // Store the document ID for later reference
-        (business as any).docId = docRef.id;
-      }
-      
-      // Commit the batch
-      await batch.commit();
-      
-      // Update the local array after successful Firestore write
-      uploadedBusinesses = [...uploadedBusinesses, ...businesses];
-      
-      // Notify listeners that data has changed
-      notifyDataChanged();
-      
-      return { 
-        success: true, 
-        businesses, 
-        message: `Successfully processed ${businesses.length} businesses.` 
-      };
-    } catch (firestoreError) {
-      console.error("Error saving to Firestore:", firestoreError);
-      return { 
-        success: false, 
-        businesses: [], 
-        message: `Error saving to database: ${firestoreError instanceof Error ? firestoreError.message : String(firestoreError)}` 
-      };
-    }
-  } catch (error) {
-    console.error("CSV processing error:", error);
-    return { 
-      success: false, 
-      businesses: [], 
-      message: `Error processing CSV: ${error instanceof Error ? error.message : String(error)}` 
-    };
+// Add a data change listener
+export const addDataChangeListener = (listener: Function): void => {
+  dataChangeListeners.push(listener);
+};
+
+// Remove a data change listener
+export const removeDataChangeListener = (listener: Function): void => {
+  const index = dataChangeListeners.indexOf(listener);
+  if (index !== -1) {
+    dataChangeListeners.splice(index, 1);
   }
 };
 
-// Add this function to generate a unique ID for a new business
-export const generateUniqueId = async (): Promise<number> => {
-  const businesses = getAllBusinesses();
-  const highestId = businesses.reduce((maxId, business) => {
-    return Math.max(maxId, business.id);
-  }, 0);
-  
-  return highestId + 1;
+// Notify all listeners about data changes
+const notifyDataChangeListeners = (): void => {
+  for (const listener of dataChangeListeners) {
+    listener();
+  }
+};
+
+// Generate a unique ID
+export const generateUniqueId = async (): Promise<string> => {
+  // Create a simple numeric ID based on timestamp and random number
+  return String(Date.now() + Math.floor(Math.random() * 10000));
 };

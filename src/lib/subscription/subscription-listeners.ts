@@ -1,6 +1,4 @@
 
-import { onSnapshot, doc } from 'firebase/firestore';
-import { db } from '@/config/firebase';
 import { getUserSubscription } from './get-subscription';
 
 /**
@@ -16,7 +14,7 @@ export const listenToUserSubscription = (userId: string, callback: (subscription
   }
   
   try {
-    // First get initial data
+    // Get initial data
     getUserSubscription(userId)
       .then(subscription => {
         if (subscription) {
@@ -27,21 +25,21 @@ export const listenToUserSubscription = (userId: string, callback: (subscription
         console.error("Error fetching initial subscription:", error);
       });
     
-    // Then set up real-time listener for Firebase
-    const userDocRef = doc(db, 'subscriptions', userId);
-    
-    return onSnapshot(userDocRef, (docSnapshot) => {
-      if (docSnapshot.exists()) {
-        const subscriptionData = docSnapshot.data();
-        console.log("Subscription updated in real-time:", subscriptionData);
-        callback(subscriptionData);
-      } else {
-        console.log("No subscription found for this user in real-time listener");
-        callback(null);
+    // Note: In MongoDB-only setup, we don't have real-time listeners like Firestore
+    // So we'll use polling instead
+    const pollingInterval = setInterval(async () => {
+      try {
+        const subscription = await getUserSubscription(userId);
+        callback(subscription);
+      } catch (error) {
+        console.error("Error in subscription polling:", error);
       }
-    }, (error) => {
-      console.error("Error in subscription listener:", error);
-    });
+    }, 60000); // Poll every 60 seconds
+    
+    // Return a function to clear the polling interval
+    return () => {
+      clearInterval(pollingInterval);
+    };
   } catch (error) {
     console.error("Error setting up subscription listener:", error);
     return () => {};

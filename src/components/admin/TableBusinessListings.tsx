@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import BusinessFormDialog from './BusinessFormDialog';
 import BusinessTableLoading from './table/BusinessTableLoading';
-import { useBusinessListings } from '@/hooks/useBusinessListings';
 import { IBusiness } from '@/models/Business';
 import DeleteBusinessDialog from './table/DeleteBusinessDialog';
 import BusinessPermissionError from './table/BusinessPermissionError';
@@ -19,6 +18,7 @@ import {
 import CSVUploadDialog from './CSVUploadDialog';
 import BusinessTableRow from './table/BusinessTableRow';
 import { Business } from '@/lib/csv-utils';
+import { fetchBusinesses } from '@/api/mongoAPI';
 
 interface TableBusinessListingsProps {
   onRefresh?: () => void;
@@ -35,22 +35,44 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState<IBusiness | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [businesses, setBusinesses] = useState<IBusiness[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  // Use the useBusinessListings hook
-  const { businesses, isLoading, error, refreshData } = useBusinessListings();
+  const loadBusinesses = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await fetchBusinesses();
+      setBusinesses(data);
+    } catch (err) {
+      console.error("Error fetching businesses:", err);
+      setError(err instanceof Error ? err.message : "Failed to load businesses");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    loadBusinesses();
+  }, []);
   
   // Function to handle business deletion
   const handleDeleteBusiness = async (businessId: string) => {
     try {
-      // Use MongoDB functionality to delete business
-      // This would be implemented in the refreshData call after deletion
-      await refreshData();
+      await fetch(`http://localhost:3001/api/businesses/${businessId}`, {
+        method: 'DELETE'
+      });
+      
+      await loadBusinesses();
       setIsDeleteDialogOpen(false);
+      
       if (onRefresh) {
         onRefresh();
       }
     } catch (error) {
       console.error("Error deleting business:", error);
+      setError("Failed to delete business");
     }
   };
 
@@ -70,10 +92,17 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
 
   const handleEditClick = (business: IBusiness) => {
     if (onEditBusiness) {
-      onEditBusiness(business as Business);
+      onEditBusiness(business as unknown as Business);
     } else {
       setSelectedBusiness(business);
       setIsFormOpen(true);
+    }
+  };
+
+  const refreshData = async () => {
+    await loadBusinesses();
+    if (onRefresh) {
+      onRefresh();
     }
   };
 
@@ -142,9 +171,6 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
           await refreshData();
           setIsFormOpen(false);
           setSelectedBusiness(null);
-          if (onRefresh) {
-            onRefresh();
-          }
         }}
         business={selectedBusiness}
         isSubmitting={false}
@@ -155,9 +181,6 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
         onClose={() => setIsUploadOpen(false)} 
         onUploadComplete={() => {
           refreshData();
-          if (onRefresh) {
-            onRefresh();
-          }
         }}
       />
 

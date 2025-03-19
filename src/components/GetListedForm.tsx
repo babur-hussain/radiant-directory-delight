@@ -3,14 +3,14 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Building, MapPin, Phone, X } from "lucide-react";
+import { Building, MapPin, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { saveBusiness } from "@/lib/mongodb-utils";
-import { generateUniqueId } from "@/lib/csv-utils";
+import { saveBusiness } from "@/api/mongoAPI";
+import { generateId } from "@/utils/id-generator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const formSchema = z.object({
@@ -45,8 +45,8 @@ const GetListedForm = ({ isOpen, setIsOpen }: GetListedFormProps) => {
     setIsSubmitting(true);
     
     try {
-      // Generate a unique ID for the business
-      const businessId = await generateUniqueId();
+      // Generate a unique numeric ID
+      const businessId = parseInt(await generateId(8));
       
       // Create the business object
       const newBusiness = {
@@ -68,7 +68,7 @@ const GetListedForm = ({ isOpen, setIsOpen }: GetListedFormProps) => {
         image: "/placeholder.svg",
       };
       
-      // Save to MongoDB instead of Firebase
+      // Save to MongoDB via API
       await saveBusiness(newBusiness);
       
       toast({

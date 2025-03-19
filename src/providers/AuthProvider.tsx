@@ -1,230 +1,138 @@
 
-import React, { 
-  createContext, 
-  useEffect, 
-  useState 
-} from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import { 
-  User as FirebaseUser, 
+  GoogleAuthProvider, 
   onAuthStateChanged, 
-  signInWithEmailAndPassword, 
-  signOut,
-  GoogleAuthProvider,
-  signInWithPopup,
-  createUserWithEmailAndPassword,
-  updateProfile
+  signInWithPopup, 
+  signOut as firebaseSignOut,
+  User as FirebaseUser 
 } from 'firebase/auth';
-import { auth } from '../config/firebase';
-import { 
-  getUserByUid, 
-  createUserIfNotExists, 
-  updateUserLogin,
-  updateUserRole as updateUserRoleService
-} from '../features/auth/authService';
-import { User, UserRole, AuthContextType } from '../types/auth';
+import { auth, googleProvider } from '../config/firebase';
+import { AuthContextType, AuthUser } from '@/types/auth';
+import { createOrUpdateUser, fetchUserByUid, updateUserLoginTimestamp } from '@/api/mongoAPI';
+import Loading from '@/components/ui/loading';
 
-export const AuthContext = createContext<AuthContextType>({
-  currentUser: null,
-  loading: true,
-  userRole: null,
-  isAdmin: false,
-  isAuthenticated: false,
-  initialized: false,
-  user: null,
-  logout: () => Promise.resolve(),
-  login: () => Promise.resolve(),
-});
+export const AuthContext = createContext<AuthContextType | null>(null);
 
-const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [initialized, setInitialized] = useState<boolean>(false);
+
+  // Convert Firebase user to our AuthUser type and save to MongoDB
+  const processUser = async (firebaseUser: FirebaseUser | null) => {
+    if (!firebaseUser) {
+      setUser(null);
+      return;
+    }
+
+    try {
+      // First, check if user exists in MongoDB
+      let mongoUser = await fetchUserByUid(firebaseUser.uid);
+      
+      // Prepare the user data
+      const userData = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        name: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
+        lastLogin: new Date()
+      };
+      
+      // If user doesn't exist, create a new one
+      if (!mongoUser) {
+        console.log("Creating new user in MongoDB");
+        mongoUser = await createOrUpdateUser({
+          ...userData,
+          role: "user",
+          isAdmin: false,
+          createdAt: new Date()
+        });
+      } else {
+        // Just update the last login time
+        await updateUserLoginTimestamp(firebaseUser.uid);
+      }
+      
+      // Set the user in the context
+      setUser({
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
+        isAdmin: mongoUser.isAdmin || false,
+        role: mongoUser.role || 'user'
+      });
+    } catch (error) {
+      console.error("Error processing user:", error);
+      // Still set the basic user info even if MongoDB operations fail
+      setUser({
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
+        isAdmin: false,
+        role: 'user'
+      });
+    }
+  };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        try {
-          // Check if user exists in MongoDB
-          let user = await getUserByUid(firebaseUser.uid);
-          
-          // If not, create the user in MongoDB
-          if (!user) {
-            user = await createUserIfNotExists(firebaseUser);
-          } else {
-            // Update last login time
-            await updateUserLogin(firebaseUser.uid);
-          }
-
-          // Special case for development
-          const isSpecialUser = firebaseUser.email === "baburhussain660@gmail.com";
-          const adminStatus = isSpecialUser ? true : (user?.isAdmin || false);
-
-          // Set user state
-          const userData = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL,
-            role: isSpecialUser ? "Admin" as UserRole : (user?.role as UserRole || null),
-            isAdmin: adminStatus
-          };
-          
-          console.log("Auth Provider: Setting user with admin status:", adminStatus, userData);
-          
-          setCurrentUser(userData);
-          setUserRole(isSpecialUser ? "Admin" as UserRole : (user?.role as UserRole || null));
-          setIsAdmin(adminStatus);
-        } catch (error) {
-          console.error("Error processing user authentication:", error);
-          setCurrentUser(null);
-          setUserRole(null);
-          setIsAdmin(false);
-        }
-      } else {
-        setCurrentUser(null);
-        setUserRole(null);
-        setIsAdmin(false);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      try {
+        await processUser(firebaseUser);
+      } catch (error) {
+        console.error("Error in auth state change:", error);
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-      setInitialized(true);
     });
 
     return () => unsubscribe();
   }, []);
 
-  const logout = async () => {
+  const signInWithGoogle = async () => {
     try {
-      await signOut(auth);
-      setCurrentUser(null);
-      setUserRole(null);
-      setIsAdmin(false);
+      const result = await signInWithPopup(auth, googleProvider);
+      await processUser(result.user);
+      return true;
     } catch (error) {
-      console.error("Error logging out:", error);
+      console.error("Google sign-in error:", error);
+      return false;
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const signOut = async () => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await firebaseSignOut(auth);
+      setUser(null);
+      return true;
     } catch (error) {
-      console.error("Error logging in:", error);
-      throw error;
+      console.error("Sign out error:", error);
+      return false;
     }
   };
 
-  const loginWithGoogle = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Error with Google login:", error);
-      throw error;
-    }
-  };
-
-  const signup = async (email: string, password: string, name: string, role: UserRole, additionalData: any = {}) => {
-    try {
-      // Create user in Firebase
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-      
-      // Update profile
-      await updateProfile(firebaseUser, {
-        displayName: name
-      });
-      
-      // Prepare user data with additional fields
-      const userData = {
-        ...firebaseUser,
-        displayName: name,
-        ...additionalData
-      };
-      
-      // Create user in MongoDB with role and additional data
-      const user = await createUserIfNotExists(userData);
-      
-      // Update user role
-      if (user) {
-        await updateUserRoleService(firebaseUser.uid, role, role === "Admin");
-      }
-      
-      return user;
-    } catch (error) {
-      console.error("Error during signup:", error);
-      throw error;
-    }
-  };
-
-  const updateUserRole = async (role: UserRole) => {
-    if (!currentUser) return;
-    
-    try {
-      const isUserAdmin = role === "Admin";
-      await updateUserRoleService(currentUser.uid, role, isUserAdmin);
-      
-      setUserRole(role);
-      setIsAdmin(isUserAdmin);
-      
-      // Update the current user object
-      setCurrentUser(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          role,
-          isAdmin: isUserAdmin
-        };
-      });
-    } catch (error) {
-      console.error("Error updating user role:", error);
-      throw error;
-    }
-  };
-
-  const updateUserPermission = async (userId: string, isAdmin: boolean) => {
-    try {
-      // Get current role
-      const user = await getUserByUid(userId);
-      if (!user) throw new Error("User not found");
-      
-      // Update role with admin status
-      await updateUserRoleService(userId, user.role as UserRole, isAdmin);
-      
-      // If updating current user, also update state
-      if (currentUser && currentUser.uid === userId) {
-        setIsAdmin(isAdmin);
-        setCurrentUser(prev => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            isAdmin
-          };
-        });
-      }
-    } catch (error) {
-      console.error("Error updating user permissions:", error);
-      throw error;
-    }
-  };
-
-  const value = {
-    currentUser,
+  const contextValue: AuthContextType = {
+    user,
+    isAuthenticated: !!user,
     loading,
-    userRole,
-    isAdmin,
-    logout,
-    login,
-    loginWithGoogle,
-    signup,
-    updateUserRole,
-    updateUserPermission,
-    isAuthenticated: !!currentUser,
-    initialized,
-    user: currentUser,
+    signInWithGoogle,
+    signOut
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loading size="lg" message="Loading authentication..." />
+      </div>
+    );
+  }
+
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export default AuthProvider;

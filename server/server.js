@@ -5,21 +5,28 @@ import User from './models/User.js';
 import Business from './models/Business.js';
 import Subscription from './models/Subscription.js';
 import SubscriptionPackage from './models/SubscriptionPackage.js';
+import SubscriptionSettings from './models/SubscriptionSettings.js';
 import crypto from 'crypto';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-
-// Razorpay API keys - In production, these should come from environment variables
-const RAZORPAY_KEY_ID = "rzp_test_1DP5mmOlF5G5ag";
-const RAZORPAY_KEY_SECRET = "your_razorpay_secret_key"; // Placeholder - in real app this would be in .env
 
 // Middleware
 app.use(express.json());
 app.use(cors());
 
 // Connect to MongoDB on startup
-connectToMongoDB();
+connectToMongoDB()
+  .then(connected => {
+    if (connected) {
+      console.log('✅ Connected to MongoDB on startup');
+    } else {
+      console.error('❌ Failed to connect to MongoDB on startup');
+    }
+  })
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err);
+  });
 
 // --- User APIs ---
 // Get user by UID
@@ -29,6 +36,7 @@ app.get('/api/users/:uid', async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.status(200).json(user);
   } catch (error) {
+    console.error('Error fetching user:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -39,6 +47,7 @@ app.get('/api/users', async (req, res) => {
     const users = await User.find().sort({ createdAt: -1 });
     res.status(200).json(users);
   } catch (error) {
+    console.error('Error fetching users:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -49,13 +58,46 @@ app.post('/api/users', async (req, res) => {
     const { uid } = req.body;
     if (!uid) return res.status(400).json({ message: 'User UID is required' });
 
-    const user = await User.findOneAndUpdate(
-      { uid },
-      req.body,
-      { upsert: true, new: true }
-    );
-    res.status(201).json(user);
+    // Check if user exists
+    const existingUser = await User.findOne({ uid });
+    
+    if (existingUser) {
+      // Update existing user
+      const user = await User.findOneAndUpdate(
+        { uid },
+        { ...req.body, updatedAt: new Date() },
+        { new: true }
+      );
+      res.status(200).json(user);
+    } else {
+      // Create new user
+      const newUser = new User({
+        ...req.body,
+        createdAt: new Date(),
+        lastLogin: new Date()
+      });
+      await newUser.save();
+      res.status(201).json(newUser);
+    }
   } catch (error) {
+    console.error('Error creating/updating user:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update user login timestamp
+app.put('/api/users/:uid/login', async (req, res) => {
+  try {
+    const user = await User.findOneAndUpdate(
+      { uid: req.params.uid },
+      { lastLogin: new Date() },
+      { new: true }
+    );
+    
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.status(200).json({ message: 'Login timestamp updated' });
+  } catch (error) {
+    console.error('Error updating login timestamp:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -68,26 +110,14 @@ app.put('/api/users/:uid/role', async (req, res) => {
 
     const user = await User.findOneAndUpdate(
       { uid: req.params.uid },
-      { role, isAdmin },
+      { role, isAdmin, updatedAt: new Date() },
       { new: true }
     );
     
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.status(200).json(user);
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Update user login timestamp
-app.put('/api/users/:uid/login', async (req, res) => {
-  try {
-    await User.updateOne(
-      { uid: req.params.uid },
-      { $set: { lastLogin: new Date() } }
-    );
-    res.status(200).json({ message: 'Login timestamp updated' });
-  } catch (error) {
+    console.error('Error updating user role:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -96,9 +126,31 @@ app.put('/api/users/:uid/login', async (req, res) => {
 // Get all businesses
 app.get('/api/businesses', async (req, res) => {
   try {
-    const businesses = await Business.find();
+    // Add query parameters for filtering
+    const { category, featured, search } = req.query;
+    
+    let query = {};
+    
+    if (category) {
+      query.category = category;
+    }
+    
+    if (featured === 'true') {
+      query.featured = true;
+    }
+    
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { category: { $regex: search, $options: 'i' } },
+      ];
+    }
+    
+    const businesses = await Business.find(query);
     res.status(200).json(businesses);
   } catch (error) {
+    console.error('Error fetching businesses:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -106,10 +158,15 @@ app.get('/api/businesses', async (req, res) => {
 // Get business by ID
 app.get('/api/businesses/:id', async (req, res) => {
   try {
-    const business = await Business.findOne({ id: req.params.id });
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: 'Invalid business ID' });
+    
+    const business = await Business.findOne({ id });
     if (!business) return res.status(404).json({ message: 'Business not found' });
+    
     res.status(200).json(business);
   } catch (error) {
+    console.error('Error fetching business:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -120,13 +177,28 @@ app.post('/api/businesses', async (req, res) => {
     const { id } = req.body;
     if (!id) return res.status(400).json({ message: 'Business ID is required' });
 
-    const business = await Business.findOneAndUpdate(
-      { id },
-      req.body,
-      { upsert: true, new: true }
-    );
-    res.status(201).json(business);
+    // Check if business already exists
+    const existingBusiness = await Business.findOne({ id });
+    
+    if (existingBusiness) {
+      // Update existing business
+      const business = await Business.findOneAndUpdate(
+        { id },
+        { ...req.body, updatedAt: new Date() },
+        { new: true }
+      );
+      res.status(200).json(business);
+    } else {
+      // Create new business
+      const newBusiness = new Business({
+        ...req.body,
+        createdAt: new Date()
+      });
+      await newBusiness.save();
+      res.status(201).json(newBusiness);
+    }
   } catch (error) {
+    console.error('Error creating/updating business:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -134,12 +206,18 @@ app.post('/api/businesses', async (req, res) => {
 // Delete business
 app.delete('/api/businesses/:id', async (req, res) => {
   try {
-    const result = await Business.deleteOne({ id: req.params.id });
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: 'Invalid business ID' });
+    
+    const result = await Business.deleteOne({ id });
+    
     if (result.deletedCount === 0) {
       return res.status(404).json({ message: 'Business not found' });
     }
+    
     res.status(200).json({ message: 'Business deleted successfully' });
   } catch (error) {
+    console.error('Error deleting business:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -151,6 +229,7 @@ app.get('/api/subscription-packages', async (req, res) => {
     const packages = await SubscriptionPackage.find();
     res.status(200).json(packages);
   } catch (error) {
+    console.error('Error fetching subscription packages:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -161,6 +240,7 @@ app.get('/api/subscription-packages/type/:type', async (req, res) => {
     const packages = await SubscriptionPackage.find({ type: req.params.type });
     res.status(200).json(packages);
   } catch (error) {
+    console.error('Error fetching subscription packages by type:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -171,13 +251,28 @@ app.post('/api/subscription-packages', async (req, res) => {
     const { id } = req.body;
     if (!id) return res.status(400).json({ message: 'Package ID is required' });
 
-    const subscriptionPackage = await SubscriptionPackage.findOneAndUpdate(
-      { id },
-      req.body,
-      { upsert: true, new: true }
-    );
-    res.status(201).json(subscriptionPackage);
+    // Check if package already exists
+    const existingPackage = await SubscriptionPackage.findOne({ id });
+    
+    if (existingPackage) {
+      // Update existing package
+      const subscriptionPackage = await SubscriptionPackage.findOneAndUpdate(
+        { id },
+        { ...req.body, updatedAt: new Date() },
+        { new: true }
+      );
+      res.status(200).json(subscriptionPackage);
+    } else {
+      // Create new package
+      const newPackage = new SubscriptionPackage({
+        ...req.body,
+        createdAt: new Date()
+      });
+      await newPackage.save();
+      res.status(201).json(newPackage);
+    }
   } catch (error) {
+    console.error('Error creating/updating subscription package:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -186,11 +281,14 @@ app.post('/api/subscription-packages', async (req, res) => {
 app.delete('/api/subscription-packages/:id', async (req, res) => {
   try {
     const result = await SubscriptionPackage.deleteOne({ id: req.params.id });
+    
     if (result.deletedCount === 0) {
       return res.status(404).json({ message: 'Subscription package not found' });
     }
+    
     res.status(200).json({ message: 'Subscription package deleted successfully' });
   } catch (error) {
+    console.error('Error deleting subscription package:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -201,7 +299,7 @@ app.get('/api/subscriptions/user/:userId', async (req, res) => {
   try {
     const subscriptions = await Subscription.find({ 
       userId: req.params.userId,
-      status: "active"
+      status: { $in: ["active", "trial"] }
     }).sort({ startDate: -1 });
     
     if (subscriptions.length === 0) {
@@ -210,6 +308,7 @@ app.get('/api/subscriptions/user/:userId', async (req, res) => {
     
     res.status(200).json(subscriptions[0]);
   } catch (error) {
+    console.error('Error fetching user subscription:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -217,149 +316,135 @@ app.get('/api/subscriptions/user/:userId', async (req, res) => {
 // Create or update subscription
 app.post('/api/subscriptions', async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id, userId, packageId } = req.body;
+    
     if (!id) return res.status(400).json({ message: 'Subscription ID is required' });
+    if (!userId) return res.status(400).json({ message: 'User ID is required' });
+    if (!packageId) return res.status(400).json({ message: 'Package ID is required' });
 
-    const subscription = await Subscription.findOneAndUpdate(
-      { id },
-      req.body,
-      { upsert: true, new: true }
-    );
+    // Check if subscription already exists
+    const existingSubscription = await Subscription.findOne({ id });
     
-    // Update user record with subscription reference
-    await User.findOneAndUpdate(
-      { uid: subscription.userId },
-      { 
-        subscription: subscription.id,
-        subscriptionStatus: subscription.status,
-        subscriptionPackage: subscription.packageId
-      }
-    );
-    
-    res.status(201).json(subscription);
+    if (existingSubscription) {
+      // Update existing subscription
+      const subscription = await Subscription.findOneAndUpdate(
+        { id },
+        { ...req.body, updatedAt: new Date() },
+        { new: true }
+      );
+      
+      // Update user's subscription reference
+      await User.findOneAndUpdate(
+        { uid: userId },
+        { 
+          subscription: id,
+          subscriptionStatus: req.body.status || existingSubscription.status,
+          subscriptionPackage: packageId,
+          updatedAt: new Date()
+        }
+      );
+      
+      res.status(200).json(subscription);
+    } else {
+      // Create new subscription
+      const newSubscription = new Subscription({
+        ...req.body,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      await newSubscription.save();
+      
+      // Update user's subscription reference
+      await User.findOneAndUpdate(
+        { uid: userId },
+        { 
+          subscription: id,
+          subscriptionStatus: req.body.status || 'active',
+          subscriptionPackage: packageId,
+          updatedAt: new Date()
+        }
+      );
+      
+      res.status(201).json(newSubscription);
+    }
   } catch (error) {
+    console.error('Error creating/updating subscription:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// --- Razorpay Payment APIs ---
-// Create Razorpay Order
-app.post('/api/create-razorpay-order', async (req, res) => {
+// --- Subscription Settings APIs ---
+// Get global subscription settings
+app.get('/api/subscription-settings', async (req, res) => {
   try {
-    const { amount, currency = 'INR', packageId, userId } = req.body;
+    let settings = await SubscriptionSettings.findOne({ id: 'global' });
     
-    if (!amount || !packageId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Amount and packageId are required' 
+    if (!settings) {
+      // Create default settings if none exist
+      settings = new SubscriptionSettings({
+        id: 'global',
+        shouldUseLocalFallback: true,
+        allowNonAdminSubscriptions: true,
+        requiresPayment: false,
+        defaultGracePeriodDays: 7,
+        defaultAdvancePaymentMonths: 1
       });
+      await settings.save();
     }
     
-    // In a real implementation, you would use the Razorpay SDK to create an order
-    // For this demo, we'll create a mock order
-    const orderId = `order_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    const order = {
-      id: orderId,
-      amount: amount * 100, // Convert to paise
-      currency,
-      receipt: `receipt_${packageId}_${Date.now()}`,
-      status: 'created'
-    };
-    
-    // Log the order details
-    console.log("Created Razorpay order:", order);
-    
-    res.status(200).json({ 
-      success: true, 
-      order,
-      key_id: RAZORPAY_KEY_ID
-    });
+    res.status(200).json(settings);
   } catch (error) {
-    console.error('Error creating Razorpay order:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to create order',
-      error: error.message
-    });
+    console.error('Error fetching subscription settings:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Verify Razorpay Payment
-app.post('/api/verify-razorpay-payment', async (req, res) => {
+// Update subscription settings
+app.post('/api/subscription-settings', async (req, res) => {
   try {
-    const { 
-      razorpay_payment_id, 
-      razorpay_order_id, 
-      razorpay_signature,
-      packageId,
-      userId,
-      paymentType
-    } = req.body;
+    const settings = await SubscriptionSettings.findOneAndUpdate(
+      { id: 'global' },
+      { ...req.body, updatedAt: new Date() },
+      { upsert: true, new: true }
+    );
     
-    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Payment verification failed: Missing required parameters' 
-      });
-    }
-    
-    // In a real implementation, you would verify the signature
-    // For this demo, we'll assume the payment is valid
-    
-    // Generate expected signature
-    // const expectedSignature = crypto
-    //   .createHmac('sha256', RAZORPAY_KEY_SECRET)
-    //   .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-    //   .digest('hex');
-    
-    // if (expectedSignature !== razorpay_signature) {
-    //   return res.status(400).json({ 
-    //     success: false, 
-    //     message: 'Payment verification failed: Invalid signature' 
-    //   });
-    // }
-    
-    // For demo purposes, we'll just assume verification succeeds
-    console.log("Payment verified successfully:", {
-      razorpay_payment_id,
-      razorpay_order_id,
-      packageId,
-      userId
-    });
-    
-    res.status(200).json({ 
-      success: true, 
-      message: 'Payment verified successfully',
-      paymentId: razorpay_payment_id,
-      orderId: razorpay_order_id
-    });
+    res.status(200).json(settings);
   } catch (error) {
-    console.error('Error verifying Razorpay payment:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Payment verification failed',
-      error: error.message
-    });
+    console.error('Error updating subscription settings:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
 // MongoDB initialization endpoint
 app.post('/api/initialize-mongodb', async (req, res) => {
   try {
-    await connectToMongoDB();
-    const collections = [
-      'User',
-      'Business',
-      'Subscription',
-      'SubscriptionPackage'
-    ];
+    const connected = await connectToMongoDB();
+    
+    if (!connected) {
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to connect to MongoDB' 
+      });
+    }
+    
+    // Check if the required collections exist and have data
+    const userCount = await User.estimatedDocumentCount();
+    const businessCount = await Business.estimatedDocumentCount();
+    const subscriptionCount = await Subscription.estimatedDocumentCount();
+    const packageCount = await SubscriptionPackage.estimatedDocumentCount();
     
     res.status(200).json({ 
       success: true, 
-      message: 'MongoDB initialized successfully',
-      collections
+      message: 'MongoDB is initialized and ready',
+      collections: {
+        users: { count: userCount },
+        businesses: { count: businessCount },
+        subscriptions: { count: subscriptionCount },
+        packages: { count: packageCount }
+      }
     });
   } catch (error) {
+    console.error('Error initializing MongoDB:', error);
     res.status(500).json({ 
       success: false,
       error: error.message 
@@ -376,9 +461,67 @@ app.get('/api/test-connection', async (req, res) => {
       message: connected ? 'Connected to MongoDB' : 'Failed to connect to MongoDB'
     });
   } catch (error) {
+    console.error('Error testing MongoDB connection:', error);
     res.status(500).json({ 
       success: false,
       error: error.message 
+    });
+  }
+});
+
+// CSV upload endpoint
+app.post('/api/upload-csv', async (req, res) => {
+  try {
+    const { businesses } = req.body;
+    
+    if (!businesses || !Array.isArray(businesses)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid request format, businesses array required' 
+      });
+    }
+    
+    let inserted = 0;
+    let updated = 0;
+    let errors = 0;
+    
+    for (const business of businesses) {
+      try {
+        // Check if business already exists
+        const existingBusiness = await Business.findOne({ id: business.id });
+        
+        if (existingBusiness) {
+          // Update existing business
+          await Business.updateOne(
+            { id: business.id },
+            { ...business, updatedAt: new Date() }
+          );
+          updated++;
+        } else {
+          // Insert new business
+          const newBusiness = new Business({
+            ...business,
+            createdAt: new Date()
+          });
+          await newBusiness.save();
+          inserted++;
+        }
+      } catch (businessError) {
+        console.error('Error processing business:', businessError);
+        errors++;
+      }
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: `Processed ${businesses.length} businesses: ${inserted} inserted, ${updated} updated, ${errors} errors`,
+      stats: { inserted, updated, errors }
+    });
+  } catch (error) {
+    console.error('Error uploading CSV data:', error);
+    res.status(500).json({
+      success: false,
+      message: `Error processing CSV: ${error.message}`
     });
   }
 });

@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { processCsvData } from '@/lib/csv-utils';
+import { toast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
   file: z.instanceof(File, { message: 'Please select a CSV file' })
@@ -68,11 +69,16 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
             const { success, businesses, message } = await processCsvData(csvContent);
             
             if (success) {
-              onUploadComplete(true, "CSV processed and saved to Firestore successfully", businesses.length);
+              toast({
+                title: "Upload Successful",
+                description: `${businesses.length} businesses processed successfully`,
+              });
+              onUploadComplete(true, `Successfully added ${businesses.length} businesses to MongoDB`, businesses.length);
             } else {
               onUploadComplete(false, message);
             }
           } catch (error) {
+            console.error("Failed to process CSV data:", error);
             onUploadComplete(false, "Failed to process CSV data: " + (error instanceof Error ? error.message : String(error)));
           }
         }
@@ -84,6 +90,7 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
       
       reader.readAsText(values.file);
     } catch (error) {
+      console.error("An unexpected error occurred:", error);
       onUploadComplete(false, "An unexpected error occurred");
     }
   };

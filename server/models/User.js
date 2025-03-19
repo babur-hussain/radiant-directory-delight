@@ -1,11 +1,11 @@
 
-import mongoose from '../mongodb-connector.js';
+import mongoose from 'mongoose';
 
 const UserSchema = new mongoose.Schema({
   uid: { type: String, required: true, unique: true },
   name: { type: String, default: null },
   email: { type: String, default: null },
-  role: { type: String, default: null },
+  role: { type: String, default: 'user' },
   isAdmin: { type: Boolean, default: false },
   photoURL: { type: String, default: null },
   createdAt: { type: Date, default: Date.now },
@@ -50,11 +50,9 @@ UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1 });
 UserSchema.index({ isAdmin: 1 });
 
-// Virtual for compatibility with Firestore IDs
-UserSchema.virtual('id').get(function() {
-  return this.uid;
-});
+// Method to check if a user is admin
+UserSchema.methods.isUserAdmin = function() {
+  return this.isAdmin === true || this.role === 'Admin' || this.role === 'admin';
+};
 
-const User = mongoose.model('User', UserSchema);
-
-export default User;
+export default mongoose.model('User', UserSchema);

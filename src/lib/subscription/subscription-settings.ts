@@ -1,7 +1,4 @@
 
-import { collection, doc, getDoc, getDocs, setDoc, query, where } from "firebase/firestore";
-import { db } from "@/config/firebase";
-
 /**
  * Global subscription settings to control behavior of subscription features
  */
@@ -14,34 +11,34 @@ export interface SubscriptionSettings {
 }
 
 /**
- * Default settings to use when Firebase connection fails
+ * Default settings to use when MongoDB connection fails
  */
 const DEFAULT_SETTINGS: SubscriptionSettings = {
   shouldUseLocalFallback: true,
-  allowNonAdminSubscriptions: true, // Changed to TRUE to allow non-admin subscriptions by default
+  allowNonAdminSubscriptions: true,
   requiresPayment: false,
   defaultGracePeriodDays: 7,
   defaultAdvancePaymentMonths: 1
 };
 
 /**
- * Retrieves global subscription settings from Firestore
+ * Retrieves global subscription settings from MongoDB
  */
 export async function getGlobalSubscriptionSettings(): Promise<SubscriptionSettings> {
   try {
-    // Try to get settings from Firestore
-    const settingsRef = doc(db, "system", "subscription_settings");
-    const settingsDoc = await getDoc(settingsRef);
+    // Try to get settings from MongoDB
+    const response = await fetch('http://localhost:3001/api/subscription-settings');
     
-    if (settingsDoc.exists()) {
-      console.log("✅ Retrieved subscription settings from Firestore");
+    if (response.ok) {
+      const settings = await response.json();
+      console.log("✅ Retrieved subscription settings from MongoDB");
       return { 
         ...DEFAULT_SETTINGS, 
-        ...settingsDoc.data() as SubscriptionSettings 
+        ...settings 
       };
     }
     
-    console.log("⚠️ No subscription settings found in Firestore, using defaults");
+    console.log("⚠️ No subscription settings found in MongoDB, using defaults");
     return DEFAULT_SETTINGS;
   } catch (error) {
     console.error("❌ Error fetching subscription settings:", error);
@@ -50,16 +47,26 @@ export async function getGlobalSubscriptionSettings(): Promise<SubscriptionSetti
 }
 
 /**
- * Updates global subscription settings
+ * Updates global subscription settings in MongoDB
  */
 export async function updateSubscriptionSettings(
   settings: Partial<SubscriptionSettings>
 ): Promise<boolean> {
   try {
-    const settingsRef = doc(db, "system", "subscription_settings");
-    await setDoc(settingsRef, settings, { merge: true });
-    console.log("✅ Updated subscription settings");
-    return true;
+    const response = await fetch('http://localhost:3001/api/subscription-settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(settings),
+    });
+    
+    if (response.ok) {
+      console.log("✅ Updated subscription settings");
+      return true;
+    }
+    
+    return false;
   } catch (error) {
     console.error("❌ Error updating subscription settings:", error);
     return false;
