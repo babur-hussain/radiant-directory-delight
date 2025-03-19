@@ -1,5 +1,5 @@
 
-import { initializeMongoDB, testMongoDBConnection } from '../api/mongoAPI';
+import { initializeMongoDB, testMongoDBConnection, isServerRunning } from '../api/mongoAPI';
 
 // Progress callback type definition
 type ProgressCallback = (progress: number, message: string) => void;
@@ -14,6 +14,13 @@ interface SetupMongoDBResult {
 // Function to test connection with retry
 export const testConnectionWithRetry = async (maxAttempts: number, delayMs: number): Promise<boolean> => {
   let attempts = 0;
+  
+  // First check if server is even running
+  const serverAvailable = await isServerRunning();
+  if (!serverAvailable) {
+    console.log('Server is not available, skipping connection test');
+    return false;
+  }
   
   while (attempts < maxAttempts) {
     attempts++;
@@ -46,6 +53,19 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback): Promise
       progressCallback(10, "Testing MongoDB connection...");
     }
     
+    // Check if server is running
+    const serverAvailable = await isServerRunning();
+    if (!serverAvailable) {
+      if (progressCallback) {
+        progressCallback(100, "MongoDB server is not available");
+      }
+      return {
+        success: false,
+        collections: [],
+        error: "MongoDB server is not available. Using fallback local data."
+      };
+    }
+    
     const connectionResult = await testConnectionWithRetry(2, 1000);
     
     if (!connectionResult) {
@@ -55,7 +75,7 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback): Promise
       return {
         success: false,
         collections: [],
-        error: "Failed to connect to MongoDB"
+        error: "Failed to connect to MongoDB. Using fallback local data."
       };
     }
     
@@ -93,6 +113,13 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback): Promise
 // Auto-initialize MongoDB when needed - simplified version for client
 export const autoInitMongoDB = async (): Promise<boolean> => {
   try {
+    // Check if server is running first
+    const serverAvailable = await isServerRunning();
+    if (!serverAvailable) {
+      console.log("Server is not available, skipping auto-initialization");
+      return false;
+    }
+    
     console.log("Testing MongoDB connection through API...");
     const connectionResult = await testMongoDBConnection();
     

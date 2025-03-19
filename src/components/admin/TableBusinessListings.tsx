@@ -18,7 +18,7 @@ import {
 import CSVUploadDialog from './CSVUploadDialog';
 import BusinessTableRow from './table/BusinessTableRow';
 import { Business } from '@/lib/csv-utils';
-import { fetchBusinesses } from '@/api/mongoAPI';
+import { fetchBusinesses, isServerRunning } from '@/api/mongoAPI';
 import { useToast } from '@/hooks/use-toast';
 
 interface TableBusinessListingsProps {
@@ -40,18 +40,28 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [usingLocalData, setUsingLocalData] = useState(false);
   const { toast } = useToast();
   
   const loadBusinesses = async () => {
     setIsLoading(true);
     setError(null);
+    setUsingLocalData(false);
+    
     try {
-      // First try to fetch from MongoDB
+      // Check if server is running
+      const serverAvailable = await isServerRunning();
+      
+      if (!serverAvailable) {
+        throw new Error("MongoDB server is not available");
+      }
+      
+      // Try to fetch from MongoDB
       const data = await fetchBusinesses();
-      // Convert IBusiness[] to Business[] to match the state type
       setBusinesses(data as unknown as Business[]);
     } catch (err) {
       console.error("Error fetching businesses from MongoDB:", err);
+      setUsingLocalData(true);
       
       // Fallback to CSV data
       try {
@@ -80,16 +90,23 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
   const handleDeleteBusiness = async (businessId: string) => {
     try {
       setIsSubmitting(true);
-      // Try deleting from MongoDB
-      try {
-        await fetch(`http://localhost:3001/api/businesses/${businessId}`, {
-          method: 'DELETE'
-        });
-      } catch (err) {
-        console.error("MongoDB deletion failed, falling back to local deletion:", err);
-        // Fallback to local deletion
+      
+      if (usingLocalData) {
+        // Using local data, delete locally
         const { deleteBusiness } = await import('@/lib/csv-utils');
         deleteBusiness(parseInt(businessId));
+      } else {
+        // Try deleting from MongoDB
+        try {
+          await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'}/businesses/${businessId}`, {
+            method: 'DELETE'
+          });
+        } catch (err) {
+          console.error("MongoDB deletion failed, falling back to local deletion:", err);
+          // Fallback to local deletion
+          const { deleteBusiness } = await import('@/lib/csv-utils');
+          deleteBusiness(parseInt(businessId));
+        }
       }
       
       await loadBusinesses();
@@ -142,18 +159,8 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
   const handleFormSubmit = async (values: any) => {
     setIsSubmitting(true);
     try {
-      // Try to save to MongoDB first
-      try {
-        const { saveBusiness } = await import('@/api/mongoAPI');
-        await saveBusiness({
-          ...selectedBusiness,
-          ...values,
-          tags: Array.isArray(values.tags) ? values.tags : values.tags.split(',').map((tag: string) => tag.trim())
-        });
-      } catch (err) {
-        console.error("MongoDB save failed, falling back to local save:", err);
-        
-        // Fallback to local save
+      if (usingLocalData) {
+        // Using local data, save locally
         const { updateBusiness, addBusiness } = await import('@/lib/csv-utils');
         if (selectedBusiness) {
           updateBusiness({
@@ -175,6 +182,43 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
             reviews: randomReviews,
             image: values.image || `https://source.unsplash.com/random/500x350/?${values.category.toLowerCase().replace(/\s+/g, ",")}`
           });
+        }
+      } else {
+        // Try to save to MongoDB first
+        try {
+          const { saveBusiness } = await import('@/api/mongoAPI');
+          await saveBusiness({
+            ...selectedBusiness,
+            ...values,
+            tags: Array.isArray(values.tags) ? values.tags : values.tags.split(',').map((tag: string) => tag.trim())
+          });
+        } catch (err) {
+          console.error("MongoDB save failed, falling back to local save:", err);
+          setUsingLocalData(true);
+          
+          // Fallback to local save
+          const { updateBusiness, addBusiness } = await import('@/lib/csv-utils');
+          if (selectedBusiness) {
+            updateBusiness({
+              ...selectedBusiness,
+              ...values,
+              tags: Array.isArray(values.tags) ? values.tags : values.tags.split(',').map((tag: string) => tag.trim())
+            } as Business);
+          } else {
+            const randomReviews = Math.floor(Math.random() * 500) + 50;
+            addBusiness({
+              name: values.name,
+              category: values.category,
+              address: values.address,
+              phone: values.phone,
+              rating: values.rating,
+              description: values.description,
+              featured: values.featured,
+              tags: Array.isArray(values.tags) ? values.tags : values.tags.split(',').map((tag: string) => tag.trim()),
+              reviews: randomReviews,
+              image: values.image || `https://source.unsplash.com/random/500x350/?${values.category.toLowerCase().replace(/\s+/g, ",")}`
+            });
+          }
         }
       }
       
@@ -231,6 +275,29 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
           </Button>
         </div>
       </div>
+
+      {usingLocalData && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                Using local data. MongoDB connection unavailable.
+                <button 
+                  className="ml-2 font-medium text-yellow-700 underline"
+                  onClick={refreshData}
+                >
+                  Try again
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error ? (
         <BusinessPermissionError errorMessage={error} />

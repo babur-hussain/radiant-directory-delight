@@ -36,8 +36,15 @@ const mockModels: Record<string, any> = {};
 
 // Mock mongoose instance
 const mongoose = {
-  connection: null,
-  connect: () => Promise.resolve(true),
+  connection: {
+    readyState: 0, // Disconnected by default
+    host: 'localhost',
+    name: 'mockdb'
+  },
+  connect: () => {
+    mongoose.connection.readyState = 1; // Set to connected
+    return Promise.resolve(true);
+  },
   Schema: function(schema: any) {
     const schemaObj = {
       // Convert the schema definition to a usable object
@@ -138,8 +145,9 @@ function createModelMock(name: string) {
   return Constructor;
 }
 
-// Set a very safe connection string with faster timeouts
-const MONGODB_URI = 'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+// Set a connection string with environment variable support
+const MONGODB_URI = process.env.NEXT_PUBLIC_MONGODB_URI || 
+  'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
 // Track connection state
 let isConnected = false;
@@ -147,14 +155,15 @@ let isConnected = false;
 // Connect to MongoDB with browser-safe implementation
 export const connectToMongoDB = async () => {
   console.log('MongoDB connection requested, but running in browser');
-  // Return success without actually connecting in browser environment
+  // For browser environment, we just simulate success
   isConnected = true;
+  mongoose.connection.readyState = 1; // Set to connected
   return true;
 };
 
 // Check if MongoDB is connected
 export const isMongoDBConnected = () => {
-  return isConnected;
+  return isConnected || mongoose.connection.readyState === 1;
 };
 
 // Export mongoose for compatibility
