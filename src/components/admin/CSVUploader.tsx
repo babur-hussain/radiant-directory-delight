@@ -146,7 +146,8 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
                   </div>
                 </FormControl>
                 <FormDescription>
-                  The CSV should include columns for Business Name, Category, Address, Review, and Mobile Number.
+                  The CSV should include these columns: <strong>Business Name</strong>, <strong>Category</strong>, <strong>Address</strong>, <strong>Mobile Number</strong>, and <strong>Review</strong> (for ratings).
+                  Optional columns: Description, Email, Website, Reviews (count), Tags (comma-separated), and Image (URL).
                 </FormDescription>
                 <FormMessage />
               </FormItem>
