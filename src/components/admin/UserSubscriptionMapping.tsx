@@ -10,7 +10,7 @@ import { Loader2, Search, UserCheck, CheckCircle, XCircle, RefreshCw } from "luc
 import { useToast } from "@/hooks/use-toast";
 import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { SubscriptionPackage } from "@/data/subscriptionData";
-import { User } from "@/types/auth";
+import { User, UserSubscription } from "@/types/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { getAllUsers } from "@/features/auth/userManagement";
 
@@ -48,10 +48,14 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
       const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
       
       // Add subscription info to users
-      const usersWithSubscriptions = firebaseUsers.map((user: User) => ({
-        ...user,
-        subscription: userSubscriptions[user.id] || null
-      }));
+      const usersWithSubscriptions = firebaseUsers.map((user: User) => {
+        // Create proper User object with typed subscription
+        const userWithSubscription: User = {
+          ...user,
+          subscription: userSubscriptions[user.id] || null
+        };
+        return userWithSubscription;
+      });
       
       setUsers(usersWithSubscriptions);
       setPackages(allPackages);
@@ -115,7 +119,7 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
       }
       
       // Create subscription data
-      const subscriptionData = {
+      const subscriptionData: UserSubscription = {
         id: `sub_${Date.now()}`,
         userId: userId,
         packageId: selectedPackage.id,
@@ -176,7 +180,7 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
         // Update state
         const updatedUsers = users.map(user => {
           if (user.id === userId) {
-            if (user.subscription) {
+            if (user.subscription && typeof user.subscription !== 'string') {
               return {
                 ...user,
                 subscription: {
@@ -207,12 +211,19 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
   };
   
   // Format date for display
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
+  };
+  
+  // Helper to safely get subscription property
+  const getSubscriptionValue = (user: User, property: string): any => {
+    if (!user.subscription) return null;
+    if (typeof user.subscription === 'string') return null;
+    return (user.subscription as UserSubscription)[property as keyof UserSubscription];
   };
   
   // If there's an error or still loading
@@ -310,28 +321,28 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {user.subscription ? (
-                        <p>{user.subscription.packageName}</p>
+                      {user.subscription && typeof user.subscription !== 'string' ? (
+                        <p>{getSubscriptionValue(user, 'packageName')}</p>
                       ) : (
                         <p className="text-muted-foreground">No subscription</p>
                       )}
                     </TableCell>
                     <TableCell>
-                      {user.subscription?.endDate ? (
-                        formatDate(user.subscription.endDate)
+                      {user.subscription && typeof user.subscription !== 'string' && getSubscriptionValue(user, 'endDate') ? (
+                        formatDate(getSubscriptionValue(user, 'endDate'))
                       ) : (
                         "-"
                       )}
                     </TableCell>
                     <TableCell>
-                      {user.subscription ? (
-                        <Badge variant={user.subscription.status === 'active' ? 'default' : 'destructive'}>
-                          {user.subscription.status === 'active' ? (
+                      {user.subscription && typeof user.subscription !== 'string' ? (
+                        <Badge variant={getSubscriptionValue(user, 'status') === 'active' ? 'default' : 'destructive'}>
+                          {getSubscriptionValue(user, 'status') === 'active' ? (
                             <CheckCircle className="h-3 w-3 mr-1" />
                           ) : (
                             <XCircle className="h-3 w-3 mr-1" />
                           )}
-                          {user.subscription.status}
+                          {getSubscriptionValue(user, 'status')}
                         </Badge>
                       ) : (
                         <Badge variant="outline">No subscription</Badge>
@@ -340,7 +351,7 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
                     <TableCell>
                       <div className="flex flex-col sm:flex-row gap-2">
                         <Select
-                          onValueChange={(value) => handleAssignPackage(user.id, value)}
+                          onValueChange={(value) => handleAssignPackage(user.id as string, value)}
                           disabled={!currentUser?.isAdmin}
                         >
                           <SelectTrigger className="w-[160px]">
@@ -355,11 +366,13 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
                           </SelectContent>
                         </Select>
                         
-                        {user.subscription?.status === 'active' && (
+                        {user.subscription && 
+                         typeof user.subscription !== 'string' && 
+                         getSubscriptionValue(user, 'status') === 'active' && (
                           <Button 
                             variant="destructive"
                             size="sm"
-                            onClick={() => handleRemoveSubscription(user.id)}
+                            onClick={() => handleRemoveSubscription(user.id as string)}
                             disabled={!currentUser?.isAdmin}
                           >
                             Cancel

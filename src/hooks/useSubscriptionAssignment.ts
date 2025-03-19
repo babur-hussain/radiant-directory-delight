@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { updateUserSubscription } from '@/lib/subscription';
 import { adminAssignSubscription } from '@/lib/subscription/admin-subscription';
-import { User } from '@/types/auth';
+import { User, UserSubscription } from '@/types/auth';
 import { useToast } from './use-toast';
 import { getPackageById, convertToSubscriptionPackage } from '@/data/subscriptionData';
 import { fetchSubscriptionPackages, fetchSubscriptionPackagesByType } from '@/lib/mongodb-utils';
@@ -15,7 +15,7 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
   const [error, setError] = useState<string | null>(null);
   const [packages, setPackages] = useState<any[]>([]);
   const [selectedPackage, setSelectedPackage] = useState("");
-  const [userCurrentSubscription, setUserCurrentSubscription] = useState<any>(null);
+  const [userCurrentSubscription, setUserCurrentSubscription] = useState<UserSubscription | null>(null);
   
   // Load packages and current subscription on mount
   useEffect(() => {
@@ -37,8 +37,8 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
         setPackages(convertedPackages);
         
         // Load current subscription if available
-        if (targetUser?.subscription) {
-          setUserCurrentSubscription(targetUser.subscription);
+        if (targetUser?.subscription && typeof targetUser.subscription !== 'string') {
+          setUserCurrentSubscription(targetUser.subscription as UserSubscription);
           
           // Select current package in dropdown
           if (targetUser.subscription.packageId) {
@@ -87,8 +87,8 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
         startDate: new Date().toISOString(),
         endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
         status: "active",
-        userId: targetUser.id,
-        assignedBy: currentUser.id,
+        userId: targetUser.id || targetUser.uid,
+        assignedBy: currentUser.id || currentUser.uid,
         assignedAt: new Date().toISOString(),
         isPausable: !isOneTime,
         isUserCancellable: !isOneTime,
@@ -96,7 +96,7 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
       };
       
       // Assign subscription
-      const success = await adminAssignSubscription(targetUser.id, subscriptionData);
+      const success = await adminAssignSubscription(targetUser.id || targetUser.uid, subscriptionData);
       
       if (success) {
         toast({
@@ -107,7 +107,7 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
         setUserCurrentSubscription({
           ...subscriptionData,
           id: `sub_${Date.now()}`
-        });
+        } as UserSubscription);
         
         if (onAssigned) {
           onAssigned(packageDetails.id);
@@ -127,7 +127,7 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser, onAssigned, packages, selectedPackage, targetUser.id, toast]);
+  }, [currentUser, onAssigned, packages, selectedPackage, targetUser, toast]);
   
   // Handle cancelling subscription
   const handleCancelSubscription = useCallback(async () => {
@@ -164,7 +164,7 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
         cancelReason: "admin_cancelled"
       };
       
-      const success = await updateUserSubscription(targetUser.id, updatedSubscription);
+      const success = await updateUserSubscription(targetUser.id || targetUser.uid, updatedSubscription);
       
       if (success) {
         toast({
@@ -172,7 +172,7 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
           description: "Successfully cancelled the subscription.",
         });
         
-        setUserCurrentSubscription(updatedSubscription);
+        setUserCurrentSubscription(updatedSubscription as UserSubscription);
       } else {
         throw new Error("Failed to cancel subscription");
       }
@@ -188,7 +188,7 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser?.isAdmin, targetUser.id, toast, userCurrentSubscription]);
+  }, [currentUser?.isAdmin, targetUser, toast, userCurrentSubscription]);
   
   return {
     isLoading,

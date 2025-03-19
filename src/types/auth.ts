@@ -4,6 +4,24 @@ import { User as FirebaseUser } from 'firebase/auth';
 // User roles enum for type safety
 export type UserRole = 'Admin' | 'Business' | 'Influencer' | 'User' | 'staff' | null;
 
+// Subscription interface for type safety
+export interface UserSubscription {
+  id: string;
+  userId: string;
+  packageId: string;
+  packageName: string;
+  amount: number;
+  startDate: Date | string;
+  endDate: Date | string;
+  status: string;
+  paymentMethod?: string;
+  transactionId?: string;
+  cancelledAt?: string;
+  cancelReason?: string;
+  paymentType?: "recurring" | "one-time";
+  [key: string]: any; // Allow additional properties
+}
+
 // Extended User interface
 export interface User {
   uid: string;
@@ -15,15 +33,17 @@ export interface User {
   employeeCode?: string | null;
   createdAt?: string;
   
-  // Added fields from MongoDB model
-  name?: string | null;
-  id?: string; // Virtual field for compatibility with Firestore IDs
-  lastLogin?: Date | string;
-  subscription?: string | null;
+  // Modified field from string to object
+  subscription?: string | UserSubscription | null;
   subscriptionId?: string;
   subscriptionStatus?: string;
   subscriptionPackage?: string;
   customDashboardSections?: string[];
+  
+  // Added fields from MongoDB model
+  name?: string | null;
+  id?: string; // Virtual field for compatibility with Firestore IDs
+  lastLogin?: Date | string;
   
   // Shared fields
   phone?: string;

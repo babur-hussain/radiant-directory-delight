@@ -18,9 +18,10 @@ import {
   Loader2 
 } from 'lucide-react';
 import { useSubscriptionAssignment } from '@/hooks/useSubscriptionAssignment';
+import { User, UserSubscription } from '@/types/auth';
 
 interface UserSubscriptionAssignmentProps {
-  user: any; 
+  user: User; 
   onAssigned?: (packageId: string) => void;
   disabled?: boolean;
 }
@@ -118,7 +119,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-2 text-gray-500" />
                 <span className="text-muted-foreground mr-1">Since:</span>
-                <span>{formatDate(userCurrentSubscription.startDate)}</span>
+                <span>{formatDate(userCurrentSubscription.startDate as string)}</span>
               </div>
               
               <div className="flex mt-2">

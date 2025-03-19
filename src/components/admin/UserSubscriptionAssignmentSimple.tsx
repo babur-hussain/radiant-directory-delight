@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { User, UserRole } from '@/types/auth';
+import { User, UserRole, UserSubscription } from '@/types/auth';
 import { fetchSubscriptionPackagesByType, saveSubscription } from '@/api/mongoAPI';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -82,7 +83,7 @@ const UserSubscriptionAssignmentSimple: React.FC<UserSubscriptionAssignmentSimpl
       const packageDetails = packages.find(pkg => pkg._id === selectedPackage);
       
       // Create subscription data
-      const subscriptionData = {
+      const subscriptionData: UserSubscription = {
         userId: user.uid,
         packageId: selectedPackage,
         startDate: new Date(),
@@ -90,7 +91,11 @@ const UserSubscriptionAssignmentSimple: React.FC<UserSubscriptionAssignmentSimpl
         endDate: new Date(Date.now() + (packageDetails?.duration || 30) * 24 * 60 * 60 * 1000),
         status: 'active',
         paymentStatus: 'paid',
-        packageDetails: packageDetails
+        packageDetails: packageDetails,
+        id: `sub_${Date.now()}`,
+        packageName: packageDetails?.name || 'Unknown Package',
+        amount: packageDetails?.price || 0,
+        paymentType: 'recurring'
       };
       
       // Save subscription
