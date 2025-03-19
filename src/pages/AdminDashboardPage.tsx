@@ -22,7 +22,7 @@ const Dashboard = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState('Connecting to MongoDB...');
-  const [dbStatus, setDbStatus] = useState<{success: boolean; message: string; collections: string[]} | null>(null);
+  const [dbStatus, setDbStatus] = useState<{success: boolean; message: string; collections: any} | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [isDiagnosing, setIsDiagnosing] = useState(false);
@@ -74,7 +74,7 @@ const Dashboard = () => {
 
         toast({
           title: "MongoDB Initialized",
-          description: `Successfully created ${result.collections.length} collections`,
+          description: `Successfully initialized MongoDB`,
         });
       } catch (error) {
         console.error('Failed to initialize MongoDB:', error);
@@ -117,7 +117,7 @@ const Dashboard = () => {
       
       toast({
         title: "MongoDB Reinitialized",
-        description: `Successfully created ${result.collections.length} collections`,
+        description: `Successfully initialized MongoDB`,
       });
     })
     .catch(error => {
@@ -331,9 +331,15 @@ const Dashboard = () => {
             <AlertDescription>
               <div className="space-y-2">
                 <p>{dbStatus.message}</p>
-                {dbStatus.success && (
-                  <p className="text-sm text-muted-foreground">
-                    Collections created: {dbStatus.collections.join(', ')}
+                {dbStatus.success && dbStatus.collections && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {typeof dbStatus.collections === 'object' && !Array.isArray(dbStatus.collections) ? (
+                      <>Collections initialized: {Object.keys(dbStatus.collections).join(', ')}</>
+                    ) : Array.isArray(dbStatus.collections) ? (
+                      <>Collections created: {dbStatus.collections.join(', ')}</>
+                    ) : (
+                      <>MongoDB initialized successfully</>
+                    )}
                   </p>
                 )}
                 {!dbStatus.success && (

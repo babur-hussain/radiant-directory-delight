@@ -7,7 +7,7 @@ type ProgressCallback = (progress: number, message: string) => void;
 // Define return type for setupMongoDB
 interface SetupMongoDBResult {
   success: boolean;
-  collections: string[];
+  collections: any; // Changed to any to accommodate both array and object formats
   error?: string;
 }
 
