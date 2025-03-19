@@ -1,7 +1,8 @@
 
 import { connectToMongoDB, mongoose } from '../config/mongodb';
-import { ISubscriptionPackage, SubscriptionPackage } from '../models/SubscriptionPackage';
+import { ISubscriptionPackage } from '../models/SubscriptionPackage';
 import { fetchSubscriptionPackages } from '@/lib/mongodb-utils';
+import axios from 'axios';
 
 // Add a browser compatibility check for process
 if (typeof window !== 'undefined' && typeof process === 'undefined') {
@@ -14,6 +15,8 @@ const defaultBusinessPackages = [
   {
     id: "business-basic",
     title: "Basic Business",
+    name: "Basic Business",
+    description: "Essential tools for small businesses",
     price: 9999,
     shortDescription: "Essential tools for small businesses",
     fullDescription: "Get started with the essential tools every small business needs to establish an online presence.",
@@ -21,12 +24,15 @@ const defaultBusinessPackages = [
     popular: false,
     setupFee: 1999,
     durationMonths: 12,
+    duration: 12,
     type: "Business",
     paymentType: "recurring"
   },
   {
     id: "business-pro",
     title: "Business Pro",
+    name: "Business Pro",
+    description: "Advanced tools for growing businesses",
     price: 19999,
     shortDescription: "Advanced tools for growing businesses",
     fullDescription: "Comprehensive tools and features for businesses looking to expand their reach and customer base.",
@@ -34,6 +40,7 @@ const defaultBusinessPackages = [
     popular: true,
     setupFee: 999,
     durationMonths: 12,
+    duration: 12,
     type: "Business",
     paymentType: "recurring"
   }
@@ -43,6 +50,8 @@ const defaultInfluencerPackages = [
   {
     id: "influencer-starter",
     title: "Influencer Starter",
+    name: "Influencer Starter",
+    description: "Essential tools for new influencers",
     price: 4999,
     shortDescription: "Essential tools for new influencers",
     fullDescription: "Get started with the essential tools every influencer needs to connect with businesses.",
@@ -50,12 +59,15 @@ const defaultInfluencerPackages = [
     popular: false,
     setupFee: 999,
     durationMonths: 12,
+    duration: 12,
     type: "Influencer",
     paymentType: "recurring"
   },
   {
     id: "influencer-pro",
     title: "Influencer Pro",
+    name: "Influencer Pro",
+    description: "Advanced tools for serious influencers",
     price: 9999,
     shortDescription: "Advanced tools for serious influencers",
     fullDescription: "Comprehensive tools and features for influencers looking to monetize their audience and grow their brand.",
@@ -63,6 +75,7 @@ const defaultInfluencerPackages = [
     popular: true,
     setupFee: 499,
     durationMonths: 12,
+    duration: 12,
     type: "Influencer",
     paymentType: "recurring"
   }
@@ -81,31 +94,38 @@ export const initializeMongoDB = async () => {
     console.log('MongoDB connection established');
     
     // Seed default packages if none exist
-    const packageCount = await SubscriptionPackage.countDocuments();
-    
-    if (packageCount === 0) {
-      console.log('No subscription packages found, seeding default packages...');
+    try {
+      // Use API call to check if packages exist
+      const response = await axios.get('/api/packages/count');
+      const packageCount = response.data.count || 0;
       
-      // Combine business and influencer packages
-      const allPackages = [...defaultBusinessPackages, ...defaultInfluencerPackages];
-      
-      // Add each package to MongoDB
-      const seedPromises = allPackages.map(async (pkg) => {
-        try {
-          await SubscriptionPackage.create({
-            ...pkg,
-            features: pkg.features || []
-          });
-          console.log(`Seeded package: ${pkg.title}`);
-        } catch (err) {
-          console.error(`Error seeding package ${pkg.title}:`, err);
-        }
-      });
-      
-      await Promise.all(seedPromises);
-      console.log('Default packages seeded successfully');
-    } else {
-      console.log(`Found ${packageCount} existing subscription packages, skipping seed`);
+      if (packageCount === 0) {
+        console.log('No subscription packages found, seeding default packages...');
+        
+        // Combine business and influencer packages
+        const allPackages = [...defaultBusinessPackages, ...defaultInfluencerPackages];
+        
+        // Add each package to MongoDB using API
+        const seedPromises = allPackages.map(async (pkg) => {
+          try {
+            await axios.post('/api/packages', {
+              ...pkg,
+              features: pkg.features || []
+            });
+            console.log(`Seeded package: ${pkg.title}`);
+          } catch (err) {
+            console.error(`Error seeding package ${pkg.title}:`, err);
+          }
+        });
+        
+        await Promise.all(seedPromises);
+        console.log('Default packages seeded successfully');
+      } else {
+        console.log(`Found ${packageCount} existing subscription packages, skipping seed`);
+      }
+    } catch (error) {
+      console.error('Error checking or seeding packages:', error);
+      // Continue execution even if seeding fails
     }
     
     return true;

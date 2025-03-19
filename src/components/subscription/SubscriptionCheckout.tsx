@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,11 +8,24 @@ import { SubscriptionPackage } from "@/data/subscriptionData";
 import { ShoppingCart, ArrowLeft, Loader2 } from "lucide-react";
 import { useSubscription } from "@/hooks";
 import RazorpayPayment from "./RazorpayPayment";
+import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
 
 interface SubscriptionCheckoutProps {
   selectedPackage: SubscriptionPackage;
   onBack: () => void;
 }
+
+const convertToISubscriptionPackage = (pkg: SubscriptionPackage): ISubscriptionPackage => {
+  return {
+    id: pkg.id,
+    name: pkg.name || pkg.title || '',
+    description: pkg.description || pkg.shortDescription || '',
+    price: pkg.price || 0,
+    type: pkg.type || 'Business',
+    duration: pkg.duration || pkg.durationMonths || 12,
+    ...(pkg as any)
+  };
+};
 
 export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ selectedPackage, onBack }) => {
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -21,6 +33,8 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
   const [showPaymentUI, setShowPaymentUI] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const { toast } = useToast();
+  
+  const packageData = convertToISubscriptionPackage(selectedPackage);
   
   const handleSubscribe = () => {
     if (!termsAccepted) {
@@ -40,8 +54,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
     console.log("Payment successful:", paymentResponse);
     
     try {
-      // Now initiate the subscription with payment details
-      await initiateSubscription(selectedPackage.id, {
+      await initiateSubscription(packageData.id!, {
         paymentId: paymentResponse.razorpay_payment_id,
         orderId: paymentResponse.razorpay_order_id,
         signature: paymentResponse.razorpay_signature,
@@ -75,7 +88,6 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
     });
   };
   
-  // Use a dedicated full-page UI for payment processing
   if (showPaymentUI) {
     return (
       <div className="max-w-2xl mx-auto">
@@ -102,7 +114,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
               </div>
             ) : (
               <RazorpayPayment 
-                selectedPackage={selectedPackage}
+                selectedPackage={packageData}
                 onSuccess={handlePaymentSuccess}
                 onFailure={handlePaymentFailure}
               />
@@ -128,10 +140,10 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
         <CardContent className="space-y-6">
           <div className="border rounded-md p-4">
             <div className="flex justify-between mb-2">
-              <h3 className="font-medium">{selectedPackage.title}</h3>
-              <span className="font-bold">₹{selectedPackage.price}/year</span>
+              <h3 className="font-medium">{packageData.title || packageData.name}</h3>
+              <span className="font-bold">₹{packageData.price}/year</span>
             </div>
-            <p className="text-sm text-muted-foreground">{selectedPackage.shortDescription}</p>
+            <p className="text-sm text-muted-foreground">{packageData.shortDescription || packageData.description}</p>
           </div>
           
           <div className="space-y-4">
@@ -139,19 +151,19 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span>One-time setup fee</span>
-                <span>₹{selectedPackage.setupFee || 0}</span>
+                <span>₹{packageData.setupFee || 0}</span>
               </div>
               <div className="flex justify-between">
                 <span>Annual subscription</span>
-                <span>₹{selectedPackage.price}</span>
+                <span>₹{packageData.price}</span>
               </div>
               <div className="border-t pt-2 flex justify-between font-medium">
                 <span>Initial payment</span>
-                <span>₹{selectedPackage.setupFee || 0}</span>
+                <span>₹{packageData.setupFee || 0}</span>
               </div>
               <div className="flex justify-between font-medium">
                 <span>Annual recurring payment</span>
-                <span>₹{selectedPackage.price}</span>
+                <span>₹{packageData.price}</span>
               </div>
             </div>
           </div>
@@ -186,10 +198,10 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
                           1.1. Your subscription will automatically renew at the end of each billing cycle unless cancelled.
                         </p>
                         <p className="mb-2">
-                          1.2. A one-time setup fee of ₹{selectedPackage.setupFee || 0} is charged at the beginning of the subscription.
+                          1.2. A one-time setup fee of ₹{packageData.setupFee || 0} is charged at the beginning of the subscription.
                         </p>
                         <p className="mb-2">
-                          1.3. The annual subscription fee of ₹{selectedPackage.price} will be charged after the setup fee payment.
+                          1.3. The annual subscription fee of ₹{packageData.price} will be charged after the setup fee payment.
                         </p>
                         
                         <h4 className="text-base font-semibold mt-4 mb-2">2. Cancellation and Refunds</h4>

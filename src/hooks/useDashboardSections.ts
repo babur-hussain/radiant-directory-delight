@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { connectToMongoDB } from "@/config/mongodb";
-import { SubscriptionPackage } from "@/models/SubscriptionPackage";
+import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
 import {
   BUSINESS_DASHBOARD_SECTIONS,
   INFLUENCER_DASHBOARD_SECTIONS,
@@ -10,6 +9,7 @@ import {
   updateUserDashboardSections,
   updatePackageDashboardSections
 } from "@/utils/dashboardSections";
+import axios from "axios";
 
 interface UseDashboardSectionsProps {
   selectedUser?: any;
@@ -22,7 +22,7 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
   const [userSections, setUserSections] = useState<string[]>([]);
   const [packageSections, setPackageSections] = useState<string[]>([]);
   const [availableSections, setAvailableSections] = useState<string[]>([]);
-  const [packages, setPackages] = useState<any[]>([]);
+  const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -71,14 +71,14 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
     setLoadingMessage("Loading package dashboard sections...");
     try {
       await connectToMongoDB();
-      const packageData = await SubscriptionPackage.findOne({ id: packageId });
+      const response = await axios.get(`/api/packages/${packageId}`);
+      const packageData = response.data;
+      
       if (packageData) {
         setPackageSections(packageData.dashboardSections || []);
-        // Set available sections based on package type
         const role = packageData.type || "Business";
         loadAvailableSections(role);
       } else {
-        // Fallback if package not found
         setPackageSections([]);
         setError("Package not found");
       }
@@ -86,7 +86,6 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
       console.error("Error loading package sections:", err);
       setError("Failed to load package dashboard sections");
       
-      // Fallback to empty sections
       setPackageSections([]);
     } finally {
       setIsLoading(false);
@@ -105,7 +104,8 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
     setLoadingMessage("Loading subscription packages...");
     try {
       await connectToMongoDB();
-      const allPackages = await SubscriptionPackage.find().sort({ title: 1 });
+      const response = await axios.get('/api/packages');
+      const allPackages = response.data;
       
       if (allPackages && allPackages.length > 0) {
         setPackages(allPackages);
@@ -113,7 +113,6 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
           setSelectedPackage(allPackages[0].id);
         }
       } else {
-        // Fallback if no packages found
         setPackages([]);
         setError("No subscription packages found");
       }
@@ -121,7 +120,6 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
       console.error("Error loading packages:", err);
       setError("Failed to load subscription packages");
       
-      // Fallback to empty packages
       setPackages([]);
     } finally {
       setIsLoading(false);
