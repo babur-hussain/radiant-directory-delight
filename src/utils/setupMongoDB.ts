@@ -53,7 +53,7 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback): Promise
       progressCallback(10, "Testing MongoDB connection...");
     }
     
-    // Check if server is running
+    // Check if server is running with shorter timeout
     const serverAvailable = await isServerRunning();
     if (!serverAvailable) {
       if (progressCallback) {
@@ -66,7 +66,8 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback): Promise
       };
     }
     
-    const connectionResult = await testConnectionWithRetry(2, 1000);
+    // Only attempt connection if server is available
+    const connectionResult = await testConnectionWithRetry(1, 1000); // Reduced retries for faster fallback
     
     if (!connectionResult) {
       if (progressCallback) {

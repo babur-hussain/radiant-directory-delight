@@ -10,7 +10,7 @@ export const API_BASE_URL = typeof process !== 'undefined' && process.env.NEXT_P
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000, // Increased timeout for slower connections
+  timeout: 10000, // Reduced timeout to fail faster when server is unreachable
   headers: {
     'Content-Type': 'application/json'
   }
@@ -22,7 +22,8 @@ api.interceptors.response.use(
   (error) => {
     // Only log errors and show toast for non-connection issues
     // For connection issues, we'll handle them gracefully in the calling code
-    if (!error.message.includes('Network Error') && !error.message.includes('Connection refused')) {
+    if (!error.message.includes('Network Error') && !error.message.includes('Connection refused') && 
+        !error.message.includes('timeout') && !error.code === 'ECONNABORTED') {
       console.error('API Error:', error.response?.data || error.message);
       toast({
         title: 'API Error',
@@ -38,7 +39,9 @@ api.interceptors.response.use(
 export const isServerRunning = async () => {
   try {
     console.log(`Checking if server is running at ${API_BASE_URL}/test-connection`);
-    const response = await axios.get(`${API_BASE_URL}/test-connection`, { timeout: 8000 });
+    const response = await axios.get(`${API_BASE_URL}/test-connection`, { 
+      timeout: 5000 // Reduced timeout for faster fallback
+    });
     console.log("Server status check response:", response.data);
     return true;
   } catch (error) {

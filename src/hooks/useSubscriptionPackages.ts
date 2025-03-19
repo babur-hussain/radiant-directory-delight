@@ -4,15 +4,17 @@ import { useState, useEffect } from 'react';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 
 interface UseSubscriptionPackagesOptions {
-  // Add any options you need here
+  initialOfflineMode?: boolean;
 }
 
-export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions) => {
+export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions = {}) => {
   const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<any>(null);
-  const [isOffline, setIsOffline] = useState<boolean>(false);
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error' | 'offline'>('connecting');
+  const [isOffline, setIsOffline] = useState<boolean>(options.initialOfflineMode || false);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error' | 'offline'>(
+    options.initialOfflineMode ? 'offline' : 'connecting'
+  );
 
   // Function to retry connection
   const retryConnection = () => {
@@ -73,7 +75,7 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions)
         setPackages(mockPackages);
         setIsLoading(false);
         setConnectionStatus('connected');
-      }, 1000);
+      }, 500); // Reduced delay for better UX
     } catch (err) {
       console.error('Error fetching packages:', err);
       setError(err);
