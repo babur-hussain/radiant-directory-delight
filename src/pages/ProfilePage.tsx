@@ -102,7 +102,8 @@ const ProfilePage = () => {
           role: values.role as UserRole
         } as User;
         
-        await updateUserRole(userToUpdate, {});
+        // Pass the updated user object, but no second parameter is needed
+        await updateUserRole(userToUpdate);
       }
       
       console.log("Updating profile:", values);

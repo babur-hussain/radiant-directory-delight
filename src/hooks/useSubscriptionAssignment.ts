@@ -7,6 +7,7 @@ import { User, UserSubscription } from '@/types/auth';
 import { useToast } from './use-toast';
 import { getPackageById, convertToSubscriptionPackage } from '@/data/subscriptionData';
 import { fetchSubscriptionPackages, fetchSubscriptionPackagesByType } from '@/lib/mongodb-utils';
+import { ISubscription } from '@/models/Subscription';
 
 export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packageId: string) => void) => {
   const { user: currentUser } = useAuth();
@@ -93,8 +94,8 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
         isPausable: !isOneTime,
         isUserCancellable: !isOneTime,
         paymentType: isOneTime ? "one-time" : "recurring",
-        createdAt: new Date().toISOString(), // Convert Date to string
-        updatedAt: new Date().toISOString(), // Convert Date to string
+        createdAt: new Date(), // Create as Date object to match ISubscription
+        updatedAt: new Date(), // Create as Date object to match ISubscription
       };
       
       // Assign subscription
@@ -108,7 +109,9 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
         
         setUserCurrentSubscription({
           ...subscriptionData,
-          id: `sub_${Date.now()}`
+          id: `sub_${Date.now()}`,
+          createdAt: new Date().toISOString(), // Store as string in state
+          updatedAt: new Date().toISOString(), // Store as string in state
         } as UserSubscription);
         
         if (onAssigned) {
@@ -158,30 +161,23 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
     setError(null);
     
     try {
-      // Update subscription to cancelled status
-      const updatedSubscription = {
+      // Prepare a subscription object that matches the ISubscription interface
+      const subscriptionForDB: Partial<ISubscription> = {
         ...userCurrentSubscription,
         status: "cancelled",
         cancelledAt: new Date().toISOString(),
         cancelReason: "admin_cancelled",
-        createdAt: typeof userCurrentSubscription.createdAt === 'object' 
-          ? userCurrentSubscription.createdAt.toISOString() 
-          : userCurrentSubscription.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        startDate: typeof userCurrentSubscription.startDate === 'object' 
+          ? userCurrentSubscription.startDate.toISOString() 
+          : userCurrentSubscription.startDate,
+        endDate: typeof userCurrentSubscription.endDate === 'object' 
+          ? userCurrentSubscription.endDate.toISOString() 
+          : userCurrentSubscription.endDate,
+        createdAt: new Date(), // This must be a Date object for ISubscription
+        updatedAt: new Date()  // This must be a Date object for ISubscription
       };
       
-      // Ensure startDate and endDate are strings
-      const finalSubscription = {
-        ...updatedSubscription,
-        startDate: typeof updatedSubscription.startDate === 'object' 
-          ? updatedSubscription.startDate.toISOString() 
-          : updatedSubscription.startDate,
-        endDate: typeof updatedSubscription.endDate === 'object' 
-          ? updatedSubscription.endDate.toISOString() 
-          : updatedSubscription.endDate
-      };
-      
-      const success = await updateUserSubscription(targetUser.id || targetUser.uid, finalSubscription);
+      const success = await updateUserSubscription(targetUser.id || targetUser.uid, subscriptionForDB as ISubscription);
       
       if (success) {
         toast({
@@ -189,7 +185,14 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
           description: "Successfully cancelled the subscription.",
         });
         
-        setUserCurrentSubscription(finalSubscription as UserSubscription);
+        // For our local state, we can use string dates
+        setUserCurrentSubscription({
+          ...userCurrentSubscription,
+          status: "cancelled",
+          cancelledAt: new Date().toISOString(),
+          cancelReason: "admin_cancelled",
+          updatedAt: new Date().toISOString()
+        } as UserSubscription);
       } else {
         throw new Error("Failed to cancel subscription");
       }
