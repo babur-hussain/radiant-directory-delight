@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import AdminLayout from '@/components/admin/AdminLayout';
 import SubscriptionPackageManagement from '@/components/admin/subscription/SubscriptionManagement';
@@ -9,7 +9,7 @@ import { AlertCircle, RefreshCw, ServerOff, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { setupMongoDB } from '@/utils/setupMongoDB';
 import { connectToMongoDB } from '@/config/mongodb';
-import { testMongoDBConnection } from '@/api/mongoAPI';
+import { testMongoDBConnection, isServerRunning, API_BASE_URL } from '@/api/mongoAPI';
 
 const AdminSubscriptionsPage = () => {
   const { toast } = useToast();
@@ -18,17 +18,15 @@ const AdminSubscriptionsPage = () => {
   const [dbInitialized, setDbInitialized] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error' | 'offline'>('connecting');
 
-  useEffect(() => {
-    initializeDatabase();
-  }, []);
-
-  const initializeDatabase = async () => {
+  const initializeDatabase = useCallback(async () => {
     setIsConnecting(true);
     setError(null);
     setConnectionStatus('connecting');
     
     try {
       console.log("Testing MongoDB connection availability...");
+      console.log(`API_BASE_URL: ${API_BASE_URL}`);
+      
       // First check if the MongoDB server is even reachable
       const connectionTest = await testMongoDBConnection();
       
@@ -85,7 +83,11 @@ const AdminSubscriptionsPage = () => {
     } finally {
       setIsConnecting(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    initializeDatabase();
+  }, [initializeDatabase]);
 
   const handlePermissionError = (error: any) => {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -173,6 +175,7 @@ const AdminSubscriptionsPage = () => {
               onPermissionError={handlePermissionError} 
               dbInitialized={dbInitialized || connectionStatus === 'offline'}
               connectionStatus={connectionStatus}
+              onRetryConnection={handleRetry}
             />
           </CardContent>
         </Card>

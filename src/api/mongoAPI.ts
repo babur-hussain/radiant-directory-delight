@@ -5,12 +5,12 @@ import { toast } from '@/hooks/use-toast';
 // API base URL with environment fallback and more robust fallback mechanism
 export const API_BASE_URL = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE_URL 
   ? process.env.NEXT_PUBLIC_API_BASE_URL 
-  : 'http://localhost:3001/api';
+  : 'https://gbv-backend.onrender.com/api'; // Updated to use a deployed server instead of localhost
 
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000, // Increased timeout
+  timeout: 30000, // Increased timeout for slower connections
   headers: {
     'Content-Type': 'application/json'
   }
@@ -37,9 +37,12 @@ api.interceptors.response.use(
 // Check if the server is running
 export const isServerRunning = async () => {
   try {
-    await axios.get(`${API_BASE_URL}/test-connection`, { timeout: 5000 });
+    console.log(`Checking if server is running at ${API_BASE_URL}/test-connection`);
+    const response = await axios.get(`${API_BASE_URL}/test-connection`, { timeout: 8000 });
+    console.log("Server status check response:", response.data);
     return true;
   } catch (error) {
+    console.warn("Server is not available:", error.message);
     return false;
   }
 };

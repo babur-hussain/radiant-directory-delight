@@ -1,12 +1,10 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { fetchSubscriptionPackagesByType } from '@/lib/mongodb-utils';
-import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { SubscriptionPackage, convertToSubscriptionPackage } from '@/data/subscriptionData';
 import { UserRole } from '@/contexts/AuthContext';
 import { isServerRunning } from '@/api/mongoAPI';
+import { useToast } from './use-toast';
 
-// Default fallback packages for when MongoDB is offline
 const fallbackBusinessPackages = [
   {
     id: "business-basic-fallback",
@@ -74,70 +72,26 @@ export const useSubscriptionPackages = (userRole: UserRole | string) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error' | 'offline'>('connecting');
+  const { toast } = useToast();
 
-  useEffect(() => {
-    const loadPackages = async () => {
+  const loadPackages = useCallback(async (forceRefresh = false) => {
+    if (forceRefresh) {
       setIsLoading(true);
       setError(null);
+      setConnectionStatus('connecting');
+    }
+    
+    try {
+      console.log(`Loading subscription packages for role: ${userRole}`);
       
-      try {
-        console.log(`Loading subscription packages for role: ${userRole}`);
-        
-        // First check if the server is running
-        const serverAvailable = await isServerRunning();
-        
-        if (!serverAvailable) {
-          console.log("Server is not available, using fallback data");
-          setIsOffline(true);
-          
-          // Convert userRole to appropriate type
-          const type = userRole === 'Admin' 
-            ? 'Business' 
-            : userRole === 'Influencer' 
-              ? 'Influencer' 
-              : 'Business';
-          
-          // Select the appropriate fallback data
-          const fallbackData = type === 'Business' 
-            ? fallbackBusinessPackages 
-            : fallbackInfluencerPackages;
-          
-          // Convert to SubscriptionPackage type
-          const convertedPackages = fallbackData.map(pkg => convertToSubscriptionPackage(pkg));
-          console.log(`Using ${convertedPackages.length} fallback ${type} packages`);
-          setPackages(convertedPackages);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Convert userRole to appropriate type format for API
-        // For business page, we need to ensure it always passes "Business" as the type
-        const type = userRole === 'Admin' 
-          ? 'Business' 
-          : userRole === 'Influencer' 
-            ? 'Influencer' 
-            : 'Business';
-        
-        console.log(`Fetching packages for type: ${type}`);
-        const fetchedPackages = await fetchSubscriptionPackagesByType(type as "Business" | "Influencer");
-        console.log(`Fetched ${fetchedPackages.length} ${type} packages:`, fetchedPackages);
-        
-        if (!fetchedPackages || fetchedPackages.length === 0) {
-          console.log(`No ${type} packages found`);
-          setPackages([]);
-        } else {
-          // Convert to SubscriptionPackage type
-          const convertedPackages = fetchedPackages.map(pkg => convertToSubscriptionPackage(pkg));
-          console.log('Converted packages:', convertedPackages);
-          setPackages(convertedPackages);
-        }
-      } catch (err) {
-        console.error('Error loading subscription packages:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load subscription packages');
-        
-        // Use fallback data if there's an error
-        console.log("Error occurred, using fallback data");
+      // First check if the server is running
+      const serverAvailable = await isServerRunning();
+      
+      if (!serverAvailable) {
+        console.log("Server is not available, using fallback data");
         setIsOffline(true);
+        setConnectionStatus('offline');
         
         // Convert userRole to appropriate type
         const type = userRole === 'Admin' 
@@ -153,15 +107,91 @@ export const useSubscriptionPackages = (userRole: UserRole | string) => {
         
         // Convert to SubscriptionPackage type
         const convertedPackages = fallbackData.map(pkg => convertToSubscriptionPackage(pkg));
-        console.log(`Using ${convertedPackages.length} fallback ${type} packages due to error`);
+        console.log(`Using ${convertedPackages.length} fallback ${type} packages`);
         setPackages(convertedPackages);
-      } finally {
         setIsLoading(false);
+        return;
       }
-    };
+      
+      // Convert userRole to appropriate type format for API
+      // For business page, we need to ensure it always passes "Business" as the type
+      const type = userRole === 'Admin' 
+        ? 'Business' 
+        : userRole === 'Influencer' 
+          ? 'Influencer' 
+          : 'Business';
+      
+      console.log(`Fetching packages for type: ${type}`);
+      const fetchedPackages = await fetchSubscriptionPackagesByType(type as "Business" | "Influencer");
+      console.log(`Fetched ${fetchedPackages.length} ${type} packages:`, fetchedPackages);
+      
+      if (!fetchedPackages || fetchedPackages.length === 0) {
+        console.log(`No ${type} packages found`);
+        setPackages([]);
+      } else {
+        // Convert to SubscriptionPackage type
+        const convertedPackages = fetchedPackages.map(pkg => convertToSubscriptionPackage(pkg));
+        console.log('Converted packages:', convertedPackages);
+        setPackages(convertedPackages);
+      }
+      
+      setConnectionStatus('connected');
+      setIsOffline(false);
+      
+      if (forceRefresh) {
+        toast({
+          title: "Connection Restored",
+          description: "Successfully connected to MongoDB and loaded subscription packages.",
+        });
+      }
+    } catch (err) {
+      console.error('Error loading subscription packages:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load subscription packages');
+      
+      // Use fallback data if there's an error
+      console.log("Error occurred, using fallback data");
+      setIsOffline(true);
+      setConnectionStatus('error');
+      
+      // Convert userRole to appropriate type
+      const type = userRole === 'Admin' 
+        ? 'Business' 
+        : userRole === 'Influencer' 
+          ? 'Influencer' 
+          : 'Business';
+      
+      // Select the appropriate fallback data
+      const fallbackData = type === 'Business' 
+        ? fallbackBusinessPackages 
+        : fallbackInfluencerPackages;
+      
+      // Convert to SubscriptionPackage type
+      const convertedPackages = fallbackData.map(pkg => convertToSubscriptionPackage(pkg));
+      console.log(`Using ${convertedPackages.length} fallback ${type} packages due to error`);
+      setPackages(convertedPackages);
+      
+      if (forceRefresh) {
+        toast({
+          title: "Connection Failed",
+          description: "Could not connect to MongoDB. Using fallback data.",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userRole, toast]);
 
+  useEffect(() => {
     loadPackages();
-  }, [userRole]);
+  }, [loadPackages]);
 
-  return { packages, isLoading, error, isOffline };
+  return { 
+    packages, 
+    isLoading, 
+    error, 
+    isOffline, 
+    connectionStatus,
+    retryConnection: () => loadPackages(true)
+  };
 };

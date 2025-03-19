@@ -1,6 +1,7 @@
 
 import mongoose from 'mongoose';
 
+// Updated MongoDB connection string to use MongoDB Atlas
 const MONGODB_URI = process.env.MONGODB_URI || 
   'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
@@ -14,8 +15,9 @@ export const connectToMongoDB = async () => {
     await mongoose.connect(MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 15000,
-      socketTimeoutMS: 60000,
+      serverSelectionTimeoutMS: 30000, // Increased timeout for better reliability
+      socketTimeoutMS: 75000, // Increased socket timeout
+      connectTimeoutMS: 30000, // Added connect timeout
     });
     console.log(`✅ MongoDB Connected: ${mongoose.connection.host}/${mongoose.connection.name}`);
     return true;
