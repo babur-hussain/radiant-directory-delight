@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect } from 'react';
 import { 
   GoogleAuthProvider, 
@@ -12,7 +11,7 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
 import { AuthContextType, User, UserRole } from '@/types/auth';
-import { createUserIfNotExists, updateUserLoginTimestamp } from '@/features/auth/authService';
+import { createUserIfNotExists, updateUserLogin } from '@/features/auth/authService';
 import { connectToMongoDB } from '@/config/mongodb';
 import Loading from '@/components/ui/loading';
 
@@ -80,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         // Update login timestamp
-        await updateUserLoginTimestamp(firebaseUser.uid);
+        await updateUserLogin(firebaseUser.uid);
       }
     } catch (error) {
       console.error("Error processing user:", error);
