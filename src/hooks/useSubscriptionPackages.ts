@@ -1,197 +1,97 @@
-import { useState, useEffect, useCallback } from 'react';
-import { fetchSubscriptionPackagesByType } from '@/lib/mongodb-utils';
-import { SubscriptionPackage, convertToSubscriptionPackage } from '@/data/subscriptionData';
-import { UserRole } from '@/contexts/AuthContext';
-import { isServerRunning } from '@/api/mongoAPI';
-import { useToast } from './use-toast';
 
-const fallbackBusinessPackages = [
-  {
-    id: "business-basic-fallback",
-    title: "Basic Business",
-    price: 9999,
-    shortDescription: "Essential tools for small businesses",
-    fullDescription: "Get started with the essential tools every small business needs to establish an online presence.",
-    features: ["Business profile listing", "Basic analytics", "Email support"],
-    popular: false,
-    setupFee: 1999,
-    durationMonths: 12,
-    type: "Business",
-    paymentType: "recurring",
-    billingCycle: "yearly"
-  },
-  {
-    id: "business-pro-fallback",
-    title: "Business Pro",
-    price: 19999,
-    shortDescription: "Advanced tools for growing businesses",
-    fullDescription: "Comprehensive tools and features for businesses looking to expand their reach and customer base.",
-    features: ["Everything in Basic", "Priority business listing", "Advanced analytics", "Priority support"],
-    popular: true,
-    setupFee: 999,
-    durationMonths: 12,
-    type: "Business",
-    paymentType: "recurring",
-    billingCycle: "yearly"
-  }
-];
+// This is a new file to define the useSubscriptionPackages hook
+import { useState, useEffect } from 'react';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 
-const fallbackInfluencerPackages = [
-  {
-    id: "influencer-starter-fallback",
-    title: "Influencer Starter",
-    price: 4999,
-    shortDescription: "Essential tools for new influencers",
-    fullDescription: "Get started with the essential tools every influencer needs to connect with businesses.",
-    features: ["Influencer profile listing", "Basic analytics"],
-    popular: false,
-    setupFee: 999,
-    durationMonths: 12,
-    type: "Influencer",
-    paymentType: "recurring",
-    billingCycle: "yearly"
-  },
-  {
-    id: "influencer-pro-fallback",
-    title: "Influencer Pro",
-    price: 9999,
-    shortDescription: "Advanced tools for serious influencers",
-    fullDescription: "Comprehensive tools and features for influencers looking to monetize their audience.",
-    features: ["Everything in Starter", "Priority profile listing", "Advanced analytics"],
-    popular: true,
-    setupFee: 499,
-    durationMonths: 12,
-    type: "Influencer",
-    paymentType: "recurring",
-    billingCycle: "yearly"
-  }
-];
+interface UseSubscriptionPackagesOptions {
+  // Add any options you need here
+}
 
-export const useSubscriptionPackages = (userRole: UserRole | string) => {
-  const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isOffline, setIsOffline] = useState(false);
+export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions) => {
+  const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<any>(null);
+  const [isOffline, setIsOffline] = useState<boolean>(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error' | 'offline'>('connecting');
-  const { toast } = useToast();
 
-  const loadPackages = useCallback(async (forceRefresh = false) => {
-    if (forceRefresh) {
-      setIsLoading(true);
-      setError(null);
-      setConnectionStatus('connecting');
-    }
+  // Function to retry connection
+  const retryConnection = () => {
+    setIsLoading(true);
+    setError(null);
+    setConnectionStatus('connecting');
     
+    // Mock fetching data - in a real app, this would connect to your API
+    fetchPackages();
+  };
+
+  // Function to fetch packages
+  const fetchPackages = async () => {
     try {
-      console.log(`Loading subscription packages for role: ${userRole}`);
-      
-      // First check if the server is running
-      const serverAvailable = await isServerRunning();
-      
-      if (!serverAvailable) {
-        console.log("Server is not available, using fallback data");
-        setIsOffline(true);
-        setConnectionStatus('offline');
-        
-        // Convert userRole to appropriate type
-        const type = userRole === 'Admin' 
-          ? 'Business' 
-          : userRole === 'Influencer' 
-            ? 'Influencer' 
-            : 'Business';
-        
-        // Select the appropriate fallback data
-        const fallbackData = type === 'Business' 
-          ? fallbackBusinessPackages 
-          : fallbackInfluencerPackages;
-        
-        // Convert to SubscriptionPackage type
-        const convertedPackages = fallbackData.map(pkg => convertToSubscriptionPackage(pkg));
-        console.log(`Using ${convertedPackages.length} fallback ${type} packages`);
-        setPackages(convertedPackages);
+      // In a real app, this would be an API call
+      // Mock data for now
+      const mockPackages: ISubscriptionPackage[] = [
+        {
+          id: 'business-1',
+          title: 'Business Basic',
+          type: 'Business',
+          price: 999,
+          setupFee: 0,
+          billingCycle: 'yearly',
+          features: ['Feature 1', 'Feature 2', 'Feature 3'],
+          shortDescription: 'Basic plan for businesses',
+          fullDescription: 'A basic plan for businesses with essential features.',
+          durationMonths: 12,
+          advancePaymentMonths: 0,
+          paymentType: 'recurring',
+          popular: false,
+          isActive: true,
+          maxBusinesses: 1,
+          maxInfluencers: 1
+        },
+        {
+          id: 'influencer-1',
+          title: 'Influencer Basic',
+          type: 'Influencer',
+          price: 499,
+          setupFee: 0,
+          billingCycle: 'yearly',
+          features: ['Feature 1', 'Feature 2'],
+          shortDescription: 'Basic plan for influencers',
+          fullDescription: 'A basic plan for influencers with essential features.',
+          durationMonths: 12,
+          advancePaymentMonths: 0,
+          paymentType: 'recurring',
+          popular: false,
+          isActive: true,
+          maxBusinesses: 0,
+          maxInfluencers: 1
+        }
+      ];
+
+      // Simulate some delay
+      setTimeout(() => {
+        setPackages(mockPackages);
         setIsLoading(false);
-        return;
-      }
-      
-      // Convert userRole to appropriate type format for API
-      // For business page, we need to ensure it always passes "Business" as the type
-      const type = userRole === 'Admin' 
-        ? 'Business' 
-        : userRole === 'Influencer' 
-          ? 'Influencer' 
-          : 'Business';
-      
-      console.log(`Fetching packages for type: ${type}`);
-      const fetchedPackages = await fetchSubscriptionPackagesByType(type as "Business" | "Influencer");
-      console.log(`Fetched ${fetchedPackages.length} ${type} packages:`, fetchedPackages);
-      
-      if (!fetchedPackages || fetchedPackages.length === 0) {
-        console.log(`No ${type} packages found`);
-        setPackages([]);
-      } else {
-        // Convert to SubscriptionPackage type
-        const convertedPackages = fetchedPackages.map(pkg => convertToSubscriptionPackage(pkg));
-        console.log('Converted packages:', convertedPackages);
-        setPackages(convertedPackages);
-      }
-      
-      setConnectionStatus('connected');
-      setIsOffline(false);
-      
-      if (forceRefresh) {
-        toast({
-          title: "Connection Restored",
-          description: "Successfully connected to MongoDB and loaded subscription packages.",
-        });
-      }
+        setConnectionStatus('connected');
+      }, 1000);
     } catch (err) {
-      console.error('Error loading subscription packages:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load subscription packages');
-      
-      // Use fallback data if there's an error
-      console.log("Error occurred, using fallback data");
-      setIsOffline(true);
-      setConnectionStatus('error');
-      
-      // Convert userRole to appropriate type
-      const type = userRole === 'Admin' 
-        ? 'Business' 
-        : userRole === 'Influencer' 
-          ? 'Influencer' 
-          : 'Business';
-      
-      // Select the appropriate fallback data
-      const fallbackData = type === 'Business' 
-        ? fallbackBusinessPackages 
-        : fallbackInfluencerPackages;
-      
-      // Convert to SubscriptionPackage type
-      const convertedPackages = fallbackData.map(pkg => convertToSubscriptionPackage(pkg));
-      console.log(`Using ${convertedPackages.length} fallback ${type} packages due to error`);
-      setPackages(convertedPackages);
-      
-      if (forceRefresh) {
-        toast({
-          title: "Connection Failed",
-          description: "Could not connect to MongoDB. Using fallback data.",
-          variant: "destructive"
-        });
-      }
-    } finally {
+      console.error('Error fetching packages:', err);
+      setError(err);
       setIsLoading(false);
+      setConnectionStatus('error');
     }
-  }, [userRole, toast]);
+  };
 
   useEffect(() => {
-    loadPackages();
-  }, [loadPackages]);
+    fetchPackages();
+  }, []);
 
-  return { 
-    packages, 
-    isLoading, 
-    error, 
-    isOffline, 
+  return {
+    packages,
+    isLoading,
+    error,
+    isOffline,
     connectionStatus,
-    retryConnection: () => loadPackages(true)
+    retryConnection
   };
 };

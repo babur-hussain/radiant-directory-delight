@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -28,7 +27,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
   const [activeTab, setActiveTab] = useState<string>('business');
   const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
   
-  // Use the actual API provided by the hook
+  // Fix: Pass an empty object as the argument to useSubscriptionPackages
   const {
     packages,
     isLoading,
@@ -36,7 +35,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
     isOffline,
     connectionStatus: hookConnectionStatus,
     retryConnection
-  } = useSubscriptionPackages();
+  } = useSubscriptionPackages({});
 
   // Filter packages by type
   const businessPackages = packages.filter(pkg => pkg.type === 'Business');
