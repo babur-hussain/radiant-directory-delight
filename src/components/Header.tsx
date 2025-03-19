@@ -44,12 +44,16 @@ const Header = () => {
   const handleDashboardClick = () => {
     if (!isAuthenticated || !user) return;
     
+    // Navigate to the appropriate dashboard based on user role
     if (user.role === "Business") {
-      navigate("/business-dashboard");
+      navigate("/dashboard/business");
     } else if (user.role === "Influencer") {
-      navigate("/influencer-dashboard");
-    } else {
+      navigate("/dashboard/influencer");
+    } else if (user.isAdmin || user.role === "Admin") {
       navigate("/admin/dashboard");
+    } else {
+      // Default fallback for users with unspecified roles
+      navigate("/profile");
     }
   };
 
