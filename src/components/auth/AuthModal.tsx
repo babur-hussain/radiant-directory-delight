@@ -46,6 +46,18 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
     onOpenChange(open);
   };
 
+  // Create an empty signup handler that returns a Promise
+  const handleSignup = async (
+    email: string,
+    password: string,
+    name: string,
+    role: UserRole,
+    additionalData?: any
+  ): Promise<void> => {
+    // This is a placeholder function that returns a Promise
+    return Promise.resolve();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden p-0">
@@ -84,7 +96,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
                   <RegisterTypeSelector onSelectType={setRegisterType} />
                 ) : (
                   <RegisterForm 
-                    onSignup={() => {}}  
+                    onSignup={handleSignup}  
                     onBack={() => setRegisterType(null)} 
                     onClose={() => onOpenChange(false)} 
                   />

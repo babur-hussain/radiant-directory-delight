@@ -81,16 +81,16 @@ const UserDetailsPopup: React.FC<UserDetailsPopupProps> = ({ isOpen, onClose, us
           <Separator className="my-4" />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <DetailItem label="User ID" value={user.uid} />
-            <DetailItem label="Email" value={user.email} />
-            <DetailItem label="Employee Code" value={user.employeeCode} highlight={true} />
-            <DetailItem label="Role" value={user.role} />
-            <DetailItem label="Is Admin" value={user.isAdmin ? "Yes" : "No"} />
-            <DetailItem label="Created At" value={formatDate(user.createdAt)} />
-            <DetailItem label="Last Login" value={formatDate(user.lastLogin)} />
-            <DetailItem label="Phone" value={user.phone} />
-            <DetailItem label="City" value={user.city} />
-            <DetailItem label="Country" value={user.country} />
+            <DetailItem label="User ID" value={user.uid} renderFieldValue={renderFieldValue} />
+            <DetailItem label="Email" value={user.email} renderFieldValue={renderFieldValue} />
+            <DetailItem label="Employee Code" value={user.employeeCode} highlight={true} renderFieldValue={renderFieldValue} />
+            <DetailItem label="Role" value={user.role} renderFieldValue={renderFieldValue} />
+            <DetailItem label="Is Admin" value={user.isAdmin ? "Yes" : "No"} renderFieldValue={renderFieldValue} />
+            <DetailItem label="Created At" value={formatDate(user.createdAt)} renderFieldValue={renderFieldValue} />
+            <DetailItem label="Last Login" value={formatDate(user.lastLogin)} renderFieldValue={renderFieldValue} />
+            <DetailItem label="Phone" value={user.phone} renderFieldValue={renderFieldValue} />
+            <DetailItem label="City" value={user.city} renderFieldValue={renderFieldValue} />
+            <DetailItem label="Country" value={user.country} renderFieldValue={renderFieldValue} />
           </div>
 
           {(user.role === 'Influencer' || user.niche || user.followersCount || user.bio) && (
@@ -98,15 +98,15 @@ const UserDetailsPopup: React.FC<UserDetailsPopupProps> = ({ isOpen, onClose, us
               <Separator className="my-4" />
               <h4 className="font-semibold text-md mb-2">Influencer Information</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DetailItem label="Niche" value={user.niche} />
-                <DetailItem label="Followers Count" value={user.followersCount} />
-                <DetailItem label="Instagram" value={user.instagramHandle} />
-                <DetailItem label="Facebook" value={user.facebookHandle} />
+                <DetailItem label="Niche" value={user.niche} renderFieldValue={renderFieldValue} />
+                <DetailItem label="Followers Count" value={user.followersCount} renderFieldValue={renderFieldValue} />
+                <DetailItem label="Instagram" value={user.instagramHandle} renderFieldValue={renderFieldValue} />
+                <DetailItem label="Facebook" value={user.facebookHandle} renderFieldValue={renderFieldValue} />
               </div>
               {user.bio && (
                 <div className="mt-2">
                   <p className="text-sm font-medium text-gray-700 mb-1">Bio</p>
-                  <p className="text-sm bg-gray-50 p-2 rounded-md">{user.bio}</p>
+                  <p className="text-sm bg-gray-50 p-2 rounded-md">{renderFieldValue(user.bio)}</p>
                 </div>
               )}
             </>
@@ -117,11 +117,11 @@ const UserDetailsPopup: React.FC<UserDetailsPopupProps> = ({ isOpen, onClose, us
               <Separator className="my-4" />
               <h4 className="font-semibold text-md mb-2">Business Information</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DetailItem label="Business Name" value={user.businessName} />
-                <DetailItem label="Owner Name" value={user.ownerName} />
-                <DetailItem label="Business Category" value={user.businessCategory} />
-                <DetailItem label="Website" value={user.website} />
-                <DetailItem label="GST Number" value={user.gstNumber} />
+                <DetailItem label="Business Name" value={user.businessName} renderFieldValue={renderFieldValue} />
+                <DetailItem label="Owner Name" value={user.ownerName} renderFieldValue={renderFieldValue} />
+                <DetailItem label="Business Category" value={user.businessCategory} renderFieldValue={renderFieldValue} />
+                <DetailItem label="Website" value={user.website} renderFieldValue={renderFieldValue} />
+                <DetailItem label="GST Number" value={user.gstNumber} renderFieldValue={renderFieldValue} />
               </div>
               {user.address && (
                 <>
@@ -147,7 +147,7 @@ const UserDetailsPopup: React.FC<UserDetailsPopupProps> = ({ isOpen, onClose, us
               <Separator className="my-4" />
               <h4 className="font-semibold text-md mb-2">Subscription Information</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DetailItem label="Subscription" value={user.subscription} />
+                <DetailItem label="Subscription" value={user.subscription} renderFieldValue={renderFieldValue} />
               </div>
             </>
           )}
@@ -161,7 +161,17 @@ const UserDetailsPopup: React.FC<UserDetailsPopupProps> = ({ isOpen, onClose, us
   );
 };
 
-const DetailItem = ({ label, value, highlight = false }: { label: string; value: any; highlight?: boolean }) => (
+const DetailItem = ({ 
+  label, 
+  value, 
+  highlight = false, 
+  renderFieldValue 
+}: { 
+  label: string; 
+  value: any; 
+  highlight?: boolean;
+  renderFieldValue: (value: any) => string | number | boolean;
+}) => (
   <div className="space-y-1">
     <p className="text-sm font-medium text-gray-700">{label}</p>
     <p className={`text-sm ${highlight ? 'bg-amber-50 font-medium p-1 rounded-md' : ''}`}>
