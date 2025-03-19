@@ -3,6 +3,7 @@ import { User as FirebaseUser } from 'firebase/auth';
 import { fetchUserByUid, createOrUpdateUser, updateUserLoginTimestamp, apiUpdateUserRole, apiGetAllUsers } from '../../api/mongoAPI';
 import { IUser } from '../../models/User';
 import { UserRole } from '@/types/auth';
+import { connectToMongoDB } from '@/config/mongodb';
 
 // Get user by Firebase UID from MongoDB
 export const getUserByUid = async (uid: string): Promise<IUser | null> => {
@@ -18,12 +19,18 @@ export const getUserByUid = async (uid: string): Promise<IUser | null> => {
 // Create user in MongoDB if not exists, handling all registration fields
 export const createUserIfNotExists = async (firebaseUser: any, additionalFields?: any): Promise<IUser | null> => {
   try {
+    // Ensure MongoDB is connected
+    await connectToMongoDB();
+    
     // Check if user already exists
     let user = await fetchUserByUid(firebaseUser.uid);
     
     // If user doesn't exist, create new user
     if (!user) {
       console.log("Creating new user in MongoDB with fields:", additionalFields);
+      
+      // Determine role - either from additionalFields or default to 'User'
+      const role = additionalFields?.role || 'User';
       
       // Extract additional data if it exists
       const userData: any = {
@@ -34,8 +41,8 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
         photoURL: firebaseUser.photoURL,
         createdAt: new Date(),
         lastLogin: new Date(),
-        role: additionalFields?.role || 'User',
-        isAdmin: additionalFields?.isAdmin || false,
+        role: role,
+        isAdmin: role === 'Admin' || additionalFields?.isAdmin || false,
         
         // Shared fields
         phone: additionalFields?.phone || firebaseUser.phone || null,
@@ -62,6 +69,12 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
         employeeCode: additionalFields?.employeeCode || null
       };
 
+      // Special case for default admin user
+      if (firebaseUser.email === 'baburhussain660@gmail.com') {
+        userData.isAdmin = true;
+        userData.role = 'Admin';
+      }
+
       // Handle address object if it exists
       if (additionalFields?.address) {
         userData.address = {
@@ -82,6 +95,12 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
         ...additionalFields,
         updatedAt: new Date()
       };
+      
+      // Ensure default admin always has admin role
+      if (user.email === 'baburhussain660@gmail.com') {
+        updatedUserData.isAdmin = true;
+        updatedUserData.role = 'Admin';
+      }
       
       user = await createOrUpdateUser(updatedUserData);
       console.log('Existing user updated in MongoDB with additional fields:', user);
@@ -163,10 +182,17 @@ export const createUserWithProfile = async (
       uid,
       email,
       role,
+      isAdmin: role === 'Admin',
       ...profileData,
       createdAt: new Date(),
       lastLogin: new Date()
     };
+    
+    // Special case for default admin user
+    if (email === 'baburhussain660@gmail.com') {
+      userData.isAdmin = true;
+      userData.role = 'Admin';
+    }
     
     // Create the user
     const user = await createOrUpdateUser(userData);

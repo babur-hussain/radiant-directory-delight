@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect } from 'react';
 import { 
   GoogleAuthProvider, 
@@ -11,8 +12,8 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
 import { AuthContextType, User, UserRole } from '@/types/auth';
-import { createOrUpdateUser, fetchUserByUid, updateUserLoginTimestamp } from '@/api/mongoAPI';
-import { createUserIfNotExists } from '@/features/auth/authService';
+import { createUserIfNotExists, updateUserLoginTimestamp } from '@/features/auth/authService';
+import { connectToMongoDB } from '@/config/mongodb';
 import Loading from '@/components/ui/loading';
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -31,16 +32,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       // Force connection to MongoDB before proceeding
-      // await connectToMongoDB();
+      await connectToMongoDB();
 
       // Check if user is the default admin
       const isDefaultAdmin = firebaseUser.email === 'baburhussain660@gmail.com';
-
+      
+      // Determine role
+      const userRole = isDefaultAdmin ? 'Admin' : (additionalFields?.role || 'User');
+      
       // Create or update user in MongoDB with all profile fields
       const mongoUser = await createUserIfNotExists(firebaseUser, {
         ...additionalFields,
         isAdmin: isDefaultAdmin || additionalFields?.isAdmin,
-        role: isDefaultAdmin ? 'Admin' : (additionalFields?.role || 'User')
+        role: userRole
       });
       
       if (mongoUser) {
