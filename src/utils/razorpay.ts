@@ -30,8 +30,8 @@ declare global {
   }
 }
 
-// Razorpay API key - Using the provided live key
-export const RAZORPAY_KEY_ID = "rzp_live_8PGS0Ug3QeCb2I";
+// Razorpay API key - Using a test key instead of live key
+export const RAZORPAY_KEY_ID = "rzp_test_cNIFmAmiJ65uQS";
 
 /**
  * Load the Razorpay script
@@ -52,15 +52,17 @@ export const loadRazorpayScript = (): Promise<void> => {
       } else {
         // If script exists but Razorpay is not available, wait a bit
         console.log("Script exists but Razorpay object not available yet, waiting...");
-        setTimeout(() => {
+        const checkRazorpay = () => {
           if (typeof window !== 'undefined' && window.Razorpay) {
             console.log("Razorpay object is now available");
             resolve();
           } else {
-            console.error("Razorpay not available even after waiting");
-            reject(new Error("Razorpay SDK not initialized properly"));
+            console.log("Waiting for Razorpay to initialize...");
+            setTimeout(checkRazorpay, 500);
           }
-        }, 2000);
+        };
+        
+        setTimeout(checkRazorpay, 500);
       }
       return;
     }
@@ -75,15 +77,17 @@ export const loadRazorpayScript = (): Promise<void> => {
     script.onload = () => {
       console.log("Razorpay script loaded successfully");
       // Wait to ensure Razorpay object is initialized
-      setTimeout(() => {
+      const checkRazorpay = () => {
         if (typeof window !== 'undefined' && window.Razorpay) {
           console.log("Razorpay object available after script load");
           resolve();
         } else {
-          console.error("Razorpay object not available after script load");
-          reject(new Error("Razorpay SDK not initialized properly"));
+          console.log("Waiting for Razorpay to initialize after script load...");
+          setTimeout(checkRazorpay, 500);
         }
-      }, 1000);
+      };
+      
+      setTimeout(checkRazorpay, 500);
     };
     
     script.onerror = (error) => {

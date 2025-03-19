@@ -5,7 +5,8 @@ import {
   loadRazorpayScript, 
   isRazorpayAvailable, 
   generateOrderId,
-  convertToPaise
+  convertToPaise,
+  RAZORPAY_KEY_ID
 } from '@/utils/razorpay';
 import { SubscriptionPackage } from '@/data/subscriptionData';
 
@@ -113,14 +114,13 @@ export const useRazorpay = ({ selectedPackage, onSuccess, onFailure }: UseRazorp
           
           // Configure Razorpay options
           const options = {
-            key: "rzp_test_cNIFmAmiJ65uQS", // Test key
+            key: RAZORPAY_KEY_ID, // Use the key from razorpay.ts
             amount: amountInPaise,
             currency: "INR",
             name: "Grow Bharat Vyapaar",
             description: isOneTime 
               ? `Full payment for ${selectedPackage.title} package` 
               : `Setup fee for ${selectedPackage.title} package`,
-            image: "https://example.com/your-logo.png", // Replace with actual logo
             order_id: orderId, // This should ideally come from your backend
             prefill: {
               name: "Customer Name",

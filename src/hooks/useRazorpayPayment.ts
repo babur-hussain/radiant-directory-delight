@@ -1,7 +1,13 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { loadRazorpayScript, isRazorpayAvailable, RAZORPAY_KEY_ID } from '@/utils/razorpay';
+import { 
+  loadRazorpayScript, 
+  isRazorpayAvailable, 
+  RAZORPAY_KEY_ID, 
+  generateOrderId, 
+  convertToPaise 
+} from '@/utils/razorpay';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -62,22 +68,35 @@ export const useRazorpayPayment = () => {
         ? (selectedPackage.price || 999) // Default to 999 if price is 0 or undefined
         : (selectedPackage.setupFee || 0);
       
-      // Create a mock order for demonstration
+      // Create a mock order ID for demonstration
       // In a real app, this would come from your backend API
-      const order = {
-        id: `order_${Date.now()}`,
-        amount: paymentAmount * 100, // Amount in smallest currency unit (paise)
-        currency: 'INR',
-        receipt: `receipt_${Date.now()}`
-      };
+      const orderId = generateOrderId();
+      
+      // Convert amount to paise
+      const amountInPaise = convertToPaise(paymentAmount);
+      
+      console.log(`Setting up payment for ${selectedPackage.title} with amount ${paymentAmount} (${amountInPaise} paise)`);
       
       const options = {
-        key: RAZORPAY_KEY_ID, // Using the provided API key from utils
-        amount: order.amount,
-        currency: order.currency,
+        key: RAZORPAY_KEY_ID,
+        amount: amountInPaise,
+        currency: 'INR',
         name: 'Grow Bharat Vyapaar',
         description: `Payment for ${selectedPackage.title}`,
-        order_id: order.id,
+        order_id: orderId,
+        prefill: {
+          name: user.displayName || user.name || '',
+          email: user.email || '',
+          contact: user.phone || ''
+        },
+        notes: {
+          package_id: selectedPackage.id,
+          package_type: selectedPackage.type,
+          payment_type: selectedPackage.paymentType || "recurring"
+        },
+        theme: {
+          color: '#2563EB'
+        },
         handler: function(response: any) {
           // Add payment type to the response
           response.paymentType = selectedPackage.paymentType || "recurring";
@@ -94,19 +113,6 @@ export const useRazorpayPayment = () => {
           setIsLoading(false);
           onSuccess(response);
         },
-        prefill: {
-          name: user.displayName || user.name || '',
-          email: user.email || '',
-          contact: user.phone || '' // Fixed: Removed reference to non-existent phoneNumber property
-        },
-        notes: {
-          package_id: selectedPackage.id,
-          package_type: selectedPackage.type,
-          payment_type: selectedPackage.paymentType || "recurring"
-        },
-        theme: {
-          color: '#2563EB'
-        },
         modal: {
           ondismiss: function() {
             console.log('Payment modal dismissed');
@@ -119,13 +125,18 @@ export const useRazorpayPayment = () => {
             });
             
             onFailure({ message: "Payment cancelled by user" });
-          }
+          },
+          escape: true,
+          confirm_close: true
         }
       };
       
       console.log("Opening Razorpay with options:", options);
       
+      // Create a new Razorpay instance
       const razorpay = new window.Razorpay(options);
+      
+      // Handle payment failures
       razorpay.on('payment.failed', function(response: any) {
         console.error('Payment failed:', response.error);
         
@@ -142,6 +153,7 @@ export const useRazorpayPayment = () => {
         onFailure(response.error);
       });
       
+      // Open the Razorpay checkout
       razorpay.open();
       
       // Log for debugging
@@ -149,7 +161,7 @@ export const useRazorpayPayment = () => {
         packageId: selectedPackage.id,
         packageTitle: selectedPackage.title,
         amount: paymentAmount,
-        orderId: order.id
+        orderId: orderId
       });
       
     } catch (error) {

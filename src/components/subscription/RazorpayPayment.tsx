@@ -24,6 +24,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const { toast } = useToast();
   const { initiatePayment, isLoading, error } = useRazorpayPayment();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   
   // Determine if this is a one-time package
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
@@ -49,33 +50,49 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         console.error("Payment failure in RazorpayPayment:", error);
         onFailure(error);
         setIsProcessing(false);
+        
+        // Increment retry count to track failed attempts
+        setRetryCount(prevCount => prevCount + 1);
       }
     });
   };
   
+  const handleRetry = () => {
+    setError(null);
+    handlePayment();
+  };
+  
   useEffect(() => {
-    // Automatically trigger payment when component mounts
-    // This makes the flow smoother
-    if (!isProcessing && !isLoading && !error) {
+    // Only auto-trigger payment on first load, not after retries
+    if (!isProcessing && !isLoading && !error && retryCount === 0) {
       handlePayment();
     }
   }, []);
   
   if (error) {
     return (
-      <Alert variant="destructive">
+      <Alert variant="destructive" className="mb-4">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Payment Error</AlertTitle>
-        <AlertDescription>
-          {error}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mt-2 w-full"
-            onClick={() => window.location.reload()}
-          >
-            Try Again
-          </Button>
+        <AlertDescription className="space-y-2">
+          <p>{error}</p>
+          <div className="flex space-x-2 mt-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRetry}
+              disabled={isProcessing}
+            >
+              Try Again
+            </Button>
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={() => window.location.reload()}
+            >
+              Reload Page
+            </Button>
+          </div>
         </AlertDescription>
       </Alert>
     );
@@ -118,8 +135,14 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         <div className="flex items-start gap-2 bg-muted p-3 rounded-md">
           <Shield className="h-5 w-5 text-muted-foreground mt-0.5" />
           <div className="text-sm">
-            <p className="font-medium">Secure Payment</p>
-            <p className="text-muted-foreground">Your payment information is processed securely by Razorpay.</p>
+            <p className="font-medium">Test Payment</p>
+            <p className="text-muted-foreground">This is a test payment - you can use the following test card details:</p>
+            <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
+              <li>Card Number: 4111 1111 1111 1111</li>
+              <li>Expiry: Any future date</li>
+              <li>CVV: Any 3 digits</li>
+              <li>Name: Any name</li>
+            </ul>
           </div>
         </div>
       </CardContent>
