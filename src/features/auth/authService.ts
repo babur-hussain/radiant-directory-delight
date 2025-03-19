@@ -1,6 +1,6 @@
 
 import { User as FirebaseUser } from 'firebase/auth';
-import { fetchUserByUid, createOrUpdateUser, updateUserLoginTimestamp, updateUserRole as apiUpdateUserRole, getAllUsers as apiGetAllUsers } from '../../api/mongoAPI';
+import { fetchUserByUid, createOrUpdateUser, updateUserLoginTimestamp, apiUpdateUserRole, apiGetAllUsers } from '../../api/mongoAPI';
 import { IUser } from '../../models/User';
 import { UserRole } from '@/types/auth';
 

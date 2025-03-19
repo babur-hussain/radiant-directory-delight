@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { toast } from '@/hooks/use-toast';
 import { connectToMongoDB } from '@/config/mongodb';
@@ -72,6 +73,9 @@ export const isServerRunning = async (useLocalFallback = false) => {
   return false;
 };
 
+//------------------ USER APIS ------------------//
+
+// Database operations for users
 export const fetchUserByUid = async (uid: string) => {
   try {
     // Ensure MongoDB is connected
@@ -128,16 +132,7 @@ export const createOrUpdateUser = async (userData: any) => {
   }
 };
 
-// Update user's last login timestamp
-export const updateUserLogin = async (uid: string): Promise<void> => {
-  try {
-    await updateUserLoginTimestamp(uid);
-  } catch (error) {
-    console.error('Error updating user login timestamp:', error);
-  }
-};
-
-// API endpoint functions - used by the higher-level functions
+// Direct API calls for user operations
 export const updateUserLoginTimestamp = async (uid: string) => {
   try {
     await api.put(`/users/${uid}/login`);
@@ -147,7 +142,6 @@ export const updateUserLoginTimestamp = async (uid: string) => {
   }
 };
 
-// Direct API calls for user operations
 export const apiUpdateUserRole = async (uid: string, role: string, isAdmin: boolean = false) => {
   const response = await api.put(`/users/${uid}/role`, { role, isAdmin });
   return response.data;
@@ -159,6 +153,14 @@ export const apiGetAllUsers = async () => {
 };
 
 // Higher-level functions with error handling
+export const updateUserLogin = async (uid: string): Promise<void> => {
+  try {
+    await updateUserLoginTimestamp(uid);
+  } catch (error) {
+    console.error('Error updating user login timestamp:', error);
+  }
+};
+
 export const getAllUsers = async (): Promise<IUser[]> => {
   try {
     const users = await apiGetAllUsers();
@@ -169,7 +171,6 @@ export const getAllUsers = async (): Promise<IUser[]> => {
   }
 };
 
-// Update user role - fixed to expect uid and role parameters
 export const updateUserRole = async (uid: string, role: string): Promise<IUser | null> => {
   try {
     // Default isAdmin to false or derive it from role
@@ -182,7 +183,6 @@ export const updateUserRole = async (uid: string, role: string): Promise<IUser |
   }
 };
 
-// Update user profile with all required fields
 export const updateUserProfile = async (uid: string, profileData: Partial<IUser>): Promise<IUser | null> => {
   try {
     // Get existing user data
@@ -205,7 +205,6 @@ export const updateUserProfile = async (uid: string, profileData: Partial<IUser>
   }
 };
 
-// Create a new user with full profile data for registration forms
 export const createUserWithProfile = async (
   uid: string, 
   email: string, 
@@ -232,7 +231,9 @@ export const createUserWithProfile = async (
   }
 };
 
-// Business API
+//------------------ BUSINESS APIS ------------------//
+
+// Direct API calls for businesses
 export const fetchBusinesses = async () => {
   try {
     const response = await api.get('/businesses');
@@ -251,6 +252,8 @@ export const saveBusiness = async (businessData: any) => {
 export const deleteBusiness = async (businessId: string) => {
   await api.delete(`/businesses/${businessId}`);
 };
+
+//------------------ SUBSCRIPTION APIS ------------------//
 
 // Subscription Packages API
 export const fetchSubscriptionPackages = async () => {
@@ -290,6 +293,8 @@ export const saveSubscription = async (subscriptionData: any) => {
   const response = await api.post('/subscriptions', subscriptionData);
   return response.data;
 };
+
+//------------------ MONGODB INITIALIZATION ------------------//
 
 // MongoDB initialization with better error handling
 export const initializeMongoDB = async () => {
@@ -350,53 +355,4 @@ export const testMongoDBConnection = async () => {
       message: error instanceof Error ? error.message : String(error)
     };
   }
-};
-
-// Business API functions
-export const saveBusiness = async (businessData: any) => {
-  const response = await api.post('/businesses', businessData);
-  return response.data;
-};
-
-export const deleteBusiness = async (businessId: string) => {
-  await api.delete(`/businesses/${businessId}`);
-};
-
-// Subscription Packages API
-export const fetchSubscriptionPackages = async () => {
-  const response = await api.get('/subscription-packages');
-  return response.data;
-};
-
-export const fetchSubscriptionPackagesByType = async (type: string) => {
-  const response = await api.get(`/subscription-packages/type/${type}`);
-  return response.data;
-};
-
-export const saveSubscriptionPackage = async (packageData: any) => {
-  const response = await api.post('/subscription-packages', packageData);
-  return response.data;
-};
-
-export const deleteSubscriptionPackage = async (packageId: string) => {
-  await api.delete(`/subscription-packages/${packageId}`);
-  return { success: true };
-};
-
-// User Subscriptions API
-export const getUserSubscription = async (userId: string) => {
-  try {
-    const response = await api.get(`/subscriptions/user/${userId}`);
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.status === 404) {
-      return null;
-    }
-    throw error;
-  }
-};
-
-export const saveSubscription = async (subscriptionData: any) => {
-  const response = await api.post('/subscriptions', subscriptionData);
-  return response.data;
 };
