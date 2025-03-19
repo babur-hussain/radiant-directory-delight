@@ -17,6 +17,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [initialized, setInitialized] = useState<boolean>(false);
 
   // Convert Firebase user to our User type and save to MongoDB
   const processUser = async (firebaseUser: FirebaseUser | null) => {
@@ -41,15 +42,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // If user doesn't exist, create a new one
       if (!mongoUser) {
         console.log("Creating new user in MongoDB");
-        mongoUser = await createOrUpdateUser({
-          ...userData,
-          role: "User" as UserRole, // Cast as UserRole to satisfy type constraint
-          isAdmin: false,
-          createdAt: new Date()
-        });
+        try {
+          mongoUser = await createOrUpdateUser({
+            ...userData,
+            role: "User" as UserRole, // Cast as UserRole to satisfy type constraint
+            isAdmin: false,
+            createdAt: new Date()
+          });
+        } catch (error) {
+          console.error("Error creating user in MongoDB:", error);
+          // Use a default user object if MongoDB is unavailable
+          mongoUser = {
+            uid: firebaseUser.uid,
+            role: "User" as UserRole,
+            isAdmin: false
+          };
+        }
       } else {
         // Just update the last login time
-        await updateUserLoginTimestamp(firebaseUser.uid);
+        try {
+          await updateUserLoginTimestamp(firebaseUser.uid);
+        } catch (error) {
+          console.error("Error updating login timestamp:", error);
+          // Continue anyway - non-critical operation
+        }
       }
       
       // Set the user in the context with proper type casting
@@ -84,11 +100,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
       } finally {
         setLoading(false);
+        setInitialized(true);
+        console.log("Auth initialized:", !!firebaseUser);
       }
     });
 
-    return () => unsubscribe();
-  }, []);
+    // Set a timeout to ensure we mark as initialized even if Firebase auth is slow
+    const initTimeout = setTimeout(() => {
+      if (!initialized) {
+        console.log("Auth initialization timeout reached, marking as initialized");
+        setInitialized(true);
+        setLoading(false);
+      }
+    }, 5000);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(initTimeout);
+    };
+  }, [initialized]);
 
   const loginWithGoogle = async (): Promise<void> => {
     try {
@@ -122,6 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loginWithGoogle,
     logout: signOut,
     login,
+    initialized,
     // Add missing properties from AuthContextType
     userRole: user?.role || null,
     isAdmin: user?.isAdmin || false,
@@ -129,14 +160,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // signup, updateUserRole, and updateUserPermission are marked as optional with ?
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loading size="lg" message="Loading authentication..." />
-      </div>
-    );
-  }
-
+  // Don't show loading screen - the header will handle this now
   return (
     <AuthContext.Provider value={contextValue}>
       {children}

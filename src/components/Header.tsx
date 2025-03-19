@@ -16,12 +16,13 @@ const Header = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const navigate = useNavigate();
-  const auth = useAuth();
-  const {
-    currentUser,
-    logout,
-    initialized
-  } = auth;
+  
+  // Get auth context with safe defaults
+  const { 
+    currentUser = null, 
+    logout = async () => {}, 
+    initialized = false 
+  } = useAuth();
   
   const isAuthenticated = !!currentUser;
   const user = currentUser;
@@ -45,8 +46,10 @@ const Header = () => {
       }
     };
     
-    fetchSubscription();
-  }, [getUserSubscription, user?.uid]);
+    if (initialized) {
+      fetchSubscription();
+    }
+  }, [getUserSubscription, user?.uid, initialized]);
   
   useEffect(() => {
     console.log("Header useEffect for scroll");
@@ -79,9 +82,30 @@ const Header = () => {
     return true; // Simplified for debugging
   };
 
+  // Don't render a null header when auth isn't initialized - render a simple header instead
   if (!initialized) {
-    console.log("Auth not initialized yet"); // Debug log
-    return null;
+    console.log("Auth not initialized yet - rendering simple header"); // Debug log
+    return (
+      <header className="main-header">
+        <div className="container max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
+          <Link to="/" className="flex items-center space-x-2">
+            <span className="font-bold text-2xl">
+              Grow Bharat Vyapaar
+            </span>
+          </Link>
+          
+          <div className="hidden md:flex items-center space-x-8">
+            <Link to="/" className="text-sm font-medium hover:text-primary transition-smooth">
+              <span>Home</span>
+            </Link>
+          </div>
+          
+          <div className="flex items-center">
+            <span className="text-sm">Loading...</span>
+          </div>
+        </div>
+      </header>
+    );
   }
 
   console.log("Header fully rendered"); // Debug log
