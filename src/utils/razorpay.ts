@@ -30,7 +30,7 @@ declare global {
   }
 }
 
-// Razorpay API key - Using a test key instead of live key
+// Razorpay API key - Using a test key
 export const RAZORPAY_KEY_ID = "rzp_test_cNIFmAmiJ65uQS";
 
 /**

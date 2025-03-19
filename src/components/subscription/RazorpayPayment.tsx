@@ -22,9 +22,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { initiatePayment, isLoading, error } = useRazorpayPayment();
+  const { initiatePayment, isLoading, error: paymentError } = useRazorpayPayment();
   const [isProcessing, setIsProcessing] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   
   // Determine if this is a one-time package
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
@@ -68,6 +69,13 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       handlePayment();
     }
   }, []);
+
+  // Use payment error from the hook if available
+  useEffect(() => {
+    if (paymentError) {
+      setError(paymentError);
+    }
+  }, [paymentError]);
   
   if (error) {
     return (
