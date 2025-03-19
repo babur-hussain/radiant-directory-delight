@@ -60,7 +60,6 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
       
       // If it's a new package and doesn't have createdAt, add it
       if (!packageData.id && !packageData.createdAt) {
-        // @ts-ignore - We intentionally add createdAt even though it's not in the type
         packageToSave.createdAt = new Date();
       }
       

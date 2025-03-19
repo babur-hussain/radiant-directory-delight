@@ -27,3 +27,6 @@ export interface ISubscriptionPackage {
   popular?: boolean;
   metadata?: Record<string, any>;
 }
+
+// Export the interface as SubscriptionPackage type alias for backward compatibility
+export type SubscriptionPackage = ISubscriptionPackage;

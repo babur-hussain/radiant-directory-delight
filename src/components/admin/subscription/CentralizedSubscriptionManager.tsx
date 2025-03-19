@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
@@ -17,6 +18,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Edit, Trash2 } from 'lucide-react';
+import { DataTable } from '@/components/ui/data-table';
+import { ColumnDef } from '@tanstack/react-table';
 
 interface CentralizedSubscriptionManagerProps {
   packages: ISubscriptionPackage[];

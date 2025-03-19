@@ -9,7 +9,7 @@ import SubscriptionError from "../subscription/SubscriptionError";
 import UserSectionsList from "./UserSectionsList";
 import PackageSectionsList from "./PackageSectionsList";
 import { connectToMongoDB } from "@/config/mongodb";
-import { SubscriptionPackage } from "@/models/SubscriptionPackage";
+import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
 import { User } from "@/models/User";
 import { useDashboardSections } from "@/hooks/useDashboardSections";
 
