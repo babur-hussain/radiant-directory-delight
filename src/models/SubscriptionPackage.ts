@@ -14,5 +14,16 @@ export interface ISubscriptionPackage {
   discountPercentage?: number;
   maxUsers?: number;
   isPopular?: boolean;
+  // Additional fields needed for subscription functionality
+  title?: string;
+  shortDescription?: string;
+  fullDescription?: string;
+  setupFee?: number;
+  durationMonths?: number;
+  paymentType?: "recurring" | "one-time";
+  billingCycle?: "monthly" | "yearly";
+  advancePaymentMonths?: number;
+  monthlyPrice?: number;
+  popular?: boolean;
   metadata?: Record<string, any>;
 }

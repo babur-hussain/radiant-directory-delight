@@ -1,23 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { DataTable } from '@/components/ui/data-table';
-import { ColumnDef } from '@tanstack/react-table';
-import { CheckCircle, Copy, Edit, Trash2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import SubscriptionPackageForm from './SubscriptionPackageForm';
 import { useToast } from '@/hooks/use-toast';
 import { 
   AlertDialog,
@@ -29,8 +14,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import SubscriptionPackageForm from './SubscriptionPackageForm';
+} from "@/components/ui/alert-dialog";
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle, Edit, Trash2 } from 'lucide-react';
 
 interface CentralizedSubscriptionManagerProps {
   packages: ISubscriptionPackage[];
@@ -204,7 +190,9 @@ const CentralizedSubscriptionManager: React.FC<CentralizedSubscriptionManagerPro
           onCancel={handleCancelEdit}
         />
       ) : (
-        <DataTable columns={columns} data={packages} />
+        <div>
+          <DataTable columns={columns} data={packages} />
+        </div>
       )}
     </div>
   );
