@@ -68,6 +68,7 @@ const AdminDatabasePage = () => {
     setProgress(0);
     setStatusMessage('Initializing database...');
     setError(null);
+    setCollections([]);
     
     try {
       const result = await setupMongoDB((progressValue, message) => {
@@ -76,17 +77,25 @@ const AdminDatabasePage = () => {
       });
       
       if (result.success) {
-        setCollections(result.collections);
+        // Only set collections if the operation was successful
+        if (Array.isArray(result.collections)) {
+          setCollections(result.collections);
+        } else if (result.collections && typeof result.collections === 'object') {
+          setCollections(Object.keys(result.collections));
+        }
+        
         toast({
           title: "Database Initialized",
-          description: `Successfully initialized ${result.collections.length} collections`,
+          description: `Successfully initialized ${Array.isArray(result.collections) ? result.collections.length : 'all'} collections`,
         });
+        setError(null);
       } else {
-        throw new Error("Failed to initialize database");
+        // If we have an error from the result, show it
+        throw new Error(result.error || "Failed to initialize database");
       }
     } catch (err) {
       console.error("Initialization error:", err);
-      setError(`Initialization error: ${err instanceof Error ? err.message : String(err)}`);
+      setError(`${err instanceof Error ? err.message : String(err)}`);
       toast({
         title: "Initialization Failed",
         description: `Error initializing database: ${err instanceof Error ? err.message : String(err)}`,

@@ -88,13 +88,21 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback): Promise
     const result = await initializeMongoDB();
     
     if (progressCallback) {
-      progressCallback(100, "MongoDB initialization complete");
+      progressCallback(100, result.success ? "MongoDB initialization complete" : "MongoDB initialization failed");
+    }
+    
+    // Make sure we're not returning success:false with a success message
+    if (!result.success) {
+      return {
+        success: false,
+        collections: result.collections || [],
+        error: result.error || "Unknown error during MongoDB initialization"
+      };
     }
     
     return {
-      success: result.success,
+      success: true,
       collections: result.collections || [],
-      error: result.error
     };
   } catch (error) {
     console.error("Error setting up MongoDB:", error);

@@ -156,7 +156,14 @@ export const initializeMongoDB = async () => {
     }
     
     const response = await api.post('/initialize-mongodb');
-    return response.data;
+    
+    // Ensure we have a properly structured response even if the API returns an unexpected format
+    const result = response.data;
+    return {
+      success: !!result.success,
+      collections: result.collections || [],
+      error: result.error || null
+    };
   } catch (error) {
     console.error("Error initializing MongoDB:", error);
     // Return structured error response
@@ -181,7 +188,10 @@ export const testMongoDBConnection = async () => {
     }
     
     const response = await api.get('/test-connection');
-    return response.data;
+    return {
+      success: true,
+      message: response.data.message || "Connection successful"
+    };
   } catch (error) {
     console.error("Error testing MongoDB connection:", error);
     // Return structured error response
