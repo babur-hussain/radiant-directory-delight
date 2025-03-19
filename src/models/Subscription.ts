@@ -28,8 +28,8 @@ export interface ISubscription {
   transactionId?: string;
 }
 
-// Create the Mongoose schema
-const SubscriptionSchema = new mongoose.Schema({
+// Create the Mongoose schema - fixed by removing 'new' keyword
+const SubscriptionSchema = mongoose.Schema({
   id: { type: String, required: true, unique: true },
   packageId: { type: String, required: true },
   packageName: { type: String, required: true },
