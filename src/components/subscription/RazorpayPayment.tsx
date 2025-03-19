@@ -26,6 +26,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
   
   // Determine if this is a one-time package
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
@@ -36,8 +37,48 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     ? (selectedPackage.price || 999) // Default to 999 if price is 0 or undefined
     : (selectedPackage.setupFee || 0);
   
+  // Check network status
+  useEffect(() => {
+    const handleOnline = () => setIsOfflineMode(false);
+    const handleOffline = () => setIsOfflineMode(true);
+    
+    // Check current status
+    setIsOfflineMode(!navigator.onLine);
+    
+    // Add event listeners
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+  
   const handlePayment = () => {
     if (isProcessing) return;
+    
+    // If we're offline, show a simulated demo payment flow
+    if (isOfflineMode) {
+      setIsProcessing(true);
+      
+      // Simulate payment processing with a delay
+      setTimeout(() => {
+        const demoResponse = {
+          razorpay_payment_id: `demo_pay_${Date.now()}`,
+          razorpay_order_id: `demo_order_${Date.now()}`,
+          razorpay_signature: 'demo_signature',
+          paymentType: selectedPackage.paymentType || 'recurring'
+        };
+        
+        console.log("Demo payment success:", demoResponse);
+        onSuccess(demoResponse);
+        setIsProcessing(false);
+      }, 2000);
+      
+      return;
+    }
+    
     setIsProcessing(true);
     
     initiatePayment({
@@ -111,6 +152,15 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       <CardHeader className="px-0 pt-0">
         <CardTitle className="text-lg">Payment Summary</CardTitle>
         <CardDescription>Review your payment details</CardDescription>
+        {isOfflineMode && (
+          <Alert variant="warning" className="mt-2">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Offline Mode</AlertTitle>
+            <AlertDescription>
+              You are currently in offline mode. This is a demo payment flow.
+            </AlertDescription>
+          </Alert>
+        )}
       </CardHeader>
       <CardContent className="px-0 space-y-4">
         <div className="border rounded-md p-4 space-y-3">
