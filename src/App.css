@@ -22,9 +22,26 @@ header.main-header {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
   z-index: 9999 !important;
   height: 64px !important;
-  display: block !important;
+  display: flex !important;  /* Changed from block to flex */
   visibility: visible !important;
   opacity: 1 !important;
+}
+
+/* Make sure all content within the header is visible */
+header.main-header > div,
+header.main-header nav,
+header.main-header a,
+header.main-header button {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 10000 !important;
+}
+
+/* Fix z-index and display for menu elements */
+header .mobile-menu {
+  z-index: 9998 !important;
+  top: 64px !important;
 }
 
 /* Main content styling with proper padding */

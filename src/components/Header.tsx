@@ -98,10 +98,6 @@ const Header = () => {
     // For debugging, let's always show it for now
     console.log("Showing dashboard for all users"); // Debug log
     return true;
-    
-    // Regular users need an active subscription
-    // Uncomment this when subscription checking is working properly
-    // return subscriptionStatus === "active";
   };
 
   // Make sure we don't show anything until auth is initialized
@@ -114,53 +110,51 @@ const Header = () => {
 
   return (
     <header className="fixed top-0 left-0 w-full z-[9999] bg-white shadow-sm h-16 main-header">
-      <div className="container max-w-7xl mx-auto px-4 sm:px-6 h-full">
-        <div className="flex items-center justify-between w-full h-full">
-          <Link to="/" className="flex items-center space-x-2">
-            <span className="logo-text font-bold text-2xl bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">Grow Bharat Vyapaar</span>
+      <div className="container max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
+        <Link to="/" className="flex items-center space-x-2">
+          <span className="logo-text font-bold text-2xl bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">Grow Bharat Vyapaar</span>
+        </Link>
+
+        <nav className="hidden md:flex items-center space-x-8">
+          <Link to="/" className="text-sm font-medium text-gray-700 hover:text-primary transition-smooth">
+            Home
           </Link>
+          <Link to="/categories" className="text-sm font-medium text-gray-700 hover:text-primary transition-smooth">
+            Categories
+          </Link>
+          <Link to="/businesses" className="text-sm font-medium text-gray-700 hover:text-primary transition-smooth">
+            Businesses
+          </Link>
+          <Link to="/about" className="text-sm font-medium text-gray-700 hover:text-primary transition-smooth">
+            About
+          </Link>
+        </nav>
 
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-sm font-medium hover:text-primary transition-smooth">
-              Home
-            </Link>
-            <Link to="/categories" className="text-sm font-medium hover:text-primary transition-smooth">
-              Categories
-            </Link>
-            <Link to="/businesses" className="text-sm font-medium hover:text-primary transition-smooth">
-              Businesses
-            </Link>
-            <Link to="/about" className="text-sm font-medium hover:text-primary transition-smooth">
-              About
-            </Link>
-          </nav>
-
-          <div className="hidden md:flex items-center space-x-4">
-            {shouldShowDashboard() && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="rounded-full transition-smooth" 
-                onClick={handleDashboardClick}
-              >
-                <LayoutDashboard className="h-4 w-4 mr-2" />
-                Dashboard
-              </Button>
-            )}
-            
-            {isAuthenticated ? <UserMenu /> : <Button variant="default" size="sm" className="rounded-full transition-smooth" onClick={() => setIsAuthModalOpen(true)}>
-                <LogIn className="h-4 w-4 mr-2" />
-                Login / Register
-              </Button>}
-          </div>
-
-          <button 
-            className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-smooth"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+        <div className="hidden md:flex items-center space-x-4">
+          {shouldShowDashboard() && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="rounded-full transition-smooth" 
+              onClick={handleDashboardClick}
+            >
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              Dashboard
+            </Button>
+          )}
+          
+          {isAuthenticated ? <UserMenu /> : <Button variant="default" size="sm" className="rounded-full transition-smooth" onClick={() => setIsAuthModalOpen(true)}>
+              <LogIn className="h-4 w-4 mr-2" />
+              Login / Register
+            </Button>}
         </div>
+
+        <button 
+          className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-smooth"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
       </div>
 
       <div className={`mobile-menu md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-sm transition-all duration-300 overflow-hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`} 
