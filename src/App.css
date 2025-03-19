@@ -24,9 +24,10 @@ header.main-header {
   height: 64px !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: center !important;
+  justify-content: space-between !important;
   visibility: visible !important;
   opacity: 1 !important;
+  color: #000000 !important;
 }
 
 /* Make sure all content within the header is visible */
@@ -39,7 +40,15 @@ header.main-header span {
   visibility: visible !important;
   opacity: 1 !important;
   z-index: 10000 !important;
-  color: inherit !important;
+  color: #000000 !important;
+}
+
+/* Fix for text inside links and buttons */
+header.main-header a *,
+header.main-header button * {
+  color: #000000 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 /* Fix z-index and display for menu elements */

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, LogIn, LayoutDashboard } from 'lucide-react';
@@ -109,26 +108,26 @@ const Header = () => {
   console.log("Header fully rendered"); // Debug log
 
   return (
-    <header className="fixed top-0 left-0 w-full z-[9999] bg-white shadow-sm h-16 main-header">
-      <div className="container max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
+    <header className="fixed top-0 left-0 w-full z-[9999] bg-white shadow-sm h-16 main-header" style={{color: "#000000"}}>
+      <div className="container max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between" style={{color: "#000000"}}>
         <Link to="/" className="flex items-center space-x-2">
-          <span className="logo-text font-bold text-2xl bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent" style={{ color: 'rgba(0, 0, 0, 0.8)' }}>
+          <span className="font-bold text-2xl" style={{color: "#000000", visibility: "visible"}}>
             Grow Bharat Vyapaar
           </span>
         </Link>
 
         <nav className="hidden md:flex items-center space-x-8">
-          <Link to="/" className="text-sm font-medium text-gray-700 hover:text-primary transition-smooth">
-            Home
+          <Link to="/" className="text-sm font-medium hover:text-primary transition-smooth">
+            <span style={{color: "#000000", visibility: "visible"}}>Home</span>
           </Link>
-          <Link to="/categories" className="text-sm font-medium text-gray-700 hover:text-primary transition-smooth">
-            Categories
+          <Link to="/categories" className="text-sm font-medium hover:text-primary transition-smooth">
+            <span style={{color: "#000000", visibility: "visible"}}>Categories</span>
           </Link>
-          <Link to="/businesses" className="text-sm font-medium text-gray-700 hover:text-primary transition-smooth">
-            Businesses
+          <Link to="/businesses" className="text-sm font-medium hover:text-primary transition-smooth">
+            <span style={{color: "#000000", visibility: "visible"}}>Businesses</span>
           </Link>
-          <Link to="/about" className="text-sm font-medium text-gray-700 hover:text-primary transition-smooth">
-            About
+          <Link to="/about" className="text-sm font-medium hover:text-primary transition-smooth">
+            <span style={{color: "#000000", visibility: "visible"}}>About</span>
           </Link>
         </nav>
 
@@ -139,21 +138,23 @@ const Header = () => {
               size="sm" 
               className="rounded-full transition-smooth" 
               onClick={handleDashboardClick}
+              style={{color: "#000000", visibility: "visible"}}
             >
               <LayoutDashboard className="h-4 w-4 mr-2" />
-              <span className="text-gray-800">Dashboard</span>
+              <span style={{color: "#000000", visibility: "visible"}}>Dashboard</span>
             </Button>
           )}
           
-          {isAuthenticated ? <UserMenu /> : <Button variant="default" size="sm" className="rounded-full transition-smooth" onClick={() => setIsAuthModalOpen(true)}>
+          {isAuthenticated ? <UserMenu /> : <Button variant="default" size="sm" className="rounded-full transition-smooth" onClick={() => setIsAuthModalOpen(true)} style={{visibility: "visible"}}>
               <LogIn className="h-4 w-4 mr-2" />
-              <span>Login / Register</span>
+              <span style={{color: "#ffffff", visibility: "visible"}}>Login / Register</span>
             </Button>}
         </div>
 
         <button 
           className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-smooth"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          style={{color: "#000000", visibility: "visible"}}
         >
           {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -166,16 +167,16 @@ const Header = () => {
            }}>
         <div className="container max-w-7xl mx-auto px-4 py-4 flex flex-col space-y-4">
           <Link to="/" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
-            <span className="text-gray-800">Home</span>
+            <span style={{color: "#000000", visibility: "visible"}}>Home</span>
           </Link>
           <Link to="/categories" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
-            <span className="text-gray-800">Categories</span>
+            <span style={{color: "#000000", visibility: "visible"}}>Categories</span>
           </Link>
           <Link to="/businesses" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
-            <span className="text-gray-800">Businesses</span>
+            <span style={{color: "#000000", visibility: "visible"}}>Businesses</span>
           </Link>
           <Link to="/about" className="py-2 text-lg font-medium hover:text-primary transition-smooth">
-            <span className="text-gray-800">About</span>
+            <span style={{color: "#000000", visibility: "visible"}}>About</span>
           </Link>
           <div className="pt-2 flex flex-col space-y-3">
             {shouldShowDashboard() && (
@@ -183,21 +184,22 @@ const Header = () => {
                 variant="outline" 
                 className="justify-start rounded-full w-full transition-smooth" 
                 onClick={handleDashboardClick}
+                style={{color: "#000000", visibility: "visible"}}
               >
                 <LayoutDashboard className="h-4 w-4 mr-2" />
-                <span className="text-gray-800">Dashboard</span>
+                <span style={{color: "#000000", visibility: "visible"}}>Dashboard</span>
               </Button>
             )}
             
-            {isAuthenticated ? <Button variant="default" className="justify-start rounded-full w-full transition-smooth" onClick={handleMobileLogout}>
+            {isAuthenticated ? <Button variant="default" className="justify-start rounded-full w-full transition-smooth" onClick={handleMobileLogout} style={{visibility: "visible"}}>
                 <LogIn className="h-4 w-4 mr-2" />
-                <span>Logout</span>
+                <span style={{color: "#ffffff", visibility: "visible"}}>Logout</span>
               </Button> : <Button variant="default" className="justify-start rounded-full w-full transition-smooth" onClick={() => {
                 setIsAuthModalOpen(true);
                 setIsMobileMenuOpen(false);
-              }}>
+              }} style={{visibility: "visible"}}>
                 <LogIn className="h-4 w-4 mr-2" />
-                <span>Login / Register</span>
+                <span style={{color: "#ffffff", visibility: "visible"}}>Login / Register</span>
               </Button>}
           </div>
         </div>
