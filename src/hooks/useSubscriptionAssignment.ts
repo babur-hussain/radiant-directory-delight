@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { updateUserSubscription } from '@/lib/subscription';
@@ -18,30 +17,24 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
   const [selectedPackage, setSelectedPackage] = useState("");
   const [userCurrentSubscription, setUserCurrentSubscription] = useState<UserSubscription | null>(null);
   
-  // Load packages and current subscription on mount
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Load packages from MongoDB based on user role
         let fetchedPackages = [];
         const userRole = targetUser?.role || 'User';
         
         if (userRole === 'Business' || userRole === 'Influencer') {
           fetchedPackages = await fetchSubscriptionPackagesByType(userRole);
         } else {
-          // Default to all packages if no specific role
           fetchedPackages = await fetchSubscriptionPackages();
         }
         
-        // Convert to SubscriptionPackage type
         const convertedPackages = fetchedPackages.map(pkg => convertToSubscriptionPackage(pkg));
         setPackages(convertedPackages);
         
-        // Load current subscription if available
         if (targetUser?.subscription && typeof targetUser.subscription !== 'string') {
           setUserCurrentSubscription(targetUser.subscription as UserSubscription);
           
-          // Select current package in dropdown
           if (targetUser.subscription.packageId) {
             setSelectedPackage(targetUser.subscription.packageId);
           }
@@ -55,7 +48,6 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
     loadData();
   }, [targetUser]);
   
-  // Handle assigning package to user
   const handleAssignPackage = useCallback(async () => {
     if (!selectedPackage) {
       setError("Please select a package to assign");
@@ -77,16 +69,14 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
         throw new Error("Package not found");
       }
       
-      // Determine if this is a one-time package
       const isOneTime = packageDetails.paymentType === "one-time";
       
-      // Create subscription data
       const subscriptionData = {
         packageId: packageDetails.id,
         packageName: packageDetails.title,
         amount: packageDetails.price,
-        startDate: new Date().toISOString(), // Ensure this is a string, not a Date object
-        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // Ensure this is a string, not a Date object
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
         status: "active",
         userId: targetUser.id || targetUser.uid,
         assignedBy: currentUser.id || currentUser.uid,
@@ -94,11 +84,10 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
         isPausable: !isOneTime,
         isUserCancellable: !isOneTime,
         paymentType: isOneTime ? "one-time" : "recurring",
-        createdAt: new Date(), // Create as Date object to match ISubscription
-        updatedAt: new Date(), // Create as Date object to match ISubscription
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
       
-      // Assign subscription
       const success = await adminAssignSubscription(targetUser.id || targetUser.uid, subscriptionData);
       
       if (success) {
@@ -110,8 +99,8 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
         setUserCurrentSubscription({
           ...subscriptionData,
           id: `sub_${Date.now()}`,
-          createdAt: new Date().toISOString(), // Store as string in state
-          updatedAt: new Date().toISOString(), // Store as string in state
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         } as UserSubscription);
         
         if (onAssigned) {
@@ -127,14 +116,13 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
       toast({
         title: "Assignment Failed",
         description: "Could not assign subscription package",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);
     }
   }, [currentUser, onAssigned, packages, selectedPackage, targetUser, toast]);
   
-  // Handle cancelling subscription
   const handleCancelSubscription = useCallback(async () => {
     if (!userCurrentSubscription) {
       setError("No active subscription to cancel");
@@ -146,13 +134,12 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
       return;
     }
     
-    // Check if this is a one-time subscription which can't be cancelled
     if (userCurrentSubscription.paymentType === "one-time") {
       setError("One-time purchases cannot be cancelled");
       toast({
         title: "Cannot Cancel",
         description: "One-time purchases cannot be cancelled",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -161,23 +148,22 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
     setError(null);
     
     try {
-      // Prepare a subscription object that matches the ISubscription interface
-      const subscriptionForDB: Partial<ISubscription> = {
+      const subscriptionForDB: ISubscription = {
         ...userCurrentSubscription,
         status: "cancelled",
         cancelledAt: new Date().toISOString(),
         cancelReason: "admin_cancelled",
-        startDate: typeof userCurrentSubscription.startDate === 'object' 
-          ? userCurrentSubscription.startDate.toISOString() 
+        startDate: typeof userCurrentSubscription.startDate === 'object'
+          ? userCurrentSubscription.startDate.toISOString()
           : userCurrentSubscription.startDate,
-        endDate: typeof userCurrentSubscription.endDate === 'object' 
-          ? userCurrentSubscription.endDate.toISOString() 
+        endDate: typeof userCurrentSubscription.endDate === 'object'
+          ? userCurrentSubscription.endDate.toISOString()
           : userCurrentSubscription.endDate,
-        createdAt: new Date(), // This must be a Date object for ISubscription
-        updatedAt: new Date()  // This must be a Date object for ISubscription
-      };
+        createdAt: new Date(),
+        updatedAt: new Date()
+      } as ISubscription;
       
-      const success = await updateUserSubscription(targetUser.id || targetUser.uid, subscriptionForDB as ISubscription);
+      const success = await updateUserSubscription(targetUser.id || targetUser.uid, subscriptionForDB);
       
       if (success) {
         toast({
@@ -185,7 +171,6 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
           description: "Successfully cancelled the subscription.",
         });
         
-        // For our local state, we can use string dates
         setUserCurrentSubscription({
           ...userCurrentSubscription,
           status: "cancelled",
@@ -203,7 +188,7 @@ export const useSubscriptionAssignment = (targetUser: User, onAssigned?: (packag
       toast({
         title: "Cancellation Failed",
         description: "Could not cancel the subscription",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);

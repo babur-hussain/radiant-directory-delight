@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -96,13 +95,11 @@ const ProfilePage = () => {
     
     try {
       if (values.role !== user?.role) {
-        // Create a minimal user object with just the role field to update
         const userToUpdate = {
           ...(user || {}),
           role: values.role as UserRole
         } as User;
         
-        // Pass the updated user object, but no second parameter is needed
         await updateUserRole(userToUpdate);
       }
       

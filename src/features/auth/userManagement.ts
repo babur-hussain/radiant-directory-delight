@@ -1,37 +1,55 @@
-
 import { User as UserModel } from '../../models/User';
 import { User, UserRole } from "../../types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { saveUserToAllUsersList } from "./authStorage";
 import { connectToMongoDB } from '../../config/mongodb';
+import { createOrUpdateUser, fetchUserByUid } from '@/api/mongoAPI';
 
-export const updateUserRole = async (user: User, role: UserRole) => {
+export const updateUserRole = async (user: User) => {
   if (!user) {
     throw new Error("User not authenticated");
   }
   
+  const role = user.role;
+  
   try {
+    // Save to localStorage for fallback
     localStorage.setItem(getRoleKey(user.uid), role as string);
     
-    // Update user role in MongoDB
-    await UserModel.findOneAndUpdate(
-      { uid: user.uid },
-      { role: role }
-    );
+    // Ensure MongoDB is connected
+    const connected = await connectToMongoDB();
     
-    await syncUserData(user.uid, { role });
-    
-    return {
-      ...user,
-      role
-    };
-  } catch (error) {
-    console.error("Error updating user role:", error);
+    if (connected) {
+      // Try to update in MongoDB first through our API
+      try {
+        await createOrUpdateUser({
+          uid: user.uid,
+          role: role,
+          // Include other fields to ensure they don't get lost
+          name: user.name || user.displayName,
+          email: user.email,
+          isAdmin: user.isAdmin,
+          updatedAt: new Date()
+        });
+        
+        console.log(`User role updated to ${role} for uid ${user.uid}`);
+        
+        // Sync user data to ensure consistency
+        await syncUserData(user.uid, { role });
+        
+        return {
+          ...user,
+          role
+        };
+      } catch (mongoError) {
+        console.error("Error updating user role in MongoDB:", mongoError);
+        // Fall back to localStorage update
+      }
+    }
     
     console.log("Falling back to localStorage-only update for role");
     
-    localStorage.setItem(getRoleKey(user.uid), role as string);
-    
+    // Update in localStorage all users list
     const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
     const userIndex = allUsers.findIndex((u: any) => u.uid === user.uid);
     
@@ -44,6 +62,16 @@ export const updateUserRole = async (user: User, role: UserRole) => {
       ...user,
       role
     };
+  } catch (error) {
+    console.error("Error updating user role:", error);
+    
+    // Last resort fallback to ensure UI updates
+    localStorage.setItem(getRoleKey(user.uid), role as string);
+    
+    return {
+      ...user,
+      role
+    };
   }
 };
 
@@ -51,11 +79,12 @@ export const updateUserPermission = async (userId: string, isAdmin: boolean) => 
   try {
     localStorage.setItem(getAdminKey(userId), isAdmin ? 'true' : 'false');
     
-    // Update user admin status in MongoDB
-    await UserModel.findOneAndUpdate(
-      { uid: userId },
-      { isAdmin: isAdmin }
-    );
+    // Update user admin status in MongoDB through API
+    await createOrUpdateUser({
+      uid: userId,
+      isAdmin: isAdmin,
+      updatedAt: new Date()
+    });
     
     await syncUserData(userId, { isAdmin });
     
@@ -81,15 +110,8 @@ export const updateUserPermission = async (userId: string, isAdmin: boolean) => 
 
 export const getUserById = async (userId: string): Promise<User | null> => {
   try {
-    // First ensure MongoDB is connected
-    const connected = await connectToMongoDB();
-    if (!connected) {
-      console.warn("Cannot connect to MongoDB, falling back to localStorage");
-      throw new Error("MongoDB connection failed");
-    }
-    
-    // Get user from MongoDB
-    const mongoUser = await UserModel.findOne({ uid: userId });
+    // First try to get user from MongoDB through API
+    const mongoUser = await fetchUserByUid(userId);
     
     if (mongoUser) {
       return {
@@ -102,10 +124,28 @@ export const getUserById = async (userId: string): Promise<User | null> => {
         isAdmin: mongoUser.isAdmin,
         photoURL: mongoUser.photoURL,
         employeeCode: mongoUser.employeeCode,
-        createdAt: mongoUser.createdAt.toISOString()
+        createdAt: mongoUser.createdAt?.toISOString?.() || mongoUser.createdAt,
+        // Include all additional fields that might be needed
+        phone: mongoUser.phone,
+        instagramHandle: mongoUser.instagramHandle,
+        facebookHandle: mongoUser.facebookHandle,
+        niche: mongoUser.niche,
+        followersCount: mongoUser.followersCount,
+        bio: mongoUser.bio,
+        businessName: mongoUser.businessName,
+        ownerName: mongoUser.ownerName,
+        businessCategory: mongoUser.businessCategory,
+        website: mongoUser.website,
+        gstNumber: mongoUser.gstNumber,
+        subscription: mongoUser.subscription,
+        // Other metadata
+        city: mongoUser.city,
+        country: mongoUser.country,
+        verified: mongoUser.verified
       };
     }
     
+    // Fall back to localStorage
     console.log(`User ${userId} not found in MongoDB, checking localStorage`);
     const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
     const user = allUsers.find((u: any) => u.id === userId || u.uid === userId);
@@ -122,7 +162,9 @@ export const getUserById = async (userId: string): Promise<User | null> => {
         role: user.role,
         isAdmin: user.isAdmin,
         employeeCode: user.employeeCode,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
+        // Include all other fields we have
+        ...user
       };
     }
     
@@ -130,11 +172,11 @@ export const getUserById = async (userId: string): Promise<User | null> => {
   } catch (error) {
     console.error("Error getting user by ID:", error);
     
+    // Last resort fallback to localStorage
     const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
     const user = allUsers.find((u: any) => u.id === userId || u.uid === userId);
     
     if (user) {
-      // Make sure returned user conforms to User interface
       return {
         uid: user.id || user.uid,
         id: user.id || user.uid,
@@ -145,7 +187,9 @@ export const getUserById = async (userId: string): Promise<User | null> => {
         role: user.role,
         isAdmin: user.isAdmin,
         employeeCode: user.employeeCode,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
+        // Include all other fields we have
+        ...user
       };
     }
     

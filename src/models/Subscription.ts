@@ -21,12 +21,15 @@ export interface ISubscription {
   isPausable?: boolean;
   isUserCancellable?: boolean;
   invoiceIds?: string[];
-  paymentType: "recurring" | "one-time";
-  [key: string]: any;
+  paymentType?: 'recurring' | 'one-time';
+  cancelledAt?: string;
+  cancelReason?: string;
+  paymentMethod?: string;
+  transactionId?: string;
 }
 
-// Create a schema using the mongoose mock
-const SubscriptionSchema = mongoose.Schema({
+// Create the Mongoose schema
+const SubscriptionSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   packageId: { type: String, required: true },
   packageName: { type: String, required: true },
@@ -46,7 +49,11 @@ const SubscriptionSchema = mongoose.Schema({
   isPausable: { type: Boolean, default: true },
   isUserCancellable: { type: Boolean, default: true },
   invoiceIds: [{ type: String }],
-  paymentType: { type: String, enum: ['recurring', 'one-time'], default: 'recurring' }
+  paymentType: { type: String, enum: ['recurring', 'one-time'], default: 'recurring' },
+  cancelledAt: { type: String },
+  cancelReason: { type: String },
+  paymentMethod: { type: String },
+  transactionId: { type: String }
 });
 
 // Create indexes for frequently queried fields
