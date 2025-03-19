@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import SubscriptionManagement from '@/components/admin/subscription/SubscriptionManagement';
+import { SubscriptionManagement } from '@/components/admin/subscription/SubscriptionManagement';
 import UnauthorizedView from '@/components/admin/UnauthorizedView';
 
 const AdminDashboardPage: React.FC = () => {
