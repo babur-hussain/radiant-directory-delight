@@ -10,6 +10,7 @@ export interface IUser {
   photoURL: string | null;
   createdAt: Date;
   lastLogin: Date;
+  employeeCode?: string | null; // Added employee code field
   subscription?: string | null;
   subscriptionId?: string;
   subscriptionStatus?: string;
@@ -38,7 +39,6 @@ export interface IUser {
   website?: string;
   address?: {
     street?: string;
-    city?: string;
     state?: string;
     country?: string;
     zipCode?: string;
@@ -56,6 +56,7 @@ const UserSchema = mongoose.Schema({
   photoURL: { type: String, default: null },
   createdAt: { type: Date, default: Date.now },
   lastLogin: { type: Date, default: Date.now },
+  employeeCode: { type: String, default: null }, // Added employee code field
   subscription: { type: String, default: null },
   subscriptionId: { type: String, default: null },
   subscriptionStatus: { type: String, default: null },
@@ -95,6 +96,7 @@ UserSchema.index({ uid: 1 });
 UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1 });
 UserSchema.index({ isAdmin: 1 });
+UserSchema.index({ employeeCode: 1 }); // Add index for employee code
 
 // Virtual for compatibility with Firestore IDs
 UserSchema.virtual('id').get(function() {

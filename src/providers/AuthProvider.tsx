@@ -21,7 +21,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [initialized, setInitialized] = useState<boolean>(false);
 
   // Convert Firebase user to our User type and save to MongoDB
-  const processUser = async (firebaseUser: FirebaseUser | null) => {
+  const processUser = async (firebaseUser: FirebaseUser | null, employeeCode?: string) => {
     if (!firebaseUser) {
       setUser(null);
       return;
@@ -43,7 +43,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: firebaseUser.email,
         name: firebaseUser.displayName,
         photoURL: firebaseUser.photoURL,
-        lastLogin: new Date()
+        lastLogin: new Date(),
+        // Only add employeeCode if it exists and we don't already have one
+        ...(employeeCode ? { employeeCode } : {})
       };
       
       // If user doesn't exist, create a new one
@@ -65,6 +67,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             isAdmin: false
           };
         }
+      } else if (employeeCode && !mongoUser.employeeCode) {
+        // If we have a new employee code and the user doesn't have one yet, update it
+        try {
+          mongoUser = await createOrUpdateUser({
+            ...mongoUser,
+            employeeCode
+          });
+        } catch (error) {
+          console.error("Error updating employee code:", error);
+        }
       } else {
         // Just update the last login time
         try {
@@ -82,7 +94,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         displayName: firebaseUser.displayName,
         photoURL: firebaseUser.photoURL,
         isAdmin: mongoUser.isAdmin || false,
-        role: (mongoUser.role as UserRole) || 'User' as UserRole
+        role: (mongoUser.role as UserRole) || 'User' as UserRole,
+        employeeCode: mongoUser.employeeCode || employeeCode || null
       });
     } catch (error) {
       console.error("Error processing user:", error);
@@ -93,7 +106,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         displayName: firebaseUser.displayName,
         photoURL: firebaseUser.photoURL,
         isAdmin: false,
-        role: 'User' as UserRole
+        role: 'User' as UserRole,
+        employeeCode: employeeCode || null
       });
     }
   };
@@ -147,12 +161,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Implement proper email/password login method
-  const login = async (email: string, password: string): Promise<void> => {
+  // Implement proper email/password login method with employee code
+  const login = async (email: string, password: string, employeeCode?: string): Promise<void> => {
     try {
       console.log(`Attempting to login with email: ${email}`);
       const result = await signInWithEmailAndPassword(auth, email, password);
-      await processUser(result.user);
+      await processUser(result.user, employeeCode);
     } catch (error) {
       console.error("Email/password login error:", error);
       throw error; // Re-throw to allow handling in the UI

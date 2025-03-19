@@ -15,6 +15,7 @@ const UserSchema = new mongoose.Schema({
   subscriptionStatus: { type: String, default: null },
   subscriptionPackage: { type: String, default: null },
   customDashboardSections: [{ type: String }],
+  employeeCode: { type: String, default: null }, // Added employee code field
   
   // Shared fields
   phone: { type: String, default: null },
@@ -49,6 +50,7 @@ UserSchema.index({ uid: 1 });
 UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1 });
 UserSchema.index({ isAdmin: 1 });
+UserSchema.index({ employeeCode: 1 }); // Add index for employee code
 
 // Method to check if a user is admin
 UserSchema.methods.isUserAdmin = function() {

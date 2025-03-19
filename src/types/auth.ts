@@ -14,6 +14,7 @@ export interface User {
   subscription?: any; // For storing subscription information
   createdAt?: Date | string; // For storing user creation date
   lastLogin?: Date | string; // For storing user's last login date
+  employeeCode?: string; // Added employee code field
   
   // Additional fields for user profiles
   phone?: string;
@@ -71,7 +72,7 @@ export interface AuthContextType {
   userRole: UserRole | null;
   isAdmin: boolean;
   logout: () => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, employeeCode?: string) => Promise<void>;
   loginWithGoogle?: () => Promise<void>;
   signup?: (email: string, password: string, name: string, role: UserRole, additionalData?: any) => Promise<any>;
   updateUserRole?: (role: UserRole) => Promise<void>;

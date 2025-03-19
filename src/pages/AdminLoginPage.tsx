@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, Loader2, AlertCircle } from "lucide-react";
+import { Mail, Lock, Loader2, AlertCircle, IdCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -14,6 +14,7 @@ const AdminLoginPage = () => {
   const { login, user, isAuthenticated } = useAuth();
   const [email, setEmail] = useState("baburhussain660@gmail.com");
   const [password, setPassword] = useState("");
+  const [employeeCode, setEmployeeCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ const AdminLoginPage = () => {
     setError(null);
 
     try {
-      await login(email, password);
+      await login(email, password, employeeCode);
       
       // Check admin privileges after successful login
       if (user?.isAdmin || email === "baburhussain660@gmail.com") {
@@ -114,6 +115,21 @@ const AdminLoginPage = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="employeeCode">Employee Code (Optional)</Label>
+              <div className="relative">
+                <IdCard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="employeeCode"
+                  type="text"
+                  placeholder="Enter employee code if applicable"
+                  className="pl-10"
+                  value={employeeCode}
+                  onChange={(e) => setEmployeeCode(e.target.value)}
                 />
               </div>
             </div>

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
-import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
+import { LogIn, Mail, Lock, Loader2, IdCard } from "lucide-react";
 import SocialLoginButtons from "./SocialLoginButtons";
 import { useToast } from "@/hooks/use-toast";
 
@@ -16,6 +16,7 @@ interface LoginFormProps {
 const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [employeeCode, setEmployeeCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login, loginWithGoogle, loading } = useAuth();
   const { toast } = useToast();
@@ -25,7 +26,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
     setIsSubmitting(true);
 
     try {
-      await login(loginEmail, loginPassword);
+      await login(loginEmail, loginPassword, employeeCode);
       toast({
         title: "Login successful",
         description: "You have been logged in successfully",
@@ -94,6 +95,21 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
             value={loginPassword}
             onChange={(e) => setLoginPassword(e.target.value)}
             required
+          />
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="employeeCode">Employee Code (Optional)</Label>
+        <div className="relative">
+          <IdCard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input
+            id="employeeCode"
+            type="text"
+            placeholder="Enter employee code if applicable"
+            className="pl-10"
+            value={employeeCode}
+            onChange={(e) => setEmployeeCode(e.target.value)}
           />
         </div>
       </div>

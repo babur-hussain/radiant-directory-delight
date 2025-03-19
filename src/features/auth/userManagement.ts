@@ -101,6 +101,7 @@ export const getUserById = async (userId: string): Promise<User | null> => {
         role: mongoUser.role as UserRole,
         isAdmin: mongoUser.isAdmin,
         photoURL: mongoUser.photoURL,
+        employeeCode: mongoUser.employeeCode,
         createdAt: mongoUser.createdAt.toISOString()
       };
     }
@@ -120,6 +121,7 @@ export const getUserById = async (userId: string): Promise<User | null> => {
         photoURL: user.photoURL,
         role: user.role,
         isAdmin: user.isAdmin,
+        employeeCode: user.employeeCode,
         createdAt: user.createdAt
       };
     }
@@ -142,6 +144,7 @@ export const getUserById = async (userId: string): Promise<User | null> => {
         photoURL: user.photoURL,
         role: user.role,
         isAdmin: user.isAdmin,
+        employeeCode: user.employeeCode,
         createdAt: user.createdAt
       };
     }
@@ -171,6 +174,7 @@ export const getAllUsers = async (): Promise<User[]> => {
         photoURL: user.photoURL,
         role: user.role,
         isAdmin: user.isAdmin,
+        employeeCode: user.employeeCode,
         createdAt: user.createdAt || new Date().toISOString()
       }));
     }
@@ -199,6 +203,7 @@ export const getAllUsers = async (): Promise<User[]> => {
           photoURL: user.photoURL,
           role: user.role,
           isAdmin: user.isAdmin,
+          employeeCode: user.employeeCode,
           createdAt: user.createdAt || new Date().toISOString()
         }));
       }
@@ -239,6 +244,7 @@ export const getAllUsers = async (): Promise<User[]> => {
         role: mongoUser.role as UserRole,
         isAdmin: mongoUser.isAdmin,
         photoURL: mongoUser.photoURL,
+        employeeCode: mongoUser.employeeCode,
         createdAt: createdTimestamp
       };
     });
@@ -271,6 +277,7 @@ export const getAllUsers = async (): Promise<User[]> => {
       photoURL: user.photoURL,
       role: user.role,
       isAdmin: user.isAdmin,
+      employeeCode: user.employeeCode,
       createdAt: user.createdAt || new Date().toISOString()
     }));
   }
@@ -281,6 +288,7 @@ export interface TestUserData {
   name: string;
   role: UserRole;
   isAdmin: boolean;
+  employeeCode?: string;
 }
 
 export const createTestUser = async (userData: TestUserData): Promise<User> => {
@@ -299,6 +307,7 @@ export const createTestUser = async (userData: TestUserData): Promise<User> => {
       role: userData.role,
       isAdmin: userData.isAdmin,
       photoURL: null,
+      employeeCode: userData.employeeCode || null,
       createdAt: new Date().toISOString()
     };
     
@@ -323,6 +332,7 @@ export const createTestUser = async (userData: TestUserData): Promise<User> => {
         name: userData.name,
         role: userData.role,
         isAdmin: userData.isAdmin,
+        employeeCode: userData.employeeCode,
         createdAt: new Date(),
         lastLogin: new Date()
       });
@@ -353,25 +363,29 @@ export const ensureTestUsers = async (): Promise<void> => {
           email: "business@example.com",
           name: "Business User",
           role: "Business" as UserRole,
-          isAdmin: false
+          isAdmin: false,
+          employeeCode: "EMP-B001"
         },
         {
           email: "influencer@example.com",
           name: "Influencer User",
           role: "Influencer" as UserRole,
-          isAdmin: false
+          isAdmin: false,
+          employeeCode: "EMP-I001"
         },
         {
           email: "admin@example.com",
           name: "Admin User",
           role: "Admin" as UserRole,
-          isAdmin: true
+          isAdmin: true,
+          employeeCode: "EMP-A001"
         },
         {
           email: "staff@example.com",
           name: "Staff Member",
           role: "staff" as UserRole,
-          isAdmin: false
+          isAdmin: false,
+          employeeCode: "EMP-S001"
         }
       ];
       

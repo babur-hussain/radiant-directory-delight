@@ -5,29 +5,36 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Loader2, RefreshCw, Search, UserPlus } from 'lucide-react';
+import { AlertCircle, Loader2, RefreshCw, Search, UserPlus, Eye, Filter, IdCard } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/hooks/use-toast';
 import { getAllUsers, createTestUser } from '@/features/auth/userManagement';
-import { UserRole } from '@/types/auth';
+import { User, UserRole } from '@/types/auth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import UserDetailsPopup from '@/components/admin/UserDetailsPopup';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 
 const AdminUsersPage = () => {
-  const [users, setUsers] = useState<any[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [employeeCodeFilter, setEmployeeCodeFilter] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAddUserDialog, setShowAddUserDialog] = useState(false);
+  const [showFilterPopover, setShowFilterPopover] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showUserDetails, setShowUserDetails] = useState(false);
   const { toast } = useToast();
 
   // Form state for new user
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserName, setNewUserName] = useState('');
   const [newUserRole, setNewUserRole] = useState<UserRole>('User');
+  const [newEmployeeCode, setNewEmployeeCode] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -36,17 +43,30 @@ const AdminUsersPage = () => {
   }, []);
 
   useEffect(() => {
-    if (searchTerm) {
-      const filtered = users.filter((user) => 
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.role?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+    if (users.length > 0) {
+      let filtered = [...users];
+      
+      // Filter by search term (email, name, role)
+      if (searchTerm) {
+        filtered = filtered.filter((user) => 
+          user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (user.name || user.displayName)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.role?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+      
+      // Filter by employee code if provided
+      if (employeeCodeFilter) {
+        filtered = filtered.filter((user) => 
+          user.employeeCode?.toLowerCase().includes(employeeCodeFilter.toLowerCase())
+        );
+      }
+      
       setFilteredUsers(filtered);
     } else {
-      setFilteredUsers(users);
+      setFilteredUsers([]);
     }
-  }, [searchTerm, users]);
+  }, [searchTerm, employeeCodeFilter, users]);
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -87,6 +107,12 @@ const AdminUsersPage = () => {
     setSearchTerm(e.target.value);
   };
 
+  const clearFilters = () => {
+    setSearchTerm('');
+    setEmployeeCodeFilter('');
+    setShowFilterPopover(false);
+  };
+
   const handleAddUser = async () => {
     if (!newUserEmail || !newUserName) {
       toast({
@@ -103,7 +129,8 @@ const AdminUsersPage = () => {
         email: newUserEmail,
         name: newUserName,
         role: newUserRole,
-        isAdmin
+        isAdmin,
+        employeeCode: newEmployeeCode
       });
 
       toast({
@@ -121,6 +148,7 @@ const AdminUsersPage = () => {
       setNewUserEmail('');
       setNewUserName('');
       setNewUserRole('User');
+      setNewEmployeeCode('');
       setIsAdmin(false);
       setShowAddUserDialog(false);
     } catch (err) {
@@ -133,6 +161,18 @@ const AdminUsersPage = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const viewUserDetails = (user: User) => {
+    setSelectedUser(user);
+    setShowUserDetails(true);
+  };
+
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (searchTerm) count++;
+    if (employeeCodeFilter) count++;
+    return count;
   };
 
   return (
@@ -177,14 +217,63 @@ const AdminUsersPage = () => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between mb-4">
-              <div className="relative w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                <Input
-                  placeholder="Search users..."
-                  className="pl-8"
-                  value={searchTerm}
-                  onChange={handleSearch}
-                />
+              <div className="flex items-center gap-2">
+                <div className="relative w-64">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    placeholder="Search users..."
+                    className="pl-8"
+                    value={searchTerm}
+                    onChange={handleSearch}
+                  />
+                </div>
+                
+                <Popover open={showFilterPopover} onOpenChange={setShowFilterPopover}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex items-center gap-1">
+                      <Filter className="h-4 w-4" />
+                      Filters
+                      {getActiveFiltersCount() > 0 && (
+                        <Badge variant="secondary" className="ml-1 rounded-full px-1.5 py-0.5">
+                          {getActiveFiltersCount()}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-4">
+                    <h4 className="font-medium mb-2">Filter Options</h4>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="employeeCodeFilter" className="flex items-center gap-2">
+                          <IdCard className="h-4 w-4" />
+                          Employee Code
+                        </Label>
+                        <Input
+                          id="employeeCodeFilter"
+                          placeholder="Search by employee code"
+                          value={employeeCodeFilter}
+                          onChange={(e) => setEmployeeCodeFilter(e.target.value)}
+                        />
+                      </div>
+                      
+                      <div className="flex justify-between pt-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={clearFilters}
+                        >
+                          Clear Filters
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          onClick={() => setShowFilterPopover(false)}
+                        >
+                          Apply Filters
+                        </Button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">
@@ -205,6 +294,7 @@ const AdminUsersPage = () => {
                       <TableHead>User</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Role</TableHead>
+                      <TableHead>Employee Code</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead>Actions</TableHead>
@@ -213,7 +303,7 @@ const AdminUsersPage = () => {
                   <TableBody>
                     {filteredUsers.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                           No users found
                         </TableCell>
                       </TableRow>
@@ -225,6 +315,15 @@ const AdminUsersPage = () => {
                           </TableCell>
                           <TableCell>{user.email || 'No Email'}</TableCell>
                           <TableCell>{user.role || 'User'}</TableCell>
+                          <TableCell>
+                            {user.employeeCode ? (
+                              <span className="px-2 py-1 bg-amber-50 rounded-md text-amber-800 font-medium text-xs">
+                                {user.employeeCode}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">Not assigned</span>
+                            )}
+                          </TableCell>
                           <TableCell>
                             {user.isAdmin ? (
                               <Badge variant="default">Admin</Badge>
@@ -238,7 +337,17 @@ const AdminUsersPage = () => {
                               : 'Unknown'}
                           </TableCell>
                           <TableCell>
-                            <Button variant="ghost" size="sm">Edit</Button>
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => viewUserDetails(user)}
+                                title="View details"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">Edit</Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -275,6 +384,19 @@ const AdminUsersPage = () => {
                 value={newUserName}
                 onChange={(e) => setNewUserName(e.target.value)}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="employeeCode">Employee Code</Label>
+              <div className="relative">
+                <IdCard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  id="employeeCode" 
+                  placeholder="EMP-12345"
+                  className="pl-10"
+                  value={newEmployeeCode}
+                  onChange={(e) => setNewEmployeeCode(e.target.value)}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
@@ -328,6 +450,13 @@ const AdminUsersPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* User Details Popup */}
+      <UserDetailsPopup 
+        isOpen={showUserDetails}
+        onClose={() => setShowUserDetails(false)}
+        user={selectedUser}
+      />
     </AdminLayout>
   );
 };
