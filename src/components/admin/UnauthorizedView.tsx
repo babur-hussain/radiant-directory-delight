@@ -56,7 +56,7 @@ const UnauthorizedView: React.FC = () => {
               </p>
               
               {isDefaultAdmin(user?.email) && (
-                <Alert variant="info" className="mb-4">
+                <Alert variant="default" className="mb-4">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
                     You are using the default admin email. Click the button below to access the admin dashboard.
