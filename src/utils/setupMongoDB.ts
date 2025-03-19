@@ -46,7 +46,7 @@ export const testConnectionWithRetry = async (maxAttempts: number, delayMs: numb
   return false;
 };
 
-// Main setup function
+// Main setup function with clearer success/error handling
 export const setupMongoDB = async (progressCallback?: ProgressCallback): Promise<SetupMongoDBResult> => {
   try {
     if (progressCallback) {
@@ -119,7 +119,7 @@ export const setupMongoDB = async (progressCallback?: ProgressCallback): Promise
   }
 };
 
-// Auto-initialize MongoDB when needed - simplified version for client
+// Auto-initialize MongoDB when needed with local data fallbacks
 export const autoInitMongoDB = async (): Promise<boolean> => {
   try {
     // Check if server is running first with a short timeout

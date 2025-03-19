@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { toast } from '@/hooks/use-toast';
 
@@ -7,10 +6,10 @@ export const API_BASE_URL = typeof process !== 'undefined' && process.env.NEXT_P
   ? process.env.NEXT_PUBLIC_API_BASE_URL 
   : 'https://gbv-backend.onrender.com/api'; // Updated to use a deployed server instead of localhost
 
-// Create axios instance
+// Create axios instance with shorter timeout
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 5000, // Reduced timeout to fail faster when server is unreachable
+  timeout: 3000, // Further reduced timeout to fail faster when server is unreachable
   headers: {
     'Content-Type': 'application/json'
   }
@@ -22,8 +21,10 @@ api.interceptors.response.use(
   (error) => {
     // Only log errors and show toast for non-connection issues
     // For connection issues, we'll handle them gracefully in the calling code
-    if (!error.message.includes('Network Error') && !error.message.includes('Connection refused') && 
-        !error.message.includes('timeout') && error.code !== 'ECONNABORTED') {
+    if (!error.message.includes('Network Error') && 
+        !error.message.includes('Connection refused') && 
+        !error.message.includes('timeout') && 
+        error.code !== 'ECONNABORTED') {
       console.error('API Error:', error.response?.data || error.message);
       toast({
         title: 'API Error',
@@ -35,12 +36,12 @@ api.interceptors.response.use(
   }
 );
 
-// Check if the server is running
+// Check if the server is running with a very short timeout
 export const isServerRunning = async () => {
   try {
     console.log(`Checking if server is running at ${API_BASE_URL}/test-connection`);
     const response = await axios.get(`${API_BASE_URL}/test-connection`, { 
-      timeout: 3000 // Reduced timeout for faster fallback
+      timeout: 2000 // Even shorter timeout for faster fallback
     });
     console.log("Server status check response:", response.data);
     return true;
@@ -141,7 +142,7 @@ export const saveSubscription = async (subscriptionData: any) => {
   return response.data;
 };
 
-// MongoDB initialization
+// MongoDB initialization with better error handling
 export const initializeMongoDB = async () => {
   try {
     // Check if server is running first

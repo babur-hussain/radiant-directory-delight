@@ -91,11 +91,14 @@ const AdminDatabasePage = () => {
         setError(null);
       } else {
         // If we have an error from the result, show it
+        setError(result.error || "Failed to initialize database");
         throw new Error(result.error || "Failed to initialize database");
       }
     } catch (err) {
       console.error("Initialization error:", err);
-      setError(`${err instanceof Error ? err.message : String(err)}`);
+      if (!error) { // Only set error if not already set
+        setError(`${err instanceof Error ? err.message : String(err)}`);
+      }
       toast({
         title: "Initialization Failed",
         description: `Error initializing database: ${err instanceof Error ? err.message : String(err)}`,
@@ -167,7 +170,7 @@ const AdminDatabasePage = () => {
                 variant="outline" 
                 className="flex items-center justify-center gap-2"
                 onClick={handleInitializeDatabase}
-                disabled={isInitializing || !isConnected}
+                disabled={isInitializing}
               >
                 {isInitializing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -179,7 +182,7 @@ const AdminDatabasePage = () => {
               <Button 
                 variant="outline" 
                 className="flex items-center justify-center gap-2"
-                disabled={!isConnected}
+                disabled={!isConnected && collections.length === 0}
               >
                 <Database className="h-4 w-4" />
                 View Collections
@@ -188,7 +191,7 @@ const AdminDatabasePage = () => {
                 variant="outline" 
                 className="flex items-center justify-center gap-2 text-red-500 hover:text-red-600"
                 onClick={handleResetDatabase}
-                disabled={!isConnected}
+                disabled={!isConnected && collections.length === 0}
               >
                 <Trash className="h-4 w-4" />
                 Reset Database
@@ -222,7 +225,9 @@ const AdminDatabasePage = () => {
               </div>
             ) : (
               <div className="text-center py-6 text-muted-foreground">
-                {isConnected ? (
+                {error ? (
+                  <p>Error connecting to MongoDB. You can try initializing the database again.</p>
+                ) : isConnected ? (
                   <p>No collections initialized yet. Click "Initialize Database" to create collections.</p>
                 ) : (
                   <p>Connect to MongoDB to view collections.</p>

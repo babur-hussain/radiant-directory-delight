@@ -28,7 +28,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       // First, check if user exists in MongoDB
-      let mongoUser = await fetchUserByUid(firebaseUser.uid);
+      let mongoUser = null;
+      try {
+        mongoUser = await fetchUserByUid(firebaseUser.uid);
+      } catch (error) {
+        console.error("Error fetching user from MongoDB:", error);
+        // Continue with default user object
+      }
       
       // Prepare the user data
       const userData = {
@@ -92,6 +98,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    // Set a shorter timeout to ensure we mark as initialized even if Firebase auth is slow
+    const initTimeout = setTimeout(() => {
+      if (!initialized) {
+        console.log("Auth initialization timeout reached, marking as initialized");
+        setInitialized(true);
+        setLoading(false);
+      }
+    }, 3000); // Shorter timeout
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         await processUser(firebaseUser);
@@ -104,15 +119,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log("Auth initialized:", !!firebaseUser);
       }
     });
-
-    // Set a timeout to ensure we mark as initialized even if Firebase auth is slow
-    const initTimeout = setTimeout(() => {
-      if (!initialized) {
-        console.log("Auth initialization timeout reached, marking as initialized");
-        setInitialized(true);
-        setLoading(false);
-      }
-    }, 5000);
 
     return () => {
       unsubscribe();
