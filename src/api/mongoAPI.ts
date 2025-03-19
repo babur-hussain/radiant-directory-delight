@@ -1,5 +1,8 @@
 import axios from 'axios';
 import { toast } from '@/hooks/use-toast';
+import { connectToMongoDB } from '@/config/mongodb';
+import { IUser } from '@/models/User';
+import { UserRole } from '@/types/auth';
 
 // API base URL with environment fallback and more robust fallback mechanism
 export const API_BASE_URL = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE_URL 
@@ -128,13 +131,34 @@ export const createOrUpdateUser = async (userData: any) => {
 // Update user's last login timestamp
 export const updateUserLogin = async (uid: string): Promise<void> => {
   try {
-    await apiUpdateUserLoginTimestamp(uid);
+    await updateUserLoginTimestamp(uid);
   } catch (error) {
     console.error('Error updating user login timestamp:', error);
   }
 };
 
-// Get all users (admin function)
+// API endpoint functions - used by the higher-level functions
+export const updateUserLoginTimestamp = async (uid: string) => {
+  try {
+    await api.put(`/users/${uid}/login`);
+  } catch (error) {
+    console.warn('Error updating login timestamp:', error.message);
+    // Non-critical operation, can continue without it
+  }
+};
+
+// Direct API calls for user operations
+export const apiUpdateUserRole = async (uid: string, role: string, isAdmin: boolean = false) => {
+  const response = await api.put(`/users/${uid}/role`, { role, isAdmin });
+  return response.data;
+};
+
+export const apiGetAllUsers = async () => {
+  const response = await api.get('/users');
+  return response.data;
+};
+
+// Higher-level functions with error handling
 export const getAllUsers = async (): Promise<IUser[]> => {
   try {
     const users = await apiGetAllUsers();
@@ -206,25 +230,6 @@ export const createUserWithProfile = async (
     console.error('Error creating user with profile:', error);
     return null;
   }
-};
-
-export const updateUserLoginTimestamp = async (uid: string) => {
-  try {
-    await api.put(`/users/${uid}/login`);
-  } catch (error) {
-    console.warn('Error updating login timestamp:', error.message);
-    // Non-critical operation, can continue without it
-  }
-};
-
-export const updateUserRole = async (uid: string, role: string, isAdmin: boolean = false) => {
-  const response = await api.put(`/users/${uid}/role`, { role, isAdmin });
-  return response.data;
-};
-
-export const getAllUsers = async () => {
-  const response = await api.get('/users');
-  return response.data;
 };
 
 // Business API
@@ -347,5 +352,51 @@ export const testMongoDBConnection = async () => {
   }
 };
 
-import { IUser } from '@/models/User';
-import { UserRole } from '@/types/auth';
+// Business API functions
+export const saveBusiness = async (businessData: any) => {
+  const response = await api.post('/businesses', businessData);
+  return response.data;
+};
+
+export const deleteBusiness = async (businessId: string) => {
+  await api.delete(`/businesses/${businessId}`);
+};
+
+// Subscription Packages API
+export const fetchSubscriptionPackages = async () => {
+  const response = await api.get('/subscription-packages');
+  return response.data;
+};
+
+export const fetchSubscriptionPackagesByType = async (type: string) => {
+  const response = await api.get(`/subscription-packages/type/${type}`);
+  return response.data;
+};
+
+export const saveSubscriptionPackage = async (packageData: any) => {
+  const response = await api.post('/subscription-packages', packageData);
+  return response.data;
+};
+
+export const deleteSubscriptionPackage = async (packageId: string) => {
+  await api.delete(`/subscription-packages/${packageId}`);
+  return { success: true };
+};
+
+// User Subscriptions API
+export const getUserSubscription = async (userId: string) => {
+  try {
+    const response = await api.get(`/subscriptions/user/${userId}`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+};
+
+export const saveSubscription = async (subscriptionData: any) => {
+  const response = await api.post('/subscriptions', subscriptionData);
+  return response.data;
+};
