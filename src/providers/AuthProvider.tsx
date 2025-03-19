@@ -12,6 +12,7 @@ import { auth, googleProvider } from '../config/firebase';
 import { AuthContextType, User, UserRole } from '@/types/auth';
 import { createOrUpdateUser, fetchUserByUid, updateUserLoginTimestamp } from '@/api/mongoAPI';
 import Loading from '@/components/ui/loading';
+import { initializeDefaultAdmin } from '../features/auth/authStorage';
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
