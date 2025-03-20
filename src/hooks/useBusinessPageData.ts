@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { 
   getAllBusinesses,
@@ -28,12 +27,12 @@ export const useBusinessPageData = (initialQuery: string = '') => {
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("relevance");
   const [activeTags, setActiveTags] = useState<string[]>([]);
+  
   const [customCategories, setCustomCategories] = useState<string[]>(getCustomCategories());
   const [customLocations, setCustomLocations] = useState<string[]>(getCustomLocations());
   
   const itemsPerPage = 40;
   
-  // Helper functions
   const getCustomCategories = (): string[] => {
     const storedCategories = localStorage.getItem("businessCategories");
     if (storedCategories) {
@@ -52,16 +51,13 @@ export const useBusinessPageData = (initialQuery: string = '') => {
     return [];
   };
   
-  // Load business data initially
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
         await initializeData();
         const fetchedBusinesses = getAllBusinesses();
-        // Add location from address if missing
         const extendedBusinesses = fetchedBusinesses.map(business => {
-          // Extract location from address
           const addressParts = business.address?.split(',') || [];
           const extractedLocation = addressParts.length > 1 
             ? addressParts[addressParts.length - 1].trim()
@@ -80,9 +76,7 @@ export const useBusinessPageData = (initialQuery: string = '') => {
     
     const handleDataChanged = () => {
       const fetchedBusinesses = getAllBusinesses();
-      // Add location from address if missing
       const extendedBusinesses = fetchedBusinesses.map(business => {
-        // Extract location from address
         const addressParts = business.address?.split(',') || [];
         const extractedLocation = addressParts.length > 1 
           ? addressParts[addressParts.length - 1].trim()
@@ -112,17 +106,14 @@ export const useBusinessPageData = (initialQuery: string = '') => {
     };
   }, []);
   
-  // Compute categories based on businesses and custom categories
   const categories = useMemo(() => {
     const businessCategories = Array.from(new Set(businesses.map(b => b.category)));
     const allCategories = [...new Set([...customCategories, ...businessCategories])].filter(Boolean);
     return allCategories;
   }, [businesses, customCategories]);
   
-  // Compute locations based on businesses and custom locations
   const locations = useMemo(() => {
     const extractedLocations = businesses.map(b => {
-      // Use location field if available, otherwise extract from address
       if (b.location) return b.location;
       
       const parts = b.address?.split(',') || [];
@@ -134,7 +125,6 @@ export const useBusinessPageData = (initialQuery: string = '') => {
     return allLocations;
   }, [businesses, customLocations]);
 
-  // Get all unique tags from businesses
   const allTags = useMemo(() => {
     const tags = new Set<string>();
     businesses.forEach(business => {
@@ -143,7 +133,6 @@ export const useBusinessPageData = (initialQuery: string = '') => {
     return Array.from(tags);
   }, [businesses]);
   
-  // Toggle a tag in the active tags
   const toggleTag = (tag: string) => {
     setActiveTags(prev => 
       prev.includes(tag) 
@@ -153,7 +142,6 @@ export const useBusinessPageData = (initialQuery: string = '') => {
     setCurrentPage(1);
   };
   
-  // Filter businesses based on all criteria
   const filteredBusinesses = useMemo(() => {
     let results = businesses.filter(business => {
       const matchesSearch = searchQuery === "" || 
@@ -200,19 +188,16 @@ export const useBusinessPageData = (initialQuery: string = '') => {
     sortBy
   ]);
   
-  // Calculate pagination values
   const totalPages = Math.ceil(filteredBusinesses.length / itemsPerPage);
   const currentBusinesses = filteredBusinesses.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
   
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedCategory, selectedRating, featuredOnly, selectedLocation, activeTags, sortBy]);
   
-  // Clear all filters
   const clearAllFilters = () => {
     setSelectedCategory("");
     setSelectedRating("");
@@ -223,7 +208,6 @@ export const useBusinessPageData = (initialQuery: string = '') => {
     setSortBy("relevance");
   };
 
-  // Calculate the count of active filters
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (selectedCategory) count++;
