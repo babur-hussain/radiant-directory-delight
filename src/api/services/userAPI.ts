@@ -1,3 +1,4 @@
+
 import { api } from '../core/apiService';
 import { connectToMongoDB } from '@/config/mongodb';
 import { IUser } from '@/models/User';
@@ -29,7 +30,14 @@ export const fetchUserByUid = async (uid: string) => {
 export const createOrUpdateUser = async (userData: any) => {
   try {
     // Ensure MongoDB is connected
-    await connectToMongoDB();
+    const connected = await connectToMongoDB();
+    
+    if (!connected) {
+      console.error('Failed to connect to MongoDB, cannot save user data');
+      return userData;
+    }
+    
+    console.log('Creating/updating user with data:', userData);
 
     // Handle the case for default admin
     if (userData.email === 'baburhussain660@gmail.com') {
@@ -47,6 +55,13 @@ export const createOrUpdateUser = async (userData: any) => {
       console.log(`Updated existing user in database:`, collection[index]);
     } else {
       // Add new user
+      // Ensure required fields for new users
+      if (!userData.createdAt) {
+        userData.createdAt = new Date();
+      }
+      if (!userData.lastLogin) {
+        userData.lastLogin = new Date();
+      }
       collection.push(userData);
       console.log(`Added new user to database:`, userData);
     }
@@ -54,6 +69,38 @@ export const createOrUpdateUser = async (userData: any) => {
     // Save back to localStorage (our mock MongoDB)
     localStorage.setItem('mongodb_User', JSON.stringify(collection));
     console.log(`User ${userData.uid} saved to database successfully`);
+    
+    // Also save to all_users_data for compatibility with existing code
+    try {
+      const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
+      const userIndex = allUsers.findIndex((u: any) => u.uid === userData.uid || u.id === userData.uid);
+      
+      const formattedUser = {
+        uid: userData.uid,
+        id: userData.uid,
+        email: userData.email,
+        displayName: userData.name || userData.displayName,
+        name: userData.name || userData.displayName,
+        photoURL: userData.photoURL,
+        role: userData.role || 'User',
+        isAdmin: userData.isAdmin || false,
+        employeeCode: userData.employeeCode,
+        createdAt: userData.createdAt,
+        // Include other fields
+        ...userData
+      };
+      
+      if (userIndex >= 0) {
+        allUsers[userIndex] = { ...allUsers[userIndex], ...formattedUser };
+      } else {
+        allUsers.push(formattedUser);
+      }
+      
+      localStorage.setItem('all_users_data', JSON.stringify(allUsers));
+      console.log(`User also saved to all_users_data collection`);
+    } catch (error) {
+      console.warn('Error saving to all_users_data:', error);
+    }
     
     return userData;
   } catch (error) {

@@ -333,18 +333,21 @@ export const createTestUser = async (userData: TestUserData): Promise<User> => {
       createdAt: new Date().toISOString()
     };
     
+    // Save to localStorage first
     saveUserToAllUsersList(user);
     
     try {
       console.log("Attempting to save user to MongoDB with ID:", userId);
       
+      // Ensure MongoDB is connected
       const connected = await connectToMongoDB();
       if (!connected) {
         console.warn("MongoDB connection failed, user only saved to localStorage");
         return user;
       }
       
-      await createOrUpdateUser({
+      // Use createOrUpdateUser with proper data formatting
+      const userToSave = {
         uid: userId,
         email: userData.email,
         name: userData.name,
@@ -353,7 +356,9 @@ export const createTestUser = async (userData: TestUserData): Promise<User> => {
         employeeCode: userData.employeeCode,
         createdAt: new Date(),
         lastLogin: new Date()
-      });
+      };
+      
+      await createOrUpdateUser(userToSave);
       
       console.log("Test user created successfully in MongoDB:", userId);
     } catch (dbError) {

@@ -21,7 +21,11 @@ export const getUserByUid = async (uid: string): Promise<IUser | null> => {
 export const createUserIfNotExists = async (firebaseUser: any, additionalFields?: any): Promise<IUser | null> => {
   try {
     // Ensure MongoDB is connected
-    await connectToMongoDB();
+    const connected = await connectToMongoDB();
+    if (!connected) {
+      console.error('Failed to connect to MongoDB in createUserIfNotExists');
+      return null;
+    }
     
     // Check if user already exists
     let user = await fetchUserByUid(firebaseUser.uid);
