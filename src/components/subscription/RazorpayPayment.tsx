@@ -1,13 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, CreditCard, Shield, Loader2, RefreshCw, Calendar, CheckCircle } from 'lucide-react';
+import { AlertCircle, CreditCard, Shield, Loader2, RefreshCw, Calendar, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useRazorpayPayment } from '@/hooks/useRazorpayPayment';
-import { isRecurringPaymentEligible, calculateNextBillingDate, formatSubscriptionDate } from '@/utils/razorpay';
+import { isRecurringPaymentEligible, calculateNextBillingDate, formatSubscriptionDate, shouldUseSubscriptionAPI } from '@/utils/razorpay';
 
 interface RazorpayPaymentProps {
   selectedPackage: ISubscriptionPackage;
@@ -18,7 +19,7 @@ interface RazorpayPaymentProps {
 /**
  * RazorpayPayment component for handling payment UI and checkout flow
  * 
- * IMPORTANT PRODUCTION NOTE:
+ * IMPORTANT PRODUCTION NOTICE:
  * This component uses mock implementations for creating subscription plans 
  * and subscriptions. In a production environment, these features should be
  * implemented on your backend server with proper authentication using
@@ -48,10 +49,12 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
   
   // Determine if this package is eligible for recurring payments
-  const canUseRecurring = !isOneTimePackage && isRecurringPaymentEligible(
-    selectedPackage.paymentType,
-    selectedPackage.billingCycle
-  );
+  const canUseRecurring = !isOneTimePackage && 
+                          isRecurringPaymentEligible(
+                            selectedPackage.paymentType,
+                            selectedPackage.billingCycle
+                          ) && 
+                          shouldUseSubscriptionAPI(); // Only use subscription API if enabled
   
   // Calculate the setup fee
   const setupFee = isOneTimePackage ? 0 : (selectedPackage.setupFee || 0);
@@ -224,6 +227,18 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         <CardTitle className="text-lg">Payment Summary</CardTitle>
         <CardDescription>Review your payment details</CardDescription>
       </CardHeader>
+      
+      {!isOneTimePackage && !canUseRecurring && (
+        <Alert variant="warning" className="mb-4 bg-amber-50 border-amber-200">
+          <AlertTriangle className="h-4 w-4 text-amber-500" />
+          <AlertTitle className="text-amber-700">Development Mode</AlertTitle>
+          <AlertDescription className="text-amber-600 text-sm">
+            Automatic recurring payments are currently in development mode. Your payment will be processed as a one-time 
+            payment including any advance months selected.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <CardContent className="px-0 space-y-4">
         <div className="border rounded-md p-4 space-y-3">
           <div className="flex justify-between border-b pb-2">

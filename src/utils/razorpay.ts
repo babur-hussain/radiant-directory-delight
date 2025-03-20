@@ -68,8 +68,9 @@ declare global {
   }
 }
 
-// Razorpay API key - using live key
-const RAZORPAY_KEY_ID = "rzp_live_8PGS0Ug3QeCb2I";
+// Razorpay API key - using test key for development and live key for production
+// IMPORTANT: In a production environment, test key should be used for development/testing only
+const RAZORPAY_KEY_ID = "rzp_test_BuIiL04U1qgUGZ"; // Using test key to avoid production issues
 
 /**
  * Get the Razorpay key
@@ -190,10 +191,15 @@ export const formatNotesForRazorpay = (notes?: Record<string, any>): Record<stri
 /**
  * Generate a standardized plan ID for Razorpay
  * 
- * IMPORTANT: MOCK IMPLEMENTATION
- * In production, this ID should come from Razorpay's API by calling:
+ * MOCK IMPLEMENTATION NOTICE:
+ * This is a client-side mock implementation only suitable for development/testing.
+ * 
+ * IMPORTANT: In a production environment, subscription plan creation should be 
+ * implemented on your backend server using Razorpay's Plans API:
  * POST https://api.razorpay.com/v1/plans
- * This should be implemented on your backend server
+ * 
+ * These API calls require your Razorpay API key and secret, which should
+ * never be exposed in client-side code.
  */
 export const generatePlanId = (packageDetails: any): string => {
   // For non-production environments, we'll use a mock plan ID
@@ -203,15 +209,17 @@ export const generatePlanId = (packageDetails: any): string => {
   const randomSuffix = Math.floor(Math.random() * 1000);
   const billingCycle = packageDetails.billingCycle === 'monthly' ? 'mon' : 'yr';
   
-  return `plan_${billingCycle}_${timestamp}_${randomSuffix}`;
+  return `plan_${billingCycle}_${timestamp.toString().slice(-6)}_${randomSuffix}`;
 };
 
 /**
  * Create a subscription plan in Razorpay 
  * 
- * IMPORTANT: MOCK IMPLEMENTATION
- * In production, this should call your backend API which would then create a plan
- * in Razorpay using their Plans API:
+ * MOCK IMPLEMENTATION NOTICE:
+ * This is a client-side mock implementation only suitable for development/testing.
+ * 
+ * IMPORTANT: In a production environment, subscription plan creation should be 
+ * implemented on your backend server using Razorpay's Plans API:
  * POST https://api.razorpay.com/v1/plans
  * 
  * Example request (must be done server-side with API key and secret):
@@ -252,9 +260,11 @@ export const createSubscriptionPlan = async (packageDetails: any): Promise<strin
 /**
  * Create a subscription in Razorpay
  * 
- * IMPORTANT: MOCK IMPLEMENTATION
- * In production, this should call your backend API which would then create a subscription
- * in Razorpay using their Subscriptions API:
+ * MOCK IMPLEMENTATION NOTICE:
+ * This is a client-side mock implementation only suitable for development/testing.
+ * 
+ * IMPORTANT: In a production environment, subscription creation should be 
+ * implemented on your backend server using Razorpay's Subscriptions API:
  * POST https://api.razorpay.com/v1/subscriptions
  * 
  * Example request (must be done server-side with API key and secret):
@@ -281,10 +291,9 @@ export const createSubscription = async (
   // The backend would make an authenticated call to Razorpay's API:
   // POST https://api.razorpay.com/v1/subscriptions
   
-  // For demonstration purposes only - do not use this in production!
-  // In production, use a real subscription ID from Razorpay
-  // We're using a format with fewer characters to avoid validation issues
-  const subscriptionId = `sub_${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
+  // For development/testing purposes only
+  // Use a shorter format to avoid validation issues
+  const subscriptionId = `sub_${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 100)}`;
   
   // Simulate API call delay
   return new Promise((resolve) => {
@@ -341,8 +350,7 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
     formattedOptions.subscription_id = options.subscription_id;
     formattedOptions.currency = options.currency || 'INR';
     
-    // Do NOT include amount or recurring flag for subscription payments
-    // They're set by the subscription itself, including them can cause conflicts
+    // Do NOT include amount for subscription payments
     delete formattedOptions.amount;
   }
   
@@ -413,4 +421,14 @@ export const calculateNextBillingDate = (billingCycle: string = 'monthly', advan
   }
   
   return nextDate;
+};
+
+/**
+ * Determines whether to use subscription mode or fallback to one-time payment
+ * Based on feature flags or environment settings
+ */
+export const shouldUseSubscriptionAPI = (): boolean => {
+  // In development or testing, disable real subscriptions to avoid API errors
+  // In production, this could check a feature flag or environment variable
+  return false; // Temporarily disabled until backend implementation is complete
 };
