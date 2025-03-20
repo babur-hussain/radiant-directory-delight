@@ -15,7 +15,7 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
     }
     
     // Generate a unique subscription ID if not provided
-    const subscriptionId = paymentDetails?.subscriptionId || `sub${Date.now()}`;
+    const subscriptionId = paymentDetails?.subscriptionId || paymentDetails?.razorpay_subscription_id || `sub${Date.now()}`;
     
     const isOneTime = packageDetails.paymentType === "one-time";
     
@@ -44,6 +44,8 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
     if (paymentDetails?.nextBillingDate) {
       nextBillingDate = paymentDetails.nextBillingDate;
     }
+    
+    console.log("Creating subscription with nextBillingDate:", nextBillingDate);
     
     // Prepare subscription data
     const subscription: SubscriptionData = {
@@ -78,8 +80,8 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
       subscription.transactionId = paymentDetails.razorpay_payment_id || paymentDetails.paymentId;
       
       // For recurring subscriptions, add the subscription ID
-      if (!isOneTime && paymentDetails.subscriptionId) {
-        subscription.razorpaySubscriptionId = paymentDetails.subscriptionId;
+      if (!isOneTime && (paymentDetails.subscriptionId || paymentDetails.razorpay_subscription_id)) {
+        subscription.razorpaySubscriptionId = paymentDetails.razorpay_subscription_id || paymentDetails.subscriptionId;
       }
       
       // Add order ID if available

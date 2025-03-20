@@ -86,7 +86,7 @@ export const useRazorpayPayment = () => {
         totalPaymentAmount = 1; // Minimum 1 rupee
       }
 
-      // Create a valid order ID - avoid using special characters
+      // Create a valid order ID - eliminate special characters
       const orderId = generateOrderId();
       
       // Convert amount to paise
@@ -179,21 +179,26 @@ export const useRazorpayPayment = () => {
         try {
           // Calculate when the first recurring payment will happen
           const startDate = new Date();
-          startDate.setMonth(startDate.getMonth() + advanceMonths);
+          if (advanceMonths > 0) {
+            startDate.setMonth(startDate.getMonth() + advanceMonths);
+          }
           const formattedStartDate = startDate.toLocaleDateString();
           
-          // For recurring subscription, handle setup fee + advance payment
+          // For recurring subscription with autopay
           const options = {
             ...commonOptions,
-            amount: amountInPaise,
+            amount: amountInPaise, 
             currency: 'INR',
+            subscription_id: `sub${Date.now()}`, // Generate a subscription ID for reference
+            recurring: true, // Flag for autopay/recurring
             notes: {
               packageId: selectedPackage.id,
               packageType: "recurring",
               billingCycle: selectedPackage.billingCycle || "yearly",
               setupFee: setupFee,
               recurringAmount: recurringAmount,
-              advanceMonths: advanceMonths
+              advanceMonths: advanceMonths,
+              nextBillingDate: startDate.toISOString()
             },
             handler: function(response: any) {
               // Add subscription details to the response
@@ -206,8 +211,8 @@ export const useRazorpayPayment = () => {
               response.advanceMonths = advanceMonths;
               response.billingCycle = selectedPackage.billingCycle || 'yearly';
               
-              // Generate a subscription ID
-              response.subscriptionId = `sub${Date.now()}`;
+              // Generate a subscription ID if not provided by Razorpay
+              response.subscriptionId = response.razorpay_subscription_id || `sub${Date.now()}`;
               
               // Add next billing date to the response
               response.nextBillingDate = startDate.toISOString();
