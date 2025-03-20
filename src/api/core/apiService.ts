@@ -9,7 +9,7 @@ export const API_BASE_URL = 'https://gbv-backend.onrender.com/api';
 // Create axios instance with production configuration
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 8000, // Reduced timeout to avoid long waiting times
+  timeout: 8000, // 8 second timeout for regular API calls
   headers: {
     'Content-Type': 'application/json',
     'X-Environment': 'production' // Add production marker
@@ -26,7 +26,22 @@ api.interceptors.response.use(
     
     if (error.code === 'ECONNABORTED' || errorMessage.includes('timeout')) {
       console.warn('API connection timed out - falling back to local data');
+      
       // Don't show toast for timeout errors, just fallback silently
+      // Store error information in localStorage to help with debugging
+      try {
+        const existingErrors = JSON.parse(localStorage.getItem('api_errors') || '[]');
+        existingErrors.push({
+          timestamp: new Date().toISOString(),
+          url: error.config?.url,
+          method: error.config?.method,
+          error: errorMessage
+        });
+        localStorage.setItem('api_errors', JSON.stringify(existingErrors.slice(-20))); // Keep last 20 errors
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+      
       return Promise.reject(error);
     }
     
@@ -53,8 +68,9 @@ api.interceptors.response.use(
 export const isServerRunning = async () => {
   try {
     console.log(`Checking if production server is running at ${API_BASE_URL}`);
+    // Use a separate axios instance with a much shorter timeout
     const response = await axios.get(`${API_BASE_URL}/test-connection`, {
-      timeout: 3000 // Much shorter timeout just for connectivity check
+      timeout: 5000 // 5 seconds timeout for connectivity check
     });
     console.log('Production server is available:', response.data);
     return true;
@@ -79,5 +95,54 @@ export const apiCallWithFallback = async (apiCall, fallbackData) => {
   } catch (error) {
     console.warn('API call failed, using fallback data:', error.message);
     return fallbackData;
+  }
+};
+
+// Create a persistent local storage function for user data
+export const storeUserLocally = (userData) => {
+  if (!userData || !userData.uid) return;
+  
+  try {
+    // Get existing users from local storage
+    const localUsers = JSON.parse(localStorage.getItem('local_users') || '[]');
+    
+    // Find if user already exists
+    const existingUserIndex = localUsers.findIndex(user => user.uid === userData.uid);
+    
+    if (existingUserIndex >= 0) {
+      // Update existing user
+      localUsers[existingUserIndex] = {
+        ...localUsers[existingUserIndex],
+        ...userData,
+        updatedAt: new Date().toISOString()
+      };
+    } else {
+      // Add new user
+      localUsers.push({
+        ...userData,
+        createdAt: userData.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+    }
+    
+    // Save to local storage
+    localStorage.setItem('local_users', JSON.stringify(localUsers));
+    return userData;
+  } catch (error) {
+    console.error('Error storing user locally:', error);
+    return userData;
+  }
+};
+
+// Get user from local storage
+export const getUserFromLocalStorage = (uid) => {
+  if (!uid) return null;
+  
+  try {
+    const localUsers = JSON.parse(localStorage.getItem('local_users') || '[]');
+    return localUsers.find(user => user.uid === uid) || null;
+  } catch (error) {
+    console.error('Error getting user from local storage:', error);
+    return null;
   }
 };

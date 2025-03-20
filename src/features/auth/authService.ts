@@ -5,6 +5,7 @@ import { IUser } from '../../models/User';
 import { UserRole } from '@/types/auth';
 import { generateEmployeeCode } from '@/utils/id-generator';
 import { api } from '@/api/core/apiService';
+import { storeUserLocally } from '@/api/core/apiService';
 
 // Get user by Firebase UID from production MongoDB
 export const getUserByUid = async (uid: string): Promise<IUser | null> => {
@@ -94,14 +95,17 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
 
       console.log("Creating user with data:", userData);
       
-      // Create user via direct API call
+      // Always store in local storage for offline resilience
+      storeUserLocally(userData);
+      
+      // Create user via API and handle failure gracefully
       try {
         const apiResponse = await api.post('/users', userData);
         user = apiResponse.data;
         console.log('New user created in MongoDB via API:', user);
       } catch (apiErr) {
         console.error('Direct API creation failed:', apiErr.message);
-        // Fallback to our service function
+        // Fallback to our service function - which will use cached data
         user = await createOrUpdateUser(userData);
       }
       
@@ -127,14 +131,17 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
       
       console.log("Updating user with data:", updatedUserData);
       
-      // Update user via direct API call
+      // Always store in local storage for offline resilience
+      storeUserLocally(updatedUserData);
+      
+      // Update user via API with graceful fallback
       try {
         const apiResponse = await api.put(`/users/${updatedUserData.uid}`, updatedUserData);
         user = apiResponse.data;
         console.log('Existing user updated in MongoDB via API with additional fields:', user);
       } catch (apiErr) {
         console.error('Direct API update failed:', apiErr.message);
-        // Fallback to our service function
+        // Fallback to our service function - which will use cached data
         user = await createOrUpdateUser(updatedUserData);
       }
     }
@@ -146,7 +153,7 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
   }
 };
 
-// Update user's last login timestamp
+// Update user's last login timestamp - now with offline support
 export const updateUserLogin = async (uid: string): Promise<void> => {
   try {
     await updateUserLoginTimestamp(uid);
@@ -155,12 +162,23 @@ export const updateUserLogin = async (uid: string): Promise<void> => {
   }
 };
 
-// Export the updateUserLoginTimestamp function
+// Export the updateUserLoginTimestamp function - now more resilient
 export const updateUserLoginTimestamp = async (uid: string): Promise<void> => {
   try {
-    // Direct API call to update login timestamp
-    await api.put(`/users/${uid}/login`);
-    console.log(`Updated login timestamp for user ${uid}`);
+    // Get current user data
+    const userData = await fetchUserByUid(uid);
+    
+    // If we have user data, update the login timestamp locally
+    if (userData) {
+      userData.lastLogin = new Date();
+      storeUserLocally(userData);
+    }
+    
+    // Non-blocking API call - don't wait for response
+    api.put(`/users/${uid}/login`)
+      .then(() => console.log(`Updated login timestamp for user ${uid} via API`))
+      .catch(error => console.warn(`API login timestamp update failed for ${uid}, but local data updated`));
+      
   } catch (error) {
     console.error('Error updating login timestamp:', error);
   }

@@ -1,5 +1,4 @@
-
-import { api, apiCallWithFallback } from '../core/apiService';
+import { api, apiCallWithFallback, storeUserLocally, getUserFromLocalStorage } from '../core/apiService';
 import { IUser } from '@/models/User';
 import { UserRole } from '@/types/auth';
 
@@ -15,14 +14,32 @@ export const fetchUserByUid = async (uid: string) => {
       return userCache.get(uid);
     }
     
+    // Check local storage second (more persistent than cache)
+    const localUser = getUserFromLocalStorage(uid);
+    if (localUser) {
+      console.log(`Returning locally stored user data for ${uid}`);
+      userCache.set(uid, localUser); // Update cache
+      return localUser;
+    }
+    
     console.log(`Fetching user directly from API: ${uid}`);
     const response = await api.get(`/users/${uid}`);
     
     // Cache the user data
     userCache.set(uid, response.data);
+    // Also store in local storage for persistence
+    storeUserLocally(response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching user from API:', error);
+    
+    // Check local storage as last resort after API failure
+    const localUser = getUserFromLocalStorage(uid);
+    if (localUser) {
+      console.log(`API failed, using locally stored user data for ${uid}`);
+      userCache.set(uid, localUser); // Update cache
+      return localUser;
+    }
     
     // Return null instead of throwing to allow graceful fallbacks
     return null;
@@ -62,8 +79,9 @@ export const createOrUpdateUser = async (userData: any) => {
     
     console.log(`Sending user data to API with role=${formattedUserData.role}`);
     
-    // Store in local memory cache regardless of API success
+    // Always store in local memory cache and local storage regardless of API success
     userCache.set(uid, formattedUserData);
+    storeUserLocally(formattedUserData);
     
     try {
       // Try to get the user first with a shorter timeout
@@ -85,6 +103,7 @@ export const createOrUpdateUser = async (userData: any) => {
           const response = await api.put(`/users/${uid}`, updatedData);
           console.log('User updated via API successfully:', response.data);
           userCache.set(uid, response.data); // Update cache with fresh data
+          storeUserLocally(response.data); // Update local storage
           return response.data;
         } catch (updateError) {
           console.error('API update failed, returning formatted data:', updateError);
@@ -99,6 +118,7 @@ export const createOrUpdateUser = async (userData: any) => {
           const response = await api.post('/users', formattedUserData);
           console.log('New user created via API:', response.data);
           userCache.set(uid, response.data); // Update cache with fresh data
+          storeUserLocally(response.data); // Update local storage
           return response.data;
         } catch (createError) {
           console.error('API create failed, returning formatted data:', createError);
@@ -121,20 +141,30 @@ export const createOrUpdateUser = async (userData: any) => {
 export const updateUserLoginTimestamp = async (uid: string) => {
   try {
     console.log(`Updating login timestamp via API for user: ${uid}`);
-    const response = await api.put(`/users/${uid}/login`);
     
     // Update cache if we have this user
     if (userCache.has(uid)) {
       const userData = userCache.get(uid);
       userData.lastLogin = new Date();
       userCache.set(uid, userData);
+      storeUserLocally(userData); // Also update local storage
     }
     
-    return response.data;
+    // Still try API, but don't wait for it
+    api.put(`/users/${uid}/login`)
+      .then(response => {
+        console.log(`Login timestamp updated via API for user ${uid}`);
+      })
+      .catch(error => {
+        console.warn(`API login timestamp update failed for ${uid}, but local data updated`);
+      });
+    
+    // Return success immediately after updating cache
+    return { success: true, message: "User login timestamp updated" };
   } catch (error) {
     console.error('Error updating login timestamp:', error.message);
     // Don't throw, just log the error
-    return null;
+    return { success: false, message: "Failed to update login timestamp" };
   }
 };
 
@@ -150,6 +180,7 @@ export const apiUpdateUserRole = async (uid: string, role: string) => {
       userData.role = role;
       userData.isAdmin = isAdmin;
       userCache.set(uid, userData);
+      storeUserLocally(userData);
     }
     
     return response.data;
@@ -170,6 +201,7 @@ export const apiGetAllUsers = async () => {
     response.data.forEach(user => {
       if (user.uid) {
         userCache.set(user.uid, user);
+        storeUserLocally(user);
       }
     });
     
@@ -284,4 +316,10 @@ export const createUserWithProfile = async (
 export const clearUserCache = () => {
   userCache.clear();
   console.log('User cache cleared');
+};
+
+// Clear local storage users data
+export const clearLocalUsers = () => {
+  localStorage.removeItem('local_users');
+  console.log('Local users storage cleared');
 };
