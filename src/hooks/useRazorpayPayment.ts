@@ -83,7 +83,7 @@ export const useRazorpayPayment = () => {
         initialAmount = 1; // Minimum 1 rupee
       }
       
-      // Generate an order ID (with format Razorpay expects)
+      // Generate an order ID for this transaction
       const orderId = generateOrderId();
       
       // Convert amount to paise
@@ -112,6 +112,16 @@ export const useRazorpayPayment = () => {
         notes.nextBillingDate = nextBillingDate.toISOString();
         notes.isRecurring = "true";
       }
+      
+      // Log options for debugging
+      console.log("Opening Razorpay with options:", {
+        key: RAZORPAY_KEY_ID,
+        amount: amountInPaise,
+        packageId: selectedPackage.id,
+        packageTitle: selectedPackage.title,
+        isOneTime: isOneTimePackage,
+        orderId
+      });
       
       // Configure Razorpay options
       const options: RazorpayOptions = {
@@ -173,17 +183,7 @@ export const useRazorpayPayment = () => {
           }
         }
       };
-      
-      // Log options for debugging
-      console.log("Opening Razorpay with options:", {
-        key: RAZORPAY_KEY_ID,
-        amount: amountInPaise,
-        packageId: selectedPackage.id,
-        packageTitle: selectedPackage.title,
-        isOneTime: isOneTimePackage,
-        orderId
-      });
-      
+
       // Create Razorpay checkout
       const razorpay = createRazorpayCheckout(options);
       

@@ -146,12 +146,13 @@ export const isRazorpayAvailable = (): boolean => {
 
 /**
  * Generate a Razorpay compatible order ID
- * Format: order_[timestamp][random]
+ * Using a very simple format that Razorpay accepts
  */
 export const generateOrderId = (): string => {
-  const timestamp = Date.now().toString();
-  const randomPart = Math.random().toString(36).substring(2, 7);
-  return `order_${timestamp}${randomPart}`;
+  // Simpler order ID format that works with Razorpay
+  const timestamp = Date.now();
+  const randomNum = Math.floor(Math.random() * 10000);
+  return `order${timestamp}${randomNum}`;
 };
 
 /**
@@ -187,6 +188,8 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
       return acc;
     }, {} as Record<string, string>)
   };
+  
+  console.log("Creating Razorpay checkout with options:", formattedOptions);
   
   // Create Razorpay instance
   const razorpay = new window.Razorpay(formattedOptions);
