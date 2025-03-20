@@ -5,28 +5,52 @@ import { UserRole } from '@/types/auth';
 // In-memory user cache to improve performance and reduce API calls
 const userCache = new Map();
 
+// Maximum age for cache entries in milliseconds (5 minutes)
+const CACHE_MAX_AGE = 5 * 60 * 1000;
+
 // API-focused operations for users
 export const fetchUserByUid = async (uid: string) => {
   try {
     // Check cache first
     if (userCache.has(uid)) {
-      console.log(`Returning cached user data for ${uid}`);
-      return userCache.get(uid);
+      const cachedData = userCache.get(uid);
+      const cacheAge = Date.now() - cachedData.timestamp;
+      
+      // Use cache if it's fresh
+      if (cacheAge < CACHE_MAX_AGE) {
+        console.log(`Returning cached user data for ${uid}`);
+        return cachedData.data;
+      } else {
+        console.log(`Cached data for ${uid} is stale, refreshing...`);
+      }
     }
     
     // Check local storage second (more persistent than cache)
     const localUser = getUserFromLocalStorage(uid);
     if (localUser) {
       console.log(`Returning locally stored user data for ${uid}`);
-      userCache.set(uid, localUser); // Update cache
+      
+      // Update cache with timestamp
+      userCache.set(uid, { 
+        data: localUser, 
+        timestamp: Date.now() 
+      });
+      
+      // Try to refresh in the background without blocking
+      refreshUserInBackground(uid);
+      
       return localUser;
     }
     
     console.log(`Fetching user directly from API: ${uid}`);
     const response = await api.get(`/users/${uid}`);
     
-    // Cache the user data
-    userCache.set(uid, response.data);
+    // Cache the user data with timestamp
+    userCache.set(uid, { 
+      data: response.data, 
+      timestamp: Date.now() 
+    });
+    
     // Also store in local storage for persistence
     storeUserLocally(response.data);
     return response.data;
@@ -37,13 +61,35 @@ export const fetchUserByUid = async (uid: string) => {
     const localUser = getUserFromLocalStorage(uid);
     if (localUser) {
       console.log(`API failed, using locally stored user data for ${uid}`);
-      userCache.set(uid, localUser); // Update cache
+      
+      // Update cache with fresh timestamp
+      userCache.set(uid, { 
+        data: localUser, 
+        timestamp: Date.now() 
+      });
+      
       return localUser;
     }
     
     // Return null instead of throwing to allow graceful fallbacks
     return null;
   }
+};
+
+// Non-blocking background refresh of user data
+const refreshUserInBackground = (uid: string) => {
+  api.get(`/users/${uid}`)
+    .then(response => {
+      console.log(`Background refresh successful for user ${uid}`);
+      userCache.set(uid, { 
+        data: response.data, 
+        timestamp: Date.now() 
+      });
+      storeUserLocally(response.data);
+    })
+    .catch(error => {
+      console.warn(`Background refresh failed for user ${uid}:`, error.message);
+    });
 };
 
 export const createOrUpdateUser = async (userData: any) => {
@@ -80,7 +126,10 @@ export const createOrUpdateUser = async (userData: any) => {
     console.log(`Sending user data to API with role=${formattedUserData.role}`);
     
     // Always store in local memory cache and local storage regardless of API success
-    userCache.set(uid, formattedUserData);
+    userCache.set(uid, { 
+      data: formattedUserData,
+      timestamp: Date.now()
+    });
     storeUserLocally(formattedUserData);
     
     try {
@@ -99,32 +148,52 @@ export const createOrUpdateUser = async (userData: any) => {
         
         console.log(`Updating existing user via API with role=${updatedData.role}`);
         
-        try {
-          const response = await api.put(`/users/${uid}`, updatedData);
-          console.log('User updated via API successfully:', response.data);
-          userCache.set(uid, response.data); // Update cache with fresh data
-          storeUserLocally(response.data); // Update local storage
-          return response.data;
-        } catch (updateError) {
-          console.error('API update failed, returning formatted data:', updateError);
-          // Return the formatted data even if API fails
-          return updatedData;
-        }
+        // Update local storage immediately to ensure data availability
+        storeUserLocally(updatedData);
+        
+        // Make API call using a dedicated Promise to avoid blocking
+        const updatePromise = api.put(`/users/${uid}`, updatedData)
+          .then(response => {
+            console.log('User updated via API successfully:', response.data);
+            userCache.set(uid, { 
+              data: response.data,
+              timestamp: Date.now()
+            });
+            storeUserLocally(response.data);
+            return response.data;
+          })
+          .catch(updateError => {
+            console.error('API update failed, returning formatted data:', updateError);
+            return updatedData;
+          });
+        
+        // Return immediately with the cached data
+        return updatedData;
       } else {
         // Create new user
         console.log(`Creating new user via API with role=${formattedUserData.role}`);
         
-        try {
-          const response = await api.post('/users', formattedUserData);
-          console.log('New user created via API:', response.data);
-          userCache.set(uid, response.data); // Update cache with fresh data
-          storeUserLocally(response.data); // Update local storage
-          return response.data;
-        } catch (createError) {
-          console.error('API create failed, returning formatted data:', createError);
-          // Return the formatted data even if API fails
-          return formattedUserData;
-        }
+        // Store locally immediately
+        storeUserLocally(formattedUserData);
+        
+        // Make API call using a dedicated Promise to avoid blocking
+        const createPromise = api.post('/users', formattedUserData)
+          .then(response => {
+            console.log('New user created via API:', response.data);
+            userCache.set(uid, { 
+              data: response.data,
+              timestamp: Date.now()
+            });
+            storeUserLocally(response.data);
+            return response.data;
+          })
+          .catch(createError => {
+            console.error('API create failed, returning formatted data:', createError);
+            return formattedUserData;
+          });
+        
+        // Return immediately with the formatted data
+        return formattedUserData;
       }
     } catch (apiError) {
       console.error('API operation failed:', apiError);
@@ -144,13 +213,16 @@ export const updateUserLoginTimestamp = async (uid: string) => {
     
     // Update cache if we have this user
     if (userCache.has(uid)) {
-      const userData = userCache.get(uid);
+      const userData = userCache.get(uid).data;
       userData.lastLogin = new Date();
-      userCache.set(uid, userData);
+      userCache.set(uid, { 
+        data: userData,
+        timestamp: Date.now()
+      });
       storeUserLocally(userData); // Also update local storage
     }
     
-    // Still try API, but don't wait for it
+    // Make non-blocking API call
     api.put(`/users/${uid}/login`)
       .then(response => {
         console.log(`Login timestamp updated via API for user ${uid}`);
@@ -176,10 +248,13 @@ export const apiUpdateUserRole = async (uid: string, role: string) => {
     
     // Update cache if we have this user
     if (userCache.has(uid)) {
-      const userData = userCache.get(uid);
+      const userData = userCache.get(uid).data;
       userData.role = role;
       userData.isAdmin = isAdmin;
-      userCache.set(uid, userData);
+      userCache.set(uid, { 
+        data: userData,
+        timestamp: Date.now()
+      });
       storeUserLocally(userData);
     }
     
@@ -200,7 +275,10 @@ export const apiGetAllUsers = async () => {
     // Update cache with fresh data
     response.data.forEach(user => {
       if (user.uid) {
-        userCache.set(user.uid, user);
+        userCache.set(user.uid, { 
+          data: user,
+          timestamp: Date.now()
+        });
         storeUserLocally(user);
       }
     });
@@ -321,5 +399,33 @@ export const clearUserCache = () => {
 // Clear local storage users data
 export const clearLocalUsers = () => {
   localStorage.removeItem('local_users');
+  sessionStorage.clear(); // Clear individual user entries in session storage
   console.log('Local users storage cleared');
+};
+
+// Force refresh a user from the API
+export const forceRefreshUser = async (uid: string): Promise<IUser | null> => {
+  try {
+    console.log(`Force refreshing user data for ${uid} from API`);
+    // Remove from cache first
+    userCache.delete(uid);
+    sessionStorage.removeItem(`user_${uid}`);
+    
+    // Fetch fresh from API
+    const response = await api.get(`/users/${uid}`);
+    const freshUserData = response.data;
+    
+    // Update cache and storage
+    userCache.set(uid, { 
+      data: freshUserData,
+      timestamp: Date.now()
+    });
+    storeUserLocally(freshUserData);
+    
+    return freshUserData;
+  } catch (error) {
+    console.error(`Failed to force refresh user ${uid}:`, error);
+    // Return local data if refresh fails
+    return getUserFromLocalStorage(uid);
+  }
 };

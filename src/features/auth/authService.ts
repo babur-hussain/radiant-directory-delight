@@ -98,11 +98,21 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
       // Always store in local storage for offline resilience
       storeUserLocally(userData);
       
-      // Create user via API and handle failure gracefully
+      // Make API request with non-blocking approach
       try {
-        const apiResponse = await api.post('/users', userData);
-        user = apiResponse.data;
-        console.log('New user created in MongoDB via API:', user);
+        // Make a direct API call but don't wait for it
+        api.post('/users', userData)
+          .then(response => {
+            console.log('New user created in MongoDB via API:', response.data);
+            storeUserLocally(response.data); // Update local storage with server data
+            return response.data;
+          })
+          .catch(apiErr => {
+            console.error('Direct API creation failed:', apiErr.message);
+          });
+        
+        // Return the local data immediately
+        user = userData;
       } catch (apiErr) {
         console.error('Direct API creation failed:', apiErr.message);
         // Fallback to our service function - which will use cached data
@@ -134,11 +144,20 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
       // Always store in local storage for offline resilience
       storeUserLocally(updatedUserData);
       
-      // Update user via API with graceful fallback
+      // Make a non-blocking API call
       try {
-        const apiResponse = await api.put(`/users/${updatedUserData.uid}`, updatedUserData);
-        user = apiResponse.data;
-        console.log('Existing user updated in MongoDB via API with additional fields:', user);
+        // Store locally first for immediate response
+        user = updatedUserData;
+        
+        // Make direct API call in the background
+        api.put(`/users/${updatedUserData.uid}`, updatedUserData)
+          .then(response => {
+            console.log('Existing user updated in MongoDB via API with additional fields:', response.data);
+            storeUserLocally(response.data); // Update local storage with server data
+          })
+          .catch(apiErr => {
+            console.error('Direct API update failed:', apiErr.message);
+          });
       } catch (apiErr) {
         console.error('Direct API update failed:', apiErr.message);
         // Fallback to our service function - which will use cached data

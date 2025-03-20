@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { toast } from '@/hooks/use-toast';
 import { getLocalFallbackPackages } from '@/lib/mongodb/serverUtils';
@@ -127,6 +126,10 @@ export const storeUserLocally = (userData) => {
     
     // Save to local storage
     localStorage.setItem('local_users', JSON.stringify(localUsers));
+    
+    // Also keep in sessionStorage for quicker access during the session
+    sessionStorage.setItem(`user_${userData.uid}`, JSON.stringify(userData));
+    
     return userData;
   } catch (error) {
     console.error('Error storing user locally:', error);
@@ -139,6 +142,13 @@ export const getUserFromLocalStorage = (uid) => {
   if (!uid) return null;
   
   try {
+    // Try session storage first (faster)
+    const sessionUser = sessionStorage.getItem(`user_${uid}`);
+    if (sessionUser) {
+      return JSON.parse(sessionUser);
+    }
+    
+    // Fall back to local storage
     const localUsers = JSON.parse(localStorage.getItem('local_users') || '[]');
     return localUsers.find(user => user.uid === uid) || null;
   } catch (error) {
