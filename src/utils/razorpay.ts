@@ -8,6 +8,7 @@ export interface RazorpayResponse {
   razorpay_payment_id: string;
   razorpay_order_id?: string;
   razorpay_signature?: string;
+  razorpay_subscription_id?: string;
 }
 
 // Type for Razorpay error response
@@ -21,6 +22,15 @@ export interface RazorpayError {
     payment_id?: string;
     order_id?: string;
   };
+}
+
+// Type for Razorpay subscription request
+export interface RazorpaySubscriptionRequest {
+  plan_id: string;
+  total_count: number;
+  quantity: number;
+  customer_notify?: number;
+  notes?: Record<string, string>;
 }
 
 // Define Razorpay window interface
@@ -147,6 +157,32 @@ export const createRazorpayOrder = async (amount: number, currency: string = 'IN
     currency,
     receipt: `receipt_${Date.now()}`,
     status: 'created'
+  };
+};
+
+/**
+ * Create a new Razorpay subscription
+ * In a real implementation, this would call your backend API
+ */
+export const createRazorpaySubscription = async (subscriptionData: RazorpaySubscriptionRequest): Promise<any> => {
+  console.log(`Creating Razorpay subscription:`, subscriptionData);
+  
+  // In a real implementation, this should call your backend API
+  // For now, we'll simulate a successful API response
+  
+  // Simulate API call delay
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  const subscriptionId = `sub_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+  
+  return {
+    id: subscriptionId,
+    plan_id: subscriptionData.plan_id,
+    total_count: subscriptionData.total_count,
+    quantity: subscriptionData.quantity,
+    status: 'created',
+    start_at: Math.floor(Date.now() / 1000),
+    notes: subscriptionData.notes || {}
   };
 };
 

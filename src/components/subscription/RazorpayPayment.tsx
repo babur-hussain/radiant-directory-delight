@@ -37,6 +37,9 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     ? (selectedPackage.price || 999) // Default to 999 if price is 0 or undefined
     : (selectedPackage.setupFee || 0);
   
+  // For recurring packages, also calculate the recurring amount
+  const recurringAmount = !isOneTimePackage ? (selectedPackage.price || 0) : 0;
+  
   const handlePayment = () => {
     if (isProcessing) return;
     
@@ -179,6 +182,9 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
               <>
                 <p>Initial setup fee payment</p>
                 <p className="mt-1">Your subscription will begin after this payment is processed.</p>
+                {recurringAmount > 0 && (
+                  <p className="mt-2 font-medium">Recurring payment: ₹{recurringAmount}/{selectedPackage.billingCycle || 'year'}</p>
+                )}
               </>
             )}
           </div>
@@ -213,7 +219,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
               <CreditCard className="mr-2 h-4 w-4" />
               {isOneTimePackage 
                 ? `Pay ₹${selectedPackage.price || 999}` // Default to 999 if price is 0
-                : `Pay ₹${selectedPackage.setupFee || 0}`}
+                : `Pay Setup Fee ₹${selectedPackage.setupFee || 0}`}
             </>
           )}
         </Button>

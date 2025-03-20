@@ -45,14 +45,20 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
       isPausable: !isOneTime,
       isUserCancellable: !isOneTime,
       invoiceIds: [],
-      paymentType: packageDetails.paymentType || "recurring"
+      paymentType: packageDetails.paymentType || "recurring",
+      billingCycle: packageDetails.billingCycle,
+      recurringAmount: isOneTime ? 0 : packageDetails.price
     };
     
     // Add payment details if provided
     if (paymentDetails) {
       subscription.paymentMethod = "razorpay";
       subscription.transactionId = paymentDetails.paymentId;
-      subscription.razorpaySubscriptionId = paymentDetails.subscriptionId;
+      
+      // For recurring subscriptions, add the subscription ID
+      if (!isOneTime && paymentDetails.subscriptionId) {
+        subscription.razorpaySubscriptionId = paymentDetails.subscriptionId;
+      }
     }
     
     // Save to MongoDB

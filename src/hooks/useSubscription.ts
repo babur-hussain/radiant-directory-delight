@@ -96,7 +96,16 @@ export const useSubscription = () => {
 
       const today = new Date();
       const endDate = new Date();
-      endDate.setFullYear(today.getFullYear() + 1);
+      
+      // Set end date based on billing cycle
+      if (paymentDetails?.billingCycle === 'monthly') {
+        endDate.setMonth(today.getMonth() + 1); // 1 month for monthly billing
+      } else {
+        endDate.setFullYear(today.getFullYear() + 1); // 1 year for yearly billing or default
+      }
+
+      // Determine if this is a one-time payment or recurring subscription
+      const isOneTime = paymentDetails?.paymentType === 'one-time';
 
       const newSubscription = {
         userId: currentUser.uid,
@@ -105,10 +114,14 @@ export const useSubscription = () => {
         status: 'active',
         startDate: today.toISOString(),
         endDate: endDate.toISOString(),
-        amount: paymentDetails?.amount || 0,
+        amount: isOneTime ? (paymentDetails?.amount || 0) : (paymentDetails?.recurringAmount || 0),
         paymentType: paymentDetails?.paymentType || 'recurring',
         paymentMethod: 'razorpay',
         transactionId: paymentDetails?.paymentId || '',
+        billingCycle: paymentDetails?.billingCycle || 'yearly',
+        signupFee: isOneTime ? 0 : (paymentDetails?.amount || 0),
+        recurringAmount: isOneTime ? 0 : (paymentDetails?.recurringAmount || 0),
+        razorpaySubscriptionId: paymentDetails?.subscriptionId || '',
         ...paymentDetails
       };
 

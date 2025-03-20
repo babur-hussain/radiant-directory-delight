@@ -44,7 +44,10 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
           : selectedPackage.setupFee,
         paymentId: response.razorpay_payment_id,
         orderId: response.razorpay_order_id,
-        paymentType: selectedPackage.paymentType || 'recurring'
+        paymentType: selectedPackage.paymentType || 'recurring',
+        subscriptionId: response.razorpay_subscription_id,
+        recurringAmount: selectedPackage.price,
+        billingCycle: selectedPackage.billingCycle
       };
       
       // Record the subscription in the database
@@ -52,8 +55,10 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
       
       // Show success toast
       toast({
-        title: "Subscription Successful",
-        description: `You have successfully subscribed to ${selectedPackage.title}`,
+        title: selectedPackage.paymentType === 'one-time' ? "Payment Successful" : "Subscription Successful",
+        description: selectedPackage.paymentType === 'one-time'
+          ? `You have successfully purchased ${selectedPackage.title}`
+          : `You have successfully subscribed to ${selectedPackage.title}`,
         variant: "success"
       });
       
