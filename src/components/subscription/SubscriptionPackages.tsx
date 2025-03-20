@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { Check, AlertCircle, Info, RefreshCw } from "lucide-react";
+import { Check, AlertCircle, Info, RefreshCw, WifiOff } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserRole } from "@/contexts/AuthContext";
@@ -73,7 +73,7 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
     );
   }
   
-  if (error) {
+  if (error && connectionStatus !== 'offline' && packages.length === 0) {
     return (
       <div className="text-center py-10">
         <Alert variant="destructive">
@@ -128,6 +128,25 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
   
   return (
     <div className="space-y-10">
+      {connectionStatus === 'offline' && (
+        <Alert className="bg-amber-50 border-amber-200">
+          <WifiOff className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-800">Offline Mode</AlertTitle>
+          <AlertDescription className="text-amber-700">
+            You're viewing sample subscription packages in offline mode.
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRetryConnection}
+              className="ml-2 border-amber-300 text-amber-800 hover:bg-amber-100"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try to reconnect
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+      
       {/* Subscription Dialog */}
       <SubscriptionDialog 
         isOpen={isDialogOpen} 

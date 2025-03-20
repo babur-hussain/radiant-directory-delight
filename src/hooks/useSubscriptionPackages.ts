@@ -9,10 +9,11 @@ import {
   deleteSubscriptionPackage,
   isServerRunning
 } from '@/lib/mongodb/subscriptionUtils';
+import { getLocalFallbackPackages } from '@/lib/mongodb/serverUtils';
 
 export interface UseSubscriptionPackagesOptions {
   type?: string;
-  initialOfflineMode?: boolean; // Added property to match usage
+  initialOfflineMode?: boolean;
 }
 
 export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions = {}) => {
@@ -33,9 +34,14 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       const serverAvailable = await isServerRunning();
       
       if (!serverAvailable) {
-        console.error("Server not available");
-        setConnectionStatus('error');
-        throw new Error("Server not available");
+        console.log("Server not available, using fallback data");
+        setConnectionStatus('offline');
+        
+        // Get fallback data
+        const fallbackPackages = getLocalFallbackPackages(options.type);
+        setPackages(fallbackPackages);
+        setIsLoading(false);
+        return;
       }
       
       // Get packages based on type or get all
@@ -57,12 +63,24 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
         fetchedPackages = [];
       }
       
+      // If we got no packages from server, use fallback data
+      if (fetchedPackages.length === 0) {
+        console.log("No packages returned from server, using fallback data");
+        const fallbackPackages = getLocalFallbackPackages(options.type);
+        fetchedPackages = fallbackPackages;
+      }
+      
       setPackages(fetchedPackages);
       setConnectionStatus('connected');
     } catch (err) {
       console.error('Error fetching packages:', err);
       setError(err instanceof Error ? err.message : 'Failed to load subscription packages');
       setConnectionStatus('error');
+      
+      // Use fallback data when there's an error
+      console.log("Error occurred, using fallback data");
+      const fallbackPackages = getLocalFallbackPackages(options.type);
+      setPackages(fallbackPackages);
     } finally {
       setIsLoading(false);
     }

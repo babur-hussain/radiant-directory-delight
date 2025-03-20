@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Loader2, ServerOff, Database, AlertCircle, RefreshCw } from "lucide-react";
+import { Loader2, ServerOff, Database, AlertCircle, RefreshCw, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SubscriptionLoaderProps {
@@ -21,7 +21,7 @@ const SubscriptionLoader: React.FC<SubscriptionLoaderProps> = ({
       <div className="flex flex-col items-center space-y-4">
         {connectionStatus === 'offline' ? (
           <>
-            <ServerOff className="h-8 w-8 text-gray-400" />
+            <WifiOff className="h-8 w-8 text-amber-500" />
             <p className="text-sm text-muted-foreground">Loading offline subscription data...</p>
             {onRetry && (
               <Button 

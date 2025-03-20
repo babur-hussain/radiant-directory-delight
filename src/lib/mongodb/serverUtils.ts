@@ -8,9 +8,9 @@ export const checkServerAvailability = async (): Promise<boolean> => {
   console.log("Checking server availability...");
   
   try {
-    // Use a longer timeout to avoid false negatives
+    // Use a shorter timeout for faster response
     const response = await api.get('/test-connection', { 
-      timeout: 8000,
+      timeout: 5000, // Reduced from 8000ms to 5000ms for faster response
       validateStatus: (status) => status >= 200 && status < 500 // Accept any non-server error response
     });
     
@@ -36,3 +36,78 @@ export const checkServerAvailability = async (): Promise<boolean> => {
     return false;
   }
 }
+
+/**
+ * Gets local fallback data when server is unavailable
+ */
+export const getLocalFallbackPackages = (type?: string): any[] => {
+  // Default fallback packages for when server is unavailable
+  const fallbackPackages = [
+    {
+      id: "fallback_business_basic",
+      title: "Business Basic",
+      type: "Business",
+      price: 999,
+      billingCycle: "yearly",
+      features: ["Basic business listing", "Email support", "1 location"],
+      shortDescription: "Essential package for small businesses",
+      fullDescription: "Get your business online with our essential package.",
+      durationMonths: 12,
+      setupFee: 0,
+      paymentType: "recurring",
+      popular: false,
+      isActive: true
+    },
+    {
+      id: "fallback_business_premium",
+      title: "Business Premium",
+      type: "Business",
+      price: 1999,
+      billingCycle: "yearly",
+      features: ["Premium business listing", "Priority support", "5 locations", "Featured in search"],
+      shortDescription: "Complete package for growing businesses",
+      fullDescription: "Everything you need to grow your business online.",
+      durationMonths: 12,
+      setupFee: 0,
+      paymentType: "recurring",
+      popular: true,
+      isActive: true
+    },
+    {
+      id: "fallback_influencer_starter",
+      title: "Influencer Starter",
+      type: "Influencer",
+      price: 599,
+      billingCycle: "yearly",
+      features: ["Profile listing", "Basic analytics", "Business connections"],
+      shortDescription: "Start your influencer journey",
+      fullDescription: "Begin your influencer career with the essential tools.",
+      durationMonths: 12,
+      setupFee: 0,
+      paymentType: "recurring",
+      popular: false,
+      isActive: true
+    },
+    {
+      id: "fallback_influencer_pro",
+      title: "Influencer Pro",
+      type: "Influencer",
+      price: 1499,
+      billingCycle: "yearly",
+      features: ["Featured profile", "Advanced analytics", "Priority business matches", "Promotion tools"],
+      shortDescription: "Professional tools for serious influencers",
+      fullDescription: "Take your influence to the next level with pro tools.",
+      durationMonths: 12,
+      setupFee: 0,
+      paymentType: "recurring",
+      popular: true,
+      isActive: true
+    }
+  ];
+
+  if (!type) {
+    return fallbackPackages;
+  }
+  
+  return fallbackPackages.filter(pkg => pkg.type === type);
+};
