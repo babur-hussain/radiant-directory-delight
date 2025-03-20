@@ -5,7 +5,6 @@ import {
   loadRazorpayScript, 
   isRazorpayAvailable, 
   getRazorpayKey,
-  generateOrderId, 
   generateReceiptId,
   convertToPaise,
   createRazorpayCheckout,
@@ -13,6 +12,7 @@ import {
   RazorpayOptions,
   RazorpayResponse
 } from '@/utils/razorpay';
+import { generateOrderId } from '@/utils/id-generator';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -86,10 +86,6 @@ export const useRazorpayPayment = () => {
         initialAmount = 1;
       }
       
-      // Generate a unique ID for this order - simplified
-      const orderId = generateOrderId();
-      console.log("Generated order ID:", orderId);
-      
       // Generate a receipt ID
       const receiptId = generateReceiptId();
       
@@ -99,7 +95,7 @@ export const useRazorpayPayment = () => {
       console.log(`Setting up payment for ${selectedPackage.title} with amount ${initialAmount} (${amountInPaise} paise)`);
       
       // Create basic notes object with strings only
-      const notes: Record<string, string> = {
+      const notes = {
         packageId: selectedPackage.id,
         packageName: selectedPackage.title,
         amount: initialAmount.toString(),
@@ -107,7 +103,7 @@ export const useRazorpayPayment = () => {
         paymentType: isOneTimePackage ? "one-time" : "recurring"
       };
       
-      // Configure Razorpay options - simplified
+      // Configure Razorpay options
       const options: RazorpayOptions = {
         key: getRazorpayKey(),
         amount: amountInPaise,
@@ -115,7 +111,6 @@ export const useRazorpayPayment = () => {
         name: 'Grow Bharat Vyapaar',
         description: `Payment for ${selectedPackage.title}`,
         image: 'https://example.com/your_logo.png', // Replace with actual logo URL
-        order_id: orderId,
         prefill: {
           name: user?.fullName || '',
           email: user?.email || '',
