@@ -15,8 +15,7 @@ import {
   calculateNextBillingDate,
   formatSubscriptionDate,
   createSubscriptionPlan,
-  createSubscription,
-  shouldUseSubscriptionAPI
+  createSubscription
 } from '@/utils/razorpay';
 import { generateOrderId } from '@/utils/id-generator';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
@@ -31,15 +30,10 @@ interface PaymentOptions {
 /**
  * Hook for handling Razorpay payments, including one-time and recurring subscriptions
  * 
- * IMPORTANT PRODUCTION NOTICE:
- * This implementation uses mock subscription creation for development/testing purposes.
- * 
+ * IMPORTANT: This is a frontend implementation with mock plan/subscription creation.
  * In a production environment, the subscription plan creation and subscription creation
  * should be implemented on your backend server with proper authentication using
- * Razorpay's APIs:
- * 
- * 1. Create Plan: POST https://api.razorpay.com/v1/plans
- * 2. Create Subscription: POST https://api.razorpay.com/v1/subscriptions
+ * Razorpay's APIs.
  */
 export const useRazorpayPayment = () => {
   const { toast } = useToast();
@@ -88,12 +82,10 @@ export const useRazorpayPayment = () => {
       const isOneTimePackage = selectedPackage.paymentType === "one-time";
       
       // Determine if this package is eligible for recurring payments (autopay)
-      const canUseRecurring = !isOneTimePackage && 
-                              isRecurringPaymentEligible(
-                                selectedPackage.paymentType,
-                                selectedPackage.billingCycle
-                              ) && 
-                              shouldUseSubscriptionAPI(); // Only use subscription API if enabled
+      const canUseRecurring = !isOneTimePackage && isRecurringPaymentEligible(
+        selectedPackage.paymentType,
+        selectedPackage.billingCycle
+      );
       
       // Calculate the total amount to be charged initially
       let initialAmount = isOneTimePackage 
@@ -140,7 +132,7 @@ export const useRazorpayPayment = () => {
         );
       }
       
-      // For recurring plans, create a subscription (only if feature is enabled)
+      // For recurring plans, create a subscription
       let subscriptionId: string | undefined;
       
       if (canUseRecurring) {
@@ -188,7 +180,6 @@ export const useRazorpayPayment = () => {
           console.error("Error creating subscription plan:", err);
           // Fall back to one-time payment if subscription creation fails
           console.log("Falling back to one-time payment method");
-          subscriptionId = undefined;
         }
       }
       
@@ -226,18 +217,16 @@ export const useRazorpayPayment = () => {
           }
         };
         
-        // For subscription payments with valid subscription ID, add subscription_id only
+        // For subscription payments, add subscription_id only
+        // Important: Don't add amount, recurring, or other conflicting params for subscriptions
         if (canUseRecurring && subscriptionId) {
           console.log("Using subscription mode with subscription ID:", subscriptionId);
           options.subscription_id = subscriptionId;
-          // Do NOT set amount or other conflicting params for subscriptions
+          // Do NOT set recurring: true as it's not needed and can cause conflicts
         } else {
-          // For one-time payments or if subscription creation failed, add amount
+          // For one-time payments, add amount
           console.log("Using one-time payment mode with amount:", amountInPaise);
           options.amount = amountInPaise;
-          
-          // For production: consider creating an order first and adding order_id
-          // This would be done through your backend
         }
 
         // Create and open Razorpay checkout

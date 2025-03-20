@@ -7,7 +7,7 @@ import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useRazorpayPayment } from '@/hooks/useRazorpayPayment';
-import { isRecurringPaymentEligible, calculateNextBillingDate, formatSubscriptionDate, shouldUseSubscriptionAPI } from '@/utils/razorpay';
+import { isRecurringPaymentEligible, calculateNextBillingDate, formatSubscriptionDate } from '@/utils/razorpay';
 
 interface RazorpayPaymentProps {
   selectedPackage: ISubscriptionPackage;
@@ -17,6 +17,19 @@ interface RazorpayPaymentProps {
 
 /**
  * RazorpayPayment component for handling payment UI and checkout flow
+ * 
+ * IMPORTANT PRODUCTION NOTE:
+ * This component uses mock implementations for creating subscription plans 
+ * and subscriptions. In a production environment, these features should be
+ * implemented on your backend server with proper authentication using
+ * Razorpay's API endpoints:
+ * 
+ * 1. Create Plan: POST https://api.razorpay.com/v1/plans
+ * 2. Create Subscription: POST https://api.razorpay.com/v1/subscriptions
+ * 3. Create Order: POST https://api.razorpay.com/v1/orders
+ * 
+ * These API calls require your Razorpay API key and secret, which should
+ * never be exposed in client-side code.
  */
 const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({ 
   selectedPackage, 
@@ -35,12 +48,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
   
   // Determine if this package is eligible for recurring payments
-  const canUseRecurring = !isOneTimePackage && 
-                          isRecurringPaymentEligible(
-                            selectedPackage.paymentType,
-                            selectedPackage.billingCycle
-                          ) && 
-                          shouldUseSubscriptionAPI(); // Will now be true
+  const canUseRecurring = !isOneTimePackage && isRecurringPaymentEligible(
+    selectedPackage.paymentType,
+    selectedPackage.billingCycle
+  );
   
   // Calculate the setup fee
   const setupFee = isOneTimePackage ? 0 : (selectedPackage.setupFee || 0);
@@ -213,18 +224,6 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         <CardTitle className="text-lg">Payment Summary</CardTitle>
         <CardDescription>Review your payment details</CardDescription>
       </CardHeader>
-      
-      {!isOneTimePackage && canUseRecurring && (
-        <Alert className="mb-4 bg-green-50 border-green-200">
-          <CheckCircle className="h-4 w-4 text-green-500" />
-          <AlertTitle className="text-green-700">Live Mode Active</AlertTitle>
-          <AlertDescription className="text-green-600 text-sm">
-            Automatic recurring payments are enabled. Your subscription will be processed as a 
-            recurring payment starting today.
-          </AlertDescription>
-        </Alert>
-      )}
-      
       <CardContent className="px-0 space-y-4">
         <div className="border rounded-md p-4 space-y-3">
           <div className="flex justify-between border-b pb-2">
