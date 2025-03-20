@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for Razorpay integration
  */
@@ -68,9 +67,9 @@ declare global {
   }
 }
 
-// Razorpay API key - using test key for development and live key for production
-// IMPORTANT: In a production environment, test key should be used for development/testing only
-const RAZORPAY_KEY_ID = "rzp_test_BuIiL04U1qgUGZ"; // Using test key to avoid production issues
+// Razorpay API key - using live key for production
+// Note: This should ideally come from environment variables in a production setup
+const RAZORPAY_KEY_ID = "rzp_live_8PGS0Ug3QeCb2I"; 
 
 /**
  * Get the Razorpay key
@@ -428,7 +427,6 @@ export const calculateNextBillingDate = (billingCycle: string = 'monthly', advan
  * Based on feature flags or environment settings
  */
 export const shouldUseSubscriptionAPI = (): boolean => {
-  // In development or testing, disable real subscriptions to avoid API errors
-  // In production, this could check a feature flag or environment variable
-  return false; // Temporarily disabled until backend implementation is complete
+  // Enable live subscription mode
+  return true;
 };

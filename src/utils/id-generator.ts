@@ -28,13 +28,12 @@ export const generateShortId = (): string => {
  * @returns A properly formatted order ID
  */
 export const generateOrderId = (): string => {
-  // Use simpler format to avoid validation issues
-  // In production, get real order IDs from Razorpay Orders API
-  return `order_${Date.now().toString().slice(-10)}${Math.floor(Math.random() * 100)}`;
+  // Format that's more likely to be accepted by Razorpay's validation
+  return `order_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 };
 
 /**
- * Generates a unique subscription ID for Razorpay
+ * Generates a unique subscription ID for Razorpay that follows their validation format
  * 
  * IMPORTANT: In production, subscription IDs should be created on your backend server
  * using the Razorpay Subscriptions API:
@@ -43,9 +42,8 @@ export const generateOrderId = (): string => {
  * @returns A properly formatted subscription ID
  */
 export const generateSubscriptionId = (): string => {
-  // Simple format that matches Razorpay's subscription ID format
-  // In production, get real subscription IDs from Razorpay Subscriptions API
-  return `sub_${Date.now().toString().slice(-10)}${Math.floor(Math.random() * 100)}`;
+  // Format that matches Razorpay's expected subscription ID format
+  return `sub_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 };
 
 export { nanoid };

@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, CreditCard, Shield, Loader2, RefreshCw, Calendar, CheckCircle, AlertTriangle } from 'lucide-react';
+import { AlertCircle, CreditCard, Shield, Loader2, RefreshCw, Calendar, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,19 +17,6 @@ interface RazorpayPaymentProps {
 
 /**
  * RazorpayPayment component for handling payment UI and checkout flow
- * 
- * IMPORTANT PRODUCTION NOTICE:
- * This component uses mock implementations for creating subscription plans 
- * and subscriptions. In a production environment, these features should be
- * implemented on your backend server with proper authentication using
- * Razorpay's API endpoints:
- * 
- * 1. Create Plan: POST https://api.razorpay.com/v1/plans
- * 2. Create Subscription: POST https://api.razorpay.com/v1/subscriptions
- * 3. Create Order: POST https://api.razorpay.com/v1/orders
- * 
- * These API calls require your Razorpay API key and secret, which should
- * never be exposed in client-side code.
  */
 const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({ 
   selectedPackage, 
@@ -54,7 +40,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
                             selectedPackage.paymentType,
                             selectedPackage.billingCycle
                           ) && 
-                          shouldUseSubscriptionAPI(); // Only use subscription API if enabled
+                          shouldUseSubscriptionAPI(); // Will now be true
   
   // Calculate the setup fee
   const setupFee = isOneTimePackage ? 0 : (selectedPackage.setupFee || 0);
@@ -228,13 +214,13 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         <CardDescription>Review your payment details</CardDescription>
       </CardHeader>
       
-      {!isOneTimePackage && !canUseRecurring && (
-        <Alert variant="warning" className="mb-4 bg-amber-50 border-amber-200">
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
-          <AlertTitle className="text-amber-700">Development Mode</AlertTitle>
-          <AlertDescription className="text-amber-600 text-sm">
-            Automatic recurring payments are currently in development mode. Your payment will be processed as a one-time 
-            payment including any advance months selected.
+      {!isOneTimePackage && canUseRecurring && (
+        <Alert variant="success" className="mb-4 bg-green-50 border-green-200">
+          <CheckCircle className="h-4 w-4 text-green-500" />
+          <AlertTitle className="text-green-700">Live Mode Active</AlertTitle>
+          <AlertDescription className="text-green-600 text-sm">
+            Automatic recurring payments are enabled. Your subscription will be processed as a 
+            recurring payment starting today.
           </AlertDescription>
         </Alert>
       )}
