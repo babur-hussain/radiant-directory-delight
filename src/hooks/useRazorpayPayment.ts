@@ -4,10 +4,9 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   loadRazorpayScript, 
   isRazorpayAvailable, 
-  RAZORPAY_KEY_ID, 
+  RAZORPAY_KEY_ID,
   generateOrderId, 
-  convertToPaise,
-  createRazorpaySubscription
+  convertToPaise
 } from '@/utils/razorpay';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,11 +17,11 @@ interface RazorpayOptions {
   onFailure: (error: any) => void;
 }
 
-// Define notes object types for type safety
-interface PaymentNotesObject {
+// Define payment notes type for type safety
+interface PaymentNotes {
   packageId: string;
   packageType: "one-time" | "recurring";
-  [key: string]: any;
+  [key: string]: string | number | boolean;
 }
 
 export const useRazorpayPayment = () => {
@@ -68,62 +67,56 @@ export const useRazorpayPayment = () => {
         throw new Error('User authentication required');
       }
       
-      // Determine if this is a one-time package
+      // Check if this is a one-time payment or subscription
       const isOneTimePackage = selectedPackage.paymentType === "one-time";
       
-      // Calculate advance payment months (if applicable for recurring payments)
-      const advanceMonths = isOneTimePackage ? 0 : (selectedPackage.advancePaymentMonths || 0);
-      
-      // Calculate the setup fee (for recurring payments)
-      const setupFee = isOneTimePackage ? 0 : (selectedPackage.setupFee || 0);
-      
-      // Calculate recurring amount
-      const recurringAmount = isOneTimePackage ? 0 : (selectedPackage.price || 0);
-      
-      // Calculate advance payment amount
-      const advanceAmount = advanceMonths * recurringAmount;
-      
-      // Calculate the total initial payment
-      let totalPaymentAmount = isOneTimePackage 
-        ? (selectedPackage.price || 999) // For one-time packages
-        : (setupFee + advanceAmount); // For recurring (setup fee + advance payment)
+      // Calculate the total amount to be charged initially
+      let initialAmount = isOneTimePackage 
+        ? selectedPackage.price || 999 
+        : selectedPackage.setupFee || 0;
+        
+      // For recurring packages, add advance payment if applicable
+      if (!isOneTimePackage) {
+        const advanceMonths = selectedPackage.advancePaymentMonths || 0;
+        const recurringAmount = selectedPackage.price || 0;
+        const advanceAmount = advanceMonths * recurringAmount;
+        initialAmount += advanceAmount;
+      }
       
       // Ensure minimum amount
-      if (totalPaymentAmount < 1) {
-        totalPaymentAmount = 1; // Minimum 1 rupee
+      if (initialAmount < 1) {
+        initialAmount = 1; // Minimum 1 rupee
       }
-
-      // Create a valid order ID
+      
+      // Generate an order ID
       const orderId = generateOrderId();
       
       // Convert amount to paise
-      const amountInPaise = convertToPaise(totalPaymentAmount);
+      const amountInPaise = convertToPaise(initialAmount);
       
-      console.log(`Setting up payment for ${selectedPackage.title} with amount ${totalPaymentAmount} (${amountInPaise} paise)`);
+      console.log(`Setting up payment for ${selectedPackage.title} with amount ${initialAmount} (${amountInPaise} paise)`);
       
-      // Create next billing date for recurring payments
-      const startDate = new Date();
-      if (advanceMonths > 0) {
-        startDate.setMonth(startDate.getMonth() + advanceMonths);
-      }
-      
-      // Create notes object that will store subscription details
-      const notesObject: PaymentNotesObject = {
+      // Create notes object with subscription details
+      const notes: PaymentNotes = {
         packageId: selectedPackage.id,
         packageType: isOneTimePackage ? "one-time" : "recurring",
+        packageName: selectedPackage.title
       };
       
-      // Add additional details for recurring subscriptions
+      // Add subscription-specific details for recurring packages
       if (!isOneTimePackage) {
-        Object.assign(notesObject, {
+        const nextBillingDate = new Date();
+        if (selectedPackage.advancePaymentMonths) {
+          nextBillingDate.setMonth(nextBillingDate.getMonth() + (selectedPackage.advancePaymentMonths || 0));
+        }
+        
+        Object.assign(notes, {
           billingCycle: selectedPackage.billingCycle || "monthly",
-          setupFee: setupFee.toString(),
-          recurringAmount: recurringAmount.toString(),
-          advanceMonths: advanceMonths.toString(),
-          subscriptionId: `sub${Date.now()}`,
-          isInitialPayment: "true",
-          isRecurring: "true",
-          nextBillingDate: startDate.toISOString()
+          setupFee: String(selectedPackage.setupFee || 0),
+          recurringAmount: String(selectedPackage.price || 0),
+          advanceMonths: String(selectedPackage.advancePaymentMonths || 0),
+          nextBillingDate: nextBillingDate.toISOString(),
+          isRecurring: "true"
         });
       }
       
@@ -137,42 +130,44 @@ export const useRazorpayPayment = () => {
         image: 'https://example.com/your_logo.png',
         order_id: orderId,
         handler: function(response: any) {
-          // Add payment type to the response
-          response.paymentType = isOneTimePackage ? "one-time" : "recurring";
-          response.packageId = selectedPackage.id;
-          response.packageName = selectedPackage.title;
-          response.amount = totalPaymentAmount;
+          // Add package info to response
+          const enrichedResponse = {
+            ...response,
+            packageId: selectedPackage.id,
+            packageName: selectedPackage.title,
+            amount: initialAmount,
+            paymentType: isOneTimePackage ? "one-time" : "recurring"
+          };
           
           // For recurring payments, add subscription details
           if (!isOneTimePackage) {
-            response.setupFee = setupFee;
-            response.recurringAmount = recurringAmount;
-            response.advanceMonths = advanceMonths;
-            response.billingCycle = selectedPackage.billingCycle || 'monthly';
-            response.nextBillingDate = notesObject.nextBillingDate;
-            response.subscriptionId = notesObject.subscriptionId;
+            Object.assign(enrichedResponse, {
+              setupFee: selectedPackage.setupFee || 0,
+              recurringAmount: selectedPackage.price || 0,
+              advanceMonths: selectedPackage.advancePaymentMonths || 0,
+              billingCycle: selectedPackage.billingCycle || 'monthly',
+              nextBillingDate: notes.nextBillingDate
+            });
           }
           
-          console.log(`${isOneTimePackage ? "One-time" : "Subscription"} payment successful, response:`, response);
+          console.log(`Payment successful for ${selectedPackage.title}:`, enrichedResponse);
           
           // Show success toast
           toast({
             title: isOneTimePackage ? "Payment Successful" : "Subscription Initialized",
-            description: isOneTimePackage
-              ? `Your payment for ${selectedPackage.title} was successful.`
-              : `Your subscription to ${selectedPackage.title} has been activated.`,
+            description: `Your payment for ${selectedPackage.title} was successful.`,
             variant: "default"
           });
           
           setIsLoading(false);
-          onSuccess(response);
+          onSuccess(enrichedResponse);
         },
         prefill: {
           name: user?.fullName || '',
           email: user?.email || '',
           contact: user?.phone || ''
         },
-        notes: notesObject,
+        notes: notes,
         theme: {
           color: '#3399cc'
         },

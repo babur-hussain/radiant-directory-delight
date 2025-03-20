@@ -86,7 +86,6 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     // Reset states and try again
     setTimeout(() => {
       setLoadingScript(false);
-      handlePayment();
     }, 1000);
   };
   
@@ -225,7 +224,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           <Shield className="h-5 w-5 text-muted-foreground mt-0.5" />
           <div className="text-sm">
             <p className="font-medium">Secure Payment</p>
-            <p className="text-muted-foreground">{!isOneTimePackage ? "Autopay enabled for hassle-free renewals" : "Your payment information is securely processed"}</p>
+            <p className="text-muted-foreground">{!isOneTimePackage ? "Automatic renewal for hassle-free service" : "Your payment information is securely processed"}</p>
           </div>
         </div>
       </CardContent>
@@ -245,7 +244,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
               <CreditCard className="mr-2 h-4 w-4" />
               {isOneTimePackage 
                 ? `Pay ₹${totalPaymentAmount}` 
-                : `Pay ₹${totalPaymentAmount} & Setup Autopay`}
+                : `Pay ₹${totalPaymentAmount}`}
             </>
           )}
         </Button>

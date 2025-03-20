@@ -120,15 +120,12 @@ export const isRazorpayAvailable = (): boolean => {
 };
 
 /**
- * Generate a unique order ID that's Razorpay compatible
- * Razorpay requires alphanumeric only, no special characters
+ * Generate a simple order ID that's Razorpay compatible
+ * Razorpay requires order IDs to be alphanumeric only
  */
 export const generateOrderId = (): string => {
-  // Simple format that uses only alphanumeric characters
-  // Generate a random alphanumeric string to ensure uniqueness
-  const timestamp = Date.now().toString();
-  const randomAlphanumeric = Math.random().toString(36).substring(2, 8);
-  return `order${timestamp}${randomAlphanumeric}`;
+  // Use timestamp and simple random string
+  return `order${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
 };
 
 /**
