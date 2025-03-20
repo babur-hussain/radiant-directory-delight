@@ -121,16 +121,13 @@ export const isRazorpayAvailable = (): boolean => {
 
 /**
  * Generate a unique order ID that's Razorpay compatible
- * Must follow Razorpay's requirements: alphanumeric only and maximum 20 characters
+ * Razorpay requires alphanumeric only, no special characters
  */
 export const generateOrderId = (): string => {
-  // Format: timestamp + random number (ensures uniqueness)
-  // Limiting to 20 characters as per Razorpay requirements
-  const timestamp = Date.now().toString().slice(-10);
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-  
-  // Ensure total length is 20 or less characters
-  return `ord_${timestamp}${random}`.substring(0, 20);
+  // Simple format that's fully compatible with Razorpay requirements
+  const timestamp = Date.now().toString();
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `order${timestamp}${random}`;
 };
 
 /**

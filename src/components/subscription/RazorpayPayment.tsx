@@ -210,7 +210,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
                 )}
                 
                 {recurringAmount > 0 && (
-                  <p className="mt-2 font-medium">Recurring payment: ₹{recurringAmount}/{selectedPackage.billingCycle || 'year'}</p>
+                  <p className="mt-2 font-medium">Recurring payment: ₹{recurringAmount}/{selectedPackage.billingCycle || 'month'}</p>
                 )}
               </>
             )}
