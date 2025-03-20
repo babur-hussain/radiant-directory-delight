@@ -1,8 +1,10 @@
+
 import { User as FirebaseUser } from 'firebase/auth';
 import { fetchUserByUid, createOrUpdateUser, apiUpdateUserRole, apiGetAllUsers } from '../../api/mongoAPI';
 import { IUser } from '../../models/User';
 import { UserRole } from '@/types/auth';
 import { connectToMongoDB } from '@/config/mongodb';
+import { generateEmployeeCode } from '@/utils/id-generator';
 
 // Get user by Firebase UID from MongoDB
 export const getUserByUid = async (uid: string): Promise<IUser | null> => {
@@ -30,6 +32,9 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
       
       // Determine role - either from additionalFields or default to 'User'
       const role = additionalFields?.role || 'User';
+      
+      // Generate employee code if not provided
+      const employeeCode = additionalFields?.employeeCode || generateEmployeeCode();
       
       // Extract additional data if it exists
       const userData: any = {
@@ -65,7 +70,7 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
         gstNumber: additionalFields?.gstNumber || null,
         
         // Employee code field
-        employeeCode: additionalFields?.employeeCode || null
+        employeeCode: employeeCode
       };
 
       // Special case for default admin user
@@ -78,9 +83,9 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
       if (additionalFields?.address) {
         userData.address = {
           street: additionalFields.address.street || null,
-          city: additionalFields.address.city || null,
+          city: additionalFields.address.city || additionalFields.city || null,
           state: additionalFields.address.state || null,
-          country: additionalFields.address.country || null,
+          country: additionalFields.address.country || additionalFields.country || null,
           zipCode: additionalFields.address.zipCode || null
         };
       }

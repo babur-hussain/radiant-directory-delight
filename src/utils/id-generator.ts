@@ -19,6 +19,17 @@ export const generateShortId = (): string => {
 };
 
 /**
+ * Generates a unique employee code
+ * @param prefix Optional prefix for the employee code (default: 'EMP')
+ * @returns A properly formatted employee code
+ */
+export const generateEmployeeCode = (prefix: string = 'EMP'): string => {
+  const randomPart = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  const datePart = new Date().getFullYear().toString().substring(2);
+  return `${prefix}${datePart}${randomPart}`;
+};
+
+/**
  * Generates a unique order ID for Razorpay that follows their best practices
  * 
  * IMPORTANT: In production, order IDs should be created on your backend server
