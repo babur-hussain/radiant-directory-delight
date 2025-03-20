@@ -1,4 +1,6 @@
 
+import { SupabaseUserSubscriptionRow } from '@/lib/supabase/types';
+
 export interface ISubscription {
   id: string;
   userId: string;
@@ -25,6 +27,36 @@ export interface ISubscription {
   createdAt?: string;
   updatedAt?: string;
 }
+
+// Map Supabase data to our application model
+export const mapFromSupabase = (data: SupabaseUserSubscriptionRow): ISubscription => {
+  return {
+    id: data.id,
+    userId: data.user_id || '',
+    packageId: data.package_id || '',
+    packageName: data.package_name || '',
+    amount: data.amount,
+    startDate: data.start_date.toString(),
+    endDate: data.end_date.toString(),
+    status: data.status || 'pending',
+    assignedBy: data.assigned_by,
+    assignedAt: data.assigned_at?.toString(),
+    advancePaymentMonths: data.advance_payment_months,
+    signupFee: data.signup_fee,
+    actualStartDate: data.actual_start_date?.toString(),
+    isPaused: data.is_paused,
+    isPausable: data.is_pausable,
+    isUserCancellable: data.is_user_cancellable,
+    invoiceIds: data.invoice_ids,
+    paymentType: data.payment_type,
+    paymentMethod: data.payment_method,
+    transactionId: data.transaction_id,
+    cancelledAt: data.cancelled_at?.toString(),
+    cancelReason: data.cancel_reason,
+    createdAt: data.created_at?.toString(),
+    updatedAt: data.updated_at?.toString()
+  };
+};
 
 // Add this export for compatibility with existing code
 export class Subscription implements ISubscription {

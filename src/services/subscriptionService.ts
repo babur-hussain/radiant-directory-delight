@@ -1,40 +1,11 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
-import { ISubscription } from '@/models/Subscription';
-
-// Helper function to map database fields to ISubscription
-const mapToISubscription = (data: any): ISubscription => {
-  return {
-    id: data.id,
-    userId: data.user_id,
-    packageId: data.package_id,
-    packageName: data.package_name,
-    amount: data.amount,
-    startDate: data.start_date,
-    endDate: data.end_date,
-    status: data.status,
-    assignedBy: data.assigned_by,
-    assignedAt: data.assigned_at,
-    advancePaymentMonths: data.advance_payment_months,
-    signupFee: data.signup_fee,
-    actualStartDate: data.actual_start_date,
-    isPaused: data.is_paused,
-    isPausable: data.is_pausable,
-    isUserCancellable: data.is_user_cancellable,
-    invoiceIds: data.invoice_ids,
-    paymentType: data.payment_type,
-    paymentMethod: data.payment_method,
-    transactionId: data.transaction_id,
-    cancelledAt: data.cancelled_at,
-    cancelReason: data.cancel_reason,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at
-  };
-};
+import { ISubscription, mapFromSupabase } from '@/models/Subscription';
+import { SupabaseUserSubscriptionRow, SupabaseUserSubscriptionInsert } from '@/lib/supabase/types';
 
 // Helper function to map ISubscription to database fields
-const mapFromISubscription = (subscription: ISubscription): any => {
+const mapToSupabase = (subscription: Partial<ISubscription>): Record<string, any> => {
   return {
     id: subscription.id,
     user_id: subscription.userId,
@@ -57,9 +28,7 @@ const mapFromISubscription = (subscription: ISubscription): any => {
     payment_method: subscription.paymentMethod,
     transaction_id: subscription.transactionId,
     cancelled_at: subscription.cancelledAt,
-    cancel_reason: subscription.cancelReason,
-    created_at: subscription.createdAt,
-    updated_at: subscription.updatedAt
+    cancel_reason: subscription.cancelReason
   };
 };
 
@@ -76,7 +45,7 @@ export const getSubscription = async (id: string): Promise<ISubscription | null>
     throw error;
   }
   
-  return data ? mapToISubscription(data) : null;
+  return data ? mapFromSupabase(data as SupabaseUserSubscriptionRow) : null;
 };
 
 // Get all subscriptions
@@ -91,7 +60,7 @@ export const getSubscriptions = async (): Promise<ISubscription[]> => {
     throw error;
   }
   
-  return data.map(subscription => mapToISubscription(subscription));
+  return data.map(subscription => mapFromSupabase(subscription as SupabaseUserSubscriptionRow));
 };
 
 // Create a new subscription
@@ -99,11 +68,11 @@ export const createSubscription = async (subscriptionData: Omit<ISubscription, '
   // Generate ID if not provided
   const id = (subscriptionData as any).id || nanoid();
   
-  const dbData = mapFromISubscription({ ...subscriptionData, id } as ISubscription);
+  const dbData = mapToSupabase({ ...subscriptionData, id });
   
   const { data, error } = await supabase
     .from('user_subscriptions')
-    .insert(dbData)
+    .insert(dbData as SupabaseUserSubscriptionInsert)
     .select()
     .single();
   
@@ -122,12 +91,12 @@ export const createSubscription = async (subscriptionData: Omit<ISubscription, '
     })
     .eq('id', subscriptionData.userId);
   
-  return mapToISubscription(data);
+  return mapFromSupabase(data as SupabaseUserSubscriptionRow);
 };
 
 // Update an existing subscription
 export const updateSubscription = async (id: string, subscriptionData: Partial<ISubscription>): Promise<ISubscription> => {
-  const dbData = mapFromISubscription({ ...subscriptionData, id } as ISubscription);
+  const dbData = mapToSupabase({ ...subscriptionData, id });
   
   // Remove undefined values
   Object.keys(dbData).forEach(key => {
@@ -158,7 +127,7 @@ export const updateSubscription = async (id: string, subscriptionData: Partial<I
       .eq('id', data.user_id);
   }
   
-  return mapToISubscription(data);
+  return mapFromSupabase(data as SupabaseUserSubscriptionRow);
 };
 
 // Delete a subscription
@@ -187,7 +156,7 @@ export const getUserSubscriptions = async (userId: string): Promise<ISubscriptio
     throw error;
   }
   
-  return data.map(subscription => mapToISubscription(subscription));
+  return data.map(subscription => mapFromSupabase(subscription as SupabaseUserSubscriptionRow));
 };
 
 // Get active user subscription
@@ -206,5 +175,5 @@ export const getActiveUserSubscription = async (userId: string): Promise<ISubscr
     throw error;
   }
   
-  return data ? mapToISubscription(data) : null;
+  return data ? mapFromSupabase(data as SupabaseUserSubscriptionRow) : null;
 };
