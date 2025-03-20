@@ -188,33 +188,36 @@ export const formatNotesForRazorpay = (notes?: Record<string, any>): Record<stri
 };
 
 /**
- * Create a subscription plan ID for Razorpay
- * This is a temporary server-side function that should ideally be on the backend
+ * Generate a standardized plan ID for Razorpay
+ * NOTE: In production, this ID should come from Razorpay's API
  */
 export const generatePlanId = (packageDetails: any): string => {
+  // For non-production environments, we'll use a mock plan ID
+  // In production, this should be replaced with an actual Razorpay plan ID
+  // from the Razorpay dashboard or API
   const timestamp = Date.now();
   const randomSuffix = Math.floor(Math.random() * 10000);
-  
-  const planType = packageDetails.paymentType === 'recurring' ? 'rec' : 'one';
   const billingCycle = packageDetails.billingCycle === 'monthly' ? 'mon' : 'yr';
   
-  return `plan_${planType}_${billingCycle}_${timestamp}_${randomSuffix}`;
+  return `plan_${billingCycle}_${timestamp}_${randomSuffix}`;
 };
 
 /**
- * Create a subscription in Razorpay (mock implementation)
- * In a real implementation, this should be a server-side call
+ * Create a subscription plan in Razorpay 
+ * NOTE: This is a mock implementation - in production, this should call your backend API
+ * which would then create a plan in Razorpay using their APIs
  */
 export const createSubscriptionPlan = async (packageDetails: any): Promise<string> => {
   console.log("Creating subscription plan for package:", packageDetails);
   
-  // This is a mock implementation - in production, you would call your backend
-  // which would then create a plan in Razorpay using their APIs
+  // In production, this would call your backend API to create a plan in Razorpay
+  // The backend would make an authenticated call to Razorpay's API:
+  // POST https://api.razorpay.com/v1/plans
   
-  // Generate a dummy plan ID
+  // For now, we'll generate a mock plan ID
   const planId = generatePlanId(packageDetails);
   
-  // For demo purposes, we'll simulate an API call with a timeout
+  // Simulate API call delay
   return new Promise((resolve) => {
     setTimeout(() => {
       console.log(`Created mock subscription plan with ID: ${planId}`);
@@ -224,8 +227,8 @@ export const createSubscriptionPlan = async (packageDetails: any): Promise<strin
 };
 
 /**
- * Create a subscription in Razorpay (mock implementation)
- * In a real implementation, this should be a server-side call
+ * Create a subscription in Razorpay
+ * NOTE: This is a mock implementation - in production, this should call your backend API
  */
 export const createSubscription = async (
   planId: string, 
@@ -234,13 +237,16 @@ export const createSubscription = async (
 ): Promise<string> => {
   console.log("Creating subscription with plan:", planId, "for customer:", customerDetails);
   
-  // This is a mock implementation - in production, you would call your backend
-  // which would then create a subscription in Razorpay using their APIs
+  // In production, this would call your backend API to create a subscription in Razorpay
+  // The backend would make an authenticated call to Razorpay's API:
+  // POST https://api.razorpay.com/v1/subscriptions
   
-  // Generate a dummy subscription ID
-  const subscriptionId = `sub_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+  // For demonstration purposes only - do not use this in production!
+  // In production, use a real subscription ID from Razorpay
+  // We're using a simpler format that's less likely to cause API validation issues
+  const subscriptionId = `sub_${Date.now().toString().slice(-10)}${Math.floor(Math.random() * 1000)}`;
   
-  // For demo purposes, we'll simulate an API call with a timeout
+  // Simulate API call delay
   return new Promise((resolve) => {
     setTimeout(() => {
       console.log(`Created mock subscription with ID: ${subscriptionId}`);
@@ -262,17 +268,15 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   // Ensure all numeric values in notes are converted to strings
   const notesWithStringValues = formatNotesForRazorpay(options.notes);
   
-  // Prepare options based on whether this is a subscription or one-time payment
+  // Start with a base configuration
   let formattedOptions: any = {
     key: options.key || getRazorpayKey(),
-    currency: options.currency || 'INR',
     name: options.name,
     description: options.description,
     image: options.image,
     prefill: options.prefill || {},
     notes: notesWithStringValues,
     theme: options.theme || { color: '#3399cc' },
-    handler: options.handler,
     modal: {
       escape: false,
       backdropclose: false,
@@ -284,16 +288,22 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
     remember_customer: true,
   };
   
-  // Add subscription_id for recurring payments
+  // For one-time payments (non-subscription), include amount and currency
+  if (options.amount && !options.subscription_id) {
+    console.log("Using standard payment mode with amount:", options.amount);
+    formattedOptions.amount = options.amount;
+    formattedOptions.currency = options.currency || 'INR';
+  }
+  
+  // For subscription payments, only include subscription_id and currency
   if (options.subscription_id) {
     console.log("Using subscription mode with ID:", options.subscription_id);
     formattedOptions.subscription_id = options.subscription_id;
-    formattedOptions.recurring = true;
-  } 
-  // Otherwise, use regular payment mode with amount
-  else if (options.amount) {
-    console.log("Using standard payment mode with amount:", options.amount);
-    formattedOptions.amount = options.amount;
+    formattedOptions.currency = options.currency || 'INR';
+    
+    // Do NOT include amount or recurring flag for subscription payments
+    // They're set by the subscription itself, including them can cause conflicts
+    delete formattedOptions.amount;
   }
   
   console.log("Creating Razorpay checkout with options:", formattedOptions);
@@ -364,3 +374,4 @@ export const calculateNextBillingDate = (billingCycle: string = 'monthly', advan
   
   return nextDate;
 };
+

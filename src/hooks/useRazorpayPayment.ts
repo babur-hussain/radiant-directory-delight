@@ -131,7 +131,7 @@ export const useRazorpayPayment = () => {
         try {
           console.log("Setting up recurring payment plan for package:", selectedPackage.title);
           
-          // 1. Create a plan (in a real implementation, this would be done on your backend)
+          // Step 1: Create a plan (in a real implementation, this would be done on your backend)
           const planId = await createSubscriptionPlan({
             packageId: selectedPackage.id,
             amount: selectedPackage.price,
@@ -142,7 +142,7 @@ export const useRazorpayPayment = () => {
             paymentType: selectedPackage.paymentType
           });
           
-          // 2. Create a subscription using the plan (also would be on backend)
+          // Step 2: Create a subscription using the plan (also would be on backend)
           subscriptionId = await createSubscription(
             planId,
             selectedPackage,
@@ -161,51 +161,52 @@ export const useRazorpayPayment = () => {
         }
       }
       
-      // Configure Razorpay options based on payment type
-      const options: RazorpayOptions = {
-        key: getRazorpayKey(),
-        name: 'Grow Bharat Vyapaar',
-        description: `Payment for ${selectedPackage.title}`,
-        image: 'https://example.com/your_logo.png', // Replace with actual logo URL
-        currency: 'INR',
-        prefill: {
-          name: user?.fullName || '',
-          email: user?.email || '',
-          contact: user?.phone || ''
-        },
-        notes: notes,
-        theme: {
-          color: '#3399cc'
-        },
-        remember_customer: true,
-        modal: {
-          escape: false,
-          backdropclose: false,
-          ondismiss: function() {
-            console.log("Checkout form closed by user");
-            setIsLoading(false);
-            
-            try {
-              onFailure({ message: "Payment cancelled by user" });
-            } catch (callbackErr) {
-              console.error("Error in onFailure callback:", callbackErr);
+      try {
+        // Configure Razorpay options
+        const options: RazorpayOptions = {
+          key: getRazorpayKey(),
+          name: 'Grow Bharat Vyapaar',
+          description: `Payment for ${selectedPackage.title}`,
+          image: 'https://example.com/your_logo.png', // Replace with actual logo URL
+          currency: 'INR',
+          prefill: {
+            name: user?.fullName || '',
+            email: user?.email || '',
+            contact: user?.phone || ''
+          },
+          notes: notes,
+          theme: {
+            color: '#3399cc'
+          },
+          remember_customer: true,
+          modal: {
+            escape: false,
+            backdropclose: false,
+            ondismiss: function() {
+              console.log("Checkout form closed by user");
+              setIsLoading(false);
+              
+              try {
+                onFailure({ message: "Payment cancelled by user" });
+              } catch (callbackErr) {
+                console.error("Error in onFailure callback:", callbackErr);
+              }
             }
           }
+        };
+        
+        // For subscription payments, add subscription_id only
+        // Important: Don't add amount, recurring, or other conflicting params for subscriptions
+        if (canUseRecurring && subscriptionId) {
+          console.log("Using subscription mode with subscription ID:", subscriptionId);
+          options.subscription_id = subscriptionId;
+          // Do NOT set recurring: true as it's not needed and can cause conflicts
+        } else {
+          // For one-time payments, add amount
+          console.log("Using one-time payment mode with amount:", amountInPaise);
+          options.amount = amountInPaise;
         }
-      };
-      
-      // For subscription payments, add subscription_id
-      if (canUseRecurring && subscriptionId) {
-        console.log("Using subscription mode with subscription ID:", subscriptionId);
-        options.subscription_id = subscriptionId;
-        options.recurring = true;
-      } else {
-        // For one-time payments, add amount
-        console.log("Using one-time payment mode with amount:", amountInPaise);
-        options.amount = amountInPaise;
-      }
 
-      try {
         // Create and open Razorpay checkout
         const razorpay = createRazorpayCheckout(options);
         

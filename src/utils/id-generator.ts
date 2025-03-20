@@ -23,8 +23,8 @@ export const generateShortId = (): string => {
  * @returns A properly formatted order ID
  */
 export const generateOrderId = (): string => {
-  // Format for Razorpay: order_<random string>
-  return `order_${Date.now()}_${nanoid(6)}`;
+  // Use simple format to avoid validation issues
+  return `order_${Date.now().toString().slice(-10)}${Math.floor(Math.random() * 1000)}`;
 };
 
 /**
@@ -32,8 +32,8 @@ export const generateOrderId = (): string => {
  * @returns A properly formatted subscription ID
  */
 export const generateSubscriptionId = (): string => {
-  // Simple timestamp-based subscription ID with random suffix
-  return `sub_${Date.now()}_${nanoid(6)}`;
+  // Simple format that matches Razorpay's subscription ID format
+  return `sub_${Date.now().toString().slice(-10)}${Math.floor(Math.random() * 1000)}`;
 };
 
 export { nanoid };
