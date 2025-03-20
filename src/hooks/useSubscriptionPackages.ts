@@ -9,10 +9,8 @@ import {
   deleteSubscriptionPackage,
   isServerRunning
 } from '@/lib/mongodb/subscriptionUtils';
-import { api } from '@/api/core/apiService';
 
 export interface UseSubscriptionPackagesOptions {
-  initialOfflineMode?: boolean;
   type?: string;
 }
 
@@ -20,10 +18,7 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
   const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<any>(null);
-  const [isOffline, setIsOffline] = useState<boolean>(options.initialOfflineMode || false);
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error' | 'offline'>(
-    options.initialOfflineMode ? 'offline' : 'connecting'
-  );
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const { toast } = useToast();
 
   // Function to fetch packages
@@ -35,21 +30,10 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
     try {
       // Check if server is running
       const serverAvailable = await isServerRunning();
-      setIsOffline(!serverAvailable);
       
       if (!serverAvailable) {
-        console.warn("Server not available, using cached data");
-        const cachedPackages = localStorage.getItem('cachedSubscriptionPackages');
-        if (cachedPackages) {
-          try {
-            setPackages(JSON.parse(cachedPackages));
-            console.log('Using cached packages from localStorage');
-          } catch (parseError) {
-            console.error('Error parsing cached packages:', parseError);
-            setPackages([]);
-          }
-        }
-        setConnectionStatus('offline');
+        console.error("Server not available");
+        setConnectionStatus('error');
         throw new Error("Server not available");
       }
       
@@ -67,32 +51,14 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       console.log(`Fetched ${fetchedPackages.length} packages:`, fetchedPackages);
       setPackages(fetchedPackages || []);
       setConnectionStatus('connected');
-      
-      // Cache packages in localStorage for offline access
-      localStorage.setItem('cachedSubscriptionPackages', JSON.stringify(fetchedPackages));
     } catch (err) {
       console.error('Error fetching packages:', err);
       setError(err instanceof Error ? err.message : 'Failed to load subscription packages');
       setConnectionStatus('error');
-      
-      if (!isOffline) {
-        setIsOffline(true);
-        
-        // Try to use localStorage as fallback if not already tried
-        try {
-          const cachedPackages = localStorage.getItem('cachedSubscriptionPackages');
-          if (cachedPackages) {
-            setPackages(JSON.parse(cachedPackages));
-            console.log('Using cached packages from localStorage');
-          }
-        } catch (cacheErr) {
-          console.error('Error loading cached packages:', cacheErr);
-        }
-      }
     } finally {
       setIsLoading(false);
     }
-  }, [options.type, isOffline]);
+  }, [options.type]);
 
   const addOrUpdatePackage = useCallback(async (packageData: ISubscriptionPackage) => {
     try {
@@ -123,9 +89,9 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       // Check if server is available before attempting to save
       const serverAvailable = await isServerRunning();
       if (!serverAvailable) {
-        console.warn("Server is not available. Using offline mode for saving package.");
-        setIsOffline(true);
-        setConnectionStatus('offline');
+        console.error("Server is not available");
+        setConnectionStatus('error');
+        throw new Error("Server is not available");
       }
       
       // Set or validate price
@@ -142,69 +108,28 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       const savedPackage = await saveSubscriptionPackage(packageData);
       console.log('Package saved successfully:', savedPackage);
       
-      // Even if server returns null, we should have a valid package from the saveSubscriptionPackage function
-      // This acts as a fallback
-      const effectivePackage = savedPackage || {
-        ...packageData,
-        updatedAt: new Date()
-      };
-      
-      // Make sure the package has all required fields before updating state
-      const finalPackage: ISubscriptionPackage = {
-        id: effectivePackage.id || packageData.id || `pkg_${Date.now()}`,
-        title: effectivePackage.title || packageData.title || 'Untitled Package',
-        type: effectivePackage.type || packageData.type || 'Business',
-        price: effectivePackage.price || packageData.price || 999,
-        durationMonths: effectivePackage.durationMonths || packageData.durationMonths || 12,
-        shortDescription: effectivePackage.shortDescription || packageData.shortDescription || '',
-        fullDescription: effectivePackage.fullDescription || packageData.fullDescription || '',
-        features: effectivePackage.features || packageData.features || [],
-        popular: effectivePackage.popular || packageData.popular || false,
-        paymentType: effectivePackage.paymentType || packageData.paymentType || 'recurring',
-        // Include other fields from effectivePackage or packageData with defaults
-        setupFee: effectivePackage.setupFee !== undefined ? effectivePackage.setupFee : (packageData.setupFee || 0),
-        billingCycle: effectivePackage.billingCycle || packageData.billingCycle || 'yearly',
-        isActive: effectivePackage.isActive !== undefined ? effectivePackage.isActive : (packageData.isActive !== undefined ? packageData.isActive : true),
-        maxBusinesses: effectivePackage.maxBusinesses || packageData.maxBusinesses || 1,
-        maxInfluencers: effectivePackage.maxInfluencers || packageData.maxInfluencers || 1
-      };
-      
       // Update local state with the saved package
       setPackages(prevPackages => {
         // Make a safe copy of prevPackages (ensure it's an array)
         const safePackages = Array.isArray(prevPackages) ? [...prevPackages] : [];
         
-        const existingIndex = safePackages.findIndex(p => p && p.id === finalPackage.id);
+        const existingIndex = safePackages.findIndex(p => p && p.id === savedPackage.id);
         if (existingIndex >= 0) {
           // Update existing package
-          safePackages[existingIndex] = finalPackage;
+          safePackages[existingIndex] = savedPackage;
           return safePackages;
         } else {
           // Add new package
-          return [...safePackages, finalPackage];
+          return [...safePackages, savedPackage];
         }
       });
-      
-      // Update cache in localStorage
-      try {
-        const updatedCache = Array.isArray(packages) ? [...packages] : [];
-        const existingCacheIndex = updatedCache.findIndex(p => p && p.id === finalPackage.id);
-        if (existingCacheIndex >= 0) {
-          updatedCache[existingCacheIndex] = finalPackage;
-        } else {
-          updatedCache.push(finalPackage);
-        }
-        localStorage.setItem('cachedSubscriptionPackages', JSON.stringify(updatedCache));
-      } catch (cacheError) {
-        console.error('Error updating cache:', cacheError);
-      }
       
       toast({
         title: "Success",
-        description: `Package "${finalPackage.title}" has been saved.`,
+        description: `Package "${savedPackage.title}" has been saved.`,
       });
       
-      return finalPackage;
+      return savedPackage;
     } catch (err) {
       console.error('Error saving package:', err);
       toast({
@@ -226,9 +151,8 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       // Check if server is available
       const serverAvailable = await isServerRunning();
       if (!serverAvailable) {
-        setIsOffline(true);
-        setConnectionStatus('offline');
-        console.warn("Server is not available. Using offline mode for deleting package.");
+        setConnectionStatus('error');
+        throw new Error("Server not available");
       }
       
       // Delete the package from MongoDB
@@ -240,10 +164,6 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
         const safePackages = Array.isArray(prevPackages) ? [...prevPackages] : [];
         return safePackages.filter(p => p && p.id !== packageId);
       });
-      
-      // Update cache
-      const updatedPackages = Array.isArray(packages) ? packages.filter(p => p && p.id !== packageId) : [];
-      localStorage.setItem('cachedSubscriptionPackages', JSON.stringify(updatedPackages));
       
       toast({
         title: "Success",
@@ -269,13 +189,10 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
     fetchPackages();
   }, [fetchPackages]);
 
-  // For backward compatibility, include both isOffline and offlineMode
   return {
     packages,
     isLoading,
     error,
-    isOffline,
-    offlineMode: isOffline, // For backward compatibility
     connectionStatus,
     retryConnection: fetchPackages,
     fetchPackages,

@@ -14,7 +14,7 @@ import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 export interface SubscriptionPackageManagementProps {
   onPermissionError: (error: any) => void;
   dbInitialized?: boolean;
-  connectionStatus?: 'connecting' | 'connected' | 'error' | 'offline';
+  connectionStatus?: 'connecting' | 'connected' | 'error';
   onRetryConnection?: () => void;
 }
 
@@ -31,8 +31,6 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
     packages,
     isLoading,
     error,
-    isOffline,
-    offlineMode,
     connectionStatus: hookConnectionStatus,
     retryConnection,
     fetchPackages,
@@ -115,35 +113,20 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
     if (onRetryConnection) onRetryConnection();
   };
 
-  if (error && !isOffline) {
+  if (error && hookConnectionStatus === 'error') {
     return <SubscriptionPermissionError error={error} onRetry={handleRetryConnection} />;
   }
 
-  const effectiveConnectionStatus = connectionStatus || hookConnectionStatus || (isOffline ? 'offline' : 'connected');
+  const effectiveConnectionStatus = connectionStatus || hookConnectionStatus || 'connected';
 
   return (
     <div className="space-y-6">
-      {effectiveConnectionStatus === 'offline' && (
-        <Alert variant="warning">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Offline Mode</AlertTitle>
-          <AlertDescription className="flex flex-col gap-2">
-            <p>MongoDB server is not available. Operating in offline mode with limited functionality.</p>
-            <p>You can still view and modify subscription packages, but changes will only be stored locally until a connection is established.</p>
-            <Button variant="outline" size="sm" className="w-fit" onClick={handleRetryConnection}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Try to reconnect
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
-      
       {effectiveConnectionStatus === 'error' && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Connection Error</AlertTitle>
           <AlertDescription className="flex flex-col gap-2">
-            <p>Failed to connect to MongoDB. Using locally cached data.</p>
+            <p>Failed to connect to MongoDB server.</p>
             <Button variant="outline" size="sm" className="w-fit" onClick={handleRetryConnection}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Retry connection

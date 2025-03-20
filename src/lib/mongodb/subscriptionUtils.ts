@@ -1,3 +1,4 @@
+
 import { 
   getAllSubscriptionPackages, 
   getSubscriptionPackagesByType,
@@ -8,7 +9,6 @@ import { saveSubscriptionPackage as apiSaveSubscriptionPackage } from '@/api/ser
 import { getUserSubscription as apiFetchUserSubscriptions } from '@/api/services/subscriptionAPI';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { ISubscription } from '@/models/Subscription';
-import { SubscriptionPackage } from '@/data/subscriptionData';
 import { checkServerAvailability } from '@/lib/mongodb/serverUtils';
 import { api } from '@/api/core/apiService';
 
@@ -108,7 +108,7 @@ export const fetchSubscriptionPackagesByType = async (type: "Business" | "Influe
 /**
  * Saves a subscription package to MongoDB
  */
-export const saveSubscriptionPackage = async (packageData: SubscriptionPackage | ISubscriptionPackage): Promise<ISubscriptionPackage> => {
+export const saveSubscriptionPackage = async (packageData: any): Promise<ISubscriptionPackage> => {
   try {
     if (!packageData) {
       throw new Error("No package data provided");
@@ -172,87 +172,29 @@ export const saveSubscriptionPackage = async (packageData: SubscriptionPackage |
     
     console.log("Sanitized package data to save:", sanitizedPackage);
     
-    // Check server availability first
-    const serverAvailable = await checkServerAvailability();
-    
-    if (!serverAvailable) {
-      console.warn("Server is not available, saving package locally only");
-      return sanitizedPackage as ISubscriptionPackage;
-    }
-    
-    // Try direct API call first (bypass the abstraction for more control)
-    try {
-      console.log("Attempting direct API call to save package");
-      
-      // Use fetch API directly for more control
-      const directApiResponse = await fetch('/api/subscription-packages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(sanitizedPackage),
-        signal: AbortSignal.timeout(8000)
-      });
-      
-      if (directApiResponse.ok) {
-        const contentType = directApiResponse.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const data = await directApiResponse.json();
-          console.log("Direct API save response:", data);
-          if (data) {
-            return data;
-          }
-        } else {
-          console.warn("Direct API returned non-JSON response:", contentType);
-        }
-      } else {
-        console.error("Direct API save failed with status:", directApiResponse.status);
-      }
-    } catch (directApiError) {
-      console.error("Direct API save failed:", directApiError);
-      // Continue with other methods
-    }
-    
-    // Try to save via the API (this will use server.js)
+    // Try to save via the API
     try {
       console.log("Attempting to save package via subscription API");
       const apiResponse = await apiSaveSubscriptionPackage(sanitizedPackage);
       console.log("API save response:", apiResponse);
-      if (apiResponse) {
-        return apiResponse;
-      }
+      return apiResponse;
     } catch (apiError) {
       console.error("API save failed, falling back to direct service:", apiError);
-    }
-    
-    // Fall back to direct service call
-    // Save to MongoDB using our service
-    try {
+      
+      // Fall back to direct service call
       console.log("Attempting to save package via direct service call");
       const savedPackage = await createOrUpdateSubscriptionPackage(sanitizedPackage);
       
       if (!savedPackage) {
-        // If service returned null, return the sanitized package
         console.warn("createOrUpdateSubscriptionPackage returned null, using sanitized package");
         return sanitizedPackage as ISubscriptionPackage;
       }
       
       console.log("Successfully saved package to MongoDB:", savedPackage);
       return savedPackage;
-    } catch (serviceError) {
-      console.error("Service save failed:", serviceError);
-      // Return sanitized package as fallback
-      return sanitizedPackage as ISubscriptionPackage;
     }
   } catch (error) {
     console.error("Error saving subscription package:", error);
-    
-    // Even when there's an error, return the sanitized package as fallback
-    // This ensures that the UI doesn't break when backend is unavailable
-    if (packageData && typeof packageData === 'object') {
-      return packageData as ISubscriptionPackage;
-    }
-    
     throw error;
   }
 };

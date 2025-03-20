@@ -14,28 +14,12 @@ export const checkServerAvailability = async (): Promise<boolean> => {
       signal: AbortSignal.timeout(5000)
     });
     
-    // Check if the response is valid before trying to parse JSON
-    if (!response.ok) {
+    // Check if the response is valid
+    if (response.ok) {
+      console.log('Server connection successful with status:', response.status);
+      return true;
+    } else {
       console.warn('Server connection check failed with status:', response.status);
-      return false;
-    }
-    
-    // Safely try to parse the JSON response
-    try {
-      const contentType = response.headers.get('content-type');
-      
-      // Only try to parse as JSON if the content type is application/json
-      if (contentType && contentType.includes('application/json')) {
-        const data = await response.json();
-        console.log('Server check response:', data);
-        return data.success === true;
-      } else {
-        console.warn('Server returned non-JSON response:', contentType);
-        // Instead of failing, assume server is not available when response isn't JSON
-        return false;
-      }
-    } catch (jsonError) {
-      console.error('Failed to parse server response as JSON:', jsonError);
       return false;
     }
   } catch (error) {

@@ -32,32 +32,7 @@ export const saveSubscriptionPackage = async (packageData: any) => {
       console.log('Generated new package ID:', packageData.id);
     }
     
-    // Try a direct API call without using axios first
-    try {
-      const directResponse = await fetch('/api/subscription-packages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(packageData),
-        signal: AbortSignal.timeout(8000)
-      });
-      
-      if (directResponse.ok) {
-        const contentType = directResponse.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const data = await directResponse.json();
-          console.log('API: Direct fetch save response:', data);
-          return data;
-        }
-      }
-      console.warn('Direct fetch failed, falling back to axios');
-    } catch (directError) {
-      console.warn('Direct fetch error:', directError);
-      // Continue with axios as fallback
-    }
-    
-    // Fall back to regular axios request
+    // Use axios directly for better control over the response
     const response = await api.post('/subscription-packages', packageData);
     console.log('API: Save response:', response.data);
     return response.data;
@@ -67,17 +42,6 @@ export const saveSubscriptionPackage = async (packageData: any) => {
     // Check if we have a meaningful error response
     if (error.response && error.response.data) {
       console.error('API error details:', error.response.data);
-    }
-    
-    // For network errors or when server is unavailable, return null
-    // so the calling code can fall back to local storage
-    if (error.message && (
-        error.message.includes('Network Error') || 
-        error.message.includes('timeout') ||
-        error.code === 'ECONNABORTED'
-    )) {
-      console.warn('Network error or timeout, returning null for local fallback');
-      return null;
     }
     
     throw error;
@@ -90,17 +54,6 @@ export const deleteSubscriptionPackage = async (packageId: string) => {
     return { success: true };
   } catch (error) {
     console.error('Error deleting subscription package:', error);
-    
-    // For network errors, return success to allow local deletion
-    if (error.message && (
-        error.message.includes('Network Error') || 
-        error.message.includes('timeout') ||
-        error.code === 'ECONNABORTED'
-    )) {
-      console.warn('Network error during deletion, returning success for local handling');
-      return { success: true };
-    }
-    
     throw error;
   }
 };
