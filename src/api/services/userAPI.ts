@@ -1,4 +1,3 @@
-
 import { api } from '../core/apiService';
 import { connectToMongoDB } from '@/config/mongodb';
 import { IUser } from '@/models/User';
@@ -130,7 +129,7 @@ export const updateUserRole = async (uid: string, role: string): Promise<IUser |
   try {
     // Default isAdmin to false or derive it from role
     const isAdmin = role === 'Admin';
-    const user = await apiUpdateUserRole(uid, role, isAdmin);
+    const user = await apiUpdateUserRole(uid, role);
     return user;
   } catch (error) {
     console.error('Error updating user role:', error);
