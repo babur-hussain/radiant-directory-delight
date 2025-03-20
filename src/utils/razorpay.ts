@@ -34,7 +34,6 @@ export interface RazorpayOptions {
   image?: string;
   order_id?: string;
   subscription_id?: string;
-  recurring?: boolean;
   prefill?: {
     name?: string;
     email?: string;
@@ -60,9 +59,9 @@ export interface RazorpayOptions {
     email?: boolean;
     contact?: boolean;
   };
-  // Add specific recurring payment properties
-  subscription_card_change?: boolean;
+  // Recurring payment properties
   recurring?: boolean;
+  subscription_card_change?: boolean;
   subscription_payment_capture?: boolean;
   payment_capture?: boolean;
   auth_type?: string;

@@ -98,7 +98,7 @@ export const useRazorpayPayment = () => {
       console.log(`Setting up payment for ${selectedPackage.title} with amount ${initialAmount} (${amountInPaise} paise)`);
       
       // Create notes object with subscription details
-      const notes = {
+      const notes: Record<string, any> = {
         packageId: String(selectedPackage.id),
         packageType: isOneTimePackage ? "one-time" : "recurring",
         packageName: String(selectedPackage.title),
@@ -112,15 +112,13 @@ export const useRazorpayPayment = () => {
           nextBillingDate.setMonth(nextBillingDate.getMonth() + (selectedPackage.advancePaymentMonths || 0));
         }
         
-        Object.assign(notes, {
-          billingCycle: String(selectedPackage.billingCycle || "monthly"),
-          setupFee: String(selectedPackage.setupFee || 0),
-          recurringAmount: String(selectedPackage.price || 0),
-          advanceMonths: String(selectedPackage.advancePaymentMonths || 0),
-          nextBillingDate: nextBillingDate.toISOString(),
-          isRecurring: "true",
-          autoPayment: "true" // Add auto-payment flag for recurring
-        });
+        notes.billingCycle = String(selectedPackage.billingCycle || "monthly");
+        notes.setupFee = String(selectedPackage.setupFee || 0);
+        notes.recurringAmount = String(selectedPackage.price || 0);
+        notes.advanceMonths = String(selectedPackage.advancePaymentMonths || 0);
+        notes.nextBillingDate = nextBillingDate.toISOString();
+        notes.isRecurring = "true";
+        notes.autoPayment = "true"; // Add auto-payment flag for recurring
       }
       
       // Format notes for Razorpay (ensure all values are strings)
