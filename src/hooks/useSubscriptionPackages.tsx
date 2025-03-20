@@ -1,12 +1,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { toast } from './use-toast';
+import { useToast } from './use-toast';
 import { 
   fetchSubscriptionPackages, 
   fetchSubscriptionPackagesByType,
   saveSubscriptionPackage,
   deleteSubscriptionPackage
-} from '@/lib/mongodb-utils';
+} from '@/lib/mongodb/subscriptionUtils';
 import { isServerRunning } from '@/api/mongoAPI';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 
@@ -20,6 +20,7 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [offlineMode, setOfflineMode] = useState<boolean>(options.initialOfflineMode || false);
+  const { toast } = useToast();
 
   const fetchPackages = useCallback(async () => {
     setIsLoading(true);
@@ -43,6 +44,9 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       
       console.log(`Fetched ${fetchedPackages.length} packages:`, fetchedPackages);
       setPackages(fetchedPackages);
+      
+      // Cache packages in localStorage for offline access
+      localStorage.setItem('cachedSubscriptionPackages', JSON.stringify(fetchedPackages));
     } catch (err) {
       console.error('Error fetching packages:', err);
       setError(err instanceof Error ? err.message : 'Failed to load subscription packages');
@@ -73,16 +77,17 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       console.log('Saving package:', packageData);
       
       const savedPackage = await saveSubscriptionPackage(packageData);
+      console.log('Package saved successfully:', savedPackage);
       
       // Update local state
       setPackages(prevPackages => {
-        const index = prevPackages.findIndex(p => p.id === savedPackage.id);
-        if (index >= 0) {
+        const existingIndex = prevPackages.findIndex(p => p.id === savedPackage.id);
+        if (existingIndex >= 0) {
           // Update existing package
           return [
-            ...prevPackages.slice(0, index),
+            ...prevPackages.slice(0, existingIndex),
             savedPackage,
-            ...prevPackages.slice(index + 1)
+            ...prevPackages.slice(existingIndex + 1)
           ];
         } else {
           // Add new package
@@ -90,33 +95,34 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
         }
       });
       
-      // Cache the updated packages in localStorage for offline fallback
-      setTimeout(() => {
-        localStorage.setItem('cachedSubscriptionPackages', JSON.stringify([...packages, savedPackage]));
-      }, 100);
+      // Update cache
+      const updatedPackages = [...packages];
+      const existingIndex = updatedPackages.findIndex(p => p.id === savedPackage.id);
+      if (existingIndex >= 0) {
+        updatedPackages[existingIndex] = savedPackage;
+      } else {
+        updatedPackages.push(savedPackage);
+      }
+      localStorage.setItem('cachedSubscriptionPackages', JSON.stringify(updatedPackages));
       
       toast({
-        title: 'Success',
+        title: "Success",
         description: `Package "${savedPackage.title}" has been saved.`,
       });
       
       return savedPackage;
     } catch (err) {
       console.error('Error saving package:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to save subscription package';
-      
       toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive',
+        title: "Error",
+        description: err instanceof Error ? err.message : 'Failed to save subscription package',
+        variant: "destructive"
       });
-      
-      setError(errorMessage);
       throw err;
     } finally {
       setIsLoading(false);
     }
-  }, [packages]);
+  }, [packages, toast]);
 
   const removePackage = useCallback(async (packageId: string) => {
     try {
@@ -128,45 +134,36 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       // Update local state
       setPackages(prevPackages => prevPackages.filter(p => p.id !== packageId));
       
-      // Update localStorage cache
-      setTimeout(() => {
-        localStorage.setItem('cachedSubscriptionPackages', JSON.stringify(packages.filter(p => p.id !== packageId)));
-      }, 100);
+      // Update cache
+      const updatedPackages = packages.filter(p => p.id !== packageId);
+      localStorage.setItem('cachedSubscriptionPackages', JSON.stringify(updatedPackages));
       
       toast({
-        title: 'Success',
-        description: 'Package has been deleted.',
+        title: "Success",
+        description: "Package has been deleted."
       });
       
       return true;
     } catch (err) {
       console.error('Error deleting package:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete subscription package';
-      
       toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive',
+        title: "Error",
+        description: err instanceof Error ? err.message : 'Failed to delete subscription package',
+        variant: "destructive"
       });
-      
-      setError(errorMessage);
-      throw err;
+      return false;
     } finally {
       setIsLoading(false);
     }
-  }, [packages]);
-
-  const refreshPackages = useCallback(() => {
-    return fetchPackages();
-  }, [fetchPackages]);
+  }, [packages, toast]);
 
   return {
     packages,
     isLoading,
     error,
     offlineMode,
+    fetchPackages,
     addOrUpdatePackage,
-    removePackage,
-    refreshPackages
+    removePackage
   };
 };

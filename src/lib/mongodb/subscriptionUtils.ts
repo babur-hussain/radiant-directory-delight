@@ -5,11 +5,11 @@ import {
   createOrUpdateSubscriptionPackage, 
   deleteSubscriptionPackage as serviceDeleteSubscriptionPackage
 } from '@/services/subscriptionService';
-import { getUserSubscription as apiFetchUserSubscriptions } from '@/api';
+import { getUserSubscription as apiFetchUserSubscriptions } from '@/api/services/subscriptionAPI';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { ISubscription } from '@/models/Subscription';
 import { SubscriptionPackage } from '@/data/subscriptionData';
-import { checkServerAvailability } from './serverUtils';
+import { checkServerAvailability } from '@/lib/mongodb/serverUtils';
 
 /**
  * Fetches all subscription packages from MongoDB
@@ -175,5 +175,17 @@ export const fetchUserSubscriptions = async (userId: string): Promise<ISubscript
   } catch (error) {
     console.error(`Error fetching subscriptions for user ${userId}:`, error);
     throw error;
+  }
+};
+
+/**
+ * Helper function to check server availability
+ */
+export const checkServerAvailability = async (): Promise<boolean> => {
+  try {
+    return await isServerRunning();
+  } catch (error) {
+    console.error("Error checking server availability:", error);
+    return false;
   }
 };
