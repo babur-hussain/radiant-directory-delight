@@ -235,10 +235,25 @@ export const getAllUsers = async (): Promise<User[]> => {
     
     console.log("MongoDB connection verified");
     
-    // Get all users from MongoDB, ordered by creation date
+    // Get all users from MongoDB, handling the Promise properly
     console.log("Executing User.find() query...");
-    const userModel = UserModel.find();
-    const mongoUsers = await userModel.sort({ createdAt: -1 }).exec();
+    const userModelQuery = await UserModel.find();
+    
+    let mongoUsers = [];
+    
+    // Check if the result has a sort method
+    if (userModelQuery && typeof userModelQuery.sort === 'function') {
+      const sortedQuery = userModelQuery.sort({ createdAt: -1 });
+      if (sortedQuery && typeof sortedQuery.exec === 'function') {
+        mongoUsers = await sortedQuery.exec();
+      } else {
+        mongoUsers = sortedQuery.results || [];
+      }
+    } else {
+      // Fallback if sort is not available
+      console.warn("Sort method not available on query result");
+      mongoUsers = userModelQuery.results || [];
+    }
     
     console.log(`Query executed, got ${mongoUsers.length} users`);
     
@@ -463,4 +478,3 @@ export const ensureTestUsers = async (): Promise<void> => {
     console.error("Error ensuring test users:", error);
   }
 };
-

@@ -34,16 +34,29 @@ const UserDashboardCustomizer: React.FC = () => {
     
     try {
       await connectToMongoDB();
-      const userQuery = await User.find();
       
-      // First execute the query to get a sorted list of users
-      const sortedQuery = userQuery.sort({ name: 1 });
-      const allUsers = await sortedQuery.exec();
+      // Execute the query in steps to avoid chaining on a Promise
+      const userQuery = User.find();
+      const queryObj = await userQuery;
       
-      setUsers(allUsers);
+      // Now sort the query object, not the Promise
+      let sortedUsers = [];
       
-      if (allUsers.length > 0 && !selectedUserId) {
-        setSelectedUserId(allUsers[0].uid);
+      if (queryObj && typeof queryObj.sort === 'function') {
+        const sortedQuery = queryObj.sort({ name: 1 });
+        if (sortedQuery && typeof sortedQuery.exec === 'function') {
+          sortedUsers = await sortedQuery.exec();
+        }
+      } else {
+        // Fallback if sort is not available
+        console.warn("Sort method not available, using unsorted results");
+        sortedUsers = queryObj.results || [];
+      }
+      
+      setUsers(sortedUsers);
+      
+      if (sortedUsers.length > 0 && !selectedUserId) {
+        setSelectedUserId(sortedUsers[0].uid);
       }
     } catch (err) {
       console.error("Error loading users:", err);

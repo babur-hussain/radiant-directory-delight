@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { connectToMongoDB } from "@/config/mongodb";
@@ -27,7 +26,6 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Load data when user or package changes
   useEffect(() => {
     if (selectedUser) {
       loadUserSections(selectedUser.uid || selectedUser.id);
@@ -37,7 +35,6 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
     }
   }, [selectedUser]);
 
-  // Load sections when package changes
   useEffect(() => {
     if (selectedPackage) {
       loadPackageSections(selectedPackage);
@@ -57,7 +54,6 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
       console.error("Error loading user sections:", err);
       setError("Failed to load user dashboard sections");
       
-      // Fallback to empty sections
       setUserSections([]);
     } finally {
       setIsLoading(false);
@@ -74,11 +70,9 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
       const packageData = await SubscriptionPackage.findOne({ id: packageId });
       if (packageData) {
         setPackageSections(packageData.dashboardSections || []);
-        // Set available sections based on package type
         const role = packageData.type || "Business";
         loadAvailableSections(role);
       } else {
-        // Fallback if package not found
         setPackageSections([]);
         setError("Package not found");
       }
@@ -86,7 +80,6 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
       console.error("Error loading package sections:", err);
       setError("Failed to load package dashboard sections");
       
-      // Fallback to empty sections
       setPackageSections([]);
     } finally {
       setIsLoading(false);
@@ -105,7 +98,21 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
     setLoadingMessage("Loading subscription packages...");
     try {
       await connectToMongoDB();
-      const allPackages = await SubscriptionPackage.find().sort({ title: 1 });
+      const packagesQuery = await SubscriptionPackage.find();
+      
+      let allPackages = [];
+      
+      if (packagesQuery && typeof packagesQuery.sort === 'function') {
+        const sortedQuery = packagesQuery.sort({ title: 1 });
+        if (sortedQuery && typeof sortedQuery.exec === 'function') {
+          allPackages = await sortedQuery.exec();
+        } else {
+          allPackages = sortedQuery.results || [];
+        }
+      } else {
+        console.warn("Sort method not available on query result");
+        allPackages = packagesQuery.results || [];
+      }
       
       if (allPackages && allPackages.length > 0) {
         setPackages(allPackages);
@@ -113,7 +120,6 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
           setSelectedPackage(allPackages[0].id);
         }
       } else {
-        // Fallback if no packages found
         setPackages([]);
         setError("No subscription packages found");
       }
@@ -121,7 +127,6 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
       console.error("Error loading packages:", err);
       setError("Failed to load subscription packages");
       
-      // Fallback to empty packages
       setPackages([]);
     } finally {
       setIsLoading(false);

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -64,9 +63,27 @@ const AdminDashboardManagerPage = () => {
     
     try {
       await connectToMongoDB();
-      const allUsers = await User.find()
-        .sort({ name: 1 })
-        .lean();
+      const usersQuery = await User.find();
+      
+      let allUsers = [];
+      
+      // Check if the query result has a sort method
+      if (usersQuery && typeof usersQuery.sort === 'function') {
+        const sortedQuery = usersQuery.sort({ name: 1 });
+        if (sortedQuery && typeof sortedQuery.exec === 'function') {
+          allUsers = await sortedQuery.exec();
+        } else if (sortedQuery && sortedQuery.lean) {
+          // Try lean if exec is not available
+          allUsers = await sortedQuery.lean();
+        } else {
+          // Fallback to results property
+          allUsers = sortedQuery.results || [];
+        }
+      } else {
+        // Fallback if sort is not available
+        console.warn("Sort method not available on query result");
+        allUsers = usersQuery.results || [];
+      }
       
       setUsers(allUsers);
       
