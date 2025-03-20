@@ -175,24 +175,25 @@ export const useRazorpayPayment = () => {
         // Open the Razorpay checkout
         razorpay.open();
       } else {
-        // Recurring subscription payment
+        // Handle recurring subscription payment - setting up initial payment only for now
         try {
           // Calculate when the first recurring payment will happen
           const startDate = new Date();
           if (advanceMonths > 0) {
             startDate.setMonth(startDate.getMonth() + advanceMonths);
           }
-          const formattedStartDate = startDate.toLocaleDateString();
           
-          // For recurring subscription with autopay
-          // Important: We need to properly setup subscription parameters
+          // For initial payment of subscription - we need a unique ID
           const subscriptionId = `sub${Date.now()}`;
           
+          // For now, we're only handling the initial payment
+          // In a production app, you would create an actual subscription through the backend
           const options = {
             ...commonOptions,
-            amount: amountInPaise,
+            amount: amountInPaise, 
             currency: 'INR',
-            // Don't use subscription_id directly in options
+            order_id: orderId,
+            payment_capture: 1,
             notes: {
               packageId: selectedPackage.id,
               packageType: "recurring",
@@ -201,16 +202,7 @@ export const useRazorpayPayment = () => {
               recurringAmount: recurringAmount,
               advanceMonths: advanceMonths,
               nextBillingDate: startDate.toISOString(),
-              subscription_id: subscriptionId
-            },
-            // Setup proper payment capture
-            payment_capture: 1,
-            // Add these options that are required by Razorpay for recurring
-            method: {
-              netbanking: true,
-              card: true,
-              upi: true,
-              wallet: true
+              subscriptionId: subscriptionId
             },
             // Standard payment callback
             handler: function(response: any) {
@@ -224,14 +216,16 @@ export const useRazorpayPayment = () => {
               response.advanceMonths = advanceMonths;
               response.billingCycle = selectedPackage.billingCycle || 'yearly';
               
-              // Generate a subscription ID if not provided by Razorpay
-              response.subscriptionId = response.razorpay_subscription_id || subscriptionId;
+              // Set the subscription ID for reference
+              response.subscriptionId = subscriptionId;
               
               // Add next billing date to the response
               response.nextBillingDate = startDate.toISOString();
               
-              console.log("Subscription setup payment successful, response:", response);
+              console.log("Subscription initial payment successful, response:", response);
               
+              // Show a different message for initial setup vs recurring
+              const formattedStartDate = startDate.toLocaleDateString();
               toast({
                 title: "Subscription Initialized",
                 description: advanceMonths > 0 
