@@ -14,7 +14,6 @@ class SchemaMock {
 
   constructor(definition: any, options?: any) {
     this.definition = definition;
-    return this;
   }
 
   index(fields: any, options?: any) {
@@ -58,26 +57,46 @@ class SchemaMock {
   }
 }
 
-// Improved QueryResult class for better method chaining
-class QueryResult {
-  results: any[] = [];
-  
+// Improved QueryResult class that extends Array for better compatibility
+class QueryResult extends Array<any> {
   constructor(results: any[] = []) {
-    this.results = results;
+    super();
+    if (results && Array.isArray(results)) {
+      results.forEach(item => this.push(item));
+    }
   }
   
   sort(sortOptions: any) {
-    // In a real implementation, this would sort the results
+    // This is a mock implementation - just return this
     return this;
   }
   
   exec() {
-    return Promise.resolve(this.results);
+    return Promise.resolve(this);
   }
   
   lean() {
     return this;
   }
+}
+
+// Helper function to extract query results safely
+function extractQueryResults(queryResult: any): any[] {
+  if (!queryResult) return [];
+  
+  if (Array.isArray(queryResult)) {
+    return queryResult;
+  }
+  
+  if (queryResult instanceof QueryResult) {
+    return Array.from(queryResult);
+  }
+  
+  if (queryResult.results && Array.isArray(queryResult.results)) {
+    return queryResult.results;
+  }
+  
+  return [];
 }
 
 // MongoDB mock implementation
@@ -143,7 +162,7 @@ const mongooseMock = {
 
 // Use the real mongoose in production, mock in development/test
 const isProduction = false; // Always use mock for now
-export { isProduction };
+export { isProduction, QueryResult, extractQueryResults };
 
 // Export the mongoose instance (real or mock)
 export const mongoose = isProduction ? mongooseModule : mongooseMock;

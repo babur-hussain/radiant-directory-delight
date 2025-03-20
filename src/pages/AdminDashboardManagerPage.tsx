@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, AlertCircle, Save, RefreshCw, Users } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/hooks/use-toast';
-import { connectToMongoDB } from '@/config/mongodb';
+import { connectToMongoDB, extractQueryResults } from '@/config/mongodb';
 import { User } from '@/models/User';
 import { 
   BUSINESS_DASHBOARD_SECTIONS, 
@@ -64,39 +63,10 @@ const AdminDashboardManagerPage = () => {
     
     try {
       await connectToMongoDB();
-      const usersQuery = await User.find();
+      const usersQuery = User.find();
       
-      let allUsers: any[] = [];
-      
-      // Check if the query result is already an array
-      if (Array.isArray(usersQuery)) {
-        allUsers = usersQuery;
-      }
-      // Check if the query result has a sort method
-      else if (usersQuery && typeof usersQuery.sort === 'function') {
-        const sortedQuery = usersQuery.sort({ name: 1 });
-        if (sortedQuery && typeof sortedQuery.exec === 'function') {
-          allUsers = await sortedQuery.exec();
-        } else if (sortedQuery && sortedQuery.lean && typeof sortedQuery.lean === 'function') {
-          // Try lean if exec is not available
-          allUsers = await sortedQuery.lean();
-        } else if (sortedQuery && Array.isArray(sortedQuery.results)) {
-          // Fallback to results property
-          allUsers = sortedQuery.results;
-        } else {
-          // If sortedQuery is itself an array or object
-          allUsers = sortedQuery || [];
-        }
-      } 
-      // Check if the query result has a results property
-      else if (usersQuery && Array.isArray(usersQuery.results)) {
-        allUsers = usersQuery.results;
-      }
-      // Final fallback - treat as empty array
-      else {
-        console.warn("Unexpected query result format");
-        allUsers = [];
-      }
+      // Safely extract the results using our helper function
+      const allUsers = extractQueryResults(usersQuery);
       
       setUsers(allUsers);
       

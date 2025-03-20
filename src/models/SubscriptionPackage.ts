@@ -26,7 +26,7 @@ export interface ISubscriptionPackage {
 }
 
 // Create a schema using the mongoose Schema
-const SubscriptionPackageSchema = new mongoose.Schema({
+const schemaDefinition = {
   id: { type: String, required: true, unique: true },
   title: { type: String, required: true },
   price: { type: Number, required: true },
@@ -48,7 +48,9 @@ const SubscriptionPackageSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
   maxBusinesses: { type: Number, default: 1 },
   maxInfluencers: { type: Number, default: 1 }
-});
+};
+
+const SubscriptionPackageSchema = mongoose.Schema(schemaDefinition);
 
 // Create indexes for frequently queried fields
 SubscriptionPackageSchema.index({ type: 1 });

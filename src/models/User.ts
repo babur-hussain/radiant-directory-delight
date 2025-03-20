@@ -10,15 +10,13 @@ export interface IUser {
   photoURL: string | null;
   createdAt: Date;
   lastLogin: Date;
-  employeeCode?: string | null; // Added employee code field
+  employeeCode?: string | null;
   subscription?: string | null;
   subscriptionId?: string;
   subscriptionStatus?: string;
   subscriptionPackage?: string;
-  // New field for custom dashboard sections
   customDashboardSections?: string[];
   
-  // New fields for influencer and business profiles
   // Shared fields
   phone?: string;
   instagramHandle?: string;
@@ -47,7 +45,7 @@ export interface IUser {
 }
 
 // Create a schema using the mongoose Schema constructor
-const UserSchema = new mongoose.Schema({
+const schemaDefinition = {
   uid: { type: String, required: true, unique: true },
   name: { type: String, default: null },
   email: { type: String, default: null },
@@ -56,7 +54,7 @@ const UserSchema = new mongoose.Schema({
   photoURL: { type: String, default: null },
   createdAt: { type: Date, default: Date.now },
   lastLogin: { type: Date, default: Date.now },
-  employeeCode: { type: String, default: null }, // Added employee code field
+  employeeCode: { type: String, default: null },
   subscription: { type: String, default: null },
   subscriptionId: { type: String, default: null },
   subscriptionStatus: { type: String, default: null },
@@ -89,7 +87,9 @@ const UserSchema = new mongoose.Schema({
     zipCode: { type: String, default: null }
   },
   gstNumber: { type: String, default: null }
-});
+};
+
+const UserSchema = mongoose.Schema(schemaDefinition);
 
 // Define methods for the user schema
 UserSchema.methods.isUserAdmin = function(): boolean {
@@ -101,7 +101,7 @@ UserSchema.index({ uid: 1 });
 UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1 });
 UserSchema.index({ isAdmin: 1 });
-UserSchema.index({ employeeCode: 1 }); // Add index for employee code
+UserSchema.index({ employeeCode: 1 });
 
 // Virtual for compatibility with Firestore IDs
 UserSchema.virtual('id').get(function() {

@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { User } from "@/models/User";
-import { connectToMongoDB } from "@/config/mongodb";
+import { connectToMongoDB, extractQueryResults } from "@/config/mongodb";
 import DashboardSectionsManager from "./DashboardSectionsManager";
 
 const UserDashboardCustomizer: React.FC = () => {
@@ -39,27 +39,8 @@ const UserDashboardCustomizer: React.FC = () => {
       const userQuery = User.find();
       let userResults: any[] = [];
       
-      // Handle the query result which could be an array or a query object
-      if (Array.isArray(userQuery)) {
-        // If it's already an array, use it directly
-        userResults = userQuery;
-      } else if (userQuery) {
-        // If it has a sort method, call it
-        const sortedQuery = typeof userQuery.sort === 'function' 
-          ? userQuery.sort({ name: 1 }) 
-          : userQuery;
-          
-        // If it has an exec method, call it to get the results
-        if (sortedQuery && typeof sortedQuery.exec === 'function') {
-          userResults = await sortedQuery.exec();
-        } else if (sortedQuery && sortedQuery.results) {
-          // If it has a results property, use that
-          userResults = sortedQuery.results;
-        } else {
-          // Assume it's the result array
-          userResults = sortedQuery || [];
-        }
-      }
+      // Handle the query result safely using the helper function
+      userResults = extractQueryResults(userQuery);
       
       setUsers(userResults);
       

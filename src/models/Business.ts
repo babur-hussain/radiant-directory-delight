@@ -21,7 +21,7 @@ export interface IBusiness {
 }
 
 // Create a schema using the mongoose Schema
-const BusinessSchema = new mongoose.Schema({
+const schemaDefinition = {
   id: { type: Number, required: true, unique: true },
   name: { type: String, required: true },
   description: { type: String, default: '' },
@@ -38,7 +38,9 @@ const BusinessSchema = new mongoose.Schema({
   tags: [{ type: String }],
   featured: { type: Boolean, default: false },
   image: { type: String, default: '' }
-});
+};
+
+const BusinessSchema = mongoose.Schema(schemaDefinition);
 
 // Create indexes for frequently queried fields
 BusinessSchema.index({ category: 1 });
