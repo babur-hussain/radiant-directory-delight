@@ -41,8 +41,13 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
         console.warn("Server not available, using cached data");
         const cachedPackages = localStorage.getItem('cachedSubscriptionPackages');
         if (cachedPackages) {
-          setPackages(JSON.parse(cachedPackages));
-          console.log('Using cached packages from localStorage');
+          try {
+            setPackages(JSON.parse(cachedPackages));
+            console.log('Using cached packages from localStorage');
+          } catch (parseError) {
+            console.error('Error parsing cached packages:', parseError);
+            setPackages([]);
+          }
         }
         setConnectionStatus('offline');
         throw new Error("Server not available");
@@ -157,7 +162,7 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
         popular: effectivePackage.popular || packageData.popular || false,
         paymentType: effectivePackage.paymentType || packageData.paymentType || 'recurring',
         // Include other fields from effectivePackage or packageData with defaults
-        setupFee: effectivePackage.setupFee || packageData.setupFee || 0,
+        setupFee: effectivePackage.setupFee !== undefined ? effectivePackage.setupFee : (packageData.setupFee || 0),
         billingCycle: effectivePackage.billingCycle || packageData.billingCycle || 'yearly',
         isActive: effectivePackage.isActive !== undefined ? effectivePackage.isActive : (packageData.isActive !== undefined ? packageData.isActive : true),
         maxBusinesses: effectivePackage.maxBusinesses || packageData.maxBusinesses || 1,
@@ -181,14 +186,18 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       });
       
       // Update cache in localStorage
-      const updatedCache = Array.isArray(packages) ? [...packages] : [];
-      const existingCacheIndex = updatedCache.findIndex(p => p && p.id === finalPackage.id);
-      if (existingCacheIndex >= 0) {
-        updatedCache[existingCacheIndex] = finalPackage;
-      } else {
-        updatedCache.push(finalPackage);
+      try {
+        const updatedCache = Array.isArray(packages) ? [...packages] : [];
+        const existingCacheIndex = updatedCache.findIndex(p => p && p.id === finalPackage.id);
+        if (existingCacheIndex >= 0) {
+          updatedCache[existingCacheIndex] = finalPackage;
+        } else {
+          updatedCache.push(finalPackage);
+        }
+        localStorage.setItem('cachedSubscriptionPackages', JSON.stringify(updatedCache));
+      } catch (cacheError) {
+        console.error('Error updating cache:', cacheError);
       }
-      localStorage.setItem('cachedSubscriptionPackages', JSON.stringify(updatedCache));
       
       toast({
         title: "Success",

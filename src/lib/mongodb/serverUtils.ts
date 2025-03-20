@@ -31,6 +31,7 @@ export const checkServerAvailability = async (): Promise<boolean> => {
         return data.success === true;
       } else {
         console.warn('Server returned non-JSON response:', contentType);
+        // Instead of failing, assume server is not available when response isn't JSON
         return false;
       }
     } catch (jsonError) {

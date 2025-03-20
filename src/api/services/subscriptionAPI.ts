@@ -32,6 +32,32 @@ export const saveSubscriptionPackage = async (packageData: any) => {
       console.log('Generated new package ID:', packageData.id);
     }
     
+    // Try a direct API call without using axios first
+    try {
+      const directResponse = await fetch('/api/subscription-packages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(packageData),
+        signal: AbortSignal.timeout(8000)
+      });
+      
+      if (directResponse.ok) {
+        const contentType = directResponse.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await directResponse.json();
+          console.log('API: Direct fetch save response:', data);
+          return data;
+        }
+      }
+      console.warn('Direct fetch failed, falling back to axios');
+    } catch (directError) {
+      console.warn('Direct fetch error:', directError);
+      // Continue with axios as fallback
+    }
+    
+    // Fall back to regular axios request
     const response = await api.post('/subscription-packages', packageData);
     console.log('API: Save response:', response.data);
     return response.data;
