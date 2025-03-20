@@ -8,21 +8,30 @@ export const checkServerAvailability = async (): Promise<boolean> => {
   console.log("Checking server availability...");
   
   try {
-    // Use a shorter timeout for faster response
-    const response = await api.get('/test-connection', { 
-      timeout: 5000, // Reduced from 8000ms to 5000ms for faster response
-      validateStatus: (status) => status >= 200 && status < 500 // Accept any non-server error response
-    });
+    // Try alternate endpoints to check server availability
+    const endpoints = ['/test-connection', '/subscription-packages'];
     
-    // Log the response for debugging
-    console.log("Server availability check response:", response);
-    
-    // If we got any response at all, consider the server available
-    if (response) {
-      console.log("Server is available, response:", response.data);
-      return true;
+    for (const endpoint of endpoints) {
+      try {
+        // Use a shorter timeout for faster response
+        const response = await api.get(endpoint, { 
+          timeout: 3000, // Very short timeout for faster response
+          validateStatus: (status) => status >= 200 && status < 500 // Accept any non-server error response
+        });
+        
+        // If we got any response at all, consider the server available
+        if (response) {
+          console.log(`Server is available via ${endpoint}, response:`, response.data);
+          return true;
+        }
+      } catch (err) {
+        // Try the next endpoint if this one fails
+        console.log(`Endpoint ${endpoint} check failed, trying next...`);
+      }
     }
     
+    // If all endpoints failed, server is not available
+    console.log("All server endpoints failed to respond");
     return false;
   } catch (error) {
     if (error.response) {
@@ -39,8 +48,10 @@ export const checkServerAvailability = async (): Promise<boolean> => {
 
 /**
  * Gets local fallback data when server is unavailable
+ * THIS SHOULD ONLY BE USED AS A LAST RESORT
  */
 export const getLocalFallbackPackages = (type?: string): any[] => {
+  console.log("WARNING: Using fallback subscription data - THIS SHOULD ONLY HAPPEN WHEN SERVER IS DOWN");
   // Default fallback packages for when server is unavailable
   const fallbackPackages = [
     {

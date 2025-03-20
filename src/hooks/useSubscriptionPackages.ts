@@ -22,16 +22,20 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
   const [error, setError] = useState<any>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error' | 'offline'>('connecting');
   const { toast } = useToast();
-
+  const [retryCount, setRetryCount] = useState(0);
+  
   // Function to fetch packages
-  const fetchPackages = useCallback(async () => {
+  const fetchPackages = useCallback(async (forceFallback = false) => {
     setIsLoading(true);
     setError(null);
-    setConnectionStatus('connecting');
+    
+    if (!forceFallback) {
+      setConnectionStatus('connecting');
+    }
     
     try {
       // Check if server is running
-      const serverAvailable = await isServerRunning();
+      const serverAvailable = forceFallback ? false : await isServerRunning();
       
       if (!serverAvailable) {
         console.log("Server not available, using fallback data");
@@ -44,47 +48,62 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
         return;
       }
       
+      // Server is available, try to get real data
+      console.log("Server is available, fetching real package data");
+      
       // Get packages based on type or get all
       let fetchedPackages: ISubscriptionPackage[];
       
-      if (options.type) {
-        console.log(`Fetching packages for type: ${options.type}`);
-        fetchedPackages = await fetchSubscriptionPackagesByType(options.type as "Business" | "Influencer");
-      } else {
-        console.log('Fetching all packages');
-        fetchedPackages = await fetchSubscriptionPackages();
+      try {
+        if (options.type) {
+          console.log(`Fetching packages for type: ${options.type}`);
+          fetchedPackages = await fetchSubscriptionPackagesByType(options.type as "Business" | "Influencer");
+        } else {
+          console.log('Fetching all packages');
+          fetchedPackages = await fetchSubscriptionPackages();
+        }
+        
+        console.log(`Successfully fetched ${fetchedPackages?.length || 0} packages from MongoDB:`, fetchedPackages);
+        
+        // Ensure we have valid array of packages
+        if (!Array.isArray(fetchedPackages)) {
+          console.warn("Received non-array response for packages:", fetchedPackages);
+          fetchedPackages = [];
+        }
+        
+        // If we got packages, use them
+        if (fetchedPackages.length > 0) {
+          setPackages(fetchedPackages);
+          setConnectionStatus('connected');
+          setIsLoading(false);
+          return;
+        }
+        
+        // If we got no packages, show error
+        console.warn("No packages returned from server");
+        setError("No subscription packages found in database");
+        setConnectionStatus('error');
+        setPackages([]);
+      } catch (fetchError) {
+        console.error("Error fetching packages from MongoDB:", fetchError);
+        setError(fetchError instanceof Error ? fetchError.message : 'Failed to fetch subscription packages');
+        setConnectionStatus('error');
+        setPackages([]);
       }
-      
-      console.log(`Fetched ${fetchedPackages.length} packages:`, fetchedPackages);
-      
-      // Ensure we have valid array of packages
-      if (!Array.isArray(fetchedPackages)) {
-        console.warn("Received non-array response for packages:", fetchedPackages);
-        fetchedPackages = [];
-      }
-      
-      // If we got no packages from server, use fallback data
-      if (fetchedPackages.length === 0) {
-        console.log("No packages returned from server, using fallback data");
-        const fallbackPackages = getLocalFallbackPackages(options.type);
-        fetchedPackages = fallbackPackages;
-      }
-      
-      setPackages(fetchedPackages);
-      setConnectionStatus('connected');
     } catch (err) {
-      console.error('Error fetching packages:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load subscription packages');
+      console.error('Error checking server availability:', err);
+      setError(err instanceof Error ? err.message : 'Failed to connect to server');
       setConnectionStatus('error');
-      
-      // Use fallback data when there's an error
-      console.log("Error occurred, using fallback data");
-      const fallbackPackages = getLocalFallbackPackages(options.type);
-      setPackages(fallbackPackages);
+      setPackages([]);
     } finally {
       setIsLoading(false);
     }
   }, [options.type]);
+
+  const retryConnection = useCallback(() => {
+    setRetryCount(prev => prev + 1);
+    return fetchPackages(false);
+  }, [fetchPackages]);
 
   const addOrUpdatePackage = useCallback(async (packageData: ISubscriptionPackage) => {
     try {
@@ -219,14 +238,14 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
   // Initialize data
   useEffect(() => {
     fetchPackages();
-  }, [fetchPackages]);
+  }, [fetchPackages, retryCount]);
 
   return {
     packages,
     isLoading,
     error,
     connectionStatus,
-    retryConnection: fetchPackages,
+    retryConnection,
     fetchPackages,
     addOrUpdatePackage,
     removePackage

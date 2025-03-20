@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Check, AlertCircle, Info, RefreshCw, WifiOff } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,15 +43,7 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
       error,
       connectionStatus
     });
-    
-    // Force an additional fetch after a short delay to make sure we get the latest data
-    const timer = setTimeout(() => {
-      console.log("Performing additional fetch to ensure latest data");
-      fetchPackages();
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, [userRole, packages, isLoading, error, connectionStatus, fetchPackages]);
+  }, [userRole, packages, isLoading, error, connectionStatus]);
 
   const handleSubscribe = (pkg: any) => {
     console.log("Selected package:", pkg);
@@ -80,7 +71,7 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error loading packages</AlertTitle>
           <AlertDescription className="flex flex-col gap-2">
-            {error}
+            {typeof error === 'string' ? error : 'Failed to load subscription packages'}
             <Button
               variant="outline"
               size="sm"
@@ -103,8 +94,10 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
           <Info className="h-4 w-4" />
           <AlertTitle>No packages available</AlertTitle>
           <AlertDescription className="flex flex-col gap-2">
-            No subscription packages are currently available for {userRole}s.
-            Please check back later or contact an administrator.
+            {connectionStatus === 'connected' 
+              ? `No subscription packages found for ${userRole}s in the database. Please contact an administrator.`
+              : `No subscription packages are currently available for ${userRole}s.`
+            }
             {(connectionStatus === 'error' || connectionStatus === 'offline') && (
               <Button
                 variant="outline"
@@ -133,7 +126,7 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
           <WifiOff className="h-4 w-4 text-amber-600" />
           <AlertTitle className="text-amber-800">Offline Mode</AlertTitle>
           <AlertDescription className="text-amber-700">
-            You're viewing sample subscription packages in offline mode.
+            Unable to connect to the database server. Displaying sample subscription packages.
             <Button
               variant="outline"
               size="sm"

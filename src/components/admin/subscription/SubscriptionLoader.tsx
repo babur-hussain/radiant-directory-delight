@@ -22,7 +22,7 @@ const SubscriptionLoader: React.FC<SubscriptionLoaderProps> = ({
         {connectionStatus === 'offline' ? (
           <>
             <WifiOff className="h-8 w-8 text-amber-500" />
-            <p className="text-sm text-muted-foreground">Loading offline subscription data...</p>
+            <p className="text-sm text-muted-foreground">Database connection failed, using fallback data...</p>
             {onRetry && (
               <Button 
                 variant="outline" 
@@ -31,14 +31,14 @@ const SubscriptionLoader: React.FC<SubscriptionLoaderProps> = ({
                 className="mt-2 flex items-center gap-2"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Try Online Connection
+                Try Database Connection
               </Button>
             )}
           </>
         ) : connectionStatus === 'error' ? (
           <>
             <AlertCircle className="h-8 w-8 text-red-500" />
-            <p className="text-sm text-muted-foreground">Connection error, using fallback data...</p>
+            <p className="text-sm text-muted-foreground">Database connection error, please try again...</p>
             {onRetry && (
               <Button 
                 variant="outline" 
@@ -54,12 +54,12 @@ const SubscriptionLoader: React.FC<SubscriptionLoaderProps> = ({
         ) : connectionStatus === 'connecting' ? (
           <>
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Connecting to MongoDB...</p>
+            <p className="text-sm text-muted-foreground">Connecting to database server...</p>
           </>
         ) : (
           <>
             <Database className="h-8 w-8 text-green-500" />
-            <p className="text-sm text-muted-foreground">Loading subscription data...</p>
+            <p className="text-sm text-muted-foreground">Loading data from MongoDB...</p>
           </>
         )}
       </div>

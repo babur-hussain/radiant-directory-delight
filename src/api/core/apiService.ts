@@ -13,7 +13,7 @@ export const LOCAL_API_URL = 'http://localhost:3001/api';
 // Create axios instance with configurable timeout
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 8000, // Increased timeout to handle slower connections
+  timeout: 5000, // Reduced to 5 seconds to avoid long wait times
   headers: {
     'Content-Type': 'application/json'
   }
@@ -45,26 +45,31 @@ export const isServerRunning = async (useLocalFallback = false) => {
     ? [LOCAL_API_URL, API_BASE_URL] 
     : [API_BASE_URL, LOCAL_API_URL];
   
+  // Try multiple endpoints to improve reliability
+  const endpoints = ['/test-connection', '/subscription-packages'];
+  
   for (const url of urls) {
-    try {
-      console.log(`Checking if server is running at ${url}/test-connection`);
-      const response = await axios.get(`${url}/test-connection`, { 
-        timeout: 1500 // Short timeout for faster fallback
-      });
-      console.log(`Server status check response for ${url}:`, response.data);
-      
-      // Update the baseURL if the working URL is different from the default
-      if (url !== api.defaults.baseURL) {
-        console.log(`Switching API base URL to ${url}`);
-        api.defaults.baseURL = url;
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`Checking if server is running at ${url}${endpoint}`);
+        const response = await axios.get(`${url}${endpoint}`, { 
+          timeout: 2000 // Very short timeout for faster fallback
+        });
+        console.log(`Server status check response for ${url}${endpoint}:`, response.data);
+        
+        // Update the baseURL if the working URL is different from the default
+        if (url !== api.defaults.baseURL) {
+          console.log(`Switching API base URL to ${url}`);
+          api.defaults.baseURL = url;
+        }
+        
+        return true;
+      } catch (error) {
+        console.warn(`Server endpoint ${url}${endpoint} is not available:`, error.message);
       }
-      
-      return true;
-    } catch (error) {
-      console.warn(`Server at ${url} is not available:`, error.message);
     }
   }
   
-  console.warn("All server options are unavailable. Using local fallback data.");
+  console.warn("All server options are unavailable.");
   return false;
 };
