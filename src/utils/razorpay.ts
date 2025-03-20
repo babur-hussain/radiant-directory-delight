@@ -180,6 +180,7 @@ export const generateReceiptId = (): string => {
 
 /**
  * Generate a Razorpay compatible order ID - must match exact format
+ * Note: In production, order IDs should come from the backend
  * Format: order_<14-character alphanumeric ID>
  */
 export const generateOrderId = (): string => {
@@ -250,7 +251,8 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
       max_count: 3
     },
     // Add these to help with auto payments for subscriptions
-    remember_customer: options.recurring === true ? true : false,
+    remember_customer: options.recurring === true,
+    save: options.recurring === true,
     send_sms_hash: true,
     readonly: {
       email: false,
@@ -261,21 +263,7 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
       ...options.modal,
       backdropclose: false,
       escape: false
-    },
-    // Add recurring payment configurations for subscriptions
-    ...(options.recurring ? {
-      subscription_card_change: false,
-      subscription_payment_capture: true,
-      payment_capture: true,
-      auth_type: "netbanking",
-      save: true,
-      config: {
-        display: {
-          language: "en",
-          hide_topbar: false
-        }
-      }
-    } : {})
+    }
   };
   
   console.log("Creating Razorpay checkout with options:", formattedOptions);

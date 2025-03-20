@@ -99,9 +99,9 @@ export const useRazorpayPayment = () => {
       
       // Create notes object with subscription details
       const notes: Record<string, any> = {
-        packageId: String(selectedPackage.id),
+        packageId: selectedPackage.id,
         packageType: isOneTimePackage ? "one-time" : "recurring",
-        packageName: String(selectedPackage.title),
+        packageName: selectedPackage.title,
         receiptId: receiptId
       };
       
@@ -112,13 +112,13 @@ export const useRazorpayPayment = () => {
           nextBillingDate.setMonth(nextBillingDate.getMonth() + (selectedPackage.advancePaymentMonths || 0));
         }
         
-        notes.billingCycle = String(selectedPackage.billingCycle || "monthly");
-        notes.setupFee = String(selectedPackage.setupFee || 0);
-        notes.recurringAmount = String(selectedPackage.price || 0);
-        notes.advanceMonths = String(selectedPackage.advancePaymentMonths || 0);
+        notes.billingCycle = selectedPackage.billingCycle || "monthly";
+        notes.setupFee = selectedPackage.setupFee || 0;
+        notes.recurringAmount = selectedPackage.price || 0;
+        notes.advanceMonths = selectedPackage.advancePaymentMonths || 0;
         notes.nextBillingDate = nextBillingDate.toISOString();
-        notes.isRecurring = "true";
-        notes.autoPayment = "true"; // Add auto-payment flag for recurring
+        notes.isRecurring = true;
+        notes.autoPayment = true; // Add auto-payment flag for recurring
       }
       
       // Format notes for Razorpay (ensure all values are strings)
@@ -145,8 +145,32 @@ export const useRazorpayPayment = () => {
         description: `Payment for ${selectedPackage.title}`,
         image: 'https://example.com/your_logo.png', // Replace with actual logo URL
         order_id: orderId,
-        recurring: !isOneTimePackage, // Enable recurring flag for subscriptions
-        remember_customer: !isOneTimePackage, // Remember customer for easier recurring payments
+        prefill: {
+          name: user?.fullName || '',
+          email: user?.email || '',
+          contact: user?.phone || ''
+        },
+        notes: formattedNotes,
+        theme: {
+          color: '#3399cc'
+        },
+        recurring: !isOneTimePackage,
+        remember_customer: !isOneTimePackage,
+        payment_capture: true,
+        modal: {
+          escape: false,
+          backdropclose: false,
+          ondismiss: function() {
+            console.log("Checkout form closed by user");
+            setIsLoading(false);
+            
+            try {
+              onFailure({ message: "Payment cancelled by user" });
+            } catch (callbackErr) {
+              console.error("Error in onFailure callback:", callbackErr);
+            }
+          }
+        },
         handler: function(response: RazorpayResponse) {
           // Add package info to response
           const enrichedResponse = {
@@ -187,37 +211,6 @@ export const useRazorpayPayment = () => {
             console.error("Error in onSuccess callback:", callbackErr);
           }
         },
-        prefill: {
-          name: user?.fullName || '',
-          email: user?.email || '',
-          contact: user?.phone || ''
-        },
-        notes: formattedNotes,
-        theme: {
-          color: '#3399cc'
-        },
-        modal: {
-          escape: false,
-          backdropclose: false,
-          ondismiss: function() {
-            console.log("Checkout form closed by user");
-            setIsLoading(false);
-            
-            try {
-              onFailure({ message: "Payment cancelled by user" });
-            } catch (callbackErr) {
-              console.error("Error in onFailure callback:", callbackErr);
-            }
-          }
-        },
-        // Additional settings for recurring payments
-        ...((!isOneTimePackage) ? {
-          subscription_card_change: false,
-          subscription_payment_capture: true,
-          payment_capture: true,
-          auth_type: "netbanking",
-          save: true
-        } : {})
       };
 
       try {
