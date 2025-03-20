@@ -9,6 +9,7 @@ import {
   deleteSubscriptionPackage,
   isServerRunning
 } from '@/lib/mongodb/subscriptionUtils';
+import { api } from '@/api/core/apiService';
 
 export interface UseSubscriptionPackagesOptions {
   initialOfflineMode?: boolean;
@@ -99,7 +100,7 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       }
       
       if (!packageData.title) {
-        throw new Error("Package title is required");
+        packageData.title = "Untitled Package";
       }
       
       if (!packageData.type) {
@@ -107,11 +108,11 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       }
       
       if (!packageData.shortDescription) {
-        throw new Error("Short description is required");
+        packageData.shortDescription = packageData.title;
       }
       
       if (!packageData.fullDescription) {
-        throw new Error("Full description is required");
+        packageData.fullDescription = packageData.shortDescription;
       }
       
       // Check if server is available before attempting to save

@@ -11,6 +11,7 @@ import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { ISubscription } from '@/models/Subscription';
 import { SubscriptionPackage } from '@/data/subscriptionData';
 import { checkServerAvailability } from '@/lib/mongodb/serverUtils';
+import { api } from '@/api/core/apiService';
 
 /**
  * Fetches all subscription packages from MongoDB
@@ -180,9 +181,22 @@ export const saveSubscriptionPackage = async (packageData: SubscriptionPackage |
       return sanitizedPackage as ISubscriptionPackage;
     }
     
-    // Try to save via the API first (this will use server.js)
+    // Try direct API call first (bypass the abstraction for more control)
     try {
-      console.log("Attempting to save package via API");
+      console.log("Attempting direct API call to save package");
+      const directApiResponse = await api.post('/api/subscription-packages', sanitizedPackage);
+      console.log("Direct API save response:", directApiResponse.data);
+      if (directApiResponse.data) {
+        return directApiResponse.data;
+      }
+    } catch (directApiError) {
+      console.error("Direct API save failed:", directApiError);
+      // Continue with other methods
+    }
+    
+    // Try to save via the API (this will use server.js)
+    try {
+      console.log("Attempting to save package via subscription API");
       const apiResponse = await apiSaveSubscriptionPackage(sanitizedPackage);
       console.log("API save response:", apiResponse);
       if (apiResponse) {
