@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -30,7 +31,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
     packages,
     isLoading,
     error,
-    offlineMode,
+    isOffline, 
     fetchPackages,
     addOrUpdatePackage,
     removePackage
@@ -97,11 +98,11 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
     if (onRetryConnection) onRetryConnection();
   };
 
-  if (error && !offlineMode) {
+  if (error && !isOffline) {
     return <SubscriptionPermissionError error={error} onRetry={handleRetryConnection} />;
   }
 
-  const effectiveConnectionStatus = connectionStatus || (offlineMode ? 'offline' : 'connected');
+  const effectiveConnectionStatus = connectionStatus || (isOffline ? 'offline' : 'connected');
   const currentPackages = activeTab === 'business' ? businessPackages : influencerPackages;
 
   return (
