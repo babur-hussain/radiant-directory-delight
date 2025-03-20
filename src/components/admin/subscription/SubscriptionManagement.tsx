@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,6 +25,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
 }) => {
   const [activeTab, setActiveTab] = useState<string>('business');
   const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
+  const [forceRefresh, setForceRefresh] = useState<number>(0); // Add a counter to force refresh
   
   const {
     packages,
@@ -45,10 +45,11 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
   const businessPackages = safePackages.filter(pkg => pkg && pkg.type === 'Business');
   const influencerPackages = safePackages.filter(pkg => pkg && pkg.type === 'Influencer');
 
-  // Refresh packages when tab changes
+  // Refresh packages when tab changes or force refresh is triggered
   useEffect(() => {
+    console.log("Fetching packages due to tab change or force refresh");
     fetchPackages();
-  }, [activeTab, fetchPackages]);
+  }, [activeTab, fetchPackages, forceRefresh]);
 
   const handleSavePackage = async (packageData: ISubscriptionPackage) => {
     try {
@@ -67,8 +68,14 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
       setSelectedPackage(null);
       
       // Force refresh packages after save
-      await fetchPackages();
-      console.log('Packages refreshed after save');
+      console.log("Package saved, triggering refresh");
+      setForceRefresh(prevCount => prevCount + 1);
+      
+      toast({
+        title: "Success",
+        description: `Package "${packageData.title}" has been saved.`,
+      });
+      
     } catch (err) {
       console.error('Error saving package:', err);
       onPermissionError(err);
@@ -84,6 +91,14 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
       await removePackage(packageId);
       
       // Force refresh packages after delete
+      console.log("Package deleted, triggering refresh");
+      setForceRefresh(prevCount => prevCount + 1);
+      
+      toast({
+        title: "Success",
+        description: `Package has been deleted.`,
+      });
+      
       await fetchPackages();
       console.log('Packages refreshed after delete');
     } catch (err) {
@@ -138,9 +153,10 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
       packagesCount: safePackages.length,
       businessPackages: businessPackages.length,
       influencerPackages: influencerPackages.length,
-      connectionStatus: effectiveConnectionStatus
+      connectionStatus: effectiveConnectionStatus,
+      forceRefresh
     });
-  }, [safePackages, businessPackages, influencerPackages, isLoading, effectiveConnectionStatus]);
+  }, [safePackages, businessPackages, influencerPackages, isLoading, effectiveConnectionStatus, forceRefresh]);
 
   return (
     <div className="space-y-6">

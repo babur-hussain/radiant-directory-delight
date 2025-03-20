@@ -8,10 +8,14 @@ export const checkServerAvailability = async (): Promise<boolean> => {
   console.log("Checking server availability...");
   
   try {
+    // Use a longer timeout to avoid false negatives
     const response = await api.get('/test-connection', { 
-      timeout: 5000,
+      timeout: 8000,
       validateStatus: (status) => status >= 200 && status < 500 // Accept any non-server error response
     });
+    
+    // Log the response for debugging
+    console.log("Server availability check response:", response);
     
     // If we got any response at all, consider the server available
     if (response) {

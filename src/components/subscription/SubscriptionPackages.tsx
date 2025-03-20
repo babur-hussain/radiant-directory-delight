@@ -28,7 +28,8 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
     isLoading, 
     error, 
     connectionStatus,
-    retryConnection 
+    retryConnection,
+    fetchPackages 
   } = useSubscriptionPackages({ 
     type: userRole as string
   });
@@ -43,7 +44,15 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
       error,
       connectionStatus
     });
-  }, [userRole, packages, isLoading, error, connectionStatus]);
+    
+    // Force an additional fetch after a short delay to make sure we get the latest data
+    const timer = setTimeout(() => {
+      console.log("Performing additional fetch to ensure latest data");
+      fetchPackages();
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [userRole, packages, isLoading, error, connectionStatus, fetchPackages]);
 
   const handleSubscribe = (pkg: any) => {
     console.log("Selected package:", pkg);

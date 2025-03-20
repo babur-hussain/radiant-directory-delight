@@ -5,7 +5,11 @@ import {
   createOrUpdateSubscriptionPackage, 
   deleteSubscriptionPackage as serviceDeleteSubscriptionPackage
 } from '@/services/subscriptionService';
-import { saveSubscriptionPackage as apiSaveSubscriptionPackage } from '@/api/services/subscriptionAPI';
+import { 
+  fetchSubscriptionPackages as apiFetchSubscriptionPackages,
+  fetchSubscriptionPackagesByType as apiFetchSubscriptionPackagesByType,
+  saveSubscriptionPackage as apiSaveSubscriptionPackage
+} from '@/api/services/subscriptionAPI';
 import { getUserSubscription as apiFetchUserSubscriptions } from '@/api/services/subscriptionAPI';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { ISubscription } from '@/models/Subscription';
@@ -18,6 +22,23 @@ import { api } from '@/api/core/apiService';
 export const fetchSubscriptionPackages = async (): Promise<ISubscriptionPackage[]> => {
   try {
     console.log("Fetching all subscription packages from MongoDB...");
+    
+    // First try using the API endpoint
+    try {
+      console.log("Attempting to fetch packages via API");
+      const apiPackages = await apiFetchSubscriptionPackages();
+      
+      if (apiPackages && apiPackages.length > 0) {
+        console.log("Successfully fetched packages via API:", apiPackages);
+        return apiPackages;
+      } else {
+        console.log("API returned empty packages, falling back to direct service");
+      }
+    } catch (apiError) {
+      console.error("Error fetching packages via API, falling back to direct service:", apiError);
+    }
+    
+    // Fall back to direct service
     const packages = await getAllSubscriptionPackages();
     
     if (!packages || packages.length === 0) {
@@ -53,6 +74,23 @@ export const fetchSubscriptionPackages = async (): Promise<ISubscriptionPackage[
 export const fetchSubscriptionPackagesByType = async (type: "Business" | "Influencer"): Promise<ISubscriptionPackage[]> => {
   try {
     console.log(`Fetching ${type} subscription packages from MongoDB...`);
+    
+    // First try using the API endpoint
+    try {
+      console.log(`Attempting to fetch ${type} packages via API`);
+      const apiPackages = await apiFetchSubscriptionPackagesByType(type);
+      
+      if (apiPackages && apiPackages.length > 0) {
+        console.log(`Successfully fetched ${type} packages via API:`, apiPackages);
+        return apiPackages;
+      } else {
+        console.log(`API returned empty ${type} packages, falling back to direct service`);
+      }
+    } catch (apiError) {
+      console.error(`Error fetching ${type} packages via API, falling back to direct service:`, apiError);
+    }
+    
+    // Fall back to direct service
     const packages = await getSubscriptionPackagesByType(type);
     
     if (!packages || packages.length === 0) {

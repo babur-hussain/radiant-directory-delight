@@ -12,7 +12,7 @@ import {
 
 export interface UseSubscriptionPackagesOptions {
   type?: string;
-  initialOfflineMode?: boolean;
+  initialOfflineMode?: boolean; // Added property to match usage
 }
 
 export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions = {}) => {

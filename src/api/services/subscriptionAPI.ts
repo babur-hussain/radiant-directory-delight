@@ -17,6 +17,7 @@ export const fetchSubscriptionPackages = async () => {
 export const fetchSubscriptionPackagesByType = async (type: string) => {
   try {
     console.log(`API: Fetching ${type} subscription packages`);
+    // Make sure we're using the correct endpoint to fetch by type
     const response = await api.get(`/subscription-packages/type/${type}`);
     console.log(`API: Fetched ${type} subscription packages:`, response.data);
     return response.data;
