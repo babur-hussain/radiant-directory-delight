@@ -8,10 +8,10 @@ export { updateUserRole, updateUserPermission } from './roleManagement';
 export { getUserById, getAllUsers } from './userDataAccess';
 
 // Export test user creation functions
-export { createTestUser, ensureTestUsers, TestUserData } from './testUsers';
+export { createTestUser, ensureTestUsers } from './testUsers';
 
 // Export utility functions
 export { formatUser, getLocalUsers } from './utils/userUtils';
 
-// Re-export types correctly
+// Re-export types correctly using 'export type'
 export type { TestUserData } from './testUsers';
