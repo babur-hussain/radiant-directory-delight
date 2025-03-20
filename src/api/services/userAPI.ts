@@ -68,13 +68,21 @@ export const createOrUpdateUser = async (userData: any) => {
       uid: uid, // Ensure uid is set
       createdAt: userData.createdAt || new Date(),
       lastLogin: userData.lastLogin || new Date(),
-      role: userData.role || 'User',
+      // Make sure role is preserved from userData or defaults to 'User' for new users
+      role: userData.role || (index >= 0 ? collection[index].role : 'User'),
       isAdmin: userData.isAdmin || false
     };
 
+    console.log(`Formatted user data: ${JSON.stringify(formattedUserData)}`);
+
     if (index >= 0) {
-      // Update existing user
-      collection[index] = { ...collection[index], ...formattedUserData };
+      // Update existing user but preserve the role if not explicitly changed
+      collection[index] = { 
+        ...collection[index], 
+        ...formattedUserData,
+        // Only update role if explicitly provided
+        role: userData.role || collection[index].role
+      };
       console.log(`Updated existing user in database:`, collection[index]);
     } else {
       // Add new user - ensure we have all required fields
@@ -99,7 +107,7 @@ export const createOrUpdateUser = async (userData: any) => {
         displayName: formattedUserData.name || formattedUserData.displayName,
         name: formattedUserData.name || formattedUserData.displayName,
         photoURL: formattedUserData.photoURL,
-        role: formattedUserData.role || 'User',
+        role: formattedUserData.role,
         isAdmin: formattedUserData.isAdmin || false,
         employeeCode: formattedUserData.employeeCode,
         createdAt: formattedUserData.createdAt,
@@ -108,7 +116,12 @@ export const createOrUpdateUser = async (userData: any) => {
       };
       
       if (userIndex >= 0) {
-        allUsers[userIndex] = { ...allUsers[userIndex], ...formattedUser };
+        // Update but preserve role if not explicitly changed
+        allUsers[userIndex] = { 
+          ...allUsers[userIndex], 
+          ...formattedUser,
+          role: userData.role || allUsers[userIndex].role
+        };
       } else {
         allUsers.push(formattedUser);
       }

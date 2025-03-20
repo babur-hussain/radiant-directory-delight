@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect } from 'react';
 import { 
   GoogleAuthProvider, 
@@ -38,7 +39,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const isDefaultAdmin = firebaseUser.email === 'baburhussain660@gmail.com';
       
+      // Make sure to use the role from additionalFields
       const userRole = isDefaultAdmin ? 'Admin' : (additionalFields?.role || 'User');
+      console.log(`Processing user with role: ${userRole}`);
       
       const formattedUserData = {
         uid: firebaseUser.uid,
@@ -145,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         displayName: firebaseUser.displayName,
         photoURL: firebaseUser.photoURL,
         isAdmin: firebaseUser.email === 'baburhussain660@gmail.com',
-        role: firebaseUser.email === 'baburhussain660@gmail.com' ? 'Admin' : 'User',
+        role: firebaseUser.email === 'baburhussain660@gmail.com' ? 'Admin' : (additionalFields?.role || 'User'),
         employeeCode: additionalFields?.employeeCode || null,
         ...(additionalFields || {})
       });

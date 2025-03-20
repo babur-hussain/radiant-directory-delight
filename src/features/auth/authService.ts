@@ -36,6 +36,7 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
       
       // Determine role - either from additionalFields or default to 'User'
       const role = additionalFields?.role || 'User';
+      console.log(`User role from additionalFields: ${role}`);
       
       // Generate employee code if not provided
       const employeeCode = additionalFields?.employeeCode || generateEmployeeCode();
@@ -94,6 +95,7 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
         };
       }
 
+      console.log("Creating user with data:", userData);
       user = await createOrUpdateUser(userData);
       console.log('New user created in MongoDB:', user);
     } else if (additionalFields) {
@@ -101,6 +103,8 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
       const updatedUserData = {
         ...user,
         ...additionalFields,
+        // Make sure role is preserved from additionalFields
+        role: additionalFields.role || user.role,
         updatedAt: new Date()
       };
       
@@ -110,6 +114,7 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
         updatedUserData.role = 'Admin';
       }
       
+      console.log("Updating user with data:", updatedUserData);
       user = await createOrUpdateUser(updatedUserData);
       console.log('Existing user updated in MongoDB with additional fields:', user);
     }
