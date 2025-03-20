@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Database, RefreshCw, Play, Trash, Loader2, AlertCircle, Check } from 'lucide-react';
-import { connectToMongoDB, isMongoDBConnected } from '@/config/mongodb';
+import { connectToMongoDB, isMongoDB_Connected } from '@/config/mongodb';
 import { setupMongoDB } from '@/utils/setupMongoDB';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -26,7 +25,7 @@ const AdminDatabasePage = () => {
 
   const checkConnection = async () => {
     try {
-      const connected = isMongoDBConnected();
+      const connected = isMongoDB_Connected();
       setIsConnected(connected);
     } catch (err) {
       console.error("Connection check error:", err);
@@ -77,7 +76,6 @@ const AdminDatabasePage = () => {
       });
       
       if (result.success) {
-        // Only set collections if the operation was successful
         if (Array.isArray(result.collections)) {
           setCollections(result.collections);
         } else if (result.collections && typeof result.collections === 'object') {
@@ -90,13 +88,12 @@ const AdminDatabasePage = () => {
         });
         setError(null);
       } else {
-        // If we have an error from the result, show it
         setError(result.error || "Failed to initialize database");
         throw new Error(result.error || "Failed to initialize database");
       }
     } catch (err) {
       console.error("Initialization error:", err);
-      if (!error) { // Only set error if not already set
+      if (!error) {
         setError(`${err instanceof Error ? err.message : String(err)}`);
       }
       toast({
@@ -110,7 +107,6 @@ const AdminDatabasePage = () => {
   };
 
   const handleResetDatabase = () => {
-    // This would be implemented to reset the database
     toast({
       title: "Not Implemented",
       description: "Database reset functionality is not implemented in this version",

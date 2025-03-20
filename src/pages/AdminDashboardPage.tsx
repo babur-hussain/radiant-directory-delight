@@ -12,7 +12,7 @@ import SubscriptionPackageManagement from '@/components/admin/subscription/Subsc
 import MigrationUtility from '@/components/admin/MigrationUtility';
 import SeedDataPanel from '@/components/admin/dashboard/SeedDataPanel';
 import { useToast } from '@/hooks/use-toast';
-import { connectToMongoDB, isMongoDBConnected } from '@/config/mongodb';
+import { connectToMongoDB, isMongoDB_Connected } from '@/config/mongodb';
 import { fullSyncPackages } from '@/utils/syncMongoFirebase';
 import { diagnoseMongoDbConnection, testConnectionWithRetry } from '@/utils/mongoDebug';
 import AdminDashboardTabs from '@/components/admin/dashboard/AdminDashboardTabs';
@@ -27,6 +27,7 @@ const Dashboard = () => {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [isDiagnosing, setIsDiagnosing] = useState(false);
   const [diagnosticResults, setDiagnosticResults] = useState<any>(null);
+  const [isConnected, setIsConnected] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -165,7 +166,7 @@ const Dashboard = () => {
     setIsSyncing(true);
     try {
       // First check if MongoDB is connected
-      if (!isMongoDBConnected()) {
+      if (!isMongoDB_Connected()) {
         const connected = await connectToMongoDB();
         if (!connected) {
           throw new Error("Failed to connect to MongoDB. Cannot sync without database connection.");
@@ -234,6 +235,16 @@ const Dashboard = () => {
       description: String(error),
       variant: "destructive"
     });
+  };
+
+  const checkConnection = async () => {
+    try {
+      const connected = isMongoDB_Connected();
+      setIsConnected(connected);
+    } catch (err) {
+      console.error("Connection check error:", err);
+      setIsConnected(false);
+    }
   };
 
   return (

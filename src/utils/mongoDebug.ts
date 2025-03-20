@@ -1,91 +1,61 @@
-
-import { connectToMongoDB, mongoose } from '../config/mongodb';
-import dns from 'dns';
-import { isServerRunning } from '../api/mongoAPI';
+import { connectToMongoDB, mongoose, isMongoDB_Connected } from '@/config/mongodb';
+import { getEnvironment } from './environment';
 
 export const diagnoseMongoDbConnection = async () => {
-  console.log("Starting MongoDB connection diagnostics...");
+  const environment = getEnvironment();
   
-  // Check if Node.js environment
-  const isNodeEnv = typeof process !== 'undefined' && process.versions && process.versions.node;
-  console.log(`Running in ${isNodeEnv ? 'Node.js' : 'Browser'} environment`);
-  
-  // Check if server is available
-  const serverRunning = await isServerRunning();
-  console.log(`MongoDB server available: ${serverRunning ? 'Yes' : 'No'}`);
-  
-  // Get MongoDB URI
-  const uri = typeof process !== 'undefined' && process.env.MONGODB_URI 
-    ? process.env.MONGODB_URI 
-    : 'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
-  
-  // Parse the URI
   try {
-    console.log("Parsing MongoDB URI...");
-    const sanitizedUri = uri.replace(/:([^:@]+)@/, ':****@'); // Hide password
-    console.log("URI (sanitized):", sanitizedUri);
-    
-    // Extract host from URI
-    const hostMatch = uri.match(/@([^/:]+)/);
-    const host = hostMatch ? hostMatch[1] : null;
-    
-    if (host && isNodeEnv) {
-      // Try DNS lookup if in Node environment
-      try {
-        console.log(`Performing DNS lookup for ${host}...`);
-        dns.lookup(host, (err, address) => {
-          if (err) {
-            console.error(`DNS lookup failed: ${err.message}`);
-          } else {
-            console.log(`DNS resolved ${host} to ${address}`);
-          }
-        });
-      } catch (dnsError) {
-        console.error("DNS lookup error:", dnsError);
-      }
+    // First attempt connection
+    let isConnected = false;
+    try {
+      await connectToMongoDB();
+      isConnected = isMongoDB_Connected();
+    } catch (e) {
+      console.error("Connection error during diagnostics:", e);
     }
-  } catch (parseError) {
-    console.error("Error parsing MongoDB URI:", parseError);
-  }
-  
-  // Check current connection state
-  const connectionState = mongoose.connection ? mongoose.connection.readyState : 99;
-  const stateMap = {
-    0: 'disconnected',
-    1: 'connected',
-    2: 'connecting',
-    3: 'disconnecting',
-    99: 'uninitialized'
-  };
-  
-  console.log(`Current connection state: ${connectionState} (${stateMap[connectionState as keyof typeof stateMap] || 'unknown'})`);
-  
-  // Try establishing a connection
-  try {
-    console.log("Attempting test connection...");
-    const connected = await connectToMongoDB();
-    console.log(`Test connection ${connected ? 'succeeded' : 'failed'}`);
     
-    if (connected && mongoose.connection) {
-      // Try a simple query - make this browser-compatible
-      try {
-        console.log("Connection is established, but skipping admin ping in browser environment");
-        // In a browser environment, we can't do DB admin pings, so we just log success
-        console.log("Connection verification completed");
-      } catch (pingError) {
-        console.error("Error verifying connection:", pingError);
-      }
+    let connectionState = "unknown";
+    
+    // Check if we're connected
+    if (isConnected) {
+      connectionState = "connected";
+    } else {
+      connectionState = "disconnected";
     }
-  } catch (connError) {
-    console.error("Error during test connection:", connError);
+    
+    // Get connection details if available
+    let connectionDetails = {};
+    try {
+      // Access the mock connection properties safely
+      connectionDetails = {
+        readyState: mongoose.connection?.readyState || 0,
+        host: mongoose.connection?.host || 'unknown',
+        name: mongoose.connection?.name || 'unknown'
+      };
+    } catch (e) {
+      console.error("Error accessing connection details:", e);
+    }
+    
+    // Format the URI for display (remove credentials)
+    const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/default';
+    const displayUri = uri.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@');
+    
+    return {
+      environment,
+      connectionState,
+      uri: displayUri,
+      details: connectionDetails,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("Error in diagnoseMongoDbConnection:", error);
+    return {
+      environment,
+      connectionState: "error",
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString()
+    };
   }
-  
-  return {
-    environment: isNodeEnv ? 'Node.js' : 'Browser',
-    connectionState: stateMap[connectionState as keyof typeof stateMap] || 'unknown',
-    uri: uri.replace(/:([^:@]+)@/, ':****@'), // Hide password
-    serverRunning
-  };
 };
 
 export const testConnectionWithRetry = async (maxAttempts = 3, delayMs = 2000) => {

@@ -27,7 +27,7 @@ export const mongoose = {
       localStorage.setItem(collectionName, '[]');
     }
     
-    return {
+    const modelObj = {
       schema,
       collection: { collectionName },
       find: async function(query = {}) {
@@ -46,7 +46,8 @@ export const mongoose = {
             });
           }
           
-          return {
+          // Return object with sort and exec methods
+          const resultObj = {
             sort: function(sortOptions: any) {
               // Simple sorting implementation
               const [field, order] = Object.entries(sortOptions)[0];
@@ -58,8 +59,12 @@ export const mongoose = {
             },
             exec: async function() {
               return results;
+            },
+            lean: function() {
+              return this; // Just return the same object with all methods
             }
           };
+          return resultObj;
         } catch (err) {
           console.error(`[MongoDB Mock] Error in find operation for ${name}:`, err);
           return [];
@@ -84,7 +89,7 @@ export const mongoose = {
           return null;
         }
       },
-      findOneAndUpdate: async function(query: any, update: any, options = {}) {
+      findOneAndUpdate: async function(query: any, update: any, options: any = {}) {
         console.log(`[MongoDB Mock] Updating document in ${name} with query:`, query);
         console.log(`[MongoDB Mock] Update data:`, update);
         
@@ -206,6 +211,57 @@ export const mongoose = {
           return null;
         }
       },
+      create: async function(doc: any) {
+        try {
+          // Ensure the document has an ID
+          if (!doc.id) {
+            doc.id = nanoid();
+          }
+          
+          // Add timestamp if not present
+          if (!doc.createdAt) {
+            doc.createdAt = new Date();
+          }
+          doc.updatedAt = new Date();
+          
+          // Get the collection
+          const collection = JSON.parse(localStorage.getItem(collectionName) || '[]');
+          
+          // Add new document
+          collection.push(doc);
+          
+          // Save to localStorage
+          localStorage.setItem(collectionName, JSON.stringify(collection));
+          
+          console.log(`[MongoDB Mock] Created document in ${name}:`, doc);
+          return doc;
+        } catch (err) {
+          console.error(`[MongoDB Mock] Error in create operation for ${name}:`, err);
+          throw err;
+        }
+      },
+      countDocuments: async function(query = {}) {
+        try {
+          const collection = JSON.parse(localStorage.getItem(collectionName) || '[]');
+          
+          if (Object.keys(query).length === 0) {
+            return collection.length;
+          }
+          
+          // Filter by query
+          const count = collection.filter((doc: any) => {
+            for (const [key, value] of Object.entries(query)) {
+              if (doc[key] !== value) return false;
+            }
+            return true;
+          }).length;
+          
+          return count;
+        } catch (err) {
+          console.error(`[MongoDB Mock] Error in countDocuments operation for ${name}:`, err);
+          return 0;
+        }
+      },
       save: async function(doc: any) {
         try {
           // Get the collection
@@ -249,10 +305,17 @@ export const mongoose = {
         }
       }
     };
+    
+    return modelObj;
   },
   connect: async function(uri: string) {
     console.log(`[MongoDB Mock] Connecting to ${uri}`);
     return { connection: { readyState: 1 } };
+  },
+  connection: {
+    readyState: 1,
+    host: 'localhost',
+    name: 'mock_db'
   }
 };
 
@@ -286,6 +349,9 @@ export const connectToMongoDB = async (): Promise<boolean> => {
 export const isMongoDB_Connected = (): boolean => {
   return isConnected;
 };
+
+// Add alias for isMongoDB_Connected to fix naming mismatches
+export const isMongoDBConnected = isMongoDB_Connected;
 
 // Disconnect from MongoDB (mock)
 export const disconnectFromMongoDB = async (): Promise<void> => {

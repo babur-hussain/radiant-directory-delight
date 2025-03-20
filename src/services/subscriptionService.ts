@@ -16,12 +16,14 @@ export const createSubscription = async (subscriptionData: Omit<ISubscription, '
     // Generate a unique ID
     const subscriptionId = nanoid();
     
-    const subscription = new Subscription({
+    const subscriptionModel = mongoose.model('Subscription', {});
+    
+    // Create subscription using our model's create method
+    const subscription = await subscriptionModel.create({
       ...subscriptionData,
       id: subscriptionId
     });
     
-    await subscription.save();
     console.log(`Created subscription with ID: ${subscriptionId}`);
     return subscription;
   } catch (error) {
@@ -34,7 +36,8 @@ export const createSubscription = async (subscriptionData: Omit<ISubscription, '
 export const getSubscription = async (id: string): Promise<ISubscription> => {
   try {
     console.log(`Looking for subscription with ID: ${id}`);
-    const subscription = await Subscription.findOne({ id });
+    const subscriptionModel = mongoose.model('Subscription', {});
+    const subscription = await subscriptionModel.findOne({ id });
     
     if (!subscription) {
       console.error(`Subscription with ID ${id} not found`);
@@ -53,7 +56,9 @@ export const getSubscription = async (id: string): Promise<ISubscription> => {
 export const getSubscriptions = async (): Promise<ISubscription[]> => {
   try {
     console.log('Fetching all subscriptions');
-    const subscriptions = await Subscription.find().sort({ createdAt: -1 });
+    const subscriptionModel = mongoose.model('Subscription', {});
+    const subscriptionsQuery = await subscriptionModel.find();
+    const subscriptions = await subscriptionsQuery.sort({ createdAt: -1 }).exec();
     console.log(`Found ${subscriptions.length} subscriptions`);
     return subscriptions;
   } catch (error) {
@@ -66,8 +71,9 @@ export const getSubscriptions = async (): Promise<ISubscription[]> => {
 export const updateSubscription = async (id: string, subscriptionData: Partial<ISubscription>): Promise<ISubscription> => {
   try {
     console.log(`Updating subscription with ID: ${id}`);
+    const subscriptionModel = mongoose.model('Subscription', {});
     
-    const subscription = await Subscription.findOneAndUpdate(
+    const subscription = await subscriptionModel.findOneAndUpdate(
       { id },
       { $set: subscriptionData },
       { new: true }
@@ -90,8 +96,9 @@ export const updateSubscription = async (id: string, subscriptionData: Partial<I
 export const deleteSubscription = async (id: string): Promise<void> => {
   try {
     console.log(`Deleting subscription with ID: ${id}`);
+    const subscriptionModel = mongoose.model('Subscription', {});
     
-    const result = await Subscription.findOneAndDelete({ id });
+    const result = await subscriptionModel.findOneAndDelete({ id });
     if (!result) {
       console.error(`Subscription with ID ${id} not found for deletion`);
       throw new Error(`Subscription with ID ${id} not found`);
@@ -108,8 +115,10 @@ export const deleteSubscription = async (id: string): Promise<void> => {
 export const getUserSubscriptions = async (userId: string): Promise<ISubscription[]> => {
   try {
     console.log(`Fetching subscriptions for user: ${userId}`);
+    const subscriptionModel = mongoose.model('Subscription', {});
     
-    const subscriptions = await Subscription.find({ userId }).sort({ startDate: -1 });
+    const subscriptionsQuery = await subscriptionModel.find({ userId });
+    const subscriptions = await subscriptionsQuery.sort({ startDate: -1 }).exec();
     console.log(`Found ${subscriptions.length} subscriptions for user ${userId}`);
     
     return subscriptions;
@@ -123,8 +132,9 @@ export const getUserSubscriptions = async (userId: string): Promise<ISubscriptio
 export const getActiveUserSubscription = async (userId: string): Promise<ISubscription | null> => {
   try {
     console.log(`Looking for active subscription for user ${userId}`);
+    const subscriptionModel = mongoose.model('Subscription', {});
     
-    const subscription = await Subscription.findOne({ 
+    const subscription = await subscriptionModel.findOne({ 
       userId, 
       status: 'active' 
     });
@@ -141,12 +151,13 @@ export const getActiveUserSubscription = async (userId: string): Promise<ISubscr
 export const createOrUpdateSubscriptionPackage = async (packageData: ISubscriptionPackage): Promise<ISubscriptionPackage> => {
   try {
     console.log(`Creating/updating subscription package: ${packageData.id}`);
+    const packageModel = mongoose.model('SubscriptionPackage', {});
     
     // Set updated timestamp
     packageData.updatedAt = new Date();
     
     // Find and update or create new
-    const result = await SubscriptionPackage.findOneAndUpdate(
+    const result = await packageModel.findOneAndUpdate(
       { id: packageData.id },
       { $set: packageData },
       { new: true, upsert: true }
@@ -164,7 +175,9 @@ export const createOrUpdateSubscriptionPackage = async (packageData: ISubscripti
 export const getAllSubscriptionPackages = async (): Promise<ISubscriptionPackage[]> => {
   try {
     console.log('Fetching all subscription packages');
-    const packages = await SubscriptionPackage.find().sort({ createdAt: -1 });
+    const packageModel = mongoose.model('SubscriptionPackage', {});
+    const packagesQuery = await packageModel.find();
+    const packages = await packagesQuery.sort({ createdAt: -1 }).exec();
     console.log(`Found ${packages.length} subscription packages`);
     return packages;
   } catch (error) {
@@ -177,7 +190,9 @@ export const getAllSubscriptionPackages = async (): Promise<ISubscriptionPackage
 export const getSubscriptionPackagesByType = async (type: string): Promise<ISubscriptionPackage[]> => {
   try {
     console.log(`Fetching subscription packages of type: ${type}`);
-    const packages = await SubscriptionPackage.find({ type }).sort({ price: 1 });
+    const packageModel = mongoose.model('SubscriptionPackage', {});
+    const packagesQuery = await packageModel.find({ type });
+    const packages = await packagesQuery.sort({ price: 1 }).exec();
     console.log(`Found ${packages.length} ${type} subscription packages`);
     return packages;
   } catch (error) {
@@ -190,8 +205,9 @@ export const getSubscriptionPackagesByType = async (type: string): Promise<ISubs
 export const deleteSubscriptionPackage = async (packageId: string): Promise<void> => {
   try {
     console.log(`Deleting subscription package with ID: ${packageId}`);
+    const packageModel = mongoose.model('SubscriptionPackage', {});
     
-    const result = await SubscriptionPackage.findOneAndDelete({ id: packageId });
+    const result = await packageModel.findOneAndDelete({ id: packageId });
     if (!result) {
       console.error(`Subscription package with ID ${packageId} not found for deletion`);
       throw new Error(`Subscription package with ID ${packageId} not found`);

@@ -205,4 +205,29 @@ export const fetchUserSubscriptions = async (userId: string): Promise<ISubscript
   }
 };
 
-// Note: Additional utility functions will be added as needed
+// Add missing business functions
+export const fetchBusinesses = async (): Promise<IBusiness[]> => {
+  try {
+    // Implementation would fetch from MongoDB or API
+    console.log("Fetching businesses (mock implementation)");
+    
+    // Return empty array or mock data as needed
+    return [];
+  } catch (error) {
+    console.error("Error fetching businesses:", error);
+    throw error;
+  }
+};
+
+export const saveBusiness = async (businessData: IBusiness): Promise<IBusiness> => {
+  try {
+    // Implementation would save to MongoDB or API
+    console.log("Saving business (mock implementation):", businessData);
+    
+    // Return the saved business
+    return businessData;
+  } catch (error) {
+    console.error("Error saving business:", error);
+    throw error;
+  }
+};

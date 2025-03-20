@@ -237,7 +237,8 @@ export const getAllUsers = async (): Promise<User[]> => {
     
     // Get all users from MongoDB, ordered by creation date
     console.log("Executing User.find() query...");
-    const mongoUsers = await UserModel.find().sort({ createdAt: -1 }).lean();
+    const userModel = UserModel.find();
+    const mongoUsers = await userModel.sort({ createdAt: -1 }).exec();
     
     console.log(`Query executed, got ${mongoUsers.length} users`);
     
@@ -379,8 +380,9 @@ export const createTestUser = async (userData: TestUserData): Promise<User> => {
         return user;
       }
       
-      // Create the user document in MongoDB
-      await UserModel.create({
+      // Create the user document in MongoDB using the API method 
+      // instead of calling UserModel.create directly
+      await createOrUpdateUser({
         uid: userId,
         email: userData.email,
         name: userData.name,
@@ -461,3 +463,4 @@ export const ensureTestUsers = async (): Promise<void> => {
     console.error("Error ensuring test users:", error);
   }
 };
+
