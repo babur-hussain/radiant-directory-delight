@@ -30,8 +30,8 @@ declare global {
   }
 }
 
-// Updated Razorpay API key - This is a live test key that works with the Razorpay test environment
-export const RAZORPAY_KEY_ID = "rzp_test_YwBbzkC8XCGEqO";
+// Live Razorpay API key
+export const RAZORPAY_KEY_ID = "rzp_live_8PGS0Ug3QeCb2I";
 
 /**
  * Load the Razorpay script

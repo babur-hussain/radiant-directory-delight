@@ -260,14 +260,8 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         <div className="flex items-start gap-2 bg-muted p-3 rounded-md">
           <Shield className="h-5 w-5 text-muted-foreground mt-0.5" />
           <div className="text-sm">
-            <p className="font-medium">Test Payment</p>
-            <p className="text-muted-foreground">This is a test payment - you can use the following test card details:</p>
-            <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
-              <li>Card Number: 4111 1111 1111 1111</li>
-              <li>Expiry: Any future date</li>
-              <li>CVV: Any 3 digits</li>
-              <li>Name: Any name</li>
-            </ul>
+            <p className="font-medium">Secure Payment</p>
+            <p className="text-muted-foreground">Your payment information is securely processed through Razorpay.</p>
           </div>
         </div>
       </CardContent>
