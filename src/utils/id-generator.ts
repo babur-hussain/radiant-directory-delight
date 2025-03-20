@@ -23,8 +23,8 @@ export const generateShortId = (): string => {
  * @returns A properly formatted order ID
  */
 export const generateOrderId = (): string => {
-  // Simple timestamp-based order ID
-  return `order_${Date.now()}`;
+  // Format for Razorpay: order_<random string>
+  return `order_${Date.now()}_${nanoid(6)}`;
 };
 
 /**

@@ -13,7 +13,9 @@ import {
   RazorpayResponse,
   isRecurringPaymentEligible,
   calculateNextBillingDate,
-  formatSubscriptionDate
+  formatSubscriptionDate,
+  createSubscriptionPlan,
+  createSubscription
 } from '@/utils/razorpay';
 import { generateOrderId } from '@/utils/id-generator';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
@@ -122,14 +124,50 @@ export const useRazorpayPayment = () => {
         );
       }
       
-      // Configure Razorpay options
+      // For recurring plans, create a subscription
+      let subscriptionId: string | undefined;
+      
+      if (canUseRecurring) {
+        try {
+          console.log("Setting up recurring payment plan for package:", selectedPackage.title);
+          
+          // 1. Create a plan (in a real implementation, this would be done on your backend)
+          const planId = await createSubscriptionPlan({
+            packageId: selectedPackage.id,
+            amount: selectedPackage.price,
+            currency: 'INR',
+            billingCycle: selectedPackage.billingCycle,
+            name: selectedPackage.title,
+            description: `${selectedPackage.title} (${selectedPackage.billingCycle})`,
+            paymentType: selectedPackage.paymentType
+          });
+          
+          // 2. Create a subscription using the plan (also would be on backend)
+          subscriptionId = await createSubscription(
+            planId,
+            selectedPackage,
+            {
+              name: user?.fullName || '',
+              email: user?.email || '',
+              contact: user?.phone || ''
+            }
+          );
+          
+          console.log(`Created subscription with ID: ${subscriptionId}`);
+        } catch (err) {
+          console.error("Error creating subscription plan:", err);
+          // Fall back to one-time payment if subscription creation fails
+          console.log("Falling back to one-time payment method");
+        }
+      }
+      
+      // Configure Razorpay options based on payment type
       const options: RazorpayOptions = {
         key: getRazorpayKey(),
-        amount: amountInPaise,
-        currency: 'INR',
         name: 'Grow Bharat Vyapaar',
         description: `Payment for ${selectedPackage.title}`,
         image: 'https://example.com/your_logo.png', // Replace with actual logo URL
+        currency: 'INR',
         prefill: {
           name: user?.fullName || '',
           email: user?.email || '',
@@ -139,35 +177,7 @@ export const useRazorpayPayment = () => {
         theme: {
           color: '#3399cc'
         },
-        recurring: canUseRecurring,
         remember_customer: true,
-        handler: function(response: RazorpayResponse) {
-          console.log(`Payment successful:`, response);
-          
-          toast({
-            title: "Payment Successful",
-            description: `Your payment for ${selectedPackage.title} was successful.`,
-          });
-          
-          setIsLoading(false);
-          
-          try {
-            onSuccess({
-              ...response,
-              packageId: selectedPackage.id,
-              packageName: selectedPackage.title,
-              amount: initialAmount,
-              paymentType: isOneTimePackage ? "one-time" : "recurring",
-              receiptId,
-              isRecurring: canUseRecurring,
-              billingCycle: selectedPackage.billingCycle,
-              nextBillingDate: canUseRecurring ? formatSubscriptionDate(nextBillingDate) : undefined,
-              advanceMonths: selectedPackage.advancePaymentMonths || 0
-            });
-          } catch (callbackErr) {
-            console.error("Error in onSuccess callback:", callbackErr);
-          }
-        },
         modal: {
           escape: false,
           backdropclose: false,
@@ -183,10 +193,51 @@ export const useRazorpayPayment = () => {
           }
         }
       };
+      
+      // For subscription payments, add subscription_id
+      if (canUseRecurring && subscriptionId) {
+        console.log("Using subscription mode with subscription ID:", subscriptionId);
+        options.subscription_id = subscriptionId;
+        options.recurring = true;
+      } else {
+        // For one-time payments, add amount
+        console.log("Using one-time payment mode with amount:", amountInPaise);
+        options.amount = amountInPaise;
+      }
 
       try {
         // Create and open Razorpay checkout
         const razorpay = createRazorpayCheckout(options);
+        
+        // Set up payment handler
+        razorpay.on('payment.success', function(resp: any) {
+          console.log('Payment successful:', resp);
+          
+          toast({
+            title: "Payment Successful",
+            description: `Your payment for ${selectedPackage.title} was successful.`,
+          });
+          
+          setIsLoading(false);
+          
+          try {
+            onSuccess({
+              ...resp,
+              packageId: selectedPackage.id,
+              packageName: selectedPackage.title,
+              amount: initialAmount,
+              paymentType: isOneTimePackage ? "one-time" : "recurring",
+              receiptId,
+              isRecurring: canUseRecurring,
+              billingCycle: selectedPackage.billingCycle,
+              nextBillingDate: canUseRecurring ? formatSubscriptionDate(nextBillingDate) : undefined,
+              advanceMonths: selectedPackage.advancePaymentMonths || 0,
+              subscription_id: subscriptionId
+            });
+          } catch (callbackErr) {
+            console.error("Error in onSuccess callback:", callbackErr);
+          }
+        });
         
         // Handle payment failures
         razorpay.on('payment.failed', function(resp: any) {

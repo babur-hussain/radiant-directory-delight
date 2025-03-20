@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for Razorpay integration
  */
@@ -27,7 +26,7 @@ export interface RazorpayError {
 // Type for Razorpay payment options
 export interface RazorpayOptions {
   key: string;
-  amount: number;
+  amount?: number;
   currency: string;
   name: string;
   description: string;
@@ -189,6 +188,68 @@ export const formatNotesForRazorpay = (notes?: Record<string, any>): Record<stri
 };
 
 /**
+ * Create a subscription plan ID for Razorpay
+ * This is a temporary server-side function that should ideally be on the backend
+ */
+export const generatePlanId = (packageDetails: any): string => {
+  const timestamp = Date.now();
+  const randomSuffix = Math.floor(Math.random() * 10000);
+  
+  const planType = packageDetails.paymentType === 'recurring' ? 'rec' : 'one';
+  const billingCycle = packageDetails.billingCycle === 'monthly' ? 'mon' : 'yr';
+  
+  return `plan_${planType}_${billingCycle}_${timestamp}_${randomSuffix}`;
+};
+
+/**
+ * Create a subscription in Razorpay (mock implementation)
+ * In a real implementation, this should be a server-side call
+ */
+export const createSubscriptionPlan = async (packageDetails: any): Promise<string> => {
+  console.log("Creating subscription plan for package:", packageDetails);
+  
+  // This is a mock implementation - in production, you would call your backend
+  // which would then create a plan in Razorpay using their APIs
+  
+  // Generate a dummy plan ID
+  const planId = generatePlanId(packageDetails);
+  
+  // For demo purposes, we'll simulate an API call with a timeout
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      console.log(`Created mock subscription plan with ID: ${planId}`);
+      resolve(planId);
+    }, 200);
+  });
+};
+
+/**
+ * Create a subscription in Razorpay (mock implementation)
+ * In a real implementation, this should be a server-side call
+ */
+export const createSubscription = async (
+  planId: string, 
+  packageDetails: any,
+  customerDetails: any
+): Promise<string> => {
+  console.log("Creating subscription with plan:", planId, "for customer:", customerDetails);
+  
+  // This is a mock implementation - in production, you would call your backend
+  // which would then create a subscription in Razorpay using their APIs
+  
+  // Generate a dummy subscription ID
+  const subscriptionId = `sub_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+  
+  // For demo purposes, we'll simulate an API call with a timeout
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      console.log(`Created mock subscription with ID: ${subscriptionId}`);
+      resolve(subscriptionId);
+    }, 300);
+  });
+};
+
+/**
  * Create and open Razorpay checkout
  * @param options Razorpay payment options
  * @returns Razorpay instance
@@ -201,10 +262,9 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   // Ensure all numeric values in notes are converted to strings
   const notesWithStringValues = formatNotesForRazorpay(options.notes);
   
-  // Simplified options to match Razorpay expectations
-  const formattedOptions = {
+  // Prepare options based on whether this is a subscription or one-time payment
+  let formattedOptions: any = {
     key: options.key || getRazorpayKey(),
-    amount: options.amount,
     currency: options.currency || 'INR',
     name: options.name,
     description: options.description,
@@ -222,11 +282,19 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
       enabled: false
     },
     remember_customer: true,
-    // Add subscription_id for recurring payments
-    subscription_id: options.subscription_id,
-    // Support for recurring flag
-    recurring: options.recurring
   };
+  
+  // Add subscription_id for recurring payments
+  if (options.subscription_id) {
+    console.log("Using subscription mode with ID:", options.subscription_id);
+    formattedOptions.subscription_id = options.subscription_id;
+    formattedOptions.recurring = true;
+  } 
+  // Otherwise, use regular payment mode with amount
+  else if (options.amount) {
+    console.log("Using standard payment mode with amount:", options.amount);
+    formattedOptions.amount = options.amount;
+  }
   
   console.log("Creating Razorpay checkout with options:", formattedOptions);
   
@@ -237,13 +305,6 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
     console.error("Error creating Razorpay instance:", error);
     throw new Error("Failed to initialize payment gateway. Please try again.");
   }
-};
-
-/**
- * Generate a simplified recurring plan ID for reference
- */
-export const generatePlanId = (): string => {
-  return `plan_${Date.now().toString(36)}`;
 };
 
 /**

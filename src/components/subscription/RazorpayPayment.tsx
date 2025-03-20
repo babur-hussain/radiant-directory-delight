@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, CreditCard, Shield, Loader2, RefreshCw, Calendar } from 'lucide-react';
+import { AlertCircle, CreditCard, Shield, Loader2, RefreshCw, Calendar, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
@@ -238,13 +238,17 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
                 )}
                 
                 {canUseRecurring && (
-                  <div className="mt-2 bg-blue-50 p-2 rounded text-blue-800 flex items-start">
+                  <div className="mt-2 bg-blue-50 p-3 rounded text-blue-800 flex items-start">
                     <Calendar className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="font-medium">Auto-pay enabled</p>
+                      <p className="font-medium">Automatic Payments Enabled</p>
                       <p className="text-xs mt-1">
-                        Your subscription will begin immediately. Recurring payment of ₹{recurringAmount} will start from {formattedFirstRecurringDate}.
+                        Your subscription will begin immediately. Recurring payment of ₹{recurringAmount} will be automatically charged every {selectedPackage.billingCycle || 'month'} starting from {formattedFirstRecurringDate}.
                       </p>
+                      <div className="mt-2 text-xs flex items-center">
+                        <CheckCircle className="h-3 w-3 mr-1 text-green-600" />
+                        <span>Hassle-free automatic billing</span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -272,7 +276,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
             <p className="font-medium">Secure Payment</p>
             <p className="text-muted-foreground">
               {canUseRecurring 
-                ? "Automatic renewal for hassle-free service" 
+                ? "Automatic renewal ensures uninterrupted service" 
                 : "Your payment information is securely processed"}
             </p>
           </div>
