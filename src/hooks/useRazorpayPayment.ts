@@ -18,7 +18,7 @@ interface RazorpayOptions {
   onFailure: (error: any) => void;
 }
 
-// Define notes object type to fix TypeScript errors
+// Define notes object types for type safety
 interface OneTimeNotesObject {
   packageId: string;
   packageType: "one-time";
@@ -107,7 +107,7 @@ export const useRazorpayPayment = () => {
         totalPaymentAmount = 1; // Minimum 1 rupee
       }
 
-      // Create a valid order ID without special characters
+      // Create a valid order ID
       const orderId = generateOrderId();
       
       // Convert amount to paise
@@ -151,6 +151,12 @@ export const useRazorpayPayment = () => {
           packageType: "one-time"
         };
       } else {
+        // Create next billing date for recurring payments
+        const startDate = new Date();
+        if (advanceMonths > 0) {
+          startDate.setMonth(startDate.getMonth() + advanceMonths);
+        }
+        
         // Initialize recurring payment notes
         notesObject = {
           packageId: selectedPackage.id,
@@ -162,15 +168,8 @@ export const useRazorpayPayment = () => {
           subscriptionId: `sub${Date.now()}`,
           isInitialPayment: "true",  // Flag for initial payment
           isRecurring: "true",  // String "true" for Razorpay to process properly
-          nextBillingDate: ""  // Will be set below
+          nextBillingDate: startDate.toISOString()  // Set the next billing date
         };
-        
-        // Calculate next billing date for recurring payments
-        const startDate = new Date();
-        if (advanceMonths > 0) {
-          startDate.setMonth(startDate.getMonth() + advanceMonths);
-        }
-        notesObject.nextBillingDate = startDate.toISOString();
       }
       
       // Complete the options with type-specific settings and handler

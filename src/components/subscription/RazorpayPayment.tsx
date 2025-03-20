@@ -92,12 +92,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   
   useEffect(() => {
     // Only auto-trigger payment after a short delay
+    // Instead of auto-triggering, wait for the user to click the button
     const timer = setTimeout(() => {
       setLoadingScript(false);
-      if (!isProcessing && !isLoading && !error && retryCount === 0) {
-        handlePayment();
-      }
-    }, 2000);
+    }, 1500);
     
     return () => clearTimeout(timer);
   }, []);

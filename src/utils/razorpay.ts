@@ -40,8 +40,9 @@ declare global {
   }
 }
 
-// Live Razorpay API key
-export const RAZORPAY_KEY_ID = "rzp_live_8PGS0Ug3QeCb2I";
+// Test Razorpay API key - replacing live key with test key
+// This is a public key, safe to be in the codebase
+export const RAZORPAY_KEY_ID = "rzp_test_1DP5mmOlF5G5ag";
 
 /**
  * Load the Razorpay script
@@ -120,13 +121,13 @@ export const isRazorpayAvailable = (): boolean => {
 
 /**
  * Generate a unique order ID that's Razorpay compatible
- * Razorpay requires a specific format - alphanumeric without special characters
+ * Must be alphanumeric without special characters
  */
 export const generateOrderId = (): string => {
-  // Note: Razorpay doesn't require a real order ID for client-side testing
-  // It will use its own order ID in response
-  // Format: order + timestamp
-  return `order${Date.now()}${Math.floor(Math.random() * 1000000)}`;
+  // Razorpay requires a specific order ID format - alphanumeric only 
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+  return `order${timestamp}${random}`;
 };
 
 /**
