@@ -1,3 +1,4 @@
+
 import { api } from '../core/apiService';
 import { connectToMongoDB } from '@/config/mongodb';
 import { IUser } from '@/models/User';
@@ -150,6 +151,17 @@ export const createOrUpdateUser = async (userData: any) => {
       
       allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
       localStorage.setItem('all_users_data', JSON.stringify(allUsers));
+      
+      // Attempt to persist to "real" MongoDB via API if possible
+      try {
+        api.post('/users', formattedUserData).then(() => {
+          console.log(`User ${uid} successfully persisted to MongoDB via API`);
+        }).catch(err => {
+          console.warn('API persistence attempt failed (non-critical):', err.message);
+        });
+      } catch (apiError) {
+        console.warn('Failed to persist to API (using local storage only):', apiError);
+      }
       
     } catch (error) {
       console.warn('Error saving to all_users_data:', error);

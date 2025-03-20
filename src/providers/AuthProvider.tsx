@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect } from 'react';
 import { 
   GoogleAuthProvider, 
@@ -16,6 +17,7 @@ import { connectToMongoDB } from '@/config/mongodb';
 import Loading from '@/components/ui/loading';
 import { createOrUpdateUser } from '@/api/services/userAPI';
 import { toast } from "@/hooks/use-toast";
+import { api } from '@/api/core/apiService';
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -278,10 +280,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log(`Directly storing registration data with ROLE=${role}:`, userData);
       
       // Force the data into localStorage and ensure both collections are updated
-      await createOrUpdateUser(userData);
+      const savedUser = await createOrUpdateUser(userData);
       
       // Verify the role persists in storage logs
-      console.log(`Verifying role is preserved: expected=${role}, sent to storage`);
+      console.log(`Verifying role is preserved: expected=${role}, actual=${savedUser?.role}`);
+      
+      // Attempt direct API persistence for more reliable storage
+      try {
+        const apiResponse = await api.post('/users', userData);
+        console.log('API direct persistence successful:', apiResponse.data);
+      } catch (apiErr) {
+        console.warn('Direct API persistence failed (non-critical):', apiErr.message);
+      }
       
       // Call processUser to set the user state and ensure all systems are updated
       await processUser(result.user, combinedData);

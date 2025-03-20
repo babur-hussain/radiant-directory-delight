@@ -1,10 +1,10 @@
-
 import { User as FirebaseUser } from 'firebase/auth';
 import { fetchUserByUid, createOrUpdateUser, updateUserRole as apiUpdateUserRole, getAllUsers as apiGetAllUsers } from '../../api/services/userAPI';
 import { IUser } from '../../models/User';
 import { UserRole } from '@/types/auth';
 import { connectToMongoDB } from '@/config/mongodb';
 import { generateEmployeeCode } from '@/utils/id-generator';
+import { api } from '@/api/core/apiService';
 
 // Get user by Firebase UID from MongoDB
 export const getUserByUid = async (uid: string): Promise<IUser | null> => {
@@ -101,6 +101,14 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
       console.log("Creating user with data:", userData);
       user = await createOrUpdateUser(userData);
       console.log('New user created in MongoDB:', user);
+      
+      // Try direct API persistence as an alternative path
+      try {
+        const apiResponse = await api.post('/users', userData);
+        console.log('API direct persistence successful:', apiResponse.data);
+      } catch (apiErr) {
+        console.warn('Direct API persistence failed (non-critical):', apiErr.message);
+      }
     } else if (additionalFields) {
       // If user exists but we have new additionalFields, update the user
       // Make sure the role is preserved from additionalFields if provided
@@ -124,6 +132,14 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
       console.log("Updating user with data:", updatedUserData);
       user = await createOrUpdateUser(updatedUserData);
       console.log('Existing user updated in MongoDB with additional fields:', user);
+      
+      // Try direct API persistence for update as well
+      try {
+        const apiResponse = await api.put(`/users/${updatedUserData.uid}`, updatedUserData);
+        console.log('API direct update successful:', apiResponse.data);
+      } catch (apiErr) {
+        console.warn('Direct API update failed (non-critical):', apiErr.message);
+      }
     }
     
     return user;
