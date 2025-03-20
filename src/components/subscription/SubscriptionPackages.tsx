@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Check, AlertCircle, Info } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,8 +24,7 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
   
   // Use our hook to fetch packages from MongoDB
   const { packages, isLoading, error } = useSubscriptionPackages({ 
-    type: userRole as string,
-    initialOfflineMode: false
+    type: userRole as string
   });
 
   // Log for debugging

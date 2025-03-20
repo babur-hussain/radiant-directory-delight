@@ -14,7 +14,7 @@ import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 export interface SubscriptionPackageManagementProps {
   onPermissionError: (error: any) => void;
   dbInitialized?: boolean;
-  connectionStatus?: 'connecting' | 'connected' | 'error';
+  connectionStatus?: 'connecting' | 'connected' | 'error' | 'offline';
   onRetryConnection?: () => void;
 }
 

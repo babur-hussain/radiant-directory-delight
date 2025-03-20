@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import SubscriptionPackageManagement from '../../components/admin/subscription/SubscriptionManagement';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -12,7 +11,7 @@ const Dashboard = () => {
   const [isMongoDBError, setIsMongoDBError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isInitializing, setIsInitializing] = useState(true);
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'offline'>('connecting');
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error' | 'offline'>('connecting');
 
   // Initialize MongoDB connection on component mount
   useEffect(() => {

@@ -12,13 +12,14 @@ import {
 
 export interface UseSubscriptionPackagesOptions {
   type?: string;
+  initialOfflineMode?: boolean;
 }
 
 export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions = {}) => {
   const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<any>(null);
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error' | 'offline'>('connecting');
   const { toast } = useToast();
 
   // Function to fetch packages
