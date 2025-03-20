@@ -50,7 +50,14 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       }
       
       console.log(`Fetched ${fetchedPackages.length} packages:`, fetchedPackages);
-      setPackages(fetchedPackages || []);
+      
+      // Ensure we have valid array of packages
+      if (!Array.isArray(fetchedPackages)) {
+        console.warn("Received non-array response for packages:", fetchedPackages);
+        fetchedPackages = [];
+      }
+      
+      setPackages(fetchedPackages);
       setConnectionStatus('connected');
     } catch (err) {
       console.error('Error fetching packages:', err);
@@ -130,6 +137,9 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
         description: `Package "${savedPackage.title}" has been saved.`,
       });
       
+      // Ensure we fetch the latest data after saving
+      await fetchPackages();
+      
       return savedPackage;
     } catch (err) {
       console.error('Error saving package:', err);
@@ -142,7 +152,7 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
     } finally {
       setIsLoading(false);
     }
-  }, [packages, toast]);
+  }, [toast, fetchPackages]);
 
   const removePackage = useCallback(async (packageId: string) => {
     try {
@@ -171,6 +181,9 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
         description: "Package has been deleted."
       });
       
+      // Refresh the packages after deletion
+      await fetchPackages();
+      
       return true;
     } catch (err) {
       console.error('Error deleting package:', err);
@@ -183,7 +196,7 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
     } finally {
       setIsLoading(false);
     }
-  }, [packages, toast]);
+  }, [toast, fetchPackages]);
 
   // Initialize data
   useEffect(() => {

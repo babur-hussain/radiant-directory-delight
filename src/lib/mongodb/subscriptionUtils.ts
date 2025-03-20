@@ -17,7 +17,7 @@ import { api } from '@/api/core/apiService';
  */
 export const fetchSubscriptionPackages = async (): Promise<ISubscriptionPackage[]> => {
   try {
-    console.log("Fetching all subscription packages...");
+    console.log("Fetching all subscription packages from MongoDB...");
     const packages = await getAllSubscriptionPackages();
     
     if (!packages || packages.length === 0) {
@@ -52,7 +52,7 @@ export const fetchSubscriptionPackages = async (): Promise<ISubscriptionPackage[
  */
 export const fetchSubscriptionPackagesByType = async (type: "Business" | "Influencer"): Promise<ISubscriptionPackage[]> => {
   try {
-    console.log(`Fetching ${type} subscription packages...`);
+    console.log(`Fetching ${type} subscription packages from MongoDB...`);
     const packages = await getSubscriptionPackagesByType(type);
     
     if (!packages || packages.length === 0) {

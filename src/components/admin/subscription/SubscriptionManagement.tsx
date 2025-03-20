@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -45,6 +45,11 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
   const businessPackages = safePackages.filter(pkg => pkg && pkg.type === 'Business');
   const influencerPackages = safePackages.filter(pkg => pkg && pkg.type === 'Influencer');
 
+  // Refresh packages when tab changes
+  useEffect(() => {
+    fetchPackages();
+  }, [activeTab, fetchPackages]);
+
   const handleSavePackage = async (packageData: ISubscriptionPackage) => {
     try {
       console.log('Handling save package:', packageData);
@@ -60,7 +65,10 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
       
       await addOrUpdatePackage(packageData);
       setSelectedPackage(null);
+      
+      // Force refresh packages after save
       await fetchPackages();
+      console.log('Packages refreshed after save');
     } catch (err) {
       console.error('Error saving package:', err);
       onPermissionError(err);
@@ -74,7 +82,10 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
   const handleDeletePackage = async (packageId: string) => {
     try {
       await removePackage(packageId);
+      
+      // Force refresh packages after delete
       await fetchPackages();
+      console.log('Packages refreshed after delete');
     } catch (err) {
       console.error('Error deleting package:', err);
       onPermissionError(err);
@@ -109,6 +120,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
   };
 
   const handleRetryConnection = () => {
+    console.log('Retrying connection and refreshing packages...');
     fetchPackages();
     if (onRetryConnection) onRetryConnection();
   };
@@ -118,6 +130,17 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
   }
 
   const effectiveConnectionStatus = connectionStatus || hookConnectionStatus || 'connected';
+
+  // Log current state for debugging
+  useEffect(() => {
+    console.log('SubscriptionManagement state:', {
+      isLoading,
+      packagesCount: safePackages.length,
+      businessPackages: businessPackages.length,
+      influencerPackages: influencerPackages.length,
+      connectionStatus: effectiveConnectionStatus
+    });
+  }, [safePackages, businessPackages, influencerPackages, isLoading, effectiveConnectionStatus]);
 
   return (
     <div className="space-y-6">

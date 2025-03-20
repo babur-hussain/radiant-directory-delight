@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { Check, AlertCircle, Info } from "lucide-react";
+import { Check, AlertCircle, Info, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserRole } from "@/contexts/AuthContext";
@@ -23,7 +23,13 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
   
   // Use our hook to fetch packages from MongoDB
-  const { packages, isLoading, error } = useSubscriptionPackages({ 
+  const { 
+    packages, 
+    isLoading, 
+    error, 
+    connectionStatus,
+    retryConnection 
+  } = useSubscriptionPackages({ 
     type: userRole as string
   });
 
@@ -34,14 +40,20 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
       packagesCount: packages?.length || 0,
       packages,
       isLoading,
-      error
+      error,
+      connectionStatus
     });
-  }, [userRole, packages, isLoading, error]);
+  }, [userRole, packages, isLoading, error, connectionStatus]);
 
   const handleSubscribe = (pkg: any) => {
     console.log("Selected package:", pkg);
     setSelectedPackage(pkg);
     setIsDialogOpen(true);
+  };
+  
+  const handleRetryConnection = () => {
+    console.log("Retrying connection...");
+    retryConnection();
   };
   
   if (isLoading) {
@@ -58,8 +70,17 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error loading packages</AlertTitle>
-          <AlertDescription>
+          <AlertDescription className="flex flex-col gap-2">
             {error}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRetryConnection}
+              className="w-fit mt-2"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
           </AlertDescription>
         </Alert>
       </div>
@@ -72,9 +93,20 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
         <Alert className="max-w-xl mx-auto">
           <Info className="h-4 w-4" />
           <AlertTitle>No packages available</AlertTitle>
-          <AlertDescription>
+          <AlertDescription className="flex flex-col gap-2">
             No subscription packages are currently available for {userRole}s.
             Please check back later or contact an administrator.
+            {(connectionStatus === 'error' || connectionStatus === 'offline') && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRetryConnection}
+                className="w-fit mt-2"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry Connection
+              </Button>
+            )}
           </AlertDescription>
         </Alert>
       </div>

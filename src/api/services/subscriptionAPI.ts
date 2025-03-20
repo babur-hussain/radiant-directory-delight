@@ -4,7 +4,9 @@ import { api } from '../core/apiService';
 // Subscription Packages API
 export const fetchSubscriptionPackages = async () => {
   try {
+    console.log('API: Fetching all subscription packages');
     const response = await api.get('/subscription-packages');
+    console.log('API: Fetched subscription packages:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching subscription packages:', error);
@@ -14,7 +16,9 @@ export const fetchSubscriptionPackages = async () => {
 
 export const fetchSubscriptionPackagesByType = async (type: string) => {
   try {
+    console.log(`API: Fetching ${type} subscription packages`);
     const response = await api.get(`/subscription-packages/type/${type}`);
+    console.log(`API: Fetched ${type} subscription packages:`, response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching subscription packages by type:', error);
@@ -50,7 +54,9 @@ export const saveSubscriptionPackage = async (packageData: any) => {
 
 export const deleteSubscriptionPackage = async (packageId: string) => {
   try {
+    console.log(`API: Deleting subscription package ${packageId}`);
     await api.delete(`/subscription-packages/${packageId}`);
+    console.log(`API: Successfully deleted package ${packageId}`);
     return { success: true };
   } catch (error) {
     console.error('Error deleting subscription package:', error);
