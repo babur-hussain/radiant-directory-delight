@@ -27,12 +27,14 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
       return null;
     }
     
+    console.log("Checking if user exists in MongoDB:", firebaseUser.uid);
     // Check if user already exists
     let user = await fetchUserByUid(firebaseUser.uid);
+    console.log("User from fetchUserByUid:", user);
     
     // If user doesn't exist, create new user
     if (!user) {
-      console.log("Creating new user in MongoDB with fields:", additionalFields);
+      console.log("User not found, creating new user in MongoDB with fields:", additionalFields);
       
       // Determine role - either from additionalFields or default to 'User'
       const role = additionalFields?.role || 'User';

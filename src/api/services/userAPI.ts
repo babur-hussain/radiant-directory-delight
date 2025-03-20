@@ -47,7 +47,7 @@ export const createOrUpdateUser = async (userData: any) => {
     }
 
     // Get current collection
-    const collection = JSON.parse(localStorage.getItem('mongodb_User') || '[]');
+    let collection = JSON.parse(localStorage.getItem('mongodb_User') || '[]');
     
     // Enhance logging for debugging
     console.log(`Current mongodb_User collection has ${collection.length} users`);
@@ -97,7 +97,7 @@ export const createOrUpdateUser = async (userData: any) => {
     
     // Also save to all_users_data for compatibility with existing code
     try {
-      const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
+      let allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
       const userIndex = allUsers.findIndex((u: any) => u.uid === uid || u.id === uid);
       
       const formattedUser = {
@@ -128,10 +128,20 @@ export const createOrUpdateUser = async (userData: any) => {
       
       localStorage.setItem('all_users_data', JSON.stringify(allUsers));
       console.log(`User also saved to all_users_data collection`);
+      
+      // Force update both collections in storage to ensure data is saved
+      // Re-read and rewrite to make sure changes are persisted
+      collection = JSON.parse(localStorage.getItem('mongodb_User') || '[]');
+      localStorage.setItem('mongodb_User', JSON.stringify(collection));
+      
+      allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
+      localStorage.setItem('all_users_data', JSON.stringify(allUsers));
+      
     } catch (error) {
       console.warn('Error saving to all_users_data:', error);
     }
     
+    // Return the updated or created user data
     return formattedUserData;
   } catch (error) {
     console.error('Error saving user to database:', error);

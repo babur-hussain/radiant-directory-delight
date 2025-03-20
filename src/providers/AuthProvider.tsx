@@ -72,12 +72,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log("Directly storing user in MongoDB:", formattedUserData);
       const storedUser = await createOrUpdateUser(formattedUserData);
+      console.log("Direct storage result:", storedUser);
       
+      console.log("Calling createUserIfNotExists with additionalFields:", additionalFields);
       const mongoUser = await createUserIfNotExists(firebaseUser, {
         ...additionalFields,
         isAdmin: isDefaultAdmin || additionalFields?.isAdmin,
         role: userRole
       });
+      console.log("createUserIfNotExists result:", mongoUser);
       
       if (mongoUser) {
         setUser({
@@ -86,7 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           displayName: firebaseUser.displayName,
           photoURL: firebaseUser.photoURL,
           isAdmin: isDefaultAdmin || mongoUser.isAdmin,
-          role: (mongoUser.role as UserRole) || (isDefaultAdmin ? 'Admin' : 'User'),
+          role: (mongoUser.role as UserRole) || (isDefaultAdmin ? 'Admin' : userRole),
           employeeCode: mongoUser?.employeeCode || additionalFields?.employeeCode || null,
           name: mongoUser?.name || firebaseUser.displayName,
           phone: mongoUser?.phone || additionalFields?.phone,
@@ -222,7 +225,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     additionalData: any = {}
   ): Promise<void> => {
     try {
-      console.log(`Signing up new user: ${email} with role: ${role}`);
+      console.log(`Signing up new user: ${email} with role: ${role} and additional data:`, additionalData);
       
       const result = await createUserWithEmailAndPassword(auth, email, password);
       console.log(`Firebase user created: ${result.user.uid}`);
@@ -240,7 +243,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       
       console.log(`Processing user with additional data:`, combinedData);
+      
+      // First do a direct save to ensure data is stored in localStorage/MongoDB
+      const userData = {
+        uid: result.user.uid,
+        email: result.user.email,
+        name: name,
+        displayName: name,
+        photoURL: result.user.photoURL,
+        isAdmin: email === 'baburhussain660@gmail.com' || (role === 'Admin'),
+        role: email === 'baburhussain660@gmail.com' ? 'Admin' : role,
+        createdAt: new Date(),
+        lastLogin: new Date(),
+        ...additionalData
+      };
+      
+      console.log("Directly storing registration data:", userData);
+      await createOrUpdateUser(userData);
+      
+      // Then process the user which will set the user state
       await processUser(result.user, combinedData);
+      
+      console.log("Registration complete for user:", result.user.uid);
     } catch (error) {
       console.error("Signup error:", error);
       throw error;
