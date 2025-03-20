@@ -1,29 +1,37 @@
 
 import { 
-  fetchSubscriptionPackages as apiFetchSubscriptionPackages,
-  fetchSubscriptionPackagesByType as apiFetchSubscriptionPackagesByType,
-  saveSubscriptionPackage as apiSaveSubscriptionPackage,
-  deleteSubscriptionPackage as apiDeleteSubscriptionPackage,
-  saveBusiness as apiSaveBusiness,
-  deleteBusiness as apiDeleteBusiness,
-  getAllUsers as apiFetchUsers,
   fetchUserByUid as apiFetchUserByUid,
   getUserSubscription as apiFetchUserSubscriptions,
-  fetchBusinesses as apiFetchBusinesses
+  isServerRunning
 } from '../api/mongoAPI';
 import { ISubscriptionPackage } from '../models/SubscriptionPackage';
 import { IBusiness } from '../models/Business';
 import { IUser } from '../models/User';
 import { ISubscription } from '@/models/Subscription';
-import { syncPackageToFirebase } from '@/utils/syncMongoFirebase';
 import { SubscriptionPackage, convertToSubscriptionPackage } from '@/data/subscriptionData';
+import { 
+  createOrUpdateSubscriptionPackage, 
+  getAllSubscriptionPackages, 
+  getSubscriptionPackagesByType,
+  deleteSubscriptionPackage as serviceDeleteSubscriptionPackage
+} from '@/services/subscriptionService';
+
+// Check for server connection before making API calls
+const checkServerAvailability = async () => {
+  const serverAvailable = await isServerRunning();
+  if (!serverAvailable) {
+    console.log("Server is not available, using local MongoDB directly");
+  }
+  return serverAvailable;
+};
 
 /**
  * Fetches all subscription packages from MongoDB
  */
 export const fetchSubscriptionPackages = async (): Promise<ISubscriptionPackage[]> => {
   try {
-    const packages = await apiFetchSubscriptionPackages();
+    console.log("Fetching all subscription packages...");
+    const packages = await getAllSubscriptionPackages();
     
     if (!packages || packages.length === 0) {
       console.warn("No subscription packages found in MongoDB");
@@ -55,8 +63,8 @@ export const fetchSubscriptionPackages = async (): Promise<ISubscriptionPackage[
  */
 export const fetchSubscriptionPackagesByType = async (type: "Business" | "Influencer"): Promise<ISubscriptionPackage[]> => {
   try {
-    console.log(`Fetching ${type} subscription packages from MongoDB API...`);
-    const packages = await apiFetchSubscriptionPackagesByType(type);
+    console.log(`Fetching ${type} subscription packages...`);
+    const packages = await getSubscriptionPackagesByType(type);
     
     if (!packages || packages.length === 0) {
       console.warn(`No ${type} subscription packages found in MongoDB`);
@@ -107,7 +115,7 @@ export const fetchSubscriptionPackagesByType = async (type: "Business" | "Influe
 };
 
 /**
- * Saves a subscription package to MongoDB and syncs to Firebase
+ * Saves a subscription package to MongoDB
  */
 export const saveSubscriptionPackage = async (packageData: SubscriptionPackage | ISubscriptionPackage): Promise<ISubscriptionPackage> => {
   try {
@@ -140,22 +148,17 @@ export const saveSubscriptionPackage = async (packageData: SubscriptionPackage |
       }
     }
     
-    console.log("Sanitized package data to save:", sanitizedPackage);
-    
-    // Save to MongoDB via API
-    const savedPackage = await apiSaveSubscriptionPackage(sanitizedPackage);
-    
-    // Sync the package to Firebase
-    try {
-      console.log("Syncing package to Firebase:", packageData.id);
-      await syncPackageToFirebase(savedPackage);
-      console.log("Successfully synced package to Firebase");
-    } catch (syncError) {
-      console.error("Error syncing package to Firebase:", syncError);
-      // We don't throw here to avoid breaking the save operation
-      // The package was saved to MongoDB successfully
+    // Set a unique ID if not already set
+    if (!sanitizedPackage.id) {
+      sanitizedPackage.id = `pkg_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     }
     
+    console.log("Sanitized package data to save:", sanitizedPackage);
+    
+    // Save to MongoDB using our service
+    const savedPackage = await createOrUpdateSubscriptionPackage(sanitizedPackage);
+    
+    console.log("Successfully saved package to MongoDB:", savedPackage);
     return savedPackage;
   } catch (error) {
     console.error("Error saving subscription package:", error);
@@ -168,71 +171,10 @@ export const saveSubscriptionPackage = async (packageData: SubscriptionPackage |
  */
 export const deleteSubscriptionPackage = async (packageId: string): Promise<{ success: boolean }> => {
   try {
-    await apiDeleteSubscriptionPackage(packageId);
+    await serviceDeleteSubscriptionPackage(packageId);
     return { success: true };
   } catch (error) {
     console.error("Error deleting subscription package:", error);
-    throw error;
-  }
-};
-
-/**
- * Saves a business to MongoDB
- */
-export async function saveBusiness(business: IBusiness): Promise<void> {
-  try {
-    console.log("Saving business to MongoDB:", business);
-    
-    // Validate required fields
-    if (!business.name) {
-      throw new Error("Business name is required");
-    }
-    
-    // Format business data
-    const formattedBusiness = {
-      ...business,
-      // Ensure numeric fields are stored as numbers
-      rating: Number(business.rating),
-      reviews: Number(business.reviews),
-      latitude: Number(business.latitude || 0),
-      longitude: Number(business.longitude || 0),
-      // Ensure boolean fields are stored as booleans
-      featured: Boolean(business.featured)
-    };
-    
-    // Save to MongoDB via API
-    await apiSaveBusiness(formattedBusiness);
-    
-    console.log("Business saved successfully with ID:", business.id);
-  } catch (error) {
-    console.error("Error saving business:", error);
-    throw error;
-  }
-}
-
-/**
- * Deletes a business from MongoDB
- */
-export async function deleteBusiness(businessId: string): Promise<void> {
-  try {
-    console.log("Deleting business with ID:", businessId);
-    await apiDeleteBusiness(businessId);
-    console.log("Business deleted successfully");
-  } catch (error) {
-    console.error("Error deleting business:", error);
-    throw error;
-  }
-}
-
-/**
- * Fetches all users from MongoDB
- */
-export const fetchUsers = async (): Promise<IUser[]> => {
-  try {
-    const users = await apiFetchUsers();
-    return users;
-  } catch (error) {
-    console.error("Error fetching users:", error);
     throw error;
   }
 };
@@ -259,19 +201,6 @@ export const fetchUserSubscriptions = async (userId: string): Promise<ISubscript
     return subscription ? [subscription] : [];
   } catch (error) {
     console.error(`Error fetching subscriptions for user ${userId}:`, error);
-    throw error;
-  }
-};
-
-/**
- * Fetches all businesses from MongoDB
- */
-export const fetchBusinesses = async (): Promise<IBusiness[]> => {
-  try {
-    const businesses = await apiFetchBusinesses();
-    return businesses;
-  } catch (error) {
-    console.error("Error fetching businesses:", error);
     throw error;
   }
 };

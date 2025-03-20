@@ -1,225 +1,294 @@
 
-// Create a more comprehensive mock version that supports required interfaces
-const createMockDocument = (data: any = {}) => {
-  return {
-    ...data,
-    toObject: () => ({ ...data }),
-    save: () => Promise.resolve(data),
-    lean: () => Promise.resolve(data)
-  };
-};
+import { nanoid } from 'nanoid';
 
-// Create a mock collection with chainable methods
-const createMockCollection = () => {
-  const mockFind = (query?: any) => ({
-    lean: () => Promise.resolve([createMockDocument(query || {})]),
-    sort: () => ({
-      lean: () => Promise.resolve([createMockDocument(query || {})])
-    })
-  });
-
-  return {
-    find: (query?: any) => mockFind(query),
-    findOne: (query?: any) => ({
-      lean: () => Promise.resolve(createMockDocument(query || {}))
-    }),
-    findOneAndUpdate: (query?: any, update?: any, options?: any) => Promise.resolve(createMockDocument(query || {})),
-    deleteOne: (query?: any) => Promise.resolve({ deletedCount: 1 }),
-    findOneAndDelete: (query?: any) => Promise.resolve(createMockDocument(query || {})),
-    updateOne: (query?: any, update?: any) => Promise.resolve({ modifiedCount: 1 }),
-    countDocuments: (query?: any) => Promise.resolve(0)
-  };
-};
-
-// Stores mock models to ensure we return consistent instances
-const mockModels: Record<string, any> = {};
-
-// Mock mongoose instance
-const mongoose = {
-  connection: {
-    readyState: 0, // Disconnected by default
-    host: 'localhost',
-    name: 'test' // Set database name to 'test' as requested
-  },
-  connect: () => {
-    mongoose.connection.readyState = 1; // Set to connected
-    return Promise.resolve(true);
-  },
-  Schema: function(schema: any) {
-    const schemaObj = {
-      // Convert the schema definition to a usable object
-      ...schema,
-      // Add schema methods
-      index: () => schemaObj,
-      pre: (event: string, callback: any) => {
-        if (typeof callback === 'function') {
-          // Mock pre-save hook execution
-          try {
-            callback.call(schemaObj);
-          } catch (err) {
-            console.error("Error in pre hook:", err);
-          }
-        }
-        return schemaObj;
+// Mock mongoose for client-side
+export const mongoose = {
+  Schema: function(definition: any, options?: any) {
+    return {
+      ...definition,
+      options,
+      pre: function(hook: string, callback: Function) {
+        this.preHooks = this.preHooks || {};
+        this.preHooks[hook] = callback;
+        return this;
       },
-      virtual: (name: string) => ({ 
-        get: (fn: Function) => schemaObj 
-      }),
-      methods: {}
+      index: function(fields: any, options?: any) {
+        this.indexes = this.indexes || [];
+        this.indexes.push({ fields, options });
+        return this;
+      },
     };
+  },
+  model: function(name: string, schema: any) {
+    const collectionName = `mongodb_${name}`;
     
-    return schemaObj;
-  },
-  model: function(name: string, schema?: any) {
-    // Return existing model if already created
-    if (mockModels[name]) {
-      return mockModels[name];
+    // Initialize local storage if not already done
+    if (typeof localStorage !== 'undefined' && !localStorage.getItem(collectionName)) {
+      localStorage.setItem(collectionName, '[]');
     }
-
-    // For direct model retrievals without a schema
-    if (!schema) {
-      // Create a mock model on-the-fly if not found
-      const mockModel = createModelMock(name);
-      mockModels[name] = mockModel;
-      return mockModel;
-    }
-
-    // Create a new model with the schema
-    const mockModel = createModelMock(name);
-    mockModels[name] = mockModel;
-    return mockModel;
+    
+    return {
+      schema,
+      collection: { collectionName },
+      find: async function(query = {}) {
+        console.log(`[MongoDB Mock] Finding documents in ${name} with query:`, query);
+        try {
+          const collection = JSON.parse(localStorage.getItem(collectionName) || '[]');
+          let results = [...collection];
+          
+          // Apply filters based on query
+          if (Object.keys(query).length > 0) {
+            results = results.filter((doc: any) => {
+              for (const [key, value] of Object.entries(query)) {
+                if (doc[key] !== value) return false;
+              }
+              return true;
+            });
+          }
+          
+          return {
+            sort: function(sortOptions: any) {
+              // Simple sorting implementation
+              const [field, order] = Object.entries(sortOptions)[0];
+              return results.sort((a: any, b: any) => {
+                if (a[field] < b[field]) return order === 1 ? -1 : 1;
+                if (a[field] > b[field]) return order === 1 ? 1 : -1;
+                return 0;
+              });
+            },
+            exec: async function() {
+              return results;
+            }
+          };
+        } catch (err) {
+          console.error(`[MongoDB Mock] Error in find operation for ${name}:`, err);
+          return [];
+        }
+      },
+      findOne: async function(query = {}) {
+        console.log(`[MongoDB Mock] Finding one document in ${name} with query:`, query);
+        try {
+          const collection = JSON.parse(localStorage.getItem(collectionName) || '[]');
+          
+          // Apply filters based on query
+          const result = collection.find((doc: any) => {
+            for (const [key, value] of Object.entries(query)) {
+              if (doc[key] !== value) return false;
+            }
+            return true;
+          });
+          
+          return result || null;
+        } catch (err) {
+          console.error(`[MongoDB Mock] Error in findOne operation for ${name}:`, err);
+          return null;
+        }
+      },
+      findOneAndUpdate: async function(query: any, update: any, options = {}) {
+        console.log(`[MongoDB Mock] Updating document in ${name} with query:`, query);
+        console.log(`[MongoDB Mock] Update data:`, update);
+        
+        try {
+          const collection = JSON.parse(localStorage.getItem(collectionName) || '[]');
+          let index = -1;
+          
+          // Find the document index
+          if (query.id) {
+            index = collection.findIndex((doc: any) => doc.id === query.id);
+          } else {
+            index = collection.findIndex((doc: any) => {
+              for (const [key, value] of Object.entries(query)) {
+                if (doc[key] !== value) return false;
+              }
+              return true;
+            });
+          }
+          
+          let result;
+          
+          // Create or update based on options
+          if (index === -1 && options.upsert) {
+            // Create new document with query values
+            const newDoc = { ...query };
+            
+            // Apply update
+            if (update.$set) {
+              Object.assign(newDoc, update.$set);
+            }
+            
+            // Ensure it has an ID if not already present
+            if (!newDoc.id) {
+              newDoc.id = nanoid();
+            }
+            
+            // Add created and updated timestamps
+            if (!newDoc.createdAt) {
+              newDoc.createdAt = new Date();
+            }
+            newDoc.updatedAt = new Date();
+            
+            // Add to collection
+            collection.push(newDoc);
+            result = newDoc;
+            console.log(`[MongoDB Mock] Created new document in ${name}:`, newDoc);
+          } else if (index !== -1) {
+            // Update existing document
+            if (update.$set) {
+              // For $set operation
+              collection[index] = {
+                ...collection[index],
+                ...update.$set,
+                updatedAt: new Date()
+              };
+            } else {
+              // Direct update (without $set)
+              collection[index] = {
+                ...collection[index],
+                ...update,
+                updatedAt: new Date()
+              };
+            }
+            
+            result = collection[index];
+            console.log(`[MongoDB Mock] Updated document in ${name}:`, result);
+          } else {
+            console.log(`[MongoDB Mock] Document not found and upsert not enabled`);
+            return null;
+          }
+          
+          // Save to localStorage
+          localStorage.setItem(collectionName, JSON.stringify(collection));
+          
+          // Return based on options
+          return options.new !== false ? result : null;
+        } catch (err) {
+          console.error(`[MongoDB Mock] Error in findOneAndUpdate operation for ${name}:`, err);
+          return null;
+        }
+      },
+      findOneAndDelete: async function(query: any) {
+        console.log(`[MongoDB Mock] Deleting document in ${name} with query:`, query);
+        
+        try {
+          const collection = JSON.parse(localStorage.getItem(collectionName) || '[]');
+          let index = -1;
+          
+          // Find the document index
+          if (query.id) {
+            index = collection.findIndex((doc: any) => doc.id === query.id);
+          } else {
+            index = collection.findIndex((doc: any) => {
+              for (const [key, value] of Object.entries(query)) {
+                if (doc[key] !== value) return false;
+              }
+              return true;
+            });
+          }
+          
+          if (index === -1) {
+            console.log(`[MongoDB Mock] Document not found for deletion`);
+            return null;
+          }
+          
+          // Get the document before removing it
+          const deletedDoc = collection[index];
+          
+          // Remove the document
+          collection.splice(index, 1);
+          
+          // Save to localStorage
+          localStorage.setItem(collectionName, JSON.stringify(collection));
+          
+          console.log(`[MongoDB Mock] Deleted document in ${name}:`, deletedDoc);
+          return deletedDoc;
+        } catch (err) {
+          console.error(`[MongoDB Mock] Error in findOneAndDelete operation for ${name}:`, err);
+          return null;
+        }
+      },
+      save: async function(doc: any) {
+        try {
+          // Get the collection
+          const collection = JSON.parse(localStorage.getItem(collectionName) || '[]');
+          
+          // Ensure the document has an ID
+          if (!doc.id) {
+            doc.id = nanoid();
+          }
+          
+          // Add timestamp if not present
+          if (!doc.createdAt) {
+            doc.createdAt = new Date();
+          }
+          doc.updatedAt = new Date();
+          
+          // Check if pre-save hooks exist and run them
+          if (schema.preHooks && schema.preHooks.save) {
+            schema.preHooks.save.call(doc);
+          }
+          
+          // Find if the document exists
+          const index = collection.findIndex((item: any) => item.id === doc.id);
+          
+          if (index >= 0) {
+            // Update existing document
+            collection[index] = { ...collection[index], ...doc };
+          } else {
+            // Add new document
+            collection.push(doc);
+          }
+          
+          // Save to localStorage
+          localStorage.setItem(collectionName, JSON.stringify(collection));
+          
+          console.log(`[MongoDB Mock] Saved document in ${name}:`, doc);
+          return doc;
+        } catch (err) {
+          console.error(`[MongoDB Mock] Error in save operation for ${name}:`, err);
+          throw err;
+        }
+      }
+    };
   },
-  Types: {
-    ObjectId: String
+  connect: async function(uri: string) {
+    console.log(`[MongoDB Mock] Connecting to ${uri}`);
+    return { connection: { readyState: 1 } };
   }
 };
 
-// Define an interface for our document methods
-interface MockDocumentMethods {
-  save: () => Promise<any>;
-  toObject: () => any;
-  [key: string]: any;
-}
-
-// Helper to create a model mock
-function createModelMock(name: string) {
-  // Create mock collection methods
-  const collection = createMockCollection();
-  
-  // Add create method that returns proper document
-  const createMethod = (data: any) => {
-    if (Array.isArray(data)) {
-      return Promise.resolve(data.map(item => createMockDocument(item)));
-    }
-    return Promise.resolve(createMockDocument(data));
-  };
-
-  // Create a constructor function that returns a document
-  function Constructor(this: MockDocumentMethods, data: any) {
-    if (!(this instanceof Constructor)) {
-      return new (Constructor as any)(data);
-    }
-    
-    // Copy all data properties to this instance
-    Object.assign(this, data);
-    
-    // Add document methods explicitly
-    this.save = function() {
-      // Store the data in localStorage for persistence
-      const collectionKey = `mongodb_${name}`;
-      try {
-        const collection = JSON.parse(localStorage.getItem(collectionKey) || '[]');
-        // Check if item exists by id or uid
-        const idField = data.id || data.uid;
-        const index = collection.findIndex((item: any) => 
-          (item.id && item.id === idField) || (item.uid && item.uid === idField)
-        );
-        
-        if (index >= 0) {
-          // Update existing item
-          collection[index] = { ...collection[index], ...data };
-        } else {
-          // Add new item
-          collection.push(data);
-        }
-        
-        localStorage.setItem(collectionKey, JSON.stringify(collection));
-        console.log(`Saved document to ${name} collection:`, data);
-      } catch (error) {
-        console.error(`Error saving to ${name} collection:`, error);
-      }
-      
-      return Promise.resolve(this);
-    };
-    
-    this.toObject = function() {
-      return { ...data };
-    };
-    
-    return this;
-  }
-  
-  // Add static methods to constructor
-  Object.assign(Constructor, {
-    ...collection,
-    create: createMethod,
-    new: (data: any) => new (Constructor as any)(data)
-  });
-  
-  return Constructor;
-}
-
-// Set connection string for MongoDB Atlas cluster
-const MONGODB_URI = 'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/test?retryWrites=true&w=majority&appName=Cluster0';
-
+// Simulate MongoDB connection
 let isConnected = false;
 
-// Connect to MongoDB with better error handling
-export const connectToMongoDB = async () => {
-  if (isConnected) {
-    console.log('Already connected to MongoDB');
-    return true;
-  }
-
+// Connect to MongoDB (mock)
+export const connectToMongoDB = async (): Promise<boolean> => {
   try {
-    // In browser environment, simulate connection and use localStorage
-    console.log('Connecting to MongoDB (simulated in browser)');
-    isConnected = true;
-    mongoose.connection.readyState = 1;
-
-    // Initialize default admin user if not exists
-    const userCollection = JSON.parse(localStorage.getItem('mongodb_User') || '[]');
-    const adminExists = userCollection.some((user: any) => 
-      user.email === 'baburhussain660@gmail.com' && user.isAdmin
-    );
-
-    if (!adminExists) {
-      const adminUser = {
-        uid: 'admin_' + Date.now(),
-        email: 'baburhussain660@gmail.com',
-        name: 'Admin User',
-        role: 'Admin',
-        isAdmin: true,
-        createdAt: new Date(),
-        lastLogin: new Date()
-      };
-
-      userCollection.push(adminUser);
-      localStorage.setItem('mongodb_User', JSON.stringify(userCollection));
-      console.log('Default admin user created:', adminUser);
+    if (isConnected) {
+      console.log('MongoDB is already connected.');
+      return true;
     }
-
+    
+    console.log('Connecting to MongoDB...');
+    
+    // Simulate connection delay for realism
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    isConnected = true;
+    console.log('Connected to MongoDB successfully.');
+    
     return true;
   } catch (error) {
-    console.error('Error connecting to MongoDB:', error);
+    console.error('MongoDB connection error:', error);
     return false;
   }
 };
 
-// Check if MongoDB is connected
-export const isMongoDBConnected = () => {
-  return isConnected || mongoose.connection.readyState === 1;
+// Check MongoDB connection status
+export const isMongoDB_Connected = (): boolean => {
+  return isConnected;
 };
 
-// Export mongoose for compatibility
-export { mongoose };
+// Disconnect from MongoDB (mock)
+export const disconnectFromMongoDB = async (): Promise<void> => {
+  isConnected = false;
+  console.log('Disconnected from MongoDB.');
+};

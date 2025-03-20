@@ -3,6 +3,7 @@ import { ISubscription, Subscription } from '../models/Subscription';
 import { mongoose } from '../config/mongodb';
 import { nanoid } from 'nanoid';
 import { autoInitMongoDB } from '../utils/setupMongoDB';
+import { ISubscriptionPackage, SubscriptionPackage } from '../models/SubscriptionPackage';
 
 // Auto-initialize MongoDB when this module is imported
 autoInitMongoDB()
@@ -132,6 +133,73 @@ export const getActiveUserSubscription = async (userId: string): Promise<ISubscr
     return subscription;
   } catch (error) {
     console.error(`Error getting active subscription for user ${userId}:`, error);
+    throw error;
+  }
+};
+
+// Create or update a subscription package
+export const createOrUpdateSubscriptionPackage = async (packageData: ISubscriptionPackage): Promise<ISubscriptionPackage> => {
+  try {
+    console.log(`Creating/updating subscription package: ${packageData.id}`);
+    
+    // Set updated timestamp
+    packageData.updatedAt = new Date();
+    
+    // Find and update or create new
+    const result = await SubscriptionPackage.findOneAndUpdate(
+      { id: packageData.id },
+      { $set: packageData },
+      { new: true, upsert: true }
+    );
+    
+    console.log(`Successfully saved subscription package: ${packageData.id}`);
+    return result;
+  } catch (error) {
+    console.error(`Error creating/updating subscription package: ${packageData.id}`, error);
+    throw error;
+  }
+};
+
+// Get all subscription packages
+export const getAllSubscriptionPackages = async (): Promise<ISubscriptionPackage[]> => {
+  try {
+    console.log('Fetching all subscription packages');
+    const packages = await SubscriptionPackage.find().sort({ createdAt: -1 });
+    console.log(`Found ${packages.length} subscription packages`);
+    return packages;
+  } catch (error) {
+    console.error('Error getting all subscription packages:', error);
+    throw error;
+  }
+};
+
+// Get subscription packages by type
+export const getSubscriptionPackagesByType = async (type: string): Promise<ISubscriptionPackage[]> => {
+  try {
+    console.log(`Fetching subscription packages of type: ${type}`);
+    const packages = await SubscriptionPackage.find({ type }).sort({ price: 1 });
+    console.log(`Found ${packages.length} ${type} subscription packages`);
+    return packages;
+  } catch (error) {
+    console.error(`Error getting ${type} subscription packages:`, error);
+    throw error;
+  }
+};
+
+// Delete a subscription package
+export const deleteSubscriptionPackage = async (packageId: string): Promise<void> => {
+  try {
+    console.log(`Deleting subscription package with ID: ${packageId}`);
+    
+    const result = await SubscriptionPackage.findOneAndDelete({ id: packageId });
+    if (!result) {
+      console.error(`Subscription package with ID ${packageId} not found for deletion`);
+      throw new Error(`Subscription package with ID ${packageId} not found`);
+    }
+    
+    console.log(`Deleted subscription package: ${packageId}`);
+  } catch (error) {
+    console.error(`Error deleting subscription package with ID ${packageId}:`, error);
     throw error;
   }
 };
