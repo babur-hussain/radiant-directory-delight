@@ -89,7 +89,7 @@ const schemaDefinition = {
   gstNumber: { type: String, default: null }
 };
 
-const UserSchema = mongoose.Schema(schemaDefinition);
+const UserSchema = new mongoose.Schema(schemaDefinition);
 
 // Define methods for the user schema
 UserSchema.methods.isUserAdmin = function(): boolean {

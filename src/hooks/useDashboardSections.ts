@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { connectToMongoDB } from "@/config/mongodb";
 import { SubscriptionPackage } from "@/models/SubscriptionPackage";
+import { extractQueryData } from "@/utils/queryHelpers";
 import {
   BUSINESS_DASHBOARD_SECTIONS,
   INFLUENCER_DASHBOARD_SECTIONS,
@@ -101,29 +101,7 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
       await connectToMongoDB();
       const packagesQuery = await SubscriptionPackage.find();
       
-      let allPackages: any[] = [];
-      
-      if (Array.isArray(packagesQuery)) {
-        // If packagesQuery is already an array, use it directly
-        allPackages = packagesQuery;
-      } else if (packagesQuery && typeof packagesQuery.sort === 'function') {
-        // If packagesQuery has a sort method, use it
-        const sortedQuery = packagesQuery.sort({ title: 1 });
-        
-        if (sortedQuery && typeof sortedQuery.exec === 'function') {
-          // If sortedQuery has an exec method, execute it
-          allPackages = await sortedQuery.exec();
-        } else if (sortedQuery && Array.isArray(sortedQuery.results)) {
-          // If sortedQuery has a results array, use it
-          allPackages = sortedQuery.results;
-        } else {
-          // If sortedQuery is already an array, use it
-          allPackages = sortedQuery || [];
-        }
-      } else if (packagesQuery && Array.isArray(packagesQuery.results)) {
-        // If packagesQuery has a results array but no sort method, use the results
-        allPackages = packagesQuery.results;
-      }
+      const allPackages = extractQueryData(packagesQuery);
       
       if (allPackages && allPackages.length > 0) {
         setPackages(allPackages);

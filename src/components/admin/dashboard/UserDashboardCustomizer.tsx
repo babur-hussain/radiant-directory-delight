@@ -1,11 +1,11 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { User } from "@/models/User";
-import { connectToMongoDB, extractQueryResults } from "@/config/mongodb";
+import { connectToMongoDB } from "@/config/mongodb";
+import { extractQueryData } from "@/utils/queryHelpers";
 import DashboardSectionsManager from "./DashboardSectionsManager";
 
 const UserDashboardCustomizer: React.FC = () => {
@@ -37,10 +37,9 @@ const UserDashboardCustomizer: React.FC = () => {
       
       // Get the query object for users
       const userQuery = User.find();
-      let userResults: any[] = [];
       
-      // Handle the query result safely using the helper function
-      userResults = extractQueryResults(userQuery);
+      // Extract user data safely using our utility function
+      const userResults = extractQueryData(userQuery);
       
       setUsers(userResults);
       

@@ -56,7 +56,7 @@ const schemaDefinition = {
   transactionId: { type: String }
 };
 
-const SubscriptionSchema = mongoose.Schema(schemaDefinition);
+const SubscriptionSchema = new mongoose.Schema(schemaDefinition);
 
 // Create indexes for frequently queried fields
 SubscriptionSchema.index({ userId: 1 });
