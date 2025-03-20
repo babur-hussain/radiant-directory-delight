@@ -28,11 +28,13 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
   const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
   
   const {
-    packages = [],
+    packages,
     isLoading,
     error,
     isOffline,
     offlineMode,
+    connectionStatus: hookConnectionStatus,
+    retryConnection,
     fetchPackages,
     addOrUpdatePackage,
     removePackage
@@ -41,7 +43,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
   // Safety check to ensure packages is always an array
   const safePackages = Array.isArray(packages) ? packages : [];
   
-  // Safely filter packages
+  // Safely filter packages and handle null values
   const businessPackages = safePackages.filter(pkg => pkg && pkg.type === 'Business');
   const influencerPackages = safePackages.filter(pkg => pkg && pkg.type === 'Influencer');
 
@@ -117,8 +119,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
     return <SubscriptionPermissionError error={error} onRetry={handleRetryConnection} />;
   }
 
-  const effectiveConnectionStatus = connectionStatus || (isOffline ? 'offline' : 'connected');
-  const currentPackages = activeTab === 'business' ? businessPackages : influencerPackages;
+  const effectiveConnectionStatus = connectionStatus || hookConnectionStatus || (isOffline ? 'offline' : 'connected');
 
   return (
     <div className="space-y-6">

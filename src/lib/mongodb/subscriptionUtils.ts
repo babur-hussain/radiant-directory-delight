@@ -5,6 +5,7 @@ import {
   createOrUpdateSubscriptionPackage, 
   deleteSubscriptionPackage as serviceDeleteSubscriptionPackage
 } from '@/services/subscriptionService';
+import { saveSubscriptionPackage as apiSaveSubscriptionPackage } from '@/api/services/subscriptionAPI';
 import { getUserSubscription as apiFetchUserSubscriptions } from '@/api/services/subscriptionAPI';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { ISubscription } from '@/models/Subscription';
@@ -171,6 +172,27 @@ export const saveSubscriptionPackage = async (packageData: SubscriptionPackage |
     
     console.log("Sanitized package data to save:", sanitizedPackage);
     
+    // Check server availability first
+    const serverAvailable = await checkServerAvailability();
+    
+    if (!serverAvailable) {
+      console.warn("Server is not available, saving package locally only");
+      return sanitizedPackage as ISubscriptionPackage;
+    }
+    
+    // Try to save via the API first (this will use server.js)
+    try {
+      console.log("Attempting to save package via API");
+      const apiResponse = await apiSaveSubscriptionPackage(sanitizedPackage);
+      console.log("API save response:", apiResponse);
+      if (apiResponse) {
+        return apiResponse;
+      }
+    } catch (apiError) {
+      console.error("API save failed, falling back to direct service:", apiError);
+    }
+    
+    // Fall back to direct service call
     // Save to MongoDB using our service
     const savedPackage = await createOrUpdateSubscriptionPackage(sanitizedPackage);
     

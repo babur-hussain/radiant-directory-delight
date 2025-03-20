@@ -6,8 +6,8 @@ export const checkServerAvailability = async (): Promise<boolean> => {
   try {
     console.log('Checking server availability...');
     
-    // Try to fetch the API health check endpoint
-    const response = await fetch('/api/health-check', { 
+    // Try to fetch the API test connection endpoint instead of health-check
+    const response = await fetch('/api/test-connection', { 
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       // Add a reasonable timeout to prevent waiting too long
@@ -15,11 +15,12 @@ export const checkServerAvailability = async (): Promise<boolean> => {
     });
     
     if (response.ok) {
-      console.log('Server is available');
-      return true;
+      const data = await response.json();
+      console.log('Server check response:', data);
+      return data.success === true;
     }
     
-    console.warn('Server health check failed with status:', response.status);
+    console.warn('Server connection check failed with status:', response.status);
     return false;
   } catch (error) {
     console.error('Server availability check error:', error);

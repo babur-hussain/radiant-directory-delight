@@ -13,8 +13,15 @@ export const fetchSubscriptionPackagesByType = async (type: string) => {
 };
 
 export const saveSubscriptionPackage = async (packageData: any) => {
-  const response = await api.post('/subscription-packages', packageData);
-  return response.data;
+  try {
+    console.log('API: Saving subscription package:', packageData);
+    const response = await api.post('/subscription-packages', packageData);
+    console.log('API: Save response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('API: Error saving subscription package:', error);
+    throw error;
+  }
 };
 
 export const deleteSubscriptionPackage = async (packageId: string) => {
