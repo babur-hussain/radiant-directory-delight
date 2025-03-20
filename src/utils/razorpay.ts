@@ -1,3 +1,4 @@
+
 /**
  * Utility functions for Razorpay integration
  */
@@ -52,7 +53,6 @@ export interface RazorpayOptions {
     enabled?: boolean;
     max_count?: number;
   };
-  recurring?: boolean;
   send_sms_hash?: boolean;
   remember_customer?: boolean;
   readonly?: {
@@ -189,14 +189,18 @@ export const formatNotesForRazorpay = (notes?: Record<string, any>): Record<stri
 
 /**
  * Generate a standardized plan ID for Razorpay
- * NOTE: In production, this ID should come from Razorpay's API
+ * 
+ * IMPORTANT: MOCK IMPLEMENTATION
+ * In production, this ID should come from Razorpay's API by calling:
+ * POST https://api.razorpay.com/v1/plans
+ * This should be implemented on your backend server
  */
 export const generatePlanId = (packageDetails: any): string => {
   // For non-production environments, we'll use a mock plan ID
   // In production, this should be replaced with an actual Razorpay plan ID
   // from the Razorpay dashboard or API
   const timestamp = Date.now();
-  const randomSuffix = Math.floor(Math.random() * 10000);
+  const randomSuffix = Math.floor(Math.random() * 1000);
   const billingCycle = packageDetails.billingCycle === 'monthly' ? 'mon' : 'yr';
   
   return `plan_${billingCycle}_${timestamp}_${randomSuffix}`;
@@ -204,8 +208,27 @@ export const generatePlanId = (packageDetails: any): string => {
 
 /**
  * Create a subscription plan in Razorpay 
- * NOTE: This is a mock implementation - in production, this should call your backend API
- * which would then create a plan in Razorpay using their APIs
+ * 
+ * IMPORTANT: MOCK IMPLEMENTATION
+ * In production, this should call your backend API which would then create a plan
+ * in Razorpay using their Plans API:
+ * POST https://api.razorpay.com/v1/plans
+ * 
+ * Example request (must be done server-side with API key and secret):
+ * {
+ *   "period": "monthly",
+ *   "interval": 1,
+ *   "item": {
+ *     "name": "Test plan - Monthly",
+ *     "amount": 69900,
+ *     "currency": "INR",
+ *     "description": "Description for the test plan"
+ *   },
+ *   "notes": {
+ *     "notes_key_1": "Tea, Earl Grey, Hot",
+ *     "notes_key_2": "Tea, Earl Grey… decaf."
+ *   }
+ * }
  */
 export const createSubscriptionPlan = async (packageDetails: any): Promise<string> => {
   console.log("Creating subscription plan for package:", packageDetails);
@@ -228,7 +251,24 @@ export const createSubscriptionPlan = async (packageDetails: any): Promise<strin
 
 /**
  * Create a subscription in Razorpay
- * NOTE: This is a mock implementation - in production, this should call your backend API
+ * 
+ * IMPORTANT: MOCK IMPLEMENTATION
+ * In production, this should call your backend API which would then create a subscription
+ * in Razorpay using their Subscriptions API:
+ * POST https://api.razorpay.com/v1/subscriptions
+ * 
+ * Example request (must be done server-side with API key and secret):
+ * {
+ *   "plan_id": "plan_JZp8ZgIqYN41JE",
+ *   "total_count": 12,
+ *   "quantity": 1,
+ *   "start_at": 1658528104,
+ *   "customer_notify": 1,
+ *   "notes": {
+ *     "notes_key_1": "Tea, Earl Grey, Hot",
+ *     "notes_key_2": "Tea, Earl Grey… decaf."
+ *   }
+ * }
  */
 export const createSubscription = async (
   planId: string, 
@@ -243,8 +283,8 @@ export const createSubscription = async (
   
   // For demonstration purposes only - do not use this in production!
   // In production, use a real subscription ID from Razorpay
-  // We're using a simpler format that's less likely to cause API validation issues
-  const subscriptionId = `sub_${Date.now().toString().slice(-10)}${Math.floor(Math.random() * 1000)}`;
+  // We're using a format with fewer characters to avoid validation issues
+  const subscriptionId = `sub_${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
   
   // Simulate API call delay
   return new Promise((resolve) => {
@@ -374,4 +414,3 @@ export const calculateNextBillingDate = (billingCycle: string = 'monthly', advan
   
   return nextDate;
 };
-

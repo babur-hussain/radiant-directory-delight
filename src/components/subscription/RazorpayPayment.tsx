@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +15,22 @@ interface RazorpayPaymentProps {
   onFailure: (error: any) => void;
 }
 
+/**
+ * RazorpayPayment component for handling payment UI and checkout flow
+ * 
+ * IMPORTANT PRODUCTION NOTE:
+ * This component uses mock implementations for creating subscription plans 
+ * and subscriptions. In a production environment, these features should be
+ * implemented on your backend server with proper authentication using
+ * Razorpay's API endpoints:
+ * 
+ * 1. Create Plan: POST https://api.razorpay.com/v1/plans
+ * 2. Create Subscription: POST https://api.razorpay.com/v1/subscriptions
+ * 3. Create Order: POST https://api.razorpay.com/v1/orders
+ * 
+ * These API calls require your Razorpay API key and secret, which should
+ * never be exposed in client-side code.
+ */
 const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({ 
   selectedPackage, 
   onSuccess, 

@@ -27,6 +27,14 @@ interface PaymentOptions {
   onFailure: (error: any) => void;
 }
 
+/**
+ * Hook for handling Razorpay payments, including one-time and recurring subscriptions
+ * 
+ * IMPORTANT: This is a frontend implementation with mock plan/subscription creation.
+ * In a production environment, the subscription plan creation and subscription creation
+ * should be implemented on your backend server with proper authentication using
+ * Razorpay's APIs.
+ */
 export const useRazorpayPayment = () => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -130,6 +138,20 @@ export const useRazorpayPayment = () => {
       if (canUseRecurring) {
         try {
           console.log("Setting up recurring payment plan for package:", selectedPackage.title);
+          
+          /**
+           * PRODUCTION IMPLEMENTATION NOTE:
+           * 
+           * In a production environment, the following subscription plan creation
+           * and subscription creation should be implemented on your backend server 
+           * with proper authentication using Razorpay's APIs:
+           * 
+           * 1. Create Plan: POST https://api.razorpay.com/v1/plans
+           * 2. Create Subscription: POST https://api.razorpay.com/v1/subscriptions
+           * 
+           * These API calls require your Razorpay API key and secret, which should
+           * never be exposed in client-side code.
+           */
           
           // Step 1: Create a plan (in a real implementation, this would be done on your backend)
           const planId = await createSubscriptionPlan({
