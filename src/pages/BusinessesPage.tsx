@@ -1,249 +1,45 @@
 
-import { useState, useEffect, useMemo } from "react";
-import { 
-  getAllBusinesses,
-  addDataChangeListener,
-  removeDataChangeListener,
-  initializeData,
-  Business
-} from "@/lib/csv-utils";
-import { businessesData } from "@/data/businessesData";
+import { useState } from "react";
 import TablePagination from "@/components/admin/table/TablePagination";
 import BusinessesHeader from "@/components/businesses/BusinessesPage/BusinessesHeader";
 import ActiveFiltersDisplay from "@/components/businesses/BusinessesPage/ActiveFiltersDisplay";
 import BusinessesSorting from "@/components/businesses/BusinessesPage/BusinessesSorting";
 import BusinessesGrid from "@/components/businesses/BusinessesPage/BusinessesGrid";
-
-type LocationFilter = string | null;
-type SortOption = "relevance" | "rating" | "reviews";
-
-// Extended business type that includes location field
-interface ExtendedBusiness extends Business {
-  location: string;
-}
-
-const getCustomCategories = (): string[] => {
-  const storedCategories = localStorage.getItem("businessCategories");
-  if (storedCategories) {
-    const categories = JSON.parse(storedCategories);
-    return categories.map((cat: { name: string }) => cat.name);
-  }
-  return [];
-};
-
-const getCustomLocations = (): string[] => {
-  const storedLocations = localStorage.getItem("businessLocations");
-  if (storedLocations) {
-    const locations = JSON.parse(storedLocations);
-    return locations.map((loc: { name: string }) => loc.name);
-  }
-  return [];
-};
+import { useBusinessPageData } from "@/hooks/useBusinessPageData";
+import { BusinessPageLoading } from "@/components/businesses/BusinessPageLoading";
 
 const BusinessesPage = () => {
-  const [loading, setLoading] = useState(true);
-  const [businesses, setBusinesses] = useState<ExtendedBusiness[]>(businessesData as ExtendedBusiness[]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedRating, setSelectedRating] = useState<string>("");
-  const [selectedLocation, setSelectedLocation] = useState<LocationFilter>(null);
   const [openFilters, setOpenFilters] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [featuredOnly, setFeaturedOnly] = useState(false);
-  const [sortBy, setSortBy] = useState<SortOption>("relevance");
-  const [activeTags, setActiveTags] = useState<string[]>([]);
-  const [customCategories, setCustomCategories] = useState<string[]>(getCustomCategories());
-  const [customLocations, setCustomLocations] = useState<string[]>(getCustomLocations());
-  
-  const itemsPerPage = 40;
-  
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        await initializeData();
-        const fetchedBusinesses = getAllBusinesses();
-        // Add location from address if missing
-        const extendedBusinesses = fetchedBusinesses.map(business => {
-          // Extract location from address
-          const addressParts = business.address?.split(',') || [];
-          const extractedLocation = addressParts.length > 1 
-            ? addressParts[addressParts.length - 1].trim()
-            : 'Unknown';
-          return { ...business, location: extractedLocation };
-        });
-        setBusinesses(extendedBusinesses);
-      } catch (error) {
-        console.error("Error loading businesses:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadData();
-    
-    const handleDataChanged = () => {
-      const fetchedBusinesses = getAllBusinesses();
-      // Add location from address if missing
-      const extendedBusinesses = fetchedBusinesses.map(business => {
-        // Extract location from address
-        const addressParts = business.address?.split(',') || [];
-        const extractedLocation = addressParts.length > 1 
-          ? addressParts[addressParts.length - 1].trim()
-          : 'Unknown';
-        return { ...business, location: extractedLocation };
-      });
-      setBusinesses(extendedBusinesses);
-    };
-    
-    addDataChangeListener(handleDataChanged);
-    
-    const handleCategoriesChanged = () => {
-      setCustomCategories(getCustomCategories());
-    };
-    
-    const handleLocationsChanged = () => {
-      setCustomLocations(getCustomLocations());
-    };
-    
-    window.addEventListener("categoriesChanged", handleCategoriesChanged);
-    window.addEventListener("locationsChanged", handleLocationsChanged);
-    
-    return () => {
-      removeDataChangeListener(handleDataChanged);
-      window.removeEventListener("categoriesChanged", handleCategoriesChanged);
-      window.removeEventListener("locationsChanged", handleLocationsChanged);
-    };
-  }, []);
-  
-  const categories = useMemo(() => {
-    const businessCategories = Array.from(new Set(businesses.map(b => b.category)));
-    const allCategories = [...new Set([...customCategories, ...businessCategories])].filter(Boolean);
-    return allCategories;
-  }, [businesses, customCategories]);
-  
-  const locations = useMemo(() => {
-    const extractedLocations = businesses.map(b => {
-      // Use location field if available, otherwise extract from address
-      if (b.location) return b.location;
-      
-      const parts = b.address?.split(',') || [];
-      return parts.length > 1 ? parts[parts.length - 1].trim() : parts[0]?.trim() || 'Unknown';
-    });
-    
-    const businessLocations = Array.from(new Set(extractedLocations));
-    const allLocations = [...new Set([...customLocations, ...businessLocations])].filter(Boolean);
-    return allLocations;
-  }, [businesses, customLocations]);
 
-  const allTags = useMemo(() => {
-    const tags = new Set<string>();
-    businesses.forEach(business => {
-      business.tags.forEach(tag => tags.add(tag));
-    });
-    return Array.from(tags);
-  }, [businesses]);
-  
-  const toggleTag = (tag: string) => {
-    setActiveTags(prev => 
-      prev.includes(tag) 
-        ? prev.filter(t => t !== tag) 
-        : [...prev, tag]
-    );
-    setCurrentPage(1);
-  };
-  
-  const filteredBusinesses = useMemo(() => {
-    let results = businesses.filter(business => {
-      const matchesSearch = searchQuery === "" || 
-        business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        business.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        business.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-      const matchesCategory = selectedCategory === "" || business.category === selectedCategory;
-      
-      const matchesRating = selectedRating === "" || 
-        (selectedRating === "4+" && business.rating >= 4) ||
-        (selectedRating === "3+" && business.rating >= 3) ||
-        (selectedRating === "2+" && business.rating >= 2);
-        
-      const matchesFeatured = !featuredOnly || business.featured;
-      
-      const matchesLocation = !selectedLocation || 
-        (business.location && business.location.includes(selectedLocation)) || 
-        business.address.includes(selectedLocation);
-      
-      const matchesTags = activeTags.length === 0 || 
-        activeTags.some(tag => business.tags.includes(tag));
-      
-      return matchesSearch && matchesCategory && matchesRating && 
-             matchesFeatured && matchesLocation && matchesTags;
-    });
-    
-    return results.sort((a, b) => {
-      if (sortBy === "rating") {
-        return b.rating - a.rating;
-      } else if (sortBy === "reviews") {
-        return b.reviews - a.reviews;
-      }
-      return b.featured ? 1 : -1;
-    });
-  }, [
-    businesses,
-    searchQuery, 
-    selectedCategory, 
-    selectedRating, 
-    featuredOnly, 
-    selectedLocation, 
-    activeTags, 
-    sortBy
-  ]);
-  
-  const totalPages = Math.ceil(filteredBusinesses.length / itemsPerPage);
-  const currentBusinesses = filteredBusinesses.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-  
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, selectedCategory, selectedRating, featuredOnly, selectedLocation, activeTags, sortBy]);
-  
-  const clearAllFilters = () => {
-    setSelectedCategory("");
-    setSelectedRating("");
-    setFeaturedOnly(false);
-    setSearchQuery("");
-    setSelectedLocation(null);
-    setActiveTags([]);
-    setSortBy("relevance");
-  };
-
-  const activeFilterCount = useMemo(() => {
-    let count = 0;
-    if (selectedCategory) count++;
-    if (selectedRating) count++;
-    if (featuredOnly) count++;
-    if (selectedLocation) count++;
-    if (activeTags.length > 0) count++;
-    return count;
-  }, [selectedCategory, selectedRating, featuredOnly, selectedLocation, activeTags]);
+  const {
+    loading,
+    businesses: currentBusinesses,
+    filteredBusinesses,
+    searchQuery,
+    setSearchQuery,
+    selectedCategory,
+    setSelectedCategory,
+    selectedRating,
+    setSelectedRating,
+    selectedLocation,
+    setSelectedLocation,
+    currentPage,
+    setCurrentPage,
+    featuredOnly,
+    setFeaturedOnly,
+    sortBy,
+    setSortBy,
+    activeTags,
+    toggleTag,
+    locations,
+    allTags,
+    clearAllFilters,
+    activeFilterCount,
+    totalPages
+  } = useBusinessPageData();
   
   if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-12 max-w-7xl">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Discover Local Businesses</h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Find the best businesses in your area. Use the search and filters to narrow down your options.
-          </p>
-        </div>
-        <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <span className="ml-3 text-lg">Loading businesses...</span>
-        </div>
-      </div>
-    );
+    return <BusinessPageLoading />;
   }
   
   return (
@@ -299,7 +95,7 @@ const BusinessesPage = () => {
       />
       
       <BusinessesGrid 
-        businesses={currentBusinesses as unknown as Business[]}
+        businesses={currentBusinesses}
         clearAllFilters={clearAllFilters}
       />
       
