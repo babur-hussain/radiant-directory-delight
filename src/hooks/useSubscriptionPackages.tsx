@@ -5,9 +5,9 @@ import {
   fetchSubscriptionPackages, 
   fetchSubscriptionPackagesByType,
   saveSubscriptionPackage,
-  deleteSubscriptionPackage
+  deleteSubscriptionPackage,
+  isServerRunning
 } from '@/lib/mongodb/subscriptionUtils';
-import { isServerRunning } from '@/api/mongoAPI';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 
 interface UseSubscriptionPackagesOptions {
@@ -31,6 +31,16 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       const serverAvailable = await isServerRunning();
       setOfflineMode(!serverAvailable);
       
+      if (!serverAvailable) {
+        console.warn("Server not available, using cached data");
+        const cachedPackages = localStorage.getItem('cachedSubscriptionPackages');
+        if (cachedPackages) {
+          setPackages(JSON.parse(cachedPackages));
+          console.log('Using cached packages from localStorage');
+        }
+        throw new Error("Server not available");
+      }
+      
       // Get packages based on type or get all
       let fetchedPackages: ISubscriptionPackage[];
       
@@ -50,22 +60,25 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
     } catch (err) {
       console.error('Error fetching packages:', err);
       setError(err instanceof Error ? err.message : 'Failed to load subscription packages');
-      setOfflineMode(true);
       
-      // Try to use localStorage as fallback
-      try {
-        const cachedPackages = localStorage.getItem('cachedSubscriptionPackages');
-        if (cachedPackages) {
-          setPackages(JSON.parse(cachedPackages));
-          console.log('Using cached packages from localStorage');
+      if (!offlineMode) {
+        setOfflineMode(true);
+        
+        // Try to use localStorage as fallback if not already tried
+        try {
+          const cachedPackages = localStorage.getItem('cachedSubscriptionPackages');
+          if (cachedPackages) {
+            setPackages(JSON.parse(cachedPackages));
+            console.log('Using cached packages from localStorage');
+          }
+        } catch (cacheErr) {
+          console.error('Error loading cached packages:', cacheErr);
         }
-      } catch (cacheErr) {
-        console.error('Error loading cached packages:', cacheErr);
       }
     } finally {
       setIsLoading(false);
     }
-  }, [options.type, options.initialOfflineMode]);
+  }, [options.type, offlineMode]);
 
   useEffect(() => {
     fetchPackages();
@@ -76,34 +89,49 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       setIsLoading(true);
       console.log('Saving package:', packageData);
       
+      // Check if server is available before attempting to save
+      const serverAvailable = await isServerRunning();
+      if (!serverAvailable) {
+        throw new Error("Server is not available. Cannot save package.");
+      }
+      
+      // Validate required fields before saving
+      if (!packageData.title) throw new Error("Package title is required");
+      if (!packageData.shortDescription) throw new Error("Short description is required");
+      if (!packageData.fullDescription) throw new Error("Full description is required");
+      
+      // Set or validate price
+      if (packageData.price === undefined || packageData.price === null) {
+        packageData.price = 999; // Default price
+      }
+      
+      // Save the package to MongoDB
       const savedPackage = await saveSubscriptionPackage(packageData);
       console.log('Package saved successfully:', savedPackage);
       
-      // Update local state
+      // Update local state with the saved package
       setPackages(prevPackages => {
         const existingIndex = prevPackages.findIndex(p => p.id === savedPackage.id);
         if (existingIndex >= 0) {
           // Update existing package
-          return [
-            ...prevPackages.slice(0, existingIndex),
-            savedPackage,
-            ...prevPackages.slice(existingIndex + 1)
-          ];
+          const updatedPackages = [...prevPackages];
+          updatedPackages[existingIndex] = savedPackage;
+          return updatedPackages;
         } else {
           // Add new package
           return [...prevPackages, savedPackage];
         }
       });
       
-      // Update cache
-      const updatedPackages = [...packages];
-      const existingIndex = updatedPackages.findIndex(p => p.id === savedPackage.id);
-      if (existingIndex >= 0) {
-        updatedPackages[existingIndex] = savedPackage;
+      // Update cache in localStorage
+      const updatedCache = [...packages];
+      const existingCacheIndex = updatedCache.findIndex(p => p.id === savedPackage.id);
+      if (existingCacheIndex >= 0) {
+        updatedCache[existingCacheIndex] = savedPackage;
       } else {
-        updatedPackages.push(savedPackage);
+        updatedCache.push(savedPackage);
       }
-      localStorage.setItem('cachedSubscriptionPackages', JSON.stringify(updatedPackages));
+      localStorage.setItem('cachedSubscriptionPackages', JSON.stringify(updatedCache));
       
       toast({
         title: "Success",
@@ -129,6 +157,13 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       setIsLoading(true);
       console.log('Deleting package:', packageId);
       
+      // Check if server is available
+      const serverAvailable = await isServerRunning();
+      if (!serverAvailable) {
+        throw new Error("Server is not available. Cannot delete package.");
+      }
+      
+      // Delete the package from MongoDB
       await deleteSubscriptionPackage(packageId);
       
       // Update local state

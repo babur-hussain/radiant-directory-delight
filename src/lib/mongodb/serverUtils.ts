@@ -4,9 +4,14 @@
  */
 export const checkServerAvailability = async (): Promise<boolean> => {
   try {
+    console.log('Checking server availability...');
+    
+    // Try to fetch the API health check endpoint
     const response = await fetch('/api/health-check', { 
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
+      // Add a reasonable timeout to prevent waiting too long
+      signal: AbortSignal.timeout(5000)
     });
     
     if (response.ok) {

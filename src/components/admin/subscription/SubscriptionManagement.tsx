@@ -10,7 +10,6 @@ import SubscriptionPermissionError from './SubscriptionPermissionError';
 import SubscriptionLoader from './SubscriptionLoader';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 
-// Define proper props interface
 export interface SubscriptionPackageManagementProps {
   onPermissionError: (error: any) => void;
   dbInitialized?: boolean;
@@ -27,39 +26,25 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
   const [activeTab, setActiveTab] = useState<string>('business');
   const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
   
-  // Fix: Pass an empty object as the argument to useSubscriptionPackages
   const {
     packages,
     isLoading,
     error,
-    isOffline,
-    connectionStatus: hookConnectionStatus,
-    retryConnection
+    offlineMode,
+    fetchPackages,
+    addOrUpdatePackage,
+    removePackage
   } = useSubscriptionPackages({});
 
-  // Filter packages by type
   const businessPackages = packages.filter(pkg => pkg.type === 'Business');
   const influencerPackages = packages.filter(pkg => pkg.type === 'Influencer');
 
-  // Create our own save/delete functions
-  const savePackage = async (packageData: ISubscriptionPackage) => {
-    // Implementation would depend on your API
-    console.log('Saving package:', packageData);
-    // This is just a placeholder - your actual implementation would call your API
-    return Promise.resolve();
-  };
-
-  const deletePackage = async (packageId: string) => {
-    // Implementation would depend on your API
-    console.log('Deleting package:', packageId);
-    // This is just a placeholder - your actual implementation would call your API
-    return Promise.resolve();
-  };
-
   const handleSavePackage = async (packageData: ISubscriptionPackage) => {
     try {
-      await savePackage(packageData);
+      console.log('Handling save package:', packageData);
+      await addOrUpdatePackage(packageData);
       setSelectedPackage(null);
+      fetchPackages();
     } catch (err) {
       console.error('Error saving package:', err);
       onPermissionError(err);
@@ -72,7 +57,8 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
 
   const handleDeletePackage = async (packageId: string) => {
     try {
-      await deletePackage(packageId);
+      await removePackage(packageId);
+      fetchPackages();
     } catch (err) {
       console.error('Error deleting package:', err);
       onPermissionError(err);
@@ -80,12 +66,11 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
   };
 
   const handleCreatePackage = () => {
-    // Create a new package based on the active tab
     const newPackage: ISubscriptionPackage = {
       id: '',
       title: 'Untitled Package',
       type: activeTab === 'business' ? 'Business' : 'Influencer',
-      price: 0,
+      price: 999,
       setupFee: 0,
       billingCycle: 'yearly',
       features: [],
@@ -107,13 +92,16 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
     setSelectedPackage(null);
   };
 
-  // Use error from hook
-  if (error) {
-    return <SubscriptionPermissionError error={error} onRetry={() => retryConnection && retryConnection()} />;
+  const handleRetryConnection = () => {
+    fetchPackages();
+    if (onRetryConnection) onRetryConnection();
+  };
+
+  if (error && !offlineMode) {
+    return <SubscriptionPermissionError error={error} onRetry={handleRetryConnection} />;
   }
 
-  // Determine which connection status to use
-  const effectiveConnectionStatus = connectionStatus || hookConnectionStatus;
+  const effectiveConnectionStatus = connectionStatus || (offlineMode ? 'offline' : 'connected');
   const currentPackages = activeTab === 'business' ? businessPackages : influencerPackages;
 
   return (
@@ -125,12 +113,10 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
           <AlertDescription className="flex flex-col gap-2">
             <p>MongoDB server is not available. Operating in offline mode with limited functionality.</p>
             <p>You can still view and modify subscription packages, but changes will only be stored locally until a connection is established.</p>
-            {onRetryConnection && (
-              <Button variant="outline" size="sm" className="w-fit" onClick={onRetryConnection}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Try to reconnect
-              </Button>
-            )}
+            <Button variant="outline" size="sm" className="w-fit" onClick={handleRetryConnection}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try to reconnect
+            </Button>
           </AlertDescription>
         </Alert>
       )}
@@ -141,12 +127,10 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
           <AlertTitle>Connection Error</AlertTitle>
           <AlertDescription className="flex flex-col gap-2">
             <p>Failed to connect to MongoDB. Using locally cached data.</p>
-            {onRetryConnection && (
-              <Button variant="outline" size="sm" className="w-fit" onClick={onRetryConnection}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Retry connection
-              </Button>
-            )}
+            <Button variant="outline" size="sm" className="w-fit" onClick={handleRetryConnection}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry connection
+            </Button>
           </AlertDescription>
         </Alert>
       )}
@@ -171,7 +155,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
             <SubscriptionLoader 
               isLoading={isLoading} 
               connectionStatus={effectiveConnectionStatus} 
-              onRetry={onRetryConnection || (retryConnection ? () => retryConnection() : undefined)} 
+              onRetry={handleRetryConnection} 
             />
 
             <TabsContent value="business" className="mt-0">

@@ -181,9 +181,9 @@ export const fetchUserSubscriptions = async (userId: string): Promise<ISubscript
 /**
  * Helper function to check server availability
  */
-export const checkServerAvailability = async (): Promise<boolean> => {
+export const isServerRunning = async (): Promise<boolean> => {
   try {
-    return await isServerRunning();
+    return await checkServerAvailability();
   } catch (error) {
     console.error("Error checking server availability:", error);
     return false;
