@@ -18,7 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { updateUserRole as userManagementUpdateRole, updateUserPermission, getAllUsers, ensureTestUsers } from "@/features/auth/userManagement";
+import { updateUserRole, updateUserPermission } from "@/features/auth/roleManagement";
+import { getAllUsers, ensureTestUsers } from "@/features/auth/userDataAccess";
 import UserSubscriptionAssignment from "./UserSubscriptionAssignment";
 import { UserRole } from "@/types/auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";

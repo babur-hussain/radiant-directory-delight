@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { getUserById } from '@/features/auth/userManagement';
+import { getUserById } from '@/features/auth/userDataAccess';
 import { User } from '@/types/auth';
 
 /**
