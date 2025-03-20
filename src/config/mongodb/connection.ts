@@ -23,17 +23,8 @@ export const connectToMongoDB = async () => {
     // Connect directly to MongoDB through API
     const uri = process.env.MONGODB_URI || 'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
     
-    // Use real MongoDB connection
-    await mongoose.connect(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 15000, 
-      socketTimeoutMS: 45000,
-      connectTimeoutMS: 15000,
-      heartbeatFrequencyMS: 30000,
-      retryWrites: true,
-      w: 'majority',
-    });
+    // Use real MongoDB connection with updated options compatible with mongoose 8+
+    await mongoose.connect(uri);
     
     isConnected = true;
     console.log('=> Connected to MongoDB');
