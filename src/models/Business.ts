@@ -40,7 +40,7 @@ const schemaDefinition = {
   image: { type: String, default: '' }
 };
 
-const BusinessSchema = new mongoose.Schema(schemaDefinition);
+const BusinessSchema = mongoose.Schema(schemaDefinition);
 
 // Create indexes for frequently queried fields
 BusinessSchema.index({ category: 1 });

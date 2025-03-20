@@ -50,7 +50,7 @@ const schemaDefinition = {
   maxInfluencers: { type: Number, default: 1 }
 };
 
-const SubscriptionPackageSchema = new mongoose.Schema(schemaDefinition);
+const SubscriptionPackageSchema = mongoose.Schema(schemaDefinition);
 
 // Create indexes for frequently queried fields
 SubscriptionPackageSchema.index({ type: 1 });

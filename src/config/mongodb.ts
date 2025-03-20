@@ -116,11 +116,18 @@ export function extractQueryResults<T>(queryResult: any): T[] {
   return [];
 }
 
+// Make SchemaClass both a function and a class
+const SchemaClass = function(definition: any, options?: any) {
+  return new SchemaMock(definition, options);
+} as any;
+
+// Assign the constructor
+SchemaClass.prototype = SchemaMock.prototype;
+SchemaClass.constructor = SchemaMock;
+
 // MongoDB mock implementation
 const mongooseMock = {
-  Schema: function(definition: any, options?: any) {
-    return new SchemaMock(definition, options);
-  },
+  Schema: SchemaClass,
   model: (name: string, schema: any) => {
     return {
       schema,
