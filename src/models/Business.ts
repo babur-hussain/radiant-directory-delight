@@ -20,8 +20,8 @@ export interface IBusiness {
   image: string;
 }
 
-// Create a schema using the mongoose mock
-const BusinessSchema = {
+// Create a schema using the mongoose Schema
+const BusinessSchema = new mongoose.Schema({
   id: { type: Number, required: true, unique: true },
   name: { type: String, required: true },
   description: { type: String, default: '' },
@@ -38,15 +38,9 @@ const BusinessSchema = {
   tags: [{ type: String }],
   featured: { type: Boolean, default: false },
   image: { type: String, default: '' }
-};
+});
 
 // Create indexes for frequently queried fields
-BusinessSchema.index = function(field: any) {
-  // This is a mock implementation that does nothing
-  return;
-};
-
-// Create the model
 BusinessSchema.index({ category: 1 });
 BusinessSchema.index({ featured: 1 });
 BusinessSchema.index({ name: 1 });

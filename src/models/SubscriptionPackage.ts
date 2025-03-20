@@ -25,8 +25,8 @@ export interface ISubscriptionPackage {
   maxInfluencers?: number;
 }
 
-// Create a schema using the mongoose mock
-const SubscriptionPackageSchema = {
+// Create a schema using the mongoose Schema
+const SubscriptionPackageSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   title: { type: String, required: true },
   price: { type: Number, required: true },
@@ -48,18 +48,7 @@ const SubscriptionPackageSchema = {
   updatedAt: { type: Date, default: Date.now },
   maxBusinesses: { type: Number, default: 1 },
   maxInfluencers: { type: Number, default: 1 }
-};
-
-// Add index and pre methods for mock implementation
-SubscriptionPackageSchema.index = function(field: any) {
-  // This is a mock implementation that does nothing
-  return;
-};
-
-SubscriptionPackageSchema.pre = function(action: string, callback: Function) {
-  // This is a mock implementation that does nothing
-  return;
-};
+});
 
 // Create indexes for frequently queried fields
 SubscriptionPackageSchema.index({ type: 1 });
@@ -68,7 +57,27 @@ SubscriptionPackageSchema.index({ price: 1 });
 
 // Pre-save middleware to ensure one-time packages have proper setup
 SubscriptionPackageSchema.pre('save', function() {
-  // Mock implementation for pre-save hook
+  const document = this as any;
+  if (document.paymentType === 'one-time') {
+    // For one-time packages, ensure price is set correctly
+    if (!document.price || document.price <= 0) {
+      console.log('Setting default price for one-time package:', document.id);
+      document.price = 999;
+    } else {
+      console.log('One-time package price set to:', document.price);
+    }
+    
+    // Remove recurring-specific fields
+    document.billingCycle = undefined;
+    document.setupFee = 0;
+    document.monthlyPrice = undefined;
+    document.advancePaymentMonths = 0;
+  } else {
+    // For recurring packages, ensure billingCycle is set
+    if (!document.billingCycle) {
+      document.billingCycle = 'yearly';
+    }
+  }
 });
 
 export const SubscriptionPackage = mongoose.model('SubscriptionPackage', SubscriptionPackageSchema);

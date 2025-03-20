@@ -4,17 +4,86 @@ import * as mongooseModule from 'mongoose';
 const MOCK_DB_NAME = 'growbharatdb';
 let mockConnection = false;
 
-// Create a Schema class to match mongoose's Schema
+// Enhanced Schema mock class with method support
 class SchemaMock {
+  definition: any;
+  indexes: any[] = [];
+  virtuals: Record<string, any> = {};
+  hooks: Record<string, any[]> = {};
+  methodsObj: Record<string, Function> = {};
+
   constructor(definition: any, options?: any) {
-    return definition;
+    this.definition = definition;
+    return this;
+  }
+
+  index(fields: any, options?: any) {
+    this.indexes.push({ fields, options });
+    return this;
+  }
+
+  virtual(name: string) {
+    const virtualObj = {
+      get: (fn: Function) => {
+        this.virtuals[name] = { getter: fn };
+        return virtualObj;
+      },
+      set: (fn: Function) => {
+        if (!this.virtuals[name]) this.virtuals[name] = {};
+        this.virtuals[name].setter = fn;
+        return virtualObj;
+      }
+    };
+    return virtualObj;
+  }
+
+  pre(action: string, callback: Function) {
+    if (!this.hooks[action]) this.hooks[action] = [];
+    this.hooks[action].push(callback);
+    return this;
+  }
+
+  post(action: string, callback: Function) {
+    if (!this.hooks[`post:${action}`]) this.hooks[`post:${action}`] = [];
+    this.hooks[`post:${action}`].push(callback);
+    return this;
+  }
+
+  get methods() {
+    return this.methodsObj;
+  }
+  
+  set methods(methodsObj: Record<string, Function>) {
+    this.methodsObj = methodsObj;
+  }
+}
+
+// Improved QueryResult class for better method chaining
+class QueryResult {
+  results: any[] = [];
+  
+  constructor(results: any[] = []) {
+    this.results = results;
+  }
+  
+  sort(sortOptions: any) {
+    // In a real implementation, this would sort the results
+    return this;
+  }
+  
+  exec() {
+    return Promise.resolve(this.results);
+  }
+  
+  lean() {
+    return this;
   }
 }
 
 // MongoDB mock implementation
 const mongooseMock = {
   Schema: function(definition: any, options?: any) {
-    return definition;
+    return new SchemaMock(definition, options);
   },
   model: (name: string, schema: any) => {
     return {
@@ -22,24 +91,7 @@ const mongooseMock = {
       collection: { collectionName: name.toLowerCase() },
       // Add methods commonly used in MongoDB queries
       find: (query = {}) => {
-        // Return a chainable object with exec and sort methods
-        const queryResult = {
-          results: [],
-          sort: function(sortOptions: any) {
-            // Just return self for chaining
-            return this;
-          },
-          exec: function() {
-            // Return a promise that resolves to the results
-            return Promise.resolve(this.results);
-          },
-          lean: function() {
-            // Return self for chaining
-            return this;
-          },
-          // Add any other methods needed for chaining
-        };
-        return queryResult;
+        return new QueryResult([]);
       },
       findOne: (query = {}) => Promise.resolve(null),
       findOneAndUpdate: (query: any, update: any, options: any = {}) => {

@@ -29,7 +29,7 @@ export interface ISubscription {
 }
 
 // Create the Mongoose schema
-const SubscriptionSchema = {
+const SubscriptionSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   packageId: { type: String, required: true },
   packageName: { type: String, required: true },
@@ -54,13 +54,7 @@ const SubscriptionSchema = {
   cancelReason: { type: String },
   paymentMethod: { type: String },
   transactionId: { type: String }
-};
-
-// Add index method for mock implementation
-SubscriptionSchema.index = function(field: any) {
-  // This is a mock implementation that does nothing
-  return;
-};
+});
 
 // Create indexes for frequently queried fields
 SubscriptionSchema.index({ userId: 1 });

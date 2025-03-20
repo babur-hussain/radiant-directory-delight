@@ -35,36 +35,36 @@ const UserDashboardCustomizer: React.FC = () => {
     try {
       await connectToMongoDB();
       
-      // Execute the query in steps to avoid chaining on a Promise
+      // Get the query object for users
       const userQuery = User.find();
-      let sortedUsers: any[] = [];
+      let userResults: any[] = [];
       
+      // Handle the query result which could be an array or a query object
       if (Array.isArray(userQuery)) {
-        // If userQuery is already an array, use it directly
-        sortedUsers = userQuery;
-      } else if (userQuery && typeof userQuery.sort === 'function') {
-        // If userQuery has a sort method, use it
-        const sortedQuery = userQuery.sort({ name: 1 });
-        
+        // If it's already an array, use it directly
+        userResults = userQuery;
+      } else if (userQuery) {
+        // If it has a sort method, call it
+        const sortedQuery = typeof userQuery.sort === 'function' 
+          ? userQuery.sort({ name: 1 }) 
+          : userQuery;
+          
+        // If it has an exec method, call it to get the results
         if (sortedQuery && typeof sortedQuery.exec === 'function') {
-          // If sortedQuery has an exec method, execute it
-          sortedUsers = await sortedQuery.exec();
-        } else if (sortedQuery && Array.isArray(sortedQuery.results)) {
-          // If sortedQuery has a results array, use it
-          sortedUsers = sortedQuery.results;
+          userResults = await sortedQuery.exec();
+        } else if (sortedQuery && sortedQuery.results) {
+          // If it has a results property, use that
+          userResults = sortedQuery.results;
         } else {
-          // If sortedQuery is already an array, use it
-          sortedUsers = sortedQuery || [];
+          // Assume it's the result array
+          userResults = sortedQuery || [];
         }
-      } else if (userQuery && Array.isArray(userQuery.results)) {
-        // If userQuery has a results array but no sort method, use the results
-        sortedUsers = userQuery.results;
       }
       
-      setUsers(sortedUsers);
+      setUsers(userResults);
       
-      if (sortedUsers.length > 0 && !selectedUserId) {
-        setSelectedUserId(sortedUsers[0].uid);
+      if (userResults.length > 0 && !selectedUserId) {
+        setSelectedUserId(userResults[0].uid);
       }
     } catch (err) {
       console.error("Error loading users:", err);
