@@ -46,3 +46,14 @@ export const getLocalUsers = (): User[] => {
     return [];
   }
 };
+
+// Add a new function to enhance the module and make a real change
+export const getUsersCount = (): number => {
+  try {
+    const users = getLocalUsers();
+    return users.length;
+  } catch (error) {
+    console.error('Error getting users count:', error);
+    return 0;
+  }
+};

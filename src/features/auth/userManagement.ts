@@ -1,5 +1,5 @@
 
-// This file is now just a re-export module for better organization
+// This file is a re-export module for better organization of auth functionality
 
 // Export user role and permission functions
 export { updateUserRole, updateUserPermission } from './roleManagement';
@@ -13,5 +13,8 @@ export { createTestUser, ensureTestUsers } from './testUsers';
 // Export utility functions
 export { formatUser, getLocalUsers } from './utils/userUtils';
 
-// Re-export types correctly using 'export type'
+// Export types properly using the 'export type' syntax
 export type { TestUserData } from './testUsers';
+
+// Add a version number for tracking changes
+export const AUTH_MODULE_VERSION = '1.0.1';

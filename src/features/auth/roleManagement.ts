@@ -1,9 +1,13 @@
-
 import { User, UserRole } from "@/types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { connectToMongoDB } from '@/config/mongodb';
 import { createOrUpdateUser } from '@/api/services/userAPI';
 
+/**
+ * Updates a user's role in the system
+ * @param user The user to update
+ * @returns The updated user object
+ */
 export const updateUserRole = async (user: User) => {
   if (!user) {
     throw new Error("User not authenticated");
@@ -84,6 +88,12 @@ export const updateUserRole = async (user: User) => {
   }
 };
 
+/**
+ * Updates a user's admin permission status
+ * @param userId The ID of the user to update
+ * @param isAdmin Whether the user should have admin permissions
+ * @returns An object containing the userId and isAdmin status
+ */
 export const updateUserPermission = async (userId: string, isAdmin: boolean) => {
   try {
     localStorage.setItem(getAdminKey(userId), isAdmin ? 'true' : 'false');
