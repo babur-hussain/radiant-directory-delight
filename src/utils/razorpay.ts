@@ -123,10 +123,10 @@ export const isRazorpayAvailable = (): boolean => {
  * Note: In production, orders should be created server-side
  */
 export const generateOrderId = (): string => {
-  // Use a simpler order ID format without special characters
-  // Using timestamp and random number for uniqueness
+  // Use a very simple alphanumeric order ID format without special characters
+  // This format is more compatible with Razorpay requirements
   const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 1000);
+  const random = Math.floor(Math.random() * 100);
   return `order${timestamp}${random}`;
 };
 

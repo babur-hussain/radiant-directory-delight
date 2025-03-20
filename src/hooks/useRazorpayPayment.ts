@@ -86,7 +86,7 @@ export const useRazorpayPayment = () => {
         totalPaymentAmount = 1; // Minimum 1 rupee
       }
 
-      // Create a valid order ID - eliminate special characters
+      // Create a valid order ID without special characters
       const orderId = generateOrderId();
       
       // Convert amount to paise
@@ -185,12 +185,14 @@ export const useRazorpayPayment = () => {
           const formattedStartDate = startDate.toLocaleDateString();
           
           // For recurring subscription with autopay
+          // Important: We need to properly setup subscription parameters
+          const subscriptionId = `sub${Date.now()}`;
+          
           const options = {
             ...commonOptions,
-            amount: amountInPaise, 
+            amount: amountInPaise,
             currency: 'INR',
-            subscription_id: `sub${Date.now()}`, // Generate a subscription ID for reference
-            recurring: true, // Flag for autopay/recurring
+            // Don't use subscription_id directly in options
             notes: {
               packageId: selectedPackage.id,
               packageType: "recurring",
@@ -198,8 +200,19 @@ export const useRazorpayPayment = () => {
               setupFee: setupFee,
               recurringAmount: recurringAmount,
               advanceMonths: advanceMonths,
-              nextBillingDate: startDate.toISOString()
+              nextBillingDate: startDate.toISOString(),
+              subscription_id: subscriptionId
             },
+            // Setup proper payment capture
+            payment_capture: 1,
+            // Add these options that are required by Razorpay for recurring
+            method: {
+              netbanking: true,
+              card: true,
+              upi: true,
+              wallet: true
+            },
+            // Standard payment callback
             handler: function(response: any) {
               // Add subscription details to the response
               response.paymentType = "recurring";
@@ -212,7 +225,7 @@ export const useRazorpayPayment = () => {
               response.billingCycle = selectedPackage.billingCycle || 'yearly';
               
               // Generate a subscription ID if not provided by Razorpay
-              response.subscriptionId = response.razorpay_subscription_id || `sub${Date.now()}`;
+              response.subscriptionId = response.razorpay_subscription_id || subscriptionId;
               
               // Add next billing date to the response
               response.nextBillingDate = startDate.toISOString();
