@@ -9,6 +9,7 @@ import {
   generateReceiptId,
   convertToPaise,
   createRazorpayCheckout,
+  formatNotesForRazorpay,
   RazorpayOptions,
   RazorpayResponse
 } from '@/utils/razorpay';
@@ -96,8 +97,8 @@ export const useRazorpayPayment = () => {
       
       console.log(`Setting up payment for ${selectedPackage.title} with amount ${initialAmount} (${amountInPaise} paise)`);
       
-      // Create notes object with subscription details and ensure all values are strings
-      const notes: Record<string, string> = {
+      // Create notes object with subscription details
+      const notes = {
         packageId: String(selectedPackage.id),
         packageType: isOneTimePackage ? "one-time" : "recurring",
         packageName: String(selectedPackage.title),
@@ -111,14 +112,19 @@ export const useRazorpayPayment = () => {
           nextBillingDate.setMonth(nextBillingDate.getMonth() + (selectedPackage.advancePaymentMonths || 0));
         }
         
-        notes.billingCycle = String(selectedPackage.billingCycle || "monthly");
-        notes.setupFee = String(selectedPackage.setupFee || 0);
-        notes.recurringAmount = String(selectedPackage.price || 0);
-        notes.advanceMonths = String(selectedPackage.advancePaymentMonths || 0);
-        notes.nextBillingDate = nextBillingDate.toISOString();
-        notes.isRecurring = "true";
-        notes.autoPayment = "true"; // Add auto-payment flag for recurring
+        Object.assign(notes, {
+          billingCycle: String(selectedPackage.billingCycle || "monthly"),
+          setupFee: String(selectedPackage.setupFee || 0),
+          recurringAmount: String(selectedPackage.price || 0),
+          advanceMonths: String(selectedPackage.advancePaymentMonths || 0),
+          nextBillingDate: nextBillingDate.toISOString(),
+          isRecurring: "true",
+          autoPayment: "true" // Add auto-payment flag for recurring
+        });
       }
+      
+      // Format notes for Razorpay (ensure all values are strings)
+      const formattedNotes = formatNotesForRazorpay(notes);
       
       // Log options for debugging
       console.log("Opening Razorpay with options:", {
@@ -128,7 +134,8 @@ export const useRazorpayPayment = () => {
         packageTitle: selectedPackage.title,
         isOneTime: isOneTimePackage,
         orderId,
-        receiptId
+        receiptId,
+        notes: formattedNotes
       });
       
       // Configure Razorpay options
@@ -187,7 +194,7 @@ export const useRazorpayPayment = () => {
           email: user?.email || '',
           contact: user?.phone || ''
         },
-        notes: notes,
+        notes: formattedNotes,
         theme: {
           color: '#3399cc'
         },
@@ -204,7 +211,15 @@ export const useRazorpayPayment = () => {
               console.error("Error in onFailure callback:", callbackErr);
             }
           }
-        }
+        },
+        // Additional settings for recurring payments
+        ...((!isOneTimePackage) ? {
+          subscription_card_change: false,
+          subscription_payment_capture: true,
+          payment_capture: true,
+          auth_type: "netbanking",
+          save: true
+        } : {})
       };
 
       try {
@@ -215,7 +230,7 @@ export const useRazorpayPayment = () => {
         razorpay.on('payment.failed', function(resp: any) {
           console.error('Payment failed:', resp.error);
           
-          const errorMessage = resp.error.description || 'Payment failed. Please try again.';
+          const errorMessage = resp.error?.description || 'Payment failed. Please try again.';
           
           toast({
             title: "Payment Failed",
@@ -227,7 +242,7 @@ export const useRazorpayPayment = () => {
           setError(errorMessage);
           
           try {
-            onFailure(resp.error);
+            onFailure(resp.error || { message: errorMessage });
           } catch (callbackErr) {
             console.error("Error in onFailure callback:", callbackErr);
           }
@@ -242,11 +257,12 @@ export const useRazorpayPayment = () => {
       
     } catch (error) {
       console.error('Error opening Razorpay:', error);
-      setError(error.message || 'An error occurred while processing payment');
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred while processing payment';
+      setError(errorMessage);
       
       toast({
         title: "Payment Error",
-        description: error.message || "Could not open payment gateway. Please try again later.",
+        description: errorMessage,
         variant: "destructive"
       });
       

@@ -60,6 +60,20 @@ export interface RazorpayOptions {
     email?: boolean;
     contact?: boolean;
   };
+  // Add specific recurring payment properties
+  subscription_card_change?: boolean;
+  recurring?: boolean;
+  subscription_payment_capture?: boolean;
+  payment_capture?: boolean;
+  auth_type?: string;
+  customer_id?: string;
+  save?: boolean;
+  config?: {
+    display?: {
+      language?: string;
+      hide_topbar?: boolean;
+    };
+  };
 }
 
 // Type for Razorpay subscription request
@@ -196,6 +210,22 @@ export const convertToPaise = (amount: number): number => {
 };
 
 /**
+ * Ensure all values in the notes object are strings
+ * Razorpay requires all notes values to be strings
+ */
+export const formatNotesForRazorpay = (notes?: Record<string, any>): Record<string, string> => {
+  if (!notes) return {};
+  
+  const formattedNotes: Record<string, string> = {};
+  Object.entries(notes).forEach(([key, value]) => {
+    // Convert all values to strings (important for numbers, booleans, etc.)
+    formattedNotes[key] = String(value);
+  });
+  
+  return formattedNotes;
+};
+
+/**
  * Create and open Razorpay checkout
  * @param options Razorpay payment options
  * @returns Razorpay instance
@@ -206,12 +236,7 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   }
   
   // Ensure all numeric values in notes are converted to strings
-  const notesWithStringValues = options.notes ? 
-    Object.entries(options.notes).reduce((acc, [key, value]) => {
-      acc[key] = String(value);
-      return acc;
-    }, {} as Record<string, string>) : 
-    {};
+  const notesWithStringValues = formatNotesForRazorpay(options.notes);
   
   // Format options correctly
   const formattedOptions = {
@@ -237,7 +262,21 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
       ...options.modal,
       backdropclose: false,
       escape: false
-    }
+    },
+    // Add recurring payment configurations for subscriptions
+    ...(options.recurring ? {
+      subscription_card_change: false,
+      subscription_payment_capture: true,
+      payment_capture: true,
+      auth_type: "netbanking",
+      save: true,
+      config: {
+        display: {
+          language: "en",
+          hide_topbar: false
+        }
+      }
+    } : {})
   };
   
   console.log("Creating Razorpay checkout with options:", formattedOptions);
@@ -274,4 +313,3 @@ export const verifyRazorpayPayment = async (paymentData: RazorpayResponse): Prom
   
   return true;
 };
-
