@@ -33,6 +33,8 @@ export interface RazorpayOptions {
   description: string;
   image?: string;
   order_id?: string;
+  subscription_id?: string;
+  recurring?: boolean;
   prefill?: {
     name?: string;
     email?: string;
@@ -45,7 +47,18 @@ export interface RazorpayOptions {
   handler?: (response: RazorpayResponse) => void;
   modal?: {
     escape?: boolean;
+    backdropclose?: boolean;
     ondismiss?: () => void;
+  };
+  retry?: {
+    enabled?: boolean;
+    max_count?: number;
+  };
+  send_sms_hash?: boolean;
+  remember_customer?: boolean;
+  readonly?: {
+    email?: boolean;
+    contact?: boolean;
   };
 }
 
@@ -145,12 +158,19 @@ export const isRazorpayAvailable = (): boolean => {
 };
 
 /**
- * Generate a Razorpay compatible order ID
- * IMPORTANT: Razorpay requires a specific format for order_id
+ * Generate a Razorpay compatible receipt ID
+ * @returns A unique receipt ID
+ */
+export const generateReceiptId = (): string => {
+  return `rcpt_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+};
+
+/**
+ * Generate a Razorpay compatible order ID - must match exact format
  * Format: order_<14-character alphanumeric ID>
  */
 export const generateOrderId = (): string => {
-  // Generate a random 14-character alphanumeric string
+  // We'll create a 14-character alphanumeric string
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
   for (let i = 0; i < 14; i++) {
@@ -199,7 +219,25 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
     key: options.key || RAZORPAY_KEY_ID,
     notes: notesWithStringValues,
     // Ensure amount is a number (not a string)
-    amount: typeof options.amount === 'string' ? parseInt(options.amount) : options.amount
+    amount: typeof options.amount === 'string' ? parseInt(options.amount) : options.amount,
+    // Add these settings for better error handling
+    retry: {
+      enabled: true,
+      max_count: 3
+    },
+    // Add these to help with auto payments for subscriptions
+    remember_customer: options.recurring === true ? true : false,
+    send_sms_hash: true,
+    readonly: {
+      email: false,
+      contact: false
+    },
+    // Add this to prevent backdrop closing issues
+    modal: {
+      ...options.modal,
+      backdropclose: false,
+      escape: false
+    }
   };
   
   console.log("Creating Razorpay checkout with options:", formattedOptions);
@@ -236,3 +274,4 @@ export const verifyRazorpayPayment = async (paymentData: RazorpayResponse): Prom
   
   return true;
 };
+

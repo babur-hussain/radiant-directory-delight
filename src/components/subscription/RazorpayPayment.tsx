@@ -95,6 +95,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           // Increment retry count to track failed attempts
           setRetryCount(prevCount => prevCount + 1);
         }
+      }).catch(err => {
+        console.error("Error initiating payment:", err);
+        setError("Could not start payment process. Please try again.");
+        setIsProcessing(false);
       });
     } catch (error) {
       console.error("Error initiating payment:", error);

@@ -6,6 +6,7 @@ import {
   isRazorpayAvailable, 
   RAZORPAY_KEY_ID,
   generateOrderId, 
+  generateReceiptId,
   convertToPaise,
   createRazorpayCheckout,
   RazorpayOptions,
@@ -87,6 +88,9 @@ export const useRazorpayPayment = () => {
       // Generate an order ID for this transaction using the correct format
       const orderId = generateOrderId();
       
+      // Generate a receipt ID
+      const receiptId = generateReceiptId();
+      
       // Convert amount to paise
       const amountInPaise = convertToPaise(initialAmount);
       
@@ -96,7 +100,8 @@ export const useRazorpayPayment = () => {
       const notes: Record<string, string> = {
         packageId: String(selectedPackage.id),
         packageType: isOneTimePackage ? "one-time" : "recurring",
-        packageName: String(selectedPackage.title)
+        packageName: String(selectedPackage.title),
+        receiptId: receiptId
       };
       
       // Add subscription-specific details for recurring packages
@@ -112,6 +117,7 @@ export const useRazorpayPayment = () => {
         notes.advanceMonths = String(selectedPackage.advancePaymentMonths || 0);
         notes.nextBillingDate = nextBillingDate.toISOString();
         notes.isRecurring = "true";
+        notes.autoPayment = "true"; // Add auto-payment flag for recurring
       }
       
       // Log options for debugging
@@ -121,7 +127,8 @@ export const useRazorpayPayment = () => {
         packageId: selectedPackage.id,
         packageTitle: selectedPackage.title,
         isOneTime: isOneTimePackage,
-        orderId
+        orderId,
+        receiptId
       });
       
       // Configure Razorpay options
@@ -133,6 +140,8 @@ export const useRazorpayPayment = () => {
         description: `Payment for ${selectedPackage.title}`,
         image: 'https://example.com/your_logo.png', // Replace with actual logo URL
         order_id: orderId,
+        recurring: !isOneTimePackage, // Enable recurring flag for subscriptions
+        remember_customer: !isOneTimePackage, // Remember customer for easier recurring payments
         handler: function(response: RazorpayResponse) {
           // Add package info to response
           const enrichedResponse = {
@@ -140,7 +149,8 @@ export const useRazorpayPayment = () => {
             packageId: selectedPackage.id,
             packageName: selectedPackage.title,
             amount: initialAmount,
-            paymentType: isOneTimePackage ? "one-time" : "recurring"
+            paymentType: isOneTimePackage ? "one-time" : "recurring",
+            receiptId
           };
           
           // For recurring payments, add subscription details
@@ -150,7 +160,8 @@ export const useRazorpayPayment = () => {
               recurringAmount: selectedPackage.price || 0,
               advanceMonths: selectedPackage.advancePaymentMonths || 0,
               billingCycle: selectedPackage.billingCycle || 'monthly',
-              nextBillingDate: notes.nextBillingDate
+              nextBillingDate: notes.nextBillingDate,
+              autoPayment: true
             });
           }
           
@@ -182,6 +193,7 @@ export const useRazorpayPayment = () => {
         },
         modal: {
           escape: false,
+          backdropclose: false,
           ondismiss: function() {
             console.log("Checkout form closed by user");
             setIsLoading(false);
