@@ -1,18 +1,22 @@
+
 import axios from 'axios';
 import { toast } from '@/hooks/use-toast';
 import { getLocalFallbackPackages } from '@/lib/mongodb/serverUtils';
 
 // API base URL - use direct MongoDB connection
-export const API_BASE_URL = 'https://gbv-backend.onrender.com/api';
+export const API_BASE_URL = process.env.NODE_ENV === 'development' 
+  ? 'http://localhost:3001/api'  // Use local server in development
+  : 'https://gbv-backend.onrender.com/api';
 
 // Create axios instance with improved timeout settings
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 12000, // Increased to 12 seconds timeout for API calls
+  timeout: 15000, // Increased to 15 seconds timeout for API calls
   headers: {
     'Content-Type': 'application/json',
     'X-Environment': 'production' // Add production marker
-  }
+  },
+  withCredentials: false // Disable sending credentials for CORS requests
 });
 
 // Add interceptors for error handling with better logging
@@ -50,8 +54,9 @@ api.interceptors.response.use(
         description: 'Your session may have expired. Please log in again.',
         variant: 'destructive'
       });
-    } else if (!error.message.includes('Network Error') && !error.message.includes('timeout')) {
-      // Only show toast for non-timeout, non-network errors
+    } else if (!error.message.includes('Network Error') && !error.message.includes('timeout') && 
+               !error.message.includes('CORS')) {
+      // Only show toast for non-timeout, non-network, non-CORS errors
       toast({
         title: 'API Error',
         description: errorMessage,
@@ -69,7 +74,12 @@ export const isServerRunning = async () => {
     console.log(`Checking if production server is running at ${API_BASE_URL}`);
     // Use a separate axios instance with a shorter timeout
     const response = await axios.get(`${API_BASE_URL}/test-connection`, {
-      timeout: 8000 // 8 seconds timeout for connectivity check
+      timeout: 8000, // 8 seconds timeout for connectivity check
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      },
+      withCredentials: false // Important for CORS requests
     });
     console.log('Production server is available:', response.data);
     return true;
@@ -88,7 +98,8 @@ export const postToMongoDB = async (endpoint, data) => {
       headers: {
         'Content-Type': 'application/json',
         'X-Direct-MongoDB': 'true'
-      }
+      },
+      withCredentials: false // Important for CORS
     });
     console.log('MongoDB direct post successful:', response.data);
     return response.data;

@@ -10,7 +10,7 @@ import { diagnoseMongoDbConnection, testConnectionWithRetry } from '@/utils/mong
 import { connectToMongoDB } from '@/config/mongodb';
 import { isServerRunning, API_BASE_URL } from '@/api/core/apiService';
 import { clearUserCache } from '@/api/services/userAPI';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 const MongoDBInitializationPanel: React.FC = () => {
   const [status, setStatus] = useState<'idle' | 'processing' | 'completed' | 'error'>('idle');
@@ -25,6 +25,7 @@ const MongoDBInitializationPanel: React.FC = () => {
   const [isDiagnosing, setIsDiagnosing] = useState(false);
   const [serverAvailable, setServerAvailable] = useState<boolean | null>(null);
   const [attemptingLocalServer, setAttemptingLocalServer] = useState(false);
+  const { toast } = useToast(); // Use the shadcn/ui toast hook
 
   useEffect(() => {
     checkServerStatus();
@@ -189,7 +190,7 @@ const MongoDBInitializationPanel: React.FC = () => {
       console.error('Error posting test user:', error);
       toast({
         title: 'Test Failed',
-        description: `Error: ${error.message}`,
+        description: `Error: ${error instanceof Error ? error.message : String(error)}`,
         variant: 'destructive'
       });
     }

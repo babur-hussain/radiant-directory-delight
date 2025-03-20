@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import { connectToMongoDB } from './mongodb-connector.js';
@@ -12,9 +13,27 @@ import mongoose from 'mongoose';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Configure CORS properly to fix the CORS issues
+const corsOptions = {
+  origin: ['http://localhost:8080', 'http://localhost:5173', 'https://gbv-backend.onrender.com', '*'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Direct-MongoDB', 'X-Environment'],
+  credentials: false,
+  optionsSuccessStatus: 200
+};
+
 // Middleware
 app.use(express.json());
-app.use(cors());
+app.use(cors(corsOptions));
+
+// Add a pre-flight check for OPTIONS requests
+app.options('*', cors(corsOptions));
+
+// Middleware to log requests - helps with debugging
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
+  next();
+});
 
 // Connect to MongoDB on startup
 connectToMongoDB()
@@ -31,6 +50,11 @@ connectToMongoDB()
 
 // Test connection with collection info
 app.get('/api/test-connection', async (req, res) => {
+  // Set CORS headers explicitly for this route
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
   try {
     const connected = await connectToMongoDB();
     
