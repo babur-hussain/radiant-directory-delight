@@ -1,4 +1,5 @@
-import { User, UserRole } from "../types/auth";
+
+import { User, UserRole } from "@/types/auth";
 import { connectToMongoDB } from '@/config/mongodb';
 import { createOrUpdateUser, fetchUserByUid, getAllUsers as getAPIAllUsers } from '@/api/services/userAPI';
 import { formatUser, getLocalUsers } from './utils/userUtils';

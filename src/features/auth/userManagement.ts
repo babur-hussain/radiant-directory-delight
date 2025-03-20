@@ -12,3 +12,6 @@ export { createTestUser, ensureTestUsers, TestUserData } from './testUsers';
 
 // Export utility functions
 export { formatUser, getLocalUsers } from './utils/userUtils';
+
+// Re-export types correctly
+export type { TestUserData } from './testUsers';

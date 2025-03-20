@@ -1,5 +1,5 @@
 
-import { User, UserRole } from "../types/auth";
+import { User, UserRole } from "@/types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { connectToMongoDB } from '@/config/mongodb';
 import { createOrUpdateUser } from '@/api/services/userAPI';
