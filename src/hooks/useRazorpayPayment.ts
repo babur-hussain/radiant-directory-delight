@@ -19,25 +19,11 @@ interface RazorpayOptions {
 }
 
 // Define notes object types for type safety
-interface OneTimeNotesObject {
+interface PaymentNotesObject {
   packageId: string;
-  packageType: "one-time";
+  packageType: "one-time" | "recurring";
+  [key: string]: any;
 }
-
-interface RecurringNotesObject {
-  packageId: string;
-  packageType: "recurring";
-  billingCycle: string;
-  setupFee: number;
-  recurringAmount: number;
-  advanceMonths: number;
-  subscriptionId: string;
-  isInitialPayment: string;
-  isRecurring: string;
-  nextBillingDate: string;
-}
-
-type NotesObject = OneTimeNotesObject | RecurringNotesObject;
 
 export const useRazorpayPayment = () => {
   const { toast } = useToast();
@@ -122,26 +108,23 @@ export const useRazorpayPayment = () => {
       }
       
       // Create notes object that will store subscription details
-      let notesObject: NotesObject;
+      const notesObject: PaymentNotesObject = {
+        packageId: selectedPackage.id,
+        packageType: isOneTimePackage ? "one-time" : "recurring",
+      };
       
-      if (isOneTimePackage) {
-        notesObject = {
-          packageId: selectedPackage.id,
-          packageType: "one-time"
-        };
-      } else {
-        notesObject = {
-          packageId: selectedPackage.id,
-          packageType: "recurring",
+      // Add additional details for recurring subscriptions
+      if (!isOneTimePackage) {
+        Object.assign(notesObject, {
           billingCycle: selectedPackage.billingCycle || "monthly",
-          setupFee: setupFee,
-          recurringAmount: recurringAmount,
-          advanceMonths: advanceMonths,
+          setupFee: setupFee.toString(),
+          recurringAmount: recurringAmount.toString(),
+          advanceMonths: advanceMonths.toString(),
           subscriptionId: `sub${Date.now()}`,
           isInitialPayment: "true",
           isRecurring: "true",
           nextBillingDate: startDate.toISOString()
-        };
+        });
       }
       
       // Configure Razorpay options
@@ -166,8 +149,8 @@ export const useRazorpayPayment = () => {
             response.recurringAmount = recurringAmount;
             response.advanceMonths = advanceMonths;
             response.billingCycle = selectedPackage.billingCycle || 'monthly';
-            response.nextBillingDate = (notesObject as RecurringNotesObject).nextBillingDate;
-            response.subscriptionId = (notesObject as RecurringNotesObject).subscriptionId;
+            response.nextBillingDate = notesObject.nextBillingDate;
+            response.subscriptionId = notesObject.subscriptionId;
           }
           
           console.log(`${isOneTimePackage ? "One-time" : "Subscription"} payment successful, response:`, response);
@@ -202,24 +185,6 @@ export const useRazorpayPayment = () => {
           }
         }
       };
-      
-      // Add payment methods
-      const paymentMethods = {
-        netbanking: true,
-        card: true,
-        upi: true,
-        wallet: true
-      };
-      
-      Object.assign(options, { method: paymentMethods });
-      
-      // For recurring subscriptions, configure autopay
-      if (!isOneTimePackage) {
-        console.log("Setting up for recurring subscription");
-        
-        // We don't set recurring flag directly for initial payment
-        // It will be handled by the backend in production
-      }
       
       // Log options for debugging
       console.log("Opening Razorpay with options:", {

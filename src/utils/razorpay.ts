@@ -124,10 +124,11 @@ export const isRazorpayAvailable = (): boolean => {
  * Razorpay requires alphanumeric only, no special characters
  */
 export const generateOrderId = (): string => {
-  // Simple format that's fully compatible with Razorpay requirements
+  // Simple format that uses only alphanumeric characters
+  // Generate a random alphanumeric string to ensure uniqueness
   const timestamp = Date.now().toString();
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  return `order${timestamp}${random}`;
+  const randomAlphanumeric = Math.random().toString(36).substring(2, 8);
+  return `order${timestamp}${randomAlphanumeric}`;
 };
 
 /**
