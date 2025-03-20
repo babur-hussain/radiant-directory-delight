@@ -81,12 +81,12 @@ export const useRazorpayPayment = () => {
         initialAmount += advanceAmount;
       }
       
-      // Ensure minimum amount
+      // Ensure minimum amount (1 rupee)
       if (initialAmount < 1) {
-        initialAmount = 1; // Minimum 1 rupee
+        initialAmount = 1;
       }
       
-      // Generate a unique ID for this order
+      // Generate a unique ID for this order - simplified
       const orderId = generateOrderId();
       console.log("Generated order ID:", orderId);
       
@@ -98,7 +98,7 @@ export const useRazorpayPayment = () => {
       
       console.log(`Setting up payment for ${selectedPackage.title} with amount ${initialAmount} (${amountInPaise} paise)`);
       
-      // Create basic notes object (simple key-value pairs only)
+      // Create basic notes object with strings only
       const notes: Record<string, string> = {
         packageId: selectedPackage.id,
         packageName: selectedPackage.title,
@@ -107,7 +107,7 @@ export const useRazorpayPayment = () => {
         paymentType: isOneTimePackage ? "one-time" : "recurring"
       };
       
-      // Configure Razorpay options
+      // Configure Razorpay options - simplified
       const options: RazorpayOptions = {
         key: getRazorpayKey(),
         amount: amountInPaise,
@@ -131,7 +131,6 @@ export const useRazorpayPayment = () => {
           toast({
             title: "Payment Successful",
             description: `Your payment for ${selectedPackage.title} was successful.`,
-            variant: "default"
           });
           
           setIsLoading(false);
@@ -166,7 +165,7 @@ export const useRazorpayPayment = () => {
       };
 
       try {
-        // Create Razorpay checkout
+        // Create and open Razorpay checkout
         const razorpay = createRazorpayCheckout(options);
         
         // Handle payment failures

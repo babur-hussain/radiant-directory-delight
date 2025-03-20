@@ -19,13 +19,12 @@ export const generateShortId = (): string => {
 };
 
 /**
- * Generates a unique order ID
+ * Generates a unique order ID for Razorpay that follows their best practices
  * @returns A properly formatted order ID
  */
 export const generateOrderId = (): string => {
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-  return `order_${timestamp}${random}`;
+  // For Razorpay, we'll use a consistent format that's unlikely to cause issues
+  return `order_${Date.now()}_${nanoid(8)}`;
 };
 
 export { nanoid };
