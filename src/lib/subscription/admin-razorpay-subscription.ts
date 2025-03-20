@@ -39,6 +39,12 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
     const advanceAmount = isOneTime ? 0 : (recurringAmount * advancePaymentMonths);
     const totalAmount = isOneTime ? packageDetails.price : (setupFee + advanceAmount);
     
+    // Handle the case where nextBillingDate is provided directly in paymentDetails
+    let nextBillingDate = recurringStartDate.toISOString();
+    if (paymentDetails?.nextBillingDate) {
+      nextBillingDate = paymentDetails.nextBillingDate;
+    }
+    
     // Prepare subscription data
     const subscription: SubscriptionData = {
       id: subscriptionId,
@@ -63,7 +69,7 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
       paymentType: packageDetails.paymentType || "recurring",
       billingCycle: packageDetails.billingCycle,
       recurringAmount: recurringAmount,
-      nextBillingDate: isOneTime ? undefined : recurringStartDate.toISOString()
+      nextBillingDate: isOneTime ? undefined : nextBillingDate
     };
     
     // Add payment details if provided

@@ -64,18 +64,35 @@ export const useRazorpayPayment = () => {
       // Determine if this is a one-time package
       const isOneTimePackage = selectedPackage.paymentType === "one-time";
       
-      // Calculate the amount based on payment type
-      const paymentAmount = isOneTimePackage 
-        ? (selectedPackage.price || 999) // Default to 999 if price is 0 or undefined
-        : (selectedPackage.setupFee || 0);
+      // Calculate advance payment months (if applicable for recurring payments)
+      const advanceMonths = isOneTimePackage ? 0 : (selectedPackage.advancePaymentMonths || 0);
       
-      // Create a valid order ID - avoid using underscores which might cause API issues
+      // Calculate the setup fee (for recurring payments)
+      const setupFee = isOneTimePackage ? 0 : (selectedPackage.setupFee || 0);
+      
+      // Calculate recurring amount
+      const recurringAmount = isOneTimePackage ? 0 : (selectedPackage.price || 0);
+      
+      // Calculate advance payment amount
+      const advanceAmount = advanceMonths * recurringAmount;
+      
+      // Calculate the total initial payment
+      let totalPaymentAmount = isOneTimePackage 
+        ? (selectedPackage.price || 999) // For one-time packages
+        : (setupFee + advanceAmount); // For recurring (setup fee + advance payment)
+      
+      // Ensure minimum amount
+      if (totalPaymentAmount < 1) {
+        totalPaymentAmount = 1; // Minimum 1 rupee
+      }
+
+      // Create a valid order ID - avoid using special characters
       const orderId = generateOrderId();
       
       // Convert amount to paise
-      const amountInPaise = convertToPaise(paymentAmount);
+      const amountInPaise = convertToPaise(totalPaymentAmount);
       
-      console.log(`Setting up payment for ${selectedPackage.title} with amount ${paymentAmount} (${amountInPaise} paise)`);
+      console.log(`Setting up payment for ${selectedPackage.title} with amount ${totalPaymentAmount} (${amountInPaise} paise)`);
       
       // Common Razorpay options that will be used for both one-time and recurring
       const commonOptions = {
@@ -117,7 +134,7 @@ export const useRazorpayPayment = () => {
             response.paymentType = "one-time";
             response.packageId = selectedPackage.id;
             response.packageName = selectedPackage.title;
-            response.amount = selectedPackage.price || 0;
+            response.amount = totalPaymentAmount;
             
             console.log("One-time payment successful, Razorpay response:", response);
             
@@ -160,29 +177,21 @@ export const useRazorpayPayment = () => {
       } else {
         // Recurring subscription payment
         try {
-          // Calculate the advance payment amount if applicable
-          const advanceMonths = selectedPackage.advancePaymentMonths || 0;
-          const recurringAmount = selectedPackage.price || 0;
-          let totalAmount = paymentAmount; // Start with setup fee
-          
-          // Add advance payment amount if there are advance months
-          if (advanceMonths > 0) {
-            totalAmount += (recurringAmount * advanceMonths);
-          }
-          
-          // Convert total to paise
-          const totalAmountInPaise = convertToPaise(totalAmount);
+          // Calculate when the first recurring payment will happen
+          const startDate = new Date();
+          startDate.setMonth(startDate.getMonth() + advanceMonths);
+          const formattedStartDate = startDate.toLocaleDateString();
           
           // For recurring subscription, handle setup fee + advance payment
           const options = {
             ...commonOptions,
-            amount: totalAmountInPaise,
+            amount: amountInPaise,
             currency: 'INR',
             notes: {
               packageId: selectedPackage.id,
               packageType: "recurring",
               billingCycle: selectedPackage.billingCycle || "yearly",
-              setupFee: selectedPackage.setupFee || 0,
+              setupFee: setupFee,
               recurringAmount: recurringAmount,
               advanceMonths: advanceMonths
             },
@@ -191,8 +200,8 @@ export const useRazorpayPayment = () => {
               response.paymentType = "recurring";
               response.packageId = selectedPackage.id;
               response.packageName = selectedPackage.title;
-              response.amount = totalAmount;
-              response.setupFee = selectedPackage.setupFee || 0;
+              response.amount = totalPaymentAmount;
+              response.setupFee = setupFee;
               response.recurringAmount = recurringAmount;
               response.advanceMonths = advanceMonths;
               response.billingCycle = selectedPackage.billingCycle || 'yearly';
@@ -200,12 +209,10 @@ export const useRazorpayPayment = () => {
               // Generate a subscription ID
               response.subscriptionId = `sub${Date.now()}`;
               
-              console.log("Subscription setup payment successful, response:", response);
+              // Add next billing date to the response
+              response.nextBillingDate = startDate.toISOString();
               
-              // Calculate when the first recurring payment will happen
-              const startDate = new Date();
-              startDate.setMonth(startDate.getMonth() + advanceMonths);
-              const formattedStartDate = startDate.toLocaleDateString();
+              console.log("Subscription setup payment successful, response:", response);
               
               toast({
                 title: "Subscription Initialized",
@@ -254,7 +261,7 @@ export const useRazorpayPayment = () => {
       console.log("Opened Razorpay with options:", {
         packageId: selectedPackage.id,
         packageTitle: selectedPackage.title,
-        amount: paymentAmount,
+        amount: totalPaymentAmount,
         orderId: orderId
       });
       

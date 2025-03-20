@@ -36,18 +36,22 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
         throw new Error("No package selected");
       }
       
+      // Calculate advance payment months
+      const advanceMonths = response.advanceMonths || selectedPackage.advancePaymentMonths || 0;
+      
       // Prepare payment details from Razorpay response
       const paymentDetails = {
         packageName: selectedPackage.title,
-        amount: selectedPackage.paymentType === 'one-time' 
-          ? selectedPackage.price 
-          : selectedPackage.setupFee,
+        amount: response.amount || 0,
         paymentId: response.razorpay_payment_id,
         orderId: response.razorpay_order_id,
         paymentType: selectedPackage.paymentType || 'recurring',
         subscriptionId: response.razorpay_subscription_id || response.subscriptionId, 
         recurringAmount: selectedPackage.price,
         billingCycle: selectedPackage.billingCycle,
+        advanceMonths: advanceMonths,
+        // Pass the next billing date if available
+        nextBillingDate: response.nextBillingDate,
         // Ensure all necessary fields are passed
         packageId: selectedPackage.id
       };
@@ -174,6 +178,12 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                         <span>Recurring Payment:</span>
                         <span className="font-medium">{formatPrice(selectedPackage.price || 0)}/{selectedPackage.billingCycle || 'year'}</span>
                       </li>
+                      {selectedPackage.advancePaymentMonths > 0 && (
+                        <li className="flex justify-between">
+                          <span>Advance Payment:</span>
+                          <span className="font-medium">{selectedPackage.advancePaymentMonths} months</span>
+                        </li>
+                      )}
                     </>
                   )}
                 </ul>

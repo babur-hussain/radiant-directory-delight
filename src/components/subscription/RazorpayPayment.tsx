@@ -67,7 +67,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         setIsProcessing(false);
       },
       onFailure: (error) => {
-        console.error("Payment failure in RazorpayPayment:", error);
+        console.log("Payment failure in RazorpayPayment:", error);
         setError(error.message || "Payment could not be completed. Please try again.");
         onFailure(error);
         setIsProcessing(false);
