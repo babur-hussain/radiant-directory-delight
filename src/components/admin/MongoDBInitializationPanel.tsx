@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { diagnoseMongoDbConnection, testConnectionWithRetry } from '@/utils/mong
 import { connectToMongoDB } from '@/config/mongodb';
 import { isServerRunning, API_BASE_URL } from '@/api/core/apiService';
 import { clearUserCache } from '@/api/services/userAPI';
-import { toast } from 'react-toastify';
+import { toast } from '@/hooks/use-toast';
 
 const MongoDBInitializationPanel: React.FC = () => {
   const [status, setStatus] = useState<'idle' | 'processing' | 'completed' | 'error'>('idle');
