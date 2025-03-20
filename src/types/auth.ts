@@ -1,5 +1,5 @@
 
-import { User as FirebaseUser } from 'firebase/auth';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 
 // User roles enum for type safety
 export type UserRole = 'Admin' | 'Business' | 'Influencer' | 'User' | 'staff' | null;
@@ -50,9 +50,9 @@ export interface User {
   subscriptionPackage?: string;
   customDashboardSections?: string[];
   
-  // Added fields from MongoDB model
+  // Added fields from Supabase
   name?: string | null;
-  id?: string; // Virtual field for compatibility with Firestore IDs
+  id?: string; // Virtual field for compatibility with Supabase IDs
   lastLogin?: Date | string;
   
   // Shared fields
@@ -106,7 +106,7 @@ export interface AuthContextType {
     additionalData?: any
   ) => Promise<void>;
   
-  // Optional properties for role management (may be implemented)
+  // Role management
   updateUserRole?: (user: User, role: UserRole) => Promise<User>;
   updateUserPermission?: (userId: string, isAdmin: boolean) => Promise<{userId: string, isAdmin: boolean}>;
 }

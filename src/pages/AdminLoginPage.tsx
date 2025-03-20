@@ -12,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const AdminLoginPage = () => {
   const { login, user, isAuthenticated } = useAuth();
-  const [email, setEmail] = useState("baburhussain660@gmail.com");
+  const [email, setEmail] = useState("admin@example.com");
   const [password, setPassword] = useState("");
   const [employeeCode, setEmployeeCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +35,7 @@ const AdminLoginPage = () => {
       await login(email, password, employeeCode);
       
       // Check admin privileges after successful login
-      if (user?.isAdmin || email === "baburhussain660@gmail.com") {
+      if (user?.isAdmin) {
         toast({
           title: "Login successful",
           description: "Welcome to the admin dashboard",

@@ -1,24 +1,23 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, LogIn, LayoutDashboard } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import AuthModal from './auth/AuthModal';
-import UserMenu from './UserMenu';
 import { useAuth } from '@/hooks/useAuth';
+import UserMenu from './UserMenu';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const navigate = useNavigate();
   
   // Get auth context with safe defaults
   const { 
     currentUser = null, 
     logout = async () => {}, 
-    initialized = false 
+    initialized = false,
+    isAuthenticated
   } = useAuth();
   
-  const isAuthenticated = !!currentUser;
   const user = currentUser;
   
   // Simple header when auth isn't initialized
@@ -54,6 +53,10 @@ const Header = () => {
       // Default fallback for users with unspecified roles
       navigate("/profile");
     }
+  };
+
+  const handleLoginClick = () => {
+    navigate("/auth");
   };
 
   const shouldShowDashboard = () => {
@@ -100,7 +103,7 @@ const Header = () => {
               variant="default" 
               size="sm" 
               className="rounded-full" 
-              onClick={() => setIsAuthModalOpen(true)} 
+              onClick={handleLoginClick} 
             >
               <LogIn className="h-4 w-4 mr-2" />
               Login / Register
@@ -152,18 +155,13 @@ const Header = () => {
           <Button 
             variant="default" 
             className="justify-start w-full mt-2" 
-            onClick={() => {
-              setIsAuthModalOpen(true);
-              setIsMobileMenuOpen(false);
-            }}
+            onClick={handleLoginClick}
           >
             <LogIn className="h-4 w-4 mr-2" />
             Login / Register
           </Button>
         )}
       </div>
-
-      <AuthModal isOpen={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
     </header>
   );
 };

@@ -1,234 +1,185 @@
 
-import React, { createContext, useState, useEffect } from 'react';
-import { 
-  GoogleAuthProvider, 
-  onAuthStateChanged, 
-  signInWithPopup, 
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  updateProfile,
-  signOut as firebaseSignOut,
-  User as FirebaseUser 
-} from 'firebase/auth';
-import { auth, googleProvider } from '../config/firebase';
+import { createContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContextType, User, UserRole } from '@/types/auth';
-import { createUserIfNotExists, updateUserLogin } from '@/features/auth/authService';
-import { connectToMongoDB } from '@/config/mongodb';
-import Loading from '@/components/ui/loading';
-import { createOrUpdateUser } from '@/api/services/userAPI';
-import { toast } from "@/hooks/use-toast";
-import { api } from '@/api/core/apiService';
+import { supabase } from '@/integrations/supabase/client';
+import { Session } from '@supabase/supabase-js';
+import { toast } from '@/hooks/use-toast';
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [initialized, setInitialized] = useState<boolean>(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
+  const navigate = useNavigate();
 
-  const processUser = async (firebaseUser: FirebaseUser | null, additionalFields?: any) => {
-    if (!firebaseUser) {
-      setUser(null);
-      return;
-    }
+  // Format user data from Supabase
+  const formatUserData = async (session: Session | null): Promise<User | null> => {
+    if (!session?.user) return null;
 
     try {
-      const connected = await connectToMongoDB();
-      if (!connected) {
-        console.error("Failed to connect to MongoDB in processUser");
-        return;
+      // Get user profile data from our users table
+      const { data: profile, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user profile:', error);
       }
 
-      const isDefaultAdmin = firebaseUser.email === 'baburhussain660@gmail.com';
-      
-      // Make sure to use the role from additionalFields
-      const userRole = isDefaultAdmin ? 'Admin' : (additionalFields?.role || 'User');
-      console.log(`Processing user with role: ${userRole}`);
-      
-      // First ensure the user is stored in MongoDB with the correct role
-      const formattedUserData = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        name: firebaseUser.displayName || additionalFields?.name,
-        displayName: firebaseUser.displayName || additionalFields?.name,
-        photoURL: firebaseUser.photoURL,
-        isAdmin: isDefaultAdmin || additionalFields?.isAdmin,
-        role: userRole, // Use the determined role
-        employeeCode: additionalFields?.employeeCode || null,
-        phone: additionalFields?.phone,
-        instagramHandle: additionalFields?.instagramHandle,
-        facebookHandle: additionalFields?.facebookHandle,
-        niche: additionalFields?.niche,
-        followersCount: additionalFields?.followersCount,
-        bio: additionalFields?.bio,
-        businessName: additionalFields?.businessName,
-        ownerName: additionalFields?.ownerName,
-        businessCategory: additionalFields?.businessCategory,
-        website: additionalFields?.website,
-        gstNumber: additionalFields?.gstNumber,
-        city: additionalFields?.city,
-        country: additionalFields?.country,
-        verified: additionalFields?.verified || false,
-        createdAt: additionalFields?.createdAt || new Date(),
-        lastLogin: new Date(),
-        // Include address if it exists
-        ...(additionalFields?.address ? { address: additionalFields.address } : {})
+      // Combine auth user and profile data
+      return {
+        uid: session.user.id,
+        id: session.user.id,
+        email: session.user.email || '',
+        displayName: profile?.name || session.user.user_metadata?.name || null,
+        name: profile?.name || session.user.user_metadata?.name || null,
+        photoURL: profile?.photo_url || session.user.user_metadata?.avatar_url || null,
+        role: (profile?.role as UserRole) || 'User',
+        isAdmin: profile?.is_admin || false,
+        employeeCode: profile?.employee_code || null,
+        createdAt: profile?.created_at || new Date().toISOString(),
+        phone: profile?.phone || null,
+        instagramHandle: profile?.instagram_handle || null,
+        facebookHandle: profile?.facebook_handle || null,
+        verified: profile?.verified || false,
+        city: profile?.city || null,
+        country: profile?.country || null,
+        niche: profile?.niche || null,
+        followersCount: profile?.followers_count || null,
+        bio: profile?.bio || null,
+        businessName: profile?.business_name || null,
+        ownerName: profile?.owner_name || null,
+        businessCategory: profile?.business_category || null,
+        website: profile?.website || null,
+        gstNumber: profile?.gst_number || null,
+        subscription: profile?.subscription || null,
+        subscriptionId: profile?.subscription_id || null,
+        subscriptionStatus: profile?.subscription_status || null,
+        subscriptionPackage: profile?.subscription_package || null,
+        customDashboardSections: profile?.custom_dashboard_sections || []
       };
-      
-      console.log("Directly storing user in MongoDB:", formattedUserData);
-      const storedUser = await createOrUpdateUser(formattedUserData);
-      console.log("Direct storage result:", storedUser);
-      
-      // Call createUserIfNotExists to handle synchronization
-      console.log("Calling createUserIfNotExists with additionalFields:", additionalFields);
-      const mongoUser = await createUserIfNotExists(firebaseUser, {
-        ...additionalFields,
-        isAdmin: isDefaultAdmin || additionalFields?.isAdmin,
-        role: userRole // Explicitly pass the role
-      });
-      console.log("createUserIfNotExists result:", mongoUser);
-      
-      // Set the user state based on the MongoDB user or the directly stored user
-      if (mongoUser) {
-        setUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-          isAdmin: isDefaultAdmin || mongoUser.isAdmin,
-          role: (mongoUser.role as UserRole) || (isDefaultAdmin ? 'Admin' : userRole),
-          employeeCode: mongoUser?.employeeCode || additionalFields?.employeeCode || null,
-          name: mongoUser?.name || firebaseUser.displayName,
-          phone: mongoUser?.phone || additionalFields?.phone,
-          instagramHandle: mongoUser?.instagramHandle || additionalFields?.instagramHandle,
-          facebookHandle: mongoUser?.facebookHandle || additionalFields?.facebookHandle,
-          niche: mongoUser?.niche || additionalFields?.niche,
-          followersCount: mongoUser?.followersCount || additionalFields?.followersCount,
-          bio: mongoUser?.bio || additionalFields?.bio,
-          businessName: mongoUser?.businessName || additionalFields?.businessName,
-          ownerName: mongoUser?.ownerName || additionalFields?.ownerName,
-          businessCategory: mongoUser?.businessCategory || additionalFields?.businessCategory,
-          website: mongoUser?.website || additionalFields?.website,
-          gstNumber: mongoUser?.gstNumber || additionalFields?.gstNumber,
-          city: mongoUser?.city || additionalFields?.city,
-          country: mongoUser?.country || additionalFields?.country,
-          verified: mongoUser?.verified || additionalFields?.verified || false,
-          subscription: mongoUser?.subscription,
-          subscriptionStatus: mongoUser?.subscriptionStatus,
-          subscriptionPackage: mongoUser?.subscriptionPackage,
-          // Include address if it exists in mongoUser
-          ...(mongoUser?.address ? { address: mongoUser.address } : {}),
-          // Include address from additionalFields as fallback
-          ...((!mongoUser?.address && additionalFields?.address) ? { address: additionalFields.address } : {})
-        });
-      } else {
-        console.log("Using directly stored user as fallback:", storedUser);
-        setUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-          isAdmin: isDefaultAdmin || storedUser?.isAdmin,
-          role: (storedUser?.role as UserRole) || userRole,
-          employeeCode: storedUser?.employeeCode || additionalFields?.employeeCode || null,
-          name: storedUser?.name || firebaseUser.displayName,
-          phone: storedUser?.phone || additionalFields?.phone,
-          instagramHandle: storedUser?.instagramHandle || additionalFields?.instagramHandle,
-          facebookHandle: storedUser?.facebookHandle || additionalFields?.facebookHandle,
-          niche: storedUser?.niche || additionalFields?.niche,
-          followersCount: storedUser?.followersCount || additionalFields?.followersCount,
-          bio: storedUser?.bio || additionalFields?.bio,
-          businessName: storedUser?.businessName || additionalFields?.businessName,
-          ownerName: storedUser?.ownerName || additionalFields?.ownerName,
-          businessCategory: storedUser?.businessCategory || additionalFields?.businessCategory,
-          website: storedUser?.website || additionalFields?.website,
-          gstNumber: storedUser?.gstNumber || additionalFields?.gstNumber,
-          city: storedUser?.city || additionalFields?.city,
-          country: storedUser?.country || additionalFields?.country,
-          verified: storedUser?.verified || additionalFields?.verified || false,
-          subscription: storedUser?.subscription,
-          subscriptionStatus: storedUser?.subscriptionStatus,
-          subscriptionPackage: storedUser?.subscriptionPackage,
-          // Include address from storedUser or additionalFields
-          ...(storedUser?.address ? { address: storedUser.address } : {}),
-          ...((!storedUser?.address && additionalFields?.address) ? { address: additionalFields.address } : {}),
-          ...storedUser
-        });
-      }
-
-      await updateUserLogin(firebaseUser.uid);
     } catch (error) {
-      console.error("Error processing user:", error);
-      // Fallback to basic user info
-      setUser({
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName,
-        photoURL: firebaseUser.photoURL,
-        isAdmin: firebaseUser.email === 'baburhussain660@gmail.com',
-        role: firebaseUser.email === 'baburhussain660@gmail.com' ? 'Admin' : (additionalFields?.role || 'User'),
-        employeeCode: additionalFields?.employeeCode || null,
-        ...(additionalFields || {})
-      });
+      console.error('Error formatting user data:', error);
+      return null;
     }
   };
 
+  // Initialize auth state
   useEffect(() => {
-    const initTimeout = setTimeout(() => {
-      if (!initialized) {
-        console.log("Auth initialization timeout reached, marking as initialized");
-        setInitialized(true);
-        setLoading(false);
-      }
-    }, 3000);
-
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const initializeAuth = async () => {
       try {
-        await processUser(firebaseUser);
-      } catch (error) {
-        console.error("Error in auth state change:", error);
-        setUser(null);
-      } finally {
+        // Set up auth state listener FIRST
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            console.log('Auth state changed:', event);
+            
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+              const userData = await formatUserData(session);
+              setUser(userData);
+              setSession(session);
+              
+              // Update last login time
+              if (userData) {
+                await supabase
+                  .from('users')
+                  .update({ last_login: new Date().toISOString() })
+                  .eq('id', userData.uid);
+              }
+            } else if (event === 'SIGNED_OUT') {
+              setUser(null);
+              setSession(null);
+            }
+          }
+        );
+
+        // THEN check for existing session
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (currentSession) {
+          const userData = await formatUserData(currentSession);
+          setUser(userData);
+          setSession(currentSession);
+        }
+
         setLoading(false);
         setInitialized(true);
-        console.log("Auth initialized:", !!firebaseUser);
+
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        setLoading(false);
+        setInitialized(true);
       }
-    });
-
-    return () => {
-      unsubscribe();
-      clearTimeout(initTimeout);
     };
-  }, [initialized]);
 
-  const loginWithGoogle = async (): Promise<void> => {
+    initializeAuth();
+  }, []);
+
+  // Authentication methods
+  const login = async (email: string, password: string, employeeCode?: string) => {
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      await processUser(result.user);
-    } catch (error) {
-      console.error("Google sign-in error:", error);
+      setLoading(true);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      // Set employee code if provided
+      if (employeeCode && data.user) {
+        await supabase
+          .from('users')
+          .update({ employee_code: employeeCode })
+          .eq('id', data.user.id);
+      }
+
+      toast({
+        title: "Login successful",
+        description: "Welcome back!",
+      });
+    } catch (error: any) {
+      console.error('Login error:', error);
+      toast({
+        title: "Login failed",
+        description: error.message || "Failed to sign in. Please check your credentials.",
+        variant: "destructive",
+      });
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const signOut = async (): Promise<void> => {
+  const loginWithGoogle = async () => {
     try {
-      await firebaseSignOut(auth);
-      setUser(null);
-    } catch (error) {
-      console.error("Sign out error:", error);
-      throw error;
-    }
-  };
+      setLoading(true);
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/auth/callback',
+        },
+      });
 
-  const login = async (email: string, password: string, employeeCode?: string): Promise<void> => {
-    try {
-      console.log(`Attempting to login user: ${email}`);
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      await processUser(result.user, { employeeCode });
-    } catch (error) {
-      console.error("Login error:", error);
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Google login error:', error);
+      toast({
+        title: "Google login failed",
+        description: error.message || "Failed to sign in with Google.",
+        variant: "destructive",
+      });
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -236,126 +187,156 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     email: string, 
     password: string, 
     name: string, 
-    role: UserRole, 
-    additionalData: any = {}
-  ): Promise<void> => {
+    role: UserRole,
+    additionalData?: any
+  ) => {
     try {
-      console.log(`Signing up new user: ${email} with role: ${role} and additional data:`, additionalData);
+      setLoading(true);
       
-      // Create the user in Firebase
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      console.log(`Firebase user created: ${result.user.uid}`);
-      
-      // Update the profile with the display name
-      await updateProfile(result.user, {
-        displayName: name
+      // Sign up with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            role,
+            ...additionalData
+          },
+        },
       });
-      console.log(`Display name set: ${name}`);
-      
-      // Combine all data for registration
-      const combinedData = {
-        role,  // Ensure role is explicitly set
-        name,
-        ...additionalData,
-        createdAt: new Date().toISOString()
-      };
-      
-      console.log(`Processing user with additional data:`, combinedData);
-      
-      // Pre-emptively save user data to localStorage/MongoDB with EXPLICIT role
-      const userData = {
-        uid: result.user.uid,
-        email: result.user.email,
-        name: name,
-        displayName: name,
-        photoURL: result.user.photoURL,
-        isAdmin: email === 'baburhussain660@gmail.com' || (role === 'Admin'),
-        role: email === 'baburhussain660@gmail.com' ? 'Admin' : role, // Explicitly set role
-        createdAt: new Date(),
-        lastLogin: new Date(),
-        ...additionalData // Include all additional data
-      };
-      
-      // Show explicit role in logs for debugging
-      console.log(`Directly storing registration data with ROLE=${role}:`, userData);
-      
-      // Force the data into localStorage and ensure both collections are updated
-      const savedUser = await createOrUpdateUser(userData);
-      
-      // Verify the role persists in storage logs
-      console.log(`Verifying role is preserved: expected=${role}, actual=${savedUser?.role}`);
-      
-      // Attempt direct API persistence for more reliable storage
-      try {
-        const apiResponse = await api.post('/users', userData);
-        console.log('API direct persistence successful:', apiResponse.data);
-      } catch (apiErr) {
-        console.warn('Direct API persistence failed (non-critical):', apiErr.message);
+
+      if (error) throw error;
+
+      // The user profile will be automatically created via the trigger
+      // but we'll update it with additional data
+      if (data.user) {
+        await supabase
+          .from('users')
+          .update({
+            name,
+            role,
+            ...additionalData
+          })
+          .eq('id', data.user.id);
       }
-      
-      // Call processUser to set the user state and ensure all systems are updated
-      await processUser(result.user, combinedData);
-      
-      // Notify user of successful registration with toast
+
       toast({
-        title: "Registration successful",
-        description: `Welcome ${name}! Your account has been created with ${role} role.`,
-        variant: "default",
+        title: "Signup successful",
+        description: "Your account has been created. Please check your email for verification.",
       });
-      
-      console.log("Registration complete for user:", result.user.uid);
-    } catch (error) {
-      console.error("Signup error:", error);
-      
-      // Show error notification
+    } catch (error: any) {
+      console.error('Signup error:', error);
       toast({
-        title: "Registration failed",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
+        title: "Signup failed",
+        description: error.message || "Failed to create account.",
         variant: "destructive",
       });
-      
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const updateUserRole = async (userToUpdate: User): Promise<User> => {
+  const logout = async () => {
     try {
-      const { updateUserRole: updateRole } = await import('../features/auth/userManagement');
+      setLoading(true);
       
-      const updatedUser = await updateRole(userToUpdate);
+      const { error } = await supabase.auth.signOut();
       
-      if (user && user.uid === updatedUser.uid) {
-        setUser(updatedUser);
+      if (error) throw error;
+      
+      navigate('/');
+      
+      toast({
+        title: "Logout successful",
+        description: "You have been signed out.",
+      });
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Logout failed",
+        description: error.message || "Failed to sign out.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Role management
+  const updateUserRole = async (user: User, role: UserRole) => {
+    try {
+      if (!user.uid) {
+        throw new Error('User not authenticated');
       }
+      
+      const { error } = await supabase
+        .from('users')
+        .update({ 
+          role,
+          is_admin: role === 'Admin' ? true : user.isAdmin
+        })
+        .eq('id', user.uid);
+      
+      if (error) throw error;
+
+      const updatedUser = {
+        ...user,
+        role,
+        isAdmin: role === 'Admin' || user.isAdmin
+      };
+      
+      setUser(updatedUser);
       
       return updatedUser;
     } catch (error) {
-      console.error("Error updating user role:", error);
+      console.error('Error updating user role:', error);
       throw error;
     }
   };
 
-  const contextValue: AuthContextType = {
-    user,
-    currentUser: user,
-    isAuthenticated: !!user,
-    loading,
-    initialized,
-    userRole: user?.role || null,
-    isAdmin: user?.isAdmin || false,
-    login,
-    loginWithGoogle,
-    logout: signOut,
-    signup,
-    updateUserRole
+  const updateUserPermission = async (userId: string, isAdmin: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ is_admin: isAdmin })
+        .eq('id', userId);
+      
+      if (error) throw error;
+
+      if (user && user.uid === userId) {
+        setUser({
+          ...user,
+          isAdmin
+        });
+      }
+      
+      return { userId, isAdmin };
+    } catch (error) {
+      console.error('Error updating user permission:', error);
+      throw error;
+    }
   };
 
-  if (loading) {
-    return <Loading />;
-  }
-
   return (
-    <AuthContext.Provider value={contextValue}>
+    <AuthContext.Provider
+      value={{
+        user,
+        currentUser: user, // Alias for backward compatibility
+        isAuthenticated: !!user,
+        loading,
+        initialized,
+        userRole: user?.role || null,
+        isAdmin: user?.isAdmin || false,
+        login,
+        loginWithGoogle,
+        logout,
+        signup,
+        updateUserRole,
+        updateUserPermission
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -1,84 +1,235 @@
 
-import { api } from '../core/apiService';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
-// Subscription Packages API
+// Fetch all subscription packages
 export const fetchSubscriptionPackages = async () => {
   try {
-    console.log('API: Fetching all subscription packages');
-    const response = await api.get('/subscription-packages');
-    console.log('API: Fetched subscription packages:', response.data);
-    return response.data;
+    const { data, error } = await supabase
+      .from('subscription_packages')
+      .select('*')
+      .order('price', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching subscription packages:', error);
+      throw error;
+    }
+    
+    return data;
   } catch (error) {
-    console.error('Error fetching subscription packages:', error);
+    console.error('Error in fetchSubscriptionPackages:', error);
     throw error;
   }
 };
 
+// Fetch subscription packages by type
 export const fetchSubscriptionPackagesByType = async (type: string) => {
   try {
-    console.log(`API: Fetching ${type} subscription packages`);
-    // Make sure we're using the correct endpoint to fetch by type
-    const response = await api.get(`/subscription-packages/type/${type}`);
-    console.log(`API: Fetched ${type} subscription packages:`, response.data);
-    return response.data;
+    const { data, error } = await supabase
+      .from('subscription_packages')
+      .select('*')
+      .eq('type', type)
+      .order('price', { ascending: true });
+    
+    if (error) {
+      console.error(`Error fetching ${type} subscription packages:`, error);
+      throw error;
+    }
+    
+    return data;
   } catch (error) {
-    console.error('Error fetching subscription packages by type:', error);
+    console.error(`Error in fetchSubscriptionPackagesByType(${type}):`, error);
     throw error;
   }
 };
 
+// Create or update subscription package
 export const saveSubscriptionPackage = async (packageData: any) => {
   try {
-    console.log('API: Saving subscription package:', packageData);
-    
-    // Ensure we have an ID before saving
+    // Ensure package has an ID
     if (!packageData.id) {
-      packageData.id = `pkg_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-      console.log('Generated new package ID:', packageData.id);
+      packageData.id = packageData.title.toLowerCase().replace(/\s+/g, '-');
     }
     
-    // Use axios directly for better control over the response
-    const response = await api.post('/subscription-packages', packageData);
-    console.log('API: Save response:', response.data);
-    return response.data;
+    // Convert features to array if it's a string
+    if (typeof packageData.features === 'string') {
+      packageData.features = packageData.features.split(',').map((f: string) => f.trim());
+    }
+    
+    const { data, error } = await supabase
+      .from('subscription_packages')
+      .upsert(packageData, { onConflict: 'id' })
+      .select();
+    
+    if (error) {
+      console.error('Error saving subscription package:', error);
+      throw error;
+    }
+    
+    return data?.[0] || null;
   } catch (error) {
-    console.error('API: Error saving subscription package:', error);
-    
-    // Check if we have a meaningful error response
-    if (error.response && error.response.data) {
-      console.error('API error details:', error.response.data);
-    }
-    
+    console.error('Error in saveSubscriptionPackage:', error);
     throw error;
   }
 };
 
+// Delete subscription package
 export const deleteSubscriptionPackage = async (packageId: string) => {
   try {
-    console.log(`API: Deleting subscription package ${packageId}`);
-    await api.delete(`/subscription-packages/${packageId}`);
-    console.log(`API: Successfully deleted package ${packageId}`);
-    return { success: true };
-  } catch (error) {
-    console.error('Error deleting subscription package:', error);
-    throw error;
-  }
-};
-
-// User Subscriptions API
-export const getUserSubscription = async (userId: string) => {
-  try {
-    const response = await api.get(`/subscriptions/user/${userId}`);
-    return response.data;
-  } catch (error) {
-    if (error.response?.status === 404) {
-      return null;
+    const { error } = await supabase
+      .from('subscription_packages')
+      .delete()
+      .eq('id', packageId);
+    
+    if (error) {
+      console.error('Error deleting subscription package:', error);
+      throw error;
     }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in deleteSubscriptionPackage:', error);
     throw error;
   }
 };
 
-export const saveSubscription = async (subscriptionData: any) => {
-  const response = await api.post('/subscriptions', subscriptionData);
-  return response.data;
+// Get user subscriptions
+export const getUserSubscriptions = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching user subscriptions:', error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error in getUserSubscriptions:', error);
+    throw error;
+  }
+};
+
+// Get active user subscription
+export const getActiveUserSubscription = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error fetching active user subscription:', error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error in getActiveUserSubscription:', error);
+    throw error;
+  }
+};
+
+// Create user subscription
+export const createSubscription = async (subscriptionData: any) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .insert(subscriptionData)
+      .select();
+    
+    if (error) {
+      console.error('Error creating subscription:', error);
+      throw error;
+    }
+    
+    // Update user's subscription info
+    await supabase
+      .from('users')
+      .update({
+        subscription_id: subscriptionData.id,
+        subscription_status: subscriptionData.status,
+        subscription_package: subscriptionData.packageId
+      })
+      .eq('id', subscriptionData.userId);
+    
+    return data?.[0] || null;
+  } catch (error) {
+    console.error('Error in createSubscription:', error);
+    throw error;
+  }
+};
+
+// Update subscription
+export const updateSubscription = async (subscriptionId: string, subscriptionData: any) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .update(subscriptionData)
+      .eq('id', subscriptionId)
+      .select();
+    
+    if (error) {
+      console.error('Error updating subscription:', error);
+      throw error;
+    }
+    
+    // Update user's subscription info if status changed
+    if (subscriptionData.status) {
+      await supabase
+        .from('users')
+        .update({
+          subscription_status: subscriptionData.status
+        })
+        .eq('id', subscriptionData.userId);
+    }
+    
+    return data?.[0] || null;
+  } catch (error) {
+    console.error('Error in updateSubscription:', error);
+    throw error;
+  }
+};
+
+// Cancel subscription
+export const cancelSubscription = async (subscriptionId: string, reason?: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .update({
+        status: 'cancelled',
+        cancelled_at: new Date().toISOString(),
+        cancel_reason: reason || ''
+      })
+      .eq('id', subscriptionId)
+      .select();
+    
+    if (error) {
+      console.error('Error cancelling subscription:', error);
+      throw error;
+    }
+    
+    if (data?.[0]) {
+      // Update user's subscription status
+      await supabase
+        .from('users')
+        .update({
+          subscription_status: 'cancelled'
+        })
+        .eq('id', data[0].user_id);
+    }
+    
+    return data?.[0] || null;
+  } catch (error) {
+    console.error('Error in cancelSubscription:', error);
+    throw error;
+  }
 };
