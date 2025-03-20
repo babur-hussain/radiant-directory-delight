@@ -14,6 +14,7 @@ import { AuthContextType, User, UserRole } from '@/types/auth';
 import { createUserIfNotExists, updateUserLogin } from '@/features/auth/authService';
 import { connectToMongoDB } from '@/config/mongodb';
 import Loading from '@/components/ui/loading';
+import { createOrUpdateUser } from '@/api/services/userAPI';
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -22,7 +23,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [initialized, setInitialized] = useState<boolean>(false);
 
-  // Convert Firebase user to our User type and save to MongoDB
   const processUser = async (firebaseUser: FirebaseUser | null, additionalFields?: any) => {
     if (!firebaseUser) {
       setUser(null);
@@ -30,16 +30,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      // Force connection to MongoDB before proceeding
-      await connectToMongoDB();
+      const connected = await connectToMongoDB();
+      if (!connected) {
+        console.error("Failed to connect to MongoDB in processUser");
+        return;
+      }
 
-      // Check if user is the default admin
       const isDefaultAdmin = firebaseUser.email === 'baburhussain660@gmail.com';
       
-      // Determine role
       const userRole = isDefaultAdmin ? 'Admin' : (additionalFields?.role || 'User');
       
-      // Create or update user in MongoDB with all profile fields
+      const formattedUserData = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        name: firebaseUser.displayName || additionalFields?.name,
+        displayName: firebaseUser.displayName || additionalFields?.name,
+        photoURL: firebaseUser.photoURL,
+        isAdmin: isDefaultAdmin || additionalFields?.isAdmin,
+        role: userRole,
+        employeeCode: additionalFields?.employeeCode || null,
+        phone: additionalFields?.phone,
+        instagramHandle: additionalFields?.instagramHandle,
+        facebookHandle: additionalFields?.facebookHandle,
+        niche: additionalFields?.niche,
+        followersCount: additionalFields?.followersCount,
+        bio: additionalFields?.bio,
+        businessName: additionalFields?.businessName,
+        ownerName: additionalFields?.ownerName,
+        businessCategory: additionalFields?.businessCategory,
+        website: additionalFields?.website,
+        gstNumber: additionalFields?.gstNumber,
+        city: additionalFields?.city,
+        country: additionalFields?.country,
+        verified: additionalFields?.verified || false,
+        createdAt: additionalFields?.createdAt || new Date(),
+        lastLogin: new Date()
+      };
+      
+      console.log("Directly storing user in MongoDB:", formattedUserData);
+      const storedUser = await createOrUpdateUser(formattedUserData);
+      
       const mongoUser = await createUserIfNotExists(firebaseUser, {
         ...additionalFields,
         isAdmin: isDefaultAdmin || additionalFields?.isAdmin,
@@ -47,7 +77,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (mongoUser) {
-        // Set the user in the context with proper type casting and all available fields
         setUser({
           uid: firebaseUser.uid,
           email: firebaseUser.email,
@@ -56,7 +85,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isAdmin: isDefaultAdmin || mongoUser.isAdmin,
           role: (mongoUser.role as UserRole) || (isDefaultAdmin ? 'Admin' : 'User'),
           employeeCode: mongoUser?.employeeCode || additionalFields?.employeeCode || null,
-          // Include additional fields
           name: mongoUser?.name || firebaseUser.displayName,
           phone: mongoUser?.phone || additionalFields?.phone,
           instagramHandle: mongoUser?.instagramHandle || additionalFields?.instagramHandle,
@@ -72,18 +100,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           city: mongoUser?.city || additionalFields?.city,
           country: mongoUser?.country || additionalFields?.country,
           verified: mongoUser?.verified || additionalFields?.verified || false,
-          // Subscription-related fields
           subscription: mongoUser?.subscription,
           subscriptionStatus: mongoUser?.subscriptionStatus,
           subscriptionPackage: mongoUser?.subscriptionPackage,
         });
-
-        // Update login timestamp
-        await updateUserLogin(firebaseUser.uid);
+      } else {
+        console.log("Using directly stored user as fallback:", storedUser);
+        setUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+          isAdmin: isDefaultAdmin || storedUser?.isAdmin,
+          role: (storedUser?.role as UserRole) || userRole,
+          employeeCode: storedUser?.employeeCode || additionalFields?.employeeCode || null,
+          name: storedUser?.name || firebaseUser.displayName,
+          phone: storedUser?.phone || additionalFields?.phone,
+          instagramHandle: storedUser?.instagramHandle || additionalFields?.instagramHandle,
+          facebookHandle: storedUser?.facebookHandle || additionalFields?.facebookHandle,
+          niche: storedUser?.niche || additionalFields?.niche,
+          followersCount: storedUser?.followersCount || additionalFields?.followersCount,
+          bio: storedUser?.bio || additionalFields?.bio,
+          businessName: storedUser?.businessName || additionalFields?.businessName,
+          ownerName: storedUser?.ownerName || additionalFields?.ownerName,
+          businessCategory: storedUser?.businessCategory || additionalFields?.businessCategory,
+          website: storedUser?.website || additionalFields?.website,
+          gstNumber: storedUser?.gstNumber || additionalFields?.gstNumber,
+          city: storedUser?.city || additionalFields?.city,
+          country: storedUser?.country || additionalFields?.country,
+          verified: storedUser?.verified || additionalFields?.verified || false,
+          subscription: storedUser?.subscription,
+          subscriptionStatus: storedUser?.subscriptionStatus,
+          subscriptionPackage: storedUser?.subscriptionPackage,
+          ...storedUser
+        });
       }
+
+      await updateUserLogin(firebaseUser.uid);
     } catch (error) {
       console.error("Error processing user:", error);
-      // Still set basic user info even if MongoDB operations fail
       setUser({
         uid: firebaseUser.uid,
         email: firebaseUser.email,
@@ -92,21 +147,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin: firebaseUser.email === 'baburhussain660@gmail.com',
         role: firebaseUser.email === 'baburhussain660@gmail.com' ? 'Admin' : 'User',
         employeeCode: additionalFields?.employeeCode || null,
-        // Add any additional fields we have
         ...(additionalFields || {})
       });
     }
   };
 
   useEffect(() => {
-    // Set a shorter timeout to ensure we mark as initialized even if Firebase auth is slow
     const initTimeout = setTimeout(() => {
       if (!initialized) {
         console.log("Auth initialization timeout reached, marking as initialized");
         setInitialized(true);
         setLoading(false);
       }
-    }, 3000); // Shorter timeout
+    }, 3000);
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
@@ -133,7 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await processUser(result.user);
     } catch (error) {
       console.error("Google sign-in error:", error);
-      throw error; // Re-throw to allow handling in the UI
+      throw error;
     }
   };
 
@@ -143,23 +196,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
     } catch (error) {
       console.error("Sign out error:", error);
-      throw error; // Re-throw to allow handling in the UI
+      throw error;
     }
   };
 
-  // Implement proper email/password login method with employee code
   const login = async (email: string, password: string, employeeCode?: string): Promise<void> => {
     try {
+      console.log(`Attempting to login user: ${email}`);
       const result = await signInWithEmailAndPassword(auth, email, password);
-      // Pass employee code for MongoDB storage
       await processUser(result.user, { employeeCode });
     } catch (error) {
       console.error("Login error:", error);
-      throw error; // Re-throw to allow handling in the UI
+      throw error;
     }
   };
 
-  // Implement role-specific signup with all profile fields
   const signup = async (
     email: string, 
     password: string, 
@@ -168,37 +219,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     additionalData: any = {}
   ): Promise<void> => {
     try {
-      // Create the Firebase user
-      const result = await createUserWithEmailAndPassword(auth, email, password);
+      console.log(`Signing up new user: ${email} with role: ${role}`);
       
-      // Set display name
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      console.log(`Firebase user created: ${result.user.uid}`);
+      
       await updateProfile(result.user, {
         displayName: name
       });
+      console.log(`Display name set: ${name}`);
       
-      // Process user with role and all the additional fields
-      await processUser(result.user, {
+      const combinedData = {
         role,
         name,
         ...additionalData,
         createdAt: new Date().toISOString()
-      });
+      };
+      
+      console.log(`Processing user with additional data:`, combinedData);
+      await processUser(result.user, combinedData);
     } catch (error) {
       console.error("Signup error:", error);
-      throw error; // Re-throw to allow handling in the UI
+      throw error;
     }
   };
 
-  // Role-specific methods for the context
   const updateUserRole = async (userToUpdate: User): Promise<User> => {
     try {
-      // Import dynamically to avoid circular dependencies
       const { updateUserRole: updateRole } = await import('../features/auth/userManagement');
       
-      // Update the user role
       const updatedUser = await updateRole(userToUpdate);
       
-      // Update local state if the updated user is the current user
       if (user && user.uid === updatedUser.uid) {
         setUser(updatedUser);
       }
@@ -210,10 +261,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Provide all context values
   const contextValue: AuthContextType = {
     user,
-    currentUser: user, // Alias for compatibility
+    currentUser: user,
     isAuthenticated: !!user,
     loading,
     initialized,

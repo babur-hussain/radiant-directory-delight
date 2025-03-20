@@ -190,6 +190,7 @@ const isProduction = false; // Always use mock for now
 // Export the mongoose instance (real or mock)
 export const mongoose = isProduction ? mongooseModule : mongooseMock;
 
+// Improved connection management with better logging
 let isConnected = false;
 
 export const connectToMongoDB = async () => {
@@ -199,6 +200,8 @@ export const connectToMongoDB = async () => {
   }
   
   try {
+    console.log('=> Attempting to connect to MongoDB...');
+    
     if (isProduction) {
       // Real MongoDB connection logic would go here
       const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/growbharatdb';
@@ -207,10 +210,23 @@ export const connectToMongoDB = async () => {
       console.log('=> Connected to MongoDB');
       return true;
     } else {
-      // Mock connection
-      console.log('=> Using MongoDB mock implementation');
+      // Mock connection with better logging
+      console.log('=> Using MongoDB mock implementation, initializing mock storage...');
+      
+      // Initialize the mock storage if needed
+      if (!localStorage.getItem('mongodb_User')) {
+        localStorage.setItem('mongodb_User', JSON.stringify([]));
+        console.log('=> Initialized empty mongodb_User collection');
+      }
+      
+      if (!localStorage.getItem('all_users_data')) {
+        localStorage.setItem('all_users_data', JSON.stringify([]));
+        console.log('=> Initialized empty all_users_data collection');
+      }
+      
       mockConnection = true;
       isConnected = true;
+      console.log('=> Mock MongoDB connection established successfully');
       return true;
     }
   } catch (error) {

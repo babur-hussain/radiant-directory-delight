@@ -29,7 +29,8 @@ export const fetchUserByUid = async (uid: string) => {
 
 export const createOrUpdateUser = async (userData: any) => {
   try {
-    // Ensure MongoDB is connected
+    // Ensure MongoDB is connected with clear logging
+    console.log(`Attempting to create/update user: ${userData.uid} (${userData.email})`);
     const connected = await connectToMongoDB();
     
     if (!connected) {
@@ -47,47 +48,63 @@ export const createOrUpdateUser = async (userData: any) => {
 
     // Get current collection
     const collection = JSON.parse(localStorage.getItem('mongodb_User') || '[]');
-    const index = collection.findIndex((u: any) => u.uid === userData.uid);
+    
+    // Enhance logging for debugging
+    console.log(`Current mongodb_User collection has ${collection.length} users`);
+    
+    // Properly handle uid matching (sometimes it's id instead of uid)
+    const uid = userData.uid || userData.id;
+    if (!uid) {
+      console.error('User data missing uid/id field:', userData);
+      return userData;
+    }
+    
+    const index = collection.findIndex((u: any) => u.uid === uid || u.id === uid);
+    console.log(`User search result: index=${index} for uid=${uid}`);
+
+    // Format user data to ensure all required fields are present
+    const formattedUserData = {
+      ...userData,
+      uid: uid, // Ensure uid is set
+      createdAt: userData.createdAt || new Date(),
+      lastLogin: userData.lastLogin || new Date(),
+      role: userData.role || 'User',
+      isAdmin: userData.isAdmin || false
+    };
 
     if (index >= 0) {
       // Update existing user
-      collection[index] = { ...collection[index], ...userData };
+      collection[index] = { ...collection[index], ...formattedUserData };
       console.log(`Updated existing user in database:`, collection[index]);
     } else {
-      // Add new user
-      // Ensure required fields for new users
-      if (!userData.createdAt) {
-        userData.createdAt = new Date();
-      }
-      if (!userData.lastLogin) {
-        userData.lastLogin = new Date();
-      }
-      collection.push(userData);
-      console.log(`Added new user to database:`, userData);
+      // Add new user - ensure we have all required fields
+      console.log(`Adding new user to database with uid=${uid}`);
+      collection.push(formattedUserData);
+      console.log(`Added new user to database:`, formattedUserData);
     }
 
     // Save back to localStorage (our mock MongoDB)
     localStorage.setItem('mongodb_User', JSON.stringify(collection));
-    console.log(`User ${userData.uid} saved to database successfully`);
+    console.log(`User ${uid} saved to mongodb_User collection successfully`);
     
     // Also save to all_users_data for compatibility with existing code
     try {
       const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
-      const userIndex = allUsers.findIndex((u: any) => u.uid === userData.uid || u.id === userData.uid);
+      const userIndex = allUsers.findIndex((u: any) => u.uid === uid || u.id === uid);
       
       const formattedUser = {
-        uid: userData.uid,
-        id: userData.uid,
-        email: userData.email,
-        displayName: userData.name || userData.displayName,
-        name: userData.name || userData.displayName,
-        photoURL: userData.photoURL,
-        role: userData.role || 'User',
-        isAdmin: userData.isAdmin || false,
-        employeeCode: userData.employeeCode,
-        createdAt: userData.createdAt,
+        uid: uid,
+        id: uid,
+        email: formattedUserData.email,
+        displayName: formattedUserData.name || formattedUserData.displayName,
+        name: formattedUserData.name || formattedUserData.displayName,
+        photoURL: formattedUserData.photoURL,
+        role: formattedUserData.role || 'User',
+        isAdmin: formattedUserData.isAdmin || false,
+        employeeCode: formattedUserData.employeeCode,
+        createdAt: formattedUserData.createdAt,
         // Include other fields
-        ...userData
+        ...formattedUserData
       };
       
       if (userIndex >= 0) {
@@ -102,7 +119,7 @@ export const createOrUpdateUser = async (userData: any) => {
       console.warn('Error saving to all_users_data:', error);
     }
     
-    return userData;
+    return formattedUserData;
   } catch (error) {
     console.error('Error saving user to database:', error);
     return userData;
@@ -218,10 +235,17 @@ export const createUserWithProfile = async (
       uid,
       email,
       role,
+      isAdmin: role === 'Admin',
       ...profileData,
       createdAt: new Date(),
       lastLogin: new Date()
     };
+    
+    // Special case for default admin user
+    if (email === 'baburhussain660@gmail.com') {
+      userData.isAdmin = true;
+      userData.role = 'Admin';
+    }
     
     // Create the user
     const user = await createOrUpdateUser(userData);
