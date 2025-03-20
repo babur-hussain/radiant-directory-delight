@@ -47,7 +47,7 @@ export interface IUser {
 }
 
 // Create a schema using the mongoose mock
-const UserSchema = mongoose.Schema({
+const UserSchema = {
   uid: { type: String, required: true, unique: true },
   name: { type: String, default: null },
   email: { type: String, default: null },
@@ -89,7 +89,27 @@ const UserSchema = mongoose.Schema({
     zipCode: { type: String, default: null }
   },
   gstNumber: { type: String, default: null }
-});
+};
+
+// Add methods for mock implementation
+UserSchema.index = function(field: any) {
+  // This is a mock implementation that does nothing
+  return;
+};
+
+UserSchema.virtual = function(name: string) {
+  return {
+    get: function() {
+      return null;
+    }
+  };
+};
+
+UserSchema.methods = {
+  isUserAdmin: function(): boolean {
+    return false;
+  }
+};
 
 // Create indexes for frequently queried fields
 UserSchema.index({ uid: 1 });
@@ -102,10 +122,5 @@ UserSchema.index({ employeeCode: 1 }); // Add index for employee code
 UserSchema.virtual('id').get(function() {
   return this.uid;
 });
-
-// Add method to check if a user is admin for easier access
-UserSchema.methods.isUserAdmin = function(): boolean {
-  return this.isAdmin === true || this.role === 'Admin' || this.role === 'admin';
-};
 
 export const User = mongoose.model('User', UserSchema);

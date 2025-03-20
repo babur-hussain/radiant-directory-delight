@@ -102,6 +102,49 @@ const getRandomEmail = (name: string) => {
   return `${nameParts}@${domains[Math.floor(Math.random() * domains.length)]}`;
 };
 
+// Helper function to safely extract results from a query result
+const extractQueryResults = async (queryResult: any): Promise<any[]> => {
+  // If it's already an array, return it
+  if (Array.isArray(queryResult)) {
+    return queryResult;
+  }
+  
+  // If it has an exec method, call it and return the result
+  if (queryResult && typeof queryResult.exec === 'function') {
+    try {
+      const result = await queryResult.exec();
+      return Array.isArray(result) ? result : [];
+    } catch (error) {
+      console.error("Error executing query:", error);
+      return [];
+    }
+  }
+  
+  // If it has a lean method, call it and extract the result
+  if (queryResult && typeof queryResult.lean === 'function') {
+    try {
+      const leanResult = queryResult.lean();
+      if (leanResult && typeof leanResult.exec === 'function') {
+        const result = await leanResult.exec();
+        return Array.isArray(result) ? result : [];
+      }
+      return Array.isArray(leanResult) ? leanResult : [];
+    } catch (error) {
+      console.error("Error executing lean query:", error);
+      return [];
+    }
+  }
+  
+  // If it has a results array, return it
+  if (queryResult && Array.isArray(queryResult.results)) {
+    return queryResult.results;
+  }
+  
+  // If it's an object but not an array or any of the above, return an empty array
+  console.warn("Unexpected query result format:", queryResult);
+  return [];
+};
+
 // Seed dummy users
 export const seedDummyUsers = async (count = 10): Promise<{ success: boolean; count: number }> => {
   try {
@@ -245,11 +288,11 @@ export const seedDummySubscriptions = async (count = 10): Promise<{ success: boo
     }
     
     // Get some users and packages to associate
-    const usersQuery = await User.find();
-    const packagesQuery = await SubscriptionPackage.find();
+    const usersQuery = User.find();
+    const packagesQuery = SubscriptionPackage.find();
     
-    const users = await usersQuery.exec();
-    const packages = await packagesQuery.exec();
+    const users = await extractQueryResults(usersQuery);
+    const packages = await extractQueryResults(packagesQuery);
     
     if (users.length === 0 || packages.length === 0) {
       throw new Error("Need users and packages to create subscriptions");

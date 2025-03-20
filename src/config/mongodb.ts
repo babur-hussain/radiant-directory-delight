@@ -4,9 +4,18 @@ import * as mongooseModule from 'mongoose';
 const MOCK_DB_NAME = 'growbharatdb';
 let mockConnection = false;
 
+// Create a Schema class to match mongoose's Schema
+class SchemaMock {
+  constructor(definition: any, options?: any) {
+    return definition;
+  }
+}
+
 // MongoDB mock implementation
 const mongooseMock = {
-  Schema: (definition: any, options?: any) => definition,
+  Schema: function(definition: any, options?: any) {
+    return definition;
+  },
   model: (name: string, schema: any) => {
     return {
       schema,

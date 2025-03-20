@@ -28,8 +28,8 @@ export interface ISubscription {
   transactionId?: string;
 }
 
-// Create the Mongoose schema - fixed by removing 'new' keyword
-const SubscriptionSchema = mongoose.Schema({
+// Create the Mongoose schema
+const SubscriptionSchema = {
   id: { type: String, required: true, unique: true },
   packageId: { type: String, required: true },
   packageName: { type: String, required: true },
@@ -54,12 +54,18 @@ const SubscriptionSchema = mongoose.Schema({
   cancelReason: { type: String },
   paymentMethod: { type: String },
   transactionId: { type: String }
-});
+};
+
+// Add index method for mock implementation
+SubscriptionSchema.index = function(field: any) {
+  // This is a mock implementation that does nothing
+  return;
+};
 
 // Create indexes for frequently queried fields
 SubscriptionSchema.index({ userId: 1 });
 SubscriptionSchema.index({ status: 1 });
 SubscriptionSchema.index({ packageId: 1 });
 
-// Export the model correctly - fixed by removing generic type argument
+// Export the model
 export const Subscription = mongoose.model('Subscription', SubscriptionSchema);

@@ -207,6 +207,40 @@ export const getUserById = async (userId: string): Promise<User | null> => {
   }
 };
 
+const extractQueryResults = async (queryResult: any): Promise<any[]> => {
+  if (Array.isArray(queryResult)) {
+    return queryResult;
+  }
+  
+  if (queryResult && typeof queryResult.sort === 'function') {
+    try {
+      const sortedQuery = queryResult.sort({ createdAt: -1 });
+      
+      if (sortedQuery && typeof sortedQuery.exec === 'function') {
+        const result = await sortedQuery.exec();
+        return Array.isArray(result) ? result : [];
+      }
+      
+      if (sortedQuery && Array.isArray(sortedQuery.results)) {
+        return sortedQuery.results;
+      }
+      
+      if (Array.isArray(sortedQuery)) {
+        return sortedQuery;
+      }
+    } catch (error) {
+      console.error("Error sorting query:", error);
+    }
+  }
+  
+  if (queryResult && Array.isArray(queryResult.results)) {
+    return queryResult.results;
+  }
+  
+  console.warn("Could not extract results from query");
+  return [];
+};
+
 export const getAllUsers = async (): Promise<User[]> => {
   try {
     console.log("Fetching ALL users from MongoDB collection");
@@ -237,23 +271,9 @@ export const getAllUsers = async (): Promise<User[]> => {
     
     // Get all users from MongoDB, handling the Promise properly
     console.log("Executing User.find() query...");
-    const userModelQuery = await UserModel.find();
+    const userModelQuery = UserModel.find();
     
-    let mongoUsers = [];
-    
-    // Check if the result has a sort method
-    if (userModelQuery && typeof userModelQuery.sort === 'function') {
-      const sortedQuery = userModelQuery.sort({ createdAt: -1 });
-      if (sortedQuery && typeof sortedQuery.exec === 'function') {
-        mongoUsers = await sortedQuery.exec();
-      } else {
-        mongoUsers = sortedQuery.results || [];
-      }
-    } else {
-      // Fallback if sort is not available
-      console.warn("Sort method not available on query result");
-      mongoUsers = userModelQuery.results || [];
-    }
+    const mongoUsers = await extractQueryResults(userModelQuery);
     
     console.log(`Query executed, got ${mongoUsers.length} users`);
     
@@ -283,7 +303,6 @@ export const getAllUsers = async (): Promise<User[]> => {
     }
     
     const users: User[] = mongoUsers.map(mongoUser => {
-      // Ensure name is a string - Fix TypeScript never type error
       let displayName: string | null = null;
       if (mongoUser.name === null) {
         displayName = null;
@@ -292,7 +311,6 @@ export const getAllUsers = async (): Promise<User[]> => {
       } else if (typeof mongoUser.name === 'string') {
         displayName = mongoUser.name;
       } else if (mongoUser.name) {
-        // Only call toString if name exists and is not null
         try {
           displayName = String(mongoUser.name);
         } catch {
@@ -302,7 +320,6 @@ export const getAllUsers = async (): Promise<User[]> => {
         displayName = null;
       }
       
-      // Convert MongoDB date to ISO string
       let createdTimestamp = mongoUser.createdAt?.toISOString() || new Date().toISOString();
       
       return {
@@ -328,14 +345,12 @@ export const getAllUsers = async (): Promise<User[]> => {
   } catch (error) {
     console.error("Error getting all users from MongoDB:", error);
     
-    // More detailed error logging
     if (error instanceof Error) {
       console.error(`Error name: ${error.name}`);
       console.error(`Error message: ${error.message}`);
       console.error(`Error stack: ${error.stack}`);
     }
     
-    // Fall back to localStorage
     console.log("Falling back to localStorage for user data due to error");
     const localUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
     return localUsers.map((user: any) => ({
@@ -365,7 +380,6 @@ export const createTestUser = async (userData: TestUserData): Promise<User> => {
   try {
     console.log("Creating test user:", userData);
     
-    // Generate a unique ID for the test user
     const userId = `test_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     
     const user: User = {
@@ -381,22 +395,17 @@ export const createTestUser = async (userData: TestUserData): Promise<User> => {
       createdAt: new Date().toISOString()
     };
     
-    // First save to local storage for immediate feedback
     saveUserToAllUsersList(user);
     
-    // Then save to MongoDB with explicit error handling
     try {
       console.log("Attempting to save user to MongoDB with ID:", userId);
       
-      // Make sure we're connected to MongoDB
       const connected = await connectToMongoDB();
       if (!connected) {
         console.warn("MongoDB connection failed, user only saved to localStorage");
         return user;
       }
       
-      // Create the user document in MongoDB using the API method 
-      // instead of calling UserModel.create directly
       await createOrUpdateUser({
         uid: userId,
         email: userData.email,
@@ -411,7 +420,6 @@ export const createTestUser = async (userData: TestUserData): Promise<User> => {
       console.log("Test user created successfully in MongoDB:", userId);
     } catch (dbError) {
       console.error("MongoDB error while creating test user:", dbError);
-      // Even if MongoDB fails, we'll return the user since it's saved in localStorage
       console.log("User was saved to localStorage but not to MongoDB");
     }
     

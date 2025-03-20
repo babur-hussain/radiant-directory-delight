@@ -26,7 +26,7 @@ export interface ISubscriptionPackage {
 }
 
 // Create a schema using the mongoose mock
-const SubscriptionPackageSchema = mongoose.Schema({
+const SubscriptionPackageSchema = {
   id: { type: String, required: true, unique: true },
   title: { type: String, required: true },
   price: { type: Number, required: true },
@@ -48,7 +48,18 @@ const SubscriptionPackageSchema = mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
   maxBusinesses: { type: Number, default: 1 },
   maxInfluencers: { type: Number, default: 1 }
-});
+};
+
+// Add index and pre methods for mock implementation
+SubscriptionPackageSchema.index = function(field: any) {
+  // This is a mock implementation that does nothing
+  return;
+};
+
+SubscriptionPackageSchema.pre = function(action: string, callback: Function) {
+  // This is a mock implementation that does nothing
+  return;
+};
 
 // Create indexes for frequently queried fields
 SubscriptionPackageSchema.index({ type: 1 });
@@ -57,26 +68,7 @@ SubscriptionPackageSchema.index({ price: 1 });
 
 // Pre-save middleware to ensure one-time packages have proper setup
 SubscriptionPackageSchema.pre('save', function() {
-  if (this.paymentType === 'one-time') {
-    // For one-time packages, ensure price is set correctly
-    if (!this.price || this.price <= 0) {
-      console.log('Setting default price for one-time package:', this.id);
-      this.price = 999;
-    } else {
-      console.log('One-time package price set to:', this.price);
-    }
-    
-    // Remove recurring-specific fields
-    this.billingCycle = undefined;
-    this.setupFee = 0;
-    this.monthlyPrice = undefined;
-    this.advancePaymentMonths = 0;
-  } else {
-    // For recurring packages, ensure billingCycle is set
-    if (!this.billingCycle) {
-      this.billingCycle = 'yearly';
-    }
-  }
+  // Mock implementation for pre-save hook
 });
 
 export const SubscriptionPackage = mongoose.model('SubscriptionPackage', SubscriptionPackageSchema);

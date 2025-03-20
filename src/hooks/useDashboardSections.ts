@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { connectToMongoDB } from "@/config/mongodb";
@@ -100,18 +101,28 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
       await connectToMongoDB();
       const packagesQuery = await SubscriptionPackage.find();
       
-      let allPackages = [];
+      let allPackages: any[] = [];
       
-      if (packagesQuery && typeof packagesQuery.sort === 'function') {
+      if (Array.isArray(packagesQuery)) {
+        // If packagesQuery is already an array, use it directly
+        allPackages = packagesQuery;
+      } else if (packagesQuery && typeof packagesQuery.sort === 'function') {
+        // If packagesQuery has a sort method, use it
         const sortedQuery = packagesQuery.sort({ title: 1 });
+        
         if (sortedQuery && typeof sortedQuery.exec === 'function') {
+          // If sortedQuery has an exec method, execute it
           allPackages = await sortedQuery.exec();
+        } else if (sortedQuery && Array.isArray(sortedQuery.results)) {
+          // If sortedQuery has a results array, use it
+          allPackages = sortedQuery.results;
         } else {
-          allPackages = sortedQuery.results || [];
+          // If sortedQuery is already an array, use it
+          allPackages = sortedQuery || [];
         }
-      } else {
-        console.warn("Sort method not available on query result");
-        allPackages = packagesQuery.results || [];
+      } else if (packagesQuery && Array.isArray(packagesQuery.results)) {
+        // If packagesQuery has a results array but no sort method, use the results
+        allPackages = packagesQuery.results;
       }
       
       if (allPackages && allPackages.length > 0) {

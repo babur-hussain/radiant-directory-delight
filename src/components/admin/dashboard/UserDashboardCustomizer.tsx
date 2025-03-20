@@ -37,20 +37,28 @@ const UserDashboardCustomizer: React.FC = () => {
       
       // Execute the query in steps to avoid chaining on a Promise
       const userQuery = User.find();
-      const queryObj = await userQuery;
+      let sortedUsers: any[] = [];
       
-      // Now sort the query object, not the Promise
-      let sortedUsers = [];
-      
-      if (queryObj && typeof queryObj.sort === 'function') {
-        const sortedQuery = queryObj.sort({ name: 1 });
+      if (Array.isArray(userQuery)) {
+        // If userQuery is already an array, use it directly
+        sortedUsers = userQuery;
+      } else if (userQuery && typeof userQuery.sort === 'function') {
+        // If userQuery has a sort method, use it
+        const sortedQuery = userQuery.sort({ name: 1 });
+        
         if (sortedQuery && typeof sortedQuery.exec === 'function') {
+          // If sortedQuery has an exec method, execute it
           sortedUsers = await sortedQuery.exec();
+        } else if (sortedQuery && Array.isArray(sortedQuery.results)) {
+          // If sortedQuery has a results array, use it
+          sortedUsers = sortedQuery.results;
+        } else {
+          // If sortedQuery is already an array, use it
+          sortedUsers = sortedQuery || [];
         }
-      } else {
-        // Fallback if sort is not available
-        console.warn("Sort method not available, using unsorted results");
-        sortedUsers = queryObj.results || [];
+      } else if (userQuery && Array.isArray(userQuery.results)) {
+        // If userQuery has a results array but no sort method, use the results
+        sortedUsers = userQuery.results;
       }
       
       setUsers(sortedUsers);
