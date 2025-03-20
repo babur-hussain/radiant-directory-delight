@@ -6,11 +6,10 @@
 import { mongoose } from './index';
 
 let isConnected = false;
-const MOCK_DB_NAME = 'growbharatdb';
+const DB_NAME = 'growbharatdb';
 
 /**
- * Connect to MongoDB database
- * In mock mode, this simply sets a flag
+ * Connect to MongoDB database directly through API
  */
 export const connectToMongoDB = async () => {
   if (isConnected) {
@@ -19,19 +18,26 @@ export const connectToMongoDB = async () => {
   }
   
   try {
-    if (mongoose.connection.readyState === 0) {
-      // Real MongoDB connection logic would go here
-      const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/growbharatdb';
-      await mongoose.connect(uri);
-      isConnected = true;
-      console.log('=> Connected to MongoDB');
-      return true;
-    } else {
-      // Already connected or mock connection
-      console.log('=> Using MongoDB mock implementation');
-      isConnected = true;
-      return true;
-    }
+    console.log('=> Connecting to MongoDB via API...');
+    
+    // Connect directly to MongoDB through API
+    const uri = process.env.MONGODB_URI || 'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+    
+    // Use real MongoDB connection
+    await mongoose.connect(uri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 15000, 
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 15000,
+      heartbeatFrequencyMS: 30000,
+      retryWrites: true,
+      w: 'majority',
+    });
+    
+    isConnected = true;
+    console.log('=> Connected to MongoDB');
+    return true;
   } catch (error) {
     console.error('=> MongoDB connection error:', error);
     isConnected = false;

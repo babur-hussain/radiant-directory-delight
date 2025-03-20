@@ -1,12 +1,12 @@
+
 import { User as FirebaseUser } from 'firebase/auth';
 import { fetchUserByUid, createOrUpdateUser, updateUserRole as apiUpdateUserRole, getAllUsers as apiGetAllUsers } from '../../api/services/userAPI';
 import { IUser } from '../../models/User';
 import { UserRole } from '@/types/auth';
-import { connectToMongoDB } from '@/config/mongodb';
 import { generateEmployeeCode } from '@/utils/id-generator';
 import { api } from '@/api/core/apiService';
 
-// Get user by Firebase UID from MongoDB
+// Get user by Firebase UID from production MongoDB
 export const getUserByUid = async (uid: string): Promise<IUser | null> => {
   try {
     const user = await fetchUserByUid(uid);
@@ -20,15 +20,9 @@ export const getUserByUid = async (uid: string): Promise<IUser | null> => {
 // Create user in MongoDB if not exists, handling all registration fields
 export const createUserIfNotExists = async (firebaseUser: any, additionalFields?: any): Promise<IUser | null> => {
   try {
-    // Ensure MongoDB is connected
-    const connected = await connectToMongoDB();
-    if (!connected) {
-      console.error('Failed to connect to MongoDB in createUserIfNotExists');
-      return null;
-    }
-    
     console.log("Checking if user exists in MongoDB:", firebaseUser.uid);
-    // Check if user already exists
+    
+    // Check if user already exists directly via API
     let user = await fetchUserByUid(firebaseUser.uid);
     console.log("User from fetchUserByUid:", user);
     
@@ -99,16 +93,18 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
       }
 
       console.log("Creating user with data:", userData);
-      user = await createOrUpdateUser(userData);
-      console.log('New user created in MongoDB:', user);
       
-      // Try direct API persistence as an alternative path
+      // Create user via direct API call
       try {
         const apiResponse = await api.post('/users', userData);
-        console.log('API direct persistence successful:', apiResponse.data);
+        user = apiResponse.data;
+        console.log('New user created in MongoDB via API:', user);
       } catch (apiErr) {
-        console.warn('Direct API persistence failed (non-critical):', apiErr.message);
+        console.error('Direct API creation failed:', apiErr.message);
+        // Fallback to our service function
+        user = await createOrUpdateUser(userData);
       }
+      
     } else if (additionalFields) {
       // If user exists but we have new additionalFields, update the user
       // Make sure the role is preserved from additionalFields if provided
@@ -130,15 +126,16 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
       }
       
       console.log("Updating user with data:", updatedUserData);
-      user = await createOrUpdateUser(updatedUserData);
-      console.log('Existing user updated in MongoDB with additional fields:', user);
       
-      // Try direct API persistence for update as well
+      // Update user via direct API call
       try {
         const apiResponse = await api.put(`/users/${updatedUserData.uid}`, updatedUserData);
-        console.log('API direct update successful:', apiResponse.data);
+        user = apiResponse.data;
+        console.log('Existing user updated in MongoDB via API with additional fields:', user);
       } catch (apiErr) {
-        console.warn('Direct API update failed (non-critical):', apiErr.message);
+        console.error('Direct API update failed:', apiErr.message);
+        // Fallback to our service function
+        user = await createOrUpdateUser(updatedUserData);
       }
     }
     
@@ -161,15 +158,9 @@ export const updateUserLogin = async (uid: string): Promise<void> => {
 // Export the updateUserLoginTimestamp function
 export const updateUserLoginTimestamp = async (uid: string): Promise<void> => {
   try {
-    // Just update the lastLogin field in the user document
-    const existingUser = await fetchUserByUid(uid);
-    if (existingUser) {
-      await createOrUpdateUser({
-        ...existingUser,
-        lastLogin: new Date()
-      });
-      console.log(`Updated login timestamp for user ${uid}`);
-    }
+    // Direct API call to update login timestamp
+    await api.put(`/users/${uid}/login`);
+    console.log(`Updated login timestamp for user ${uid}`);
   } catch (error) {
     console.error('Error updating login timestamp:', error);
   }
@@ -178,7 +169,7 @@ export const updateUserLoginTimestamp = async (uid: string): Promise<void> => {
 // Get all users (admin function)
 export const getAllUsers = async (): Promise<IUser[]> => {
   try {
-    console.log('Fetching all users from API...');
+    console.log('Fetching all users from production API...');
     const users = await apiGetAllUsers();
     console.log(`Retrieved ${users.length} users from API`);
     return users;
@@ -193,9 +184,9 @@ export const updateUserRole = async (uid: string, role: string): Promise<IUser |
   try {
     // Default isAdmin to false or derive it from role
     const isAdmin = role === 'Admin';
-    // Fix: this function only expects 2 params - uid and role
-    const user = await apiUpdateUserRole(uid, role);
-    return user;
+    // Direct API call to update role
+    const response = await api.put(`/users/${uid}/role`, { role, isAdmin });
+    return response.data;
   } catch (error) {
     console.error('Error updating user role:', error);
     return null;
@@ -216,9 +207,9 @@ export const updateUserProfile = async (uid: string, profileData: Partial<IUser>
       updatedAt: new Date() 
     };
     
-    // Update the user
-    const user = await createOrUpdateUser(updatedUser);
-    return user;
+    // Direct API call to update profile
+    const response = await api.put(`/users/${uid}`, updatedUser);
+    return response.data;
   } catch (error) {
     console.error('Error updating user profile:', error);
     return null;
@@ -253,9 +244,9 @@ export const createUserWithProfile = async (
       userData.role = 'Admin';
     }
     
-    // Create the user
-    const user = await createOrUpdateUser(userData);
-    return user;
+    // Direct API call to create user
+    const response = await api.post('/users', userData);
+    return response.data;
   } catch (error) {
     console.error('Error creating user with profile:', error);
     return null;
