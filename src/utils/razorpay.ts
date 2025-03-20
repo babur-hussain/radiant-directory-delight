@@ -201,14 +201,13 @@ export const formatNotesForRazorpay = (notes?: Record<string, any>): Record<stri
  * never be exposed in client-side code.
  */
 export const generatePlanId = (packageDetails: any): string => {
-  // For non-production environments, we'll use a mock plan ID
-  // In production, this should be replaced with an actual Razorpay plan ID
-  // from the Razorpay dashboard or API
-  const timestamp = Date.now();
+  // Format that's more likely to be accepted by Razorpay's validation
+  // Using only lowercase characters, numbers, and underscores to match Razorpay format
+  const timestamp = Date.now().toString().substring(0, 6);
   const randomSuffix = Math.floor(Math.random() * 1000);
   const billingCycle = packageDetails.billingCycle === 'monthly' ? 'mon' : 'yr';
   
-  return `plan_${billingCycle}_${timestamp.toString().slice(-6)}_${randomSuffix}`;
+  return `plan_${billingCycle}_${timestamp}_${randomSuffix}`;
 };
 
 /**
@@ -290,9 +289,11 @@ export const createSubscription = async (
   // The backend would make an authenticated call to Razorpay's API:
   // POST https://api.razorpay.com/v1/subscriptions
   
-  // For development/testing purposes only
-  // Use a shorter format to avoid validation issues
-  const subscriptionId = `sub_${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 100)}`;
+  // Generate a subscription ID in a format more likely to be accepted by Razorpay
+  // DO NOT include the "sub_" prefix as Razorpay adds this automatically
+  const timestamp = Date.now().toString().substring(0, 6);
+  const randomNumber = Math.floor(Math.random() * 10000);
+  const subscriptionId = `${timestamp}${randomNumber}`;
   
   // Simulate API call delay
   return new Promise((resolve) => {

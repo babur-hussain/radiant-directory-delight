@@ -215,7 +215,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       </CardHeader>
       
       {!isOneTimePackage && canUseRecurring && (
-        <Alert variant="success" className="mb-4 bg-green-50 border-green-200">
+        <Alert className="mb-4 bg-green-50 border-green-200">
           <CheckCircle className="h-4 w-4 text-green-500" />
           <AlertTitle className="text-green-700">Live Mode Active</AlertTitle>
           <AlertDescription className="text-green-600 text-sm">

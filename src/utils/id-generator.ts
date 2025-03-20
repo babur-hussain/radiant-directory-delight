@@ -42,8 +42,9 @@ export const generateOrderId = (): string => {
  * @returns A properly formatted subscription ID
  */
 export const generateSubscriptionId = (): string => {
-  // Format that matches Razorpay's expected subscription ID format
-  return `sub_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+  // Format that's closer to Razorpay's expected format (without the 'sub_' prefix)
+  // as Razorpay will add that prefix itself
+  return `${Date.now().toString().substring(0, 6)}${Math.floor(Math.random() * 10000)}`;
 };
 
 export { nanoid };
