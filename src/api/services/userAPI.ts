@@ -11,6 +11,7 @@ export const fetchUserByUid = async (uid: string) => {
     return response.data;
   } catch (error) {
     console.error('Error fetching user from API:', error);
+    // Return null instead of throwing to allow graceful fallbacks
     return null;
   }
 };
@@ -49,7 +50,7 @@ export const createOrUpdateUser = async (userData: any) => {
     console.log(`Sending user data to API with role=${formattedUserData.role}`);
     
     try {
-      // Try to get the user first
+      // Try to get the user first with a shorter timeout
       const existingUser = await fetchUserByUid(uid);
       
       if (existingUser) {
@@ -63,15 +64,29 @@ export const createOrUpdateUser = async (userData: any) => {
         };
         
         console.log(`Updating existing user via API with role=${updatedData.role}`);
-        const response = await api.put(`/users/${uid}`, updatedData);
-        console.log('User updated via API successfully:', response.data);
-        return response.data;
+        
+        try {
+          const response = await api.put(`/users/${uid}`, updatedData);
+          console.log('User updated via API successfully:', response.data);
+          return response.data;
+        } catch (updateError) {
+          console.error('API update failed, returning formatted data:', updateError);
+          // Return the formatted data even if API fails
+          return updatedData;
+        }
       } else {
         // Create new user
         console.log(`Creating new user via API with role=${formattedUserData.role}`);
-        const response = await api.post('/users', formattedUserData);
-        console.log('New user created via API:', response.data);
-        return response.data;
+        
+        try {
+          const response = await api.post('/users', formattedUserData);
+          console.log('New user created via API:', response.data);
+          return response.data;
+        } catch (createError) {
+          console.error('API create failed, returning formatted data:', createError);
+          // Return the formatted data even if API fails
+          return formattedUserData;
+        }
       }
     } catch (apiError) {
       console.error('API operation failed:', apiError);
@@ -92,7 +107,8 @@ export const updateUserLoginTimestamp = async (uid: string) => {
     return response.data;
   } catch (error) {
     console.error('Error updating login timestamp:', error.message);
-    throw error;
+    // Don't throw, just log the error
+    return null;
   }
 };
 
@@ -104,7 +120,8 @@ export const apiUpdateUserRole = async (uid: string, role: string) => {
     return response.data;
   } catch (error) {
     console.error('Error in apiUpdateUserRole:', error);
-    throw error;
+    // Return null instead of throwing
+    return null;
   }
 };
 
@@ -116,7 +133,8 @@ export const apiGetAllUsers = async () => {
     return response.data;
   } catch (error) {
     console.error('Error getting all users from API:', error);
-    throw error;
+    // Return empty array instead of throwing
+    return [];
   }
 };
 

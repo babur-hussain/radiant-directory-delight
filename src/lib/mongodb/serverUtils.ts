@@ -1,5 +1,6 @@
 
-import { api } from '@/api/core/apiService';
+import axios from 'axios';
+import { API_BASE_URL } from '@/api/core/apiService';
 
 /**
  * Checks if the MongoDB server is available
@@ -8,13 +9,13 @@ export const checkServerAvailability = async (): Promise<boolean> => {
   console.log("Checking server availability...");
   
   try {
-    // Try alternate endpoints to check server availability
+    // Try alternate endpoints to check server availability with a short timeout
     const endpoints = ['/test-connection', '/subscription-packages'];
     
     for (const endpoint of endpoints) {
       try {
         // Use a shorter timeout for faster response
-        const response = await api.get(endpoint, { 
+        const response = await axios.get(`${API_BASE_URL}${endpoint}`, { 
           timeout: 3000, // Very short timeout for faster response
           validateStatus: (status) => status >= 200 && status < 500 // Accept any non-server error response
         });
