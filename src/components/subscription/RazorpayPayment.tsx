@@ -31,14 +31,27 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   // Determine if this is a one-time package
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
   
-  // Calculate the amount based on payment type
-  // Ensure one-time packages have proper pricing
-  const paymentAmount = isOneTimePackage 
-    ? (selectedPackage.price || 999) // Default to 999 if price is 0 or undefined
-    : (selectedPackage.setupFee || 0);
+  // Calculate the setup fee
+  const setupFee = isOneTimePackage ? 0 : (selectedPackage.setupFee || 0);
   
-  // For recurring packages, also calculate the recurring amount
-  const recurringAmount = !isOneTimePackage ? (selectedPackage.price || 0) : 0;
+  // Calculate recurring amount
+  const recurringAmount = isOneTimePackage ? 0 : (selectedPackage.price || 0);
+  
+  // Advanced payment months
+  const advanceMonths = isOneTimePackage ? 0 : (selectedPackage.advancePaymentMonths || 0);
+  
+  // Calculate advance payment amount
+  const advanceAmount = advanceMonths * recurringAmount;
+  
+  // Calculate the total initial payment
+  const totalPaymentAmount = isOneTimePackage 
+    ? (selectedPackage.price || 999) // Default to 999 if price is 0 or undefined
+    : (setupFee + advanceAmount);
+  
+  // Calculate when the first recurring payment will happen (after advance months)
+  const firstRecurringDate = new Date();
+  firstRecurringDate.setMonth(firstRecurringDate.getMonth() + advanceMonths);
+  const formattedFirstRecurringDate = firstRecurringDate.toLocaleDateString();
   
   const handlePayment = () => {
     if (isProcessing) return;
@@ -169,7 +182,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           <div className="flex justify-between border-b pb-2">
             <span className="font-medium">{selectedPackage.title}</span>
             <span className="font-medium">
-              ₹{paymentAmount}
+              ₹{totalPaymentAmount}
             </span>
           </div>
           
@@ -178,8 +191,26 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
               <p>One-time payment for {selectedPackage.durationMonths || 12} months of service</p>
             ) : (
               <>
-                <p>Initial setup fee payment</p>
-                <p className="mt-1">Your subscription will begin after this payment is processed.</p>
+                {setupFee > 0 && (
+                  <div className="flex justify-between">
+                    <span>Setup fee</span>
+                    <span>₹{setupFee}</span>
+                  </div>
+                )}
+                
+                {advanceMonths > 0 && (
+                  <div className="flex justify-between mt-1">
+                    <span>Advance payment ({advanceMonths} months)</span>
+                    <span>₹{advanceAmount}</span>
+                  </div>
+                )}
+                
+                {advanceMonths > 0 ? (
+                  <p className="mt-2">Your subscription will begin immediately. Recurring payment of ₹{recurringAmount} will start from {formattedFirstRecurringDate}.</p>
+                ) : (
+                  <p className="mt-2">Your subscription will begin after this payment is processed.</p>
+                )}
+                
                 {recurringAmount > 0 && (
                   <p className="mt-2 font-medium">Recurring payment: ₹{recurringAmount}/{selectedPackage.billingCycle || 'year'}</p>
                 )}
@@ -189,7 +220,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           
           <div className="flex justify-between pt-2 font-medium text-primary">
             <span>Total Amount</span>
-            <span>₹{paymentAmount}</span>
+            <span>₹{totalPaymentAmount}</span>
           </div>
         </div>
         
@@ -216,8 +247,8 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
             <>
               <CreditCard className="mr-2 h-4 w-4" />
               {isOneTimePackage 
-                ? `Pay ₹${paymentAmount}` 
-                : `Pay Setup Fee ₹${paymentAmount}`}
+                ? `Pay ₹${totalPaymentAmount}` 
+                : `Pay ₹${totalPaymentAmount}`}
             </>
           )}
         </Button>

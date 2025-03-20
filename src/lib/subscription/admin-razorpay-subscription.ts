@@ -19,9 +19,25 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
     
     const isOneTime = packageDetails.paymentType === "one-time";
     
-    // Calculate end date based on package duration or default to 1 year
+    // Get advance payment months from either payment details or package
+    const advancePaymentMonths = paymentDetails?.advanceMonths || packageDetails.advancePaymentMonths || 0;
+    
+    // Calculate end date based on package duration + advance months
     const endDate = new Date();
-    endDate.setMonth(endDate.getMonth() + (packageDetails.durationMonths || 12));
+    const totalMonths = (packageDetails.durationMonths || 12) + advancePaymentMonths;
+    endDate.setMonth(endDate.getMonth() + totalMonths);
+    
+    // Calculate recurring payment start date (after advance months)
+    const recurringStartDate = new Date();
+    if (advancePaymentMonths > 0) {
+      recurringStartDate.setMonth(recurringStartDate.getMonth() + advancePaymentMonths);
+    }
+    
+    // Calculate total amount including setup fee and advance payments
+    const setupFee = packageDetails.setupFee || 0;
+    const recurringAmount = isOneTime ? 0 : packageDetails.price || 0;
+    const advanceAmount = isOneTime ? 0 : (recurringAmount * advancePaymentMonths);
+    const totalAmount = isOneTime ? packageDetails.price : (setupFee + advanceAmount);
     
     // Prepare subscription data
     const subscription: SubscriptionData = {
@@ -29,7 +45,7 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
       userId: userId,
       packageId: packageDetails.id,
       packageName: packageDetails.title,
-      amount: isOneTime ? packageDetails.price : packageDetails.setupFee,
+      amount: totalAmount,
       startDate: new Date().toISOString(),
       endDate: endDate.toISOString(),
       status: "active",
@@ -37,8 +53,8 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
       updatedAt: new Date(),
       assignedBy: "user",
       assignedAt: new Date().toISOString(),
-      advancePaymentMonths: packageDetails.advancePaymentMonths || 0,
-      signupFee: packageDetails.setupFee || 0,
+      advancePaymentMonths: advancePaymentMonths,
+      signupFee: setupFee,
       actualStartDate: new Date().toISOString(),
       isPaused: false,
       isPausable: !isOneTime,
@@ -46,7 +62,8 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
       invoiceIds: [],
       paymentType: packageDetails.paymentType || "recurring",
       billingCycle: packageDetails.billingCycle,
-      recurringAmount: isOneTime ? 0 : packageDetails.price
+      recurringAmount: recurringAmount,
+      nextBillingDate: isOneTime ? undefined : recurringStartDate.toISOString()
     };
     
     // Add payment details if provided

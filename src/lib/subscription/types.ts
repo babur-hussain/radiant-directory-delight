@@ -1,4 +1,8 @@
 
+/**
+ * Utility functions for Razorpay integration
+ */
+
 import { Timestamp } from "firebase/firestore";
 
 // Define subscription data interface
@@ -20,7 +24,7 @@ export interface SubscriptionData {
   assignedBy?: string;
   assignedAt?: string;
   
-  // New fields for advanced payment structure - making them optional for backward compatibility
+  // Fields for advanced payment structure
   advancePaymentMonths?: number; 
   signupFee?: number;
   actualStartDate?: string;
@@ -33,7 +37,11 @@ export interface SubscriptionData {
   isUserCancellable?: boolean;
   invoiceIds?: string[];
   razorpaySubscriptionId?: string;
+  razorpayOrderId?: string;
   paymentType: "recurring" | "one-time"; // Required field for payment type
+  billingCycle?: string;
+  recurringAmount?: number;
+  nextBillingDate?: string; // New field to track when recurring billing starts
   
   [key: string]: any; // Allow additional properties
 }

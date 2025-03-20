@@ -69,7 +69,7 @@ export const useRazorpayPayment = () => {
         ? (selectedPackage.price || 999) // Default to 999 if price is 0 or undefined
         : (selectedPackage.setupFee || 0);
       
-      // Create a valid order ID - avoid using underscores which may cause API issues
+      // Create a valid order ID - avoid using underscores which might cause API issues
       const orderId = generateOrderId();
       
       // Convert amount to paise
@@ -160,36 +160,58 @@ export const useRazorpayPayment = () => {
       } else {
         // Recurring subscription payment
         try {
-          // For recurring subscription, first handle the setup fee
+          // Calculate the advance payment amount if applicable
+          const advanceMonths = selectedPackage.advancePaymentMonths || 0;
+          const recurringAmount = selectedPackage.price || 0;
+          let totalAmount = paymentAmount; // Start with setup fee
+          
+          // Add advance payment amount if there are advance months
+          if (advanceMonths > 0) {
+            totalAmount += (recurringAmount * advanceMonths);
+          }
+          
+          // Convert total to paise
+          const totalAmountInPaise = convertToPaise(totalAmount);
+          
+          // For recurring subscription, handle setup fee + advance payment
           const options = {
             ...commonOptions,
-            amount: amountInPaise,
+            amount: totalAmountInPaise,
             currency: 'INR',
             notes: {
               packageId: selectedPackage.id,
               packageType: "recurring",
               billingCycle: selectedPackage.billingCycle || "yearly",
               setupFee: selectedPackage.setupFee || 0,
-              recurringAmount: selectedPackage.price || 0
+              recurringAmount: recurringAmount,
+              advanceMonths: advanceMonths
             },
             handler: function(response: any) {
               // Add subscription details to the response
               response.paymentType = "recurring";
               response.packageId = selectedPackage.id;
               response.packageName = selectedPackage.title;
-              response.amount = selectedPackage.setupFee || 0;
-              response.recurringAmount = selectedPackage.price || 0;
+              response.amount = totalAmount;
+              response.setupFee = selectedPackage.setupFee || 0;
+              response.recurringAmount = recurringAmount;
+              response.advanceMonths = advanceMonths;
               response.billingCycle = selectedPackage.billingCycle || 'yearly';
               
-              // Generate a mock subscription ID
-              // In a real implementation, this would come from Razorpay's subscription API
+              // Generate a subscription ID
               response.subscriptionId = `sub${Date.now()}`;
               
               console.log("Subscription setup payment successful, response:", response);
               
+              // Calculate when the first recurring payment will happen
+              const startDate = new Date();
+              startDate.setMonth(startDate.getMonth() + advanceMonths);
+              const formattedStartDate = startDate.toLocaleDateString();
+              
               toast({
                 title: "Subscription Initialized",
-                description: `Your subscription to ${selectedPackage.title} has been activated. You will be charged ₹${selectedPackage.price} ${selectedPackage.billingCycle || 'yearly'}.`,
+                description: advanceMonths > 0 
+                  ? `Your subscription to ${selectedPackage.title} has been activated with ${advanceMonths} months advance payment. Recurring payment of ₹${recurringAmount} will start from ${formattedStartDate}.` 
+                  : `Your subscription to ${selectedPackage.title} has been activated. You will be charged ₹${recurringAmount} ${selectedPackage.billingCycle || 'yearly'}.`,
                 variant: "default"
               });
               
@@ -198,14 +220,14 @@ export const useRazorpayPayment = () => {
             }
           };
           
-          console.log("Opening Razorpay subscription setup payment with options:", options);
+          console.log("Opening Razorpay subscription payment with options:", options);
           
           // Create a new Razorpay instance
           const razorpay = new window.Razorpay(options);
           
           // Handle payment failures
           razorpay.on('payment.failed', function(response: any) {
-            console.error('Subscription setup payment failed:', response.error);
+            console.error('Subscription payment failed:', response.error);
             
             const errorMessage = response.error.description || 'Subscription payment failed. Please try again.';
             
