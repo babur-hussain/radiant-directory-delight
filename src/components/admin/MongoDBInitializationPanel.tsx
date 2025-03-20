@@ -69,6 +69,7 @@ const MongoDBInitializationPanel: React.FC = () => {
       setDiagnosticResults(diagnostics);
       
       try {
+        // Use simpler headers to avoid CORS issues
         const response = await fetch(`${API_BASE_URL}/test-collection`, {
           method: 'GET',
           headers: {
@@ -170,6 +171,7 @@ const MongoDBInitializationPanel: React.FC = () => {
         lastLogin: new Date()
       };
       
+      // Use simplified fetch with minimal headers to avoid CORS issues
       const response = await fetch(`${API_BASE_URL}/users`, {
         method: 'POST',
         headers: {

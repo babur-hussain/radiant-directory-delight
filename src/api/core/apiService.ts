@@ -72,12 +72,13 @@ api.interceptors.response.use(
 export const isServerRunning = async () => {
   try {
     console.log(`Checking if production server is running at ${API_BASE_URL}`);
-    // Use a separate axios instance with a shorter timeout
+    // Use a separate axios instance with a shorter timeout and no cache-control header
     const response = await axios.get(`${API_BASE_URL}/test-connection`, {
       timeout: 8000, // 8 seconds timeout for connectivity check
       headers: {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
+        // Avoid sending cache-control header that's causing CORS issues
+        'Content-Type': 'application/json',
+        'X-Environment': 'production'
       },
       withCredentials: false // Important for CORS requests
     });
