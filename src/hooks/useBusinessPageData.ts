@@ -16,6 +16,25 @@ export interface ExtendedBusiness extends Business {
 type LocationFilter = string | null;
 type SortOption = "relevance" | "rating" | "reviews";
 
+// Helper functions defined before they're used
+const getCustomCategories = (): string[] => {
+  const storedCategories = localStorage.getItem("businessCategories");
+  if (storedCategories) {
+    const categories = JSON.parse(storedCategories);
+    return categories.map((cat: { name: string }) => cat.name);
+  }
+  return [];
+};
+
+const getCustomLocations = (): string[] => {
+  const storedLocations = localStorage.getItem("businessLocations");
+  if (storedLocations) {
+    const locations = JSON.parse(storedLocations);
+    return locations.map((loc: { name: string }) => loc.name);
+  }
+  return [];
+};
+
 export const useBusinessPageData = (initialQuery: string = '') => {
   const [loading, setLoading] = useState(true);
   const [businesses, setBusinesses] = useState<ExtendedBusiness[]>(businessesData as ExtendedBusiness[]);
@@ -32,24 +51,6 @@ export const useBusinessPageData = (initialQuery: string = '') => {
   const [customLocations, setCustomLocations] = useState<string[]>(getCustomLocations());
   
   const itemsPerPage = 40;
-  
-  const getCustomCategories = (): string[] => {
-    const storedCategories = localStorage.getItem("businessCategories");
-    if (storedCategories) {
-      const categories = JSON.parse(storedCategories);
-      return categories.map((cat: { name: string }) => cat.name);
-    }
-    return [];
-  };
-
-  const getCustomLocations = (): string[] => {
-    const storedLocations = localStorage.getItem("businessLocations");
-    if (storedLocations) {
-      const locations = JSON.parse(storedLocations);
-      return locations.map((loc: { name: string }) => loc.name);
-    }
-    return [];
-  };
   
   useEffect(() => {
     const loadData = async () => {
