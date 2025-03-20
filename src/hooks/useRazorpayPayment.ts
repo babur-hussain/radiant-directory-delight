@@ -195,8 +195,8 @@ export const useRazorpayPayment = () => {
             response.recurringAmount = recurringAmount;
             response.advanceMonths = advanceMonths;
             response.billingCycle = selectedPackage.billingCycle || 'yearly';
-            response.subscriptionId = (notesObject as RecurringNotesObject).subscriptionId;
             response.nextBillingDate = (notesObject as RecurringNotesObject).nextBillingDate;
+            response.subscriptionId = (notesObject as RecurringNotesObject).subscriptionId;
           }
           
           console.log(`${isOneTimePackage ? "One-time" : "Subscription"} payment successful, response:`, response);
@@ -214,6 +214,28 @@ export const useRazorpayPayment = () => {
           onSuccess(response);
         }
       };
+      
+      // Configure autopay for recurring packages
+      if (!isOneTimePackage) {
+        console.log("Setting up autopay for recurring subscription");
+        
+        // Add subscription-specific options for autopay
+        Object.assign(options, {
+          recurring: true,
+          subscription: {
+            notify: {
+              email: true,
+              sms: true
+            },
+            cancel_at_pay_limit: false
+          },
+          readonly: {
+            email: true,
+            contact: true,
+            name: true
+          }
+        });
+      }
       
       console.log(`Opening Razorpay ${isOneTimePackage ? "one-time" : "subscription"} payment with options:`, options);
       
@@ -245,7 +267,8 @@ export const useRazorpayPayment = () => {
         packageId: selectedPackage.id,
         packageTitle: selectedPackage.title,
         amount: totalPaymentAmount,
-        orderId: orderId
+        orderId: orderId,
+        isRecurring: !isOneTimePackage
       });
       
     } catch (error) {
