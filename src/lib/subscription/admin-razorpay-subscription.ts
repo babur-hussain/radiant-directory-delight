@@ -15,7 +15,7 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
     }
     
     // Generate a unique subscription ID if not provided
-    const subscriptionId = paymentDetails?.subscriptionId || `sub_${Date.now()}`;
+    const subscriptionId = paymentDetails?.subscriptionId || `sub${Date.now()}`;
     
     const isOneTime = packageDetails.paymentType === "one-time";
     

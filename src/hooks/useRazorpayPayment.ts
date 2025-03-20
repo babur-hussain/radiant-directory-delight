@@ -69,8 +69,7 @@ export const useRazorpayPayment = () => {
         ? (selectedPackage.price || 999) // Default to 999 if price is 0 or undefined
         : (selectedPackage.setupFee || 0);
       
-      // Create a mock order ID for demonstration
-      // In a real app, this would come from your backend API
+      // Create a valid order ID - avoid using underscores which may cause API issues
       const orderId = generateOrderId();
       
       // Convert amount to paise
@@ -93,10 +92,12 @@ export const useRazorpayPayment = () => {
           color: '#3399cc'
         },
         modal: {
-          backdropclose: false,
           escape: false,
-          handleback: true,
-          confirm_close: true
+          ondismiss: function() {
+            console.log("Checkout form closed by user");
+            setIsLoading(false);
+            onFailure({ message: "Payment cancelled by user" });
+          }
         }
       };
       
@@ -107,6 +108,10 @@ export const useRazorpayPayment = () => {
           amount: amountInPaise,
           currency: 'INR',
           order_id: orderId,
+          notes: {
+            packageId: selectedPackage.id,
+            packageType: "one-time"
+          },
           handler: function(response: any) {
             // Add payment type to the response
             response.paymentType = "one-time";
@@ -160,7 +165,6 @@ export const useRazorpayPayment = () => {
             ...commonOptions,
             amount: amountInPaise,
             currency: 'INR',
-            order_id: orderId,
             notes: {
               packageId: selectedPackage.id,
               packageType: "recurring",
@@ -179,7 +183,7 @@ export const useRazorpayPayment = () => {
               
               // Generate a mock subscription ID
               // In a real implementation, this would come from Razorpay's subscription API
-              response.subscriptionId = `sub_${Date.now()}`;
+              response.subscriptionId = `sub${Date.now()}`;
               
               console.log("Subscription setup payment successful, response:", response);
               

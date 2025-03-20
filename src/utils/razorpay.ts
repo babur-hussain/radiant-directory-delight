@@ -123,7 +123,8 @@ export const isRazorpayAvailable = (): boolean => {
  * Note: In production, orders should be created server-side
  */
 export const generateOrderId = (): string => {
-  return `order_${Date.now()}`;
+  // Simple order ID format without underscores (which might cause API issues)
+  return `order${Date.now()}`;
 };
 
 /**
@@ -157,7 +158,7 @@ export const createRazorpayOrder = async (amount: number, currency: string = 'IN
     id: orderId,
     amount: convertToPaise(amount),
     currency,
-    receipt: `receipt_${Date.now()}`,
+    receipt: `receipt${Date.now()}`,
     status: 'created'
   };
 };
@@ -175,7 +176,7 @@ export const createRazorpaySubscription = async (subscriptionData: RazorpaySubsc
   // Simulate API call delay
   await new Promise(resolve => setTimeout(resolve, 500));
   
-  const subscriptionId = `sub_${Date.now()}`;
+  const subscriptionId = `sub${Date.now()}`;
   
   return {
     id: subscriptionId,
