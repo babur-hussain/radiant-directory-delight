@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,8 +11,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, AlertCircle, Save, RefreshCw, Users } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/hooks/use-toast';
-import { connectToMongoDB, extractQueryResults } from '@/config/mongodb';
-import { User } from '@/models/User';
+import { connectToMongoDB } from '@/config/mongodb';
+import { User, IUser } from '@/models/User';
+import { extractQueryData } from '@/utils/queryHelpers';
 import { 
   BUSINESS_DASHBOARD_SECTIONS, 
   INFLUENCER_DASHBOARD_SECTIONS,
@@ -19,8 +21,8 @@ import {
 } from '@/utils/dashboardSections';
 
 const AdminDashboardManagerPage = () => {
-  const [users, setUsers] = useState<any[]>([]);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [users, setUsers] = useState<IUser[]>([]);
+  const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +68,7 @@ const AdminDashboardManagerPage = () => {
       const usersQuery = User.find();
       
       // Safely extract the results using our helper function
-      const allUsers = extractQueryResults(usersQuery);
+      const allUsers = extractQueryData<IUser>(usersQuery);
       
       setUsers(allUsers);
       

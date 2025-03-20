@@ -83,7 +83,7 @@ export class QueryResult<T = any> extends Array<T> {
   }
 }
 
-// Helper function to extract query results safely
+// Helper function to extract query results safely and handle type casting
 export function extractQueryResults<T>(queryResult: any): T[] {
   if (!queryResult) return [];
   

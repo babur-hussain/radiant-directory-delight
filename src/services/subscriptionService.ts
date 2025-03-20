@@ -1,9 +1,10 @@
 
 import { ISubscription, Subscription } from '../models/Subscription';
-import { mongoose, extractQueryResults } from '../config/mongodb';
+import { mongoose } from '../config/mongodb';
 import { nanoid } from 'nanoid';
 import { autoInitMongoDB } from '../utils/setupMongoDB';
 import { ISubscriptionPackage, SubscriptionPackage } from '../models/SubscriptionPackage';
+import { extractQueryData } from '../utils/queryHelpers';
 
 // Auto-initialize MongoDB when this module is imported
 autoInitMongoDB()
@@ -25,7 +26,7 @@ export const createSubscription = async (subscriptionData: Omit<ISubscription, '
     });
     
     console.log(`Created subscription with ID: ${subscriptionId}`);
-    return subscription;
+    return subscription as ISubscription;
   } catch (error) {
     console.error('Error creating subscription:', error);
     throw error;
@@ -45,7 +46,7 @@ export const getSubscription = async (id: string): Promise<ISubscription> => {
     }
     
     console.log(`Found subscription: ${id}`);
-    return subscription;
+    return subscription as ISubscription;
   } catch (error) {
     console.error(`Error getting subscription with ID ${id}:`, error);
     throw error;
@@ -59,13 +60,8 @@ export const getSubscriptions = async (): Promise<ISubscription[]> => {
     const subscriptionModel = mongoose.model('Subscription', {});
     const subscriptionsQuery = subscriptionModel.find();
     
-    // If we have a sort method available, use it
-    const sortedQuery = subscriptionsQuery && typeof subscriptionsQuery.sort === 'function'
-      ? subscriptionsQuery.sort({ createdAt: -1 })
-      : subscriptionsQuery;
-    
-    // Extract results safely
-    const subscriptions = extractQueryResults(sortedQuery);
+    // Extract results safely using our utility function
+    const subscriptions = extractQueryData<ISubscription>(subscriptionsQuery);
     
     console.log(`Found ${subscriptions.length} subscriptions`);
     return subscriptions;
@@ -93,7 +89,7 @@ export const updateSubscription = async (id: string, subscriptionData: Partial<I
     }
     
     console.log(`Updated subscription: ${id}`);
-    return subscription;
+    return subscription as ISubscription;
   } catch (error) {
     console.error(`Error updating subscription with ID ${id}:`, error);
     throw error;
@@ -124,16 +120,10 @@ export const getUserSubscriptions = async (userId: string): Promise<ISubscriptio
   try {
     console.log(`Fetching subscriptions for user: ${userId}`);
     const subscriptionModel = mongoose.model('Subscription', {});
-    
     const subscriptionsQuery = subscriptionModel.find({ userId });
     
-    // If we have a sort method available, use it
-    const sortedQuery = subscriptionsQuery && typeof subscriptionsQuery.sort === 'function'
-      ? subscriptionsQuery.sort({ startDate: -1 })
-      : subscriptionsQuery;
-    
-    // Extract results safely
-    const subscriptions = extractQueryResults(sortedQuery);
+    // Extract results safely using our utility function
+    const subscriptions = extractQueryData<ISubscription>(subscriptionsQuery);
     
     console.log(`Found ${subscriptions.length} subscriptions for user ${userId}`);
     return subscriptions;
@@ -155,7 +145,7 @@ export const getActiveUserSubscription = async (userId: string): Promise<ISubscr
     });
     
     console.log(`Found subscription:`, subscription);
-    return subscription;
+    return subscription as ISubscription | null;
   } catch (error) {
     console.error(`Error getting active subscription for user ${userId}:`, error);
     throw error;
@@ -179,7 +169,7 @@ export const createOrUpdateSubscriptionPackage = async (packageData: ISubscripti
     );
     
     console.log(`Successfully saved subscription package: ${packageData.id}`);
-    return result;
+    return result as ISubscriptionPackage;
   } catch (error) {
     console.error(`Error creating/updating subscription package: ${packageData.id}`, error);
     throw error;
@@ -193,13 +183,8 @@ export const getAllSubscriptionPackages = async (): Promise<ISubscriptionPackage
     const packageModel = mongoose.model('SubscriptionPackage', {});
     const packagesQuery = packageModel.find();
     
-    // If we have a sort method available, use it
-    const sortedQuery = packagesQuery && typeof packagesQuery.sort === 'function'
-      ? packagesQuery.sort({ createdAt: -1 })
-      : packagesQuery;
-    
-    // Extract results safely
-    const packages = extractQueryResults(sortedQuery);
+    // Extract results safely using our utility function
+    const packages = extractQueryData<ISubscriptionPackage>(packagesQuery);
     
     console.log(`Found ${packages.length} subscription packages`);
     return packages;
@@ -216,13 +201,8 @@ export const getSubscriptionPackagesByType = async (type: string): Promise<ISubs
     const packageModel = mongoose.model('SubscriptionPackage', {});
     const packagesQuery = packageModel.find({ type });
     
-    // If we have a sort method available, use it
-    const sortedQuery = packagesQuery && typeof packagesQuery.sort === 'function'
-      ? packagesQuery.sort({ price: 1 })
-      : packagesQuery;
-    
-    // Extract results safely
-    const packages = extractQueryResults(sortedQuery);
+    // Extract results safely using our utility function
+    const packages = extractQueryData<ISubscriptionPackage>(packagesQuery);
     
     console.log(`Found ${packages.length} ${type} subscription packages`);
     return packages;
