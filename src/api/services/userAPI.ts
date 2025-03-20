@@ -45,18 +45,20 @@ export const createOrUpdateUser = async (userData: any) => {
     if (index >= 0) {
       // Update existing user
       collection[index] = { ...collection[index], ...userData };
+      console.log(`Updated existing user in database:`, collection[index]);
     } else {
       // Add new user
       collection.push(userData);
+      console.log(`Added new user to database:`, userData);
     }
 
     // Save back to localStorage (our mock MongoDB)
     localStorage.setItem('mongodb_User', JSON.stringify(collection));
-    console.log(`User ${userData.uid} saved to database:`, userData);
+    console.log(`User ${userData.uid} saved to database successfully`);
     
     return userData;
   } catch (error) {
-    console.warn('Error saving user to database:', error);
+    console.error('Error saving user to database:', error);
     return userData;
   }
 };
