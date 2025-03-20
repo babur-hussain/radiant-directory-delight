@@ -18,7 +18,7 @@ import {
 import CSVUploadDialog from './CSVUploadDialog';
 import BusinessTableRow from './table/BusinessTableRow';
 import { Business } from '@/lib/csv-utils';
-import { fetchBusinesses, isServerRunning } from '@/api/mongoAPI';
+import { fetchBusinesses, isServerRunning } from '@/api';
 import { useToast } from '@/hooks/use-toast';
 
 interface TableBusinessListingsProps {

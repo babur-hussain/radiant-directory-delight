@@ -1,5 +1,4 @@
-
-import { initializeMongoDB, testMongoDBConnection, isServerRunning } from '../api/mongoAPI';
+import { initializeMongoDB, testMongoDBConnection, isServerRunning } from '@/api';
 
 // Progress callback type definition
 type ProgressCallback = (progress: number, message: string) => void;

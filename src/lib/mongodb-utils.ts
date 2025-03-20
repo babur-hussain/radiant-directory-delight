@@ -1,11 +1,11 @@
-
 import { 
   fetchUserByUid as apiFetchUserByUid,
   getUserSubscription as apiFetchUserSubscriptions,
   isServerRunning,
   fetchBusinesses as apiFetchBusinesses,
   saveBusiness as apiSaveBusiness
-} from '../api/mongoAPI';
+} from '@/api';
+
 import { ISubscriptionPackage } from '../models/SubscriptionPackage';
 import { IBusiness } from '../models/Business';
 import { IUser } from '../models/User';
