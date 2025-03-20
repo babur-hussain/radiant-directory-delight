@@ -37,6 +37,7 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
       console.log("User not found, creating new user in MongoDB with fields:", additionalFields);
       
       // Determine role - either from additionalFields or default to 'User'
+      // This is critical - we need to use the role from additionalFields
       const role = additionalFields?.role || 'User';
       console.log(`User role from additionalFields: ${role}`);
       
@@ -52,7 +53,7 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
         photoURL: firebaseUser.photoURL,
         createdAt: new Date(),
         lastLogin: new Date(),
-        role: role,
+        role: role, // Explicitly set role from additionalFields
         isAdmin: role === 'Admin' || additionalFields?.isAdmin || false,
         
         // Shared fields
@@ -102,13 +103,17 @@ export const createUserIfNotExists = async (firebaseUser: any, additionalFields?
       console.log('New user created in MongoDB:', user);
     } else if (additionalFields) {
       // If user exists but we have new additionalFields, update the user
+      // Make sure the role is preserved from additionalFields if provided
       const updatedUserData = {
         ...user,
         ...additionalFields,
-        // Make sure role is preserved from additionalFields
+        // Make sure role is preserved from additionalFields if it exists
         role: additionalFields.role || user.role,
         updatedAt: new Date()
       };
+      
+      // Log the role value for debugging
+      console.log(`Updating existing user with role=${additionalFields.role || user.role}`);
       
       // Ensure default admin always has admin role
       if (user.email === 'baburhussain660@gmail.com') {
@@ -216,12 +221,15 @@ export const createUserWithProfile = async (
     const userData = {
       uid,
       email,
-      role,
+      role, // Explicitly set role
       isAdmin: role === 'Admin',
       ...profileData,
       createdAt: new Date(),
       lastLogin: new Date()
     };
+    
+    // Log the role for debugging
+    console.log(`Creating user with profile, role=${role}`);
     
     // Special case for default admin user
     if (email === 'baburhussain660@gmail.com') {

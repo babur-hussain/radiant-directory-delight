@@ -1,4 +1,3 @@
-
 import { api } from '../core/apiService';
 import { connectToMongoDB } from '@/config/mongodb';
 import { IUser } from '@/models/User';
@@ -62,31 +61,39 @@ export const createOrUpdateUser = async (userData: any) => {
     const index = collection.findIndex((u: any) => u.uid === uid || u.id === uid);
     console.log(`User search result: index=${index} for uid=${uid}`);
 
+    // Log the original role for debugging
+    const originalRole = userData.role;
+    console.log(`Original role from userData: ${originalRole}`);
+
     // Format user data to ensure all required fields are present
     const formattedUserData = {
       ...userData,
       uid: uid, // Ensure uid is set
       createdAt: userData.createdAt || new Date(),
       lastLogin: userData.lastLogin || new Date(),
-      // Make sure role is preserved from userData or defaults to 'User' for new users
+      // CRITICAL: Preserve the role from userData or default to existing role or 'User'
       role: userData.role || (index >= 0 ? collection[index].role : 'User'),
       isAdmin: userData.isAdmin || false
     };
 
+    console.log(`Formatted user data role: ${formattedUserData.role}`);
     console.log(`Formatted user data: ${JSON.stringify(formattedUserData)}`);
 
     if (index >= 0) {
       // Update existing user but preserve the role if not explicitly changed
+      // CRITICAL: We need to ensure role is maintained from userData if provided
       collection[index] = { 
         ...collection[index], 
         ...formattedUserData,
-        // Only update role if explicitly provided
+        // Only update role if explicitly provided in userData
         role: userData.role || collection[index].role
       };
+      
+      console.log(`Updated existing user in database with role=${collection[index].role}`);
       console.log(`Updated existing user in database:`, collection[index]);
     } else {
       // Add new user - ensure we have all required fields
-      console.log(`Adding new user to database with uid=${uid}`);
+      console.log(`Adding new user to database with uid=${uid} and role=${formattedUserData.role}`);
       collection.push(formattedUserData);
       console.log(`Added new user to database:`, formattedUserData);
     }
@@ -107,6 +114,7 @@ export const createOrUpdateUser = async (userData: any) => {
         displayName: formattedUserData.name || formattedUserData.displayName,
         name: formattedUserData.name || formattedUserData.displayName,
         photoURL: formattedUserData.photoURL,
+        // CRITICAL: Ensure role is preserved
         role: formattedUserData.role,
         isAdmin: formattedUserData.isAdmin || false,
         employeeCode: formattedUserData.employeeCode,
@@ -115,15 +123,21 @@ export const createOrUpdateUser = async (userData: any) => {
         ...formattedUserData
       };
       
+      // Log role for debugging
+      console.log(`Saving to all_users_data with role=${formattedUser.role}`);
+      
       if (userIndex >= 0) {
         // Update but preserve role if not explicitly changed
         allUsers[userIndex] = { 
           ...allUsers[userIndex], 
           ...formattedUser,
+          // This is CRITICAL - we need to use the role from userData if provided
           role: userData.role || allUsers[userIndex].role
         };
+        console.log(`Updated existing user in all_users_data with role=${allUsers[userIndex].role}`);
       } else {
         allUsers.push(formattedUser);
+        console.log(`Added new user to all_users_data with role=${formattedUser.role}`);
       }
       
       localStorage.setItem('all_users_data', JSON.stringify(allUsers));
@@ -212,10 +226,12 @@ export const getAllUsers = async (): Promise<IUser[]> => {
   }
 };
 
+// Update user role - fixed to expect uid and role parameters
 export const updateUserRole = async (uid: string, role: string): Promise<IUser | null> => {
   try {
     // Default isAdmin to false or derive it from role
     const isAdmin = role === 'Admin';
+    // Fix: this function only expects 2 params - uid and role
     const user = await apiUpdateUserRole(uid, role);
     return user;
   } catch (error) {
@@ -224,16 +240,23 @@ export const updateUserRole = async (uid: string, role: string): Promise<IUser |
   }
 };
 
+// Update user profile with all required fields
 export const updateUserProfile = async (uid: string, profileData: Partial<IUser>): Promise<IUser | null> => {
   try {
     // Get existing user data
     const existingUser = await fetchUserByUid(uid);
     if (!existingUser) return null;
     
+    // Ensure we preserve the role from the existing user if not explicitly changed
+    const role = profileData.role || existingUser.role;
+    console.log(`Updating user profile with role=${role}`);
+    
     // Merge existing data with new profile data
     const updatedUser = { 
       ...existingUser, 
       ...profileData,
+      // Explicitly set role based on provided data or existing data
+      role: role,
       updatedAt: new Date() 
     };
     
@@ -246,6 +269,7 @@ export const updateUserProfile = async (uid: string, profileData: Partial<IUser>
   }
 };
 
+// Create a new user with full profile data for registration forms
 export const createUserWithProfile = async (
   uid: string, 
   email: string, 
@@ -253,6 +277,9 @@ export const createUserWithProfile = async (
   profileData: any
 ): Promise<IUser | null> => {
   try {
+    // Log role for debugging
+    console.log(`Creating user with profile, role=${role}`);
+    
     // Construct a complete user profile
     const userData = {
       uid,

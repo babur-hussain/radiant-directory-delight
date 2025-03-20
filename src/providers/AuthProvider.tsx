@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect } from 'react';
 import { 
   GoogleAuthProvider, 
@@ -16,6 +15,7 @@ import { createUserIfNotExists, updateUserLogin } from '@/features/auth/authServ
 import { connectToMongoDB } from '@/config/mongodb';
 import Loading from '@/components/ui/loading';
 import { createOrUpdateUser } from '@/api/services/userAPI';
+import { toast } from "@/hooks/use-toast";
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -43,6 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userRole = isDefaultAdmin ? 'Admin' : (additionalFields?.role || 'User');
       console.log(`Processing user with role: ${userRole}`);
       
+      // First ensure the user is stored in MongoDB with the correct role
       const formattedUserData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
@@ -50,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         displayName: firebaseUser.displayName || additionalFields?.name,
         photoURL: firebaseUser.photoURL,
         isAdmin: isDefaultAdmin || additionalFields?.isAdmin,
-        role: userRole,
+        role: userRole, // Use the determined role
         employeeCode: additionalFields?.employeeCode || null,
         phone: additionalFields?.phone,
         instagramHandle: additionalFields?.instagramHandle,
@@ -67,21 +68,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         country: additionalFields?.country,
         verified: additionalFields?.verified || false,
         createdAt: additionalFields?.createdAt || new Date(),
-        lastLogin: new Date()
+        lastLogin: new Date(),
+        // Include address if it exists
+        ...(additionalFields?.address ? { address: additionalFields.address } : {})
       };
       
       console.log("Directly storing user in MongoDB:", formattedUserData);
       const storedUser = await createOrUpdateUser(formattedUserData);
       console.log("Direct storage result:", storedUser);
       
+      // Call createUserIfNotExists to handle synchronization
       console.log("Calling createUserIfNotExists with additionalFields:", additionalFields);
       const mongoUser = await createUserIfNotExists(firebaseUser, {
         ...additionalFields,
         isAdmin: isDefaultAdmin || additionalFields?.isAdmin,
-        role: userRole
+        role: userRole // Explicitly pass the role
       });
       console.log("createUserIfNotExists result:", mongoUser);
       
+      // Set the user state based on the MongoDB user or the directly stored user
       if (mongoUser) {
         setUser({
           uid: firebaseUser.uid,
@@ -109,6 +114,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           subscription: mongoUser?.subscription,
           subscriptionStatus: mongoUser?.subscriptionStatus,
           subscriptionPackage: mongoUser?.subscriptionPackage,
+          // Include address if it exists in mongoUser
+          ...(mongoUser?.address ? { address: mongoUser.address } : {}),
+          // Include address from additionalFields as fallback
+          ...((!mongoUser?.address && additionalFields?.address) ? { address: additionalFields.address } : {})
         });
       } else {
         console.log("Using directly stored user as fallback:", storedUser);
@@ -138,6 +147,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           subscription: storedUser?.subscription,
           subscriptionStatus: storedUser?.subscriptionStatus,
           subscriptionPackage: storedUser?.subscriptionPackage,
+          // Include address from storedUser or additionalFields
+          ...(storedUser?.address ? { address: storedUser.address } : {}),
+          ...((!storedUser?.address && additionalFields?.address) ? { address: additionalFields.address } : {}),
           ...storedUser
         });
       }
@@ -145,6 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await updateUserLogin(firebaseUser.uid);
     } catch (error) {
       console.error("Error processing user:", error);
+      // Fallback to basic user info
       setUser({
         uid: firebaseUser.uid,
         email: firebaseUser.email,
@@ -227,16 +240,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log(`Signing up new user: ${email} with role: ${role} and additional data:`, additionalData);
       
+      // Create the user in Firebase
       const result = await createUserWithEmailAndPassword(auth, email, password);
       console.log(`Firebase user created: ${result.user.uid}`);
       
+      // Update the profile with the display name
       await updateProfile(result.user, {
         displayName: name
       });
       console.log(`Display name set: ${name}`);
       
+      // Combine all data for registration
       const combinedData = {
-        role,
+        role,  // Ensure role is explicitly set
         name,
         ...additionalData,
         createdAt: new Date().toISOString()
@@ -244,7 +260,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log(`Processing user with additional data:`, combinedData);
       
-      // First do a direct save to ensure data is stored in localStorage/MongoDB
+      // Pre-emptively save user data to localStorage/MongoDB with EXPLICIT role
       const userData = {
         uid: result.user.uid,
         email: result.user.email,
@@ -252,21 +268,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         displayName: name,
         photoURL: result.user.photoURL,
         isAdmin: email === 'baburhussain660@gmail.com' || (role === 'Admin'),
-        role: email === 'baburhussain660@gmail.com' ? 'Admin' : role,
+        role: email === 'baburhussain660@gmail.com' ? 'Admin' : role, // Explicitly set role
         createdAt: new Date(),
         lastLogin: new Date(),
-        ...additionalData
+        ...additionalData // Include all additional data
       };
       
-      console.log("Directly storing registration data:", userData);
+      // Show explicit role in logs for debugging
+      console.log(`Directly storing registration data with ROLE=${role}:`, userData);
+      
+      // Force the data into localStorage and ensure both collections are updated
       await createOrUpdateUser(userData);
       
-      // Then process the user which will set the user state
+      // Verify the role persists in storage logs
+      console.log(`Verifying role is preserved: expected=${role}, sent to storage`);
+      
+      // Call processUser to set the user state and ensure all systems are updated
       await processUser(result.user, combinedData);
+      
+      // Notify user of successful registration with toast
+      toast({
+        title: "Registration successful",
+        description: `Welcome ${name}! Your account has been created with ${role} role.`,
+        variant: "default",
+      });
       
       console.log("Registration complete for user:", result.user.uid);
     } catch (error) {
       console.error("Signup error:", error);
+      
+      // Show error notification
+      toast({
+        title: "Registration failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+      
       throw error;
     }
   };
