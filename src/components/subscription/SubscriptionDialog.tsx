@@ -45,9 +45,11 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
         paymentId: response.razorpay_payment_id,
         orderId: response.razorpay_order_id,
         paymentType: selectedPackage.paymentType || 'recurring',
-        subscriptionId: response.razorpay_subscription_id,
+        subscriptionId: response.razorpay_subscription_id || response.subscriptionId, 
         recurringAmount: selectedPackage.price,
-        billingCycle: selectedPackage.billingCycle
+        billingCycle: selectedPackage.billingCycle,
+        // Ensure all necessary fields are passed
+        packageId: selectedPackage.id
       };
       
       // Record the subscription in the database
