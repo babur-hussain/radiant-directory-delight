@@ -6,9 +6,9 @@
 import { mongoose } from './index';
 
 let isConnected = false;
-const DB_NAME = 'growbharatdb';
+const DB_NAME = 'test'; // Changed to match the desired collection name
 let connectionAttempts = 0;
-const MAX_RETRY_ATTEMPTS = 3;
+const MAX_RETRY_ATTEMPTS = 5; // Increased retry attempts
 
 /**
  * Connect to MongoDB database directly through API
@@ -29,12 +29,14 @@ export const connectToMongoDB = async () => {
   try {
     console.log('=> Connecting to MongoDB via API...');
     
-    // Connect directly to MongoDB through API
-    const uri = process.env.MONGODB_URI || 'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+    // Connect directly to MongoDB through API with the correct collection name
+    const uri = process.env.MONGODB_URI || 'mongodb+srv://growbharatvyapaar:bharat123@cluster0.08wsm.mongodb.net/test?retryWrites=true&w=majority&appName=Cluster0';
     
-    // Use the mongoose connect method with modern options
+    // Use the mongoose connect method with modern options and longer timeout
     await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 5000 // 5 seconds timeout for connection
+      serverSelectionTimeoutMS: 10000, // 10 seconds timeout for connection
+      connectTimeoutMS: 15000,         // 15 seconds for initial connection
+      socketTimeoutMS: 30000           // 30 seconds for socket operations
     });
     
     isConnected = true;

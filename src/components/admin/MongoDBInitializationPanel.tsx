@@ -9,6 +9,7 @@ import { diagnoseMongoDbConnection, testConnectionWithRetry } from '@/utils/mong
 import { connectToMongoDB } from '@/config/mongodb';
 import { isServerRunning, API_BASE_URL } from '@/api/core/apiService';
 import { clearUserCache } from '@/api/services/userAPI';
+import { toast } from 'react-toastify';
 
 const MongoDBInitializationPanel: React.FC = () => {
   const [status, setStatus] = useState<'idle' | 'processing' | 'completed' | 'error'>('idle');
@@ -25,16 +26,13 @@ const MongoDBInitializationPanel: React.FC = () => {
   const [attemptingLocalServer, setAttemptingLocalServer] = useState(false);
 
   useEffect(() => {
-    // Check server status on component mount
     checkServerStatus();
-    // Check connection status on component mount
     checkConnectionStatus();
   }, []);
 
   const checkServerStatus = async () => {
     setAttemptingLocalServer(true);
     try {
-      // Try to connect to the server
       const available = await isServerRunning();
       setServerAvailable(available);
     } catch (error) {
@@ -67,6 +65,23 @@ const MongoDBInitializationPanel: React.FC = () => {
       await checkServerStatus();
       const diagnostics = await diagnoseMongoDbConnection();
       setDiagnosticResults(diagnostics);
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/test-collection`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        const collectionData = await response.json();
+        console.log('Test collection data:', collectionData);
+        setDiagnosticResults(prev => ({
+          ...prev,
+          collectionTest: collectionData
+        }));
+      } catch (collErr) {
+        console.error('Collection test failed:', collErr);
+      }
     } catch (error) {
       console.error('Error running MongoDB diagnostics:', error);
       setResults(prev => ({
@@ -89,7 +104,6 @@ const MongoDBInitializationPanel: React.FC = () => {
     });
 
     try {
-      // Check if server is available
       setCurrentTask('Checking server availability...');
       const isAvailable = await isServerRunning();
       setServerAvailable(isAvailable);
@@ -98,7 +112,6 @@ const MongoDBInitializationPanel: React.FC = () => {
         throw new Error('MongoDB server is not available. Please check server status or use local data.');
       }
       
-      // First establish connection with retries
       setProgress(10);
       setCurrentTask('Establishing MongoDB connection');
       
@@ -113,10 +126,9 @@ const MongoDBInitializationPanel: React.FC = () => {
         mongoConnected: true
       }));
       
-      // Initialize MongoDB collections
       setCurrentTask('Setting up MongoDB collections');
       const setupResult = await setupMongoDB((progressValue, message) => {
-        setProgress(30 + (progressValue * 0.7)); // Scale to remaining 70%
+        setProgress(30 + (progressValue * 0.7));
         setCurrentTask(message);
       });
       
@@ -129,10 +141,8 @@ const MongoDBInitializationPanel: React.FC = () => {
         collectionsSetup: setupResult.collections
       }));
       
-      // Clear user cache to ensure fresh data
       clearUserCache();
       
-      // Complete
       setProgress(100);
       setStatus('completed');
       setCurrentTask('MongoDB setup complete');
@@ -143,6 +153,44 @@ const MongoDBInitializationPanel: React.FC = () => {
         ...prev,
         errors: [...prev.errors, error instanceof Error ? error.message : 'Unknown error occurred']
       }));
+    }
+  };
+
+  const handleDirectUserPost = async () => {
+    try {
+      const testUser = {
+        uid: `test-${Date.now()}`,
+        name: 'Test User',
+        email: `test-${Date.now()}@example.com`,
+        role: 'User',
+        isAdmin: false,
+        createdAt: new Date(),
+        lastLogin: new Date()
+      };
+      
+      const response = await fetch(`${API_BASE_URL}/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(testUser)
+      });
+      
+      const result = await response.json();
+      toast({
+        title: response.ok ? 'Test Successful' : 'Test Failed',
+        description: response.ok 
+          ? `User created with ID: ${result.uid}` 
+          : `Failed to create user: ${result.message || 'Unknown error'}`,
+        variant: response.ok ? 'default' : 'destructive'
+      });
+    } catch (error) {
+      console.error('Error posting test user:', error);
+      toast({
+        title: 'Test Failed',
+        description: `Error: ${error.message}`,
+        variant: 'destructive'
+      });
     }
   };
 
@@ -219,7 +267,7 @@ const MongoDBInitializationPanel: React.FC = () => {
           </Alert>
         )}
         
-        <div className="flex justify-end mb-2">
+        <div className="flex justify-between mb-2">
           <Button
             variant="outline"
             size="sm"
@@ -229,6 +277,16 @@ const MongoDBInitializationPanel: React.FC = () => {
           >
             <Activity className={`h-4 w-4 ${isDiagnosing ? 'animate-pulse' : ''}`} />
             {isDiagnosing ? 'Running...' : 'Diagnose Connection'}
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDirectUserPost}
+            className="flex items-center gap-2"
+          >
+            <Server className="h-4 w-4" />
+            Test User Creation
           </Button>
         </div>
         
@@ -334,4 +392,3 @@ const MongoDBInitializationPanel: React.FC = () => {
 };
 
 export default MongoDBInitializationPanel;
-

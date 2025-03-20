@@ -1,7 +1,7 @@
 
 import { fetchUserByUid as apiFetchUserByUid } from '@/api';
 import { IUser } from '@/models/User';
-import { getUserFromLocalStorage, storeUserLocally } from '@/api/core/apiService';
+import { getUserFromLocalStorage, storeUserLocally, postToMongoDB } from '@/api/core/apiService';
 
 /**
  * Fetches user by UID from MongoDB with local fallback
@@ -44,6 +44,7 @@ export const fetchUserByUid = async (uid: string): Promise<IUser | null> => {
 
 /**
  * Updates a user's data in both API and local storage
+ * Plus tries a direct MongoDB insert as backup
  */
 export const updateUserData = async (userData: Partial<IUser> & { uid: string }): Promise<IUser | null> => {
   try {
@@ -72,11 +73,39 @@ export const updateUserData = async (userData: Partial<IUser> & { uid: string })
           if (response.ok) {
             console.log(`User ${userData.uid} updated successfully in MongoDB`);
           } else {
-            console.warn(`Failed to update user ${userData.uid} in MongoDB, but local data updated`);
+            console.warn(`Failed to update user ${userData.uid} in MongoDB, trying direct insert...`);
+            
+            // Try direct insert as a backup
+            postToMongoDB('/direct-insert', {
+              collection: 'user',
+              document: {
+                ...updatedUser,
+                _id: userData.uid // Use uid as MongoDB _id
+              }
+            }).then(result => {
+              if (result && result.success) {
+                console.log(`User ${userData.uid} inserted directly into MongoDB`);
+              } else {
+                console.warn(`Failed to directly insert user ${userData.uid}`);
+              }
+            });
           }
         })
         .catch(error => {
           console.error(`API error updating user ${userData.uid}:`, error);
+          
+          // Try direct insert as a backup
+          postToMongoDB('/direct-insert', {
+            collection: 'user',
+            document: {
+              ...updatedUser,
+              _id: userData.uid // Use uid as MongoDB _id
+            }
+          }).then(result => {
+            if (result && result.success) {
+              console.log(`User ${userData.uid} inserted directly into MongoDB after API error`);
+            }
+          });
         });
       
       return updatedUser;
@@ -86,5 +115,23 @@ export const updateUserData = async (userData: Partial<IUser> & { uid: string })
   } catch (error) {
     console.error(`Error updating user data for ${userData.uid}:`, error);
     return null;
+  }
+};
+
+// Helper function to directly insert a user into MongoDB
+export const directInsertUser = async (userData: IUser): Promise<boolean> => {
+  try {
+    const result = await postToMongoDB('/direct-insert', {
+      collection: 'user',
+      document: {
+        ...userData,
+        _id: userData.uid // Use uid as MongoDB _id
+      }
+    });
+    
+    return result && result.success;
+  } catch (error) {
+    console.error('Direct user insert failed:', error);
+    return false;
   }
 };

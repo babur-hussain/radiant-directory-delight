@@ -108,4 +108,5 @@ UserSchema.virtual('id').get(function() {
   return this.uid;
 });
 
-export const User = mongoose.model('User', UserSchema);
+// Specify collection name explicitly to ensure it goes to test.user
+export const User = mongoose.model('User', UserSchema, 'user');

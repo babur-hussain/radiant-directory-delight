@@ -2,13 +2,13 @@ import axios from 'axios';
 import { toast } from '@/hooks/use-toast';
 import { getLocalFallbackPackages } from '@/lib/mongodb/serverUtils';
 
-// API base URL - use production URL directly
+// API base URL - use direct MongoDB connection
 export const API_BASE_URL = 'https://gbv-backend.onrender.com/api';
 
-// Create axios instance with production configuration
+// Create axios instance with improved timeout settings
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 8000, // 8 second timeout for regular API calls
+  timeout: 12000, // Increased to 12 seconds timeout for API calls
   headers: {
     'Content-Type': 'application/json',
     'X-Environment': 'production' // Add production marker
@@ -67,15 +67,34 @@ api.interceptors.response.use(
 export const isServerRunning = async () => {
   try {
     console.log(`Checking if production server is running at ${API_BASE_URL}`);
-    // Use a separate axios instance with a much shorter timeout
+    // Use a separate axios instance with a shorter timeout
     const response = await axios.get(`${API_BASE_URL}/test-connection`, {
-      timeout: 5000 // 5 seconds timeout for connectivity check
+      timeout: 8000 // 8 seconds timeout for connectivity check
     });
     console.log('Production server is available:', response.data);
     return true;
   } catch (error) {
     console.error('Production server is not available:', error.message);
     return false;
+  }
+};
+
+// Helper function to directly post data to MongoDB using server.js endpoints
+export const postToMongoDB = async (endpoint, data) => {
+  try {
+    console.log(`Posting data directly to MongoDB endpoint: ${endpoint}`);
+    const response = await axios.post(`${API_BASE_URL}${endpoint}`, data, {
+      timeout: 10000, // 10 seconds timeout
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Direct-MongoDB': 'true'
+      }
+    });
+    console.log('MongoDB direct post successful:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error posting directly to MongoDB:', error.message);
+    return null;
   }
 };
 

@@ -7,6 +7,7 @@ import Subscription from './models/Subscription.js';
 import SubscriptionPackage from './models/SubscriptionPackage.js';
 import SubscriptionSettings from './models/SubscriptionSettings.js';
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -27,6 +28,78 @@ connectToMongoDB()
   .catch(err => {
     console.error('❌ MongoDB connection error:', err);
   });
+
+// Test connection with collection info
+app.get('/api/test-connection', async (req, res) => {
+  try {
+    const connected = await connectToMongoDB();
+    
+    // Additional collection test
+    let collectionInfo = {};
+    if (connected) {
+      try {
+        const db = mongoose.connection.db;
+        const collections = await db.listCollections().toArray();
+        collectionInfo = {
+          databaseName: mongoose.connection.name,
+          collections: collections.map(c => c.name)
+        };
+      } catch (collErr) {
+        console.error('Error fetching collections:', collErr);
+      }
+    }
+    
+    res.status(200).json({ 
+      success: connected,
+      message: connected ? 'Connected to MongoDB' : 'Failed to connect to MongoDB',
+      connectionInfo: {
+        host: mongoose.connection.host,
+        database: mongoose.connection.name,
+        readyState: mongoose.connection.readyState
+      },
+      ...collectionInfo
+    });
+  } catch (error) {
+    console.error('Error testing MongoDB connection:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+// Add explicit test for the user collection
+app.get('/api/test-collection', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectToMongoDB();
+    }
+    
+    const db = mongoose.connection.db;
+    const collections = await db.listCollections().toArray();
+    const hasUserCollection = collections.some(c => c.name === 'user');
+    
+    // Try to count documents in the user collection
+    let userCount = 0;
+    if (hasUserCollection) {
+      userCount = await db.collection('user').countDocuments();
+    }
+    
+    res.status(200).json({
+      success: true,
+      database: mongoose.connection.name,
+      userCollectionExists: hasUserCollection,
+      userDocumentCount: userCount,
+      allCollections: collections.map(c => c.name)
+    });
+  } catch (error) {
+    console.error('Error testing collection access:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 // --- User APIs ---
 // Get user by UID
@@ -452,23 +525,6 @@ app.post('/api/initialize-mongodb', async (req, res) => {
   }
 });
 
-// Test connection endpoint
-app.get('/api/test-connection', async (req, res) => {
-  try {
-    const connected = await connectToMongoDB();
-    res.status(200).json({ 
-      success: connected,
-      message: connected ? 'Connected to MongoDB' : 'Failed to connect to MongoDB'
-    });
-  } catch (error) {
-    console.error('Error testing MongoDB connection:', error);
-    res.status(500).json({ 
-      success: false,
-      error: error.message 
-    });
-  }
-});
-
 // CSV upload endpoint
 app.post('/api/upload-csv', async (req, res) => {
   try {
@@ -522,6 +578,39 @@ app.post('/api/upload-csv', async (req, res) => {
     res.status(500).json({
       success: false,
       message: `Error processing CSV: ${error.message}`
+    });
+  }
+});
+
+// Direct MongoDB test insert API
+app.post('/api/direct-insert', async (req, res) => {
+  try {
+    const { collection, document } = req.body;
+    
+    if (!collection || !document) {
+      return res.status(400).json({
+        success: false,
+        message: 'Collection name and document are required'
+      });
+    }
+    
+    if (mongoose.connection.readyState !== 1) {
+      await connectToMongoDB();
+    }
+    
+    const result = await mongoose.connection.db.collection(collection).insertOne(document);
+    
+    res.status(200).json({
+      success: true,
+      message: `Document inserted into ${collection}`,
+      insertedId: result.insertedId,
+      document
+    });
+  } catch (error) {
+    console.error('Error with direct insert:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });
