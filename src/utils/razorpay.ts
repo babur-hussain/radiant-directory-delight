@@ -146,13 +146,14 @@ export const isRazorpayAvailable = (): boolean => {
 
 /**
  * Generate a Razorpay compatible order ID
- * Using a very simple format that Razorpay accepts
+ * IMPORTANT: Razorpay requires a specific format for order_id
  */
 export const generateOrderId = (): string => {
-  // Simpler order ID format that works with Razorpay
-  const timestamp = Date.now();
-  const randomNum = Math.floor(Math.random() * 10000);
-  return `order${timestamp}${randomNum}`;
+  // Correct format for Razorpay order_id
+  // It must start with "order_" followed by alphanumeric characters
+  const timestamp = Date.now().toString();
+  const randomChars = Math.random().toString(36).substring(2, 8);
+  return `order_${timestamp}${randomChars}`;
 };
 
 /**
@@ -177,24 +178,31 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
     throw new Error("Razorpay is not available. Please refresh the page.");
   }
   
-  // Ensure options are properly formatted
-  const formattedOptions = {
-    ...options,
-    // Ensure key is set
-    key: options.key || RAZORPAY_KEY_ID,
-    // Convert notes to strings if needed
-    notes: Object.entries(options.notes || {}).reduce((acc, [key, value]) => {
+  // Ensure all numeric values in notes are converted to strings
+  const notesWithStringValues = options.notes ? 
+    Object.entries(options.notes).reduce((acc, [key, value]) => {
       acc[key] = String(value);
       return acc;
-    }, {} as Record<string, string>)
+    }, {} as Record<string, string>) : 
+    {};
+  
+  // Format options correctly
+  const formattedOptions = {
+    ...options,
+    key: options.key || RAZORPAY_KEY_ID,
+    notes: notesWithStringValues
   };
   
   console.log("Creating Razorpay checkout with options:", formattedOptions);
   
-  // Create Razorpay instance
-  const razorpay = new window.Razorpay(formattedOptions);
-  
-  return razorpay;
+  try {
+    // Create Razorpay instance
+    const razorpay = new window.Razorpay(formattedOptions);
+    return razorpay;
+  } catch (error) {
+    console.error("Error creating Razorpay instance:", error);
+    throw new Error("Failed to initialize payment gateway. Please try again.");
+  }
 };
 
 /**

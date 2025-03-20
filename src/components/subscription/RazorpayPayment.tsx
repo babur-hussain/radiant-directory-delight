@@ -59,23 +59,30 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     setIsProcessing(true);
     setError(null);
     
-    initiatePayment({
-      selectedPackage,
-      onSuccess: (response) => {
-        console.log("Payment success in RazorpayPayment:", response);
-        onSuccess(response);
-        setIsProcessing(false);
-      },
-      onFailure: (error) => {
-        console.log("Payment failure in RazorpayPayment:", error);
-        setError(error.message || "Payment could not be completed. Please try again.");
-        onFailure(error);
-        setIsProcessing(false);
-        
-        // Increment retry count to track failed attempts
-        setRetryCount(prevCount => prevCount + 1);
-      }
-    });
+    try {
+      initiatePayment({
+        selectedPackage,
+        onSuccess: (response) => {
+          console.log("Payment success in RazorpayPayment:", response);
+          onSuccess(response);
+          setIsProcessing(false);
+        },
+        onFailure: (error) => {
+          console.log("Payment failure in RazorpayPayment:", error);
+          setError(error.message || "Payment could not be completed. Please try again.");
+          onFailure(error);
+          setIsProcessing(false);
+          
+          // Increment retry count to track failed attempts
+          setRetryCount(prevCount => prevCount + 1);
+        }
+      });
+    } catch (error) {
+      console.error("Error initiating payment:", error);
+      setError("Could not start payment process. Please try again.");
+      setIsProcessing(false);
+      onFailure(error);
+    }
   };
   
   const handleRetry = () => {
