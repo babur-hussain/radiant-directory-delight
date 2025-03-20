@@ -114,14 +114,13 @@ export const useRazorpayPayment = () => {
       
       console.log(`Setting up payment for ${selectedPackage.title} with amount ${paymentAmount} (${amountInPaise} paise)`);
       
-      // Enhanced Razorpay configuration with simplified and effective options
+      // Simplified Razorpay options for live mode
       const options = {
         key: RAZORPAY_KEY_ID,
         amount: amountInPaise,
         currency: 'INR',
         name: 'Grow Bharat Vyapaar',
         description: `Payment for ${selectedPackage.title}`,
-        image: 'https://growbharatvyapaar.com/logo.png', // Optional: Add your logo URL
         order_id: orderId,
         prefill: {
           name: user?.displayName || user?.name || 'Customer',
@@ -151,28 +150,12 @@ export const useRazorpayPayment = () => {
           
           setIsLoading(false);
           onSuccess(response);
-        },
-        modal: {
-          ondismiss: function() {
-            console.log('Payment modal dismissed');
-            setIsLoading(false);
-            
-            toast({
-              title: "Payment Cancelled",
-              description: "You've cancelled the payment process.",
-              variant: "default"
-            });
-            
-            onFailure({ message: "Payment cancelled by user" });
-          },
-          escape: true,
-          confirm_close: true
         }
       };
       
       console.log("Opening Razorpay with options:", options);
       
-      // Create a new Razorpay instance with the much simpler approach
+      // Create a new Razorpay instance with simplified options
       const razorpay = new window.Razorpay(options);
       
       // Handle payment failures
