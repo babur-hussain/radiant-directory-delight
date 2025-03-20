@@ -1,5 +1,5 @@
 
-import mongoose from 'mongoose';
+import * as mongooseModule from 'mongoose';
 
 const MOCK_DB_NAME = 'growbharatdb';
 let mockConnection = false;
@@ -27,9 +27,10 @@ const mongooseMock = {
           lean: function() {
             // Return self for chaining
             return this;
-          }
+          },
+          // Add any other methods needed for chaining
         };
-        return Promise.resolve(queryResult);
+        return queryResult;
       },
       findOne: (query = {}) => Promise.resolve(null),
       findOneAndUpdate: (query: any, update: any, options: any = {}) => {
@@ -83,7 +84,8 @@ const mongooseMock = {
 const isProduction = false; // Always use mock for now
 export { isProduction };
 
-export const mongoose = isProduction ? mongoose : mongooseMock;
+// Export the mongoose instance (real or mock)
+export const mongoose = isProduction ? mongooseModule : mongooseMock;
 
 let isConnected = false;
 
