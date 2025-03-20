@@ -145,13 +145,12 @@ export const isRazorpayAvailable = (): boolean => {
 };
 
 /**
- * Generate a simple order ID that's Razorpay compatible
- * Razorpay requires order IDs to be alphanumeric only
+ * Generate a Razorpay compatible order ID
+ * Format: order_[timestamp][random]
  */
 export const generateOrderId = (): string => {
-  // Create a timestamp-based ID with only alphanumeric characters
   const timestamp = Date.now().toString();
-  const randomPart = Math.random().toString(36).substring(2, 8);
+  const randomPart = Math.random().toString(36).substring(2, 7);
   return `order_${timestamp}${randomPart}`;
 };
 
@@ -177,8 +176,20 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
     throw new Error("Razorpay is not available. Please refresh the page.");
   }
   
+  // Ensure options are properly formatted
+  const formattedOptions = {
+    ...options,
+    // Ensure key is set
+    key: options.key || RAZORPAY_KEY_ID,
+    // Convert notes to strings if needed
+    notes: Object.entries(options.notes || {}).reduce((acc, [key, value]) => {
+      acc[key] = String(value);
+      return acc;
+    }, {} as Record<string, string>)
+  };
+  
   // Create Razorpay instance
-  const razorpay = new window.Razorpay(options);
+  const razorpay = new window.Razorpay(formattedOptions);
   
   return razorpay;
 };

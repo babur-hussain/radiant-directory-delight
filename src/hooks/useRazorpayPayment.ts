@@ -19,14 +19,6 @@ interface PaymentOptions {
   onFailure: (error: any) => void;
 }
 
-// Define payment notes type for type safety
-interface PaymentNotes {
-  packageId: string;
-  packageType: string;
-  packageName: string;
-  [key: string]: string;
-}
-
 export const useRazorpayPayment = () => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -99,8 +91,8 @@ export const useRazorpayPayment = () => {
       
       console.log(`Setting up payment for ${selectedPackage.title} with amount ${initialAmount} (${amountInPaise} paise)`);
       
-      // Create notes object with subscription details - only use strings
-      const notes: PaymentNotes = {
+      // Create notes object with subscription details
+      const notes: Record<string, string> = {
         packageId: selectedPackage.id,
         packageType: isOneTimePackage ? "one-time" : "recurring",
         packageName: selectedPackage.title
@@ -113,14 +105,12 @@ export const useRazorpayPayment = () => {
           nextBillingDate.setMonth(nextBillingDate.getMonth() + (selectedPackage.advancePaymentMonths || 0));
         }
         
-        Object.assign(notes, {
-          billingCycle: selectedPackage.billingCycle || "monthly",
-          setupFee: String(selectedPackage.setupFee || 0),
-          recurringAmount: String(selectedPackage.price || 0),
-          advanceMonths: String(selectedPackage.advancePaymentMonths || 0),
-          nextBillingDate: nextBillingDate.toISOString(),
-          isRecurring: "true"
-        });
+        notes.billingCycle = selectedPackage.billingCycle || "monthly";
+        notes.setupFee = String(selectedPackage.setupFee || 0);
+        notes.recurringAmount = String(selectedPackage.price || 0);
+        notes.advanceMonths = String(selectedPackage.advancePaymentMonths || 0);
+        notes.nextBillingDate = nextBillingDate.toISOString();
+        notes.isRecurring = "true";
       }
       
       // Configure Razorpay options
