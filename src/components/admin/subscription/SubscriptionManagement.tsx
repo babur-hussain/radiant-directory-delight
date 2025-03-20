@@ -9,6 +9,7 @@ import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import SubscriptionPermissionError from './SubscriptionPermissionError';
 import SubscriptionLoader from './SubscriptionLoader';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
+import { useToast } from '@/hooks/use-toast';
 
 export interface SubscriptionPackageManagementProps {
   onPermissionError: (error: any) => void;
@@ -25,7 +26,8 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
 }) => {
   const [activeTab, setActiveTab] = useState<string>('business');
   const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
-  const [forceRefresh, setForceRefresh] = useState<number>(0); // Add a counter to force refresh
+  const [forceRefresh, setForceRefresh] = useState<number>(0);
+  const { toast } = useToast();
   
   const {
     packages,
@@ -38,14 +40,11 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
     removePackage
   } = useSubscriptionPackages({});
 
-  // Safety check to ensure packages is always an array
   const safePackages = Array.isArray(packages) ? packages : [];
   
-  // Safely filter packages and handle null values
   const businessPackages = safePackages.filter(pkg => pkg && pkg.type === 'Business');
   const influencerPackages = safePackages.filter(pkg => pkg && pkg.type === 'Influencer');
 
-  // Refresh packages when tab changes or force refresh is triggered
   useEffect(() => {
     console.log("Fetching packages due to tab change or force refresh");
     fetchPackages();
@@ -59,7 +58,6 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
         throw new Error("Package data is required");
       }
       
-      // Ensure package type is set based on active tab if not provided
       if (!packageData.type) {
         packageData.type = activeTab === 'business' ? 'Business' : 'Influencer';
       }
@@ -67,7 +65,6 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
       await addOrUpdatePackage(packageData);
       setSelectedPackage(null);
       
-      // Force refresh packages after save
       console.log("Package saved, triggering refresh");
       setForceRefresh(prevCount => prevCount + 1);
       
@@ -90,7 +87,6 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
     try {
       await removePackage(packageId);
       
-      // Force refresh packages after delete
       console.log("Package deleted, triggering refresh");
       setForceRefresh(prevCount => prevCount + 1);
       
@@ -146,7 +142,6 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
 
   const effectiveConnectionStatus = connectionStatus || hookConnectionStatus || 'connected';
 
-  // Log current state for debugging
   useEffect(() => {
     console.log('SubscriptionManagement state:', {
       isLoading,
