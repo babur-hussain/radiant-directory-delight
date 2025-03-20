@@ -1,10 +1,9 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { 
   loadRazorpayScript, 
   isRazorpayAvailable, 
-  RAZORPAY_KEY_ID,
+  getRazorpayKey,
   generateOrderId, 
   generateReceiptId,
   convertToPaise,
@@ -86,8 +85,9 @@ export const useRazorpayPayment = () => {
         initialAmount = 1; // Minimum 1 rupee
       }
       
-      // Generate an order ID for this transaction using the correct format
+      // Generate a unique ID for this order
       const orderId = generateOrderId();
+      console.log("Generated order ID:", orderId);
       
       // Generate a receipt ID
       const receiptId = generateReceiptId();
@@ -97,48 +97,20 @@ export const useRazorpayPayment = () => {
       
       console.log(`Setting up payment for ${selectedPackage.title} with amount ${initialAmount} (${amountInPaise} paise)`);
       
-      // Create notes object with subscription details
+      // Create notes object with simple payment details (avoid complex nested objects)
       const notes: Record<string, any> = {
         packageId: selectedPackage.id,
-        packageType: isOneTimePackage ? "one-time" : "recurring",
         packageName: selectedPackage.title,
+        amount: initialAmount.toString(),
         receiptId: receiptId
       };
-      
-      // Add subscription-specific details for recurring packages
-      if (!isOneTimePackage) {
-        const nextBillingDate = new Date();
-        if (selectedPackage.advancePaymentMonths) {
-          nextBillingDate.setMonth(nextBillingDate.getMonth() + (selectedPackage.advancePaymentMonths || 0));
-        }
-        
-        notes.billingCycle = selectedPackage.billingCycle || "monthly";
-        notes.setupFee = selectedPackage.setupFee || 0;
-        notes.recurringAmount = selectedPackage.price || 0;
-        notes.advanceMonths = selectedPackage.advancePaymentMonths || 0;
-        notes.nextBillingDate = nextBillingDate.toISOString();
-        notes.isRecurring = true;
-        notes.autoPayment = true; // Add auto-payment flag for recurring
-      }
       
       // Format notes for Razorpay (ensure all values are strings)
       const formattedNotes = formatNotesForRazorpay(notes);
       
-      // Log options for debugging
-      console.log("Opening Razorpay with options:", {
-        key: RAZORPAY_KEY_ID,
-        amount: amountInPaise,
-        packageId: selectedPackage.id,
-        packageTitle: selectedPackage.title,
-        isOneTime: isOneTimePackage,
-        orderId,
-        receiptId,
-        notes: formattedNotes
-      });
-      
-      // Configure Razorpay options
+      // Configure Razorpay options - keep it minimal for test mode
       const options: RazorpayOptions = {
-        key: RAZORPAY_KEY_ID,
+        key: getRazorpayKey(),
         amount: amountInPaise,
         currency: 'INR',
         name: 'Grow Bharat Vyapaar',
@@ -154,9 +126,31 @@ export const useRazorpayPayment = () => {
         theme: {
           color: '#3399cc'
         },
-        recurring: !isOneTimePackage,
-        remember_customer: !isOneTimePackage,
-        payment_capture: true,
+        // Simplify the handler to avoid any complex data manipulation
+        handler: function(response: RazorpayResponse) {
+          console.log(`Payment successful:`, response);
+          
+          toast({
+            title: "Payment Successful",
+            description: `Your payment for ${selectedPackage.title} was successful.`,
+            variant: "default"
+          });
+          
+          setIsLoading(false);
+          
+          try {
+            onSuccess({
+              ...response,
+              packageId: selectedPackage.id,
+              packageName: selectedPackage.title,
+              amount: initialAmount,
+              paymentType: isOneTimePackage ? "one-time" : "recurring",
+              receiptId
+            });
+          } catch (callbackErr) {
+            console.error("Error in onSuccess callback:", callbackErr);
+          }
+        },
         modal: {
           escape: false,
           backdropclose: false,
@@ -170,47 +164,7 @@ export const useRazorpayPayment = () => {
               console.error("Error in onFailure callback:", callbackErr);
             }
           }
-        },
-        handler: function(response: RazorpayResponse) {
-          // Add package info to response
-          const enrichedResponse = {
-            ...response,
-            packageId: selectedPackage.id,
-            packageName: selectedPackage.title,
-            amount: initialAmount,
-            paymentType: isOneTimePackage ? "one-time" : "recurring",
-            receiptId
-          };
-          
-          // For recurring payments, add subscription details
-          if (!isOneTimePackage) {
-            Object.assign(enrichedResponse, {
-              setupFee: selectedPackage.setupFee || 0,
-              recurringAmount: selectedPackage.price || 0,
-              advanceMonths: selectedPackage.advancePaymentMonths || 0,
-              billingCycle: selectedPackage.billingCycle || 'monthly',
-              nextBillingDate: notes.nextBillingDate,
-              autoPayment: true
-            });
-          }
-          
-          console.log(`Payment successful for ${selectedPackage.title}:`, enrichedResponse);
-          
-          // Show success toast
-          toast({
-            title: isOneTimePackage ? "Payment Successful" : "Subscription Initialized",
-            description: `Your payment for ${selectedPackage.title} was successful.`,
-            variant: "default"
-          });
-          
-          setIsLoading(false);
-          
-          try {
-            onSuccess(enrichedResponse);
-          } catch (callbackErr) {
-            console.error("Error in onSuccess callback:", callbackErr);
-          }
-        },
+        }
       };
 
       try {

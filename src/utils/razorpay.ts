@@ -59,12 +59,7 @@ export interface RazorpayOptions {
     email?: boolean;
     contact?: boolean;
   };
-  // Recurring payment properties
-  recurring?: boolean;
-  subscription_card_change?: boolean;
-  subscription_payment_capture?: boolean;
-  payment_capture?: boolean;
-  auth_type?: string;
+  // Recurring payment properties - only include fields that are expected by Razorpay
   customer_id?: string;
   save?: boolean;
   config?: {
@@ -94,6 +89,17 @@ declare global {
 // Production Razorpay API key
 // This is a public key, safe to be in the codebase
 export const RAZORPAY_KEY_ID = "rzp_live_8PGS0Ug3QeCb2I";
+
+// Test key for development - use this to avoid hitting production during testing
+export const RAZORPAY_TEST_KEY_ID = "rzp_test_1DP5mmOlF5G5ag";
+
+/**
+ * Get the appropriate Razorpay key based on environment
+ */
+export const getRazorpayKey = (): string => {
+  // For now always use the test key to avoid hitting production
+  return RAZORPAY_TEST_KEY_ID;
+};
 
 /**
  * Load the Razorpay script
@@ -180,21 +186,14 @@ export const generateReceiptId = (): string => {
 
 /**
  * Generate a Razorpay compatible order ID - must match exact format
- * Note: In production, order IDs should come from the backend
- * Format: order_<14-character alphanumeric ID>
+ * Using exact format required by Razorpay test mode
  */
 export const generateOrderId = (): string => {
-  // We'll create a 14-character alphanumeric string
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 14; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  
-  // The underscore after "order" is critical - must be exactly as: order_XXXXXXXXXX...
-  const orderId = `order_${result}`;
-  console.log("Generated Razorpay order ID:", orderId);
-  return orderId;
+  // In test mode, Razorpay expects order IDs to begin with "order_"
+  // followed by a random string, we'll use timestamp + random number
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).substring(2, 8);
+  return `order_${timestamp}${random}`;
 };
 
 /**
@@ -235,13 +234,16 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
     throw new Error("Razorpay is not available. Please refresh the page.");
   }
   
+  // Use the environment-specific key
+  const apiKey = getRazorpayKey();
+  
   // Ensure all numeric values in notes are converted to strings
   const notesWithStringValues = formatNotesForRazorpay(options.notes);
   
-  // Format options correctly
+  // Format options correctly - only include fields that Razorpay actually expects
   const formattedOptions = {
     ...options,
-    key: options.key || RAZORPAY_KEY_ID,
+    key: apiKey,
     notes: notesWithStringValues,
     // Ensure amount is a number (not a string)
     amount: typeof options.amount === 'string' ? parseInt(options.amount) : options.amount,
@@ -251,13 +253,9 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
       max_count: 3
     },
     // Add these to help with auto payments for subscriptions
-    remember_customer: options.recurring === true,
-    save: options.recurring === true,
+    remember_customer: true,
+    save: true,
     send_sms_hash: true,
-    readonly: {
-      email: false,
-      contact: false
-    },
     // Add this to prevent backdrop closing issues
     modal: {
       ...options.modal,
@@ -269,7 +267,7 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   console.log("Creating Razorpay checkout with options:", formattedOptions);
   
   try {
-    // Create Razorpay instance
+    // Create Razorpay instance - ensure we're not passing any unexpected parameters
     const razorpay = new window.Razorpay(formattedOptions);
     
     // Add error handler

@@ -23,16 +23,10 @@ export const generateShortId = (): string => {
  * @returns A properly formatted order ID for Razorpay
  */
 export const generateRazorpayOrderId = (): string => {
-  // Create a random 14-character alphanumeric string
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 14; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  
-  // Always starts with "order_" followed by exactly 14 alphanumeric characters
-  // This matches Razorpay's format requirement
-  return `order_${result}`;
+  // For test mode, we need to format this as order_XXX where XXX is random
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).substring(2, 8);
+  return `order_${timestamp}${random}`;
 };
 
 export { nanoid };
