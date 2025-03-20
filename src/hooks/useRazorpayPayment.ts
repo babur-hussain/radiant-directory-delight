@@ -94,12 +94,15 @@ export const useRazorpayPayment = () => {
       
       console.log(`Setting up payment for ${selectedPackage.title} with amount ${totalPaymentAmount} (${amountInPaise} paise)`);
       
-      // Common Razorpay options that will be used for both one-time and recurring
+      // Common Razorpay options for both one-time and recurring payments
       const commonOptions = {
         key: RAZORPAY_KEY_ID,
         name: 'Grow Bharat Vyapaar',
         description: `Payment for ${selectedPackage.title}`,
         image: 'https://example.com/your_logo.png', // Add your logo URL here
+        amount: amountInPaise,
+        currency: 'INR',
+        order_id: orderId,
         prefill: {
           name: user?.fullName || '',
           email: user?.email || '',
@@ -118,162 +121,100 @@ export const useRazorpayPayment = () => {
         }
       };
       
-      if (isOneTimePackage) {
-        // One-time payment using standard Razorpay checkout
-        const options = {
-          ...commonOptions,
-          amount: amountInPaise,
-          currency: 'INR',
-          order_id: orderId,
-          notes: {
+      // Create notes object that will store subscription details for recurring payments
+      const notesObject = isOneTimePackage
+        ? {
             packageId: selectedPackage.id,
             packageType: "one-time"
-          },
-          handler: function(response: any) {
-            // Add payment type to the response
-            response.paymentType = "one-time";
-            response.packageId = selectedPackage.id;
-            response.packageName = selectedPackage.title;
-            response.amount = totalPaymentAmount;
-            
-            console.log("One-time payment successful, Razorpay response:", response);
-            
-            // Show success toast
-            toast({
-              title: "Payment Successful",
-              description: `Your payment for ${selectedPackage.title} was successful.`,
-              variant: "default"
-            });
-            
-            setIsLoading(false);
-            onSuccess(response);
           }
-        };
-        
-        console.log("Opening Razorpay one-time payment with options:", options);
-        
-        // Create a new Razorpay instance with minimal options
-        const razorpay = new window.Razorpay(options);
-        
-        // Handle payment failures
-        razorpay.on('payment.failed', function(response: any) {
-          console.error('Payment failed:', response.error);
+        : {
+            packageId: selectedPackage.id,
+            packageType: "recurring",
+            billingCycle: selectedPackage.billingCycle || "yearly",
+            setupFee: setupFee,
+            recurringAmount: recurringAmount,
+            advanceMonths: advanceMonths,
+            subscriptionId: `sub${Date.now()}`,
+            isInitialPayment: "true",  // Flag for initial payment
+            isRecurring: "true"  // String "true" for Razorpay to process properly
+          };
+      
+      // If it's a recurring payment, add next billing date to notes
+      if (!isOneTimePackage) {
+        const startDate = new Date();
+        if (advanceMonths > 0) {
+          startDate.setMonth(startDate.getMonth() + advanceMonths);
+        }
+        notesObject.nextBillingDate = startDate.toISOString();
+      }
+      
+      // Complete the options with type-specific settings and handler
+      const options = {
+        ...commonOptions,
+        notes: notesObject,
+        method: {
+          netbanking: true,
+          card: true,
+          upi: true,
+          wallet: true
+        },
+        handler: function(response: any) {
+          // Add payment type to the response
+          response.paymentType = isOneTimePackage ? "one-time" : "recurring";
+          response.packageId = selectedPackage.id;
+          response.packageName = selectedPackage.title;
+          response.amount = totalPaymentAmount;
           
-          const errorMessage = response.error.description || 'Payment failed. Please try again.';
+          // For recurring payments, add subscription details
+          if (!isOneTimePackage) {
+            response.setupFee = setupFee;
+            response.recurringAmount = recurringAmount;
+            response.advanceMonths = advanceMonths;
+            response.billingCycle = selectedPackage.billingCycle || 'yearly';
+            response.subscriptionId = notesObject.subscriptionId;
+            response.nextBillingDate = notesObject.nextBillingDate;
+          }
           
+          console.log(`${isOneTimePackage ? "One-time" : "Subscription"} payment successful, response:`, response);
+          
+          // Show success toast
           toast({
-            title: "Payment Failed",
-            description: errorMessage,
-            variant: "destructive"
+            title: isOneTimePackage ? "Payment Successful" : "Subscription Initialized",
+            description: isOneTimePackage
+              ? `Your payment for ${selectedPackage.title} was successful.`
+              : `Your subscription to ${selectedPackage.title} has been activated.`,
+            variant: "default"
           });
           
           setIsLoading(false);
-          setError(errorMessage);
-          onFailure(response.error);
+          onSuccess(response);
+        }
+      };
+      
+      console.log(`Opening Razorpay ${isOneTimePackage ? "one-time" : "subscription"} payment with options:`, options);
+      
+      // Create a new Razorpay instance
+      const razorpay = new window.Razorpay(options);
+      
+      // Handle payment failures
+      razorpay.on('payment.failed', function(response: any) {
+        console.error('Payment failed:', response.error);
+        
+        const errorMessage = response.error.description || 'Payment failed. Please try again.';
+        
+        toast({
+          title: "Payment Failed",
+          description: errorMessage,
+          variant: "destructive"
         });
         
-        // Open the Razorpay checkout
-        razorpay.open();
-      } else {
-        // Handle recurring payments
-        try {
-          // Calculate when the first recurring payment will happen
-          const startDate = new Date();
-          if (advanceMonths > 0) {
-            startDate.setMonth(startDate.getMonth() + advanceMonths);
-          }
-          
-          // Generate a subscription ID
-          const subscriptionId = `sub${Date.now()}`;
-          
-          // For now, handle the initial payment only
-          // Treat recurring payments as standard payments with subscription metadata
-          const options = {
-            ...commonOptions,
-            amount: amountInPaise,
-            currency: 'INR',
-            order_id: orderId,
-            // Essential payment methods for recurring payments
-            method: {
-              netbanking: true,
-              card: true,
-              upi: true,
-              wallet: true
-            },
-            notes: {
-              packageId: selectedPackage.id,
-              packageType: "recurring",
-              billingCycle: selectedPackage.billingCycle || "yearly",
-              setupFee: setupFee,
-              recurringAmount: recurringAmount,
-              advanceMonths: advanceMonths,
-              nextBillingDate: startDate.toISOString(),
-              subscriptionId: subscriptionId,
-              isRecurring: "true"  // String "true" for Razorpay to process properly
-            },
-            handler: function(response: any) {
-              // Add subscription details to the response
-              response.paymentType = "recurring";
-              response.packageId = selectedPackage.id;
-              response.packageName = selectedPackage.title;
-              response.amount = totalPaymentAmount;
-              response.setupFee = setupFee;
-              response.recurringAmount = recurringAmount;
-              response.advanceMonths = advanceMonths;
-              response.billingCycle = selectedPackage.billingCycle || 'yearly';
-              
-              // Set the subscription ID for reference
-              response.subscriptionId = subscriptionId;
-              
-              // Add next billing date to the response
-              response.nextBillingDate = startDate.toISOString();
-              
-              console.log("Subscription initial payment successful, response:", response);
-              
-              // Show a different message for initial setup vs recurring
-              const formattedStartDate = startDate.toLocaleDateString();
-              toast({
-                title: "Subscription Initialized",
-                description: advanceMonths > 0 
-                  ? `Your subscription to ${selectedPackage.title} has been activated with ${advanceMonths} months advance payment. Recurring payment of ₹${recurringAmount} will start from ${formattedStartDate}.` 
-                  : `Your subscription to ${selectedPackage.title} has been activated. You will be charged ₹${recurringAmount} ${selectedPackage.billingCycle || 'yearly'}.`,
-                variant: "default"
-              });
-              
-              setIsLoading(false);
-              onSuccess(response);
-            }
-          };
-          
-          console.log("Opening Razorpay subscription payment with options:", options);
-          
-          // Create a new Razorpay instance
-          const razorpay = new window.Razorpay(options);
-          
-          // Handle payment failures
-          razorpay.on('payment.failed', function(response: any) {
-            console.error('Subscription payment failed:', response.error);
-            
-            const errorMessage = response.error.description || 'Subscription payment failed. Please try again.';
-            
-            toast({
-              title: "Subscription Setup Failed",
-              description: errorMessage,
-              variant: "destructive"
-            });
-            
-            setIsLoading(false);
-            setError(errorMessage);
-            onFailure(response.error);
-          });
-          
-          // Open the Razorpay checkout
-          razorpay.open();
-        } catch (subscriptionError) {
-          console.error('Error creating subscription:', subscriptionError);
-          throw new Error('Failed to create subscription. Please try again later.');
-        }
-      }
+        setIsLoading(false);
+        setError(errorMessage);
+        onFailure(response.error);
+      });
+      
+      // Open the Razorpay checkout
+      razorpay.open();
       
       // Log for debugging
       console.log("Opened Razorpay with options:", {
