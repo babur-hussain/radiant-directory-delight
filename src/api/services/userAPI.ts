@@ -73,8 +73,10 @@ export const updateUserLoginTimestamp = async (uid: string) => {
   }
 };
 
-export const apiUpdateUserRole = async (uid: string, role: string, isAdmin: boolean = false) => {
+export const apiUpdateUserRole = async (uid: string, role: string) => {
   try {
+    // Removed the isAdmin parameter to match the usage in authService.ts
+    const isAdmin = role === 'Admin'; // Calculate it here instead
     const response = await api.put(`/users/${uid}/role`, { role, isAdmin });
     return response.data;
   } catch (error) {
@@ -82,6 +84,7 @@ export const apiUpdateUserRole = async (uid: string, role: string, isAdmin: bool
     // Update locally as fallback
     const user = await fetchUserByUid(uid);
     if (user) {
+      const isAdmin = role === 'Admin';
       await createOrUpdateUser({ ...user, role, isAdmin });
       return { ...user, role, isAdmin };
     }

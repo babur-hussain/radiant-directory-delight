@@ -161,7 +161,8 @@ export const updateUserRole = async (uid: string, role: string): Promise<IUser |
   try {
     // Default isAdmin to false or derive it from role
     const isAdmin = role === 'Admin';
-    const user = await apiUpdateUserRole(uid, role, isAdmin);
+    // Fix: this function only expects 2 params - uid and role
+    const user = await apiUpdateUserRole(uid, role);
     return user;
   } catch (error) {
     console.error('Error updating user role:', error);
