@@ -10,7 +10,10 @@ import {
   createRazorpayCheckout,
   formatNotesForRazorpay,
   RazorpayOptions,
-  RazorpayResponse
+  RazorpayResponse,
+  isRecurringPaymentEligible,
+  calculateNextBillingDate,
+  formatSubscriptionDate
 } from '@/utils/razorpay';
 import { generateOrderId } from '@/utils/id-generator';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
@@ -68,6 +71,12 @@ export const useRazorpayPayment = () => {
       // Check if this is a one-time payment or subscription
       const isOneTimePackage = selectedPackage.paymentType === "one-time";
       
+      // Determine if this package is eligible for recurring payments (autopay)
+      const canUseRecurring = !isOneTimePackage && isRecurringPaymentEligible(
+        selectedPackage.paymentType,
+        selectedPackage.billingCycle
+      );
+      
       // Calculate the total amount to be charged initially
       let initialAmount = isOneTimePackage 
         ? selectedPackage.price || 999 
@@ -103,6 +112,16 @@ export const useRazorpayPayment = () => {
         paymentType: isOneTimePackage ? "one-time" : "recurring"
       };
       
+      // Calculate next billing date for recurring payments
+      let nextBillingDate = new Date();
+      if (canUseRecurring) {
+        const advanceMonths = selectedPackage.advancePaymentMonths || 0;
+        nextBillingDate = calculateNextBillingDate(
+          selectedPackage.billingCycle, 
+          advanceMonths
+        );
+      }
+      
       // Configure Razorpay options
       const options: RazorpayOptions = {
         key: getRazorpayKey(),
@@ -120,6 +139,8 @@ export const useRazorpayPayment = () => {
         theme: {
           color: '#3399cc'
         },
+        recurring: canUseRecurring,
+        remember_customer: true,
         handler: function(response: RazorpayResponse) {
           console.log(`Payment successful:`, response);
           
@@ -137,7 +158,11 @@ export const useRazorpayPayment = () => {
               packageName: selectedPackage.title,
               amount: initialAmount,
               paymentType: isOneTimePackage ? "one-time" : "recurring",
-              receiptId
+              receiptId,
+              isRecurring: canUseRecurring,
+              billingCycle: selectedPackage.billingCycle,
+              nextBillingDate: canUseRecurring ? formatSubscriptionDate(nextBillingDate) : undefined,
+              advanceMonths: selectedPackage.advancePaymentMonths || 0
             });
           } catch (callbackErr) {
             console.error("Error in onSuccess callback:", callbackErr);

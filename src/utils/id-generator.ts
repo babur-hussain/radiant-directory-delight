@@ -23,9 +23,17 @@ export const generateShortId = (): string => {
  * @returns A properly formatted order ID
  */
 export const generateOrderId = (): string => {
-  // Razorpay requires order_id to be unique but doesn't strictly require a specific format
-  // Using a simple format with a timestamp and random string for uniqueness
-  return `order_${Date.now()}_${nanoid(8)}`;
+  // Simple timestamp-based order ID
+  return `order_${Date.now()}`;
+};
+
+/**
+ * Generates a unique subscription ID for Razorpay
+ * @returns A properly formatted subscription ID
+ */
+export const generateSubscriptionId = (): string => {
+  // Simple timestamp-based subscription ID with random suffix
+  return `sub_${Date.now()}_${nanoid(6)}`;
 };
 
 export { nanoid };

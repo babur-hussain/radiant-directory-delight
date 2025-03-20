@@ -33,6 +33,7 @@ export interface RazorpayOptions {
   description: string;
   image?: string;
   order_id?: string;
+  subscription_id?: string;
   prefill?: {
     name?: string;
     email?: string;
@@ -52,6 +53,7 @@ export interface RazorpayOptions {
     enabled?: boolean;
     max_count?: number;
   };
+  recurring?: boolean;
   send_sms_hash?: boolean;
   remember_customer?: boolean;
   readonly?: {
@@ -218,7 +220,12 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
     },
     retry: {
       enabled: false
-    }
+    },
+    remember_customer: true,
+    // Add subscription_id for recurring payments
+    subscription_id: options.subscription_id,
+    // Support for recurring flag
+    recurring: options.recurring
   };
   
   console.log("Creating Razorpay checkout with options:", formattedOptions);
@@ -230,6 +237,13 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
     console.error("Error creating Razorpay instance:", error);
     throw new Error("Failed to initialize payment gateway. Please try again.");
   }
+};
+
+/**
+ * Generate a simplified recurring plan ID for reference
+ */
+export const generatePlanId = (): string => {
+  return `plan_${Date.now().toString(36)}`;
 };
 
 /**
@@ -247,4 +261,45 @@ export const verifyRazorpayPayment = async (paymentData: RazorpayResponse): Prom
   await new Promise(resolve => setTimeout(resolve, 500));
   
   return true;
+};
+
+/**
+ * Determine if recurring payment is available for a package
+ */
+export const isRecurringPaymentEligible = (paymentType: string, billingCycle?: string): boolean => {
+  // Only enable recurring for packages marked as recurring with a billing cycle
+  return paymentType === "recurring" && !!billingCycle;
+};
+
+/**
+ * Format a date for subscription display
+ */
+export const formatSubscriptionDate = (date: Date): string => {
+  return date.toLocaleDateString('en-IN', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+
+/**
+ * Calculate the next billing date based on the billing cycle
+ */
+export const calculateNextBillingDate = (billingCycle: string = 'monthly', advanceMonths: number = 0): Date => {
+  const nextDate = new Date();
+  
+  // Add advance payment months first
+  if (advanceMonths > 0) {
+    nextDate.setMonth(nextDate.getMonth() + advanceMonths);
+  }
+  
+  // Then add billing cycle
+  if (billingCycle === 'yearly') {
+    nextDate.setFullYear(nextDate.getFullYear() + 1);
+  } else {
+    // Default to monthly
+    nextDate.setMonth(nextDate.getMonth() + 1);
+  }
+  
+  return nextDate;
 };
