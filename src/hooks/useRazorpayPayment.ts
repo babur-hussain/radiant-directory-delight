@@ -114,27 +114,13 @@ export const useRazorpayPayment = () => {
       
       console.log(`Setting up payment for ${selectedPackage.title} with amount ${paymentAmount} (${amountInPaise} paise)`);
       
-      // Simplified Razorpay options for live mode
+      // Create minimal Razorpay options to avoid Bad Request errors
       const options = {
         key: RAZORPAY_KEY_ID,
         amount: amountInPaise,
         currency: 'INR',
         name: 'Grow Bharat Vyapaar',
         description: `Payment for ${selectedPackage.title}`,
-        order_id: orderId,
-        prefill: {
-          name: user?.displayName || user?.name || 'Customer',
-          email: user?.email || 'customer@example.com',
-          contact: user?.phone || ''
-        },
-        notes: {
-          package_id: selectedPackage.id,
-          package_type: selectedPackage.type,
-          payment_type: selectedPackage.paymentType || "recurring"
-        },
-        theme: {
-          color: '#2563EB'
-        },
         handler: function(response: any) {
           // Add payment type to the response
           response.paymentType = selectedPackage.paymentType || "recurring";
@@ -155,7 +141,7 @@ export const useRazorpayPayment = () => {
       
       console.log("Opening Razorpay with options:", options);
       
-      // Create a new Razorpay instance with simplified options
+      // Create a new Razorpay instance with minimal options
       const razorpay = new window.Razorpay(options);
       
       // Handle payment failures

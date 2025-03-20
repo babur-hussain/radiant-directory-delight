@@ -155,7 +155,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           <p>{error}</p>
           {retryCount >= 2 ? (
             <div className="mt-2">
-              <p className="text-sm mb-2">We're experiencing issues with our payment provider. You can:</p>
+              <p className="text-sm mb-2">We're experiencing issues with the payment provider. You can:</p>
               <div className="flex space-x-2 mt-2">
                 <Button 
                   variant="outline" 
@@ -261,7 +261,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           <Shield className="h-5 w-5 text-muted-foreground mt-0.5" />
           <div className="text-sm">
             <p className="font-medium">Secure Payment</p>
-            <p className="text-muted-foreground">Your payment information is securely processed through Razorpay.</p>
+            <p className="text-muted-foreground">Your payment information is securely processed</p>
           </div>
         </div>
       </CardContent>

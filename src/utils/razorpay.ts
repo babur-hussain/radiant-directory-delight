@@ -166,6 +166,7 @@ export const isRazorpayAvailable = (): boolean => {
 
 /**
  * Generate a unique order ID
+ * Note: In production, orders should be created server-side
  */
 export const generateOrderId = (): string => {
   return `order_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
