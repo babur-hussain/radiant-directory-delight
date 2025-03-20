@@ -123,11 +123,10 @@ export const isRazorpayAvailable = (): boolean => {
  * Razorpay requires a specific format - alphanumeric without special characters
  */
 export const generateOrderId = (): string => {
-  // Format: order + timestamp + 5-digit random number
-  // Ensuring it's purely alphanumeric for full compatibility
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
-  return `order${timestamp}${random}`;
+  // Note: Razorpay doesn't require a real order ID for client-side testing
+  // It will use its own order ID in response
+  // Format: order + timestamp
+  return `order${Date.now()}${Math.floor(Math.random() * 1000000)}`;
 };
 
 /**
