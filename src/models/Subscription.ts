@@ -79,4 +79,10 @@ export class Subscription implements ISubscription {
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
   }
+
+  // Add compatibility static methods
+  static async create(data: ISubscription) {
+    console.warn('Subscription.create is a compatibility method, not implemented fully');
+    return new Subscription(data);
+  }
 }

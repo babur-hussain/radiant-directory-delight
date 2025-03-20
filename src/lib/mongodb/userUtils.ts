@@ -3,6 +3,42 @@ import { fetchUserByUid as apiFetchUserByUid } from '@/api';
 import { IUser } from '@/models/User';
 import { getUserFromLocalStorage, storeUserLocally, postToMongoDB } from '@/api/core/apiService';
 
+// Helper function to convert from DB fields to our model
+const mapDatabaseToModel = (dbUser: any): IUser => {
+  return {
+    uid: dbUser.id || dbUser.uid,
+    email: dbUser.email,
+    name: dbUser.name,
+    role: dbUser.role,
+    isAdmin: dbUser.is_admin || false,
+    photoURL: dbUser.photo_url,
+    employeeCode: dbUser.employee_code,
+    createdAt: new Date(dbUser.created_at || new Date()),
+    lastLogin: new Date(dbUser.last_login || dbUser.created_at || new Date()),
+    
+    // Shared fields
+    phone: dbUser.phone,
+    instagramHandle: dbUser.instagram_handle,
+    facebookHandle: dbUser.facebook_handle,
+    verified: dbUser.verified,
+    city: dbUser.city,
+    country: dbUser.country,
+    
+    // Influencer fields
+    niche: dbUser.niche,
+    followersCount: dbUser.followers_count,
+    bio: dbUser.bio,
+    
+    // Business fields
+    businessName: dbUser.business_name,
+    ownerName: dbUser.owner_name,
+    businessCategory: dbUser.business_category,
+    website: dbUser.website,
+    address: dbUser.address,
+    gstNumber: dbUser.gst_number
+  };
+};
+
 /**
  * Fetches user by UID from MongoDB with local fallback
  */
@@ -13,8 +49,9 @@ export const fetchUserByUid = async (uid: string): Promise<IUser | null> => {
     
     // If we got a user, update local storage for future offline access
     if (user) {
-      storeUserLocally(user);
-      return user;
+      const modelUser = mapDatabaseToModel(user);
+      storeUserLocally(modelUser);
+      return modelUser;
     }
     
     // If API returns null, try local storage

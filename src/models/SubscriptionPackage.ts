@@ -72,12 +72,12 @@ export class SubscriptionPackage implements ISubscriptionPackage {
   }
 
   // Add required methods to emulate Mongoose functionality
-  static async find(query: any) {
+  static async find(query: any = {}) {
     console.warn('SubscriptionPackage.find is a compatibility method, not implemented fully');
     return [];
   }
 
-  static async countDocuments(query: any) {
+  static async countDocuments(query: any = {}) {
     console.warn('SubscriptionPackage.countDocuments is a compatibility method, not implemented fully');
     return 0;
   }

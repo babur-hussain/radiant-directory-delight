@@ -1,8 +1,42 @@
-
 import { User, UserRole } from "@/types/auth";
 import { connectToMongoDB } from '@/config/mongodb';
 import { createOrUpdateUser, fetchUserByUid, getAllUsers as getAPIAllUsers } from '@/api/services/userAPI';
 import { formatUser, getLocalUsers } from './utils/userUtils';
+
+const mapDatabaseUserToUser = (dbUser: any) => {
+  return {
+    uid: dbUser.id,
+    email: dbUser.email,
+    name: dbUser.name,
+    role: dbUser.role,
+    isAdmin: dbUser.is_admin,
+    photoURL: dbUser.photo_url,
+    employeeCode: dbUser.employee_code,
+    createdAt: dbUser.created_at || new Date().toISOString(),
+    lastLogin: dbUser.last_login || dbUser.created_at,
+    
+    // Shared fields
+    phone: dbUser.phone,
+    instagramHandle: dbUser.instagram_handle,
+    facebookHandle: dbUser.facebook_handle,
+    verified: dbUser.verified,
+    city: dbUser.city,
+    country: dbUser.country,
+    
+    // Influencer fields
+    niche: dbUser.niche,
+    followersCount: dbUser.followers_count,
+    bio: dbUser.bio,
+    
+    // Business fields
+    businessName: dbUser.business_name,
+    ownerName: dbUser.owner_name,
+    businessCategory: dbUser.business_category,
+    website: dbUser.website,
+    address: dbUser.address,
+    gstNumber: dbUser.gst_number
+  };
+};
 
 export const getUserById = async (userId: string): Promise<User | null> => {
   try {
@@ -10,36 +44,7 @@ export const getUserById = async (userId: string): Promise<User | null> => {
     const mongoUser = await fetchUserByUid(userId);
     
     if (mongoUser) {
-      return {
-        uid: userId,
-        id: userId, // Alias for uid for compatibility
-        email: mongoUser.email,
-        displayName: mongoUser.name,
-        name: mongoUser.name,
-        role: mongoUser.role as UserRole,
-        isAdmin: mongoUser.is_admin,
-        photoURL: mongoUser.photo_url,
-        employeeCode: mongoUser.employee_code,
-        createdAt: mongoUser.created_at?.toString?.() || mongoUser.created_at,
-        // Include all additional fields that might be needed
-        phone: mongoUser.phone,
-        instagramHandle: mongoUser.instagram_handle,
-        facebookHandle: mongoUser.facebook_handle,
-        niche: mongoUser.niche,
-        followersCount: mongoUser.followers_count,
-        bio: mongoUser.bio,
-        businessName: mongoUser.business_name,
-        ownerName: mongoUser.owner_name,
-        businessCategory: mongoUser.business_category,
-        website: mongoUser.website,
-        gstNumber: mongoUser.gst_number,
-        subscription: mongoUser.subscription,
-        // Other metadata
-        city: mongoUser.city,
-        country: mongoUser.country,
-        verified: mongoUser.verified,
-        lastLogin: mongoUser.last_login
-      };
+      return mapDatabaseUserToUser(mongoUser);
     }
     
     // Fall back to localStorage
@@ -49,20 +54,7 @@ export const getUserById = async (userId: string): Promise<User | null> => {
     
     if (user) {
       // Make sure returned user conforms to User interface
-      return {
-        uid: user.id || user.uid,
-        id: user.id || user.uid,
-        email: user.email,
-        displayName: user.name || user.displayName,
-        name: user.name || user.displayName,
-        photoURL: user.photoURL,
-        role: user.role,
-        isAdmin: user.isAdmin,
-        employeeCode: user.employeeCode,
-        createdAt: user.createdAt,
-        // Include all other fields we have
-        ...user
-      };
+      return mapDatabaseUserToUser(user);
     }
     
     return null;
@@ -74,20 +66,7 @@ export const getUserById = async (userId: string): Promise<User | null> => {
     const user = allUsers.find((u: any) => u.id === userId || u.uid === userId);
     
     if (user) {
-      return {
-        uid: user.id || user.uid,
-        id: user.id || user.uid,
-        email: user.email,
-        displayName: user.name || user.displayName,
-        name: user.name || user.displayName,
-        photoURL: user.photoURL,
-        role: user.role,
-        isAdmin: user.isAdmin,
-        employeeCode: user.employeeCode,
-        createdAt: user.createdAt,
-        // Include all other fields we have
-        ...user
-      };
+      return mapDatabaseUserToUser(user);
     }
     
     return null;
@@ -120,39 +99,7 @@ export const getAllUsers = async (): Promise<User[]> => {
         console.log(`Retrieved ${apiUsers.length} users from MongoDB API`);
         
         // Format the users properly and save to localStorage
-        const formattedUsers = apiUsers.map((user: any) => ({
-          uid: user.id,
-          id: user.id,
-          email: user.email,
-          displayName: user.name,
-          name: user.name,
-          photoURL: user.photo_url,
-          isAdmin: user.is_admin || false,
-          role: user.role as UserRole,
-          employeeCode: user.employee_code,
-          createdAt: user.created_at,
-          lastLogin: user.last_login,
-          // Additional fields
-          phone: user.phone,
-          instagramHandle: user.instagram_handle,
-          facebookHandle: user.facebook_handle,
-          verified: user.verified,
-          city: user.city,
-          country: user.country,
-          niche: user.niche,
-          followersCount: user.followers_count,
-          bio: user.bio,
-          businessName: user.business_name,
-          ownerName: user.owner_name,
-          businessCategory: user.business_category,
-          website: user.website,
-          gstNumber: user.gst_number,
-          subscription: user.subscription,
-          subscriptionId: user.subscription_id,
-          subscriptionStatus: user.subscription_status,
-          subscriptionPackage: user.subscription_package,
-          customDashboardSections: user.custom_dashboard_sections
-        }));
+        const formattedUsers = apiUsers.map((user: any) => mapDatabaseUserToUser(user));
         
         localStorage.setItem('all_users_data', JSON.stringify(formattedUsers));
         

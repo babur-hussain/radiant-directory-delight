@@ -58,7 +58,9 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
   
   // Convert features to array if it's a string
   if (typeof packageData.features === 'string') {
-    packageData.features = packageData.features.split(',').map((f: string) => f.trim());
+    packageData.features = (packageData.features as unknown as string).split(',').map((f: string) => f.trim());
+  } else if (!Array.isArray(packageData.features)) {
+    packageData.features = [];
   }
   
   const { data, error } = await supabase

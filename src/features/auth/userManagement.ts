@@ -8,7 +8,7 @@ export { updateUserRole, updateUserPermission } from './roleManagement';
 export { getUserById, getAllUsers } from './userDataAccess';
 
 // Export test user creation functions
-export { createTestUser, ensureTestUsers } from './testUsers';
+export { generateTestUsers, generateAdminUser, generateAllTypesOfUsers } from './testUsers';
 
 // Export utility functions
 export { formatUser, getLocalUsers } from './utils/userUtils';
@@ -17,4 +17,4 @@ export { formatUser, getLocalUsers } from './utils/userUtils';
 export type { TestUserData } from './testUsers';
 
 // Add a version number for tracking changes
-export const AUTH_MODULE_VERSION = '1.0.1';
+export const AUTH_MODULE_VERSION = '1.0.2';

@@ -1,36 +1,53 @@
+// Add type conversion to handle the Json type
+interface IBusiness {
+  id: number;
+  name: string;
+  // ... other business fields
+  hours: Record<string, any>;
+  // ... other remaining fields
+}
 
-import { 
-  fetchBusinesses as apiFetchBusinesses,
-  saveBusiness as apiSaveBusiness
-} from '@/api';
-import { IBusiness } from '@/models/Business';
+// Update the function to convert Json string to object if needed
+const convertBusinessData = (data: any): IBusiness => {
+  return {
+    ...data,
+    hours: typeof data.hours === 'string' ? JSON.parse(data.hours) : data.hours
+  };
+};
+
+import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Fetches businesses from MongoDB
+ * Gets businesses from Supabase
  */
 export const fetchBusinesses = async (): Promise<IBusiness[]> => {
   try {
-    // Try the API first
-    const businesses = await apiFetchBusinesses();
-    return businesses;
+    const { data, error } = await supabase
+      .from('businesses')
+      .select('*');
+    
+    if (error) throw error;
+    return data.map(convertBusinessData) as IBusiness[];
   } catch (error) {
-    console.error("Error fetching businesses:", error);
-    // Return empty array in case of error
+    console.error("Error getting businesses:", error);
     return [];
   }
-};
+}
 
 /**
- * Saves a business to MongoDB
+ * Creates or updates a business
  */
-export const saveBusiness = async (businessData: IBusiness): Promise<IBusiness> => {
+export const saveBusiness = async (businessData: any): Promise<any | null> => {
   try {
-    // Try the API first
-    const business = await apiSaveBusiness(businessData);
-    return business;
+    const { data, error } = await supabase
+      .from('businesses')
+      .upsert(businessData)
+      .select();
+    
+    if (error) throw error;
+    return data?.[0] || null;
   } catch (error) {
-    console.error("Error saving business:", error);
-    // Return the original data in case of error
-    return businessData;
+    console.error("Error creating/updating business:", error);
+    return null;
   }
-};
+}

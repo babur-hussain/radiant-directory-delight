@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { SubscriptionPackage, ISubscriptionPackage } from "@/models/SubscriptionPackage";
 import { User, IUser } from "@/models/User";
@@ -81,7 +80,7 @@ export const useDashboardSections = ({ selectedUser }: UseDashboardSectionsProps
     try {
       await connectToMongoDB();
       
-      const packageQuery = SubscriptionPackage.find();
+      const packageQuery = SubscriptionPackage.find({});
       const packagesData = extractQueryData<ISubscriptionPackage>(packageQuery);
       
       setPackages(packagesData);

@@ -1,4 +1,3 @@
-
 import { connectToMongoDB, mongoose } from '../config/mongodb';
 import { ISubscriptionPackage, SubscriptionPackage } from '../models/SubscriptionPackage';
 import { fetchSubscriptionPackages } from '@/lib/mongodb-utils';
@@ -81,7 +80,7 @@ export const initializeMongoDB = async () => {
     console.log('MongoDB connection established');
     
     // Seed default packages if none exist
-    const packageCount = await SubscriptionPackage.countDocuments();
+    const packageCount = await SubscriptionPackage.countDocuments({});
     
     if (packageCount === 0) {
       console.log('No subscription packages found, seeding default packages...');

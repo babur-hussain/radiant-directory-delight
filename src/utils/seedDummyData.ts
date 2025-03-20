@@ -247,7 +247,7 @@ export const seedDummySubscriptionPackages = async (): Promise<{ success: boolea
     
     // Check if packages already exist
     const packageModel = SubscriptionPackage;
-    const count = await packageModel.countDocuments();
+    const count = await packageModel.countDocuments({});
     
     if (count > 0) {
       console.log(`Found ${count} existing packages, skipping seed`);
@@ -288,8 +288,8 @@ export const seedDummySubscriptions = async (count = 10): Promise<{ success: boo
     }
     
     // Get some users and packages to associate
-    const usersQuery = User.find();
-    const packagesQuery = SubscriptionPackage.find();
+    const usersQuery = User.find({});
+    const packagesQuery = SubscriptionPackage.find({});
     
     const users = await extractQueryResults(usersQuery);
     const packages = await extractQueryResults(packagesQuery);
@@ -324,7 +324,7 @@ export const seedDummySubscriptions = async (count = 10): Promise<{ success: boo
         
         const status = statuses[Math.floor(Math.random() * statuses.length)];
         
-        await Subscription.create({
+        await new Subscription({
           id: `sub_${Date.now()}_${i}`,
           userId: randomUser.uid,
           packageId: randomPackage.id,

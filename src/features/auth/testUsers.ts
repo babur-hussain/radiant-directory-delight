@@ -43,6 +43,24 @@ export const generateTestUsers = async (count = 10, type: UserRole = 'User') => 
   return users;
 };
 
+// Define TestUserData type for export
+export interface TestUserData {
+  uid: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  isAdmin: boolean;
+  employeeCode: string;
+  createdAt: string;
+  lastLogin: string;
+}
+
+// Create a single test user (used by other modules)
+export const createTestUser = async (role: UserRole = 'User'): Promise<TestUserData | null> => {
+  const users = await generateTestUsers(1, role);
+  return users[0] || null;
+};
+
 // Generate a specific test admin user
 export const generateAdminUser = async () => {
   const adminId = nanoid();
@@ -88,4 +106,22 @@ export const generateAllTypesOfUsers = async (countPerType = 5) => {
     influencerUsers,
     allUsers: [admin, ...standardUsers, ...businessUsers, ...influencerUsers].filter(Boolean)
   };
+};
+
+// Ensure test users exist (used by admin panels)
+export const ensureTestUsers = async (count = 5): Promise<TestUserData[]> => {
+  console.log('Ensuring test users exist...');
+  
+  try {
+    // Generate one of each type
+    const admin = await generateAdminUser();
+    const standardUsers = await generateTestUsers(count, 'User');
+    const businessUsers = await generateTestUsers(count, 'Business');
+    const influencerUsers = await generateTestUsers(count, 'Influencer');
+    
+    return [admin, ...standardUsers, ...businessUsers, ...influencerUsers].filter(Boolean) as TestUserData[];
+  } catch (error) {
+    console.error('Failed to ensure test users exist:', error);
+    return [];
+  }
 };

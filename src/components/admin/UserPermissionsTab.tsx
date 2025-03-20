@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -19,7 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { updateUserRole, updateUserPermission } from "@/features/auth/roleManagement";
 import { getAllUsers } from "@/features/auth/userDataAccess";
-import { ensureTestUsers } from "@/features/auth/testUsers";
+import { generateTestUsers } from "@/features/auth/testUsers";
 import UserSubscriptionAssignment from "./UserSubscriptionAssignment";
 import { UserRole } from "@/types/auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -68,7 +69,12 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
   const createTestUsersIfEmpty = async () => {
     try {
       setIsLoading(true);
-      await ensureTestUsers();
+      // Generate 5 users of each type instead of using ensureTestUsers
+      await generateTestUsers(5, 'User');
+      await generateTestUsers(5, 'Business');
+      await generateTestUsers(5, 'Influencer');
+      await generateTestUsers(1, 'Admin');
+      
       await loadUsers();
       toast({
         title: "Test Users Created",

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { Button } from "@/components/ui/button";
@@ -124,7 +123,8 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
     try {
       await onSave({
         ...packageData,
-        updatedAt: new Date()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       });
     } catch (error) {
       console.error("Error saving package:", error);

@@ -1,4 +1,3 @@
-
 import { User as FirebaseUser } from 'firebase/auth';
 import { fetchUserByUid, createOrUpdateUser, updateUserRole as apiUpdateUserRole, getAllUsers as apiGetAllUsers } from '../../api/services/userAPI';
 import { IUser } from '../../models/User';
@@ -7,11 +6,47 @@ import { generateEmployeeCode } from '@/utils/id-generator';
 import { api } from '@/api/core/apiService';
 import { storeUserLocally } from '@/api/core/apiService';
 
+// Add a function to map from database fields to our model fields
+const mapDatabaseUserToModel = (dbUser: any) => {
+  return {
+    uid: dbUser.id || dbUser.uid,
+    email: dbUser.email,
+    name: dbUser.name,
+    role: dbUser.role,
+    isAdmin: dbUser.is_admin,
+    photoURL: dbUser.photo_url,
+    employeeCode: dbUser.employee_code,
+    createdAt: dbUser.created_at ? new Date(dbUser.created_at) : new Date(),
+    lastLogin: dbUser.last_login ? new Date(dbUser.last_login) : new Date(),
+    
+    // Shared fields
+    phone: dbUser.phone,
+    instagramHandle: dbUser.instagram_handle,
+    facebookHandle: dbUser.facebook_handle,
+    verified: dbUser.verified,
+    city: dbUser.city,
+    country: dbUser.country,
+    
+    // Influencer fields
+    niche: dbUser.niche,
+    followersCount: dbUser.followers_count,
+    bio: dbUser.bio,
+    
+    // Business fields
+    businessName: dbUser.business_name,
+    ownerName: dbUser.owner_name,
+    businessCategory: dbUser.business_category,
+    website: dbUser.website,
+    address: dbUser.address,
+    gstNumber: dbUser.gst_number
+  };
+};
+
 // Get user by Firebase UID from production MongoDB
 export const getUserByUid = async (uid: string): Promise<IUser | null> => {
   try {
     const user = await fetchUserByUid(uid);
-    return user;
+    return mapDatabaseUserToModel(user);
   } catch (error) {
     console.error('Error getting user by UID:', error);
     return null;
