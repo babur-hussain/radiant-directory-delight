@@ -8,7 +8,8 @@ import {
   generateOrderId, 
   convertToPaise,
   createRazorpayCheckout,
-  RazorpayOptions
+  RazorpayOptions,
+  RazorpayResponse
 } from '@/utils/razorpay';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
@@ -91,7 +92,7 @@ export const useRazorpayPayment = () => {
       
       console.log(`Setting up payment for ${selectedPackage.title} with amount ${initialAmount} (${amountInPaise} paise)`);
       
-      // Create notes object with subscription details
+      // Create notes object with subscription details and ensure all values are strings
       const notes: Record<string, string> = {
         packageId: String(selectedPackage.id),
         packageType: isOneTimePackage ? "one-time" : "recurring",
@@ -132,7 +133,7 @@ export const useRazorpayPayment = () => {
         description: `Payment for ${selectedPackage.title}`,
         image: 'https://example.com/your_logo.png', // Replace with actual logo URL
         order_id: orderId,
-        handler: function(response) {
+        handler: function(response: RazorpayResponse) {
           // Add package info to response
           const enrichedResponse = {
             ...response,

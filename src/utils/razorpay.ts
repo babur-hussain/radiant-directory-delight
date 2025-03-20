@@ -156,8 +156,11 @@ export const generateOrderId = (): string => {
   for (let i = 0; i < 14; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  // Return in the correct format: order_<14 chars>
-  return `order_${result}`;
+  
+  // The underscore after "order" is critical - must be exactly as: order_XXXXXXXXXX...
+  const orderId = `order_${result}`;
+  console.log("Generated Razorpay order ID:", orderId);
+  return orderId;
 };
 
 /**
@@ -194,7 +197,9 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   const formattedOptions = {
     ...options,
     key: options.key || RAZORPAY_KEY_ID,
-    notes: notesWithStringValues
+    notes: notesWithStringValues,
+    // Ensure amount is a number (not a string)
+    amount: typeof options.amount === 'string' ? parseInt(options.amount) : options.amount
   };
   
   console.log("Creating Razorpay checkout with options:", formattedOptions);
@@ -202,6 +207,12 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   try {
     // Create Razorpay instance
     const razorpay = new window.Razorpay(formattedOptions);
+    
+    // Add error handler
+    razorpay.on('payment.error', function(error: any) {
+      console.error("Payment error:", error);
+    });
+    
     return razorpay;
   } catch (error) {
     console.error("Error creating Razorpay instance:", error);

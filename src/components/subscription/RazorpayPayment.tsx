@@ -64,13 +64,32 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         selectedPackage,
         onSuccess: (response) => {
           console.log("Payment success in RazorpayPayment:", response);
-          onSuccess(response);
+          
+          try {
+            // Call the onSuccess callback provided by the parent component
+            onSuccess(response);
+          } catch (callbackError) {
+            console.error("Error in onSuccess callback:", callbackError);
+            toast({
+              title: "Warning",
+              description: "Payment was successful, but there was an error processing the confirmation.",
+              variant: "warning"
+            });
+          }
+          
           setIsProcessing(false);
         },
         onFailure: (error) => {
           console.log("Payment failure in RazorpayPayment:", error);
           setError(error.message || "Payment could not be completed. Please try again.");
-          onFailure(error);
+          
+          try {
+            // Call the onFailure callback provided by the parent component
+            onFailure(error);
+          } catch (callbackError) {
+            console.error("Error in onFailure callback:", callbackError);
+          }
+          
           setIsProcessing(false);
           
           // Increment retry count to track failed attempts
@@ -81,7 +100,12 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       console.error("Error initiating payment:", error);
       setError("Could not start payment process. Please try again.");
       setIsProcessing(false);
-      onFailure(error);
+      
+      try {
+        onFailure(error);
+      } catch (callbackError) {
+        console.error("Error in onFailure callback:", callbackError);
+      }
     }
   };
   
