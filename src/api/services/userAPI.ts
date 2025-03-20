@@ -1,16 +1,29 @@
 
-import { api } from '../core/apiService';
+import { api, apiCallWithFallback } from '../core/apiService';
 import { IUser } from '@/models/User';
 import { UserRole } from '@/types/auth';
+
+// In-memory user cache to improve performance and reduce API calls
+const userCache = new Map();
 
 // API-focused operations for users
 export const fetchUserByUid = async (uid: string) => {
   try {
+    // Check cache first
+    if (userCache.has(uid)) {
+      console.log(`Returning cached user data for ${uid}`);
+      return userCache.get(uid);
+    }
+    
     console.log(`Fetching user directly from API: ${uid}`);
     const response = await api.get(`/users/${uid}`);
+    
+    // Cache the user data
+    userCache.set(uid, response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching user from API:', error);
+    
     // Return null instead of throwing to allow graceful fallbacks
     return null;
   }
@@ -49,6 +62,9 @@ export const createOrUpdateUser = async (userData: any) => {
     
     console.log(`Sending user data to API with role=${formattedUserData.role}`);
     
+    // Store in local memory cache regardless of API success
+    userCache.set(uid, formattedUserData);
+    
     try {
       // Try to get the user first with a shorter timeout
       const existingUser = await fetchUserByUid(uid);
@@ -68,6 +84,7 @@ export const createOrUpdateUser = async (userData: any) => {
         try {
           const response = await api.put(`/users/${uid}`, updatedData);
           console.log('User updated via API successfully:', response.data);
+          userCache.set(uid, response.data); // Update cache with fresh data
           return response.data;
         } catch (updateError) {
           console.error('API update failed, returning formatted data:', updateError);
@@ -81,6 +98,7 @@ export const createOrUpdateUser = async (userData: any) => {
         try {
           const response = await api.post('/users', formattedUserData);
           console.log('New user created via API:', response.data);
+          userCache.set(uid, response.data); // Update cache with fresh data
           return response.data;
         } catch (createError) {
           console.error('API create failed, returning formatted data:', createError);
@@ -99,11 +117,19 @@ export const createOrUpdateUser = async (userData: any) => {
   }
 };
 
-// Direct API calls for user operations
+// Direct API calls for user operations with memory caching
 export const updateUserLoginTimestamp = async (uid: string) => {
   try {
     console.log(`Updating login timestamp via API for user: ${uid}`);
     const response = await api.put(`/users/${uid}/login`);
+    
+    // Update cache if we have this user
+    if (userCache.has(uid)) {
+      const userData = userCache.get(uid);
+      userData.lastLogin = new Date();
+      userCache.set(uid, userData);
+    }
+    
     return response.data;
   } catch (error) {
     console.error('Error updating login timestamp:', error.message);
@@ -117,6 +143,15 @@ export const apiUpdateUserRole = async (uid: string, role: string) => {
     const isAdmin = role === 'Admin';
     console.log(`Updating user role via API for user: ${uid}, role: ${role}, isAdmin: ${isAdmin}`);
     const response = await api.put(`/users/${uid}/role`, { role, isAdmin });
+    
+    // Update cache if we have this user
+    if (userCache.has(uid)) {
+      const userData = userCache.get(uid);
+      userData.role = role;
+      userData.isAdmin = isAdmin;
+      userCache.set(uid, userData);
+    }
+    
     return response.data;
   } catch (error) {
     console.error('Error in apiUpdateUserRole:', error);
@@ -130,6 +165,14 @@ export const apiGetAllUsers = async () => {
     console.log('Fetching all users from production API');
     const response = await api.get('/users');
     console.log(`Retrieved ${response.data.length} users from API`);
+    
+    // Update cache with fresh data
+    response.data.forEach(user => {
+      if (user.uid) {
+        userCache.set(user.uid, user);
+      }
+    });
+    
     return response.data;
   } catch (error) {
     console.error('Error getting all users from API:', error);
@@ -235,4 +278,10 @@ export const createUserWithProfile = async (
     console.error('Error creating user with profile:', error);
     return null;
   }
+};
+
+// Clear user cache (useful for testing or when we know data has changed externally)
+export const clearUserCache = () => {
+  userCache.clear();
+  console.log('User cache cleared');
 };

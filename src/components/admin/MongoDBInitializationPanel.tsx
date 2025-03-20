@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,8 @@ import { Database, Server, Activity, RefreshCw, Info, ExternalLink, AlertCircle 
 import { setupMongoDB } from '@/utils/setupMongoDB';
 import { diagnoseMongoDbConnection, testConnectionWithRetry } from '@/utils/mongoDebug';
 import { connectToMongoDB } from '@/config/mongodb';
-import { isServerRunning, API_BASE_URL, LOCAL_API_URL } from '@/api/mongoAPI';
+import { isServerRunning, API_BASE_URL } from '@/api/core/apiService';
+import { clearUserCache } from '@/api/services/userAPI';
 
 const MongoDBInitializationPanel: React.FC = () => {
   const [status, setStatus] = useState<'idle' | 'processing' | 'completed' | 'error'>('idle');
@@ -34,8 +34,8 @@ const MongoDBInitializationPanel: React.FC = () => {
   const checkServerStatus = async () => {
     setAttemptingLocalServer(true);
     try {
-      // Try both remote and local servers
-      const available = await isServerRunning(true);
+      // Try to connect to the server
+      const available = await isServerRunning();
       setServerAvailable(available);
     } catch (error) {
       console.error("Error checking server status:", error);
@@ -89,9 +89,9 @@ const MongoDBInitializationPanel: React.FC = () => {
     });
 
     try {
-      // Check if server is available (try both remote and local)
+      // Check if server is available
       setCurrentTask('Checking server availability...');
-      const isAvailable = await isServerRunning(true);
+      const isAvailable = await isServerRunning();
       setServerAvailable(isAvailable);
       
       if (!isAvailable) {
@@ -128,6 +128,9 @@ const MongoDBInitializationPanel: React.FC = () => {
         ...prev,
         collectionsSetup: setupResult.collections
       }));
+      
+      // Clear user cache to ensure fresh data
+      clearUserCache();
       
       // Complete
       setProgress(100);
@@ -331,3 +334,4 @@ const MongoDBInitializationPanel: React.FC = () => {
 };
 
 export default MongoDBInitializationPanel;
+
