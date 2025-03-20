@@ -22,7 +22,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { initiatePayment, isLoading, error: paymentError } = useRazorpayPayment();
+  const { initiatePayment, isLoading, error: paymentError, isOffline } = useRazorpayPayment();
   const [isProcessing, setIsProcessing] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +44,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     const handleOffline = () => setIsOfflineMode(true);
     
     // Check current status
-    setIsOfflineMode(!navigator.onLine);
+    setIsOfflineMode(!navigator.onLine || isOffline);
     
     // Add event listeners
     window.addEventListener('online', handleOnline);
@@ -52,12 +52,13 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     
     // Initial check for Razorpay script loading
     setLoadingScript(true);
+    setTimeout(() => setLoadingScript(false), 1500);
     
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [isOffline]);
   
   const handlePayment = () => {
     if (isProcessing) return;
@@ -140,7 +141,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     return (
       <div className="flex flex-col items-center justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="mt-4 text-center">Loading payment gateway...</p>
+        <p className="mt-4 text-center">Preparing payment gateway...</p>
       </div>
     );
   }
