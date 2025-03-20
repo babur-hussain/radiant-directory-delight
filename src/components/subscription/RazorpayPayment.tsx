@@ -22,11 +22,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { initiatePayment, isLoading, error: paymentError, isOffline } = useRazorpayPayment();
+  const { initiatePayment, isLoading, error: paymentError } = useRazorpayPayment();
   const [isProcessing, setIsProcessing] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [loadingScript, setLoadingScript] = useState(true);
   
   // Determine if this is a one-time package
@@ -38,51 +37,8 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     ? (selectedPackage.price || 999) // Default to 999 if price is 0 or undefined
     : (selectedPackage.setupFee || 0);
   
-  // Check network status
-  useEffect(() => {
-    const handleOnline = () => setIsOfflineMode(false);
-    const handleOffline = () => setIsOfflineMode(true);
-    
-    // Check current status
-    setIsOfflineMode(!navigator.onLine || isOffline);
-    
-    // Add event listeners
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    // Initial check for Razorpay script loading
-    setLoadingScript(true);
-    setTimeout(() => setLoadingScript(false), 1500);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [isOffline]);
-  
   const handlePayment = () => {
     if (isProcessing) return;
-    
-    // If we're offline, show a simulated demo payment flow
-    if (isOfflineMode) {
-      setIsProcessing(true);
-      
-      // Simulate payment processing with a delay
-      setTimeout(() => {
-        const demoResponse = {
-          razorpay_payment_id: `demo_pay_${Date.now()}`,
-          razorpay_order_id: `demo_order_${Date.now()}`,
-          razorpay_signature: 'demo_signature',
-          paymentType: selectedPackage.paymentType || 'recurring'
-        };
-        
-        console.log("Demo payment success:", demoResponse);
-        onSuccess(demoResponse);
-        setIsProcessing(false);
-      }, 2000);
-      
-      return;
-    }
     
     setIsProcessing(true);
     setError(null);
@@ -174,21 +130,6 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
                   Reload Page
                 </Button>
               </div>
-              <p className="text-xs mt-2 text-muted-foreground">
-                You can also try our demo mode which will simulate a successful payment for testing.
-              </p>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="mt-2"
-                onClick={() => {
-                  setIsOfflineMode(true);
-                  setError(null);
-                  setTimeout(() => handlePayment(), 500);
-                }}
-              >
-                Use Demo Mode
-              </Button>
             </div>
           ) : (
             <div className="flex space-x-2 mt-2">
@@ -219,15 +160,6 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       <CardHeader className="px-0 pt-0">
         <CardTitle className="text-lg">Payment Summary</CardTitle>
         <CardDescription>Review your payment details</CardDescription>
-        {isOfflineMode && (
-          <Alert variant="warning" className="mt-2">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Demo Mode</AlertTitle>
-            <AlertDescription>
-              You are currently in demo mode. This is a simulated payment flow.
-            </AlertDescription>
-          </Alert>
-        )}
       </CardHeader>
       <CardContent className="px-0 space-y-4">
         <div className="border rounded-md p-4 space-y-3">
@@ -285,22 +217,6 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
             </>
           )}
         </Button>
-        {!isOfflineMode && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mt-2" 
-            onClick={() => {
-              setIsOfflineMode(true);
-              toast({
-                title: "Demo Mode Activated",
-                description: "You've switched to demo mode for testing payments.",
-              });
-            }}
-          >
-            Switch to Demo Mode
-          </Button>
-        )}
         <p className="text-xs text-center text-muted-foreground">
           By proceeding, you agree to our Terms of Service and Privacy Policy
         </p>

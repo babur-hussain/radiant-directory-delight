@@ -22,27 +22,12 @@ export const useRazorpayPayment = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isOffline, setIsOffline] = useState(false);
   
-  // Check online status
-  const checkOnlineStatus = () => {
-    const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
-    setIsOffline(!online);
-    return online;
-  };
-
   const loadScript = async (): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Check if we're online
-      if (!checkOnlineStatus()) {
-        console.log("Device is offline, using offline payment flow");
-        setIsLoading(false);
-        return true;
-      }
-      
       await loadRazorpayScript();
       setIsLoading(false);
       return true;
@@ -61,32 +46,10 @@ export const useRazorpayPayment = () => {
     setError(null);
     
     try {
-      // Check if we're online
-      const online = checkOnlineStatus();
-      
       // First ensure the script is loaded
       const scriptLoaded = await loadScript();
       if (!scriptLoaded) {
         throw new Error('Payment gateway could not be loaded');
-      }
-      
-      if (!online) {
-        console.log("Device is offline, using simulated payment flow");
-        
-        // Simulate a successful payment after a delay
-        setTimeout(() => {
-          const mockResponse = {
-            razorpay_payment_id: `offline_pay_${Date.now()}`,
-            razorpay_order_id: `offline_order_${Date.now()}`,
-            razorpay_signature: 'offline_signature',
-            paymentType: selectedPackage.paymentType || 'recurring'
-          };
-          
-          setIsLoading(false);
-          onSuccess(mockResponse);
-        }, 2000);
-        
-        return;
       }
       
       if (!isRazorpayAvailable()) {
@@ -190,7 +153,6 @@ export const useRazorpayPayment = () => {
   return {
     isLoading,
     error,
-    initiatePayment,
-    isOffline
+    initiatePayment
   };
 };
