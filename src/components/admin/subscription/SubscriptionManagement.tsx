@@ -28,24 +28,39 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
   const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
   
   const {
-    packages,
+    packages = [],
     isLoading,
     error,
-    isOffline, 
+    isOffline,
+    offlineMode,
     fetchPackages,
     addOrUpdatePackage,
     removePackage
   } = useSubscriptionPackages({});
 
-  const businessPackages = packages.filter(pkg => pkg.type === 'Business');
-  const influencerPackages = packages.filter(pkg => pkg.type === 'Influencer');
+  // Safety check to ensure packages is always an array
+  const safePackages = Array.isArray(packages) ? packages : [];
+  
+  // Safely filter packages
+  const businessPackages = safePackages.filter(pkg => pkg && pkg.type === 'Business');
+  const influencerPackages = safePackages.filter(pkg => pkg && pkg.type === 'Influencer');
 
   const handleSavePackage = async (packageData: ISubscriptionPackage) => {
     try {
       console.log('Handling save package:', packageData);
+      
+      if (!packageData) {
+        throw new Error("Package data is required");
+      }
+      
+      // Ensure package type is set based on active tab if not provided
+      if (!packageData.type) {
+        packageData.type = activeTab === 'business' ? 'Business' : 'Influencer';
+      }
+      
       await addOrUpdatePackage(packageData);
       setSelectedPackage(null);
-      fetchPackages();
+      await fetchPackages();
     } catch (err) {
       console.error('Error saving package:', err);
       onPermissionError(err);
@@ -59,7 +74,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
   const handleDeletePackage = async (packageId: string) => {
     try {
       await removePackage(packageId);
-      fetchPackages();
+      await fetchPackages();
     } catch (err) {
       console.error('Error deleting package:', err);
       onPermissionError(err);

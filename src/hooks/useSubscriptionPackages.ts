@@ -59,7 +59,7 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       }
       
       console.log(`Fetched ${fetchedPackages.length} packages:`, fetchedPackages);
-      setPackages(fetchedPackages);
+      setPackages(fetchedPackages || []);
       setConnectionStatus('connected');
       
       // Cache packages in localStorage for offline access
@@ -93,16 +93,32 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       setIsLoading(true);
       console.log('Saving package:', packageData);
       
+      // Validate required fields before proceeding
+      if (!packageData) {
+        throw new Error("No package data provided");
+      }
+      
+      if (!packageData.title) {
+        throw new Error("Package title is required");
+      }
+      
+      if (!packageData.type) {
+        throw new Error("Package type is required");
+      }
+      
+      if (!packageData.shortDescription) {
+        throw new Error("Short description is required");
+      }
+      
+      if (!packageData.fullDescription) {
+        throw new Error("Full description is required");
+      }
+      
       // Check if server is available before attempting to save
       const serverAvailable = await isServerRunning();
       if (!serverAvailable) {
         throw new Error("Server is not available. Cannot save package.");
       }
-      
-      // Validate required fields before saving
-      if (!packageData.title) throw new Error("Package title is required");
-      if (!packageData.shortDescription) throw new Error("Short description is required");
-      if (!packageData.fullDescription) throw new Error("Full description is required");
       
       // Set or validate price
       if (packageData.price === undefined || packageData.price === null) {
@@ -112,6 +128,10 @@ export const useSubscriptionPackages = (options: UseSubscriptionPackagesOptions 
       // Save the package to MongoDB
       const savedPackage = await saveSubscriptionPackage(packageData);
       console.log('Package saved successfully:', savedPackage);
+      
+      if (!savedPackage) {
+        throw new Error("Failed to save package - server returned null");
+      }
       
       // Update local state with the saved package
       setPackages(prevPackages => {

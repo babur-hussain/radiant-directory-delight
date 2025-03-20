@@ -28,6 +28,8 @@ export const fetchSubscriptionPackages = async (): Promise<ISubscriptionPackage[
     
     // Make sure all one-time packages have valid price
     const validatedPackages = packages.map(pkg => {
+      if (!pkg) return null;
+      
       if (pkg.paymentType === "one-time" && (!pkg.price || pkg.price <= 0)) {
         return {
           ...pkg,
@@ -35,7 +37,7 @@ export const fetchSubscriptionPackages = async (): Promise<ISubscriptionPackage[
         };
       }
       return pkg;
-    });
+    }).filter(pkg => pkg !== null) as ISubscriptionPackage[];
     
     return validatedPackages;
   } catch (error) {
@@ -60,38 +62,40 @@ export const fetchSubscriptionPackagesByType = async (type: "Business" | "Influe
     console.log(`Fetched ${packages.length} ${type} packages:`, packages);
     
     // Make sure all packages have valid and required fields
-    const validatedPackages = packages.map(pkg => {
-      // Create a new object with defaults for missing fields
-      const validatedPkg = {
-        ...pkg,
-        id: pkg.id || `pkg_${Date.now()}`,
-        title: pkg.title || 'Untitled Package',
-        price: Number(pkg.price) || 999,
-        durationMonths: Number(pkg.durationMonths) || 12,
-        shortDescription: pkg.shortDescription || pkg.title || '',
-        fullDescription: pkg.fullDescription || pkg.shortDescription || '',
-        features: Array.isArray(pkg.features) ? pkg.features : [],
-        popular: !!pkg.popular,
-        type: pkg.type || type,
-        paymentType: pkg.paymentType || "recurring"
-      };
-      
-      // Special handling for one-time packages
-      if (validatedPkg.paymentType === "one-time") {
-        if (!validatedPkg.price || validatedPkg.price <= 0) {
-          validatedPkg.price = 999; // Set default price for one-time packages if missing or 0
+    const validatedPackages = packages
+      .filter(pkg => pkg !== null) // Filter out any null packages
+      .map(pkg => {
+        // Create a new object with defaults for missing fields
+        const validatedPkg = {
+          ...pkg,
+          id: pkg.id || `pkg_${Date.now()}`,
+          title: pkg.title || 'Untitled Package',
+          price: Number(pkg.price) || 999,
+          durationMonths: Number(pkg.durationMonths) || 12,
+          shortDescription: pkg.shortDescription || pkg.title || '',
+          fullDescription: pkg.fullDescription || pkg.shortDescription || '',
+          features: Array.isArray(pkg.features) ? pkg.features : [],
+          popular: !!pkg.popular,
+          type: pkg.type || type,
+          paymentType: pkg.paymentType || "recurring"
+        };
+        
+        // Special handling for one-time packages
+        if (validatedPkg.paymentType === "one-time") {
+          if (!validatedPkg.price || validatedPkg.price <= 0) {
+            validatedPkg.price = 999; // Set default price for one-time packages if missing or 0
+          }
+          // One-time packages don't need these fields
+          validatedPkg.billingCycle = undefined;
+          validatedPkg.setupFee = 0;
+        } else {
+          // Set defaults for recurring packages
+          validatedPkg.billingCycle = validatedPkg.billingCycle || "yearly";
+          validatedPkg.setupFee = Number(validatedPkg.setupFee) || 0;
         }
-        // One-time packages don't need these fields
-        validatedPkg.billingCycle = undefined;
-        validatedPkg.setupFee = 0;
-      } else {
-        // Set defaults for recurring packages
-        validatedPkg.billingCycle = validatedPkg.billingCycle || "yearly";
-        validatedPkg.setupFee = Number(validatedPkg.setupFee) || 0;
-      }
-      
-      return validatedPkg;
-    });
+        
+        return validatedPkg;
+      });
     
     return validatedPackages;
   } catch (error) {
@@ -105,10 +109,31 @@ export const fetchSubscriptionPackagesByType = async (type: "Business" | "Influe
  */
 export const saveSubscriptionPackage = async (packageData: SubscriptionPackage | ISubscriptionPackage): Promise<ISubscriptionPackage> => {
   try {
+    if (!packageData) {
+      throw new Error("No package data provided");
+    }
+    
     console.log("Original package data to save:", packageData);
     
     // Ensure price is properly set for one-time payment packages
     let sanitizedPackage = { ...packageData };
+    
+    // Validate required fields
+    if (!sanitizedPackage.title) {
+      sanitizedPackage.title = "Untitled Package";
+    }
+    
+    if (!sanitizedPackage.type) {
+      throw new Error("Package type is required");
+    }
+    
+    if (!sanitizedPackage.shortDescription) {
+      sanitizedPackage.shortDescription = sanitizedPackage.title;
+    }
+    
+    if (!sanitizedPackage.fullDescription) {
+      sanitizedPackage.fullDescription = sanitizedPackage.shortDescription;
+    }
     
     // Make sure setupFee is set if undefined
     if (sanitizedPackage.setupFee === undefined) {
@@ -132,6 +157,11 @@ export const saveSubscriptionPackage = async (packageData: SubscriptionPackage |
       if (!sanitizedPackage.billingCycle) {
         sanitizedPackage.billingCycle = "yearly";
       }
+      
+      // Set a default price if not provided
+      if (!sanitizedPackage.price || sanitizedPackage.price <= 0) {
+        sanitizedPackage.price = 999;
+      }
     }
     
     // Set a unique ID if not already set
@@ -143,6 +173,12 @@ export const saveSubscriptionPackage = async (packageData: SubscriptionPackage |
     
     // Save to MongoDB using our service
     const savedPackage = await createOrUpdateSubscriptionPackage(sanitizedPackage);
+    
+    if (!savedPackage) {
+      // If service returned null, return the sanitized package
+      console.warn("createOrUpdateSubscriptionPackage returned null, using sanitized package");
+      return sanitizedPackage as ISubscriptionPackage;
+    }
     
     console.log("Successfully saved package to MongoDB:", savedPackage);
     return savedPackage;
