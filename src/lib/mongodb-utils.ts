@@ -2,7 +2,9 @@
 import { 
   fetchUserByUid as apiFetchUserByUid,
   getUserSubscription as apiFetchUserSubscriptions,
-  isServerRunning
+  isServerRunning,
+  fetchBusinesses as apiFetchBusinesses,
+  saveBusiness as apiSaveBusiness
 } from '../api/mongoAPI';
 import { ISubscriptionPackage } from '../models/SubscriptionPackage';
 import { IBusiness } from '../models/Business';
@@ -205,29 +207,32 @@ export const fetchUserSubscriptions = async (userId: string): Promise<ISubscript
   }
 };
 
-// Add missing business functions
+/**
+ * Fetches businesses from MongoDB
+ */
 export const fetchBusinesses = async (): Promise<IBusiness[]> => {
   try {
-    // Implementation would fetch from MongoDB or API
-    console.log("Fetching businesses (mock implementation)");
-    
-    // Return empty array or mock data as needed
-    return [];
+    // Try the API first
+    const businesses = await apiFetchBusinesses();
+    return businesses;
   } catch (error) {
     console.error("Error fetching businesses:", error);
-    throw error;
+    // Return empty array in case of error
+    return [];
   }
 };
 
+/**
+ * Saves a business to MongoDB
+ */
 export const saveBusiness = async (businessData: IBusiness): Promise<IBusiness> => {
   try {
-    // Implementation would save to MongoDB or API
-    console.log("Saving business (mock implementation):", businessData);
-    
-    // Return the saved business
-    return businessData;
+    // Try the API first
+    const business = await apiSaveBusiness(businessData);
+    return business;
   } catch (error) {
     console.error("Error saving business:", error);
-    throw error;
+    // Return the original data in case of error
+    return businessData;
   }
 };

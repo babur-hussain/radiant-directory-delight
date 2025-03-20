@@ -1,4 +1,3 @@
-
 import { connectToMongoDB } from '../config/mongodb';
 import { User } from '../models/User';
 import { Business } from '../models/Business';
@@ -66,7 +65,7 @@ const defaultInfluencerPackages = [
   }
 ];
 
-// Generate a random date within the last year
+// Helper functions
 const getRandomDate = () => {
   const now = new Date();
   const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
@@ -74,17 +73,14 @@ const getRandomDate = () => {
   return new Date(oneYearAgo.getTime() + Math.random() * timeOffset);
 };
 
-// Generate a random price between min and max
 const getRandomPrice = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min + 1) + min);
 };
 
-// Generate random boolean with weight towards true or false
 const getRandomBoolean = (trueWeight = 0.5) => {
   return Math.random() < trueWeight;
 };
 
-// Generate a random business name
 const getRandomBusinessName = () => {
   const prefixes = ['Royal', 'Golden', 'Prime', 'Elite', 'Superior', 'Classic', 'Modern', 'Advanced', 'Digital'];
   const businesses = ['Solutions', 'Enterprise', 'Services', 'Associates', 'Consultants', 'Systems', 'Group', 'Industries', 'Technologies'];
@@ -92,7 +88,6 @@ const getRandomBusinessName = () => {
   return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${businesses[Math.floor(Math.random() * businesses.length)]}`;
 };
 
-// Generate a random user name
 const getRandomUserName = () => {
   const firstNames = ['John', 'Jane', 'Robert', 'Emily', 'Michael', 'Sarah', 'David', 'Jessica', 'Daniel', 'Olivia'];
   const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Miller', 'Davis', 'Garcia', 'Rodriguez', 'Wilson'];
@@ -100,7 +95,6 @@ const getRandomUserName = () => {
   return `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
 };
 
-// Generate a random email based on name
 const getRandomEmail = (name: string) => {
   const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'aol.com'];
   const nameParts = name.toLowerCase().replace(/\s+/g, '.');
@@ -209,10 +203,12 @@ export const seedDummySubscriptionPackages = async (): Promise<{ success: boolea
     }
     
     // Check if packages already exist
-    const existingCount = await SubscriptionPackage.countDocuments();
-    if (existingCount > 0) {
-      console.log(`Found ${existingCount} existing packages, skipping seed`);
-      return { success: true, count: existingCount };
+    const packageModel = SubscriptionPackage;
+    const count = await packageModel.countDocuments();
+    
+    if (count > 0) {
+      console.log(`Found ${count} existing packages, skipping seed`);
+      return { success: true, count: count };
     }
     
     // Combine business and influencer packages
@@ -249,8 +245,11 @@ export const seedDummySubscriptions = async (count = 10): Promise<{ success: boo
     }
     
     // Get some users and packages to associate
-    const users = await User.find().lean();
-    const packages = await SubscriptionPackage.find().lean();
+    const usersQuery = await User.find();
+    const packagesQuery = await SubscriptionPackage.find();
+    
+    const users = await usersQuery.exec();
+    const packages = await packagesQuery.exec();
     
     if (users.length === 0 || packages.length === 0) {
       throw new Error("Need users and packages to create subscriptions");

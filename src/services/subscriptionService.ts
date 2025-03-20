@@ -58,7 +58,9 @@ export const getSubscriptions = async (): Promise<ISubscription[]> => {
     console.log('Fetching all subscriptions');
     const subscriptionModel = mongoose.model('Subscription', {});
     const subscriptionsQuery = await subscriptionModel.find();
-    const subscriptions = await subscriptionsQuery.sort({ createdAt: -1 }).exec();
+    const sortedQuery = subscriptionsQuery.sort({ createdAt: -1 });
+    const subscriptions = await sortedQuery.exec();
+    
     console.log(`Found ${subscriptions.length} subscriptions`);
     return subscriptions;
   } catch (error) {
@@ -118,9 +120,10 @@ export const getUserSubscriptions = async (userId: string): Promise<ISubscriptio
     const subscriptionModel = mongoose.model('Subscription', {});
     
     const subscriptionsQuery = await subscriptionModel.find({ userId });
-    const subscriptions = await subscriptionsQuery.sort({ startDate: -1 }).exec();
-    console.log(`Found ${subscriptions.length} subscriptions for user ${userId}`);
+    const sortedQuery = subscriptionsQuery.sort({ startDate: -1 });
+    const subscriptions = await sortedQuery.exec();
     
+    console.log(`Found ${subscriptions.length} subscriptions for user ${userId}`);
     return subscriptions;
   } catch (error) {
     console.error(`Error getting subscriptions for user ${userId}:`, error);
@@ -177,7 +180,9 @@ export const getAllSubscriptionPackages = async (): Promise<ISubscriptionPackage
     console.log('Fetching all subscription packages');
     const packageModel = mongoose.model('SubscriptionPackage', {});
     const packagesQuery = await packageModel.find();
-    const packages = await packagesQuery.sort({ createdAt: -1 }).exec();
+    const sortedQuery = packagesQuery.sort({ createdAt: -1 });
+    const packages = await sortedQuery.exec();
+    
     console.log(`Found ${packages.length} subscription packages`);
     return packages;
   } catch (error) {
@@ -192,7 +197,9 @@ export const getSubscriptionPackagesByType = async (type: string): Promise<ISubs
     console.log(`Fetching subscription packages of type: ${type}`);
     const packageModel = mongoose.model('SubscriptionPackage', {});
     const packagesQuery = await packageModel.find({ type });
-    const packages = await packagesQuery.sort({ price: 1 }).exec();
+    const sortedQuery = packagesQuery.sort({ price: 1 });
+    const packages = await sortedQuery.exec();
+    
     console.log(`Found ${packages.length} ${type} subscription packages`);
     return packages;
   } catch (error) {

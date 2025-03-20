@@ -1,3 +1,4 @@
+
 import { connectToMongoDB, mongoose, isMongoDB_Connected } from '@/config/mongodb';
 import { getEnvironment } from './environment';
 
@@ -26,7 +27,7 @@ export const diagnoseMongoDbConnection = async () => {
     // Get connection details if available
     let connectionDetails = {};
     try {
-      // Access the mock connection properties safely
+      // Access connection properties safely using optional chaining
       connectionDetails = {
         readyState: mongoose.connection?.readyState || 0,
         host: mongoose.connection?.host || 'unknown',

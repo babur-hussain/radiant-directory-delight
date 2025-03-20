@@ -34,10 +34,11 @@ const UserDashboardCustomizer: React.FC = () => {
     
     try {
       await connectToMongoDB();
-      const userModel = User.find();
+      const userQuery = await User.find();
       
-      // First execute the query to get users
-      const allUsers = await userModel.sort({ name: 1 }).exec();
+      // First execute the query to get a sorted list of users
+      const sortedQuery = userQuery.sort({ name: 1 });
+      const allUsers = await sortedQuery.exec();
       
       setUsers(allUsers);
       

@@ -26,11 +26,35 @@ export const mongoose = {
     if (typeof localStorage !== 'undefined' && !localStorage.getItem(collectionName)) {
       localStorage.setItem(collectionName, '[]');
     }
+
+    // Helper to create a query result object with chaining methods
+    const createQueryResultObject = (results: any[]) => {
+      return {
+        results,
+        sort: function(sortOptions: any) {
+          if (!sortOptions) return this;
+          
+          const [field, order] = Object.entries(sortOptions)[0];
+          this.results.sort((a: any, b: any) => {
+            if (a[field] < b[field]) return order === 1 ? -1 : 1;
+            if (a[field] > b[field]) return order === 1 ? 1 : -1;
+            return 0;
+          });
+          return this;
+        },
+        exec: async function() {
+          return this.results;
+        },
+        lean: function() {
+          return this;
+        }
+      };
+    };
     
     const modelObj = {
       schema,
       collection: { collectionName },
-      find: async function(query = {}) {
+      async find(query = {}) {
         console.log(`[MongoDB Mock] Finding documents in ${name} with query:`, query);
         try {
           const collection = JSON.parse(localStorage.getItem(collectionName) || '[]');
@@ -46,31 +70,13 @@ export const mongoose = {
             });
           }
           
-          // Return object with sort and exec methods
-          const resultObj = {
-            sort: function(sortOptions: any) {
-              // Simple sorting implementation
-              const [field, order] = Object.entries(sortOptions)[0];
-              return results.sort((a: any, b: any) => {
-                if (a[field] < b[field]) return order === 1 ? -1 : 1;
-                if (a[field] > b[field]) return order === 1 ? 1 : -1;
-                return 0;
-              });
-            },
-            exec: async function() {
-              return results;
-            },
-            lean: function() {
-              return this; // Just return the same object with all methods
-            }
-          };
-          return resultObj;
+          return createQueryResultObject(results);
         } catch (err) {
           console.error(`[MongoDB Mock] Error in find operation for ${name}:`, err);
-          return [];
+          return createQueryResultObject([]);
         }
       },
-      findOne: async function(query = {}) {
+      async findOne(query = {}) {
         console.log(`[MongoDB Mock] Finding one document in ${name} with query:`, query);
         try {
           const collection = JSON.parse(localStorage.getItem(collectionName) || '[]');
@@ -89,7 +95,7 @@ export const mongoose = {
           return null;
         }
       },
-      findOneAndUpdate: async function(query: any, update: any, options: any = {}) {
+      async findOneAndUpdate(query: any, update: any, options: any = {}) {
         console.log(`[MongoDB Mock] Updating document in ${name} with query:`, query);
         console.log(`[MongoDB Mock] Update data:`, update);
         
@@ -171,7 +177,7 @@ export const mongoose = {
           return null;
         }
       },
-      findOneAndDelete: async function(query: any) {
+      async findOneAndDelete(query: any) {
         console.log(`[MongoDB Mock] Deleting document in ${name} with query:`, query);
         
         try {
@@ -211,7 +217,7 @@ export const mongoose = {
           return null;
         }
       },
-      create: async function(doc: any) {
+      async create(doc: any) {
         try {
           // Ensure the document has an ID
           if (!doc.id) {
@@ -240,7 +246,7 @@ export const mongoose = {
           throw err;
         }
       },
-      countDocuments: async function(query = {}) {
+      async countDocuments(query = {}) {
         try {
           const collection = JSON.parse(localStorage.getItem(collectionName) || '[]');
           
@@ -262,7 +268,7 @@ export const mongoose = {
           return 0;
         }
       },
-      save: async function(doc: any) {
+      async save(doc: any) {
         try {
           // Get the collection
           const collection = JSON.parse(localStorage.getItem(collectionName) || '[]');
