@@ -74,13 +74,32 @@ export const updateUserLoginTimestamp = async (uid: string) => {
 };
 
 export const apiUpdateUserRole = async (uid: string, role: string, isAdmin: boolean = false) => {
-  const response = await api.put(`/users/${uid}/role`, { role, isAdmin });
-  return response.data;
+  try {
+    const response = await api.put(`/users/${uid}/role`, { role, isAdmin });
+    return response.data;
+  } catch (error) {
+    console.error('Error in apiUpdateUserRole:', error);
+    // Update locally as fallback
+    const user = await fetchUserByUid(uid);
+    if (user) {
+      await createOrUpdateUser({ ...user, role, isAdmin });
+      return { ...user, role, isAdmin };
+    }
+    throw error;
+  }
 };
 
 export const apiGetAllUsers = async () => {
-  const response = await api.get('/users');
-  return response.data;
+  try {
+    // Try to get from API first
+    const response = await api.get('/users');
+    return response.data;
+  } catch (error) {
+    console.warn('Error getting users from API, falling back to localStorage:', error);
+    // Fallback to localStorage
+    const collection = JSON.parse(localStorage.getItem('mongodb_User') || '[]');
+    return collection;
+  }
 };
 
 // Higher-level functions with error handling
@@ -94,7 +113,9 @@ export const updateUserLogin = async (uid: string): Promise<void> => {
 
 export const getAllUsers = async (): Promise<IUser[]> => {
   try {
+    console.log('Getting all users from MongoDB...');
     const users = await apiGetAllUsers();
+    console.log(`Retrieved ${users.length} users from MongoDB`);
     return users;
   } catch (error) {
     console.error('Error getting all users:', error);

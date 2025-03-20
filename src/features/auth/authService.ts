@@ -1,6 +1,6 @@
 
 import { User as FirebaseUser } from 'firebase/auth';
-import { fetchUserByUid, createOrUpdateUser, apiUpdateUserRole, apiGetAllUsers } from '../../api/mongoAPI';
+import { fetchUserByUid, createOrUpdateUser, updateUserRole as apiUpdateUserRole, getAllUsers as apiGetAllUsers } from '../../api/services/userAPI';
 import { IUser } from '../../models/User';
 import { UserRole } from '@/types/auth';
 import { connectToMongoDB } from '@/config/mongodb';
@@ -146,7 +146,9 @@ export const updateUserLoginTimestamp = async (uid: string): Promise<void> => {
 // Get all users (admin function)
 export const getAllUsers = async (): Promise<IUser[]> => {
   try {
+    console.log('Fetching all users from API...');
     const users = await apiGetAllUsers();
+    console.log(`Retrieved ${users.length} users from API`);
     return users;
   } catch (error) {
     console.error('Error getting all users:', error);

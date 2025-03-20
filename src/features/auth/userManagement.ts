@@ -3,7 +3,7 @@ import { User, UserRole } from "../../types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { saveUserToAllUsersList } from "./authStorage";
 import { connectToMongoDB } from '../../config/mongodb';
-import { createOrUpdateUser, fetchUserByUid } from '@/api/mongoAPI';
+import { createOrUpdateUser, fetchUserByUid, getAllUsers as getAPIAllUsers } from '@/api/services/userAPI';
 
 export const updateUserRole = async (user: User) => {
   if (!user) {
@@ -207,40 +207,7 @@ export const getUserById = async (userId: string): Promise<User | null> => {
   }
 };
 
-const extractQueryResults = async (queryResult: any): Promise<any[]> => {
-  if (Array.isArray(queryResult)) {
-    return queryResult;
-  }
-  
-  if (queryResult && typeof queryResult.sort === 'function') {
-    try {
-      const sortedQuery = queryResult.sort({ createdAt: -1 });
-      
-      if (sortedQuery && typeof sortedQuery.exec === 'function') {
-        const result = await sortedQuery.exec();
-        return Array.isArray(result) ? result : [];
-      }
-      
-      if (sortedQuery && Array.isArray(sortedQuery.results)) {
-        return sortedQuery.results;
-      }
-      
-      if (Array.isArray(sortedQuery)) {
-        return sortedQuery;
-      }
-    } catch (error) {
-      console.error("Error sorting query:", error);
-    }
-  }
-  
-  if (queryResult && Array.isArray(queryResult.results)) {
-    return queryResult.results;
-  }
-  
-  console.warn("Could not extract results from query");
-  return [];
-};
-
+// Updated: Direct access to localStorage data to ensure users are loaded
 export const getAllUsers = async (): Promise<User[]> => {
   try {
     console.log("Fetching ALL users from MongoDB collection");
@@ -248,100 +215,37 @@ export const getAllUsers = async (): Promise<User[]> => {
     // First ensure MongoDB is connected with a clear error message
     console.log("Checking MongoDB connection...");
     const connected = await connectToMongoDB();
+    
     if (!connected) {
       console.error("MongoDB connection failed - could not establish connection");
       // Instead of throwing an error, let's fall back to localStorage
       console.log("Falling back to localStorage for user data");
-      const localUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
-      return localUsers.map((user: any) => ({
-        uid: user.id || user.uid,
-        id: user.id || user.uid,
-        email: user.email,
-        displayName: user.name || user.displayName,
-        name: user.name || user.displayName,
-        photoURL: user.photoURL,
-        role: user.role,
-        isAdmin: user.isAdmin,
-        employeeCode: user.employeeCode,
-        createdAt: user.createdAt || new Date().toISOString()
-      }));
+      return getLocalUsers();
     }
     
     console.log("MongoDB connection verified");
     
-    // Get all users from MongoDB, handling the Promise properly
-    console.log("Executing User.find() query...");
-    const userModelQuery = UserModel.find();
-    
-    const mongoUsers = await extractQueryResults(userModelQuery);
-    
-    console.log(`Query executed, got ${mongoUsers.length} users`);
-    
-    if (mongoUsers.length === 0) {
-      console.log("No users found in MongoDB, checking localStorage");
-      const localUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
+    // Try to get users from the API first
+    try {
+      const mongoUsers = await getAPIAllUsers();
       
-      if (localUsers.length > 0) {
-        console.log(`Found ${localUsers.length} users in localStorage`);
-        // Format localStorage users to match User interface
-        return localUsers.map((user: any) => ({
-          uid: user.id || user.uid,
-          id: user.id || user.uid,
-          email: user.email,
-          displayName: user.name || user.displayName,
-          name: user.name || user.displayName,
-          photoURL: user.photoURL,
-          role: user.role,
-          isAdmin: user.isAdmin,
-          employeeCode: user.employeeCode,
-          createdAt: user.createdAt || new Date().toISOString()
-        }));
+      if (Array.isArray(mongoUsers) && mongoUsers.length > 0) {
+        console.log(`Retrieved ${mongoUsers.length} users from MongoDB API`);
+        
+        // Format the users properly and save to localStorage
+        const formattedUsers = mongoUsers.map(formatUser);
+        localStorage.setItem('all_users_data', JSON.stringify(formattedUsers));
+        
+        return formattedUsers;
+      } else {
+        console.warn('No users returned from API, checking localStorage');
       }
-      
-      console.log("No users found in localStorage either");
-      return [];
+    } catch (apiError) {
+      console.error('Error fetching users from API:', apiError);
     }
     
-    const users: User[] = mongoUsers.map(mongoUser => {
-      let displayName: string | null = null;
-      if (mongoUser.name === null) {
-        displayName = null;
-      } else if (typeof mongoUser.name === 'boolean') {
-        displayName = 'User';
-      } else if (typeof mongoUser.name === 'string') {
-        displayName = mongoUser.name;
-      } else if (mongoUser.name) {
-        try {
-          displayName = String(mongoUser.name);
-        } catch {
-          displayName = null;
-        }
-      } else {
-        displayName = null;
-      }
-      
-      let createdTimestamp = mongoUser.createdAt?.toISOString() || new Date().toISOString();
-      
-      return {
-        uid: mongoUser.uid,
-        id: mongoUser.uid,
-        email: mongoUser.email,
-        displayName: displayName,
-        name: displayName,
-        role: mongoUser.role as UserRole,
-        isAdmin: mongoUser.isAdmin,
-        photoURL: mongoUser.photoURL,
-        employeeCode: mongoUser.employeeCode,
-        createdAt: createdTimestamp
-      };
-    });
-    
-    console.log(`Successfully fetched ${users.length} users from MongoDB`);
-    
-    // Ensure we're correctly saving to localStorage
-    localStorage.setItem('all_users_data', JSON.stringify(users));
-    
-    return users;
+    // Fall back to direct localStorage access
+    return getLocalUsers();
   } catch (error) {
     console.error("Error getting all users from MongoDB:", error);
     
@@ -351,21 +255,55 @@ export const getAllUsers = async (): Promise<User[]> => {
       console.error(`Error stack: ${error.stack}`);
     }
     
-    console.log("Falling back to localStorage for user data due to error");
-    const localUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
-    return localUsers.map((user: any) => ({
-      uid: user.id || user.uid,
-      id: user.id || user.uid,
-      email: user.email,
-      displayName: user.name || user.displayName,
-      name: user.name || user.displayName,
-      photoURL: user.photoURL,
-      role: user.role,
-      isAdmin: user.isAdmin,
-      employeeCode: user.employeeCode,
-      createdAt: user.createdAt || new Date().toISOString()
-    }));
+    // Last resort: return from localStorage
+    return getLocalUsers();
   }
+};
+
+// Helper function to get users from localStorage
+const getLocalUsers = (): User[] => {
+  console.log("Getting users from localStorage");
+  try {
+    // Try getting from mongodb_User collection first (our mock MongoDB)
+    const mongoCollection = JSON.parse(localStorage.getItem('mongodb_User') || '[]');
+    
+    if (mongoCollection.length > 0) {
+      console.log(`Found ${mongoCollection.length} users in mongodb_User localStorage`);
+      const formattedUsers = mongoCollection.map(formatUser);
+      
+      // Update the all_users_data for consistency
+      localStorage.setItem('all_users_data', JSON.stringify(formattedUsers));
+      
+      return formattedUsers;
+    }
+    
+    // Fall back to the all_users_data collection
+    const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
+    console.log(`Found ${allUsers.length} users in all_users_data localStorage`);
+    
+    return allUsers.map(formatUser);
+  } catch (error) {
+    console.error('Error getting users from localStorage:', error);
+    return [];
+  }
+};
+
+// Helper to format a user object consistently
+const formatUser = (user: any): User => {
+  return {
+    uid: user.id || user.uid,
+    id: user.id || user.uid,
+    email: user.email,
+    displayName: user.name || user.displayName,
+    name: user.name || user.displayName,
+    photoURL: user.photoURL,
+    role: user.role || 'User',
+    isAdmin: !!user.isAdmin,
+    employeeCode: user.employeeCode,
+    createdAt: user.createdAt || new Date().toISOString(),
+    // Include all other fields
+    ...user
+  };
 };
 
 export interface TestUserData {
