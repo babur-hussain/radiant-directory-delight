@@ -19,13 +19,12 @@ export const generateShortId = (): string => {
 };
 
 /**
- * Generates a Razorpay order ID
- * @returns A properly formatted order ID for Razorpay
+ * Generates a unique order ID
+ * @returns A properly formatted order ID
  */
-export const generateRazorpayOrderId = (): string => {
-  // For test mode, we need to format this as order_XXX where XXX is random
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 8);
+export const generateOrderId = (): string => {
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
   return `order_${timestamp}${random}`;
 };
 

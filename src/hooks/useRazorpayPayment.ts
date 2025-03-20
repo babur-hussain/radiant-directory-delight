@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -97,18 +98,16 @@ export const useRazorpayPayment = () => {
       
       console.log(`Setting up payment for ${selectedPackage.title} with amount ${initialAmount} (${amountInPaise} paise)`);
       
-      // Create notes object with simple payment details (avoid complex nested objects)
-      const notes: Record<string, any> = {
+      // Create basic notes object (simple key-value pairs only)
+      const notes: Record<string, string> = {
         packageId: selectedPackage.id,
         packageName: selectedPackage.title,
         amount: initialAmount.toString(),
-        receiptId: receiptId
+        receiptId: receiptId,
+        paymentType: isOneTimePackage ? "one-time" : "recurring"
       };
       
-      // Format notes for Razorpay (ensure all values are strings)
-      const formattedNotes = formatNotesForRazorpay(notes);
-      
-      // Configure Razorpay options - keep it minimal for test mode
+      // Configure Razorpay options
       const options: RazorpayOptions = {
         key: getRazorpayKey(),
         amount: amountInPaise,
@@ -122,11 +121,10 @@ export const useRazorpayPayment = () => {
           email: user?.email || '',
           contact: user?.phone || ''
         },
-        notes: formattedNotes,
+        notes: notes,
         theme: {
           color: '#3399cc'
         },
-        // Simplify the handler to avoid any complex data manipulation
         handler: function(response: RazorpayResponse) {
           console.log(`Payment successful:`, response);
           
