@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { fetchBusinesses } from '@/lib/mongodb-utils';
+import { fetchBusinesses } from '@/lib/mongodb/businessUtils';
 import { IBusiness } from '@/models/Business';
 import { autoInitMongoDB } from '@/utils/setupMongoDB';
 
