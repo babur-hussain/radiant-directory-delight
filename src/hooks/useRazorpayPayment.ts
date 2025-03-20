@@ -93,9 +93,9 @@ export const useRazorpayPayment = () => {
       
       // Create notes object with subscription details
       const notes: Record<string, string> = {
-        packageId: selectedPackage.id,
+        packageId: String(selectedPackage.id),
         packageType: isOneTimePackage ? "one-time" : "recurring",
-        packageName: selectedPackage.title
+        packageName: String(selectedPackage.title)
       };
       
       // Add subscription-specific details for recurring packages
@@ -105,7 +105,7 @@ export const useRazorpayPayment = () => {
           nextBillingDate.setMonth(nextBillingDate.getMonth() + (selectedPackage.advancePaymentMonths || 0));
         }
         
-        notes.billingCycle = selectedPackage.billingCycle || "monthly";
+        notes.billingCycle = String(selectedPackage.billingCycle || "monthly");
         notes.setupFee = String(selectedPackage.setupFee || 0);
         notes.recurringAmount = String(selectedPackage.price || 0);
         notes.advanceMonths = String(selectedPackage.advancePaymentMonths || 0);

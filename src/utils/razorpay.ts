@@ -147,13 +147,17 @@ export const isRazorpayAvailable = (): boolean => {
 /**
  * Generate a Razorpay compatible order ID
  * IMPORTANT: Razorpay requires a specific format for order_id
+ * Format: order_<14-character alphanumeric ID>
  */
 export const generateOrderId = (): string => {
-  // Correct format for Razorpay order_id
-  // It must start with "order_" followed by alphanumeric characters
-  const timestamp = Date.now().toString();
-  const randomChars = Math.random().toString(36).substring(2, 8);
-  return `order_${timestamp}${randomChars}`;
+  // Generate a random 14-character alphanumeric string
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 14; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  // Return in the correct format: order_<14 chars>
+  return `order_${result}`;
 };
 
 /**

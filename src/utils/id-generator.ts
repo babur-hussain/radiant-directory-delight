@@ -18,4 +18,14 @@ export const generateShortId = (): string => {
   return nanoid(8);
 };
 
+/**
+ * Generates a Razorpay order ID
+ * @returns A properly formatted order ID for Razorpay
+ */
+export const generateRazorpayOrderId = (): string => {
+  // Always starts with "order_" followed by exactly 14 alphanumeric characters
+  // This matches Razorpay's format requirement
+  return `order_${nanoid(14)}`;
+};
+
 export { nanoid };
