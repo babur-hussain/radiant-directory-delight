@@ -26,7 +26,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [loadingScript, setLoadingScript] = useState(true);
+  const [ready, setReady] = useState(false);
   
   // Determine if this is a one-time package
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
@@ -80,20 +80,20 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   
   const handleRetry = () => {
     setError(null);
-    setLoadingScript(true);
+    setReady(false);
     setRetryCount(0); // Reset retry count
     
     // Reset states and try again
     setTimeout(() => {
-      setLoadingScript(false);
+      setReady(true);
     }, 1000);
   };
   
   useEffect(() => {
-    // Only show loading for a short time, then allow user to click button manually
+    // Set ready after a short delay
     const timer = setTimeout(() => {
-      setLoadingScript(false);
-    }, 1500);
+      setReady(true);
+    }, 1000);
     
     return () => clearTimeout(timer);
   }, []);
@@ -105,11 +105,11 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     }
   }, [paymentError]);
   
-  if (loadingScript) {
+  if (!ready) {
     return (
       <div className="flex flex-col items-center justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="mt-4 text-center">Preparing payment gateway...</p>
+        <p className="mt-4 text-center">Preparing payment details...</p>
       </div>
     );
   }

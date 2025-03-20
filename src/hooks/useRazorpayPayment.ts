@@ -6,12 +6,14 @@ import {
   isRazorpayAvailable, 
   RAZORPAY_KEY_ID,
   generateOrderId, 
-  convertToPaise
+  convertToPaise,
+  createRazorpayCheckout,
+  RazorpayOptions
 } from '@/utils/razorpay';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
 
-interface RazorpayOptions {
+interface PaymentOptions {
   selectedPackage: ISubscriptionPackage;
   onSuccess: (response: any) => void;
   onFailure: (error: any) => void;
@@ -20,8 +22,9 @@ interface RazorpayOptions {
 // Define payment notes type for type safety
 interface PaymentNotes {
   packageId: string;
-  packageType: "one-time" | "recurring";
-  [key: string]: string | number | boolean;
+  packageType: string;
+  packageName: string;
+  [key: string]: string;
 }
 
 export const useRazorpayPayment = () => {
@@ -46,7 +49,7 @@ export const useRazorpayPayment = () => {
     }
   };
 
-  const initiatePayment = async ({ selectedPackage, onSuccess, onFailure }: RazorpayOptions) => {
+  const initiatePayment = async ({ selectedPackage, onSuccess, onFailure }: PaymentOptions) => {
     if (isLoading) return;
     
     setIsLoading(true);
@@ -88,7 +91,7 @@ export const useRazorpayPayment = () => {
         initialAmount = 1; // Minimum 1 rupee
       }
       
-      // Generate an order ID
+      // Generate an order ID (with format Razorpay expects)
       const orderId = generateOrderId();
       
       // Convert amount to paise
@@ -96,7 +99,7 @@ export const useRazorpayPayment = () => {
       
       console.log(`Setting up payment for ${selectedPackage.title} with amount ${initialAmount} (${amountInPaise} paise)`);
       
-      // Create notes object with subscription details
+      // Create notes object with subscription details - only use strings
       const notes: PaymentNotes = {
         packageId: selectedPackage.id,
         packageType: isOneTimePackage ? "one-time" : "recurring",
@@ -121,15 +124,15 @@ export const useRazorpayPayment = () => {
       }
       
       // Configure Razorpay options
-      const options = {
+      const options: RazorpayOptions = {
         key: RAZORPAY_KEY_ID,
         amount: amountInPaise,
         currency: 'INR',
         name: 'Grow Bharat Vyapaar',
         description: `Payment for ${selectedPackage.title}`,
-        image: 'https://example.com/your_logo.png',
+        image: 'https://example.com/your_logo.png', // Replace with actual logo URL
         order_id: orderId,
-        handler: function(response: any) {
+        handler: function(response) {
           // Add package info to response
           const enrichedResponse = {
             ...response,
@@ -191,8 +194,8 @@ export const useRazorpayPayment = () => {
         orderId
       });
       
-      // Create and open Razorpay checkout
-      const razorpay = new window.Razorpay(options);
+      // Create Razorpay checkout
+      const razorpay = createRazorpayCheckout(options);
       
       // Handle payment failures
       razorpay.on('payment.failed', function(resp: any) {

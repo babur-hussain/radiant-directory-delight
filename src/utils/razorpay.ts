@@ -24,6 +24,31 @@ export interface RazorpayError {
   };
 }
 
+// Type for Razorpay payment options
+export interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  image?: string;
+  order_id?: string;
+  prefill?: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
+  notes?: Record<string, string>;
+  theme?: {
+    color?: string;
+  };
+  handler?: (response: RazorpayResponse) => void;
+  modal?: {
+    escape?: boolean;
+    ondismiss?: () => void;
+  };
+}
+
 // Type for Razorpay subscription request
 export interface RazorpaySubscriptionRequest {
   plan_id: string;
@@ -124,8 +149,10 @@ export const isRazorpayAvailable = (): boolean => {
  * Razorpay requires order IDs to be alphanumeric only
  */
 export const generateOrderId = (): string => {
-  // Use timestamp and simple random string
-  return `order${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
+  // Create a timestamp-based ID with only alphanumeric characters
+  const timestamp = Date.now().toString();
+  const randomPart = Math.random().toString(36).substring(2, 8);
+  return `order_${timestamp}${randomPart}`;
 };
 
 /**
@@ -141,53 +168,19 @@ export const convertToPaise = (amount: number): number => {
 };
 
 /**
- * Create a new Razorpay order
- * For demo purposes, this creates a client-side order
- * In production, this should call a secure backend endpoint
+ * Create and open Razorpay checkout
+ * @param options Razorpay payment options
+ * @returns Razorpay instance
  */
-export const createRazorpayOrder = async (amount: number, currency: string = 'INR'): Promise<any> => {
-  console.log(`Creating Razorpay order for amount: ${amount} ${currency}`);
+export const createRazorpayCheckout = (options: RazorpayOptions): any => {
+  if (!isRazorpayAvailable()) {
+    throw new Error("Razorpay is not available. Please refresh the page.");
+  }
   
-  // In a real implementation, this should call your backend API
-  // For demo purposes, we're creating a mock order
-  const orderId = generateOrderId();
+  // Create Razorpay instance
+  const razorpay = new window.Razorpay(options);
   
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  return {
-    id: orderId,
-    amount: convertToPaise(amount),
-    currency,
-    receipt: `rcpt${Date.now()}`,
-    status: 'created'
-  };
-};
-
-/**
- * Create a new Razorpay subscription
- * In a real implementation, this would call your backend API
- */
-export const createRazorpaySubscription = async (subscriptionData: RazorpaySubscriptionRequest): Promise<any> => {
-  console.log(`Creating Razorpay subscription:`, subscriptionData);
-  
-  // In a real implementation, this should call your backend API
-  // For now, we'll simulate a successful API response
-  
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  const subscriptionId = `sub${Date.now()}`;
-  
-  return {
-    id: subscriptionId,
-    plan_id: subscriptionData.plan_id,
-    total_count: subscriptionData.total_count,
-    quantity: subscriptionData.quantity,
-    status: 'created',
-    start_at: Math.floor(Date.now() / 1000),
-    notes: subscriptionData.notes || {}
-  };
+  return razorpay;
 };
 
 /**
