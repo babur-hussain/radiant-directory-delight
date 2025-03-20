@@ -169,9 +169,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           <div className="flex justify-between border-b pb-2">
             <span className="font-medium">{selectedPackage.title}</span>
             <span className="font-medium">
-              ₹{isOneTimePackage 
-                ? (selectedPackage.price || 999) // Default to 999 if price is 0
-                : (selectedPackage.setupFee || 0)}
+              ₹{paymentAmount}
             </span>
           </div>
           
@@ -191,7 +189,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           
           <div className="flex justify-between pt-2 font-medium text-primary">
             <span>Total Amount</span>
-            <span>₹{isOneTimePackage ? (selectedPackage.price || 999) : paymentAmount}</span>
+            <span>₹{paymentAmount}</span>
           </div>
         </div>
         
@@ -218,8 +216,8 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
             <>
               <CreditCard className="mr-2 h-4 w-4" />
               {isOneTimePackage 
-                ? `Pay ₹${selectedPackage.price || 999}` // Default to 999 if price is 0
-                : `Pay Setup Fee ₹${selectedPackage.setupFee || 0}`}
+                ? `Pay ₹${paymentAmount}` 
+                : `Pay Setup Fee ₹${paymentAmount}`}
             </>
           )}
         </Button>

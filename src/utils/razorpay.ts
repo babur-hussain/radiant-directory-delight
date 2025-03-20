@@ -123,7 +123,7 @@ export const isRazorpayAvailable = (): boolean => {
  * Note: In production, orders should be created server-side
  */
 export const generateOrderId = (): string => {
-  return `order_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+  return `order_${Date.now()}`;
 };
 
 /**
@@ -131,6 +131,8 @@ export const generateOrderId = (): string => {
  * Ensures minimum payment is ₹1 (100 paise)
  */
 export const convertToPaise = (amount: number): number => {
+  // Ensure minimum amount is 1 rupee (100 paise)
+  // Round to ensure we have whole number of paise
   const paise = Math.max(Math.round(amount * 100), 100);
   console.log(`Converting amount ${amount} to ${paise} paise`);
   return paise;
@@ -173,7 +175,7 @@ export const createRazorpaySubscription = async (subscriptionData: RazorpaySubsc
   // Simulate API call delay
   await new Promise(resolve => setTimeout(resolve, 500));
   
-  const subscriptionId = `sub_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+  const subscriptionId = `sub_${Date.now()}`;
   
   return {
     id: subscriptionId,

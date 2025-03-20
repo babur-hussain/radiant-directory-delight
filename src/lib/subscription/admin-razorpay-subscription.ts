@@ -1,5 +1,4 @@
 
-// This file needs updating to include paymentType
 import { SubscriptionData } from "./types";
 import axios from 'axios';
 
@@ -15,8 +14,8 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
       return false;
     }
     
-    // Generate a unique subscription ID
-    const subscriptionId = `sub_${Date.now()}`;
+    // Generate a unique subscription ID if not provided
+    const subscriptionId = paymentDetails?.subscriptionId || `sub_${Date.now()}`;
     
     const isOneTime = packageDetails.paymentType === "one-time";
     
@@ -30,13 +29,13 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
       userId: userId,
       packageId: packageDetails.id,
       packageName: packageDetails.title,
-      amount: packageDetails.price,
+      amount: isOneTime ? packageDetails.price : packageDetails.setupFee,
       startDate: new Date().toISOString(),
       endDate: endDate.toISOString(),
       status: "active",
       createdAt: new Date(),
       updatedAt: new Date(),
-      assignedBy: "admin",
+      assignedBy: "user",
       assignedAt: new Date().toISOString(),
       advancePaymentMonths: packageDetails.advancePaymentMonths || 0,
       signupFee: packageDetails.setupFee || 0,
@@ -53,16 +52,22 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
     // Add payment details if provided
     if (paymentDetails) {
       subscription.paymentMethod = "razorpay";
-      subscription.transactionId = paymentDetails.paymentId;
+      subscription.transactionId = paymentDetails.razorpay_payment_id || paymentDetails.paymentId;
       
       // For recurring subscriptions, add the subscription ID
       if (!isOneTime && paymentDetails.subscriptionId) {
         subscription.razorpaySubscriptionId = paymentDetails.subscriptionId;
       }
+      
+      // Add order ID if available
+      if (paymentDetails.razorpay_order_id || paymentDetails.orderId) {
+        subscription.razorpayOrderId = paymentDetails.razorpay_order_id || paymentDetails.orderId;
+      }
     }
     
     // Save to MongoDB
     try {
+      console.log("Saving subscription to database:", subscription);
       await axios.post('http://localhost:3001/api/subscriptions', subscription);
       console.log(`Razorpay subscription ${subscriptionId} assigned to user ${userId}`);
       return true;

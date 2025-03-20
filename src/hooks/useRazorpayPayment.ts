@@ -78,14 +78,34 @@ export const useRazorpayPayment = () => {
       
       console.log(`Setting up payment for ${selectedPackage.title} with amount ${paymentAmount} (${amountInPaise} paise)`);
       
+      // Common Razorpay options that will be used for both one-time and recurring
+      const commonOptions = {
+        key: RAZORPAY_KEY_ID,
+        name: 'Grow Bharat Vyapaar',
+        description: `Payment for ${selectedPackage.title}`,
+        image: 'https://example.com/your_logo.png', // Add your logo URL here
+        prefill: {
+          name: user?.fullName || '',
+          email: user?.email || '',
+          contact: user?.phone || ''
+        },
+        theme: {
+          color: '#3399cc'
+        },
+        modal: {
+          backdropclose: false,
+          escape: false,
+          handleback: true,
+          confirm_close: true
+        }
+      };
+      
       if (isOneTimePackage) {
         // One-time payment using standard Razorpay checkout
         const options = {
-          key: RAZORPAY_KEY_ID,
+          ...commonOptions,
           amount: amountInPaise,
           currency: 'INR',
-          name: 'Grow Bharat Vyapaar',
-          description: `Payment for ${selectedPackage.title}`,
           order_id: orderId,
           handler: function(response: any) {
             // Add payment type to the response
@@ -135,14 +155,19 @@ export const useRazorpayPayment = () => {
       } else {
         // Recurring subscription payment
         try {
-          // Simplified subscription flow - just collect setup fee first
+          // For recurring subscription, first handle the setup fee
           const options = {
-            key: RAZORPAY_KEY_ID,
+            ...commonOptions,
             amount: amountInPaise,
             currency: 'INR',
-            name: 'Grow Bharat Vyapaar',
-            description: `Setup fee for ${selectedPackage.title} subscription`,
             order_id: orderId,
+            notes: {
+              packageId: selectedPackage.id,
+              packageType: "recurring",
+              billingCycle: selectedPackage.billingCycle || "yearly",
+              setupFee: selectedPackage.setupFee || 0,
+              recurringAmount: selectedPackage.price || 0
+            },
             handler: function(response: any) {
               // Add subscription details to the response
               response.paymentType = "recurring";
@@ -154,7 +179,7 @@ export const useRazorpayPayment = () => {
               
               // Generate a mock subscription ID
               // In a real implementation, this would come from Razorpay's subscription API
-              response.subscriptionId = `sub_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+              response.subscriptionId = `sub_${Date.now()}`;
               
               console.log("Subscription setup payment successful, response:", response);
               
