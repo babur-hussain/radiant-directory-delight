@@ -164,7 +164,12 @@ export const useRazorpayPayment = () => {
           });
           
           setIsLoading(false);
-          onSuccess(enrichedResponse);
+          
+          try {
+            onSuccess(enrichedResponse);
+          } catch (callbackErr) {
+            console.error("Error in onSuccess callback:", callbackErr);
+          }
         },
         prefill: {
           name: user?.fullName || '',
@@ -180,7 +185,12 @@ export const useRazorpayPayment = () => {
           ondismiss: function() {
             console.log("Checkout form closed by user");
             setIsLoading(false);
-            onFailure({ message: "Payment cancelled by user" });
+            
+            try {
+              onFailure({ message: "Payment cancelled by user" });
+            } catch (callbackErr) {
+              console.error("Error in onFailure callback:", callbackErr);
+            }
           }
         }
       };
@@ -203,7 +213,12 @@ export const useRazorpayPayment = () => {
           
           setIsLoading(false);
           setError(errorMessage);
-          onFailure(resp.error);
+          
+          try {
+            onFailure(resp.error);
+          } catch (callbackErr) {
+            console.error("Error in onFailure callback:", callbackErr);
+          }
         });
         
         // Open the Razorpay checkout
@@ -223,7 +238,12 @@ export const useRazorpayPayment = () => {
         variant: "destructive"
       });
       
-      onFailure(error);
+      try {
+        onFailure(error);
+      } catch (callbackErr) {
+        console.error("Error in onFailure callback:", callbackErr);
+      }
+      
       setIsLoading(false);
     }
   };
