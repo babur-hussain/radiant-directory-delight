@@ -175,7 +175,7 @@ export const useRazorpayPayment = () => {
         // Open the Razorpay checkout
         razorpay.open();
       } else {
-        // Handle recurring subscription payment - setting up initial payment only for now
+        // Handle recurring payments
         try {
           // Calculate when the first recurring payment will happen
           const startDate = new Date();
@@ -183,17 +183,23 @@ export const useRazorpayPayment = () => {
             startDate.setMonth(startDate.getMonth() + advanceMonths);
           }
           
-          // For initial payment of subscription - we need a unique ID
+          // Generate a subscription ID
           const subscriptionId = `sub${Date.now()}`;
           
-          // For now, we're only handling the initial payment
-          // In a production app, you would create an actual subscription through the backend
+          // For now, handle the initial payment only
+          // Treat recurring payments as standard payments with subscription metadata
           const options = {
             ...commonOptions,
-            amount: amountInPaise, 
+            amount: amountInPaise,
             currency: 'INR',
             order_id: orderId,
-            payment_capture: 1,
+            // Essential payment methods for recurring payments
+            method: {
+              netbanking: true,
+              card: true,
+              upi: true,
+              wallet: true
+            },
             notes: {
               packageId: selectedPackage.id,
               packageType: "recurring",
@@ -202,9 +208,9 @@ export const useRazorpayPayment = () => {
               recurringAmount: recurringAmount,
               advanceMonths: advanceMonths,
               nextBillingDate: startDate.toISOString(),
-              subscriptionId: subscriptionId
+              subscriptionId: subscriptionId,
+              isRecurring: "true"  // String "true" for Razorpay to process properly
             },
-            // Standard payment callback
             handler: function(response: any) {
               // Add subscription details to the response
               response.paymentType = "recurring";

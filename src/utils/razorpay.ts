@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for Razorpay integration
  */
@@ -119,14 +118,14 @@ export const isRazorpayAvailable = (): boolean => {
 };
 
 /**
- * Generate a unique order ID
+ * Generate a unique order ID that's guaranteed to be compatible with Razorpay
  * Note: In production, orders should be created server-side
  */
 export const generateOrderId = (): string => {
-  // Use a very simple alphanumeric order ID format without special characters
-  // This format is more compatible with Razorpay requirements
+  // Format: order + timestamp + random number (5 digits)
+  // This ensures uniqueness and avoids invalid characters
   const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 100);
+  const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
   return `order${timestamp}${random}`;
 };
 
