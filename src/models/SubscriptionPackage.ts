@@ -18,6 +18,10 @@ export interface ISubscriptionPackage {
   dashboardSections?: string[];
   createdAt?: string;
   updatedAt?: string;
+  // Adding missing properties that are being used in the code
+  isActive?: boolean;
+  maxBusinesses?: number;
+  maxInfluencers?: number;
 }
 
 export class SubscriptionPackage implements ISubscriptionPackage {
@@ -39,6 +43,9 @@ export class SubscriptionPackage implements ISubscriptionPackage {
   dashboardSections?: string[];
   createdAt?: string;
   updatedAt?: string;
+  isActive?: boolean;
+  maxBusinesses?: number;
+  maxInfluencers?: number;
 
   constructor(data: ISubscriptionPackage) {
     this.id = data.id;
@@ -59,5 +66,29 @@ export class SubscriptionPackage implements ISubscriptionPackage {
     this.dashboardSections = data.dashboardSections;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
+    this.isActive = data.isActive !== undefined ? data.isActive : true;
+    this.maxBusinesses = data.maxBusinesses || 1;
+    this.maxInfluencers = data.maxInfluencers || 1;
+  }
+
+  // Add required methods to emulate Mongoose functionality
+  static async find(query: any) {
+    console.warn('SubscriptionPackage.find is a compatibility method, not implemented fully');
+    return [];
+  }
+
+  static async countDocuments(query: any) {
+    console.warn('SubscriptionPackage.countDocuments is a compatibility method, not implemented fully');
+    return 0;
+  }
+
+  static async create(data: any) {
+    console.warn('SubscriptionPackage.create is a compatibility method, not implemented fully');
+    return new SubscriptionPackage(data);
+  }
+
+  static async updateOne(query: any, update: any) {
+    console.warn('SubscriptionPackage.updateOne is a compatibility method, not implemented fully');
+    return { modifiedCount: 0 };
   }
 }

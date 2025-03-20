@@ -1,3 +1,4 @@
+
 import { User, UserRole } from "@/types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { connectToMongoDB } from '@/config/mongodb';
@@ -37,8 +38,7 @@ export const updateUserRole = async (user: User) => {
           isAdmin: roleToAssign === 'Admin' || user.isAdmin,
           // Include other fields to ensure they don't get lost
           name: user.name || user.displayName,
-          email: user.email,
-          updatedAt: new Date()
+          email: user.email
         });
         
         console.log(`User role updated to ${roleToAssign} for uid ${user.uid}`);
@@ -101,8 +101,7 @@ export const updateUserPermission = async (userId: string, isAdmin: boolean) => 
     // Update user admin status in MongoDB through API
     await createOrUpdateUser({
       uid: userId,
-      isAdmin: isAdmin,
-      updatedAt: new Date()
+      isAdmin: isAdmin
     });
     
     await syncUserData(userId, { isAdmin });

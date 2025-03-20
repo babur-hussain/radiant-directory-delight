@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User, UserRole } from '@/types/auth';
+import { User, UserRole, UserSubscription, isUserSubscription } from '@/types/auth';
 
 // Get all users
 export const getAllUsers = async (): Promise<User[]> => {
@@ -98,7 +98,7 @@ export const getUserById = async (userId: string): Promise<User | null> => {
 // Update user
 export const updateUser = async (userId: string, userData: Partial<User>): Promise<User> => {
   // Convert user data to snake_case format
-  const formattedData = {
+  const formattedData: any = {
     name: userData.name || userData.displayName,
     email: userData.email,
     photo_url: userData.photoURL,
@@ -119,13 +119,22 @@ export const updateUser = async (userId: string, userData: Partial<User>): Promi
     business_category: userData.businessCategory,
     website: userData.website,
     gst_number: userData.gstNumber,
-    subscription: userData.subscription,
     subscription_id: userData.subscriptionId,
     subscription_status: userData.subscriptionStatus,
     subscription_package: userData.subscriptionPackage,
     custom_dashboard_sections: userData.customDashboardSections,
     updated_at: new Date().toISOString()
   };
+  
+  // Handle subscription object if it exists
+  if (userData.subscription) {
+    if (isUserSubscription(userData.subscription)) {
+      // Convert object to string for storage
+      formattedData.subscription = JSON.stringify(userData.subscription);
+    } else {
+      formattedData.subscription = userData.subscription;
+    }
+  }
   
   const { data, error } = await supabase
     .from('users')

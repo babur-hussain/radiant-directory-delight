@@ -17,27 +17,28 @@ export const getUserById = async (userId: string): Promise<User | null> => {
         displayName: mongoUser.name,
         name: mongoUser.name,
         role: mongoUser.role as UserRole,
-        isAdmin: mongoUser.isAdmin,
-        photoURL: mongoUser.photoURL,
-        employeeCode: mongoUser.employeeCode,
-        createdAt: mongoUser.createdAt?.toISOString?.() || mongoUser.createdAt,
+        isAdmin: mongoUser.is_admin,
+        photoURL: mongoUser.photo_url,
+        employeeCode: mongoUser.employee_code,
+        createdAt: mongoUser.created_at?.toString?.() || mongoUser.created_at,
         // Include all additional fields that might be needed
         phone: mongoUser.phone,
-        instagramHandle: mongoUser.instagramHandle,
-        facebookHandle: mongoUser.facebookHandle,
+        instagramHandle: mongoUser.instagram_handle,
+        facebookHandle: mongoUser.facebook_handle,
         niche: mongoUser.niche,
-        followersCount: mongoUser.followersCount,
+        followersCount: mongoUser.followers_count,
         bio: mongoUser.bio,
-        businessName: mongoUser.businessName,
-        ownerName: mongoUser.ownerName,
-        businessCategory: mongoUser.businessCategory,
+        businessName: mongoUser.business_name,
+        ownerName: mongoUser.owner_name,
+        businessCategory: mongoUser.business_category,
         website: mongoUser.website,
-        gstNumber: mongoUser.gstNumber,
+        gstNumber: mongoUser.gst_number,
         subscription: mongoUser.subscription,
         // Other metadata
         city: mongoUser.city,
         country: mongoUser.country,
-        verified: mongoUser.verified
+        verified: mongoUser.verified,
+        lastLogin: mongoUser.last_login
       };
     }
     
@@ -113,13 +114,46 @@ export const getAllUsers = async (): Promise<User[]> => {
     
     // Try to get users from the API first
     try {
-      const mongoUsers = await getAPIAllUsers();
+      const apiUsers = await getAPIAllUsers();
       
-      if (Array.isArray(mongoUsers) && mongoUsers.length > 0) {
-        console.log(`Retrieved ${mongoUsers.length} users from MongoDB API`);
+      if (Array.isArray(apiUsers) && apiUsers.length > 0) {
+        console.log(`Retrieved ${apiUsers.length} users from MongoDB API`);
         
         // Format the users properly and save to localStorage
-        const formattedUsers = mongoUsers.map(formatUser);
+        const formattedUsers = apiUsers.map((user: any) => ({
+          uid: user.id,
+          id: user.id,
+          email: user.email,
+          displayName: user.name,
+          name: user.name,
+          photoURL: user.photo_url,
+          isAdmin: user.is_admin || false,
+          role: user.role as UserRole,
+          employeeCode: user.employee_code,
+          createdAt: user.created_at,
+          lastLogin: user.last_login,
+          // Additional fields
+          phone: user.phone,
+          instagramHandle: user.instagram_handle,
+          facebookHandle: user.facebook_handle,
+          verified: user.verified,
+          city: user.city,
+          country: user.country,
+          niche: user.niche,
+          followersCount: user.followers_count,
+          bio: user.bio,
+          businessName: user.business_name,
+          ownerName: user.owner_name,
+          businessCategory: user.business_category,
+          website: user.website,
+          gstNumber: user.gst_number,
+          subscription: user.subscription,
+          subscriptionId: user.subscription_id,
+          subscriptionStatus: user.subscription_status,
+          subscriptionPackage: user.subscription_package,
+          customDashboardSections: user.custom_dashboard_sections
+        }));
+        
         localStorage.setItem('all_users_data', JSON.stringify(formattedUsers));
         
         return formattedUsers;

@@ -1,5 +1,5 @@
 
-import { Subscription, ISubscription } from '../../models/Subscription';
+import { ISubscription } from '../../models/Subscription';
 import { User } from '../../models/User';
 
 export const adminAssignSubscription = async (userId: string, subscriptionData: any): Promise<boolean> => {
@@ -22,8 +22,8 @@ export const adminAssignSubscription = async (userId: string, subscriptionData: 
       startDate: subscriptionData.startDate || new Date().toISOString(),
       endDate: subscriptionData.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       status: subscriptionData.status || "active",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       assignedBy: subscriptionData.assignedBy || "admin",
       assignedAt: subscriptionData.assignedAt || new Date().toISOString(),
       advancePaymentMonths: subscriptionData.advancePaymentMonths || 0,
@@ -78,7 +78,7 @@ export const adminCancelSubscription = async (userId: string, subscriptionId: st
       status: "cancelled",
       cancelledAt: new Date().toISOString(),
       cancelReason: "admin_cancelled",
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString()
     };
     
     // Save updated subscription

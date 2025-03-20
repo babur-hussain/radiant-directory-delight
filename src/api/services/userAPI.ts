@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@/types/auth';
+import { User, UserRole } from '@/types/auth';
 import { toast } from '@/hooks/use-toast';
 
 // Fetch user by UID
@@ -44,11 +44,38 @@ export const getAllUsers = async () => {
   }
 };
 
+// Clear local user cache (exported for components that need it)
+export const clearUserCache = () => {
+  localStorage.removeItem('all_users_data');
+  console.log('User cache cleared');
+};
+
+// Update user role (exported for auth service)
+export const updateUserRole = async (uid: string, role: UserRole) => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ role })
+      .eq('id', uid)
+      .select();
+    
+    if (error) {
+      console.error('Error updating user role:', error);
+      throw error;
+    }
+    
+    return data?.[0] || null;
+  } catch (error) {
+    console.error('Error in updateUserRole:', error);
+    throw error;
+  }
+};
+
 // Create or update user
 export const createOrUpdateUser = async (userData: Partial<User> & { uid: string }) => {
   try {
-    // Convert to Supabase format (snake_case)
-    const supabaseData = {
+    // Convert user data to the format expected by Supabase
+    const supabaseData: any = {
       id: userData.uid,
       email: userData.email,
       name: userData.name || userData.displayName,
@@ -70,17 +97,29 @@ export const createOrUpdateUser = async (userData: Partial<User> & { uid: string
       business_category: userData.businessCategory,
       website: userData.website,
       gst_number: userData.gstNumber,
-      subscription: userData.subscription,
-      subscription_id: userData.subscriptionId,
-      subscription_status: userData.subscriptionStatus,
-      subscription_package: userData.subscriptionPackage,
-      custom_dashboard_sections: userData.customDashboardSections,
-      updated_at: new Date().toISOString()
     };
+    
+    // Handle subscription data - ensure it's a string for Supabase
+    if (userData.subscription) {
+      if (typeof userData.subscription === 'object') {
+        supabaseData.subscription = JSON.stringify(userData.subscription);
+      } else {
+        supabaseData.subscription = userData.subscription;
+      }
+    }
+    
+    // Add other subscription-related fields
+    supabaseData.subscription_id = userData.subscriptionId;
+    supabaseData.subscription_status = userData.subscriptionStatus;
+    supabaseData.subscription_package = userData.subscriptionPackage;
+    supabaseData.custom_dashboard_sections = userData.customDashboardSections;
+    
+    // Add timestamp
+    supabaseData.updated_at = new Date().toISOString();
     
     const { data, error } = await supabase
       .from('users')
-      .upsert(supabaseData, { onConflict: 'id' })
+      .upsert(supabaseData)
       .select();
     
     if (error) {

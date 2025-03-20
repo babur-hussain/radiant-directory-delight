@@ -1,5 +1,5 @@
 
-import { Subscription, ISubscription } from '../../models/Subscription';
+import { ISubscription } from '../../models/Subscription';
 import { User } from '../../models/User';
 import { auth } from '@/config/firebase';
 import { toast } from '@/hooks/use-toast';
@@ -33,17 +33,21 @@ export const updateUserSubscription = async (userId: string, subscriptionData: I
     });
     
     // First check if user document exists
-    const user = await User.findOne({ uid: userId });
-    
-    if (!user) {
-      const errorMsg = `User document ${userId} does not exist`;
-      console.error(`❌ ${errorMsg}`);
-      toast({
-        title: "User Not Found",
-        description: errorMsg,
-        variant: "destructive"
-      });
-      throw new Error(errorMsg);
+    try {
+      const response = await fetch(`http://localhost:3001/api/users/${userId}`);
+      if (!response.ok) {
+        const errorMsg = `User document ${userId} does not exist`;
+        console.error(`❌ ${errorMsg}`);
+        toast({
+          title: "User Not Found",
+          description: errorMsg,
+          variant: "destructive"
+        });
+        throw new Error(errorMsg);
+      }
+    } catch (error) {
+      console.error(`❌ Error checking user existence:`, error);
+      throw error;
     }
     
     console.log(`✅ User document exists: ${userId}`);
@@ -53,10 +57,11 @@ export const updateUserSubscription = async (userId: string, subscriptionData: I
     try {
       // Check current user's admin status directly
       if (auth.currentUser) {
-        const adminUser = await User.findOne({ uid: auth.currentUser.uid });
+        const adminCheckResponse = await fetch(`http://localhost:3001/api/users/${auth.currentUser.uid}`);
         
-        if (adminUser) {
-          isAdmin = adminUser.isAdmin === true;
+        if (adminCheckResponse.ok) {
+          const adminUser = await adminCheckResponse.json();
+          isAdmin = adminUser.is_admin === true;
           console.log(`🔐 Current user admin status:`, {
             userId: auth.currentUser.uid,
             isAdmin: isAdmin,
@@ -85,36 +90,49 @@ export const updateUserSubscription = async (userId: string, subscriptionData: I
       ...subscriptionData,
       id: subscriptionId,
       userId: userId,
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString()
     };
     
     if (!subscriptionData.createdAt) {
-      subscriptionWithIds.createdAt = new Date();
+      subscriptionWithIds.createdAt = new Date().toISOString();
     }
     
-    // Update or create the subscription in MongoDB
-    await Subscription.findOneAndUpdate(
-      { id: subscriptionId },
-      subscriptionWithIds,
-      { upsert: true, new: true }
-    );
+    // Update or create the subscription through API
+    const response = await fetch('http://localhost:3001/api/subscriptions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(subscriptionWithIds),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to update subscription: ${response.statusText}`);
+    }
     
     // Update the user document with subscription summary
-    await User.findOneAndUpdate(
-      { uid: userId },
-      {
+    const userUpdateResponse = await fetch(`http://localhost:3001/api/users/${userId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         subscription: subscriptionId,
-        subscriptionStatus: subscriptionData.status,
-        subscriptionPackage: subscriptionData.packageId,
-        lastUpdated: new Date(),
+        subscription_status: subscriptionData.status,
+        subscription_package: subscriptionData.packageId,
+        last_updated: new Date().toISOString(),
         ...(subscriptionData.status === "active" 
-            ? { subscriptionAssignedAt: new Date() } 
+            ? { subscription_assigned_at: new Date().toISOString() } 
             : {}),
         ...(subscriptionData.status === "cancelled" 
-            ? { subscriptionCancelledAt: new Date() } 
+            ? { subscription_cancelled_at: new Date().toISOString() } 
             : {})
-      }
-    );
+      }),
+    });
+    
+    if (!userUpdateResponse.ok) {
+      console.warn(`⚠️ Failed to update user with subscription info: ${userUpdateResponse.statusText}`);
+    }
     
     console.log("✅ Successfully updated subscription");
     return true;
