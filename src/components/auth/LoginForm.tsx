@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -20,7 +20,6 @@ import SocialLoginButtons from "./SocialLoginButtons";
 import { useAuth } from "@/hooks/useAuth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
-import { isDefaultAdminEmail, DEFAULT_ADMIN_EMAIL } from "@/types/auth";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -35,18 +34,12 @@ interface LoginFormProps {
   onClose: () => void;
 }
 
-// Known demo credentials - correctly set for testing
-const DEMO_CREDENTIALS = {
-  email: DEFAULT_ADMIN_EMAIL,
-  password: "admin123" // Make sure this matches what's set in Supabase
-};
-
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [resendingEmail, setResendingEmail] = useState(false);
   const { toast } = useToast();
-  const { loginWithGoogle, currentUser } = useAuth();
+  const { loginWithGoogle } = useAuth();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -57,42 +50,24 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
     },
   });
 
-  // Check if user is already logged in
-  useEffect(() => {
-    if (currentUser) {
-      console.log("User is already logged in:", currentUser.email);
-      toast({
-        title: "Already logged in",
-        description: `You are already logged in as ${currentUser.email}`,
-      });
-      onClose();
-    }
-  }, [currentUser, onClose, toast]);
-
   const onSubmit = async (data: LoginFormData) => {
     setIsSubmitting(true);
     setEmailError(null);
     
-    console.log("Login form submitted for:", data.email);
-    
     try {
       await onLogin(data.email, data.password, data.employeeCode || undefined);
       
-      console.log("Login successful, showing toast and closing modal");
       toast({
         title: "Login successful",
-        description: isDefaultAdminEmail(data.email) 
-          ? "Welcome to the admin dashboard!" 
-          : "Welcome back!",
+        description: "Welcome back!",
       });
       
       onClose();
     } catch (error) {
-      console.error("Login form error:", error);
+      console.error("Login error:", error);
       
       // Check for email confirmation error
       if (error instanceof Error && error.message.includes("Email not confirmed")) {
-        console.log("Email verification required, showing resend option");
         setEmailError(data.email);
         toast({
           title: "Email verification required",
@@ -114,9 +89,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
   const handleGoogleLogin = async () => {
     try {
       setIsSubmitting(true);
-      console.log("Initiating Google login");
       await loginWithGoogle();
-      console.log("Google login successful, closing modal");
       onClose();
     } catch (error) {
       console.error("Google login error:", error);
@@ -135,7 +108,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
     
     setResendingEmail(true);
     try {
-      console.log("Resending verification email to:", emailError);
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: emailError,
@@ -162,18 +134,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
   };
 
   // Is this the default admin email?
-  const isAdminEmail = isDefaultAdminEmail(form.watch('email'));
-
-  // Auto-fill admin email and password for demo purposes
-  React.useEffect(() => {
-    // Only set default values if the form is empty
-    if (!form.getValues("email") && !form.getValues("password")) {
-      // Set the default admin email
-      form.setValue("email", DEMO_CREDENTIALS.email);
-      // For demo, set the correct password
-      form.setValue("password", DEMO_CREDENTIALS.password);
-    }
-  }, [form]);
+  const isAdminEmail = form.watch('email').toLowerCase() === 'baburhussain660@gmail.com';
 
   return (
     <div className="space-y-6 py-4">
@@ -219,7 +180,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
         <Alert variant="default" className="mb-4 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
           <AlertTitle>Admin Account Detected</AlertTitle>
           <AlertDescription>
-            You're logging in with the default admin account. For demo purposes, the password has been pre-filled.
+            You're logging in with the default admin account. Make sure to confirm your email address.
           </AlertDescription>
         </Alert>
       )}

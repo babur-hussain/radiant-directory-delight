@@ -1,5 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { User, UserRole, isDefaultAdminEmail } from '@/types/auth';
+import { User, UserRole } from '@/types/auth';
 import { fetchUserByUid } from '@/lib/supabase/userUtils';
 import { updateUserRole } from './roleManagement';
 import { toast } from '@/hooks/use-toast';
@@ -13,30 +14,9 @@ export const signupWithEmail = async (
   additionalData: any = {}
 ): Promise<User> => {
   try {
-    console.log("Starting signup for:", email);
     // Check for default admin email
-    const isAdmin = isDefaultAdminEmail(email);
-    const finalRole = isAdmin ? 'Admin' : role;
-    
-    // First, check if user already exists
-    const { data: existingUser } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    }).catch(() => ({ data: null }));
-    
-    if (existingUser?.user) {
-      console.log("User already exists, fetching profile");
-      const userData = await fetchUserByUid(existingUser.user.id);
-      if (userData) {
-        // Ensure admin privileges for default admin
-        if (isAdmin && (!userData.isAdmin || userData.role !== 'Admin')) {
-          userData.isAdmin = true;
-          userData.role = 'Admin';
-          await updateUserRole(userData);
-        }
-        return userData;
-      }
-    }
+    const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
+    const finalRole = isDefaultAdmin ? 'Admin' : role;
     
     // Register the user with Supabase
     const { data, error } = await supabase.auth.signUp({
@@ -46,7 +26,7 @@ export const signupWithEmail = async (
         data: {
           name,
           role: finalRole,
-          is_admin: isAdmin,
+          is_admin: isDefaultAdmin,
           ...additionalData
         }
       }
@@ -61,42 +41,14 @@ export const signupWithEmail = async (
       throw new Error("No user returned from signup");
     }
 
-    console.log("User registered, ID:", data.user.id, "Session:", data.session ? "exists" : "null");
-
-    // Create a user profile in the database
-    try {
-      console.log("Creating user profile in database");
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert({
-          id: data.user.id,
-          email: email,
-          name: name,
-          role: finalRole,
-          is_admin: isAdmin,
-          created_at: new Date().toISOString(),
-          last_login: new Date().toISOString()
-        });
-        
-      if (insertError) {
-        console.error("Error creating user profile:", insertError);
-      } else {
-        console.log("User profile created successfully");
-      }
-    } catch (dbError) {
-      console.error("Database error creating profile:", dbError);
-    }
-
     // For default admin or when email confirmation is not required,
     // try to login immediately after signup
-    if (isAdmin || process.env.NODE_ENV === 'development') {
+    if (isDefaultAdmin || process.env.NODE_ENV === 'development') {
       try {
-        console.log("Attempting immediate login after signup");
         await supabase.auth.signInWithPassword({
           email,
           password
         });
-        console.log("Auto-login successful");
       } catch (loginError) {
         console.warn("Auto login after signup failed:", loginError);
         // Continue with signup flow even if auto-login fails
@@ -112,14 +64,16 @@ export const signupWithEmail = async (
       name: name,
       photoURL: null,
       role: finalRole,
-      isAdmin: isAdmin,
+      isAdmin: isDefaultAdmin,
       createdAt: new Date().toISOString(),
       lastLogin: new Date().toISOString(),
       // Include additional data
       ...additionalData
     };
 
-    console.log("Signup completed successfully, returning user");
+    // Set user role (this also updates the database)
+    await updateUserRole(newUser);
+
     return newUser;
   } catch (error) {
     console.error("Error in signupWithEmail:", error);
@@ -134,42 +88,9 @@ export const loginWithEmail = async (
   employeeCode?: string
 ): Promise<User> => {
   try {
-    console.log("Attempting login for:", email);
+    // Check for email confirmation bypass for development or default admin
+    const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
     
-    // Check if user is already logged in
-    const { data: sessionData } = await supabase.auth.getSession();
-    
-    if (sessionData?.session?.user?.email?.toLowerCase() === email.toLowerCase()) {
-      console.log("User is already logged in with this email, fetching profile");
-      // User is already logged in with this email, just fetch the profile
-      const userData = await fetchUserByUid(sessionData.session.user.id);
-      
-      if (userData) {
-        // Special case for default admin email
-        const isAdmin = isDefaultAdminEmail(email);
-        if (isAdmin) {
-          userData.isAdmin = true;
-          userData.role = 'Admin';
-        }
-        
-        // Update last login timestamp
-        try {
-          await supabase
-            .from('users')
-            .update({ last_login: new Date().toISOString() })
-            .eq('id', userData.id);
-        } catch (updateError) {
-          console.warn("Failed to update last login time:", updateError);
-        }
-        
-        return userData;
-      }
-    }
-    
-    // Otherwise proceed with normal login
-    const isAdmin = isDefaultAdminEmail(email);
-    
-    console.log("Attempting to sign in with password");
     // Sign in with Supabase
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -177,54 +98,40 @@ export const loginWithEmail = async (
     });
 
     if (error) {
+      if (error.message.includes('Email not confirmed') && isDefaultAdmin) {
+        // Special handling for default admin - try to auto-confirm
+        console.log("Attempting to bypass email confirmation for default admin");
+        toast({
+          title: "Admin login",
+          description: "Attempting special login for admin account",
+        });
+        
+        // You can add special handling here if needed
+        // For now, we'll just show a clearer error
+        throw new Error("Admin account needs email confirmation. Please check Supabase dashboard.");
+      }
       console.error("Login error:", error);
       throw error;
     }
 
     if (!data.user) {
-      console.error("No user returned from login");
       throw new Error("No user returned from login");
     }
 
-    console.log("Auth login successful, fetching user profile");
     // Fetch user profile data
     let userData = await fetchUserByUid(data.user.id);
     
     // Handle case where user exists in auth but not in public.users table
     if (!userData) {
-      console.log("User auth exists but no profile found, creating default profile");
-      
-      // Create a basic profile in the users table
-      const userMetadata = data.user.user_metadata || {};
-      
-      // Create a basic profile in the users table
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert({
-          id: data.user.id,
-          email: data.user.email || '',
-          name: userMetadata.name || '',
-          role: isAdmin ? 'Admin' : (userMetadata.role || 'User'),
-          is_admin: isAdmin,
-          created_at: new Date().toISOString(),
-          last_login: new Date().toISOString()
-        });
-        
-      if (insertError) {
-        console.error("Error creating user profile:", insertError);
-      } else {
-        console.log("Created user profile in database");
-      }
-      
       // Default user data
       userData = {
         uid: data.user.id,
         id: data.user.id,
         email: data.user.email || '',
-        displayName: userMetadata.name || '',
-        name: userMetadata.name || '',
-        role: isAdmin ? 'Admin' : (userMetadata.role as UserRole) || 'User',
-        isAdmin: isAdmin || (userMetadata.is_admin === true),
+        displayName: data.user.user_metadata.name || '',
+        name: data.user.user_metadata.name || '',
+        role: (data.user.user_metadata.role as UserRole) || 'User',
+        isAdmin: isDefaultAdmin || (data.user.user_metadata.is_admin === true),
         photoURL: null,
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString(),
@@ -240,8 +147,7 @@ export const loginWithEmail = async (
     }
 
     // Special case for default admin email
-    if (isAdmin && !userData.isAdmin) {
-      console.log("Assigning admin privileges to default admin account");
+    if (isDefaultAdmin && !userData.isAdmin) {
       userData.isAdmin = true;
       userData.role = 'Admin';
       
@@ -255,7 +161,6 @@ export const loginWithEmail = async (
       .update({ last_login: new Date().toISOString() })
       .eq('id', data.user.id);
 
-    console.log("Login successful, returning user data:", userData);
     return userData;
   } catch (error) {
     console.error("Error in loginWithEmail:", error);
@@ -318,7 +223,6 @@ export const getCurrentSession = async () => {
 // Get current user
 export const getCurrentUser = async () => {
   try {
-    console.log("Getting current user");
     const { data, error } = await supabase.auth.getUser();
     
     if (error) {
@@ -327,71 +231,18 @@ export const getCurrentUser = async () => {
     }
     
     if (!data.user) {
-      console.log("No authenticated user found");
       return null;
     }
     
-    console.log("Authenticated user found:", data.user.id, "email:", data.user.email);
-    
     // Fetch user profile data
-    let userData = await fetchUserByUid(data.user.id);
-    
-    if (!userData) {
-      console.log("User auth exists but no profile found in database");
-      
-      const userMetadata = data.user.user_metadata || {};
-      const isAdmin = isDefaultAdminEmail(data.user.email || '');
-      
-      // Try to create a profile in the database
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert({
-          id: data.user.id,
-          email: data.user.email || '',
-          name: userMetadata.name || '',
-          role: isAdmin ? 'Admin' : (userMetadata.role || 'User'),
-          is_admin: isAdmin,
-          created_at: new Date().toISOString(),
-          last_login: new Date().toISOString()
-        });
-        
-      if (insertError) {
-        console.error("Error creating user profile:", insertError);
-      } else {
-        console.log("Created new user profile in database");
-        // Try to fetch the newly created profile
-        userData = await fetchUserByUid(data.user.id);
-      }
-      
-      // If we still don't have a profile, create a basic user object
-      if (!userData) {
-        // Create a basic user object if profile not found
-        const basicUserData: User = {
-          uid: data.user.id,
-          id: data.user.id,
-          email: data.user.email || '',
-          displayName: userMetadata.name || '',
-          name: userMetadata.name || '',
-          role: isAdmin ? 'Admin' : (userMetadata.role as UserRole) || 'User',
-          isAdmin: isAdmin,
-          photoURL: null,
-          createdAt: new Date().toISOString(),
-          lastLogin: new Date().toISOString(),
-        };
-        
-        console.log("Created basic user profile:", basicUserData.email, "role:", basicUserData.role);
-        return basicUserData;
-      }
-    }
+    const userData = await fetchUserByUid(data.user.id);
     
     // Special case for default admin
-    if (isDefaultAdminEmail(data.user.email || '') && userData) {
+    if (data.user.email?.toLowerCase() === 'baburhussain660@gmail.com' && userData) {
       userData.isAdmin = true;
       userData.role = 'Admin';
-      console.log("Assigned admin privileges to user");
     }
     
-    console.log("Returning user data from profile:", userData.email, "role:", userData.role);
     return userData;
   } catch (error) {
     console.error("Error in getCurrentUser:", error);

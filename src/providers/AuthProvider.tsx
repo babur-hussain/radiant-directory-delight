@@ -1,12 +1,10 @@
-
 import { createContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   User,
   UserRole,
   AuthContextType,
-  SessionData,
-  DEFAULT_ADMIN_EMAIL
+  SessionData
 } from '@/types/auth';
 import {
   signupWithEmail,
@@ -39,25 +37,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Effect to handle auth state changes and initialization
   useEffect(() => {
-    console.log("Auth provider initializing...");
     // Track if component is mounted to prevent state updates after unmount
     let isMounted = true;
 
     const initializeAuth = async () => {
       try {
         // Set up auth state change listener
-        const { data: authListener } = supabase.auth.onAuthStateChange(
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, _session) => {
-            console.log("Auth state changed:", event, "Session:", _session ? "exists" : "null");
+            console.log("Auth state changed:", event);
             
             if (!isMounted) return;
             
             if (_session) {
-              console.log("Session user ID:", _session.user.id);
               setSession({
                 accessToken: _session.access_token,
                 refreshToken: _session.refresh_token,
-                expiresAt: _session.expires_at ? new Date(_session.expires_at * 1000).toISOString() : new Date().toISOString(),
+                expiresAt: new Date(_session.expires_at!).toISOString(),
                 providerToken: _session.provider_token || null,
                 user: {
                   id: _session.user.id,
@@ -71,20 +67,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               
               // Get additional user data
               try {
-                console.log("Fetching user data for ID:", _session.user.id);
                 const userData = await getCurrentUser();
-                console.log("User data fetched:", userData ? "success" : "null");
                 
                 // Special case for default admin
-                if (_session.user?.email?.toLowerCase() === DEFAULT_ADMIN_EMAIL.toLowerCase() && userData) {
+                if (_session.user?.email?.toLowerCase() === 'baburhussain660@gmail.com' && userData) {
                   userData.isAdmin = true;
                   userData.role = 'Admin';
-                  console.log("Admin user detected, forcing admin role");
                 }
                 
                 if (isMounted) {
                   setUser(userData);
-                  console.log("User state set:", userData ? userData.email : "null");
                 }
               } catch (error) {
                 console.error("Error fetching user data:", error);
@@ -93,7 +85,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 }
               }
             } else {
-              console.log("No session in auth state change");
               if (isMounted) {
                 setSession(null);
                 setUser(null);
@@ -107,16 +98,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         );
         
         // Get current session
-        console.log("Checking for existing session...");
-        const { data } = await supabase.auth.getSession();
-        const currentSession = data.session;
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
         
         if (currentSession && isMounted) {
-          console.log("Existing session found for user:", currentSession.user.id);
           setSession({
             accessToken: currentSession.access_token,
             refreshToken: currentSession.refresh_token,
-            expiresAt: currentSession.expires_at ? new Date(currentSession.expires_at * 1000).toISOString() : new Date().toISOString(),
+            expiresAt: new Date(currentSession.expires_at!).toISOString(),
             providerToken: currentSession.provider_token || null,
             user: {
               id: currentSession.user.id,
@@ -130,39 +118,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           // Get additional user data
           try {
-            console.log("Fetching user data for existing session");
             const userData = await getCurrentUser();
-            console.log("User data for existing session:", userData ? userData.email : "null");
             
             // Special case for default admin
-            if (currentSession.user?.email?.toLowerCase() === DEFAULT_ADMIN_EMAIL.toLowerCase() && userData) {
+            if (currentSession.user?.email?.toLowerCase() === 'baburhussain660@gmail.com' && userData) {
               userData.isAdmin = true;
               userData.role = 'Admin';
-              console.log("Setting admin privileges for default admin account");
             }
             
             if (isMounted) {
               setUser(userData);
             }
           } catch (error) {
-            console.error("Error fetching existing user data:", error);
+            console.error("Error fetching user data:", error);
             if (isMounted) {
               setUser(null);
             }
           }
-        } else {
-          console.log("No existing session found");
         }
         
         if (isMounted) {
           setLoading(false);
           setInitialized(true);
-          console.log("Auth provider initialized");
         }
         
         // Cleanup function
         return () => {
-          authListener.subscription.unsubscribe();
+          subscription.unsubscribe();
         };
       } catch (error) {
         console.error("Error initializing auth:", error);
@@ -184,14 +166,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string, employeeCode?: string): Promise<User | null> => {
     try {
       setLoading(true);
-      console.log("Attempting login for:", email);
-      
-      // Add basic validation
-      if (!email.trim()) throw new Error("Email is required");
-      if (!password.trim()) throw new Error("Password is required");
-      
       const userData = await loginWithEmail(email, password, employeeCode);
-      console.log("Login successful, user data:", userData ? userData.email : "null");
       setUser(userData);
       return userData;
     } catch (error) {
@@ -203,28 +178,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
       
-      // Create a more user-friendly message for common auth errors
-      let errorMessage = "Invalid credentials or account not found";
-      
-      if (error instanceof Error) {
-        if (error.message.includes("Invalid login credentials")) {
-          errorMessage = "Invalid email or password";
-        } else if (error.message.includes("Email not confirmed")) {
-          errorMessage = "Please verify your email before logging in";
-        } else if (error.message.includes("Rate limit")) {
-          errorMessage = "Too many login attempts. Please try again later";
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
       toast({
         title: "Login failed",
-        description: errorMessage,
+        description: error instanceof Error ? error.message : "Invalid credentials",
         variant: "destructive",
       });
-      
-      throw new Error(errorMessage);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -241,13 +200,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       
-      // Add basic validation
-      if (!email.trim()) throw new Error("Email is required");
-      if (!password.trim()) throw new Error("Password is required");
-      if (!name.trim()) throw new Error("Name is required");
-      
       // Check if this is the admin email
-      const isDefaultAdmin = email.toLowerCase() === DEFAULT_ADMIN_EMAIL.toLowerCase();
+      const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
       if (isDefaultAdmin) {
         console.log("Registering default admin account");
         role = 'Admin';
@@ -262,36 +216,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Don't set the user here as we want to make the user confirm their email
       // unless we're in development mode and bypassing email confirmation
       if (process.env.NODE_ENV === 'development' || isDefaultAdmin) {
-        console.log("Setting user immediately after signup (dev mode or admin)");
         setUser(userData);
       }
       
       return userData;
     } catch (error) {
       console.error("Signup error:", error);
-      
-      // Create a more user-friendly message for common auth errors
-      let errorMessage = "Failed to create account";
-      
-      if (error instanceof Error) {
-        if (error.message.includes("already registered")) {
-          errorMessage = "This email is already registered";
-        } else if (error.message.includes("Password should be")) {
-          errorMessage = error.message; // Use the password requirements error as is
-        } else if (error.message.includes("invalid email")) {
-          errorMessage = "Please enter a valid email address";
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
       toast({
         title: "Signup failed",
-        description: errorMessage,
+        description: error instanceof Error ? error.message : "Failed to create account",
         variant: "destructive",
       });
-      
-      throw new Error(errorMessage);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -301,7 +237,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logoutUser = async (): Promise<void> => {
     try {
       setLoading(true);
-      console.log("Logging out user");
       await authLogout();
       setUser(null);
       setSession(null);
@@ -326,7 +261,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const handleGoogleLogin = async (): Promise<void> => {
     try {
       setLoading(true);
-      console.log("Initiating Google login");
       await loginWithGoogle();
       // Auth state handler will update user state
     } catch (error) {
@@ -345,14 +279,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Refresh user data function
   const refreshUserData = async (): Promise<User | null> => {
     try {
-      console.log("Refreshing user data");
       const userData = await getCurrentUser();
       
       // Special case for default admin
-      if (userData?.email?.toLowerCase() === DEFAULT_ADMIN_EMAIL.toLowerCase()) {
+      if (userData?.email?.toLowerCase() === 'baburhussain660@gmail.com') {
         userData.isAdmin = true;
         userData.role = 'Admin';
-        console.log("Refreshed user data with admin privileges");
       }
       
       setUser(userData);
