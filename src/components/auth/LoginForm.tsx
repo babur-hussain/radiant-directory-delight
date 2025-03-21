@@ -38,7 +38,7 @@ interface LoginFormProps {
 // Known demo credentials - WARNING: Only for development!
 const DEMO_CREDENTIALS = {
   email: DEFAULT_ADMIN_EMAIL,
-  password: "Rocky312" // Make sure this matches what's set in Supabase
+  password: "admin123" // Make sure this matches what's set in Supabase
 };
 
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {

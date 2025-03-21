@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole, isDefaultAdminEmail } from '@/types/auth';
 import { fetchUserByUid } from '@/lib/supabase/userUtils';
@@ -63,22 +64,6 @@ export const signupWithEmail = async (
 
     console.log("User registered, ID:", data.user.id, "Session:", data.session ? "exists" : "null");
 
-    // For default admin or when email confirmation is not required,
-    // try to login immediately after signup
-    if (isAdmin || process.env.NODE_ENV === 'development') {
-      try {
-        console.log("Attempting immediate login after signup");
-        await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-        console.log("Auto-login successful");
-      } catch (loginError) {
-        console.warn("Auto login after signup failed:", loginError);
-        // Continue with signup flow even if auto-login fails
-      }
-    }
-
     // Create a user profile in the database
     try {
       console.log("Creating user profile in database");
@@ -101,6 +86,22 @@ export const signupWithEmail = async (
       }
     } catch (dbError) {
       console.error("Database error creating profile:", dbError);
+    }
+
+    // For default admin or when email confirmation is not required,
+    // try to login immediately after signup
+    if (isAdmin || process.env.NODE_ENV === 'development') {
+      try {
+        console.log("Attempting immediate login after signup");
+        await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        console.log("Auto-login successful");
+      } catch (loginError) {
+        console.warn("Auto login after signup failed:", loginError);
+        // Continue with signup flow even if auto-login fails
+      }
     }
 
     // Create a user object from the signup data
