@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User, UserRole } from '@/types/auth';
+import { User, UserRole, isDefaultAdminEmail } from '@/types/auth';
 import { fetchUserByUid } from '@/lib/supabase/userUtils';
 import { updateUserRole } from './roleManagement';
 import { toast } from '@/hooks/use-toast';
@@ -15,8 +15,8 @@ export const signupWithEmail = async (
 ): Promise<User> => {
   try {
     // Check for default admin email
-    const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
-    const finalRole = isDefaultAdmin ? 'Admin' : role;
+    const isAdmin = isDefaultAdminEmail(email);
+    const finalRole = isAdmin ? 'Admin' : role;
     
     // Register the user with Supabase
     const { data, error } = await supabase.auth.signUp({
@@ -26,7 +26,7 @@ export const signupWithEmail = async (
         data: {
           name,
           role: finalRole,
-          is_admin: isDefaultAdmin,
+          is_admin: isAdmin,
           ...additionalData
         }
       }
@@ -43,7 +43,7 @@ export const signupWithEmail = async (
 
     // For default admin or when email confirmation is not required,
     // try to login immediately after signup
-    if (isDefaultAdmin || process.env.NODE_ENV === 'development') {
+    if (isAdmin || process.env.NODE_ENV === 'development') {
       try {
         await supabase.auth.signInWithPassword({
           email,
@@ -64,7 +64,7 @@ export const signupWithEmail = async (
       name: name,
       photoURL: null,
       role: finalRole,
-      isAdmin: isDefaultAdmin,
+      isAdmin: isAdmin,
       createdAt: new Date().toISOString(),
       lastLogin: new Date().toISOString(),
       // Include additional data
@@ -89,7 +89,7 @@ export const loginWithEmail = async (
 ): Promise<User> => {
   try {
     // Check for email confirmation bypass for development or default admin
-    const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
+    const isAdmin = isDefaultAdminEmail(email);
     
     // Sign in with Supabase
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -98,7 +98,7 @@ export const loginWithEmail = async (
     });
 
     if (error) {
-      if (error.message.includes('Email not confirmed') && isDefaultAdmin) {
+      if (error.message.includes('Email not confirmed') && isAdmin) {
         // Special handling for default admin - try to auto-confirm
         console.log("Attempting to bypass email confirmation for default admin");
         toast({
@@ -108,7 +108,7 @@ export const loginWithEmail = async (
         
         // You can add special handling here if needed
         // For now, we'll just show a clearer error
-        throw new Error("Admin account needs email confirmation. Please check Supabase dashboard.");
+        throw new Error("Admin account needs email confirmation. Please check your inbox or Supabase dashboard.");
       }
       console.error("Login error:", error);
       throw error;
@@ -131,7 +131,7 @@ export const loginWithEmail = async (
         displayName: data.user.user_metadata.name || '',
         name: data.user.user_metadata.name || '',
         role: (data.user.user_metadata.role as UserRole) || 'User',
-        isAdmin: isDefaultAdmin || (data.user.user_metadata.is_admin === true),
+        isAdmin: isAdmin || (data.user.user_metadata.is_admin === true),
         photoURL: null,
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString(),
@@ -147,7 +147,7 @@ export const loginWithEmail = async (
     }
 
     // Special case for default admin email
-    if (isDefaultAdmin && !userData.isAdmin) {
+    if (isAdmin && !userData.isAdmin) {
       userData.isAdmin = true;
       userData.role = 'Admin';
       
@@ -238,7 +238,7 @@ export const getCurrentUser = async () => {
     const userData = await fetchUserByUid(data.user.id);
     
     // Special case for default admin
-    if (data.user.email?.toLowerCase() === 'baburhussain660@gmail.com' && userData) {
+    if (isDefaultAdminEmail(data.user.email || '') && userData) {
       userData.isAdmin = true;
       userData.role = 'Admin';
     }

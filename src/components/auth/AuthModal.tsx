@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { 
@@ -7,7 +8,7 @@ import {
   DialogTitle, 
   DialogDescription 
 } from "@/components/ui/dialog";
-import { UserRole } from "@/types/auth";
+import { UserRole, isDefaultAdminEmail } from "@/types/auth";
 import { LogIn, UserPlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
@@ -46,11 +47,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
 
   const handleLogin = async (email: string, password: string, employeeCode?: string): Promise<void> => {
     try {
-      const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
+      const isAdmin = isDefaultAdminEmail(email);
       
       await login(email, password, employeeCode);
       
-      if (isDefaultAdmin) {
+      if (isAdmin) {
         toast({
           title: "Admin login successful",
           description: "Welcome to the admin dashboard",
@@ -78,11 +79,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
     additionalData?: any
   ): Promise<void> => {
     try {
-      const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
+      const isAdmin = isDefaultAdminEmail(email);
       
-      await signup(email, password, name, isDefaultAdmin ? 'Admin' : role, additionalData);
+      await signup(email, password, name, isAdmin ? 'Admin' : role, additionalData);
       
-      let message = `Your account has been created as a ${isDefaultAdmin ? 'Admin' : role}.`;
+      let message = `Your account has been created as a ${isAdmin ? 'Admin' : role}.`;
       
       message += " Please check your email for a verification link.";
       
@@ -91,7 +92,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
         description: message,
       });
       
-      if (isDefaultAdmin) {
+      if (isAdmin) {
         toast({
           title: "Admin Account",
           description: "This account has been set as an admin account",

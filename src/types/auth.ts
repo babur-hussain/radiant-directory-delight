@@ -1,3 +1,4 @@
+
 export type UserRole = "User" | "Business" | "Influencer" | "Staff" | "Admin";
 
 export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled' | 'pending' | 'paused' | 'expired' | 'trial';
@@ -125,6 +126,14 @@ export function isUserSubscription(value: any): value is UserSubscription {
     'startDate' in value &&
     'endDate' in value
   );
+}
+
+// Default admin email constant for easy reference
+export const DEFAULT_ADMIN_EMAIL = 'baburhussain660@gmail.com';
+
+// Helper function to check if an email is the default admin
+export function isDefaultAdminEmail(email: string): boolean {
+  return email.toLowerCase() === DEFAULT_ADMIN_EMAIL.toLowerCase();
 }
 
 export interface AuthContextType {

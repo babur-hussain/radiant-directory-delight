@@ -20,6 +20,7 @@ import SocialLoginButtons from "./SocialLoginButtons";
 import { useAuth } from "@/hooks/useAuth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
+import { isDefaultAdminEmail } from "@/types/auth";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -59,7 +60,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
       
       toast({
         title: "Login successful",
-        description: "Welcome back!",
+        description: isDefaultAdminEmail(data.email) 
+          ? "Welcome to the admin dashboard!" 
+          : "Welcome back!",
       });
       
       onClose();
@@ -134,7 +137,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
   };
 
   // Is this the default admin email?
-  const isAdminEmail = form.watch('email').toLowerCase() === 'baburhussain660@gmail.com';
+  const isAdminEmail = isDefaultAdminEmail(form.watch('email'));
 
   return (
     <div className="space-y-6 py-4">
