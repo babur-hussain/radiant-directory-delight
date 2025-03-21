@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,7 +29,6 @@ import { PaymentType, BillingCycle } from '@/models/Subscription';
 import { Loader2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
-// Form validation schema
 const packageSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(2, { message: "Title must be at least 2 characters" }),
@@ -70,12 +68,10 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   const [featuresArray, setFeaturesArray] = useState<string[]>([]);
   const [newFeature, setNewFeature] = useState('');
   
-  // Transform features array to string for form
   const featuresToString = (features: string[] | undefined) => {
     return features ? features.join('\n') : '';
   };
   
-  // Initialize form with initial package data
   const form = useForm<PackageFormData>({
     resolver: zodResolver(packageSchema),
     defaultValues: {
@@ -99,7 +95,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
     }
   });
   
-  // Watch form values for reactive elements
   const paymentType = form.watch('paymentType');
   const price = form.watch('price') || 0;
   const monthlyPrice = form.watch('monthlyPrice') || 0;
@@ -108,27 +103,22 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   const advancePaymentMonths = form.watch('advancePaymentMonths') || 0;
   const billingCycle = form.watch('billingCycle');
   
-  // Initialize features array from initial package
   useEffect(() => {
     if (initialPackage.features && Array.isArray(initialPackage.features)) {
       setFeaturesArray(initialPackage.features);
     }
   }, [initialPackage.features]);
   
-  // Calculate payment summary
   const calculateInitialPayment = () => {
     if (paymentType === 'one-time') {
       return price;
     } else {
-      // For recurring payment
       const setup = setupFee || 0;
       const advance = advancePaymentMonths || 0;
       
       if (billingCycle === 'monthly') {
-        // Monthly billing: setup + (monthly price * advance months)
         return setup + (monthlyPrice * advance);
       } else {
-        // Yearly billing: setup + yearly price (if paid in advance)
         return setup + (advance > 0 ? price : 0);
       }
     }
@@ -145,12 +135,10 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   const initialPayment = calculateInitialPayment();
   const recurringAmount = calculateRecurringAmount();
   
-  // Handle form submission
   const onSubmit = async (data: PackageFormData) => {
     setIsSubmitting(true);
     
     try {
-      // Convert features from string to array if it's a string
       let featuresData: string[] = [];
       
       if (typeof data.features === 'string' && data.features.trim()) {
@@ -161,15 +149,12 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
         featuresData = data.features;
       }
       
-      // Ensure we have a valid ID
       const packageId = data.id || uuidv4().substring(0, 8);
       
-      // Ensure we have required title
       if (!data.title) {
         throw new Error("Package title is required");
       }
       
-      // Prepare package data
       const packageData: ISubscriptionPackage = {
         id: packageId,
         title: data.title,
@@ -189,7 +174,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
         maxInfluencers: data.maxInfluencers || 1,
         popular: data.popular || false,
         dashboardSections: initialPackage.dashboardSections || [],
-        isActive: true
       };
       
       console.log('Submitting package data:', packageData);
@@ -201,7 +185,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
     }
   };
   
-  // Format currency
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -213,7 +196,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Basic Information</h3>
             
@@ -310,7 +292,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
             />
           </div>
           
-          {/* Payment Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Payment Structure</h3>
             
@@ -488,7 +469,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
               )}
             />
             
-            {/* Payment Summary */}
             <Card className="mt-6">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Payment Summary</CardTitle>
@@ -533,7 +513,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
           </div>
         </div>
         
-        {/* Features */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Package Features</h3>
           
@@ -556,7 +535,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
           />
         </div>
         
-        {/* Additional Settings */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Additional Settings</h3>
           
@@ -633,7 +611,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   );
 };
 
-// For completeness, adding the missing FormDescription component
 const FormDescription = ({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => {
   return (
     <p

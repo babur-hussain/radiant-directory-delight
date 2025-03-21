@@ -5,7 +5,7 @@ import { ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AdminPermissionErrorProps {
-  permissionError: string | null;
+  permissionError: string;
   dismissError: () => void;
 }
 
@@ -19,8 +19,8 @@ const AdminPermissionError = ({ permissionError, dismissError }: AdminPermission
       <AlertDescription className="flex flex-col gap-2">
         <p>{permissionError}</p>
         <p className="text-sm">
-          This usually happens when your Firebase security rules do not allow the operation.
-          Please check your Firebase rules or contact your administrator.
+          This usually happens when you don't have admin permissions.
+          Please check your role or contact your administrator.
         </p>
         <Button 
           variant="outline" 

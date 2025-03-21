@@ -56,7 +56,7 @@ const AdminDashboardTabs = () => {
               Configure which dashboard features are included in each subscription package
             </p>
             <Separator className="my-4" />
-            <DashboardSectionsManager />
+            <DashboardSectionsManager userId="admin" isAdmin={true} />
           </div>
         </TabsContent>
       </div>

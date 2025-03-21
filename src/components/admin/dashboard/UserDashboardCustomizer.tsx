@@ -103,7 +103,13 @@ const UserDashboardCustomizer: React.FC = () => {
         </CardContent>
       </Card>
       
-      <DashboardSectionsManager selectedUser={selectedUser} />
+      {selectedUser && (
+        <DashboardSectionsManager 
+          userId={selectedUser.uid} 
+          isAdmin={true} 
+          selectedUser={selectedUser}
+        />
+      )}
     </div>
   );
 };

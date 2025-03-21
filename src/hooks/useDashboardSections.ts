@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useSubscription } from './useSubscription';
 
-export const useDashboardSections = () => {
-  const { subscription } = useSubscription();
+export const useDashboardSections = (userId?: string) => {
+  const { subscription } = useSubscription(userId);
   const [dashboardSections, setDashboardSections] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,4 +43,3 @@ export const useDashboardSections = () => {
 
   return { dashboardSections, isLoading, error };
 };
-

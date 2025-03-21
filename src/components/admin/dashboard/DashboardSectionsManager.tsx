@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,24 +11,39 @@ import { supabase } from '@/integrations/supabase/client';
 import Loading from '@/components/ui/loading';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import AdminPermissionError from './AdminPermissionError';
+import { IUser } from '@/models/User';
 
 interface DashboardSectionsManagerProps {
-  userId: string;
-  isAdmin: boolean;
+  userId?: string;
+  isAdmin?: boolean;
+  selectedUser?: IUser | null;
 }
 
-const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ userId, isAdmin }) => {
-  const { subscription, isLoading: isSubscriptionLoading, isError: isSubscriptionError } = useSubscription(userId);
-  const { dashboardSections, setDashboardSections, isLoading: isSectionsLoading, isError: isSectionsError } = useDashboardSections(userId);
+const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ 
+  userId, 
+  isAdmin = false,
+  selectedUser = null
+}) => {
+  const effectiveUserId = selectedUser?.uid || userId;
+  const { subscription, loading: isSubscriptionLoading, error: subscriptionError } = useSubscription(effectiveUserId);
+  const { dashboardSections, isLoading: isSectionsLoading, error: sectionsError } = useDashboardSections();
   const [availableSections, setAvailableSections] = useState<string[]>([]);
+  const [userSections, setUserSections] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (subscription?.packageId) {
       fetchSubscriptionPackage(subscription.packageId);
     }
   }, [subscription?.packageId]);
+
+  useEffect(() => {
+    if (dashboardSections && dashboardSections.length > 0) {
+      setUserSections(dashboardSections);
+    }
+  }, [dashboardSections]);
 
   const fetchSubscriptionPackage = async (packageId: string) => {
     try {
@@ -55,22 +71,24 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
   };
 
   const handleSectionToggle = (section: string) => {
-    if (dashboardSections) {
-      const newSections = dashboardSections.includes(section)
-        ? dashboardSections.filter(s => s !== section)
-        : [...dashboardSections, section];
-      setDashboardSections(newSections);
+    if (userSections) {
+      const newSections = userSections.includes(section)
+        ? userSections.filter(s => s !== section)
+        : [...userSections, section];
+      setUserSections(newSections);
     }
   };
 
   const saveDashboardSections = async () => {
+    if (!effectiveUserId) return;
+    
     setIsSaving(true);
     setError(null);
     try {
       const { error } = await supabase
         .from('users')
-        .update({ custom_dashboard_sections: dashboardSections })
-        .eq('id', userId);
+        .update({ custom_dashboard_sections: userSections })
+        .eq('id', effectiveUserId);
 
       if (error) {
         console.error("Error updating dashboard sections:", error);
@@ -100,20 +118,24 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
     }
   };
 
-  if (!isAdmin) {
-    return <AdminPermissionError />;
+  const dismissError = () => {
+    setPermissionError(null);
+  };
+
+  if (!isAdmin && !selectedUser) {
+    return <AdminPermissionError permissionError="You don't have permission to manage dashboard sections" dismissError={dismissError} />;
   }
 
   if (isSubscriptionLoading || isSectionsLoading) {
     return <Loading message="Loading dashboard sections..." />;
   }
 
-  if (isSubscriptionError || isSectionsError || error) {
+  if (subscriptionError || sectionsError || error) {
     return (
       <Card>
         <CardContent>
           <p className="text-red-500">
-            Error: {error || isSubscriptionError?.message || isSectionsError?.message || "Failed to load dashboard sections."}
+            Error: {error || subscriptionError?.message || sectionsError || "Failed to load dashboard sections."}
           </p>
         </CardContent>
       </Card>
@@ -142,7 +164,7 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
               <div key={section} className="flex items-center space-x-2">
                 <Checkbox
                   id={section}
-                  checked={dashboardSections?.includes(section) || false}
+                  checked={userSections?.includes(section) || false}
                   onCheckedChange={() => handleSectionToggle(section)}
                 />
                 <label
