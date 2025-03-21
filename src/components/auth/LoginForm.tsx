@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -35,12 +35,18 @@ interface LoginFormProps {
   onClose: () => void;
 }
 
+// Known demo credentials - WARNING: Only for development!
+const DEMO_CREDENTIALS = {
+  email: DEFAULT_ADMIN_EMAIL,
+  password: "Rocky312" // Make sure this matches what's set in Supabase
+};
+
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [resendingEmail, setResendingEmail] = useState(false);
   const { toast } = useToast();
-  const { loginWithGoogle } = useAuth();
+  const { loginWithGoogle, currentUser } = useAuth();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -50,6 +56,18 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
       employeeCode: "",
     },
   });
+
+  // Check if user is already logged in
+  useEffect(() => {
+    if (currentUser) {
+      console.log("User is already logged in:", currentUser.email);
+      toast({
+        title: "Already logged in",
+        description: `You are already logged in as ${currentUser.email}`,
+      });
+      onClose();
+    }
+  }, [currentUser, onClose, toast]);
 
   const onSubmit = async (data: LoginFormData) => {
     setIsSubmitting(true);
@@ -151,9 +169,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
     // Only set default values if the form is empty
     if (!form.getValues("email") && !form.getValues("password")) {
       // Set the default admin email
-      form.setValue("email", DEFAULT_ADMIN_EMAIL);
-      // For demo, you can set a default password - but be careful with this in production
-      form.setValue("password", "password123");
+      form.setValue("email", DEMO_CREDENTIALS.email);
+      // For demo, set the correct password
+      form.setValue("password", DEMO_CREDENTIALS.password);
     }
   }, [form]);
 
@@ -201,7 +219,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
         <Alert variant="default" className="mb-4 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
           <AlertTitle>Admin Account Detected</AlertTitle>
           <AlertDescription>
-            You're logging in with the default admin account. Make sure to confirm your email address.
+            You're logging in with the default admin account. For demo purposes, the password has been pre-filled.
           </AlertDescription>
         </Alert>
       )}

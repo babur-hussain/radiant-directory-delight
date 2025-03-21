@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole, isDefaultAdminEmail } from '@/types/auth';
 import { fetchUserByUid } from '@/lib/supabase/userUtils';
@@ -89,7 +88,38 @@ export const loginWithEmail = async (
 ): Promise<User> => {
   try {
     console.log("Attempting login for:", email);
-    // Check for email confirmation bypass for development or default admin
+    
+    // Check if user is already logged in
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    if (sessionData?.session?.user?.email?.toLowerCase() === email.toLowerCase()) {
+      console.log("User is already logged in with this email, fetching profile");
+      // User is already logged in with this email, just fetch the profile
+      const userData = await fetchUserByUid(sessionData.session.user.id);
+      
+      if (userData) {
+        // Special case for default admin email
+        const isAdmin = isDefaultAdminEmail(email);
+        if (isAdmin) {
+          userData.isAdmin = true;
+          userData.role = 'Admin';
+        }
+        
+        // Update last login timestamp
+        try {
+          await supabase
+            .from('users')
+            .update({ last_login: new Date().toISOString() })
+            .eq('id', userData.id);
+        } catch (updateError) {
+          console.warn("Failed to update last login time:", updateError);
+        }
+        
+        return userData;
+      }
+    }
+    
+    // Otherwise proceed with normal login
     const isAdmin = isDefaultAdminEmail(email);
     
     // Sign in with Supabase
