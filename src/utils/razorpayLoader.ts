@@ -1,6 +1,6 @@
 
-// Key ID for Razorpay integration - using test key for development environment
-export const RAZORPAY_KEY_ID = 'rzp_test_mxolTiKYIDkIpn';
+// Key ID for Razorpay integration - using live key for production
+export const RAZORPAY_KEY_ID = 'rzp_live_8PGS0Ug3QeCb2I';
 
 // Maximum number of load attempts
 const MAX_LOAD_ATTEMPTS = 3;
