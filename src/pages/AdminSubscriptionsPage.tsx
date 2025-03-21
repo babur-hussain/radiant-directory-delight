@@ -14,8 +14,8 @@ import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
 
 import SubscriptionPackagesTable from "@/components/admin/subscription/SubscriptionPackagesTable";
 import SubscriptionSettingsPanel from "@/components/admin/subscription/SubscriptionSettingsPanel";
-import SubscriptionCreateForm from "@/components/admin/subscription/SubscriptionCreateForm";
 import DatabaseConnectionStatus from "@/components/admin/DatabaseConnectionStatus";
+import CentralizedSubscriptionManager from "@/components/admin/subscription/CentralizedSubscriptionManager";
 
 const AdminSubscriptionsPage = () => {
   const { user } = useAuth();
@@ -26,7 +26,19 @@ const AdminSubscriptionsPage = () => {
   const [dbConnected, setDbConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [editingPackage, setEditingPackage] = useState<ISubscriptionPackage | null>(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  // Default empty package for new package creation
+  const emptyPackage: ISubscriptionPackage = {
+    id: '',
+    title: '',
+    price: 0,
+    features: [],
+    paymentType: 'recurring',
+    type: 'Business',
+    billingCycle: 'yearly',
+    durationMonths: 12
+  };
   
   useEffect(() => {
     const checkConnection = async () => {
@@ -57,6 +69,7 @@ const AdminSubscriptionsPage = () => {
         id: pkg.id,
         title: pkg.title,
         price: pkg.price,
+        monthlyPrice: pkg.monthly_price,
         durationMonths: pkg.duration_months || 12,
         shortDescription: pkg.short_description,
         fullDescription: pkg.full_description,
@@ -64,11 +77,14 @@ const AdminSubscriptionsPage = () => {
         popular: pkg.popular,
         setupFee: pkg.setup_fee,
         type: (pkg.type as 'Business' | 'Influencer') || 'Business',
-        paymentType: pkg.payment_type as PaymentType,
+        paymentType: (pkg.payment_type as PaymentType) || 'recurring',
         billingCycle: pkg.billing_cycle as BillingCycle,
         dashboardSections: pkg.dashboard_sections,
         termsAndConditions: pkg.terms_and_conditions,
-        advancePaymentMonths: pkg.advance_payment_months
+        advancePaymentMonths: pkg.advance_payment_months,
+        isActive: pkg.is_active !== undefined ? pkg.is_active : true,
+        maxBusinesses: pkg.max_businesses || 1, 
+        maxInfluencers: pkg.max_influencers || 1
       }));
       
       const transformedSubscriptions = subscriptionsData.map(sub => ({
@@ -115,7 +131,7 @@ const AdminSubscriptionsPage = () => {
     }
   }, [dbConnected]);
   
-  const handleCreatePackage = async (data: Partial<ISubscriptionPackage>) => {
+  const handleCreatePackage = async (data: ISubscriptionPackage) => {
     try {
       setIsLoading(true);
       
@@ -129,6 +145,7 @@ const AdminSubscriptionsPage = () => {
         id: packageData.id,
         title: packageData.title,
         price: packageData.price,
+        monthly_price: packageData.monthlyPrice,
         duration_months: packageData.durationMonths || 12,
         short_description: packageData.shortDescription,
         full_description: packageData.fullDescription,
@@ -140,7 +157,10 @@ const AdminSubscriptionsPage = () => {
         billing_cycle: packageData.billingCycle,
         dashboard_sections: packageData.dashboardSections || [],
         terms_and_conditions: packageData.termsAndConditions,
-        advance_payment_months: packageData.advancePaymentMonths || 0
+        advance_payment_months: packageData.advancePaymentMonths || 0,
+        is_active: packageData.isActive !== undefined ? packageData.isActive : true,
+        max_businesses: packageData.maxBusinesses || 1,
+        max_influencers: packageData.maxInfluencers || 1
       };
       
       const { error } = await supabase
@@ -150,7 +170,7 @@ const AdminSubscriptionsPage = () => {
       if (error) throw error;
       
       await fetchData();
-      setShowCreateForm(false);
+      setIsDialogOpen(false);
       setEditingPackage(null);
     } catch (error) {
       console.error('Error creating package:', error);
@@ -162,7 +182,7 @@ const AdminSubscriptionsPage = () => {
   
   const handleEditPackage = (pkg: ISubscriptionPackage) => {
     setEditingPackage(pkg);
-    setShowCreateForm(true);
+    setIsDialogOpen(true);
   };
   
   const handleDeletePackage = async (id: string) => {
@@ -185,8 +205,13 @@ const AdminSubscriptionsPage = () => {
     }
   };
   
-  const handleConfigureRazorpay = () => {
-    console.log('Configure Razorpay clicked');
+  const handleOpenCreateDialog = () => {
+    setEditingPackage(null);
+    setIsDialogOpen(true);
+  };
+  
+  const handleCancelEdit = () => {
+    setEditingPackage(null);
   };
   
   if (user && !user.isAdmin) {
@@ -213,15 +238,10 @@ const AdminSubscriptionsPage = () => {
               <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            {!showCreateForm && (
-              <Button onClick={() => {
-                setEditingPackage(null);
-                setShowCreateForm(true);
-              }}>
-                <Plus className="h-4 w-4 mr-2" />
-                New Package
-              </Button>
-            )}
+            <Button onClick={handleOpenCreateDialog}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Package
+            </Button>
           </div>
         </div>
         
@@ -231,84 +251,47 @@ const AdminSubscriptionsPage = () => {
           error={connectionError || undefined}
         />
         
-        {dbConnected ? (
-          <>
-            {showCreateForm ? (
+        {dbConnected && (
+          <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="packages">Packages</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="packages" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>{editingPackage ? 'Edit Package' : 'Create New Package'}</CardTitle>
+                  <CardTitle>Subscription Packages</CardTitle>
                   <CardDescription>
-                    {editingPackage 
-                      ? 'Update the details of an existing package' 
-                      : 'Add a new subscription package to your offerings'}
+                    Manage your subscription packages and pricing
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <SubscriptionCreateForm 
-                    onSubmit={handleCreatePackage}
-                    initialData={editingPackage || {}}
-                    isEditing={!!editingPackage}
+                  <SubscriptionPackagesTable 
+                    packages={packages}
+                    onEdit={handleEditPackage}
+                    onDelete={handleDeletePackage}
                   />
-                  <div className="mt-4">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        setShowCreateForm(false);
-                        setEditingPackage(null);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
                 </CardContent>
               </Card>
-            ) : (
-              <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                <TabsList>
-                  <TabsTrigger value="packages">Packages</TabsTrigger>
-                  <TabsTrigger value="settings">Settings</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="packages" className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Subscription Packages</CardTitle>
-                      <CardDescription>
-                        Manage your subscription packages and pricing
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <SubscriptionPackagesTable 
-                        packages={packages}
-                        onEdit={handleEditPackage}
-                        onDelete={handleDeletePackage}
-                      />
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-                
-                <TabsContent value="settings">
-                  <SubscriptionSettingsPanel onConfigureRazorpay={handleConfigureRazorpay} />
-                </TabsContent>
-              </Tabs>
-            )}
-          </>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Database Connection Failed</CardTitle>
-              <CardDescription>
-                Please check your database configuration and try again
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => checkSupabaseConnection()}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Retry Connection
-              </Button>
-            </CardContent>
-          </Card>
+            </TabsContent>
+            
+            <TabsContent value="settings">
+              <SubscriptionSettingsPanel />
+            </TabsContent>
+          </Tabs>
         )}
+        
+        {/* Package Editor Dialog */}
+        <CentralizedSubscriptionManager 
+          isDialogOpen={isDialogOpen}
+          setIsDialogOpen={setIsDialogOpen}
+          isEditing={!!editingPackage}
+          selectedPackage={editingPackage}
+          handleSave={handleCreatePackage}
+          handleCancelEdit={handleCancelEdit}
+          initialData={emptyPackage}
+        />
       </div>
     </DashboardLayout>
   );
