@@ -42,9 +42,9 @@ export const useSubscriptionPackages = () => {
             ? (packageData.features as string).split('\n').filter(f => f.trim().length > 0)
             : [],
         // Ensure these fields are strings
-        termsAndConditions: packageData.termsAndConditions || '',
-        fullDescription: packageData.fullDescription || '',
-        shortDescription: packageData.shortDescription || ''
+        termsAndConditions: String(packageData.termsAndConditions || ''),
+        fullDescription: String(packageData.fullDescription || ''),
+        shortDescription: String(packageData.shortDescription || '')
       };
       
       console.log("Mutation received and processed package data:", processedData);

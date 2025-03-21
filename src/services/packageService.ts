@@ -175,10 +175,10 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
     packageData.features = [];
   }
 
-  // Ensure text fields are properly handled
-  packageData.termsAndConditions = packageData.termsAndConditions || '';
-  packageData.fullDescription = packageData.fullDescription || '';
-  packageData.shortDescription = packageData.shortDescription || '';
+  // Ensure text fields are properly handled - explicitly stringify them
+  packageData.termsAndConditions = String(packageData.termsAndConditions || '');
+  packageData.fullDescription = String(packageData.fullDescription || '');
+  packageData.shortDescription = String(packageData.shortDescription || '');
 
   // Ensure dashboardSections is an array
   if (!Array.isArray(packageData.dashboardSections)) {
