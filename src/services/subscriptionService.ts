@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
 import { Subscription, PaymentType, BillingCycle } from '@/models/Subscription';
@@ -176,6 +175,25 @@ export const getUserSubscriptions = async (userId: string): Promise<Subscription
   } catch (error) {
     console.error(`Error getting subscriptions for user ${userId}:`, error);
     return [];
+  }
+};
+
+// Get active user subscription
+export const getActiveUserSubscription = async (userId: string): Promise<Subscription | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .select()
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .maybeSingle();
+    
+    if (error) throw error;
+    
+    return data ? fromSupabase(data) : null;
+  } catch (error) {
+    console.error(`Error getting active subscription for user ${userId}:`, error);
+    return null;
   }
 };
 

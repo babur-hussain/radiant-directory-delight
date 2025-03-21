@@ -9,7 +9,7 @@ import {
   getActiveUserSubscription, 
   getUserSubscriptions, 
   updateSubscription, 
-  cancelSubscription
+  cancelSubscription 
 } from '@/services/subscriptionService';
 
 export interface SubscriptionResponse {
@@ -168,10 +168,13 @@ export const useSubscription = (userId?: string | null) => {
         updatedAt: now
       };
       
-      const updatedSubscription = await cancelSubscription(subscription.id, reason);
+      // Fix: boolean return value expected, not subscription object
+      const success = await cancelSubscription(subscription.id, reason);
       
-      if (updatedSubscription) {
-        setSubscription(updatedSubscription);
+      if (success) {
+        // Instead of setting subscription directly to the boolean result,
+        // update it with canceled status
+        setSubscription(prev => prev ? {...prev, ...updatedData} : null);
         return true;
       }
       return false;

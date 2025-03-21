@@ -1,8 +1,33 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import { ISubscription, SubscriptionStatus } from '@/models/Subscription';
+import { ISubscription, SubscriptionStatus, PaymentType } from '@/models/Subscription';
 import { User } from '@/types/auth';
+
+// Helper to ensure correct type casting
+const transformType = (type: string): 'Business' | 'Influencer' => {
+  if (type?.toLowerCase() === 'influencer') return 'Influencer';
+  return 'Business'; // Default or invalid value becomes 'Business'
+};
+
+// Helper to ensure correct payment type casting
+const transformPaymentType = (type: string): PaymentType => {
+  if (type?.toLowerCase() === 'one-time') return 'one-time';
+  return 'recurring'; // Default
+};
+
+// Helper to ensure subscription status is valid
+const transformStatus = (status: string): SubscriptionStatus => {
+  switch (status?.toLowerCase()) {
+    case 'active': return 'active';
+    case 'pending': return 'pending';
+    case 'cancelled': return 'cancelled';
+    case 'expired': return 'expired';
+    case 'trial': return 'trial';
+    case 'paused': return 'paused';
+    default: return 'active'; // Default to active
+  }
+};
 
 /**
  * Gets subscription packages from Supabase
@@ -14,7 +39,25 @@ export const getSubscriptionPackages = async (): Promise<ISubscriptionPackage[]>
       .select('*');
     
     if (error) throw error;
-    return data || [];
+    
+    return data ? data.map(pkg => ({
+      id: pkg.id,
+      title: pkg.title || '',
+      price: pkg.price || 0,
+      monthlyPrice: pkg.monthly_price,
+      setupFee: pkg.setup_fee || 0,
+      durationMonths: pkg.duration_months || 12,
+      shortDescription: pkg.short_description || '',
+      fullDescription: pkg.full_description || '',
+      features: Array.isArray(pkg.features) ? pkg.features : [],
+      popular: pkg.popular || false,
+      type: transformType(pkg.type), // Fix: ensure type is valid
+      termsAndConditions: pkg.terms_and_conditions,
+      paymentType: transformPaymentType(pkg.payment_type), // Fix: ensure paymentType is valid
+      billingCycle: pkg.billing_cycle,
+      advancePaymentMonths: pkg.advance_payment_months || 0,
+      dashboardSections: pkg.dashboard_sections || []
+    })) : [];
   } catch (error) {
     console.error("Error getting subscription packages:", error);
     return [];
@@ -32,7 +75,25 @@ export const getPackagesByType = async (type: string): Promise<ISubscriptionPack
       .eq('type', type);
     
     if (error) throw error;
-    return data || [];
+    
+    return data ? data.map(pkg => ({
+      id: pkg.id,
+      title: pkg.title || '',
+      price: pkg.price || 0,
+      monthlyPrice: pkg.monthly_price,
+      setupFee: pkg.setup_fee || 0,
+      durationMonths: pkg.duration_months || 12,
+      shortDescription: pkg.short_description || '',
+      fullDescription: pkg.full_description || '',
+      features: Array.isArray(pkg.features) ? pkg.features : [],
+      popular: pkg.popular || false,
+      type: transformType(pkg.type), // Fix: ensure type is valid
+      termsAndConditions: pkg.terms_and_conditions,
+      paymentType: transformPaymentType(pkg.payment_type), // Fix: ensure paymentType is valid
+      billingCycle: pkg.billing_cycle,
+      advancePaymentMonths: pkg.advance_payment_months || 0,
+      dashboardSections: pkg.dashboard_sections || []
+    })) : [];
   } catch (error) {
     console.error(`Error getting ${type} subscription packages:`, error);
     return [];
@@ -51,7 +112,7 @@ export const createOrUpdatePackage = async (packageData: ISubscriptionPackage): 
     
     // Format features if it's a string
     if (typeof packageData.features === 'string') {
-      packageData.features = packageData.features.split(',').map(f => f.trim());
+      packageData.features = (packageData.features as any).split(',').map((f: string) => f.trim());
     }
     
     const { data, error } = await supabase
@@ -60,7 +121,12 @@ export const createOrUpdatePackage = async (packageData: ISubscriptionPackage): 
       .select();
     
     if (error) throw error;
-    return data && data.length > 0 ? data[0] : null;
+    
+    return data && data.length > 0 ? {
+      ...packageData,
+      // Ensure the correct type
+      type: transformType(data[0].type)
+    } : null;
   } catch (error) {
     console.error("Error creating/updating subscription package:", error);
     return null;
@@ -112,10 +178,10 @@ export const getUserSubscription = async (userId: string): Promise<ISubscription
         amount: data.amount,
         startDate: data.start_date,
         endDate: data.end_date,
-        status: data.status as SubscriptionStatus,
+        status: transformStatus(data.status), // Fix: ensure status is valid
         paymentMethod: data.payment_method,
         transactionId: data.transaction_id,
-        paymentType: data.payment_type,
+        paymentType: transformPaymentType(data.payment_type), // Fix: ensure payment type is valid
         createdAt: data.created_at,
         updatedAt: data.updated_at,
         cancelledAt: data.cancelled_at,
@@ -150,10 +216,11 @@ export const getUserSubscription = async (userId: string): Promise<ISubscription
         id: userData.subscription_id,
         userId: userId,
         packageId: userData.subscription_package || '',
-        status: (userData.subscription_status as SubscriptionStatus) || 'inactive',
+        status: transformStatus(userData.subscription_status || ''), // Fix: ensure status is valid
         startDate: new Date().toISOString(), // Default values
         endDate: new Date().toISOString(),
-        amount: 0
+        amount: 0,
+        paymentType: 'recurring' // Default payment type
       };
     }
     

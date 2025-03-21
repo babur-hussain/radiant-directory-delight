@@ -125,10 +125,11 @@ export const fetchFeaturedBusinesses = async (): Promise<IBusiness[]> => {
  */
 export const deleteBusiness = async (id: number | string): Promise<boolean> => {
   try {
+    // Fix: Ensure the id is properly handled for the eq condition
     const { error } = await supabase
       .from('businesses')
       .delete()
-      .eq('id', id);
+      .eq('id', typeof id === 'string' ? parseInt(id, 10) : id);
     
     if (error) throw error;
     return true;
