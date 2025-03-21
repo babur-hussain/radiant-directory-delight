@@ -1,5 +1,4 @@
-
-import { ISubscription } from '../../models/Subscription';
+import { Subscription } from '../../models/Subscription';
 import { User } from '../../models/User';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -7,7 +6,7 @@ import { toast } from '@/hooks/use-toast';
 /**
  * Updates a user's subscription in Supabase with enhanced error handling
  */
-export const updateUserSubscription = async (userId: string, subscriptionData: ISubscription) => {
+export const updateUserSubscription = async (userId: string, subscriptionData: Subscription) => {
   if (!userId) {
     console.error("❌ Cannot update subscription: No user ID provided");
     toast({

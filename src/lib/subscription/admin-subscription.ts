@@ -1,5 +1,4 @@
-
-import { ISubscription } from '../../models/Subscription';
+import { Subscription } from '../../models/Subscription';
 import { User } from '../../models/User';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -14,7 +13,7 @@ export const adminAssignSubscription = async (userId: string, subscriptionData: 
     const subscriptionId = subscriptionData.id || `sub_${Date.now()}`;
     
     // Prepare subscription data
-    const subscription: Partial<ISubscription> = {
+    const subscription: Partial<Subscription> = {
       id: subscriptionId,
       userId: userId,
       packageId: subscriptionData.packageId || subscriptionData.id,

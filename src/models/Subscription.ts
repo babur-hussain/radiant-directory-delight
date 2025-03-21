@@ -43,3 +43,26 @@ export interface Subscription {
   dashboardSections?: string[];
   actualStartDate?: string;
 }
+
+// Alias ISubscription to Subscription for backward compatibility
+export type ISubscription = Subscription;
+
+// Define the subscription package interface
+export interface ISubscriptionPackage {
+  id: string;
+  title: string;
+  shortDescription?: string;
+  fullDescription?: string;
+  price: number;
+  monthlyPrice?: number;
+  features: string[];
+  popular?: boolean;
+  paymentType: PaymentType;
+  billingCycle?: BillingCycle;
+  durationMonths?: number;
+  setupFee?: number;
+  advancePaymentMonths?: number;
+  dashboardFeatures?: string[];
+  dashboardSections?: string[];
+  termsAndConditions?: string;
+}

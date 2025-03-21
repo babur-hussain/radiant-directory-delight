@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -30,7 +29,6 @@ const AdminUsersPage = () => {
   const [showUserDetails, setShowUserDetails] = useState(false);
   const { toast } = useToast();
 
-  // Form state for new user
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserName, setNewUserName] = useState('');
   const [newUserRole, setNewUserRole] = useState<UserRole>('User');
@@ -46,7 +44,6 @@ const AdminUsersPage = () => {
     if (users.length > 0) {
       let filtered = [...users];
       
-      // Filter by search term (email, name, role)
       if (searchTerm) {
         filtered = filtered.filter((user) => 
           user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -55,7 +52,6 @@ const AdminUsersPage = () => {
         );
       }
       
-      // Filter by employee code if provided
       if (employeeCodeFilter) {
         filtered = filtered.filter((user) => 
           user.employeeCode?.toLowerCase().includes(employeeCodeFilter.toLowerCase())
@@ -100,7 +96,6 @@ const AdminUsersPage = () => {
       if (error) throw error;
       
       if (data && data.length > 0) {
-        // Map the Supabase data to our User type
         const mappedUsers: User[] = data.map(userData => ({
           uid: userData.id,
           id: userData.id,
@@ -176,7 +171,6 @@ const AdminUsersPage = () => {
 
     setIsSubmitting(true);
     try {
-      // Create a new user in Supabase
       const { data, error } = await supabase
         .from('users')
         .insert([{
@@ -202,7 +196,6 @@ const AdminUsersPage = () => {
           isAdmin: data[0].is_admin || false,
           employeeCode: data[0].employee_code || '',
           createdAt: data[0].created_at,
-          // Add other fields with default values
           lastLogin: null,
           phone: '',
           photoURL: '',
@@ -231,14 +224,12 @@ const AdminUsersPage = () => {
           description: `User ${newUserName} has been created`,
         });
 
-        // Add the new user to the list and sort (newest first)
         setUsers((prevUsers) => {
           const updatedUsers = [newUser, ...prevUsers];
           return updatedUsers;
         });
       }
       
-      // Reset form and close dialog
       setNewUserEmail('');
       setNewUserName('');
       setNewUserRole('User');
@@ -254,6 +245,49 @@ const AdminUsersPage = () => {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleBulkUploadUsers = async (users: any[]) => {
+    try {
+      setIsLoading(true);
+      
+      const formattedUsers = users.map(user => ({
+        id: user.id || undefined,
+        email: user.email,
+        name: user.name,
+        role: user.role || 'user',
+        is_admin: user.is_admin || false,
+        employee_code: user.employee_code || '',
+        created_at: user.created_at || new Date().toISOString()
+      }));
+      
+      for (const user of formattedUsers) {
+        const { error } = await supabase
+          .from('users')
+          .upsert(user);
+          
+        if (error) {
+          console.error('Error adding user:', error);
+          throw error;
+        }
+      }
+      
+      toast({
+        title: 'Users Added',
+        description: `Successfully added ${users.length} users.`,
+      });
+      
+      fetchUsers();
+    } catch (error) {
+      console.error('Error in bulk upload:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add users. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -454,7 +488,6 @@ const AdminUsersPage = () => {
         </Card>
       </div>
 
-      {/* Add User Dialog */}
       <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog}>
         <DialogContent>
           <DialogHeader>
@@ -545,7 +578,6 @@ const AdminUsersPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* User Details Popup */}
       <UserDetailsPopup 
         isOpen={showUserDetails}
         onClose={() => setShowUserDetails(false)}

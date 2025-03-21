@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Table,
@@ -10,13 +9,13 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ISubscription } from '@/models/Subscription';
+import { Subscription } from '@/models/Subscription';
 
 interface UserSubscriptionsTableProps {
-  subscriptions: ISubscription[];
+  subscriptions: Subscription[];
   isLoading?: boolean;
-  onViewDetails?: (subscription: ISubscription) => void;
-  onCancel?: (subscription: ISubscription) => void;
+  onViewDetails?: (subscription: Subscription) => void;
+  onCancel?: (subscription: Subscription) => void;
 }
 
 const UserSubscriptionsTable: React.FC<UserSubscriptionsTableProps> = ({ 
@@ -48,7 +47,7 @@ const UserSubscriptionsTable: React.FC<UserSubscriptionsTableProps> = ({
     }
   };
 
-  const isSubscriptionActive = (subscription: ISubscription) => {
+  const isSubscriptionActive = (subscription: Subscription) => {
     return subscription.status?.toLowerCase() === 'active';
   };
 

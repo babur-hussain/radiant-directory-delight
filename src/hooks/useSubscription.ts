@@ -1,9 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 import { supabase } from '@/integrations/supabase/client';
-import { ISubscription, PaymentType, BillingCycle, SubscriptionStatus } from '@/models/Subscription';
-import { ISubscriptionPackage } from '@/models/Subscription';
+import { Subscription, PaymentType, BillingCycle, SubscriptionStatus, ISubscriptionPackage } from '@/models/Subscription';
 import { 
   createSubscription, 
   getActiveUserSubscription, 
@@ -14,12 +12,12 @@ import {
 
 export interface SubscriptionResponse {
   success: boolean;
-  data?: ISubscription | null;
+  data?: Subscription | null;
   error?: string;
 }
 
 export const useSubscription = (userId?: string | null) => {
-  const [subscription, setSubscription] = useState<ISubscription | null>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -54,7 +52,7 @@ export const useSubscription = (userId?: string | null) => {
     }
   }, [userId]);
   
-  const purchaseSubscription = async (packageData: ISubscriptionPackage): Promise<ISubscription | null> => {
+  const purchaseSubscription = async (packageData: ISubscriptionPackage): Promise<Subscription | null> => {
     if (!userId) return null;
     
     try {
@@ -63,7 +61,7 @@ export const useSubscription = (userId?: string | null) => {
       const endDate = new Date(now);
       endDate.setMonth(now.getMonth() + (packageData.durationMonths || 12));
       
-      const subscriptionData: Partial<ISubscription> = {
+      const subscriptionData: Partial<Subscription> = {
         id: nanoid(),
         userId: userId,
         packageId: packageData.id,
@@ -95,8 +93,6 @@ export const useSubscription = (userId?: string | null) => {
   const initiateSubscription = async (packageId: string, paymentData?: any): Promise<SubscriptionResponse> => {
     try {
       setIsProcessing(true);
-      // Implementation would typically involve creating a pending subscription
-      // and processing payment information
       console.log('Initiating subscription for package:', packageId, 'with payment data:', paymentData);
       
       // Fake successful subscription for now
@@ -123,13 +119,12 @@ export const useSubscription = (userId?: string | null) => {
     }
   };
   
-  const renewSubscription = async (months: number = 12): Promise<ISubscription | null> => {
+  const renewSubscription = async (months: number = 12): Promise<Subscription | null> => {
     if (!subscription || !userId) return null;
     
     try {
       setIsProcessing(true);
       const now = new Date();
-      // If subscription has expired, set new start date as now
       const startDate = new Date(subscription.endDate) < now 
         ? now 
         : new Date(subscription.endDate);
@@ -161,19 +156,16 @@ export const useSubscription = (userId?: string | null) => {
     try {
       setIsProcessing(true);
       const now = new Date().toISOString();
-      const updatedData: Partial<ISubscription> = {
+      const updatedData: Partial<Subscription> = {
         status: 'cancelled',
         cancelledAt: now,
         cancelReason: reason || 'User cancelled',
         updatedAt: now
       };
       
-      // Fix: boolean return value expected, not subscription object
       const success = await cancelSubscription(subscription.id, reason);
       
       if (success) {
-        // Instead of setting subscription directly to the boolean result,
-        // update it with canceled status
         setSubscription(prev => prev ? {...prev, ...updatedData} : null);
         return true;
       }
@@ -192,12 +184,10 @@ export const useSubscription = (userId?: string | null) => {
       const userIdToUse = userId || userId;
       if (!userIdToUse) return [];
       
-      // Get the active subscription
       const userSubscription = await getActiveUserSubscription(userIdToUse);
       
       if (!userSubscription) return [];
       
-      // Return dashboard features from the subscription
       return userSubscription.dashboardFeatures || [];
     } catch (error) {
       console.error('Error fetching dashboard features:', error);

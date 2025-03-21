@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { nanoid } from 'nanoid';
 import { supabase } from '@/integrations/supabase/client';
-import { ISubscription, PaymentType, BillingCycle, SubscriptionStatus } from '@/models/Subscription';
-import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
+import { Subscription, PaymentType, BillingCycle, SubscriptionStatus, ISubscriptionPackage } from '@/models/Subscription';
 import { useToast } from '@/hooks/use-toast';
 
 const useAdminSubscriptionAssignment = () => {
@@ -27,7 +26,7 @@ const useAdminSubscriptionAssignment = () => {
       endDate.setMonth(now.getMonth() + (packageData.durationMonths || 12));
       
       // Set up subscription data with proper types
-      const subscriptionData: ISubscription = {
+      const subscriptionData: Subscription = {
         id: nanoid(),
         userId,
         packageId: packageData.id,
@@ -77,7 +76,7 @@ const useAdminSubscriptionAssignment = () => {
     }
   };
 
-  const toggleSubscriptionStatus = async (subscription: ISubscription) => {
+  const toggleSubscriptionStatus = async (subscription: Subscription) => {
     setIsLoading(true);
     setError(null);
     
