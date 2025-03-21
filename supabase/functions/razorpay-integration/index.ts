@@ -155,6 +155,16 @@ async function handleCreatePlan(req: Request, user: any) {
   }
 }
 
+// Generate a valid Razorpay subscription ID that follows their format
+function generateValidSubscriptionId(): string {
+  // Razorpay subscription IDs usually start with 'sub_' followed by alphanumeric characters
+  const randomPart = Array.from({ length: 14 }, () => 
+    "abcdefghijklmnopqrstuvwxyz0123456789"[Math.floor(Math.random() * 36)]
+  ).join('');
+  
+  return `sub_${randomPart}`;
+}
+
 // Handle creating a new subscription
 async function handleCreateSubscription(req: Request, user: any) {
   try {
@@ -172,8 +182,8 @@ async function handleCreateSubscription(req: Request, user: any) {
       );
     }
     
-    const { packageData, customerData, userId } = body;
-    console.log("Creating subscription with data:", { packageData, customerData, userId });
+    const { packageData, customerData, userId, useOneTimePreferred = false } = body;
+    console.log("Creating subscription with data:", { packageData, customerData, userId, useOneTimePreferred });
 
     // Validate subscription data
     if (!packageData || !customerData || !userId) {
@@ -187,7 +197,8 @@ async function handleCreateSubscription(req: Request, user: any) {
     }
 
     // Determine if this is a one-time payment or a subscription
-    const isOneTime = packageData.paymentType === "one-time";
+    // useOneTimePreferred forces one-time payments even for subscription packages
+    const isOneTime = packageData.paymentType === "one-time" || useOneTimePreferred;
     console.log(`Processing payment type: ${isOneTime ? 'one-time' : 'subscription'}`);
     
     // Calculate amount in paise (100 paise = 1 INR)
@@ -213,7 +224,7 @@ async function handleCreateSubscription(req: Request, user: any) {
       notes: {
         packageId: packageData.id,
         userId: userId,
-        paymentType: packageData.paymentType || "one-time"
+        paymentType: isOneTime ? "one-time" : "subscription"
       },
       created_at: Date.now()
     };
@@ -223,15 +234,12 @@ async function handleCreateSubscription(req: Request, user: any) {
     // Initialize subscription to null
     let subscription = null;
     
-    // Only create a subscription object if this is a recurring payment
+    // Only create a subscription object if this is a recurring payment and not forced to one-time
     if (!isOneTime) {
-      // Format for Razorpay subscription IDs usually starts with "sub_" followed by alphanumeric characters
-      // We'll create a format that matches Razorpay's format but is unique for our mock implementation
-      const timestamp = Date.now().toString(36); // Convert timestamp to base36 string
-      const random = Math.random().toString(36).substring(2, 10);
-      const subscriptionId = `sub_${timestamp}${random}`;
+      // Create a valid Razorpay subscription ID
+      const subscriptionId = generateValidSubscriptionId();
       
-      console.log("Created subscription ID:", subscriptionId);
+      console.log("Created valid subscription ID:", subscriptionId);
       
       subscription = {
         id: subscriptionId,

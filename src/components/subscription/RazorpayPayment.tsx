@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,7 +71,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     try {
       console.log(`Initiating ${isOneTimePackage ? 'one-time payment' : 'subscription'} for package:`, selectedPackage);
       
-      const result = await createSubscription(selectedPackage);
+      // Set a flag to prefer one-time payments for now as a fallback strategy
+      const useOneTimePreferred = true;
+      
+      const result = await createSubscription(selectedPackage, useOneTimePreferred);
       
       console.log('Payment success:', result);
       
@@ -81,7 +85,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       
       onSuccess({
         ...result,
-        isRecurring: canUseRecurring,
+        isRecurring: result.isSubscription || false,
         nextBillingDate: formattedFirstRecurringDate,
         recurringAmount: recurringAmount,
         billingCycle: selectedPackage.billingCycle || 'monthly'
@@ -300,4 +304,3 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
 };
 
 export default RazorpayPayment;
-
