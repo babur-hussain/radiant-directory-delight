@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
 import { Subscription, PaymentType, BillingCycle } from '@/models/Subscription';
@@ -23,7 +24,15 @@ const fromSupabase = (data: any): Subscription => {
     recurringAmount: data.recurring_amount,
     razorpaySubscriptionId: data.razorpay_subscription_id,
     createdAt: data.created_at,
-    updatedAt: data.updated_at
+    updatedAt: data.updated_at,
+    isPaused: data.is_paused,
+    isPausable: data.is_pausable,
+    isUserCancellable: data.is_user_cancellable,
+    assignedBy: data.assigned_by,
+    assignedAt: data.assigned_at,
+    advancePaymentMonths: data.advance_payment_months,
+    actualStartDate: data.actual_start_date,
+    invoiceIds: data.invoice_ids
   };
 };
 
@@ -46,7 +55,15 @@ const toSupabase = (data: Partial<Subscription>): any => {
     billing_cycle: data.billingCycle,
     signup_fee: data.signupFee,
     recurring_amount: data.recurringAmount,
-    razorpay_subscription_id: data.razorpaySubscriptionId
+    razorpay_subscription_id: data.razorpaySubscriptionId,
+    is_paused: data.isPaused,
+    is_pausable: data.isPausable,
+    is_user_cancellable: data.isUserCancellable,
+    assigned_by: data.assignedBy,
+    assigned_at: data.assignedAt,
+    advance_payment_months: data.advancePaymentMonths,
+    actual_start_date: data.actualStartDate,
+    invoice_ids: data.invoiceIds
   };
 };
 
@@ -80,6 +97,14 @@ export const createSubscription = async (subscription: Partial<Subscription>): P
       signupFee: subscription.signupFee,
       recurringAmount: subscription.recurringAmount,
       razorpaySubscriptionId: subscription.razorpaySubscriptionId,
+      isPaused: subscription.isPaused || false,
+      isPausable: subscription.isPausable !== undefined ? subscription.isPausable : true,
+      isUserCancellable: subscription.isUserCancellable !== undefined ? subscription.isUserCancellable : true,
+      assignedBy: subscription.assignedBy || 'system',
+      assignedAt: subscription.assignedAt || now,
+      advancePaymentMonths: subscription.advancePaymentMonths || 0,
+      actualStartDate: subscription.actualStartDate || now,
+      invoiceIds: subscription.invoiceIds || [],
       createdAt: now,
       updatedAt: now
     });
@@ -94,6 +119,17 @@ export const createSubscription = async (subscription: Partial<Subscription>): P
     if (!data || data.length === 0) {
       throw new Error('Failed to create subscription');
     }
+    
+    // Also update the user record with subscription info
+    await supabase
+      .from('users')
+      .update({
+        subscription: id,
+        subscription_id: id,
+        subscription_status: 'active',
+        subscription_package: subscription.packageId
+      })
+      .eq('id', subscription.userId);
     
     return fromSupabase(data[0]);
   } catch (error) {
@@ -153,6 +189,16 @@ export const updateSubscription = async (id: string, subscription: Partial<Subsc
     
     if (error) throw error;
     
+    // If status was updated, also update the user record
+    if (subscription.status) {
+      await supabase
+        .from('users')
+        .update({
+          subscription_status: subscription.status
+        })
+        .eq('id', result.user_id);
+    }
+    
     return fromSupabase(result);
   } catch (error) {
     console.error('Error updating subscription:', error);
@@ -200,7 +246,7 @@ export const getActiveUserSubscription = async (userId: string): Promise<Subscri
 // Cancel subscription
 export const cancelSubscription = async (id: string, reason: string = 'user_cancelled'): Promise<boolean> => {
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('user_subscriptions')
       .update({
         status: 'cancelled',
@@ -208,9 +254,20 @@ export const cancelSubscription = async (id: string, reason: string = 'user_canc
         cancel_reason: reason,
         updated_at: new Date().toISOString()
       })
-      .eq('id', id);
+      .eq('id', id)
+      .select();
     
     if (error) throw error;
+    
+    // Also update the user record
+    if (data && data.length > 0) {
+      await supabase
+        .from('users')
+        .update({
+          subscription_status: 'cancelled'
+        })
+        .eq('id', data[0].user_id);
+    }
     
     return true;
   } catch (error) {

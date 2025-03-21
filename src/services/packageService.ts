@@ -33,7 +33,8 @@ const mapToPackage = (pkg: any): ISubscriptionPackage => {
     paymentType: getPaymentType(pkg.payment_type),
     billingCycle: getBillingCycle(pkg.billing_cycle),
     advancePaymentMonths: pkg.advance_payment_months || 0,
-    dashboardSections: pkg.dashboard_sections || []
+    dashboardSections: pkg.dashboard_sections || [],
+    isActive: true
   };
 };
 

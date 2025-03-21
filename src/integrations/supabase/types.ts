@@ -186,6 +186,7 @@ export type Database = {
           amount: number
           assigned_at: string | null
           assigned_by: string | null
+          billing_cycle: string | null
           cancel_reason: string | null
           cancelled_at: string | null
           created_at: string | null
@@ -212,6 +213,7 @@ export type Database = {
           amount: number
           assigned_at?: string | null
           assigned_by?: string | null
+          billing_cycle?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           created_at?: string | null
@@ -238,6 +240,7 @@ export type Database = {
           amount?: number
           assigned_at?: string | null
           assigned_by?: string | null
+          billing_cycle?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           created_at?: string | null

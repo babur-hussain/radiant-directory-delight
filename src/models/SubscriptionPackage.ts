@@ -17,4 +17,5 @@ export interface ISubscriptionPackage {
   billingCycle?: 'monthly' | 'yearly';
   termsAndConditions?: string;
   dashboardSections?: string[];
+  isActive?: boolean;
 }
