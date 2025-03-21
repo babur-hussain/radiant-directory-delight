@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -174,6 +173,7 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
         dashboardSections: initialPackage.dashboardSections || []
       };
       
+      console.log('Submitting package data:', packageData);
       await onSave(packageData);
     } catch (error) {
       console.error('Error saving package:', error);
@@ -624,3 +624,4 @@ const FormDescription = ({ className, ...props }: React.HTMLAttributes<HTMLParag
 };
 
 export default SubscriptionPackageForm;
+

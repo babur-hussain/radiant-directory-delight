@@ -16,6 +16,7 @@ import SubscriptionPackagesTable from "@/components/admin/subscription/Subscript
 import SubscriptionSettingsPanel from "@/components/admin/subscription/SubscriptionSettingsPanel";
 import DatabaseConnectionStatus from "@/components/admin/DatabaseConnectionStatus";
 import CentralizedSubscriptionManager from "@/components/admin/subscription/CentralizedSubscriptionManager";
+import { toast } from "@/hooks/use-toast";
 
 const AdminSubscriptionsPage = () => {
   const { user } = useAuth();
@@ -140,39 +141,53 @@ const AdminSubscriptionsPage = () => {
     try {
       setIsLoading(true);
       
-      const packageData = {
-        ...data,
-        id: data.id || `pkg_${Date.now()}`,
-        features: data.features || []
-      };
-      
+      // Transform the ISubscriptionPackage data to match Supabase schema (snake_case)
       const supabaseData = {
-        id: packageData.id,
-        title: packageData.title,
-        price: packageData.price,
-        monthly_price: packageData.monthlyPrice,
-        duration_months: packageData.durationMonths || 12,
-        short_description: packageData.shortDescription,
-        full_description: packageData.fullDescription,
-        features: packageData.features,
-        popular: packageData.popular || false,
-        setup_fee: packageData.setupFee || 0,
-        type: packageData.type || 'Business',
-        payment_type: packageData.paymentType || 'recurring',
-        billing_cycle: packageData.billingCycle,
-        dashboard_sections: packageData.dashboardSections || [],
-        terms_and_conditions: packageData.termsAndConditions,
-        advance_payment_months: packageData.advancePaymentMonths || 0,
-        is_active: packageData.isActive !== undefined ? packageData.isActive : true,
-        max_businesses: packageData.maxBusinesses || 1,
-        max_influencers: packageData.maxInfluencers || 1
+        id: data.id || `pkg_${Date.now()}`,
+        title: data.title,
+        price: data.price,
+        monthly_price: data.monthlyPrice || 0,
+        duration_months: data.durationMonths || 12,
+        short_description: data.shortDescription || '',
+        full_description: data.fullDescription || '',
+        features: Array.isArray(data.features) ? data.features : [],
+        popular: data.popular || false,
+        setup_fee: data.setupFee || 0,
+        type: data.type || 'Business',
+        payment_type: data.paymentType || 'recurring',
+        billing_cycle: data.billingCycle || 'yearly',
+        dashboard_sections: data.dashboardSections || [],
+        terms_and_conditions: data.termsAndConditions || '',
+        advance_payment_months: data.advancePaymentMonths || 0,
+        is_active: data.isActive !== undefined ? data.isActive : true,
+        max_businesses: data.maxBusinesses || 1,
+        max_influencers: data.maxInfluencers || 1
       };
       
-      const { error } = await supabase
-        .from('subscription_packages')
-        .upsert(supabaseData);
+      console.log('Saving package data:', supabaseData);
       
-      if (error) throw error;
+      const { data: savedData, error } = await supabase
+        .from('subscription_packages')
+        .upsert(supabaseData)
+        .select();
+      
+      if (error) {
+        console.error('Error creating package:', error);
+        toast({
+          title: "Error",
+          description: `Failed to save package: ${error.message}`,
+          variant: "destructive"
+        });
+        throw error;
+      }
+      
+      toast({
+        title: "Success",
+        description: "Package saved successfully",
+        variant: "default"
+      });
+      
+      console.log('Package saved successfully:', savedData);
       
       await fetchData();
       setIsDialogOpen(false);
@@ -199,7 +214,20 @@ const AdminSubscriptionsPage = () => {
         .delete()
         .eq('id', id);
       
-      if (error) throw error;
+      if (error) {
+        toast({
+          title: "Error",
+          description: `Failed to delete package: ${error.message}`,
+          variant: "destructive"
+        });
+        throw error;
+      }
+      
+      toast({
+        title: "Success",
+        description: "Package deleted successfully",
+        variant: "default"
+      });
       
       await fetchData();
     } catch (error) {
