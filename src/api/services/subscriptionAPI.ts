@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -63,13 +62,18 @@ export const saveSubscriptionPackage = async (packageData: any) => {
     
     if (error) {
       console.error('Error saving subscription package:', error);
-      throw error;
+      throw new Error(error.message || JSON.stringify(error));
     }
     
     return data?.[0] || null;
   } catch (error) {
     console.error('Error in saveSubscriptionPackage:', error);
-    throw error;
+    // Rethrow with better error message
+    if (error instanceof Error) {
+      throw error;
+    } else {
+      throw new Error(JSON.stringify(error));
+    }
   }
 };
 

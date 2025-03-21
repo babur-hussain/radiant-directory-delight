@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -179,7 +180,7 @@ const AdminSubscriptionsPage = () => {
         console.error('Error creating package:', error);
         toast({
           title: "Error",
-          description: `Failed to save package: ${error.message}`,
+          description: `Failed to save package: ${error.message || JSON.stringify(error)}`,
           variant: "destructive"
         });
         throw error;
@@ -205,7 +206,7 @@ const AdminSubscriptionsPage = () => {
       setConnectionError(error instanceof Error ? error.message : String(error));
       toast({
         title: "Error",
-        description: `Failed to save package: ${error instanceof Error ? error.message : String(error)}`,
+        description: `Failed to save package: ${error instanceof Error ? error.message : JSON.stringify(error)}`,
         variant: "destructive"
       });
     } finally {

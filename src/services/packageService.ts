@@ -123,21 +123,26 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
     max_influencers: packageData.maxInfluencers
   };
   
-  const { data, error } = await supabase
-    .from('subscription_packages')
-    .upsert(supabaseData, { onConflict: 'id' })
-    .select();
-  
-  if (error) {
-    console.error('Error saving subscription package:', error);
+  try {
+    const { data, error } = await supabase
+      .from('subscription_packages')
+      .upsert(supabaseData, { onConflict: 'id' })
+      .select();
+    
+    if (error) {
+      console.error('Error saving subscription package:', error);
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      throw new Error('No data returned after saving package');
+    }
+    
+    return mapToPackage(data[0]);
+  } catch (error) {
+    console.error('Error in savePackage:', error);
     throw error;
   }
-  
-  if (!data || data.length === 0) {
-    throw new Error('No data returned after saving package');
-  }
-  
-  return mapToPackage(data[0]);
 };
 
 // Delete package

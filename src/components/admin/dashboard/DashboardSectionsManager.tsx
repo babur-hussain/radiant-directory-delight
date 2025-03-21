@@ -1,189 +1,169 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { toast } from '@/hooks/use-toast';
-import { useSubscription } from '@/hooks/useSubscription';
-import { useDashboardSections } from '@/hooks/useDashboardSections';
-import { supabase } from '@/integrations/supabase/client';
-import Loading from '@/components/ui/loading';
-import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import AdminPermissionError from './AdminPermissionError';
-import { IUser } from '@/models/User';
+import React, { useState, useEffect } from "react";
+import { useDashboardSections } from "@/hooks/useDashboardSections";
+import { useSubscription } from "@/hooks/useSubscription";
+import { Card, CardContent } from "@/components/ui/card";
+import { savePackage, getPackageById } from "@/services/packageService";
+import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
+import { useSubscriptionPackages } from "@/hooks/useSubscriptionPackages";
+import AdminPermissionError from "./AdminPermissionError";
+import PackageSectionsList from "./PackageSectionsList";
+import { toast } from "@/hooks/use-toast";
 
 interface DashboardSectionsManagerProps {
-  userId?: string;
-  isAdmin?: boolean;
-  selectedUser?: IUser | null;
+  userId: string;
+  isAdmin: boolean;
 }
 
-const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ 
-  userId, 
-  isAdmin = false,
-  selectedUser = null
-}) => {
-  const effectiveUserId = selectedUser?.uid || userId;
-  const { subscription, loading: isSubscriptionLoading, error: subscriptionError } = useSubscription(effectiveUserId);
-  const { dashboardSections, isLoading: isSectionsLoading, error: sectionsError } = useDashboardSections();
+const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ userId, isAdmin }) => {
+  const { subscription, loading: subscriptionLoading, error: subscriptionError } = useSubscription(userId);
+  const { dashboardSections, isLoading: sectionsLoading, error: sectionsError } = useDashboardSections(userId);
+  const { packages, isLoading: packagesLoading, error: packagesError, refetch } = useSubscriptionPackages();
+  
+  const [selectedPackage, setSelectedPackage] = useState<string>("");
+  const [currentPackageSections, setCurrentPackageSections] = useState<string[]>([]);
   const [availableSections, setAvailableSections] = useState<string[]>([]);
-  const [userSections, setUserSections] = useState<string[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [permissionError, setPermissionError] = useState<string | null>(null);
-
+  const [permissionError, setPermissionError] = useState<string>("");
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  
+  // Populate available dashboard sections
   useEffect(() => {
-    if (subscription?.packageId) {
-      fetchSubscriptionPackage(subscription.packageId);
-    }
-  }, [subscription?.packageId]);
-
-  useEffect(() => {
-    if (dashboardSections && dashboardSections.length > 0) {
-      setUserSections(dashboardSections);
-    }
-  }, [dashboardSections]);
-
-  const fetchSubscriptionPackage = async (packageId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('subscription_packages')
-        .select('dashboard_sections')
-        .eq('id', packageId)
-        .single();
-
-      if (error) {
-        console.error("Error fetching subscription package:", error);
-        setError("Failed to load subscription package details.");
-        return;
-      }
-
-      if (data && data.dashboard_sections) {
-        setAvailableSections(data.dashboard_sections);
-      } else {
-        setAvailableSections([]);
-      }
-    } catch (err) {
-      console.error("Unexpected error fetching subscription package:", err);
-      setError("Failed to load subscription package details.");
-    }
-  };
-
-  const handleSectionToggle = (section: string) => {
-    if (userSections) {
-      const newSections = userSections.includes(section)
-        ? userSections.filter(s => s !== section)
-        : [...userSections, section];
-      setUserSections(newSections);
-    }
-  };
-
-  const saveDashboardSections = async () => {
-    if (!effectiveUserId) return;
+    const allSections = [
+      'seo_optimization',
+      'google_business',
+      'reels_and_ads',
+      'marketing_campaigns',
+      'business_ratings',
+      'creative_designs',
+      'leads_and_inquiries',
+      'reach_and_visibility',
+      'growth_analytics',
+      'influencer_rank',
+      'performance_metrics',
+      'leads_generated',
+      'ratings_reviews',
+      'creatives_tracker',
+      'reels_progress',
+      'seo_progress',
+      'google_listing_status'
+    ];
     
-    setIsSaving(true);
-    setError(null);
+    setAvailableSections(allSections);
+  }, []);
+  
+  // Set selected package when packages are loaded
+  useEffect(() => {
+    if (packages && packages.length > 0 && !selectedPackage) {
+      setSelectedPackage(packages[0].id);
+    }
+  }, [packages, selectedPackage]);
+  
+  // Load package sections when selected package changes
+  useEffect(() => {
+    if (selectedPackage && packages) {
+      const pkg = packages.find(p => p.id === selectedPackage);
+      if (pkg) {
+        setCurrentPackageSections(pkg.dashboardSections || []);
+      }
+    }
+  }, [selectedPackage, packages]);
+  
+  const handleSelectPackage = (packageId: string) => {
+    setSelectedPackage(packageId);
+  };
+  
+  const togglePackageSection = (section: string) => {
+    if (currentPackageSections.includes(section)) {
+      setCurrentPackageSections(prev => prev.filter(s => s !== section));
+    } else {
+      setCurrentPackageSections(prev => [...prev, section]);
+    }
+  };
+  
+  const savePackageSections = async () => {
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ custom_dashboard_sections: userSections })
-        .eq('id', effectiveUserId);
-
-      if (error) {
-        console.error("Error updating dashboard sections:", error);
-        setError("Failed to update dashboard sections.");
+      setIsSaving(true);
+      
+      if (!selectedPackage) {
         toast({
           title: "Error",
-          description: "Failed to update dashboard sections.",
+          description: "No package selected",
           variant: "destructive"
         });
         return;
       }
-
+      
+      const pkg = packages.find(p => p.id === selectedPackage);
+      if (!pkg) {
+        toast({
+          title: "Error",
+          description: "Selected package not found",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Update package with new sections
+      const updatedPackage: ISubscriptionPackage = {
+        ...pkg,
+        dashboardSections: currentPackageSections
+      };
+      
+      await savePackage(updatedPackage);
+      
       toast({
         title: "Success",
-        description: "Dashboard sections updated successfully.",
+        description: "Package dashboard sections updated successfully",
+        variant: "default"
       });
-    } catch (err) {
-      console.error("Unexpected error updating dashboard sections:", err);
-      setError("Failed to update dashboard sections.");
+      
+      // Refresh packages
+      await refetch();
+    } catch (error) {
+      console.error("Error saving package sections:", error);
+      setPermissionError(error instanceof Error ? error.message : "Unknown error saving package sections");
       toast({
         title: "Error",
-        description: "Failed to update dashboard sections.",
+        description: `Failed to save package sections: ${error instanceof Error ? error.message : String(error)}`,
         variant: "destructive"
       });
     } finally {
       setIsSaving(false);
     }
   };
-
+  
   const dismissError = () => {
-    setPermissionError(null);
+    setPermissionError("");
   };
-
-  if (!isAdmin && !selectedUser) {
-    return <AdminPermissionError permissionError="You don't have permission to manage dashboard sections" dismissError={dismissError} />;
-  }
-
-  if (isSubscriptionLoading || isSectionsLoading) {
-    return <Loading message="Loading dashboard sections..." />;
-  }
-
-  if (subscriptionError || sectionsError || error) {
-    return (
-      <Card>
-        <CardContent>
-          <p className="text-red-500">
-            Error: {error || subscriptionError?.message || sectionsError || "Failed to load dashboard sections."}
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!subscription) {
-    return (
-      <Card>
-        <CardContent>
-          <p>No subscription found for this user.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
+  
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Manage Dashboard Sections</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {availableSections.length > 0 ? (
-          <div className="space-y-2">
-            {availableSections.map(section => (
-              <div key={section} className="flex items-center space-x-2">
-                <Checkbox
-                  id={section}
-                  checked={userSections?.includes(section) || false}
-                  onCheckedChange={() => handleSectionToggle(section)}
-                />
-                <label
-                  htmlFor={section}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  {section}
-                </label>
-              </div>
-            ))}
-            <Button onClick={saveDashboardSections} disabled={isSaving}>
-              {isSaving ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
-        ) : (
-          <p>No dashboard sections available for this subscription.</p>
-        )}
-      </CardContent>
-    </Card>
+    <div className="space-y-4">
+      {permissionError && (
+        <AdminPermissionError 
+          permissionError={permissionError} 
+          dismissError={dismissError} 
+        />
+      )}
+      
+      <Card>
+        <CardContent className="pt-6">
+          {(subscriptionLoading || sectionsLoading || packagesLoading) ? (
+            <div className="py-8 text-center text-muted-foreground">Loading dashboard sections...</div>
+          ) : (
+            <PackageSectionsList
+              packages={packages}
+              selectedPackage={selectedPackage}
+              setSelectedPackage={handleSelectPackage}
+              packageSections={currentPackageSections}
+              availableSections={availableSections}
+              togglePackageSection={togglePackageSection}
+              savePackageSections={savePackageSections}
+              refreshData={refetch}
+            />
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
