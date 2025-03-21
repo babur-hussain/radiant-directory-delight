@@ -31,9 +31,20 @@ export const useSubscriptionPackages = () => {
   });
   
   const createOrUpdateMutation = useMutation({
-    mutationFn: savePackage,
+    mutationFn: async (packageData: ISubscriptionPackage) => {
+      console.log("Mutation received package data:", packageData);
+      return await savePackage(packageData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
+    },
+    onError: (error: any) => {
+      console.error("Mutation error:", error);
+      toast({
+        title: "Error",
+        description: `Failed to save package: ${error instanceof Error ? error.message : String(error)}`,
+        variant: "destructive"
+      });
     }
   });
   
@@ -41,12 +52,20 @@ export const useSubscriptionPackages = () => {
     mutationFn: deletePackage,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete package: ${error instanceof Error ? error.message : String(error)}`,
+        variant: "destructive"
+      });
     }
   });
   
   // Helper methods with better error handling
   const createOrUpdate = async (packageData: ISubscriptionPackage) => {
     try {
+      console.log("Creating/updating package:", packageData);
       return await createOrUpdateMutation.mutateAsync(packageData);
     } catch (error) {
       console.error('Error in createOrUpdate:', error);

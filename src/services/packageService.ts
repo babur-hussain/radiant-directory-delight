@@ -30,7 +30,7 @@ const mapToPackage = (pkg: any): ISubscriptionPackage => {
     features: Array.isArray(pkg.features) ? pkg.features : [],
     popular: pkg.popular || false,
     type: pkg.type as "Business" | "Influencer" || 'Business',
-    termsAndConditions: pkg.terms_and_conditions,
+    termsAndConditions: pkg.terms_and_conditions || '',
     paymentType: getPaymentType(pkg.payment_type),
     billingCycle: getBillingCycle(pkg.billing_cycle),
     advancePaymentMonths: pkg.advance_payment_months || 0,
@@ -44,6 +44,14 @@ const mapToSupabasePackage = (pkg: ISubscriptionPackage) => {
   // Generate an ID if one doesn't exist
   const packageId = pkg.id || `pkg_${Date.now()}`;
   
+  // Ensure features is an array
+  let features = [];
+  if (Array.isArray(pkg.features)) {
+    features = pkg.features;
+  } else if (typeof pkg.features === 'string') {
+    features = pkg.features.split('\n').filter(f => f.trim().length > 0);
+  }
+  
   return {
     id: packageId,
     title: pkg.title,
@@ -52,7 +60,7 @@ const mapToSupabasePackage = (pkg: ISubscriptionPackage) => {
     duration_months: pkg.durationMonths || 12,
     short_description: pkg.shortDescription || '',
     full_description: pkg.fullDescription || '',
-    features: Array.isArray(pkg.features) ? pkg.features : [],
+    features: features,
     popular: pkg.popular || false,
     setup_fee: pkg.setupFee || 0,
     type: pkg.type || 'Business',
@@ -149,10 +157,18 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
     packageData.id = `pkg_${Date.now()}`;
   }
   
-  // Convert features to array if it's a string
+  // Properly handle features conversion
+  let features: string[] = [];
   if (typeof packageData.features === 'string') {
-    packageData.features = (packageData.features as unknown as string).split(',').map((f: string) => f.trim());
-  } else if (!Array.isArray(packageData.features)) {
+    features = (packageData.features as unknown as string)
+      .split('\n')
+      .map(f => f.trim())
+      .filter(f => f.length > 0);
+    packageData.features = features;
+  } else if (Array.isArray(packageData.features)) {
+    features = packageData.features.filter(f => f.trim().length > 0);
+    packageData.features = features;
+  } else {
     packageData.features = [];
   }
 
@@ -164,7 +180,7 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
   // Prepare the data for Supabase (snake_case)
   const supabaseData = mapToSupabasePackage(packageData);
   
-  console.log("Supabase data to save:", JSON.stringify(supabaseData, null, 2));
+  console.log("Preparing to save package data:", JSON.stringify(supabaseData, null, 2));
   
   try {
     const { data, error } = await supabase
@@ -175,6 +191,11 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
     
     if (error) {
       console.error('Error saving subscription package:', error);
+      toast({
+        title: "Error",
+        description: `Failed to save package: ${error.message}`,
+        variant: "destructive"
+      });
       throw new Error(`Failed to save package: ${error.message}`);
     }
     

@@ -67,7 +67,7 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   const [newFeature, setNewFeature] = useState('');
   
   const featuresToString = (features: string[] | undefined) => {
-    return features ? features.join('\n') : '';
+    return features && Array.isArray(features) ? features.join('\n') : '';
   };
   
   const form = useForm<PackageFormData>({
