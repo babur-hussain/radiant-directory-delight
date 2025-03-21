@@ -164,7 +164,7 @@ const AdminSubscriptionsPage = () => {
         max_influencers: data.maxInfluencers || 1
       };
       
-      console.log('Saving package data:', supabaseData);
+      console.log('Saving package data to Supabase:', supabaseData);
       
       const { data: savedData, error } = await supabase
         .from('subscription_packages')

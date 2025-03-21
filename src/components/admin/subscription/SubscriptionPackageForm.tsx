@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -145,10 +146,14 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
     setIsSubmitting(true);
     
     try {
-      // Convert features from string to array
-      const featuresData = data.features
-        ? data.features.split('\n').filter(f => f.trim().length > 0)
-        : featuresArray;
+      // Convert features from string to array if it's a string
+      let featuresData: string[] = [];
+      
+      if (typeof data.features === 'string' && data.features.trim()) {
+        featuresData = data.features.split('\n').filter(f => f.trim().length > 0);
+      } else if (featuresArray.length > 0) {
+        featuresData = featuresArray;
+      }
       
       // Prepare package data
       const packageData: ISubscriptionPackage = {
@@ -159,7 +164,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
         features: featuresData,
         paymentType: data.paymentType,
         type: data.type,
-        // Set default values for optional fields
         shortDescription: data.shortDescription || `${data.title} subscription package`,
         fullDescription: data.fullDescription || '',
         setupFee: data.setupFee || 0,
@@ -170,7 +174,8 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
         maxBusinesses: data.maxBusinesses || 1,
         maxInfluencers: data.maxInfluencers || 1,
         popular: data.popular || false,
-        dashboardSections: initialPackage.dashboardSections || []
+        dashboardSections: initialPackage.dashboardSections || [],
+        isActive: true
       };
       
       console.log('Submitting package data:', packageData);
@@ -624,4 +629,3 @@ const FormDescription = ({ className, ...props }: React.HTMLAttributes<HTMLParag
 };
 
 export default SubscriptionPackageForm;
-
