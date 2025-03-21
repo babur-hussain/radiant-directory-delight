@@ -44,11 +44,11 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
 /**
  * Thoroughly clean Razorpay options to prevent errors
  */
-const cleanRazorpayOptions = (options: RazorpayOptions): void => {
+const cleanRazorpayOptions = (options: Record<string, any>): void => {
   // Remove any undefined, null, or empty string values
   Object.keys(options).forEach(key => {
     if (options[key] === undefined || options[key] === null || options[key] === '') {
-      delete options[key];
+      options[key] = undefined; // Instead of deleting, set to undefined
     }
   });
   
@@ -61,13 +61,13 @@ const cleanRazorpayOptions = (options: RazorpayOptions): void => {
   if (options.prefill) {
     Object.keys(options.prefill).forEach(key => {
       if (!options.prefill[key] || options.prefill[key] === '') {
-        delete options.prefill[key];
+        options.prefill[key] = undefined; // Instead of deleting, set to undefined
       }
     });
     
-    // If prefill is empty after cleaning, remove it
-    if (Object.keys(options.prefill).length === 0) {
-      delete options.prefill;
+    // If prefill is empty after cleaning, remove reference
+    if (Object.keys(options.prefill).filter(key => options.prefill[key] !== undefined).length === 0) {
+      options.prefill = undefined;
     }
   }
   
@@ -77,13 +77,13 @@ const cleanRazorpayOptions = (options: RazorpayOptions): void => {
       if (options.notes[key] !== undefined && options.notes[key] !== null) {
         options.notes[key] = String(options.notes[key]);
       } else {
-        delete options.notes[key];
+        options.notes[key] = undefined; // Instead of deleting, set to undefined
       }
     });
     
-    // If notes is empty after cleaning, remove it
-    if (Object.keys(options.notes).length === 0) {
-      delete options.notes;
+    // If notes is empty after cleaning, remove reference
+    if (Object.keys(options.notes).filter(key => options.notes[key] !== undefined).length === 0) {
+      options.notes = undefined;
     }
   }
   
@@ -91,28 +91,28 @@ const cleanRazorpayOptions = (options: RazorpayOptions): void => {
   // 1. Ensure we don't have both subscription_id and order_id (Razorpay requirement)
   if (options.subscription_id && options.order_id) {
     console.warn("Both subscription_id and order_id present, removing subscription_id");
-    delete options.subscription_id;
+    options.subscription_id = undefined; // Instead of deleting, set to undefined
   }
   
   // 2. If recurring is true, ensure we have a valid subscription_id, otherwise remove recurring flag
   if (options.recurring === true && !options.subscription_id) {
     console.warn("Recurring flag present without subscription_id, removing recurring flag");
-    delete options.recurring;
+    options.recurring = undefined; // Instead of deleting, set to undefined
   }
   
   // 3. Remove amount if order_id is present (Razorpay recommendation)
   if (options.order_id && options.amount) {
     console.warn("Both order_id and amount present, removing amount since it's included in the order");
-    delete options.amount;
+    options.amount = undefined; // Instead of deleting, set to undefined
   }
   
   // 4. If we're using standard checkout mode, make sure we don't send problematic options
   if (options.order_id && options.order_id.startsWith('order_')) {
     // For standard checkout, these options can cause conflicts
-    delete options.recurring;
-    delete options.subscription_id;
-    delete options.amount;
-    delete options.currency;
+    options.recurring = undefined;
+    options.subscription_id = undefined;
+    options.amount = undefined;
+    options.currency = undefined;
   }
 
   // 5. Ensure the callback URL is valid (added for route not found fix)
@@ -122,7 +122,26 @@ const cleanRazorpayOptions = (options: RazorpayOptions): void => {
       new URL(options.callback_url);
     } catch (e) {
       console.warn("Invalid callback_url, removing it");
-      delete options.callback_url;
+      options.callback_url = undefined; // Instead of deleting, set to undefined
+    }
+  }
+  
+  // Final cleanup - remove all undefined properties
+  // This is a safe way to clean the object without using delete on potentially readonly properties
+  for (const key in options) {
+    if (options[key] === undefined) {
+      // Create a new object without the undefined properties
+      // This is safer than using delete operator
+      const { [key]: _, ...rest } = options;
+      Object.assign(options, rest);
+    } else if (typeof options[key] === 'object' && options[key] !== null) {
+      // Recursively clean nested objects
+      for (const nestedKey in options[key]) {
+        if (options[key][nestedKey] === undefined) {
+          const { [nestedKey]: _, ...rest } = options[key];
+          Object.assign(options[key], rest);
+        }
+      }
     }
   }
 };
@@ -284,9 +303,6 @@ export const buildRazorpayOptions = (
   if (result.order && result.order.id) {
     console.log("Setting up order-based payment with order ID:", result.order.id);
     options.order_id = result.order.id;
-    
-    // Do NOT set subscription_id if order_id is set (Razorpay requirement)
-    delete options.subscription_id;
   } else {
     console.error("Missing required order_id in the response");
     throw new Error("Invalid response from server: missing order information");
