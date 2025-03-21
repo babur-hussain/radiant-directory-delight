@@ -62,18 +62,25 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
       const subscription = await purchaseSubscription(selectedPackage);
       
       if (response.razorpay_payment_id) {
-        // Update the subscription with payment details
+        // Update the subscription with payment details including autopay information
+        const updateData: any = {
+          transaction_id: response.razorpay_payment_id,
+          payment_method: 'razorpay',
+          amount: response.amount ? response.amount / 100 : selectedPackage.price, // Convert from paise to rupees
+          is_autopay_enabled: response.enableAutoPay || false
+        };
+        
+        // Add autopay details if available
+        if (response.autopayDetails && response.autopayDetails.enabled) {
+          updateData.autopay_next_date = response.autopayDetails.nextBillingDate || response.nextBillingDate;
+          updateData.autopay_amount = response.autopayDetails.recurringAmount || response.recurringAmount;
+          updateData.autopay_remaining_count = response.autopayDetails.remainingPayments || response.recurringPaymentCount;
+          updateData.autopay_total_remaining = response.autopayDetails.totalRemainingAmount || response.remainingAmount;
+        }
+        
         await supabase
           .from('user_subscriptions')
-          .update({
-            transaction_id: response.razorpay_payment_id,
-            payment_method: 'razorpay',
-            amount: response.amount || selectedPackage.price,
-            is_autopay_enabled: response.enableAutoPay || false,
-            autopay_next_date: response.nextBillingDate || null,
-            autopay_amount: response.recurringAmount || 0,
-            autopay_remaining_count: response.recurringPaymentCount || 0
-          })
+          .update(updateData)
           .eq('id', subscription.id);
       }
       

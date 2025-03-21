@@ -1,34 +1,51 @@
 
-import { loadRazorpayScript, isRazorpayAvailable } from '@/utils/razorpay';
+/**
+ * Razorpay script loader utility
+ */
 
-// Production live key
+// Production Razorpay key ID
 export const RAZORPAY_KEY_ID = 'rzp_live_8PGS0Ug3QeCb2I';
 
 /**
- * Ensure Razorpay script is loaded and available
- * @returns Promise<boolean> - Returns true if Razorpay is available, false otherwise
+ * Asynchronously load the Razorpay script and ensure it's available
+ * @returns Promise<boolean> - True if script loaded successfully
  */
 export const ensureRazorpayAvailable = async (): Promise<boolean> => {
-  try {
-    // First check if already loaded
-    if (isRazorpayAvailable()) {
-      console.log('Razorpay script already loaded');
-      return true;
+  return new Promise((resolve) => {
+    // Check if Razorpay is already available
+    if (typeof (window as any).Razorpay !== 'undefined') {
+      console.log("Razorpay already loaded");
+      resolve(true);
+      return;
     }
+
+    console.log("Loading Razorpay checkout script");
     
-    // Not loaded yet, try loading
-    console.log('Attempting to load Razorpay script');
-    const result = await loadRazorpayScript();
+    // Create and inject the script
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.defer = true;
+
+    script.onload = () => {
+      console.log("Razorpay script loaded successfully");
+      resolve(true);
+    };
     
-    if (result) {
-      console.log('Razorpay script successfully loaded');
-    } else {
-      console.error('Failed to load Razorpay script');
-    }
+    script.onerror = () => {
+      console.error("Error loading Razorpay script");
+      resolve(false);
+    };
+
+    // Add to document
+    document.head.appendChild(script);
     
-    return result;
-  } catch (error) {
-    console.error('Error while loading Razorpay:', error);
-    return false;
-  }
+    // Set timeout to prevent hanging
+    setTimeout(() => {
+      if (typeof (window as any).Razorpay === 'undefined') {
+        console.error("Razorpay script load timed out");
+        resolve(false);
+      }
+    }, 10000); // 10 second timeout
+  });
 };

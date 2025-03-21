@@ -76,6 +76,7 @@ export interface SubscriptionResult {
   totalAmount?: number; // Total package value
   recurringPaymentAmount?: number; // Amount for each recurring payment
   recurringPaymentCount?: number; // Number of recurring payments
+  autopayDetails?: AutopayDetails; // Add autopay details
 }
 
 // New interface for autopay details

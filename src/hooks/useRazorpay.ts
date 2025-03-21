@@ -134,8 +134,10 @@ export const useRazorpay = () => {
               // Reset the razorpay instance reference
               razorpayInstanceRef.current = null;
               
+              // Include the autopay details from the server response
               resolve({
                 ...response,
+                ...result, // Include all data from the server
                 isRecurring: isRecurringPayment,
                 enableAutoPay: enableAutoPay
               });
@@ -188,12 +190,12 @@ export const useRazorpay = () => {
               reject(err);
             });
             
+            // Dispatch event to close the payment summary dialog
+            window.dispatchEvent(new CustomEvent('razorpay-opened'));
+            
             // Finally, open the payment modal
             razorpay.open();
             console.log("Razorpay checkout modal opened");
-            
-            // Dispatch a custom event to close the payment summary dialog
-            window.dispatchEvent(new CustomEvent('razorpay-opened'));
           } catch (razorpayError) {
             console.error("Error during Razorpay checkout creation:", razorpayError);
             

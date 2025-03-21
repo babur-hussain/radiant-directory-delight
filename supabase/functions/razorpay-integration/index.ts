@@ -221,6 +221,15 @@ serve(async (req) => {
     // Generate a receipt ID
     const receiptId = generateReceiptId();
     
+    // Create autopay details object for structured response
+    const autopayDetails = {
+      enabled: enableAutoPay && isRecurring,
+      nextBillingDate: nextBillingDate,
+      recurringAmount: recurringPaymentAmount,
+      remainingPayments: recurringPaymentCount,
+      totalRemainingAmount: remainingAmount
+    };
+    
     // Key-only mode: Don't create an order or subscription ID
     // Instead, let Razorpay handle direct payment with just the key and amount
     console.log("Setting up direct key-only mode payment with amount:", amountInPaise);
@@ -262,13 +271,7 @@ serve(async (req) => {
         remainingAmount: remainingAmount,
         recurringPaymentAmount: recurringPaymentAmount,
         recurringPaymentCount: recurringPaymentCount,
-        autopayDetails: {
-          enabled: enableAutoPay && isRecurring,
-          nextBillingDate: nextBillingDate,
-          recurringAmount: recurringPaymentAmount,
-          remainingPayments: recurringPaymentCount,
-          totalRemainingAmount: remainingAmount
-        }
+        autopayDetails: autopayDetails
       }),
       {
         status: 200,

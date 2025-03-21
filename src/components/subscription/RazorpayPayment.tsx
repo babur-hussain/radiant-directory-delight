@@ -221,7 +221,14 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         recurringPaymentCount,
         packageDuration,
         nextBillingDate: getNextBillingDate(),
-        packageEndDate: getPackageEndDate()
+        packageEndDate: getPackageEndDate(),
+        autopayDetails: result.autopayDetails || {
+          enabled: enableAutoPay && supportsRecurring,
+          nextBillingDate: getNextBillingDate(),
+          recurringAmount: recurringAmount,
+          remainingPayments: recurringPaymentCount,
+          totalRemainingAmount: remainingAmount
+        }
       });
     } catch (error) {
       console.error('Payment error:', error);

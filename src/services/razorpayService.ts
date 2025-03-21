@@ -242,6 +242,26 @@ export const buildRazorpayOptions = (
   // Get current URL (to create valid return URLs)
   const currentUrl = window.location.href.split('?')[0].split('#')[0];
   
+  // Include autopay information in notes
+  const notes = {
+    packageId: packageData.id.toString(),
+    userId: user.id,
+    enableAutoPay: enableAutoPay ? "true" : "false",
+    isRecurring: packageData.paymentType === 'recurring' ? "true" : "false"
+  };
+  
+  // Add additional autopay details if available
+  if (result.autopayDetails) {
+    notes.autopayDetails = JSON.stringify(result.autopayDetails);
+  }
+  
+  if (enableAutoPay && packageData.paymentType === 'recurring') {
+    notes.nextBillingDate = result.nextBillingDate || '';
+    notes.recurringAmount = String(result.recurringPaymentAmount || 0);
+    notes.remainingPayments = String(result.recurringPaymentCount || 0);
+    notes.totalRemainingAmount = String(result.remainingAmount || 0);
+  }
+  
   // Base options for Razorpay
   const options: RazorpayOptions = {
     key: RAZORPAY_KEY_ID,
@@ -251,11 +271,7 @@ export const buildRazorpayOptions = (
     // Fix the TypeScript error by adding fallback when result.amount is undefined
     amount: result.amount !== undefined ? result.amount : Math.round(packageData.price * 100),
     currency: 'INR',
-    notes: {
-      packageId: packageData.id.toString(),
-      userId: user.id,
-      enableAutoPay: enableAutoPay ? "true" : "false" // Flag for autopay
-    },
+    notes: notes,
     theme: {
       color: '#3399cc'
     },
@@ -263,10 +279,10 @@ export const buildRazorpayOptions = (
       console.log("Payment success response:", response);
       onSuccess({
         ...response,
+        ...result, // Include all data from the edge function result
         isSubscription: !isOneTime,
         enableAutoPay: enableAutoPay,
         packageDetails: packageData,
-        // Fix the TypeScript error by adding fallback when result.amount is undefined
         amount: result.amount !== undefined ? result.amount : Math.round(packageData.price * 100)
       });
     },
