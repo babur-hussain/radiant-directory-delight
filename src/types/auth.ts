@@ -1,6 +1,9 @@
 
 export type UserRole = "User" | "Business" | "Influencer" | "Staff" | "Admin";
 
+export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled' | 'pending' | 'paused' | 'expired' | 'trial';
+export type PaymentType = 'recurring' | 'one-time';
+
 export interface User {
   uid: string;
   id: string;
@@ -51,9 +54,6 @@ export interface User {
   subscriptionPackage?: string | null;
   customDashboardSections?: string[] | null;
 }
-
-export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled' | 'pending' | 'paused' | 'expired' | 'trial';
-export type PaymentType = 'recurring' | 'one-time';
 
 export interface UserSubscription {
   id: string;

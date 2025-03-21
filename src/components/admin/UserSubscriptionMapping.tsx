@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,29 +27,22 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
   
-  // Fetch all users and subscription packages
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Get all users directly from Firebase
       const result = await getAllUsers();
       const firebaseUsers = result.users;
       console.log("Fetched users for subscription mapping:", firebaseUsers.length);
       
-      // Log each user to verify they're all available
       firebaseUsers.forEach((user, idx) => {
         console.log(`Mapping user ${idx + 1}:`, user.id, user.email);
       });
       
-      // Get all subscription packages
       const allPackages = await fetchSubscriptionPackages();
       
-      // Get current subscriptions
       const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
       
-      // Add subscription info to users
       const usersWithSubscriptions = firebaseUsers.map((user: User) => {
-        // Create proper User object with typed subscription
         const userWithSubscription: User = {
           ...user,
           subscription: userSubscriptions[user.id] || null
@@ -61,7 +53,6 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
       setUsers(usersWithSubscriptions);
       setPackages(allPackages);
       setError(null);
-      
     } catch (error) {
       console.error("Error fetching data:", error);
       setError("Failed to load users or subscription packages.");
@@ -79,18 +70,15 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
     fetchData();
   }, [onPermissionError]);
   
-  // Filter users based on search term
   const filteredUsers = users.filter(user => 
     (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
   
-  // Handle search input change
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
   
-  // Handle refreshing data
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchData();
@@ -100,7 +88,6 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
     });
   };
   
-  // Handle assigning package to user
   const handleAssignPackage = (userId: string, packageId: string) => {
     try {
       if (!currentUser?.isAdmin) {
@@ -108,7 +95,6 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
         return;
       }
       
-      // Find the package
       const selectedPackage = packages.find(pkg => pkg.id === packageId);
       if (!selectedPackage) {
         toast({
@@ -119,30 +105,27 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
         return;
       }
       
-      // Create subscription data
       const subscriptionData: UserSubscription = {
         id: `sub_${Date.now()}`,
         userId: userId,
         packageId: selectedPackage.id,
         packageName: selectedPackage.title,
         amount: selectedPackage.price,
-        startDate: new Date(),
-        endDate: new Date(Date.now() + selectedPackage.durationMonths * 30 * 24 * 60 * 60 * 1000),
-        status: "active",
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + selectedPackage.durationMonths * 30 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'active' as SubscriptionStatus,
       };
       
-      // Update localStorage
       const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
       userSubscriptions[userId] = subscriptionData;
       localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
       
-      // Update state
       const updatedUsers = users.map(user => {
         if (user.id === userId) {
           return {
             ...user,
             subscription: subscriptionData
-          };
+          } as User;
         }
         return user;
       });
@@ -163,7 +146,6 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
     }
   };
   
-  // Handle removing a subscription
   const handleRemoveSubscription = (userId: string) => {
     try {
       if (!currentUser?.isAdmin) {
@@ -171,14 +153,12 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
         return;
       }
       
-      // Update localStorage
       const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
       
       if (userSubscriptions[userId]) {
-        userSubscriptions[userId].status = "cancelled";
+        userSubscriptions[userId].status = 'cancelled' as SubscriptionStatus;
         localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
         
-        // Update state
         const updatedUsers = users.map(user => {
           if (user.id === userId) {
             if (user.subscription && typeof user.subscription !== 'string') {
@@ -186,9 +166,9 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
                 ...user,
                 subscription: {
                   ...user.subscription,
-                  status: "cancelled"
+                  status: 'cancelled' as SubscriptionStatus
                 }
-              };
+              } as User;
             }
           }
           return user;
@@ -211,7 +191,6 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
     }
   };
   
-  // Format date for display
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -220,14 +199,12 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
     });
   };
   
-  // Helper to safely get subscription property
   const getSubscriptionValue = (user: User, property: string): any => {
     if (!user.subscription) return null;
     if (typeof user.subscription === 'string') return null;
     return (user.subscription as UserSubscription)[property as keyof UserSubscription];
   };
   
-  // If there's an error or still loading
   if (error && !isLoading) {
     return (
       <Card>
@@ -274,7 +251,6 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
         </Button>
       </CardHeader>
       <CardContent>
-        {/* Search Input */}
         <div className="mb-4 relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -285,7 +261,6 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
           />
         </div>
         
-        {/* User Table */}
         <div className="rounded-md border">
           <Table>
             <TableHeader>

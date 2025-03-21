@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { User, UserSubscription } from '@/types/auth';
+import { User, UserSubscription, SubscriptionStatus } from '@/types/auth';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
@@ -53,7 +53,7 @@ export const useSubscriptionAssignment = (
             amount: data.amount,
             startDate: data.start_date,
             endDate: data.end_date,
-            status: data.status,
+            status: data.status as SubscriptionStatus,
             paymentMethod: data.payment_method,
             transactionId: data.transaction_id,
             cancelledAt: data.cancelled_at,
@@ -121,7 +121,7 @@ export const useSubscriptionAssignment = (
         amount: packageToAssign.price,
         start_date: startDate.toISOString(),
         end_date: endDate.toISOString(),
-        status: 'active',
+        status: 'active' as SubscriptionStatus,
         payment_type: packageToAssign.paymentType as PaymentType || 'recurring',
         assigned_at: startDate.toISOString(),
         assigned_by: 'admin'
@@ -143,7 +143,7 @@ export const useSubscriptionAssignment = (
         amount: subscriptionData.amount,
         startDate: subscriptionData.start_date,
         endDate: subscriptionData.end_date,
-        status: subscriptionData.status,
+        status: 'active' as SubscriptionStatus,
         paymentType: subscriptionData.payment_type
       });
       

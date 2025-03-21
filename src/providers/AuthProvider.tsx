@@ -29,6 +29,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.error('Error fetching user profile:', error);
       }
 
+      // Create a properly structured address object
+      const address = profile?.address || {
+        street: null,
+        city: profile?.city || null,
+        state: null,
+        country: profile?.country || null,
+        zipCode: null
+      };
+
       return {
         uid: session.user.id,
         id: session.user.id,
@@ -54,7 +63,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         ownerName: profile?.owner_name || null,
         businessCategory: profile?.business_category || null,
         website: profile?.website || null,
-        address: profile?.address || null,
+        address: address,
         gstNumber: profile?.gst_number || null,
         subscription: profile?.subscription || null,
         subscriptionId: profile?.subscription_id || null,
