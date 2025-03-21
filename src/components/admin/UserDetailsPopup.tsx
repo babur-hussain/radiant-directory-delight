@@ -123,7 +123,7 @@ const UserDetailsPopup: React.FC<UserDetailsPopupProps> = ({ isOpen, onClose, us
                 <DetailItem label="Website" value={user.website} renderFieldValue={renderFieldValue} />
                 <DetailItem label="GST Number" value={user.gstNumber} renderFieldValue={renderFieldValue} />
               </div>
-              {user.address && (
+              {user.address && typeof user.address === 'object' && (
                 <>
                   <p className="text-sm font-medium text-gray-700 mt-2 mb-1">Address</p>
                   <div className="text-sm bg-gray-50 p-2 rounded-md">

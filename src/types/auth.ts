@@ -35,15 +35,75 @@ export interface User {
   ownerName?: string | null;
   businessCategory?: string | null;
   website?: string | null;
-  address?: string | null;
+  address?: {
+    street?: string | null;
+    city?: string | null;
+    state?: string | null;
+    country?: string | null;
+    zipCode?: string | null;
+  } | null;
   gstNumber?: string | null;
   
   // Subscription-related fields
-  subscription?: string | null;
+  subscription?: UserSubscription | string | null;
   subscriptionId?: string | null;
   subscriptionStatus?: string | null;
   subscriptionPackage?: string | null;
   customDashboardSections?: string[] | null;
+}
+
+export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled' | 'pending' | 'paused' | 'expired' | 'trial';
+export type PaymentType = 'recurring' | 'one-time';
+
+export interface UserSubscription {
+  id: string;
+  userId: string;
+  packageId: string;
+  packageName: string;
+  amount: number;
+  startDate: string | Date;
+  endDate: string | Date;
+  status: SubscriptionStatus;
+  paymentStatus?: string;
+  paymentMethod?: string;
+  transactionId?: string;
+  paymentType?: PaymentType;
+  packageDetails?: any;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+  cancelledAt?: string | Date;
+  cancelReason?: string;
+  assignedBy?: string;
+  assignedAt?: string;
+  
+  // Fields for advanced payment structure
+  advancePaymentMonths?: number; 
+  signupFee?: number;
+  actualStartDate?: string;
+  isPaused?: boolean;
+  pausedAt?: string;
+  pausedBy?: string;
+  resumedAt?: string;
+  resumedBy?: string;
+  isPausable?: boolean;
+  isUserCancellable?: boolean;
+  invoiceIds?: string[];
+  razorpaySubscriptionId?: string;
+  razorpayOrderId?: string;
+  nextBillingDate?: string;
+  recurringAmount?: number;
+  billingCycle?: string;
+}
+
+// Utility function to check if a value is a UserSubscription
+export function isUserSubscription(value: any): value is UserSubscription {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'packageId' in value &&
+    'startDate' in value &&
+    'endDate' in value
+  );
 }
 
 export interface AuthContextType {

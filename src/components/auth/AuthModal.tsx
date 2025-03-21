@@ -27,7 +27,7 @@ type AuthModalProps = {
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
   const [authTab, setAuthTab] = useState<string>("login");
   const [registerType, setRegisterType] = useState<UserRole>(null);
-  const { signup } = useAuth();
+  const { signup, login, loginWithGoogle } = useAuth();
   const { toast } = useToast();
 
   // Reset registration type when switching tabs
@@ -48,6 +48,18 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
       }, 200); // Delay to allow animation to complete
     }
     onOpenChange(open);
+  };
+
+  // Handle login using the auth context
+  const handleLogin = async (email: string, password: string, employeeCode?: string): Promise<void> => {
+    try {
+      await login(email, password, employeeCode);
+      onOpenChange(false);
+      return Promise.resolve();
+    } catch (error) {
+      console.error("Error in handleLogin:", error);
+      return Promise.reject(error);
+    }
   };
 
   // Handle signup using the auth context
@@ -132,7 +144,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
           <div className="px-6 pb-6 pt-2 h-[calc(90vh-180px)]">
             <ScrollArea className="h-full pr-4">
               <TabsContent value="login" className="m-0 mt-2">
-                <LoginForm onClose={() => onOpenChange(false)} />
+                <LoginForm onLogin={handleLogin} onClose={() => onOpenChange(false)} />
               </TabsContent>
 
               <TabsContent value="register" className="m-0 mt-2">
