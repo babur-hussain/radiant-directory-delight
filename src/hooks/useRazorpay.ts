@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -210,6 +211,7 @@ export const useRazorpay = () => {
           theme: {
             color: '#3399cc'
           },
+          recurring: true, // Add this to indicate it's a recurring payment
           handler: function(response: any) {
             resolve({
               ...response,
@@ -225,8 +227,13 @@ export const useRazorpay = () => {
           }
         };
         
-        const razorpay = new (window as any).Razorpay(options);
-        razorpay.open();
+        try {
+          const razorpay = new (window as any).Razorpay(options);
+          razorpay.open();
+        } catch (err) {
+          console.error('Razorpay initialization error:', err);
+          reject(new Error('Failed to initialize payment gateway'));
+        }
       });
     } catch (error) {
       console.error('Error creating subscription:', error);
@@ -287,8 +294,13 @@ export const useRazorpay = () => {
           }
         };
         
-        const razorpay = new (window as any).Razorpay(options);
-        razorpay.open();
+        try {
+          const razorpay = new (window as any).Razorpay(options);
+          razorpay.open();
+        } catch (err) {
+          console.error('Razorpay initialization error:', err);
+          reject(new Error('Failed to initialize payment gateway'));
+        }
       });
     } catch (error) {
       console.error('Error processing payment:', error);

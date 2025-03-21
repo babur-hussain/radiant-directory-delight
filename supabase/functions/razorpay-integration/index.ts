@@ -125,8 +125,8 @@ async function handleCreatePlan(req: Request, user: any) {
       );
     }
 
-    // For simplicity, we'll mock the plan creation
-    // In a real implementation, you would call Razorpay API to create the plan
+    // In a real implementation, you would make an API call to Razorpay here
+    // For now, we're returning a mock plan
     const plan = {
       id: `plan_${packageData.id}`,
       name: packageData.title,
@@ -186,10 +186,16 @@ async function handleCreateSubscription(req: Request, user: any) {
       );
     }
 
-    // For simplicity, we'll mock the subscription creation
-    // In a real implementation, you would call Razorpay API to create the subscription
+    // In a real implementation, you would make an API call to Razorpay here
+    // using the RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET
+    // For now, we're returning a mock subscription with the data needed
+    // by the frontend to proceed with the payment
+    
+    // Generate a unique ID for the subscription
+    const subscriptionId = `sub_${Date.now()}`;
+    
     const subscription = {
-      id: `sub_${Date.now()}`,
+      id: subscriptionId,
       plan_id: `plan_${packageData.id}`,
       customer_id: userId,
       status: "created",
