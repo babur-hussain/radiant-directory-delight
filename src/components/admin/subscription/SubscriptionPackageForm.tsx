@@ -153,16 +153,24 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
       
       // Prepare package data
       const packageData: ISubscriptionPackage = {
-        ...data,
-        features: featuresData,
         id: data.id || uuidv4().substring(0, 8),
+        title: data.title,
+        price: data.price,
+        monthlyPrice: data.monthlyPrice || 0,
+        features: featuresData,
+        paymentType: data.paymentType,
+        type: data.type,
         // Set default values for optional fields
         shortDescription: data.shortDescription || `${data.title} subscription package`,
         fullDescription: data.fullDescription || '',
         setupFee: data.setupFee || 0,
+        durationMonths: data.durationMonths || 12,
         advancePaymentMonths: data.advancePaymentMonths || 0,
+        billingCycle: data.billingCycle,
+        termsAndConditions: data.termsAndConditions || '',
         maxBusinesses: data.maxBusinesses || 1,
         maxInfluencers: data.maxInfluencers || 1,
+        popular: data.popular || false,
         dashboardSections: initialPackage.dashboardSections || []
       };
       

@@ -50,6 +50,31 @@ const AdminSubscriptionsPage = () => {
     checkConnection();
   }, []);
   
+  // Helper function to transform Supabase data to our app model
+  const transformPackageData = (pkg: any): ISubscriptionPackage => {
+    return {
+      id: pkg.id,
+      title: pkg.title,
+      price: pkg.price,
+      monthlyPrice: pkg.monthly_price,
+      durationMonths: pkg.duration_months || 12,
+      shortDescription: pkg.short_description,
+      fullDescription: pkg.full_description,
+      features: pkg.features || [],
+      popular: pkg.popular || false,
+      setupFee: pkg.setup_fee || 0,
+      type: (pkg.type as 'Business' | 'Influencer') || 'Business',
+      paymentType: (pkg.payment_type as PaymentType) || 'recurring',
+      billingCycle: pkg.billing_cycle as BillingCycle,
+      dashboardSections: pkg.dashboard_sections || [],
+      termsAndConditions: pkg.terms_and_conditions,
+      advancePaymentMonths: pkg.advance_payment_months || 0,
+      isActive: pkg.is_active !== undefined ? pkg.is_active : true,
+      maxBusinesses: pkg.max_businesses || 1, 
+      maxInfluencers: pkg.max_influencers || 1
+    };
+  };
+  
   const fetchData = async () => {
     setIsLoading(true);
     try {
@@ -65,27 +90,7 @@ const AdminSubscriptionsPage = () => {
       
       if (subscriptionsError) throw subscriptionsError;
       
-      const transformedPackages: ISubscriptionPackage[] = packagesData.map(pkg => ({
-        id: pkg.id,
-        title: pkg.title,
-        price: pkg.price,
-        monthlyPrice: pkg.monthly_price,
-        durationMonths: pkg.duration_months || 12,
-        shortDescription: pkg.short_description,
-        fullDescription: pkg.full_description,
-        features: pkg.features || [],
-        popular: pkg.popular,
-        setupFee: pkg.setup_fee,
-        type: (pkg.type as 'Business' | 'Influencer') || 'Business',
-        paymentType: (pkg.payment_type as PaymentType) || 'recurring',
-        billingCycle: pkg.billing_cycle as BillingCycle,
-        dashboardSections: pkg.dashboard_sections,
-        termsAndConditions: pkg.terms_and_conditions,
-        advancePaymentMonths: pkg.advance_payment_months,
-        isActive: pkg.is_active !== undefined ? pkg.is_active : true,
-        maxBusinesses: pkg.max_businesses || 1, 
-        maxInfluencers: pkg.max_influencers || 1
-      }));
+      const transformedPackages: ISubscriptionPackage[] = packagesData.map(pkg => transformPackageData(pkg));
       
       const transformedSubscriptions = subscriptionsData.map(sub => ({
         id: sub.id,
@@ -213,6 +218,11 @@ const AdminSubscriptionsPage = () => {
   const handleCancelEdit = () => {
     setEditingPackage(null);
   };
+
+  const handleConfigureRazorpay = () => {
+    console.log("Configure Razorpay clicked");
+    // This is just a placeholder - implement actual configuration in a future task
+  };
   
   if (user && !user.isAdmin) {
     return (
@@ -277,7 +287,9 @@ const AdminSubscriptionsPage = () => {
             </TabsContent>
             
             <TabsContent value="settings">
-              <SubscriptionSettingsPanel />
+              <SubscriptionSettingsPanel 
+                onConfigureRazorpay={handleConfigureRazorpay}
+              />
             </TabsContent>
           </Tabs>
         )}
