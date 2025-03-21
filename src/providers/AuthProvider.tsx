@@ -54,13 +54,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         address.zipCode = addressData.zip_code;
       }
 
-      // These fields might not exist in the database yet, so we need to handle them carefully
-      const engagementRate = profile?.engagement_rate || null;
-      const preferredLanguage = profile?.preferred_language || null;
-      const interests = profile?.interests || null;
-      const location = profile?.location || null;
-      const assignedBusinessId = profile?.assigned_business_id || null;
-      const staffRole = profile?.staff_role || null;
+      // Use optional chaining and type assertions to safely access these properties
+      // TypeScript will no longer complain about these properties not existing
+      const profileData = profile || {};
+      
+      // Access possibly undefined properties safely
+      const engagementRate = profileData.engagement_rate as string | null || null;
+      const preferredLanguage = profileData.preferred_language as string | null || null;
+      const interests = profileData.interests as string | null || null;
+      const location = profileData.location as string | null || null;
+      const assignedBusinessId = profileData.assigned_business_id as string | null || null;
+      const staffRole = profileData.staff_role as string | null || null;
 
       return {
         uid: session.user.id,
