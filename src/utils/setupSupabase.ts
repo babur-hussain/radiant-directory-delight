@@ -1,16 +1,17 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, testSupabaseConnection } from '@/integrations/supabase/client';
 
 /**
  * Checks if the Supabase connection is working
  */
 export const checkSupabaseConnection = async () => {
   try {
-    const { data, error } = await supabase.from('users').select('count').limit(1);
+    // Use the dedicated test function
+    const result = await testSupabaseConnection();
     
-    if (error) {
-      console.error('Supabase connection error:', error);
-      return { connected: false, error: error.message };
+    if (!result.connected) {
+      console.error('Supabase connection error:', result.error);
+      return { connected: false, error: result.error };
     }
     
     return { connected: true };

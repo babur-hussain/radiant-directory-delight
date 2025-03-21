@@ -1,9 +1,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import { getSubscriptionPackages, createOrUpdatePackage, deletePackage } from '@/lib/supabase/subscriptionUtils';
-import { supabase } from '@/integrations/supabase/client';
-import { PaymentType, BillingCycle } from '@/models/Subscription';
+import { getAllPackages, savePackage, deletePackage } from '@/services/packageService';
+import { toast } from '@/hooks/use-toast';
 
 export const useSubscriptionPackages = () => {
   const {
@@ -16,49 +15,15 @@ export const useSubscriptionPackages = () => {
     queryKey: ['subscription-packages'],
     queryFn: async (): Promise<ISubscriptionPackage[]> => {
       try {
-        // First try to get packages from Supabase
-        const { data, error } = await supabase
-          .from('subscription_packages')
-          .select('*')
-          .order('price', { ascending: true });
-        
-        if (error) {
-          console.error('Error fetching packages from Supabase:', error);
-          throw error;
-        }
-        
-        if (data && data.length > 0) {
-          return data.map(pkg => ({
-            id: pkg.id,
-            title: pkg.title,
-            price: pkg.price,
-            monthlyPrice: pkg.monthly_price,
-            setupFee: pkg.setup_fee || 0,
-            durationMonths: pkg.duration_months || 12,
-            shortDescription: pkg.short_description || '',
-            fullDescription: pkg.full_description || '',
-            features: pkg.features || [],
-            popular: pkg.popular || false,
-            type: (pkg.type as 'Business' | 'Influencer') || 'Business',
-            termsAndConditions: pkg.terms_and_conditions,
-            paymentType: (pkg.payment_type as PaymentType) || 'recurring',
-            billingCycle: pkg.billing_cycle as BillingCycle,
-            advancePaymentMonths: pkg.advance_payment_months || 0,
-            dashboardSections: pkg.dashboard_sections || [],
-            isActive: true
-          }));
-        }
-        
-        // Fallback to helper utility
-        console.log('No packages found in Supabase, falling back to helper function');
-        return getSubscriptionPackages();
+        // Use the packageService to fetch packages
+        return await getAllPackages();
       } catch (err) {
         console.error('Error in useSubscriptionPackages hook:', err);
-        // Fallback to helper utility
-        const packages = await getSubscriptionPackages();
-        if (packages.length > 0) {
-          return packages;
-        }
+        toast({
+          title: "Error",
+          description: `Failed to load subscription packages: ${err instanceof Error ? err.message : String(err)}`,
+          variant: "destructive"
+        });
         throw err;
       }
     }
@@ -66,15 +31,33 @@ export const useSubscriptionPackages = () => {
   
   // Add methods for SubscriptionManagement component
   const createOrUpdate = async (packageData: ISubscriptionPackage) => {
-    const result = await createOrUpdatePackage(packageData);
-    await refetch();
-    return result;
+    try {
+      const result = await savePackage(packageData);
+      await refetch();
+      return result;
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to save package: ${error instanceof Error ? error.message : String(error)}`,
+        variant: "destructive"
+      });
+      throw error;
+    }
   };
   
   const remove = async (packageId: string) => {
-    const result = await deletePackage(packageId);
-    await refetch();
-    return result;
+    try {
+      await deletePackage(packageId);
+      await refetch();
+      return true;
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to delete package: ${error instanceof Error ? error.message : String(error)}`,
+        variant: "destructive"
+      });
+      throw error;
+    }
   };
 
   return {
