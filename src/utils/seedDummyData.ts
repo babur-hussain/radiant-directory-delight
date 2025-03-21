@@ -1,399 +1,280 @@
-
 import { supabase } from '@/integrations/supabase/client';
+import { PaymentType, BillingCycle, SubscriptionStatus } from '@/models/Subscription';
 import { UserRole } from '@/types/auth';
-import { PaymentType, BillingCycle } from '@/models/Subscription';
 
-export const seedDummyUsers = async () => {
-  try {
-    // Check if users already exist
-    const { data: existingUsers, error } = await supabase
-      .from('users')
-      .select('id')
-      .limit(5);
-    
-    if (error) {
-      throw error;
-    }
-    
-    // Skip if users already exist
-    if (existingUsers && existingUsers.length > 0) {
-      console.log("Users already exist. Skipping seed.");
-      return { success: true, count: existingUsers.length };
-    }
-    
-    // Dummy user data
-    const users = [
-      {
-        id: '1',
-        email: 'admin@example.com',
-        name: 'Admin User',
-        role: 'Admin' as UserRole,
-        is_admin: true,
-        created_at: new Date().toISOString(),
-        phone: '+91 9876543210',
-        city: 'Delhi',
-        country: 'India',
-        verified: true
-      },
-      {
-        id: '2',
-        email: 'business@example.com',
-        name: 'Business User',
-        role: 'Business' as UserRole,
-        is_admin: false,
-        created_at: new Date().toISOString(),
-        phone: '+91 8765432109',
-        city: 'Mumbai',
-        country: 'India',
-        business_name: 'Sample Business',
-        owner_name: 'Business Owner',
-        business_category: 'Restaurant',
-        verified: true
-      },
-      {
-        id: '3',
-        email: 'influencer@example.com',
-        name: 'Influencer User',
-        role: 'Influencer' as UserRole,
-        is_admin: false,
-        created_at: new Date().toISOString(),
-        phone: '+91 7654321098',
-        city: 'Bangalore',
-        country: 'India',
-        instagram_handle: '@sampleinfluencer',
-        followers_count: 15000,
-        verified: true
-      }
-    ];
-    
-    // Insert users
-    const { data, error: insertError } = await supabase
-      .from('users')
-      .upsert(users)
-      .select();
-    
-    if (insertError) {
-      throw insertError;
-    }
-    
-    return { success: true, count: data?.length || 0 };
-  } catch (error) {
-    console.error("Error seeding dummy users:", error);
-    return { success: false, error };
+const generateRandomString = (length: number) => {
+  let result = '';
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const charactersLength = characters.length;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
+  return result;
 };
 
-export const seedDummyBusinesses = async () => {
-  try {
-    // Check if businesses already exist
-    const { data: existingBusinesses, error } = await supabase
-      .from('businesses')
-      .select('id')
-      .limit(5);
-    
-    if (error) {
-      throw error;
-    }
-    
-    // Skip if businesses already exist
-    if (existingBusinesses && existingBusinesses.length > 0) {
-      console.log("Businesses already exist. Skipping seed.");
-      return { success: true, count: existingBusinesses.length };
-    }
-    
-    // Dummy business data
-    const businesses = [
-      {
-        name: 'Organic Foods Market',
-        description: 'Fresh and organic groceries',
-        category: 'Grocery',
-        address: '123 Main St, Mumbai',
-        phone: '+91 9876543210',
-        email: 'info@organicfoods.com',
-        website: 'organicfoods.com',
-        image: 'https://picsum.photos/200/300',
-        hours: JSON.stringify({
-          "monday": "9:00 AM - 9:00 PM",
-          "tuesday": "9:00 AM - 9:00 PM",
-          "wednesday": "9:00 AM - 9:00 PM",
-          "thursday": "9:00 AM - 9:00 PM",
-          "friday": "9:00 AM - 10:00 PM",
-          "saturday": "10:00 AM - 10:00 PM",
-          "sunday": "10:00 AM - 8:00 PM"
-        }),
-        rating: 4.5,
-        reviews: 128,
-        latitude: 19.0760,
-        longitude: 72.8777,
-        tags: ['organic', 'groceries', 'healthy'],
-        featured: true
-      },
-      {
-        name: 'Tech Solutions Hub',
-        description: 'IT services and consulting',
-        category: 'Technology',
-        address: '456 Tech Park, Bangalore',
-        phone: '+91 8765432109',
-        email: 'contact@techsolutions.com',
-        website: 'techsolutions.com',
-        image: 'https://picsum.photos/200/300',
-        hours: JSON.stringify({
-          "monday": "9:00 AM - 6:00 PM",
-          "tuesday": "9:00 AM - 6:00 PM",
-          "wednesday": "9:00 AM - 6:00 PM",
-          "thursday": "9:00 AM - 6:00 PM",
-          "friday": "9:00 AM - 6:00 PM",
-          "saturday": "10:00 AM - 2:00 PM",
-          "sunday": "Closed"
-        }),
-        rating: 4.2,
-        reviews: 75,
-        latitude: 12.9716,
-        longitude: 77.5946,
-        tags: ['technology', 'consulting', 'it services'],
-        featured: false
-      }
-    ];
-    
-    // Insert businesses
-    const { data, error: insertError } = await supabase
-      .from('businesses')
-      .upsert(businesses)
-      .select();
-    
-    if (insertError) {
-      throw insertError;
-    }
-    
-    return { success: true, count: data?.length || 0 };
-  } catch (error) {
-    console.error("Error seeding dummy businesses:", error);
-    return { success: false, error };
-  }
+const generateRandomNumber = (min: number, max: number) => {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
-export const seedDummySubscriptionPackages = async () => {
-  try {
-    // Check if packages already exist
-    const { data: existingPackages, error } = await supabase
-      .from('subscription_packages')
-      .select('id')
-      .limit(5);
-    
-    if (error) {
-      throw error;
-    }
-    
-    // Skip if packages already exist
-    if (existingPackages && existingPackages.length > 0) {
-      console.log("Subscription packages already exist. Skipping seed.");
-      return { success: true, count: existingPackages.length };
-    }
-    
-    // Dummy package data
-    const packages = [
-      {
-        id: 'business-basic',
-        title: 'Business Basic',
-        price: 5999,
-        monthly_price: 599,
-        setup_fee: 999,
-        duration_months: 12,
-        short_description: 'Essential digital presence for small businesses',
-        full_description: 'Get your business online with our essential digital package. Includes website, GMB listing, and basic SEO.',
-        features: ['Google My Business Listing', 'Basic Website', 'Social Media Setup', 'Basic SEO', 'Email Support'],
-        popular: false,
-        type: 'Business' as 'Business' | 'Influencer',
-        is_active: true,
-        advance_payment_months: 0,
-        payment_type: 'recurring' as PaymentType,
-        billing_cycle: 'yearly' as BillingCycle,
-        dashboard_sections: ['google_listing', 'ratings', 'seo']
-      },
-      {
-        id: 'business-pro',
-        title: 'Business Pro',
-        price: 9999,
-        monthly_price: 999,
-        setup_fee: 1999,
-        duration_months: 12,
-        short_description: 'Complete digital marketing solution for growing businesses',
-        full_description: 'Comprehensive digital marketing solution to grow your business online. Includes premium website, SEO, social media management and more.',
-        features: ['Premium Website', 'Google My Business Management', 'Social Media Management', 'Advanced SEO', 'Content Creation', 'Performance Reports', 'Priority Support'],
-        popular: true,
-        type: 'Business' as 'Business' | 'Influencer',
-        is_active: true,
-        advance_payment_months: 1,
-        payment_type: 'recurring' as PaymentType,
-        billing_cycle: 'yearly' as BillingCycle,
-        dashboard_sections: ['google_listing', 'ratings', 'seo', 'leads', 'performance']
-      },
-      {
-        id: 'influencer-basic',
-        title: 'Influencer Basic',
-        price: 4999,
-        monthly_price: 499,
-        setup_fee: 999,
-        duration_months: 12,
-        short_description: 'Start your influencer journey',
-        full_description: 'Perfect for new influencers looking to build their brand. Get access to campaigns, analytics and basic brand connections.',
-        features: ['Campaign Access', 'Basic Analytics', 'Profile Optimization', 'Email Support'],
-        popular: false,
-        type: 'Influencer' as 'Business' | 'Influencer',
-        is_active: true,
-        advance_payment_months: 0,
-        payment_type: 'recurring' as PaymentType,
-        billing_cycle: 'yearly' as BillingCycle,
-        dashboard_sections: ['reels', 'ratings', 'rank']
-      },
-      {
-        id: 'influencer-pro',
-        title: 'Influencer Pro',
-        price: 7999,
-        monthly_price: 799,
-        setup_fee: 1499,
-        duration_months: 12,
-        short_description: 'Advanced tools for professional influencers',
-        full_description: 'Take your influence to the next level with premium tools, analytics, brand partnerships and dedicated support.',
-        features: ['Premium Campaign Priority', 'Advanced Analytics', 'Brand Partnership', 'Content Strategy', 'Performance Reports', 'Priority Support'],
-        popular: true,
-        type: 'Influencer' as 'Business' | 'Influencer',
-        is_active: true,
-        advance_payment_months: 1,
-        payment_type: 'recurring' as PaymentType,
-        billing_cycle: 'yearly' as BillingCycle,
-        dashboard_sections: ['reels', 'ratings', 'rank', 'creatives', 'performance', 'leads']
-      }
-    ];
-    
-    // Insert packages
-    const { data, error: insertError } = await supabase
-      .from('subscription_packages')
-      .upsert(packages)
-      .select();
-    
-    if (insertError) {
-      throw insertError;
-    }
-    
-    return { success: true, count: data?.length || 0 };
-  } catch (error) {
-    console.error("Error seeding dummy subscription packages:", error);
-    return { success: false, error };
-  }
-};
+export const seedDatabase = async () => {
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-export const seedDummySubscriptions = async () => {
-  try {
-    // Check if subscriptions already exist
-    const { data: existingSubscriptions, error } = await supabase
-      .from('user_subscriptions')
-      .select('id')
-      .limit(5);
-    
-    if (error) {
-      throw error;
-    }
-    
-    // Skip if subscriptions already exist
-    if (existingSubscriptions && existingSubscriptions.length > 0) {
-      console.log("Subscriptions already exist. Skipping seed.");
-      return { success: true, count: existingSubscriptions.length };
-    }
-    
-    // Get users
-    const { data: users } = await supabase
-      .from('users')
-      .select('id, role')
-      .order('created_at', { ascending: false })
-      .limit(10);
-    
-    if (!users || users.length === 0) {
-      console.log("No users found. Please seed users first.");
-      return { success: false, error: "No users found" };
-    }
-    
-    // Get packages
-    const { data: packages } = await supabase
-      .from('subscription_packages')
-      .select('id, title, price, type')
-      .order('created_at', { ascending: false });
-    
-    if (!packages || packages.length === 0) {
-      console.log("No packages found. Please seed packages first.");
-      return { success: false, error: "No packages found" };
-    }
-    
-    // Create some dummy subscriptions
-    const now = new Date();
-    const endDate = new Date();
-    endDate.setFullYear(now.getFullYear() + 1);
-    
-    const subscriptions = users.map(user => {
-      // Find a matching package type for this user
-      const matchingPackages = packages.filter(p => {
-        if (user.role === 'Business' && p.type === 'Business') return true;
-        if (user.role === 'Influencer' && p.type === 'Influencer') return true;
-        return false;
-      });
-      
-      const randomPackage = matchingPackages.length > 0 
-        ? matchingPackages[Math.floor(Math.random() * matchingPackages.length)]
-        : packages[0];
-      
-      return {
-        id: `sub-${user.id}`,
-        user_id: user.id,
-        package_id: randomPackage.id,
-        package_name: randomPackage.title,
-        status: Math.random() > 0.2 ? 'active' : 'pending',
-        start_date: now.toISOString(),
-        end_date: endDate.toISOString(),
-        amount: randomPackage.price,
-        payment_type: 'recurring' as PaymentType,
-        payment_method: 'razorpay',
-        transaction_id: `tx-${Math.floor(Math.random() * 1000000)}`,
-        billing_cycle: 'yearly' as BillingCycle,
-        recurring_amount: randomPackage.price,
-        created_at: now.toISOString(),
-        updated_at: now.toISOString()
-      };
-    });
-    
-    // Insert subscriptions
-    const { data, error: insertError } = await supabase
-      .from('user_subscriptions')
-      .upsert(subscriptions)
-      .select();
-    
-    if (insertError) {
-      throw insertError;
-    }
-    
-    return { success: true, count: data?.length || 0 };
-  } catch (error) {
-    console.error("Error seeding dummy subscriptions:", error);
-    return { success: false, error };
-  }
-};
+  const nineMonthsLater = new Date();
+  nineMonthsLater.setMonth(nineMonthsLater.getMonth() + 9);
 
-export const seedAllDummyData = async () => {
-  const results = {
-    users: await seedDummyUsers(),
-    businesses: await seedDummyBusinesses(),
-    packages: await seedDummySubscriptionPackages(),
-    subscriptions: await seedDummySubscriptions()
-  };
+  try {
+    // Clear existing data
+    await supabase.from('users').delete().neq('id', 'null');
+    await supabase.from('businesses').delete().neq('id', 'null');
+    await supabase.from('subscription_packages').delete().neq('id', 'null');
+    await supabase.from('user_subscriptions').delete().neq('id', 'null');
+
+    console.log("✅ Existing data cleared");
+  } catch (clearError) {
+    console.error("❌ Error clearing existing data:", clearError);
+    return false;
+  }
   
-  return {
-    success: 
-      results.users.success && 
-      results.businesses.success && 
-      results.packages.success && 
-      results.subscriptions.success,
-    results
-  };
-};
+  // Seed users with proper types
+  const users = [
+    {
+      id: "user1",
+      email: "admin@example.com",
+      name: "Admin User",
+      role: "Admin" as UserRole,
+      is_admin: true,
+      created_at: new Date().toISOString(),
+      phone: "123-456-7890",
+      city: "New York",
+      country: "USA",
+      verified: true
+    },
+    {
+      id: "user2",
+      email: "business@example.com",
+      name: "Business User",
+      role: "Business" as UserRole,
+      is_admin: false,
+      created_at: new Date().toISOString(),
+      phone: "987-654-3210",
+      city: "Los Angeles",
+      country: "USA",
+      verified: true,
+      business_name: "Acme Corp",
+      owner_name: "John Doe",
+      business_category: "Technology"
+    },
+    {
+      id: "user3",
+      email: "influencer@example.com",
+      name: "Influencer User",
+      role: "Influencer" as UserRole,
+      is_admin: false,
+      created_at: new Date().toISOString(),
+      phone: "555-123-4567",
+      city: "Miami",
+      country: "USA",
+      verified: true,
+      instagram_handle: "@influencer",
+      followers_count: 10000
+    },
+    {
+      id: "user4",
+      email: "staff@example.com",
+      name: "Staff User",
+      role: "staff" as UserRole,
+      is_admin: false,
+      created_at: new Date().toISOString(),
+      phone: "111-222-3333",
+      city: "Chicago",
+      country: "USA",
+      verified: false,
+      employee_code: "EMP123"
+    }
+  ];
 
-// Export an alias for backward compatibility
-export const seedDummyData = seedAllDummyData;
+  // Seed businesses
+  const businesses = [
+    {
+      id: "business1",
+      name: "Tech Solutions Inc.",
+      owner_id: "user2",
+      category: "Technology",
+      created_at: new Date().toISOString(),
+      city: "San Francisco",
+      country: "USA"
+    },
+    {
+      id: "business2",
+      name: "Global Marketing Ltd.",
+      owner_id: "user2",
+      category: "Marketing",
+      created_at: new Date().toISOString(),
+      city: "London",
+      country: "UK"
+    }
+  ];
+
+  // Seed subscription packages with proper types
+  const subscriptionPackages = [
+    {
+      id: "business-basic",
+      title: "Business Basic",
+      price: 999,
+      short_description: "Essential tools for small businesses",
+      full_description: "Our basic package includes all the essential tools...",
+      features: ["Google Business Profile", "Basic SEO", "1 Creative per month"],
+      popular: false,
+      setup_fee: 499,
+      duration_months: 12,
+      type: "Business" as const,
+      payment_type: "recurring" as PaymentType,
+      billing_cycle: "yearly" as BillingCycle,
+      dashboard_sections: ["reels", "creatives", "seo"]
+    },
+    {
+      id: "business-pro",
+      title: "Business Pro",
+      price: 2499,
+      short_description: "Advanced tools for growing businesses",
+      full_description: "Our pro package includes advanced tools...",
+      features: ["Google Business Profile", "Advanced SEO", "5 Creatives per month", "Priority Support"],
+      popular: true,
+      setup_fee: 0,
+      duration_months: 12,
+      type: "Business" as const,
+      payment_type: "recurring" as PaymentType,
+      billing_cycle: "yearly" as BillingCycle,
+      dashboard_sections: ["reels", "creatives", "seo", "ads"]
+    },
+    {
+      id: "influencer-basic",
+      title: "Influencer Basic",
+      price: 499,
+      short_description: "Basic tools for influencers",
+      full_description: "Our basic influencer package...",
+      features: ["Profile Optimization", "Basic Analytics", "Content Scheduling"],
+      popular: false,
+      setup_fee: 0,
+      duration_months: 12,
+      type: "Influencer" as const,
+      payment_type: "recurring" as PaymentType,
+      billing_cycle: "yearly" as BillingCycle,
+      dashboard_sections: ["reels", "analytics"]
+    },
+    {
+      id: "influencer-pro",
+      title: "Influencer Pro",
+      price: 1499,
+      short_description: "Advanced tools for influencers",
+      full_description: "Our pro influencer package...",
+      features: ["Profile Optimization", "Advanced Analytics", "Content Scheduling", "Campaign Management"],
+      popular: true,
+      setup_fee: 0,
+      duration_months: 12,
+      type: "Influencer" as const,
+      payment_type: "recurring" as PaymentType,
+      billing_cycle: "yearly" as BillingCycle,
+      dashboard_sections: ["reels", "analytics", "campaigns"]
+    }
+  ];
+
+  // Seed user subscriptions with proper types
+  const userSubscriptions = [
+    {
+      id: "sub_1",
+      user_id: "user2",
+      package_id: "business-pro",
+      package_name: "Business Pro",
+      status: "active" as SubscriptionStatus,
+      start_date: threeMonthsAgo.toISOString(),
+      end_date: nineMonthsLater.toISOString(),
+      amount: 2499,
+      payment_type: "recurring" as PaymentType,
+      billing_cycle: "yearly" as BillingCycle,
+      signup_fee: 0,
+      created_at: threeMonthsAgo.toISOString(),
+      is_pausable: true,
+      is_user_cancellable: true
+    },
+    {
+      id: "sub_2",
+      user_id: "user3",
+      package_id: "influencer-pro",
+      package_name: "Influencer Pro",
+      status: "active" as SubscriptionStatus,
+      start_date: threeMonthsAgo.toISOString(),
+      end_date: nineMonthsLater.toISOString(),
+      amount: 1499,
+      payment_type: "recurring" as PaymentType,
+      billing_cycle: "yearly" as BillingCycle,
+      signup_fee: 0,
+      created_at: threeMonthsAgo.toISOString(),
+      is_pausable: true,
+      is_user_cancellable: true
+    }
+  ];
+
+  try {
+    // Insert users one by one with proper type conversion
+    for (const user of users) {
+      const { error } = await supabase
+        .from('users')
+        .upsert({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          is_admin: user.is_admin,
+          created_at: user.created_at,
+          phone: user.phone,
+          city: user.city,
+          country: user.country,
+          verified: user.verified,
+          instagram_handle: user.instagram_handle || null,
+          followers_count: user.followers_count ? String(user.followers_count) : null,
+          business_name: user.business_name || null,
+          owner_name: user.owner_name || null,
+          business_category: user.business_category || null
+        });
+      
+      if (error) {
+        console.error("Error inserting user:", error);
+      }
+    }
+
+    // Insert businesses
+    const { error: businessError } = await supabase
+      .from('businesses')
+      .upsert(businesses);
+
+    if (businessError) {
+      console.error("Error inserting businesses:", businessError);
+    }
+
+    // Insert subscription packages
+    const { error: packageError } = await supabase
+      .from('subscription_packages')
+      .upsert(subscriptionPackages);
+
+    if (packageError) {
+      console.error("Error inserting subscription packages:", packageError);
+    }
+
+    // Insert user subscriptions
+    const { error: subscriptionError } = await supabase
+      .from('user_subscriptions')
+      .upsert(userSubscriptions);
+
+    if (subscriptionError) {
+      console.error("Error inserting user subscriptions:", subscriptionError);
+    }
+
+    console.log("✅ Dummy data seeded successfully");
+    return true;
+  } catch (error) {
+    console.error("Error seeding database:", error);
+    return false;
+  }
+};

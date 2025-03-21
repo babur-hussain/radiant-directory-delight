@@ -115,13 +115,13 @@ export const useSubscription = () => {
     return data.data;
   };
 
-  // Get dashboard features for a user - compatibility method
+  // Get dashboard features for a user
   const getUserDashboardFeatures = async (userId: string) => {
     if (!subscription) {
       return [];
     }
     // Return default dashboard features or fetch from package details
-    return subscription.dashboardFeatures || [];
+    return subscription.dashboardFeatures || subscription.dashboardSections || [];
   };
 
   // Purchase subscription (alternative to initiateSubscription)
@@ -167,10 +167,18 @@ export const useSubscription = () => {
         id: subscription.id,
         status: 'cancelled' as const,
         cancelledAt: new Date().toISOString(),
-        cancelReason: reason || ''
+        cancelReason: reason || '',
+        // Add required fields to satisfy TypeScript
+        userId: subscription.userId,
+        packageId: subscription.packageId,
+        packageName: subscription.packageName,
+        startDate: subscription.startDate,
+        endDate: subscription.endDate,
+        amount: subscription.amount,
+        paymentType: subscription.paymentType
       };
 
-      const result = await cancelSubscriptionAPI(cancellationData.id, reason);
+      const result = await cancelSubscriptionAPI(subscription.id, reason);
       
       toast({
         title: 'Subscription Cancelled',
@@ -199,6 +207,8 @@ export const useSubscription = () => {
     loading: isLoading,
     error: error as Error,
     fetchUserSubscription,
+    getUserSubscription,
+    getUserDashboardFeatures,
     isSubscriptionLoading: isLoading,
     isSubscriptionsLoading,
     isSubscriptionError: isError,
@@ -206,8 +216,6 @@ export const useSubscription = () => {
     subscriptionError: error,
     subscriptionsError,
     initiateSubscription,
-    getUserSubscription,
-    getUserDashboardFeatures,
     purchaseSubscription,
     renewSubscription,
     cancelSubscription,

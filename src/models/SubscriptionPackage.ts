@@ -10,10 +10,10 @@ export interface ISubscriptionPackage {
   fullDescription?: string;
   features: string[];
   popular?: boolean;
-  type?: string;
+  type?: "Business" | "Influencer";
   termsAndConditions?: string;
-  paymentType?: string;
-  billingCycle?: string;
+  paymentType?: PaymentType;
+  billingCycle?: BillingCycle;
   advancePaymentMonths?: number;
   dashboardSections?: string[];
   createdAt?: string;
@@ -23,6 +23,9 @@ export interface ISubscriptionPackage {
   maxBusinesses?: number;
   maxInfluencers?: number;
 }
+
+// Import the type definitions
+import { PaymentType, BillingCycle } from './Subscription';
 
 export class SubscriptionPackage implements ISubscriptionPackage {
   id: string;
@@ -35,10 +38,10 @@ export class SubscriptionPackage implements ISubscriptionPackage {
   fullDescription: string;
   features: string[];
   popular: boolean;
-  type: string;
+  type: "Business" | "Influencer";
   termsAndConditions?: string;
-  paymentType: string;
-  billingCycle?: string;
+  paymentType: PaymentType;
+  billingCycle?: BillingCycle;
   advancePaymentMonths: number;
   dashboardSections?: string[];
   createdAt?: string;

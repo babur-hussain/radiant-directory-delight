@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/features/auth/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { UserRole } from '@/types/auth';
 import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 
 const SubscriptionPage: React.FC = () => {
   const { user } = useAuth();
-  const { subscription, loading, error } = useSubscription(user?.uid || null);
+  const { subscription, loading, error } = useSubscription();
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -78,7 +78,7 @@ const SubscriptionPage: React.FC = () => {
   return (
     <div className="container mx-auto py-10 px-4">
       <h1 className="text-3xl font-bold mb-6">Choose a Subscription</h1>
-      <SubscriptionPackages userRole={user.role} />
+      <SubscriptionPackages userRole={user.role as UserRole} />
     </div>
   );
 };

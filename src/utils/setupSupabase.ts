@@ -1,98 +1,59 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { checkAndInitializeBusinesses } from './businessInitialization';
 
-export interface SetupSupabaseOptions {
-  initializeDatabase?: boolean;
-  initializeCollections?: boolean;
-  clearExistingData?: boolean;
-}
-
-export interface SetupSupabaseProgress {
-  progress: number;
-  message: string;
-}
-
-export interface SetupSupabaseResult {
+interface SetupSupabaseResult {
   success: boolean;
-  collections: string[];
-  error?: string;
+  message?: string;
 }
 
-// List of valid collections
-const VALID_COLLECTIONS = ['users', 'businesses', 'subscription_packages', 'user_subscriptions', 'addresses'] as const;
-type ValidCollection = typeof VALID_COLLECTIONS[number];
-
-export const setupSupabase = async (
-  progressCallback?: (progress: number, message: string) => void,
-  options: SetupSupabaseOptions = {}
-): Promise<SetupSupabaseResult> => {
-  const { 
-    initializeDatabase = true,
-    initializeCollections = true,
-    clearExistingData = false
-  } = options;
-  
+export const setupSupabase = async (): Promise<SetupSupabaseResult> => {
   try {
-    // Check connection
-    progressCallback?.(5, "Checking Supabase connection...");
-    const { error: connectionError } = await supabase
+    // Check if Supabase is running
+    const { data: profiles, error: profilesError } = await supabase
       .from('users')
-      .select('id')
+      .select('*')
       .limit(1);
     
-    if (connectionError) {
-      throw new Error(`Failed to connect to Supabase: ${connectionError.message}`);
+    if (profilesError) {
+      console.error("Error connecting to Supabase:", profilesError);
+      return {
+        success: false,
+        message: `Failed to connect to Supabase: ${profilesError.message}`
+      };
     }
     
     // Check if tables exist
-    progressCallback?.(20, "Checking Supabase tables...");
-    let existingCollections: string[] = [];
+    const tables = ['users', 'businesses', 'subscription_packages', 'user_subscriptions', 'addresses'];
+    const missingTables = [];
     
-    for (const collection of VALID_COLLECTIONS) {
-      try {
-        const { error } = await supabase
-          .from(collection)
-          .select('*')
-          .limit(1);
-          
-        if (!error) {
-          existingCollections.push(collection);
-        }
-      } catch (error) {
-        console.warn(`Table check error for ${collection}:`, error);
+    for (const table of tables) {
+      // Use proper table typing for Supabase
+      const { count, error } = await supabase
+        .from(table as any)
+        .select('*', { count: 'exact', head: true });
+      
+      if (error || count === null) {
+        missingTables.push(table);
       }
     }
     
-    progressCallback?.(30, `Found ${existingCollections.length} existing collections`);
-    
-    // Initialize business data if needed
-    progressCallback?.(50, "Initializing business data...");
-    const businessResult = await checkAndInitializeBusinesses();
-    
-    if (businessResult.initialized) {
-      progressCallback?.(70, `Initialized ${businessResult.count} businesses`);
-    } else {
-      progressCallback?.(70, `Found ${businessResult.count} existing businesses`);
+    if (missingTables.length > 0) {
+      console.warn("Missing tables:", missingTables);
+      return {
+        success: false,
+        message: `Missing tables in Supabase: ${missingTables.join(', ')}`
+      };
     }
     
-    // Initialize other collections if needed
-    // This would be where you'd add more initialization logic for other collections
-    
-    progressCallback?.(100, "Supabase setup complete");
-    
+    console.log("Supabase setup check completed successfully");
     return {
       success: true,
-      collections: existingCollections
+      message: "Supabase setup check completed successfully"
     };
-  } catch (error) {
-    console.error("Supabase setup error:", error);
-    progressCallback?.(0, `Error: ${error instanceof Error ? error.message : String(error)}`);
-    
+  } catch (error: any) {
+    console.error("Error during Supabase setup check:", error);
     return {
       success: false,
-      collections: [],
-      error: error instanceof Error ? error.message : String(error)
+      message: `An unexpected error occurred: ${error.message}`
     };
   }
 };

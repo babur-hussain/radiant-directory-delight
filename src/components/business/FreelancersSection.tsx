@@ -2,15 +2,19 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-const FreelancersSection = () => {
+interface FreelancersSectionProps {
+  freelancers?: any[];
+}
+
+const FreelancersSection: React.FC<FreelancersSectionProps> = ({ freelancers = [] }) => {
   return (
     <Card className="mb-8">
       <CardHeader>
-        <CardTitle>Freelancers Network</CardTitle>
-        <CardDescription>Connect with skilled professionals for your business needs</CardDescription>
+        <CardTitle>Our Freelancers</CardTitle>
+        <CardDescription>Expert freelancers ready to assist you</CardDescription>
       </CardHeader>
       <CardContent>
-        <p>Freelancer section content goes here</p>
+        <p>Freelancers content goes here</p>
       </CardContent>
     </Card>
   );

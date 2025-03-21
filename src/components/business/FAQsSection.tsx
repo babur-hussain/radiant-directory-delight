@@ -2,7 +2,11 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-const FAQsSection = () => {
+interface FAQsSectionProps {
+  faqs: any;
+}
+
+const FAQsSection: React.FC<FAQsSectionProps> = ({ faqs }) => {
   return (
     <Card className="mb-8">
       <CardHeader>
@@ -10,7 +14,7 @@ const FAQsSection = () => {
         <CardDescription>Common questions about our business services</CardDescription>
       </CardHeader>
       <CardContent>
-        <p>FAQs content goes here</p>
+        <p>FAQs content: {JSON.stringify(faqs)}</p>
       </CardContent>
     </Card>
   );

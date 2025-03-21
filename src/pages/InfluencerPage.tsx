@@ -1,23 +1,23 @@
-
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserRole } from '@/types/auth';
-import { useAuth } from '@/features/auth/useAuth';
-import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
 import StatisticsSection from '@/components/influencer/StatisticsSection';
 import FeaturesSection from '@/components/influencer/FeaturesSection';
 import HowItWorksSection from '@/components/influencer/HowItWorksSection';
 import FAQsSection from '@/components/influencer/FAQsSection';
 import TestimonialsSection from '@/components/influencer/TestimonialsSection';
-import { Button } from '@/components/ui/button';
-import { Image } from 'lucide-react';
+import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
+import { Star, Users, TrendingUp, Instagram, ThumbsUp, Camera } from 'lucide-react';
 
-const InfluencerPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('features');
+const InfluencerPage = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('features');
   
   useEffect(() => {
-    // Any initializations here
+    // Any initialization code here
   }, []);
 
   const statistics = [
@@ -108,7 +108,7 @@ const InfluencerPage: React.FC = () => {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto py-6 px-4">
       <section className="py-10 md:py-20">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
@@ -135,38 +135,38 @@ const InfluencerPage: React.FC = () => {
         </div>
       </section>
 
-      <StatisticsSection statistics={statistics} />
-
-      <section className="py-12">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="flex justify-center mb-8">
-            <TabsList className="grid grid-cols-4 w-full max-w-2xl">
-              <TabsTrigger value="features">Features</TabsTrigger>
-              <TabsTrigger value="packages">Packages</TabsTrigger>
-              <TabsTrigger value="howItWorks">How It Works</TabsTrigger>
-              <TabsTrigger value="faqs">FAQs</TabsTrigger>
-            </TabsList>
-          </div>
-
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-10">
+        <TabsList className="grid grid-cols-5 w-full max-w-4xl mx-auto">
+          <TabsTrigger value="features">Features</TabsTrigger>
+          <TabsTrigger value="how">How It Works</TabsTrigger>
+          <TabsTrigger value="testimonials">Testimonials</TabsTrigger>
+          <TabsTrigger value="pricing">Pricing</TabsTrigger>
+          <TabsTrigger value="faq">FAQ</TabsTrigger>
+        </TabsList>
+        
+        <div className="mt-8">
           <TabsContent value="features">
+            <StatisticsSection statistics={statistics} />
             <FeaturesSection features={features} />
           </TabsContent>
-
-          <TabsContent value="packages">
-            <SubscriptionPackages userRole="Influencer" />
-          </TabsContent>
-
-          <TabsContent value="howItWorks">
+          
+          <TabsContent value="how">
             <HowItWorksSection steps={howItWorks} />
           </TabsContent>
-
-          <TabsContent value="faqs">
+          
+          <TabsContent value="testimonials">
+            <TestimonialsSection />
+          </TabsContent>
+          
+          <TabsContent value="pricing">
+            <SubscriptionPackages userRole="Influencer" />
+          </TabsContent>
+          
+          <TabsContent value="faq">
             <FAQsSection faqs={faqs} />
           </TabsContent>
-        </Tabs>
-      </section>
-
-      <TestimonialsSection />
+        </div>
+      </Tabs>
     </div>
   );
 };

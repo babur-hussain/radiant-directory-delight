@@ -27,5 +27,7 @@ export interface ISubscription {
   recurringAmount?: number;
   nextBillingDate?: string;
   actualStartDate?: string;
+  dashboardFeatures?: string[];
+  dashboardSections?: string[];
   [key: string]: any;
 }

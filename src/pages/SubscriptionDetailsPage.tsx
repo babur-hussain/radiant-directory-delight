@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "@/hooks";
+import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import AdvancedSubscriptionDetails from "@/components/admin/subscription/Advance
 
 const SubscriptionDetailsPage = () => {
   const { user, isAuthenticated } = useAuth();
-  const { getUserSubscription, cancelSubscription } = useSubscription();
+  const { fetchUserSubscription, cancelSubscription } = useSubscription();
   const navigate = useNavigate();
   const [subscription, setSubscription] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,11 +23,11 @@ const SubscriptionDetailsPage = () => {
     const fetchSubscription = async () => {
       if (isAuthenticated && user?.id) {
         try {
-          const subscriptionData = await getUserSubscription();
-          setSubscription(subscriptionData);
+          const result = await fetchUserSubscription();
+          setSubscription(result.data);
           
-          if (subscriptionData?.packageId) {
-            const pkgDetails = getPackageById(subscriptionData.packageId);
+          if (result.data?.packageId) {
+            const pkgDetails = getPackageById(result.data.packageId);
             setPackageDetails(pkgDetails);
           }
         } catch (error) {
@@ -38,7 +38,7 @@ const SubscriptionDetailsPage = () => {
     };
     
     fetchSubscription();
-  }, [isAuthenticated, user, getUserSubscription]);
+  }, [isAuthenticated, user, fetchUserSubscription]);
 
   if (isLoading) {
     return (

@@ -1,7 +1,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { ISubscriptionPackage } from '@/hooks/useSubscriptionPackages';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { nanoid } from 'nanoid';
+import { PaymentType, BillingCycle } from '@/models/Subscription';
 
 /**
  * Get all subscription packages
@@ -27,8 +28,8 @@ export const getSubscriptionPackages = async (): Promise<ISubscriptionPackage[]>
       popular: pkg.popular,
       type: (pkg.type as 'Business' | 'Influencer') || 'Business',
       termsAndConditions: pkg.terms_and_conditions,
-      paymentType: (pkg.payment_type as 'recurring' | 'one-time') || 'recurring',
-      billingCycle: pkg.billing_cycle as 'monthly' | 'yearly' | undefined,
+      paymentType: (pkg.payment_type as PaymentType) || 'recurring',
+      billingCycle: pkg.billing_cycle as BillingCycle,
       advancePaymentMonths: pkg.advance_payment_months,
       dashboardSections: pkg.dashboard_sections || []
     }));
@@ -133,8 +134,8 @@ export const createOrUpdatePackage = async (packageData: Partial<ISubscriptionPa
       popular: savedPackage.popular,
       type: (savedPackage.type as 'Business' | 'Influencer') || 'Business',
       termsAndConditions: savedPackage.terms_and_conditions,
-      paymentType: (savedPackage.payment_type as 'recurring' | 'one-time') || 'recurring',
-      billingCycle: savedPackage.billing_cycle as 'monthly' | 'yearly' | undefined,
+      paymentType: (savedPackage.payment_type as PaymentType) || 'recurring',
+      billingCycle: savedPackage.billing_cycle as BillingCycle,
       advancePaymentMonths: savedPackage.advance_payment_months,
       dashboardSections: savedPackage.dashboard_sections || []
     };

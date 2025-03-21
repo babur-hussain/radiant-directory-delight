@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -25,36 +24,10 @@ const AdminSubscriptionsPage = () => {
   const { packages, createOrUpdate, remove, isCreating, isDeleting, refetch } = useSubscriptionPackages();
   const { toast } = useToast();
 
-  // Fetch all subscriptions
-  const { data: subscriptions = [], isLoading: isLoadingSubscriptions } = useQuery({
-    queryKey: ['admin-subscriptions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_subscriptions')
-        .select('*')
-        .order('created_at', { ascending: false });
-        
-      if (error) throw error;
-      return data as ISubscription[];
-    }
-  });
+  const [subscriptions, setSubscriptions] = useState<ISubscription[]>([]);
 
-  // Initial empty package template
-  const initialPackage: ISubscriptionPackage = {
-    id: '',
-    title: '',
-    price: 0,
-    durationMonths: 12,
-    shortDescription: '',
-    fullDescription: '',
-    features: [],
-    type: 'Business',
-    paymentType: 'recurring',
-  };
-
-  // Check connection to supabase
   useEffect(() => {
-    const checkConnection = async () => {
+    const initializeDatabase = async () => {
       try {
         setConnectionStatus('connecting');
         const result = await setupSupabase();
@@ -67,7 +40,41 @@ const AdminSubscriptionsPage = () => {
       }
     };
 
-    checkConnection();
+    const fetchSubscriptions = async () => {
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      if (data) {
+        const convertedSubscriptions = data.map(sub => ({
+          id: sub.id,
+          userId: sub.user_id,
+          packageId: sub.package_id || '',
+          packageName: sub.package_name || '',
+          status: sub.status as SubscriptionStatus,
+          startDate: sub.start_date,
+          endDate: sub.end_date,
+          amount: sub.amount,
+          paymentType: (sub.payment_type || 'recurring') as PaymentType,
+          paymentMethod: sub.payment_method,
+          transactionId: sub.transaction_id,
+          billingCycle: (sub.billing_cycle || 'yearly') as BillingCycle,
+          signupFee: sub.signup_fee,
+          cancelledAt: sub.cancelled_at,
+          cancelReason: sub.cancel_reason,
+          createdAt: sub.created_at,
+          updatedAt: sub.updated_at
+        })) as ISubscription[];
+        
+        setSubscriptions(convertedSubscriptions);
+      }
+    };
+
+    initializeDatabase();
+    fetchSubscriptions();
   }, []);
 
   const handleRetryConnection = async () => {
@@ -165,7 +172,6 @@ const AdminSubscriptionsPage = () => {
   };
 
   const handleViewSubscriptionDetails = (subscription: ISubscription) => {
-    // Handle viewing subscription details
     toast({
       title: "View Subscription",
       description: `Viewing details for subscription ${subscription.id}`,
@@ -173,7 +179,6 @@ const AdminSubscriptionsPage = () => {
   };
 
   const handleCancelSubscription = (subscription: ISubscription) => {
-    // Handle cancelling subscription
     toast({
       title: "Cancel Subscription",
       description: `Cancelling subscription ${subscription.id}`,
@@ -250,7 +255,7 @@ const AdminSubscriptionsPage = () => {
             <CardContent>
               <UserSubscriptionsTable 
                 subscriptions={subscriptions} 
-                isLoading={isLoadingSubscriptions}
+                isLoading={false}
                 onViewDetails={handleViewSubscriptionDetails}
                 onCancel={handleCancelSubscription}
               />
