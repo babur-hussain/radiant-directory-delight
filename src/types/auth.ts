@@ -1,115 +1,64 @@
 
-import { User as SupabaseUser } from '@supabase/supabase-js';
+export type UserRole = "User" | "Business" | "Influencer" | "Staff" | "Admin";
 
-// User roles enum for type safety
-export type UserRole = 'Admin' | 'Business' | 'Influencer' | 'User' | 'Staff' | null;
-
-// Subscription interface for type safety
-export interface UserSubscription {
-  id: string;
-  userId: string;
-  packageId: string;
-  packageName: string;
-  amount: number;
-  startDate: Date | string;
-  endDate: Date | string;
-  status: string;
-  paymentMethod?: string;
-  transactionId?: string;
-  cancelledAt?: string;
-  cancelReason?: string;
-  paymentType?: "recurring" | "one-time";
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
-  [key: string]: any; // Allow additional properties
-}
-
-// Function to check if a subscription is a UserSubscription object
-export function isUserSubscription(subscription: any): subscription is UserSubscription {
-  return subscription && 
-         typeof subscription === 'object' && 
-         'packageId' in subscription && 
-         'status' in subscription;
-}
-
-// Extended User interface
 export interface User {
   uid: string;
-  id: string; // Ensure id is always present and matches uid
-  email: string | null;
+  id: string;
+  email: string;
   displayName: string | null;
   name: string | null;
-  photoURL: string | null;
-  isAdmin: boolean;
   role: UserRole;
+  isAdmin: boolean;
+  photoURL: string | null;
+  createdAt: string;
+  lastLogin: string;
+  
+  // Common optional fields
   employeeCode?: string | null;
-  createdAt?: string;
+  phone?: string | null;
   
-  // Subscription fields
-  subscription?: string | UserSubscription | null;
-  subscriptionId?: string;
-  subscriptionStatus?: string;
-  subscriptionPackage?: string;
-  customDashboardSections?: string[];
+  // User-specific fields
+  fullName?: string | null;
   
-  // Last login field
-  lastLogin?: Date | string;
-  
-  // User profile fields
-  phone?: string;
-  instagramHandle?: string;
-  facebookHandle?: string;
+  // Influencer-specific fields
+  instagramHandle?: string | null;
+  facebookHandle?: string | null;
   verified?: boolean;
-  city?: string;
-  country?: string;
+  city?: string | null;
+  country?: string | null;
+  niche?: string | null;
+  followersCount?: string | null;
+  bio?: string | null;
   
-  // Influencer specific fields
-  fullName?: string;
-  niche?: string;
-  followersCount?: string;
-  bio?: string;
+  // Business-specific fields
+  businessName?: string | null;
+  ownerName?: string | null;
+  businessCategory?: string | null;
+  website?: string | null;
+  address?: string | null;
+  gstNumber?: string | null;
   
-  // Business specific fields
-  businessName?: string;
-  ownerName?: string;
-  businessCategory?: string;
-  website?: string;
-  address?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    zipCode?: string;
-  };
-  gstNumber?: string;
+  // Subscription-related fields
+  subscription?: string | null;
+  subscriptionId?: string | null;
+  subscriptionStatus?: string | null;
+  subscriptionPackage?: string | null;
+  customDashboardSections?: string[] | null;
 }
 
-// Auth context type for the context provider
 export interface AuthContextType {
   user: User | null;
   currentUser: User | null;
-  isAuthenticated: boolean;
   loading: boolean;
   initialized: boolean;
-  userRole: UserRole;
+  userRole: UserRole | null;
   isAdmin: boolean;
-  
-  // Auth methods
+  isAuthenticated: boolean;
   login: (email: string, password: string, employeeCode?: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
-  signup: (
-    email: string, 
-    password: string, 
-    name: string, 
-    role: UserRole, 
-    additionalData?: any
-  ) => Promise<void>;
-  
-  // User data management
+  signup: (email: string, password: string, name: string, role: UserRole, additionalData?: any) => Promise<void>;
   updateUserData: (data: Partial<User>) => Promise<void>;
-  
-  // Role management
-  updateUserRole?: (user: User, role: UserRole) => Promise<User>;
-  updateUserPermission?: (userId: string, isAdmin: boolean) => Promise<{userId: string, isAdmin: boolean}>;
+  updateUserRole: (user: User, role: UserRole) => Promise<User>;
+  updateUserPermission: (userId: string, isAdmin: boolean) => Promise<{userId: string, isAdmin: boolean}>;
 }
