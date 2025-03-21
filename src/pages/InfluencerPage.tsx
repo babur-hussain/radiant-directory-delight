@@ -1,118 +1,156 @@
 
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import Layout from '@/components/layout/Layout';
-import { useAuth } from '@/hooks/useAuth';
+import { ArrowRight, Award, CheckSquare, Star, TrendingUp, Users, Zap } from 'lucide-react';
 import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
-import { Check, Instagram, Users, TrendingUp } from 'lucide-react';
+import Loading from '@/components/ui/loading';
+import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 
 const InfluencerPage = () => {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { packages, isLoading, isError } = useSubscriptionPackages();
   
+  const benefits = [
+    {
+      icon: Users,
+      title: "Expand Your Audience",
+      description: "Connect with businesses looking for influencers in your niche and grow your follower base."
+    },
+    {
+      icon: Star,
+      title: "Premium Brand Partnerships",
+      description: "Get exclusive access to collaboration opportunities with top brands and businesses."
+    },
+    {
+      icon: TrendingUp,
+      title: "Monetize Your Content",
+      description: "Transform your social media presence into a sustainable income stream through partnerships."
+    },
+    {
+      icon: Award,
+      title: "Verified Influencer Badge",
+      description: "Stand out with our verified badge that shows businesses you're a trusted partner."
+    },
+    {
+      icon: Zap,
+      title: "Analytics Dashboard",
+      description: "Track your performance, engagement, and earnings with our intuitive analytics tools."
+    },
+    {
+      icon: CheckSquare,
+      title: "Personalized Opportunities",
+      description: "Receive tailored collaboration offers that match your audience and content style."
+    },
+  ];
+
+  const scrollToPackages = () => {
+    const packagesSection = document.getElementById('subscription-packages');
+    if (packagesSection) {
+      packagesSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
-    <Layout>
-      <div className="container mx-auto px-4 py-10">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Become an Influencer Partner</h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Join our network of influencers and create authentic content that connects brands with your audience.
-          </p>
-          <div className="mt-8">
-            <Button size="lg" className="px-8 py-6 text-lg">Apply Now</Button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          <Card>
-            <CardHeader>
-              <CardTitle>Create</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Create authentic content that resonates with your audience and showcases local businesses.</p>
-            </CardContent>
-          </Card>
+    <div className="min-h-screen">
+      <main className="flex-grow">
+        {/* Hero Section */}
+        <section className="relative py-20 md:py-28 bg-gradient-to-br from-purple-500/10 via-violet-500/10 to-indigo-500/10 overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-50"></div>
           
-          <Card>
-            <CardHeader>
-              <CardTitle>Connect</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Connect with local businesses and brands that align with your personal values and style.</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Earn</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Earn competitive compensation for your content creation and audience engagement skills.</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="bg-muted py-16 px-4 rounded-lg mb-16">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold text-center mb-8">Why Partner With Us?</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-start">
-                <div className="bg-primary/10 p-2 rounded-full mr-4">
-                  <Instagram className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-medium mb-2">Authentic Partnerships</h3>
-                  <p className="text-muted-foreground">We connect you with businesses that match your unique style and audience interests.</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start">
-                <div className="bg-primary/10 p-2 rounded-full mr-4">
-                  <Users className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-medium mb-2">Community Focus</h3>
-                  <p className="text-muted-foreground">Help promote local businesses and strengthen your community connections.</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start">
-                <div className="bg-primary/10 p-2 rounded-full mr-4">
-                  <TrendingUp className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-medium mb-2">Growth Opportunities</h3>
-                  <p className="text-muted-foreground">Access to exclusive events, professional development, and networking.</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start">
-                <div className="bg-primary/10 p-2 rounded-full mr-4">
-                  <Check className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-medium mb-2">Consistent Income</h3>
-                  <p className="text-muted-foreground">Reliable payment structure with clear expectations and deliverables.</p>
-                </div>
-              </div>
+          <div className="container px-4 mx-auto relative z-10">
+            <div className="max-w-3xl mx-auto text-center">
+              <h1 className="text-4xl md:text-5xl font-bold mb-6 text-gradient-purple">
+                Maximize Your Earning Potential as an Influencer
+              </h1>
+              <p className="text-xl text-gray-600 mb-8">
+                Join our platform and turn your passion into profit by connecting with brands that value your unique voice and audience.
+              </p>
+              <Button 
+                size="lg" 
+                className="bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 hover:from-indigo-500 hover:via-violet-500 hover:to-purple-500 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                onClick={scrollToPackages}
+              >
+                Start Your Journey <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className="mb-16">
-          <h2 className="text-3xl font-bold text-center mb-8">Influencer Programs</h2>
-          <SubscriptionPackages userRole="Influencer" />
-        </div>
+        {/* Benefits Section */}
+        <section className="py-20 bg-white">
+          <div className="container px-4 mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold mb-4 text-gradient-purple">Key Benefits for Influencers</h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Our platform provides everything you need to succeed as an influencer in today's competitive market.
+              </p>
+            </div>
 
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold mb-6">Ready to Start Your Influencer Journey?</h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-            Join our network of successful influencers who are making an impact in their communities.
-          </p>
-          <Button size="lg" className="px-8 py-6 text-lg">Apply Now</Button>
-        </div>
-      </div>
-    </Layout>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {benefits.map((benefit, index) => (
+                <Card key={index} className="border-0 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <CardHeader className="pb-2">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex items-center justify-center mb-3">
+                      <benefit.icon className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <CardTitle className="text-xl">{benefit.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-600">{benefit.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Subscription Packages Section */}
+        <section id="subscription-packages" className="py-20 bg-gray-50">
+          <div className="container px-4 mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold mb-4 text-gradient-purple">Choose Your Influencer Package</h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Select the plan that best fits your goals and take your influencer career to the next level.
+              </p>
+            </div>
+
+            {isLoading ? (
+              <div className="flex justify-center items-center py-20">
+                <Loading size="lg" message="Loading subscription packages..." />
+              </div>
+            ) : isError ? (
+              <div className="text-center py-10">
+                <p className="text-red-500 mb-4">There was an error loading the subscription packages.</p>
+                <Button onClick={() => window.location.reload()}>Try Again</Button>
+              </div>
+            ) : (
+              <SubscriptionPackages userRole="Influencer" />
+            )}
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-16 bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 text-white">
+          <div className="container px-4 mx-auto text-center">
+            <h2 className="text-3xl font-bold mb-6">Ready to Start Your Influencer Journey?</h2>
+            <p className="text-lg mb-8 max-w-2xl mx-auto text-white/90">
+              Join thousands of successful influencers who are growing their audience and income with our platform.
+            </p>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="bg-white text-purple-600 hover:bg-white/90 border-white hover:shadow-lg transition-all duration-300"
+              onClick={scrollToPackages}
+            >
+              Join Now <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+        </section>
+      </main>
+    </div>
   );
 };
 

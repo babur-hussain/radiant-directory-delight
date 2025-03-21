@@ -1,59 +1,77 @@
 
+// Enum for payment types
 export type PaymentType = 'recurring' | 'one-time';
-export type BillingCycle = 'monthly' | 'yearly';
-export type SubscriptionStatus = 'active' | 'paused' | 'pending' | 'cancelled' | 'expired' | 'inactive';
 
-export interface ISubscription {
+// Enum for billing cycles
+export type BillingCycle = 'monthly' | 'yearly' | undefined;
+
+export interface Subscription {
   id: string;
   userId: string;
   packageId: string;
   packageName: string;
-  status: SubscriptionStatus;
+  amount: number;
   startDate: string;
   endDate: string;
-  amount: number;
-  paymentType: PaymentType;
+  status: SubscriptionStatus;
   paymentMethod?: string;
   transactionId?: string;
-  billingCycle?: BillingCycle;
-  signupFee?: number;
-  recurring?: boolean;
   cancelledAt?: string;
   cancelReason?: string;
+  paymentType: PaymentType;
+  isPaused?: boolean;
+  isPausable?: boolean;
+  isUserCancellable?: boolean;
   createdAt?: string;
   updatedAt?: string;
-  razorpaySubscriptionId?: string;
-  razorpayOrderId?: string;
-  recurringAmount?: number;
-  nextBillingDate?: string;
-  actualStartDate?: string;
-  dashboardFeatures?: string[];
-  dashboardSections?: string[];
-  advancePaymentMonths?: number;
-  [key: string]: any;
 }
 
-// Make this interface compatible with the one in SubscriptionPackage.ts
-export interface ISubscriptionPackage {
-  id: string;
-  title: string;
-  price: number;
-  durationMonths: number; // Make required to match the other interface
-  shortDescription?: string;
-  fullDescription?: string;
-  features: string[]; // Make required to match the other interface
-  popular?: boolean;
-  setupFee?: number;
-  type?: 'Business' | 'Influencer'; // Ensure this is a union type
+export type SubscriptionStatus = 
+  | 'active'
+  | 'pending'
+  | 'cancelled'
+  | 'expired'
+  | 'trial'
+  | 'paused';
+
+export const SUBSCRIPTION_STATUSES = {
+  ACTIVE: 'active' as SubscriptionStatus,
+  PENDING: 'pending' as SubscriptionStatus,
+  CANCELLED: 'cancelled' as SubscriptionStatus,
+  EXPIRED: 'expired' as SubscriptionStatus,
+  TRIAL: 'trial' as SubscriptionStatus,
+  PAUSED: 'paused' as SubscriptionStatus,
+};
+
+export interface UserSubscriptionParams {
+  userId: string;
+  packageId: string;
+  packageName: string;
+  amount: number;
+  startDate: string;
+  endDate: string;
+  status?: SubscriptionStatus;
+  paymentMethod?: string;
+  transactionId?: string;
   paymentType?: PaymentType;
-  billingCycle?: BillingCycle;
-  dashboardSections?: string[];
-  termsAndConditions?: string;
-  advancePaymentMonths?: number;
-  monthlyPrice?: number;
-  isActive?: boolean;
-  maxBusinesses?: number;
-  maxInfluencers?: number;
-  createdAt?: string;
-  updatedAt?: string;
+}
+
+export interface SubscriptionUpdateParams {
+  status?: SubscriptionStatus;
+  endDate?: string;
+  cancelledAt?: string;
+  cancelReason?: string;
+  isPaused?: boolean;
+}
+
+export interface SubscriptionAdminUpdateParams extends SubscriptionUpdateParams {
+  packageId?: string;
+  packageName?: string;
+  amount?: number;
+  startDate?: string;
+  paymentMethod?: string;
+  transactionId?: string;
+  paymentType?: PaymentType;
+  isPausable?: boolean;
+  isUserCancellable?: boolean;
 }

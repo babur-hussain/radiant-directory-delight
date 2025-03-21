@@ -1,78 +1,156 @@
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import Layout from '@/components/layout/Layout';
-import { useAuth } from '@/hooks/useAuth';
+import { ArrowRight, Award, CheckSquare, Star, TrendingUp, Users, Zap } from 'lucide-react';
 import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
-import FAQ from '@/components/business/FAQsSection';
+import Loading from '@/components/ui/loading';
+import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 
 const BusinessPage = () => {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { packages, isLoading, isError } = useSubscriptionPackages();
   
-  // Create empty placeholder data
-  const statistics = [];
-  const features = [];
-  const faqs = [];
+  const benefits = [
+    {
+      icon: Users,
+      title: "Expand Your Audience",
+      description: "Connect with our network of influencers to reach new potential customers and grow your business."
+    },
+    {
+      icon: Star,
+      title: "Premium Influencer Partnerships",
+      description: "Get exclusive access to our top influencers who can promote your products and services."
+    },
+    {
+      icon: TrendingUp,
+      title: "Boost Your Online Presence",
+      description: "Transform your digital footprint with expert marketing strategies and influencer collaborations."
+    },
+    {
+      icon: Award,
+      title: "Verified Business Badge",
+      description: "Stand out with our verified badge that shows customers you're a trusted business partner."
+    },
+    {
+      icon: Zap,
+      title: "Analytics Dashboard",
+      description: "Track your campaign performance, engagement, and ROI with our intuitive analytics tools."
+    },
+    {
+      icon: CheckSquare,
+      title: "Personalized Marketing Plans",
+      description: "Receive tailored marketing strategies that match your business goals and budget."
+    },
+  ];
+
+  const scrollToPackages = () => {
+    const packagesSection = document.getElementById('subscription-packages');
+    if (packagesSection) {
+      packagesSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
-    <Layout>
-      <div className="container mx-auto px-4 py-10">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Business Solutions</h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Grow your business with our customized digital marketing solutions designed specifically for local businesses.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-          <Card>
-            <CardHeader>
-              <CardTitle>Complete Digital Presence</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Establish your business online with a complete digital strategy tailored to your specific needs.</p>
-            </CardContent>
-          </Card>
+    <div className="min-h-screen">
+      <main className="flex-grow">
+        {/* Hero Section */}
+        <section className="relative py-20 md:py-28 bg-gradient-to-br from-blue-500/10 via-cyan-500/10 to-teal-500/10 overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-50"></div>
           
-          <Card>
-            <CardHeader>
-              <CardTitle>Local SEO Excellence</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Get found by local customers with optimized local SEO strategies that put your business on the map.</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Social Media Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Engage with your community through professional social media management and content creation.</p>
-            </CardContent>
-          </Card>
-        </div>
+          <div className="container px-4 mx-auto relative z-10">
+            <div className="max-w-3xl mx-auto text-center">
+              <h1 className="text-4xl md:text-5xl font-bold mb-6 text-gradient-blue">
+                Grow Your Business with Influencer Marketing
+              </h1>
+              <p className="text-xl text-gray-600 mb-8">
+                Connect with our network of influencers to amplify your brand message and drive meaningful business growth.
+              </p>
+              <Button 
+                size="lg" 
+                className="bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 hover:from-teal-500 hover:via-cyan-500 hover:to-blue-500 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                onClick={scrollToPackages}
+              >
+                Start Your Journey <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+        </section>
 
-        <div className="mb-16">
-          <h2 className="text-3xl font-bold text-center mb-8">Our Business Plans</h2>
-          <SubscriptionPackages userRole="Business" />
-        </div>
+        {/* Benefits Section */}
+        <section className="py-20 bg-white">
+          <div className="container px-4 mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold mb-4 text-gradient-blue">Key Benefits for Businesses</h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Our platform provides everything you need to thrive in today's competitive market through influencer partnerships.
+              </p>
+            </div>
 
-        <div className="mb-16">
-          <h2 className="text-3xl font-bold text-center mb-8">Frequently Asked Questions</h2>
-          <FAQ faqs={faqs} />
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {benefits.map((benefit, index) => (
+                <Card key={index} className="border-0 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <CardHeader className="pb-2">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500/20 to-teal-500/20 flex items-center justify-center mb-3">
+                      <benefit.icon className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <CardTitle className="text-xl">{benefit.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-600">{benefit.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
 
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold mb-6">Ready to Grow Your Business?</h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-            Join hundreds of local businesses who have transformed their digital presence with our solutions.
-          </p>
-          <Button size="lg" className="px-8 py-6 text-lg">Get Started Today</Button>
-        </div>
-      </div>
-    </Layout>
+        {/* Subscription Packages Section */}
+        <section id="subscription-packages" className="py-20 bg-gray-50">
+          <div className="container px-4 mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold mb-4 text-gradient-blue">Choose Your Business Package</h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Select the plan that best fits your goals and take your business to the next level.
+              </p>
+            </div>
+
+            {isLoading ? (
+              <div className="flex justify-center items-center py-20">
+                <Loading size="lg" message="Loading subscription packages..." />
+              </div>
+            ) : isError ? (
+              <div className="text-center py-10">
+                <p className="text-red-500 mb-4">There was an error loading the subscription packages.</p>
+                <Button onClick={() => window.location.reload()}>Try Again</Button>
+              </div>
+            ) : (
+              <SubscriptionPackages userRole="Business" />
+            )}
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-16 bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 text-white">
+          <div className="container px-4 mx-auto text-center">
+            <h2 className="text-3xl font-bold mb-6">Ready to Start Your Business Growth?</h2>
+            <p className="text-lg mb-8 max-w-2xl mx-auto text-white/90">
+              Join thousands of successful businesses who are expanding their reach and growing their revenue with our platform.
+            </p>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="bg-white text-blue-600 hover:bg-white/90 border-white hover:shadow-lg transition-all duration-300"
+              onClick={scrollToPackages}
+            >
+              Join Now <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+        </section>
+      </main>
+    </div>
   );
 };
 
