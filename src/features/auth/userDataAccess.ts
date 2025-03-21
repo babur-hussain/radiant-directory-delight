@@ -1,7 +1,7 @@
 
-import { User } from "@/types/auth";
+import { User, UserRole } from "@/types/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { transformRole } from "./userManagement";
+import { transformRole } from "@/hooks/useSupabaseUsers";
 
 // Get all users with pagination
 export const getAllUsers = async (
@@ -60,7 +60,12 @@ export const getAllUsers = async (
       ownerName: userData.owner_name || "",
       businessCategory: userData.business_category || "",
       website: userData.website || "",
-      gstNumber: userData.gst_number || ""
+      gstNumber: userData.gst_number || "",
+      subscription: userData.subscription || null,
+      subscriptionId: userData.subscription_id || null,
+      subscriptionStatus: userData.subscription_status || null,
+      subscriptionPackage: userData.subscription_package || null,
+      customDashboardSections: userData.custom_dashboard_sections || null
     }));
 
     return { users, count: count || 0 };
@@ -77,12 +82,14 @@ export const getUserById = async (userId: string): Promise<User | null> => {
       .from("users")
       .select("*")
       .eq("id", userId)
-      .single();
+      .maybeSingle();
 
-    if (error || !data) {
+    if (error) {
       console.error("Error fetching user by ID:", error);
       return null;
     }
+
+    if (!data) return null;
 
     return {
       uid: data.id,
@@ -109,7 +116,12 @@ export const getUserById = async (userId: string): Promise<User | null> => {
       ownerName: data.owner_name || "",
       businessCategory: data.business_category || "",
       website: data.website || "",
-      gstNumber: data.gst_number || ""
+      gstNumber: data.gst_number || "",
+      subscription: data.subscription || null,
+      subscriptionId: data.subscription_id || null,
+      subscriptionStatus: data.subscription_status || null,
+      subscriptionPackage: data.subscription_package || null,
+      customDashboardSections: data.custom_dashboard_sections || null
     };
   } catch (error) {
     console.error("Error in getUserById:", error);

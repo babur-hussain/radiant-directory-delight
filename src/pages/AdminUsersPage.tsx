@@ -9,14 +9,13 @@ import { AlertCircle, Loader2, RefreshCw, Search, UserPlus, Eye, Filter, IdCard 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/hooks/use-toast';
-import { createTestUser } from '@/features/auth/userManagement';
-import { getAllUsers } from '@/features/auth/userDataAccess';
 import { User, UserRole } from '@/types/auth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import UserDetailsPopup from '@/components/admin/UserDetailsPopup';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminUsersPage = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -69,24 +68,75 @@ const AdminUsersPage = () => {
     }
   }, [searchTerm, employeeCodeFilter, users]);
 
+  const transformRole = (role: string | null): UserRole => {
+    if (!role) return 'User';
+    
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return 'Admin';
+      case 'business':
+        return 'Business';
+      case 'influencer':
+        return 'Influencer';
+      case 'staff':
+        return 'Staff';
+      case 'user':
+      default:
+        return 'User';
+    }
+  };
+
   const fetchUsers = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      console.log('Fetching all users from userManagement...');
-      const allUsers = await getAllUsers();
-      console.log('Users fetched:', allUsers);
+      console.log('Fetching users from Supabase...');
       
-      if (Array.isArray(allUsers) && allUsers.length > 0) {
-        // Sort users by creation date (newest first)
-        const sortedUsers = [...allUsers].sort((a, b) => {
-          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return dateB - dateA;
-        });
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        // Map the Supabase data to our User type
+        const mappedUsers: User[] = data.map(userData => ({
+          uid: userData.id,
+          id: userData.id,
+          email: userData.email || "",
+          displayName: userData.name || "",
+          name: userData.name || "",
+          role: transformRole(userData.role),
+          isAdmin: userData.is_admin || false,
+          photoURL: userData.photo_url || "",
+          employeeCode: userData.employee_code || "",
+          createdAt: userData.created_at || new Date().toISOString(),
+          lastLogin: userData.last_login || null,
+          phone: userData.phone || "",
+          instagramHandle: userData.instagram_handle || "",
+          facebookHandle: userData.facebook_handle || "",
+          verified: userData.verified || false,
+          city: userData.city || "",
+          country: userData.country || "",
+          niche: userData.niche || "",
+          followersCount: userData.followers_count || "",
+          bio: userData.bio || "",
+          businessName: userData.business_name || "",
+          ownerName: userData.owner_name || "",
+          businessCategory: userData.business_category || "",
+          website: userData.website || "",
+          gstNumber: userData.gst_number || "",
+          subscription: userData.subscription || null,
+          subscriptionId: userData.subscription_id || null,
+          subscriptionStatus: userData.subscription_status || null,
+          subscriptionPackage: userData.subscription_package || null,
+          customDashboardSections: userData.custom_dashboard_sections || null
+        }));
         
-        setUsers(sortedUsers);
-        setFilteredUsers(sortedUsers);
+        console.log(`Fetched ${mappedUsers.length} users from Supabase`);
+        setUsers(mappedUsers);
+        setFilteredUsers(mappedUsers);
       } else {
         toast({
           title: "No users found",
@@ -126,24 +176,67 @@ const AdminUsersPage = () => {
 
     setIsSubmitting(true);
     try {
-      const newUser = await createTestUser({
-        email: newUserEmail,
-        name: newUserName,
-        role: newUserRole,
-        isAdmin,
-        employeeCode: newEmployeeCode
-      });
+      // Create a new user in Supabase
+      const { data, error } = await supabase
+        .from('users')
+        .insert([{
+          email: newUserEmail,
+          name: newUserName,
+          role: newUserRole.toLowerCase(),
+          is_admin: isAdmin,
+          employee_code: newEmployeeCode,
+          created_at: new Date().toISOString()
+        }])
+        .select();
+        
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const newUser: User = {
+          uid: data[0].id,
+          id: data[0].id,
+          email: data[0].email,
+          name: data[0].name,
+          displayName: data[0].name,
+          role: transformRole(data[0].role),
+          isAdmin: data[0].is_admin || false,
+          employeeCode: data[0].employee_code || '',
+          createdAt: data[0].created_at,
+          // Add other fields with default values
+          lastLogin: null,
+          phone: '',
+          photoURL: '',
+          instagramHandle: '',
+          facebookHandle: '',
+          verified: false,
+          city: '',
+          country: '',
+          niche: '',
+          followersCount: '',
+          bio: '',
+          businessName: '',
+          ownerName: '',
+          businessCategory: '',
+          website: '',
+          gstNumber: '',
+          subscription: null,
+          subscriptionId: null,
+          subscriptionStatus: null,
+          subscriptionPackage: null,
+          customDashboardSections: null
+        };
 
-      toast({
-        title: 'Success',
-        description: `User ${newUserName} has been created`,
-      });
+        toast({
+          title: 'Success',
+          description: `User ${newUserName} has been created`,
+        });
 
-      // Add the new user to the list and sort (newest first)
-      setUsers((prevUsers) => {
-        const updatedUsers = [newUser, ...prevUsers];
-        return updatedUsers;
-      });
+        // Add the new user to the list and sort (newest first)
+        setUsers((prevUsers) => {
+          const updatedUsers = [newUser, ...prevUsers];
+          return updatedUsers;
+        });
+      }
       
       // Reset form and close dialog
       setNewUserEmail('');
