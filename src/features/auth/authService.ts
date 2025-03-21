@@ -223,6 +223,7 @@ export const getCurrentSession = async () => {
 // Get current user
 export const getCurrentUser = async () => {
   try {
+    console.log("Getting current user...");
     const { data, error } = await supabase.auth.getUser();
     
     if (error) {
@@ -231,11 +232,33 @@ export const getCurrentUser = async () => {
     }
     
     if (!data.user) {
+      console.log("No authenticated user found");
       return null;
     }
     
+    console.log("Found authenticated user:", data.user.id);
+    
     // Fetch user profile data
     const userData = await fetchUserByUid(data.user.id);
+    
+    if (!userData) {
+      console.log("User exists in auth but not in profiles, creating basic profile");
+      // Basic user data if no profile exists
+      const basicUserData: User = {
+        uid: data.user.id,
+        id: data.user.id,
+        email: data.user.email || '',
+        displayName: data.user.user_metadata?.name || '',
+        name: data.user.user_metadata?.name || '',
+        role: (data.user.user_metadata?.role as UserRole) || 'User',
+        isAdmin: data.user.email?.toLowerCase() === 'baburhussain660@gmail.com' || false,
+        photoURL: null,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      };
+      
+      return basicUserData;
+    }
     
     // Special case for default admin
     if (data.user.email?.toLowerCase() === 'baburhussain660@gmail.com' && userData) {
@@ -243,6 +266,7 @@ export const getCurrentUser = async () => {
       userData.role = 'Admin';
     }
     
+    console.log("Returning user data:", userData.id, userData.role);
     return userData;
   } catch (error) {
     console.error("Error in getCurrentUser:", error);

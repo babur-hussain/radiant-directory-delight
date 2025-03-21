@@ -1,3 +1,4 @@
+
 import { createContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -42,10 +43,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const initializeAuth = async () => {
       try {
-        // Set up auth state change listener
+        console.log("Initializing auth state...");
+        
+        // IMPORTANT: First get current session to set initial state
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        if (sessionData.session && isMounted) {
+          console.log("Found existing session:", sessionData.session.user.id);
+          setSession({
+            accessToken: sessionData.session.access_token,
+            refreshToken: sessionData.session.refresh_token,
+            expiresAt: new Date(sessionData.session.expires_at!).toISOString(),
+            providerToken: sessionData.session.provider_token || null,
+            user: {
+              id: sessionData.session.user.id,
+              email: sessionData.session.user.email || '',
+              phone: sessionData.session.user.phone || '',
+              userMetadata: sessionData.session.user.user_metadata || {},
+              appMetadata: sessionData.session.user.app_metadata || {},
+              aud: sessionData.session.user.aud || ''
+            }
+          });
+          
+          // Get additional user data
+          try {
+            const userData = await getCurrentUser();
+            
+            console.log("Fetched current user data:", userData?.id);
+            
+            // Special case for default admin
+            if (sessionData.session.user?.email?.toLowerCase() === 'baburhussain660@gmail.com' && userData) {
+              userData.isAdmin = true;
+              userData.role = 'Admin';
+            }
+            
+            if (isMounted) {
+              setUser(userData);
+            }
+          } catch (error) {
+            console.error("Error fetching user data:", error);
+            if (isMounted) {
+              setUser(null);
+            }
+          }
+        }
+        
+        // THEN set up auth state change listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, _session) => {
-            console.log("Auth state changed:", event);
+            console.log("Auth state changed:", event, _session?.user?.id);
             
             if (!isMounted) return;
             
@@ -96,46 +142,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
           }
         );
-        
-        // Get current session
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        
-        if (currentSession && isMounted) {
-          setSession({
-            accessToken: currentSession.access_token,
-            refreshToken: currentSession.refresh_token,
-            expiresAt: new Date(currentSession.expires_at!).toISOString(),
-            providerToken: currentSession.provider_token || null,
-            user: {
-              id: currentSession.user.id,
-              email: currentSession.user.email || '',
-              phone: currentSession.user.phone || '',
-              userMetadata: currentSession.user.user_metadata || {},
-              appMetadata: currentSession.user.app_metadata || {},
-              aud: currentSession.user.aud || ''
-            }
-          });
-          
-          // Get additional user data
-          try {
-            const userData = await getCurrentUser();
-            
-            // Special case for default admin
-            if (currentSession.user?.email?.toLowerCase() === 'baburhussain660@gmail.com' && userData) {
-              userData.isAdmin = true;
-              userData.role = 'Admin';
-            }
-            
-            if (isMounted) {
-              setUser(userData);
-            }
-          } catch (error) {
-            console.error("Error fetching user data:", error);
-            if (isMounted) {
-              setUser(null);
-            }
-          }
-        }
         
         if (isMounted) {
           setLoading(false);

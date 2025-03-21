@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, LogIn, LayoutDashboard } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -14,22 +14,33 @@ const Header = () => {
   
   // Get auth context with safe defaults
   const { 
-    currentUser = null, 
-    logout = async () => {}, 
-    isAuthenticated = false
+    currentUser, 
+    user,
+    logout,
+    isAuthenticated,
+    loading,
+    initialized
   } = useAuth();
   
-  const user = currentUser;
+  // Helper debugging log (temporary)
+  useEffect(() => {
+    console.log("Header auth state:", { 
+      isAuthenticated, 
+      userId: currentUser?.id || user?.id,
+      loading,
+      initialized
+    });
+  }, [isAuthenticated, currentUser, user, loading, initialized]);
 
   const handleDashboardClick = () => {
-    if (!isAuthenticated || !user) return;
+    if (!isAuthenticated || !currentUser) return;
     
     // Navigate to the appropriate dashboard based on user role
-    if (user.role === "Admin" || user.isAdmin) {
+    if (currentUser.role === "Admin" || currentUser.isAdmin) {
       navigate("/admin/dashboard");
-    } else if (user.role === "Influencer") {
+    } else if (currentUser.role === "Influencer") {
       navigate("/dashboard/influencer");
-    } else if (user.role === "Business") {
+    } else if (currentUser.role === "Business") {
       navigate("/dashboard/business");
     } else {
       // Default fallback for users with unspecified roles
@@ -42,9 +53,28 @@ const Header = () => {
   };
 
   const shouldShowDashboard = () => {
-    if (!isAuthenticated || !user) return false;
+    if (!isAuthenticated || !currentUser) return false;
     return true;
   };
+
+  // Determine if we should show the loading state
+  const showLoading = loading && !initialized;
+  
+  // Don't render auth-dependent UI until we've initialized
+  if (showLoading) {
+    return (
+      <header className="sticky top-0 z-50 w-full bg-white border-b shadow-sm dark:bg-gray-900 dark:border-gray-800">
+        <div className="container flex items-center justify-between h-16 mx-auto px-4">
+          <div className="flex-shrink-0">
+            <Link to="/" className="text-xl font-bold bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 bg-clip-text text-transparent hover:from-indigo-500 hover:via-purple-500 hover:to-violet-500 transition-all duration-300">
+              Grow Bharat Vyapaar
+            </Link>
+          </div>
+          <div className="animate-pulse bg-gray-200 h-8 w-24 rounded"></div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white border-b shadow-sm dark:bg-gray-900 dark:border-gray-800">

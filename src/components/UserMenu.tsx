@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -15,13 +15,33 @@ import { LogOut, User, Settings, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const UserMenu = () => {
-  const auth = useAuth();
-  const { currentUser, initialized, logout } = auth;
+  const { currentUser, user, initialized, logout } = useAuth();
   const navigate = useNavigate();
+  
+  // Combined user data from either source
+  const userData = currentUser || user;
+  
+  // Log for debugging
+  useEffect(() => {
+    console.log("UserMenu rendering with user:", { 
+      currentUserId: currentUser?.id,
+      userId: user?.id, 
+      initialized 
+    });
+  }, [currentUser, user, initialized]);
   
   // Get first letter of name for avatar fallback
   const getInitials = () => {
-    return currentUser?.displayName ? currentUser.displayName.charAt(0).toUpperCase() : "U";
+    if (userData?.displayName) {
+      return userData.displayName.charAt(0).toUpperCase();
+    }
+    if (userData?.name) {
+      return userData.name.charAt(0).toUpperCase();
+    }
+    if (userData?.email) {
+      return userData.email.charAt(0).toUpperCase();
+    }
+    return "U";
   };
 
   // Handle profile option click
@@ -35,7 +55,7 @@ const UserMenu = () => {
   };
 
   // Don't render until auth is initialized and we have a user
-  if (!initialized || !currentUser) {
+  if (!initialized || !userData) {
     return null;
   }
 
@@ -44,8 +64,8 @@ const UserMenu = () => {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="relative h-9 w-9 rounded-full">
           <Avatar className="h-9 w-9">
-            {currentUser?.photoURL ? (
-              <AvatarImage src={currentUser.photoURL} alt={currentUser?.displayName || "User"} />
+            {userData?.photoURL ? (
+              <AvatarImage src={userData.photoURL} alt={userData?.displayName || userData?.name || "User"} />
             ) : (
               <AvatarFallback>{getInitials()}</AvatarFallback>
             )}
@@ -55,11 +75,11 @@ const UserMenu = () => {
       <DropdownMenuContent align="end" className="w-56 bg-white">
         <DropdownMenuLabel>
           <div className="flex flex-col">
-            <span>{currentUser?.displayName}</span>
-            <span className="text-xs text-muted-foreground truncate">{currentUser?.email}</span>
-            {currentUser?.role && (
+            <span>{userData?.displayName || userData?.name}</span>
+            <span className="text-xs text-muted-foreground truncate">{userData?.email}</span>
+            {userData?.role && (
               <span className="text-xs font-medium mt-1 bg-primary/10 text-primary rounded-full px-2 py-0.5 inline-block w-fit">
-                {currentUser.role}
+                {userData.role}
               </span>
             )}
           </div>
