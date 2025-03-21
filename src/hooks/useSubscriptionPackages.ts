@@ -1,10 +1,12 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { getAllPackages, savePackage, deletePackage } from '@/services/packageService';
 import { toast } from '@/hooks/use-toast';
 
 export const useSubscriptionPackages = () => {
+  const queryClient = useQueryClient();
+  
   const {
     data: packages,
     isLoading,
@@ -15,7 +17,6 @@ export const useSubscriptionPackages = () => {
     queryKey: ['subscription-packages'],
     queryFn: async (): Promise<ISubscriptionPackage[]> => {
       try {
-        // Use the packageService to fetch packages
         return await getAllPackages();
       } catch (err) {
         console.error('Error in useSubscriptionPackages hook:', err);
@@ -29,33 +30,36 @@ export const useSubscriptionPackages = () => {
     }
   });
   
-  // Add methods for SubscriptionManagement component
+  const createOrUpdateMutation = useMutation({
+    mutationFn: savePackage,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
+    }
+  });
+  
+  const deleteMutation = useMutation({
+    mutationFn: deletePackage,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
+    }
+  });
+  
+  // Helper methods with better error handling
   const createOrUpdate = async (packageData: ISubscriptionPackage) => {
     try {
-      const result = await savePackage(packageData);
-      await refetch();
-      return result;
+      return await createOrUpdateMutation.mutateAsync(packageData);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: `Failed to save package: ${error instanceof Error ? error.message : String(error)}`,
-        variant: "destructive"
-      });
+      console.error('Error in createOrUpdate:', error);
       throw error;
     }
   };
   
   const remove = async (packageId: string) => {
     try {
-      await deletePackage(packageId);
-      await refetch();
+      await deleteMutation.mutateAsync(packageId);
       return true;
     } catch (error) {
-      toast({
-        title: "Error",
-        description: `Failed to delete package: ${error instanceof Error ? error.message : String(error)}`,
-        variant: "destructive"
-      });
+      console.error('Error in remove:', error);
       throw error;
     }
   };
@@ -67,7 +71,9 @@ export const useSubscriptionPackages = () => {
     error,
     refetch,
     createOrUpdate,
-    remove
+    remove,
+    isCreating: createOrUpdateMutation.isPending,
+    isDeleting: deleteMutation.isPending
   };
 };
 

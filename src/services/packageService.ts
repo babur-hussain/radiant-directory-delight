@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
+import { toast } from '@/hooks/use-toast';
 
 // Helper function to ensure payment type is valid
 const getPaymentType = (type: string | null): PaymentType => {
@@ -35,6 +36,31 @@ const mapToPackage = (pkg: any): ISubscriptionPackage => {
     advancePaymentMonths: pkg.advance_payment_months || 0,
     dashboardSections: pkg.dashboard_sections || [],
     isActive: true
+  };
+};
+
+// Map an ISubscriptionPackage to a Supabase row
+const mapToSupabasePackage = (pkg: ISubscriptionPackage) => {
+  // Generate an ID if one doesn't exist
+  const packageId = pkg.id || `pkg_${Date.now()}`;
+  
+  return {
+    id: packageId,
+    title: pkg.title,
+    price: pkg.price,
+    monthly_price: pkg.monthlyPrice || 0,
+    duration_months: pkg.durationMonths || 12,
+    short_description: pkg.shortDescription || '',
+    full_description: pkg.fullDescription || '',
+    features: Array.isArray(pkg.features) ? pkg.features : [],
+    popular: pkg.popular || false,
+    setup_fee: pkg.setupFee || 0,
+    type: pkg.type || 'Business',
+    payment_type: pkg.paymentType || 'recurring',
+    billing_cycle: pkg.billingCycle || 'yearly',
+    dashboard_sections: Array.isArray(pkg.dashboardSections) ? pkg.dashboardSections : [],
+    terms_and_conditions: pkg.termsAndConditions || '',
+    advance_payment_months: pkg.advancePaymentMonths || 0
   };
 };
 
@@ -109,9 +135,18 @@ export const getPackageById = async (id: string): Promise<ISubscriptionPackage |
 
 // Create or update package
 export const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscriptionPackage> => {
+  // Validate required fields
+  if (!packageData.title) {
+    throw new Error('Package title is required');
+  }
+  
+  if (packageData.price === undefined || packageData.price === null) {
+    throw new Error('Package price is required');
+  }
+  
   // Ensure package has an ID
   if (!packageData.id) {
-    packageData.id = packageData.title.toLowerCase().replace(/\s+/g, '-');
+    packageData.id = `pkg_${Date.now()}`;
   }
   
   // Convert features to array if it's a string
@@ -127,31 +162,14 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
   }
 
   // Prepare the data for Supabase (snake_case)
-  const supabaseData = {
-    id: packageData.id,
-    title: packageData.title,
-    price: packageData.price,
-    monthly_price: packageData.monthlyPrice,
-    setup_fee: packageData.setupFee,
-    duration_months: packageData.durationMonths,
-    short_description: packageData.shortDescription,
-    full_description: packageData.fullDescription,
-    features: packageData.features,
-    popular: packageData.popular,
-    type: packageData.type,
-    terms_and_conditions: packageData.termsAndConditions,
-    payment_type: packageData.paymentType,
-    billing_cycle: packageData.billingCycle,
-    advance_payment_months: packageData.advancePaymentMonths,
-    dashboard_sections: packageData.dashboardSections
-  };
+  const supabaseData = mapToSupabasePackage(packageData);
   
   console.log("Supabase data to save:", JSON.stringify(supabaseData, null, 2));
   
   try {
     const { data, error } = await supabase
       .from('subscription_packages')
-      .upsert(supabaseData, { onConflict: 'id' })
+      .upsert(supabaseData)
       .select('*')
       .maybeSingle();
     
@@ -166,9 +184,18 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
     
     const savedPackage = mapToPackage(data);
     console.log("Package saved successfully:", savedPackage);
+    toast({
+      title: "Success",
+      description: `Package "${savedPackage.title}" saved successfully`,
+    });
     return savedPackage;
   } catch (error) {
     console.error('Error in savePackage:', error);
+    toast({
+      title: "Error",
+      description: `Failed to save package: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      variant: "destructive"
+    });
     if (error instanceof Error) {
       throw new Error(`Error saving package: ${error.message}`);
     } else {
@@ -189,8 +216,18 @@ export const deletePackage = async (id: string): Promise<void> => {
       console.error(`Error deleting package with ID ${id}:`, error);
       throw error;
     }
+    
+    toast({
+      title: "Success",
+      description: "Package deleted successfully",
+    });
   } catch (error) {
     console.error(`Error in deletePackage:`, error);
+    toast({
+      title: "Error",
+      description: `Failed to delete package: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      variant: "destructive"
+    });
     throw new Error(`Failed to delete package: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
