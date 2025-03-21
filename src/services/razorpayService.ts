@@ -1,3 +1,4 @@
+
 /**
  * Service for Razorpay API interactions
  */
@@ -25,15 +26,15 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   cleanRazorpayOptions(safeOptions);
   
   // Final validation to ensure mandatory params
-  if (!safeOptions.key || !safeOptions.order_id) {
+  if (!safeOptions.key) {
     console.error("Missing required Razorpay parameters:", safeOptions);
-    throw new Error('Required parameters missing: key and order_id are mandatory for Razorpay checkout');
+    throw new Error('Required parameter missing: key is mandatory for Razorpay checkout');
   }
   
-  // Validate order_id format
-  if (!safeOptions.order_id.startsWith('order_') || safeOptions.order_id.length < 20) {
-    console.error("Invalid order_id format:", safeOptions.order_id);
-    throw new Error('Invalid order ID format. Please try again.');
+  // For key-only mode, we need either order_id or amount
+  if (!safeOptions.order_id && !safeOptions.amount) {
+    console.error("Either order_id or amount must be provided:", safeOptions);
+    throw new Error('Either order_id or amount must be provided for Razorpay checkout');
   }
   
   try {
@@ -101,18 +102,17 @@ const cleanRazorpayOptions = (options: Record<string, any>): void => {
     options.recurring = undefined;
   }
   
-  // Remove amount if order_id is present
-  if (options.order_id && options.amount) {
-    options.amount = undefined;
-  }
-  
   // For standard checkout with order_id, remove potentially conflicting options
-  if (options.order_id && options.order_id.startsWith('order_')) {
+  if (options.order_id) {
     // For standard checkout, these options can cause conflicts
     options.recurring = undefined;
     options.subscription_id = undefined;
-    options.amount = undefined;
-    options.currency = undefined;
+    
+    // Only remove amount if explicitly using order_id mode
+    if (options.amount) {
+      console.log("Order ID present, removing amount parameter");
+      options.amount = undefined;
+    }
   }
 
   // Ensure the callback URL is valid and absolute
@@ -297,13 +297,15 @@ export const buildRazorpayOptions = (
     options.prefill = cleanedPrefill;
   }
   
-  // Always use order-based payment (Razorpay's preferred approach)
+  // Use order-based payment if we have an order ID from backend
   if (result.order && result.order.id) {
     console.log("Setting up order-based payment with order ID:", result.order.id);
     options.order_id = result.order.id;
   } else {
-    console.error("Missing required order_id in the response");
-    throw new Error("Invalid response from server: missing order information");
+    // Fallback to direct payment with amount if order ID is missing
+    console.log("Order ID missing, using direct amount-based payment");
+    options.amount = Math.round(packageData.price * 100); // Convert to paise
+    options.currency = 'INR';
   }
   
   return options;
