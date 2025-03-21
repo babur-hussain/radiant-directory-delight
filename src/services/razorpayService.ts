@@ -1,3 +1,4 @@
+
 /**
  * Service for Razorpay API interactions
  */
@@ -6,9 +7,6 @@ import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { supabase } from '@/integrations/supabase/client';
 import { RAZORPAY_KEY_ID } from '@/utils/razorpayLoader';
 import { RazorpayOptions, SubscriptionResult } from '@/types/razorpay';
-
-// Constants
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://kyjdfhajtdqhdoijzmgk.supabase.co";
 
 /**
  * Create a new Razorpay checkout instance
@@ -142,7 +140,6 @@ export const createSubscriptionViaEdgeFunction = async (
     throw new Error('Not authenticated. Please log in again.');
   }
   
-  // Fix: Use the Supabase functions.invoke method instead of direct fetch
   try {
     // Clean customer data before sending to server
     const cleanedCustomerData = {
@@ -172,14 +169,11 @@ export const createSubscriptionViaEdgeFunction = async (
       enableAutoPay: enableAutoPay
     };
     
-    console.log("Sending payload to edge function:", JSON.stringify(payload));
+    console.log("Sending payload to edge function:", JSON.stringify(payload, null, 2));
     
-    // FIXED: Use Supabase's functions.invoke method instead of direct fetch
+    // Use Supabase's functions.invoke method to call the edge function
     const { data, error } = await supabase.functions.invoke('razorpay-integration', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: payload
     });
     
@@ -188,10 +182,15 @@ export const createSubscriptionViaEdgeFunction = async (
       throw new Error(`Server error: ${error.message}`);
     }
     
+    if (!data) {
+      throw new Error('Edge function returned empty response');
+    }
+    
     console.log("Received result from edge function:", data);
     
     // Validate the response contains required fields
     if (!data.order || !data.order.id) {
+      console.error('Invalid response from edge function:', data);
       throw new Error('Invalid response: missing order information');
     }
     

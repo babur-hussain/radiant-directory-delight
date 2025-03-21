@@ -18,19 +18,16 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Generate a proper Razorpay order ID format
+// Generate a proper Razorpay order ID format (order_XXX where XXX is 14 chars)
 function generateValidOrderId(): string {
-  // Generate a 14-character alphanumeric string following Razorpay's format
+  // Format: order_[14 random alphanumeric characters]
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
   const charactersLength = characters.length;
   
-  // Create a 14-character string with cryptographically strong random values
-  const randomValues = new Uint8Array(14);
-  crypto.getRandomValues(randomValues);
-  
   for (let i = 0; i < 14; i++) {
-    result += characters.charAt(randomValues[i] % charactersLength);
+    const randomIndex = Math.floor(Math.random() * charactersLength);
+    result += characters.charAt(randomIndex);
   }
   
   return `order_${result}`;
@@ -49,10 +46,11 @@ serve(async (req) => {
   }
 
   try {
-    // Main request handling - simplified to handle the default case
+    // Parse request body
     let body;
     try {
       body = await req.json();
+      console.log("Request body:", JSON.stringify(body, null, 2));
     } catch (e) {
       console.error("Error parsing request body:", e);
       return new Response(
@@ -65,18 +63,25 @@ serve(async (req) => {
     }
     
     const { packageData, customerData, userId, useOneTimePreferred = true, enableAutoPay = true } = body;
-    console.log("Creating subscription with data:", { packageData, customerData, userId, useOneTimePreferred, enableAutoPay });
-
-    // Validate subscription data
+    
+    // Validate required fields
     if (!packageData || !userId) {
+      console.error("Missing required fields:", { packageData, userId });
       return new Response(
-        JSON.stringify({ error: "Invalid subscription data" }),
+        JSON.stringify({ error: "Missing required fields: packageData and userId" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
     }
+
+    console.log("Creating subscription with data:", { 
+      packageId: packageData.id, 
+      userId, 
+      useOneTimePreferred, 
+      enableAutoPay 
+    });
 
     // Determine payment type based on package data and user preference
     const isRecurring = packageData.paymentType === 'recurring' && enableAutoPay;
@@ -90,11 +95,11 @@ serve(async (req) => {
     // Generate a receipt ID
     const receiptId = `receipt_${Date.now().toString(36)}`;
     
-    // Generate a valid order ID that exactly matches Razorpay format requirements
+    // Generate a valid order ID that matches Razorpay format requirements
     const orderId = generateValidOrderId();
     console.log("Generated order ID:", orderId);
     
-    // For subscription data
+    // Create subscription data if recurring
     const subscriptionData = isRecurring ? {
       id: `sub_${Date.now().toString(36)}${Math.random().toString(36).substring(2, 7)}`,
       entity: "subscription",
@@ -126,7 +131,7 @@ serve(async (req) => {
       notes: {
         packageId: packageData.id.toString(),
         userId: userId,
-        enableAutoPay: enableAutoPay ? "true" : "false", // Flag for enabling autopay
+        enableAutoPay: enableAutoPay ? "true" : "false",
         isRecurring: isRecurring ? "true" : "false"
       },
       created_at: Date.now()
@@ -134,7 +139,7 @@ serve(async (req) => {
     
     console.log("Order created successfully:", order);
     
-    // Return appropriate response
+    // Return successful response
     return new Response(
       JSON.stringify({ 
         order,

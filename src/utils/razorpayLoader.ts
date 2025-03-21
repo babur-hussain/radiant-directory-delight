@@ -11,7 +11,7 @@ export const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js
  * Check if Razorpay is already loaded in the window
  */
 export const isRazorpayAvailable = (): boolean => {
-  return typeof (window as any).Razorpay !== 'undefined';
+  return typeof window !== 'undefined' && typeof (window as any).Razorpay !== 'undefined';
 };
 
 /**
