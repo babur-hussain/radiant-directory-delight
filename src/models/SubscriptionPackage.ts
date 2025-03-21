@@ -1,4 +1,7 @@
 
+// Import the type definitions
+import { PaymentType, BillingCycle } from './Subscription';
+
 export interface ISubscriptionPackage {
   id: string;
   title: string;
@@ -12,7 +15,7 @@ export interface ISubscriptionPackage {
   popular?: boolean;
   type?: "Business" | "Influencer";
   termsAndConditions?: string;
-  paymentType?: PaymentType;
+  paymentType: PaymentType; // Changed from optional to required
   billingCycle?: BillingCycle;
   advancePaymentMonths?: number;
   dashboardSections?: string[];
@@ -23,9 +26,6 @@ export interface ISubscriptionPackage {
   maxBusinesses?: number;
   maxInfluencers?: number;
 }
-
-// Import the type definitions
-import { PaymentType, BillingCycle } from './Subscription';
 
 export class SubscriptionPackage implements ISubscriptionPackage {
   id: string;

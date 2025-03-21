@@ -171,16 +171,21 @@ const AdminUsersPage = () => {
 
     setIsSubmitting(true);
     try {
+      const userId = crypto.randomUUID();
+      
+      const userData = {
+        id: userId,
+        email: newUserEmail,
+        name: newUserName,
+        role: newUserRole.toLowerCase(),
+        is_admin: isAdmin,
+        employee_code: newEmployeeCode,
+        created_at: new Date().toISOString()
+      };
+      
       const { data, error } = await supabase
         .from('users')
-        .insert([{
-          email: newUserEmail,
-          name: newUserName,
-          role: newUserRole.toLowerCase(),
-          is_admin: isAdmin,
-          employee_code: newEmployeeCode,
-          created_at: new Date().toISOString()
-        }])
+        .insert([userData])
         .select();
         
       if (error) throw error;
@@ -253,9 +258,9 @@ const AdminUsersPage = () => {
       setIsLoading(true);
       
       const formattedUsers = users.map(user => ({
-        id: user.id || undefined,
-        email: user.email,
-        name: user.name,
+        id: user.id || crypto.randomUUID(),
+        email: user.email || '',
+        name: user.name || '',
         role: user.role || 'user',
         is_admin: user.is_admin || false,
         employee_code: user.employee_code || '',
