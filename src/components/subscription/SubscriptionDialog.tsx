@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface SubscriptionDialogProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   const { toast } = useToast();
   const { purchaseSubscription, isProcessing } = useSubscription();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   // Handle successful payment
   const handlePaymentSuccess = async (response: any) => {
@@ -36,19 +38,25 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
         throw new Error("No package selected");
       }
       
-      // Record the successful payment in our system
-      await supabase.from('payment_records').insert({
-        user_id: supabase.auth.user()?.id,
-        package_id: selectedPackage.id,
-        amount: response.amount || selectedPackage.price,
-        payment_id: response.razorpay_payment_id,
-        subscription_id: response.razorpay_subscription_id || response.subscriptionId,
-        payment_type: selectedPackage.paymentType,
-        status: 'successful'
-      });
+      if (!user?.id) {
+        throw new Error("User not authenticated");
+      }
       
-      // Update user's subscription
-      await purchaseSubscription(selectedPackage);
+      // Record the successful payment in our system
+      // Since we don't have a payment_records table, we'll add the data directly to user_subscriptions
+      const subscription = await purchaseSubscription(selectedPackage);
+      
+      if (response.razorpay_payment_id) {
+        // Update the subscription with payment details
+        await supabase
+          .from('user_subscriptions')
+          .update({
+            transaction_id: response.razorpay_payment_id,
+            payment_method: 'razorpay',
+            amount: response.amount || selectedPackage.price
+          })
+          .eq('id', subscription.id);
+      }
       
       // Show success toast
       toast({

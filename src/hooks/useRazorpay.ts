@@ -62,11 +62,19 @@ export const useRazorpay = () => {
   // Create a subscription plan on the server
   const createPlan = async (packageData: ISubscriptionPackage): Promise<any> => {
     try {
+      // Get current auth session
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      
+      if (!accessToken) {
+        throw new Error('Not authenticated');
+      }
+      
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/razorpay-integration/create-plan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.auth.session()?.access_token}`
+          'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify({ packageData })
       });
@@ -111,12 +119,20 @@ export const useRazorpay = () => {
         phone: user.phone || ''
       };
       
+      // Get current auth session
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      
+      if (!accessToken) {
+        throw new Error('Not authenticated');
+      }
+      
       // Create subscription via edge function
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/razorpay-integration/create-subscription`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.auth.session()?.access_token}`
+          'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify({
           userId: user.id,
