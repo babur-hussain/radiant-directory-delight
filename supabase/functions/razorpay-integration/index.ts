@@ -186,35 +186,76 @@ async function handleCreateSubscription(req: Request, user: any) {
       );
     }
 
-    // In a real implementation, you would make an API call to Razorpay here
-    // using the RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET
-    // For now, we're returning a mock subscription with the data needed
-    // by the frontend to proceed with the payment
+    // For simplicity, we'll create an order object for both one-time and subscription payments
+    // This is more reliable for testing than trying to mock Razorpay's subscription API
     
-    // Generate a unique ID for the subscription with a format compatible with Razorpay
-    // Using a proper format like "sub_xxxxxx" where xxxxxx is an alphanumeric string
-    const randomId = Math.random().toString(36).substring(2, 10);
-    const subscriptionId = `sub_${randomId}`;
+    // Calculate amount in paise (100 paise = 1 INR)
+    const amountInPaise = Math.round(packageData.price * 100);
     
-    const subscription = {
-      id: subscriptionId,
-      plan_id: `plan_${packageData.id}`,
-      customer_id: userId,
+    // Generate a receipt ID
+    const receiptId = `receipt_${Date.now()}`;
+    
+    // Create a unique order ID 
+    const orderId = `order_${Date.now()}${Math.floor(Math.random() * 10000)}`;
+    
+    // Create order object (this would be returned from Razorpay's API in a real implementation)
+    const order = {
+      id: orderId,
+      entity: "order",
+      amount: amountInPaise,
+      amount_paid: 0,
+      amount_due: amountInPaise,
+      currency: "INR",
+      receipt: receiptId,
       status: "created",
-      current_start: new Date().toISOString(),
-      current_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      ended_at: null,
-      quantity: 1,
+      attempts: 0,
       notes: {
         packageId: packageData.id,
         userId: userId,
+        paymentType: packageData.paymentType || "one-time"
       },
-      created_at: new Date().toISOString(),
+      created_at: Date.now()
     };
-
-    console.log("Subscription created successfully:", subscription);
+    
+    console.log("Order created successfully:", order);
+    
+    // For subscription type, also create a subscription object
+    let subscription = null;
+    if (packageData.paymentType === "recurring") {
+      // Use a proper format for the subscription ID
+      // Replace any special characters that might cause issues
+      const randomString = Math.random().toString(36).substring(2, 10).replace(/[^a-z0-9]/g, "");
+      const subscriptionId = `sub_${randomString}`;
+      
+      subscription = {
+        id: subscriptionId,
+        entity: "subscription",
+        plan_id: `plan_${packageData.id}`,
+        customer_id: userId,
+        status: "created",
+        current_start: new Date().toISOString(),
+        current_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        ended_at: null,
+        quantity: 1,
+        notes: {
+          packageId: packageData.id,
+          userId: userId,
+        },
+        created_at: new Date().toISOString(),
+        order_id: orderId
+      };
+      
+      console.log("Subscription created successfully:", subscription);
+    }
+    
+    // Return appropriate response
     return new Response(
-      JSON.stringify({ subscription }),
+      JSON.stringify({ 
+        order, 
+        subscription,
+        isSubscription: packageData.paymentType === "recurring",
+        isOneTime: packageData.paymentType === "one-time"
+      }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -256,6 +297,9 @@ async function handleWebhook(req: Request) {
     } else if (eventType === "subscription.cancelled") {
       // Handle subscription cancellation
       await processSubscriptionCancelled(payload);
+    } else if (eventType === "payment.authorized" || eventType === "payment.captured") {
+      // Handle payment success
+      await processPaymentSuccess(payload);
     }
 
     return new Response(
@@ -274,6 +318,25 @@ async function handleWebhook(req: Request) {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
+  }
+}
+
+// Process payment success
+async function processPaymentSuccess(payload: any) {
+  try {
+    const payment = payload.payment;
+    const orderId = payment?.order_id;
+    
+    if (!orderId) {
+      console.error("Missing order ID in payment payload");
+      return;
+    }
+    
+    // Update user's subscription in the database
+    // This would require fetching the order to get the notes with packageId and userId
+    console.log("Processing successful payment for order:", orderId);
+  } catch (error) {
+    console.error("Error processing payment success:", error);
   }
 }
 

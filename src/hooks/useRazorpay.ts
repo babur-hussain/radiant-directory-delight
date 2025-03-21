@@ -185,21 +185,26 @@ export const useRazorpay = () => {
         throw new Error('Invalid response format from server');
       }
       
-      const subscription = result.subscription;
+      console.log("Received result from backend:", result);
       
-      if (!subscription || !subscription.id) {
-        throw new Error('Invalid subscription response');
+      // Determine whether to use order_id or subscription_id based on the response
+      let orderBasedPayment = false;
+      let subscriptionBasedPayment = false;
+      
+      if (result.order && result.order.id) {
+        orderBasedPayment = true;
       }
       
-      console.log("Received subscription from backend:", subscription);
+      if (result.subscription && result.subscription.id) {
+        subscriptionBasedPayment = result.isSubscription || packageData.paymentType === 'recurring';
+      }
       
-      // Open Razorpay checkout for subscription
+      // Open Razorpay checkout
       return new Promise((resolve, reject) => {
         const options: RazorpayOptions = {
           key: RAZORPAY_KEY_ID,
-          subscription_id: subscription.id,
           name: 'Grow Bharat Vyapaar',
-          description: `Subscription for ${packageData.title}`,
+          description: `Payment for ${packageData.title}`,
           image: 'https://your-company-logo.png', // Replace with your logo
           prefill: {
             name: customerData.name,
@@ -212,24 +217,41 @@ export const useRazorpay = () => {
           },
           theme: {
             color: '#3399cc'
-          },
-          // Do not use recurring: true here as it can cause conflicts with subscription_id
-          handler: function(response: any) {
-            resolve({
-              ...response,
-              subscription,
-              subscriptionId: subscription.id,
-              packageDetails: packageData
-            });
-          },
-          modal: {
-            ondismiss: function() {
-              reject(new Error('Payment cancelled by user'));
-            }
+          }
+        };
+        
+        // For order-based payments
+        if (orderBasedPayment) {
+          options.order_id = result.order.id;
+          options.amount = result.order.amount; // amount in paise
+          options.currency = result.order.currency || 'INR';
+        }
+        
+        // For subscription-based payments
+        if (subscriptionBasedPayment) {
+          options.subscription_id = result.subscription.id;
+          // Do NOT use recurring: true here as it can cause conflicts with subscription_id
+        }
+        
+        options.handler = function(response: any) {
+          resolve({
+            ...response,
+            subscription: result.subscription,
+            order: result.order,
+            subscriptionId: result.subscription?.id,
+            orderId: result.order?.id,
+            packageDetails: packageData
+          });
+        };
+        
+        options.modal = {
+          ondismiss: function() {
+            reject(new Error('Payment cancelled by user'));
           }
         };
         
         try {
+          console.log("Initializing Razorpay with options:", options);
           const razorpay = new (window as any).Razorpay(options);
           razorpay.open();
         } catch (err) {
@@ -253,19 +275,73 @@ export const useRazorpay = () => {
     }
     
     try {
-      // Calculate amount in paise
-      const amountInPaise = Math.round(packageData.price * 100);
+      // Get current auth session
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       
-      // Create an order via server
-      // This is just a placeholder - in a real implementation, you would create an order via your server
-      // and get an order_id to pass to Razorpay
+      if (sessionError) {
+        throw new Error(`Session error: ${sessionError.message}`);
+      }
+      
+      const accessToken = sessionData?.session?.access_token;
+      
+      if (!accessToken) {
+        throw new Error('Not authenticated');
+      }
+      
+      // Make sure we have the correct URL format
+      const functionUrl = `${SUPABASE_URL}/functions/v1/razorpay-integration/create-subscription`;
+      console.log("Calling edge function for one-time payment at:", functionUrl);
+      
+      // Create order via edge function (reusing the same endpoint)
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          packageData: {
+            ...packageData,
+            paymentType: 'one-time' // Ensure it's treated as one-time
+          },
+          customerData: {
+            name: user.fullName || user.email?.split('@')[0] || '',
+            email: user.email || '',
+            contact: user.phone || ''
+          }
+        })
+      });
+      
+      // Check if response is OK
+      if (!response.ok) {
+        const responseText = await response.text();
+        console.error('Error response from server:', responseText);
+        throw new Error(`Server error: ${response.status} - ${responseText}`);
+      }
+      
+      // Parse the JSON response
+      let result;
+      try {
+        result = await response.json();
+      } catch (jsonError) {
+        console.error('Error parsing JSON:', jsonError);
+        throw new Error('Invalid response format from server');
+      }
+      
+      console.log("Received result for one-time payment:", result);
+      
+      if (!result.order || !result.order.id) {
+        throw new Error('Invalid order response from server');
+      }
       
       // Open Razorpay checkout
       return new Promise((resolve, reject) => {
         const options: RazorpayOptions = {
           key: RAZORPAY_KEY_ID,
-          amount: amountInPaise,
-          currency: 'INR',
+          order_id: result.order.id,
+          amount: result.order.amount, // amount in paise
+          currency: result.order.currency || 'INR',
           name: 'Grow Bharat Vyapaar',
           description: `Payment for ${packageData.title}`,
           image: 'https://your-company-logo.png', // Replace with your logo
@@ -286,7 +362,8 @@ export const useRazorpay = () => {
             resolve({
               ...response,
               packageDetails: packageData,
-              amount: packageData.price
+              amount: packageData.price,
+              orderId: result.order.id
             });
           },
           modal: {
@@ -297,6 +374,7 @@ export const useRazorpay = () => {
         };
         
         try {
+          console.log("Initializing Razorpay one-time payment with options:", options);
           const razorpay = new (window as any).Razorpay(options);
           razorpay.open();
         } catch (err) {
