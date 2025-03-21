@@ -56,7 +56,8 @@ export const useRazorpay = () => {
         user,
         packageData,
         customerData,
-        !isRecurringPayment // Use one-time API if not recurring
+        !isRecurringPayment, // Use one-time API if not recurring
+        enableAutoPay // Pass the autopay preference
       );
       
       console.log("Received result from backend:", result);
@@ -75,9 +76,16 @@ export const useRazorpay = () => {
             customerData,
             result,
             !isRecurringPayment, // isOneTime
+            enableAutoPay, // Add autopay preference
             (response) => {
               console.log("Payment success callback triggered with:", response);
-              resolve(response);
+              resolve({
+                ...response,
+                subscription: result.subscription,
+                order: result.order,
+                isRecurring: isRecurringPayment,
+                enableAutoPay: enableAutoPay
+              });
             },
             () => {
               console.log("Payment modal dismissed by user");

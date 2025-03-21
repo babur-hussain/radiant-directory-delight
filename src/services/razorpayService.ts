@@ -97,7 +97,8 @@ export const createSubscriptionViaEdgeFunction = async (
   user: any,
   packageData: ISubscriptionPackage, 
   customerData: any,
-  useOneTimePreferred = true
+  useOneTimePreferred = true,
+  enableAutoPay = true
 ): Promise<SubscriptionResult> => {
   // Get current auth session
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -146,9 +147,9 @@ export const createSubscriptionViaEdgeFunction = async (
           paymentType: packageData.paymentType || 'one-time'
         },
         customerData: cleanedCustomerData,
-        // Add a flag to indicate autopay preference
+        // Add flags to indicate payment preferences
         useOneTimePreferred: useOneTimePreferred,
-        enableAutoPay: true
+        enableAutoPay: enableAutoPay
       })
     });
     
@@ -183,6 +184,7 @@ export const buildRazorpayOptions = (
   customerData: any, 
   result: SubscriptionResult, 
   isOneTime: boolean,
+  enableAutoPay: boolean,
   onSuccess: (response: any) => void,
   onDismiss: () => void
 ): RazorpayOptions => {
@@ -204,7 +206,7 @@ export const buildRazorpayOptions = (
     notes: {
       packageId: packageData.id,
       userId: user.id,
-      enableAutoPay: "true" // Flag for autopay
+      enableAutoPay: enableAutoPay ? "true" : "false" // Flag for autopay
     },
     theme: {
       color: '#3399cc'
@@ -219,18 +221,21 @@ export const buildRazorpayOptions = (
         orderId: result.order?.id,
         packageDetails: packageData,
         isSubscription: result.isSubscription,
-        enableAutoPay: true
+        enableAutoPay: enableAutoPay
       });
     },
     modal: {
       ondismiss: onDismiss,
       escape: false,
       backdropclose: false
-    },
-    // Add recurring and auto_capture flags if using autopay
-    recurring: true,
-    remember_customer: true
+    }
   };
+  
+  // Add autopay flags if applicable
+  if (!isOneTime && enableAutoPay) {
+    options.recurring = true;
+    options.remember_customer = true;
+  }
   
   // Only add prefill if we have values
   if (Object.keys(cleanedPrefill).length > 0) {

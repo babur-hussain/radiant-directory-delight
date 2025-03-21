@@ -33,33 +33,46 @@ export const generateEmployeeCode = (prefix: string = 'EMP'): string => {
  * Generates a unique order ID for Razorpay that follows their required format
  * Format: order_<14-character alphanumeric ID>
  * 
- * IMPORTANT: In production, order IDs should be created on your backend server
- * using the Razorpay Orders API
- * 
- * @returns A properly formatted order ID
+ * @returns A properly formatted order ID for Razorpay
  */
 export const generateOrderId = (): string => {
-  // Generate a 14-character alphanumeric string
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  // Generate exactly 14 alphanumeric characters as per Razorpay requirements
+  const allowedChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
+  
+  // Create a 14-character string using cryptographically secure random values
+  const randomValues = new Uint8Array(14);
+  window.crypto.getRandomValues(randomValues);
+  
   for (let i = 0; i < 14; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
+    result += allowedChars.charAt(randomValues[i] % allowedChars.length);
   }
-  // Return the formatted order ID
+  
+  // Return the formatted order ID with the required prefix
   return `order_${result}`;
 };
 
 /**
  * Generates a unique subscription ID for Razorpay
- * 
- * IMPORTANT: In production, subscription IDs should be created on your backend server
- * using the Razorpay Subscriptions API
+ * Format: sub_<14-character alphanumeric ID>
  * 
  * @returns A properly formatted subscription ID
  */
 export const generateSubscriptionId = (): string => {
-  // Simple format that matches Razorpay's subscription ID format
-  return `sub_${nanoid(14)}`;
+  // Generate exactly 14 alphanumeric characters as per Razorpay requirements
+  const allowedChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  
+  // Create a 14-character string using cryptographically secure random values
+  const randomValues = new Uint8Array(14);
+  window.crypto.getRandomValues(randomValues);
+  
+  for (let i = 0; i < 14; i++) {
+    result += allowedChars.charAt(randomValues[i] % allowedChars.length);
+  }
+  
+  // Return the formatted subscription ID with the required prefix
+  return `sub_${result}`;
 };
 
 export { nanoid };

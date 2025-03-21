@@ -55,7 +55,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       
       toast({
         title: "Payment Successful",
-        description: `Your payment was successful.${enableAutoPay ? ' Autopay has been enabled for future payments.' : ''}`,
+        description: `Your payment was successful.${enableAutoPay && supportsRecurring ? ' Autopay has been enabled for future payments.' : ''}`,
       });
       
       onSuccess({

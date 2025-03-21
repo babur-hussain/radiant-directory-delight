@@ -18,6 +18,24 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// Generate a proper Razorpay order ID format
+function generateValidOrderId(): string {
+  // Generate a 14-character alphanumeric string following Razorpay's format
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  const charactersLength = characters.length;
+  
+  // Create a 14-character string with cryptographically strong random values
+  const randomValues = new Uint8Array(14);
+  crypto.getRandomValues(randomValues);
+  
+  for (let i = 0; i < 14; i++) {
+    result += characters.charAt(randomValues[i] % charactersLength);
+  }
+  
+  return `order_${result}`;
+}
+
 // Server entrypoint
 serve(async (req) => {
   console.log("Request received:", req.method, new URL(req.url).pathname);
@@ -155,25 +173,21 @@ async function handleCreatePlan(req: Request, user: any) {
   }
 }
 
-// Generate a proper Razorpay order ID format
-function generateValidOrderId(): string {
-  // Generate a 14-character alphanumeric string following Razorpay's format
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 14; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
-  }
-  return `order_${result}`;
-}
-
 // Generate a proper Razorpay subscription ID format
 function generateValidSubscriptionId(): string {
   // Razorpay subscription IDs start with 'sub_' followed by alphanumeric characters
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
+  const charactersLength = characters.length;
+  
+  // Create a 14-character string with cryptographically strong random values
+  const randomValues = new Uint8Array(14);
+  crypto.getRandomValues(randomValues);
+  
   for (let i = 0; i < 14; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
+    result += characters.charAt(randomValues[i] % charactersLength);
   }
+  
   return `sub_${result}`;
 }
 
@@ -194,8 +208,8 @@ async function handleCreateSubscription(req: Request, user: any) {
       );
     }
     
-    const { packageData, customerData, userId, useOneTimePreferred = true } = body;
-    console.log("Creating subscription with data:", { packageData, customerData, userId, useOneTimePreferred });
+    const { packageData, customerData, userId, useOneTimePreferred = true, enableAutoPay = true } = body;
+    console.log("Creating subscription with data:", { packageData, customerData, userId, useOneTimePreferred, enableAutoPay });
 
     // Validate subscription data
     if (!packageData || !userId) {
@@ -209,9 +223,10 @@ async function handleCreateSubscription(req: Request, user: any) {
     }
 
     // Determine payment type based on package data and user preference
-    // For now, use one-time payment as default for stability
-    const isOneTime = true;
-    console.log(`Processing payment type: one-time`);
+    const isRecurring = packageData.paymentType === 'recurring' && enableAutoPay;
+    const isOneTime = useOneTimePreferred || !isRecurring;
+    
+    console.log(`Processing payment type: ${isOneTime ? 'one-time' : 'recurring'} with autopay: ${enableAutoPay}`);
     
     // Calculate amount in paise (100 paise = 1 INR)
     const amountInPaise = Math.round(packageData.price * 100);
@@ -237,13 +252,12 @@ async function handleCreateSubscription(req: Request, user: any) {
       notes: {
         packageId: packageData.id.toString(),
         userId: userId,
-        enableAutoPay: "true" // Flag for enabling autopay
+        enableAutoPay: enableAutoPay ? "true" : "false", // Flag for enabling autopay
+        isRecurring: isRecurring ? "true" : "false"
       },
       created_at: Date.now(),
       // Add autopay flags if supported by your account
-      offer_id: null,
-      method: "card", // Preferred payment method for autopay
-      recurring: "1", // Enable recurring for autopay
+      recurring: isRecurring ? "1" : "0", // Enable recurring for autopay
       auto_capture: "1" // Auto-capture the payment
     };
     
@@ -253,9 +267,9 @@ async function handleCreateSubscription(req: Request, user: any) {
     return new Response(
       JSON.stringify({ 
         order,
-        isOneTime: true,
-        isSubscription: false,
-        enableAutoPay: true
+        isOneTime,
+        isSubscription: !isOneTime,
+        enableAutoPay
       }),
       {
         status: 200,
