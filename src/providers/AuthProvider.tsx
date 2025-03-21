@@ -31,11 +31,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       // Create a properly structured address object from the profile data
       const address = {
-        street: null,
+        street: profile?.street || null,
         city: profile?.city || null,
-        state: null,
+        state: profile?.state || null,
         country: profile?.country || null,
-        zipCode: null
+        zipCode: profile?.zip_code || null
       };
 
       return {
@@ -210,14 +210,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) throw error;
 
       if (data.user) {
-        await supabase
+        // Create the user profile record
+        const profileData = {
+          id: data.user.id,
+          name,
+          role,
+          email: email,
+          created_at: new Date().toISOString(),
+          last_login: new Date().toISOString(),
+          ...additionalData
+        };
+        
+        // Remove any nested objects that need to be flattened
+        if (profileData.address) {
+          if (typeof profileData.address === 'object') {
+            profileData.street = profileData.address.street;
+            profileData.city = profileData.address.city || profileData.city;
+            profileData.state = profileData.address.state;
+            profileData.country = profileData.address.country || profileData.country;
+            profileData.zip_code = profileData.address.zipCode;
+          }
+          delete profileData.address;
+        }
+        
+        // Ensure any data formatting matches the database schema
+        if (profileData.phoneNumber) {
+          profileData.phone = profileData.phoneNumber;
+          delete profileData.phoneNumber;
+        }
+        
+        // Insert the profile
+        const { error: profileError } = await supabase
           .from('users')
-          .update({
-            name,
-            role,
-            ...additionalData
-          })
-          .eq('id', data.user.id);
+          .upsert(profileData);
+          
+        if (profileError) {
+          console.error('Error creating user profile:', profileError);
+        }
       }
 
       toast({
