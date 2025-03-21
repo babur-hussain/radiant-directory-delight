@@ -1,4 +1,3 @@
-
 /**
  * Service for Razorpay API interactions
  */
@@ -143,10 +142,7 @@ export const createSubscriptionViaEdgeFunction = async (
     throw new Error('Not authenticated. Please log in again.');
   }
   
-  // Make sure we have the correct URL format
-  const functionUrl = `${SUPABASE_URL}/functions/v1/razorpay-integration`;
-  console.log("Calling edge function at:", functionUrl);
-  
+  // Fix: Use the Supabase functions.invoke method instead of direct fetch
   try {
     // Clean customer data before sending to server
     const cleanedCustomerData = {
@@ -178,44 +174,29 @@ export const createSubscriptionViaEdgeFunction = async (
     
     console.log("Sending payload to edge function:", JSON.stringify(payload));
     
-    // Create subscription via edge function
-    const response = await fetch(functionUrl, {
+    // FIXED: Use Supabase's functions.invoke method instead of direct fetch
+    const { data, error } = await supabase.functions.invoke('razorpay-integration', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
       },
-      body: JSON.stringify(payload)
+      body: payload
     });
     
-    // Check response status
-    if (!response.ok) {
-      let errorText = '';
-      try {
-        errorText = await response.text();
-      } catch (e) {
-        errorText = `HTTP error ${response.status}`;
-      }
-      
-      console.error('Error response from server:', errorText);
-      throw new Error(`Server error: ${response.status} - ${errorText}`);
+    if (error) {
+      console.error('Error response from edge function:', error);
+      throw new Error(`Server error: ${error.message}`);
     }
     
-    // Parse the JSON response
-    try {
-      const result = await response.json();
-      console.log("Received result from edge function:", result);
-      
-      // Validate the response contains required fields
-      if (!result.order || !result.order.id) {
-        throw new Error('Invalid response: missing order information');
-      }
-      
-      return result;
-    } catch (jsonError) {
-      console.error('Error parsing JSON:', jsonError);
-      throw new Error('Invalid response format from server');
+    console.log("Received result from edge function:", data);
+    
+    // Validate the response contains required fields
+    if (!data.order || !data.order.id) {
+      throw new Error('Invalid response: missing order information');
     }
+    
+    return data;
+    
   } catch (error) {
     console.error('Error calling edge function:', error);
     throw error;

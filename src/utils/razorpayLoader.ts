@@ -45,7 +45,15 @@ export const loadRazorpayScript = (): Promise<boolean> => {
     // Setup event handlers
     script.onload = () => {
       console.log("Razorpay script loaded successfully");
-      resolve(true);
+      // Add a small delay to ensure Razorpay is fully initialized
+      setTimeout(() => {
+        if (isRazorpayAvailable()) {
+          resolve(true);
+        } else {
+          console.error("Razorpay failed to initialize properly");
+          resolve(false);
+        }
+      }, 500);
     };
     
     script.onerror = () => {
