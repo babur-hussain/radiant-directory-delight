@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import RazorpayPayment from './RazorpayPayment';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SubscriptionDialogProps {
   isOpen: boolean;
@@ -36,27 +36,18 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
         throw new Error("No package selected");
       }
       
-      // Calculate advance payment months
-      const advanceMonths = response.advanceMonths || selectedPackage.advancePaymentMonths || 0;
+      // Record the successful payment in our system
+      await supabase.from('payment_records').insert({
+        user_id: supabase.auth.user()?.id,
+        package_id: selectedPackage.id,
+        amount: response.amount || selectedPackage.price,
+        payment_id: response.razorpay_payment_id,
+        subscription_id: response.razorpay_subscription_id || response.subscriptionId,
+        payment_type: selectedPackage.paymentType,
+        status: 'successful'
+      });
       
-      // Prepare payment details from Razorpay response
-      const paymentDetails = {
-        packageName: selectedPackage.title,
-        amount: response.amount || 0,
-        paymentId: response.razorpay_payment_id,
-        orderId: response.razorpay_order_id,
-        paymentType: selectedPackage.paymentType || 'recurring',
-        subscriptionId: response.razorpay_subscription_id || response.subscriptionId, 
-        recurringAmount: selectedPackage.price,
-        billingCycle: selectedPackage.billingCycle,
-        advanceMonths: advanceMonths,
-        // Pass the next billing date if available
-        nextBillingDate: response.nextBillingDate,
-        // Ensure all necessary fields are passed
-        packageId: selectedPackage.id
-      };
-      
-      // Record the subscription in the database
+      // Update user's subscription
       await purchaseSubscription(selectedPackage);
       
       // Show success toast
@@ -65,7 +56,6 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
         description: selectedPackage.paymentType === 'one-time'
           ? `You have successfully purchased ${selectedPackage.title}`
           : `You have successfully subscribed to ${selectedPackage.title}`,
-        variant: "success"
       });
       
       // Close dialog
@@ -264,21 +254,6 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
-
-// Helper function to format price
-const formatPrice = (price: number) => {
-  return `₹${price.toLocaleString('en-IN')}`;
-};
-
-// Handle payment failure - stub function
-const handlePaymentFailure = (error: any) => {
-  console.error("Payment failure in dialog:", error);
-};
-
-// Handle proceed to payment - stub function
-const handleProceedToPayment = () => {
-  console.log("Proceeding to payment");
 };
 
 export default SubscriptionDialog;

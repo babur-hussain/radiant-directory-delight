@@ -6,8 +6,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { useRazorpayPayment } from '@/hooks/useRazorpayPayment';
-import { isRecurringPaymentEligible, calculateNextBillingDate, formatSubscriptionDate } from '@/utils/razorpay';
+import { useRazorpay } from '@/hooks/useRazorpay';
+import { formatSubscriptionDate } from '@/utils/razorpay';
 
 interface RazorpayPaymentProps {
   selectedPackage: ISubscriptionPackage;
@@ -15,22 +15,6 @@ interface RazorpayPaymentProps {
   onFailure: (error: any) => void;
 }
 
-/**
- * RazorpayPayment component for handling payment UI and checkout flow
- * 
- * IMPORTANT PRODUCTION NOTE:
- * This component uses mock implementations for creating subscription plans 
- * and subscriptions. In a production environment, these features should be
- * implemented on your backend server with proper authentication using
- * Razorpay's API endpoints:
- * 
- * 1. Create Plan: POST https://api.razorpay.com/v1/plans
- * 2. Create Subscription: POST https://api.razorpay.com/v1/subscriptions
- * 3. Create Order: POST https://api.razorpay.com/v1/orders
- * 
- * These API calls require your Razorpay API key and secret, which should
- * never be exposed in client-side code.
- */
 const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({ 
   selectedPackage, 
   onSuccess, 
@@ -38,7 +22,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { initiatePayment, isLoading, error: paymentError } = useRazorpayPayment();
+  const { createSubscription, isLoading, error: paymentError } = useRazorpay();
   const [isProcessing, setIsProcessing] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -48,13 +32,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
   
   // Determine if this package is eligible for recurring payments
-  const canUseRecurring = !isOneTimePackage && isRecurringPaymentEligible(
-    selectedPackage.paymentType,
-    selectedPackage.billingCycle
-  );
+  const canUseRecurring = !isOneTimePackage && selectedPackage.billingCycle !== undefined;
   
   // Calculate the setup fee
-  const setupFee = isOneTimePackage ? 0 : (selectedPackage.setupFee || 0);
+  const setupFee = selectedPackage.setupFee || 0;
   
   // Calculate recurring amount based on billing cycle
   const recurringAmount = isOneTimePackage ? 0 : (
@@ -77,90 +58,90 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     : (setupFee + (advanceMonths > 0 ? advanceAmount : 0));
   
   // Calculate when the first recurring payment will happen (after advance months)
-  const firstRecurringDate = calculateNextBillingDate(
-    selectedPackage.billingCycle,
-    advanceMonths
-  );
+  const firstRecurringDate = new Date();
+  if (advanceMonths > 0) {
+    firstRecurringDate.setMonth(firstRecurringDate.getMonth() + advanceMonths);
+  } else if (selectedPackage.billingCycle === 'yearly') {
+    firstRecurringDate.setFullYear(firstRecurringDate.getFullYear() + 1);
+  } else {
+    firstRecurringDate.setMonth(firstRecurringDate.getMonth() + 1);
+  }
   
   const formattedFirstRecurringDate = formatSubscriptionDate(firstRecurringDate);
   
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (isProcessing) return;
     
     setIsProcessing(true);
     setError(null);
     
-    initiatePayment({
-      selectedPackage,
-      onSuccess: (response) => {
-        console.log("Payment success in RazorpayPayment:", response);
-        
-        try {
-          // Call the onSuccess callback provided by the parent component
-          onSuccess({
-            ...response,
-            // Add autopay details for recurring payments
-            isRecurring: canUseRecurring,
-            nextBillingDate: formattedFirstRecurringDate,
-            recurringAmount: recurringAmount,
-            billingCycle: selectedPackage.billingCycle || 'monthly'
-          });
-        } catch (callbackError) {
-          console.error("Error in onSuccess callback:", callbackError);
-          toast({
-            title: "Warning",
-            description: "Payment was successful, but there was an error processing the confirmation.",
-            variant: "warning"
-          });
-        }
-        
-        setIsProcessing(false);
-      },
-      onFailure: (error) => {
-        console.log("Payment failure in RazorpayPayment:", error);
-        setError(error.message || "Payment could not be completed. Please try again.");
-        
-        try {
-          // Call the onFailure callback provided by the parent component
-          onFailure(error);
-        } catch (callbackError) {
-          console.error("Error in onFailure callback:", callbackError);
-        }
-        
-        setIsProcessing(false);
-        
-        // Increment retry count to track failed attempts
-        setRetryCount(prevCount => prevCount + 1);
-      }
-    });
+    try {
+      // Start the subscription/payment process
+      const result = await createSubscription(selectedPackage);
+      
+      // Handle success
+      console.log('Payment success:', result);
+      
+      toast({
+        title: "Payment Successful",
+        description: `Your ${isOneTimePackage ? 'payment' : 'subscription'} was successful.`,
+      });
+      
+      // Call the parent component's success handler
+      onSuccess({
+        ...result,
+        isRecurring: canUseRecurring,
+        nextBillingDate: formattedFirstRecurringDate,
+        recurringAmount: recurringAmount,
+        billingCycle: selectedPackage.billingCycle || 'monthly'
+      });
+    } catch (error) {
+      console.error('Payment error:', error);
+      
+      setError(error instanceof Error ? error.message : 'Payment failed');
+      
+      toast({
+        title: "Payment Failed",
+        description: error instanceof Error ? error.message : 'Payment could not be processed',
+        variant: "destructive"
+      });
+      
+      // Call the parent component's failure handler
+      onFailure(error);
+      
+      // Increment retry count
+      setRetryCount(prev => prev + 1);
+    } finally {
+      setIsProcessing(false);
+    }
   };
   
   const handleRetry = () => {
     setError(null);
     setReady(false);
-    setRetryCount(0); // Reset retry count
+    setRetryCount(0);
     
-    // Reset states and try again
+    // Reset states and try again after a short delay
     setTimeout(() => {
       setReady(true);
     }, 1000);
   };
   
-  useEffect(() => {
-    // Set ready after a short delay
-    const timer = setTimeout(() => {
-      setReady(true);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
   // Use payment error from the hook if available
   useEffect(() => {
     if (paymentError) {
       setError(paymentError);
     }
   }, [paymentError]);
+  
+  // Set ready after component mounts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setReady(true);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   if (!ready) {
     return (
