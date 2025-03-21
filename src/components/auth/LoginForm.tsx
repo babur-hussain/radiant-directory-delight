@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -55,9 +54,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
     setIsSubmitting(true);
     setEmailError(null);
     
+    console.log("Login form submitted for:", data.email);
+    
     try {
       await onLogin(data.email, data.password, data.employeeCode || undefined);
       
+      console.log("Login successful, showing toast and closing modal");
       toast({
         title: "Login successful",
         description: isDefaultAdminEmail(data.email) 
@@ -67,10 +69,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
       
       onClose();
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Login form error:", error);
       
       // Check for email confirmation error
       if (error instanceof Error && error.message.includes("Email not confirmed")) {
+        console.log("Email verification required, showing resend option");
         setEmailError(data.email);
         toast({
           title: "Email verification required",
@@ -92,7 +95,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
   const handleGoogleLogin = async () => {
     try {
       setIsSubmitting(true);
+      console.log("Initiating Google login");
       await loginWithGoogle();
+      console.log("Google login successful, closing modal");
       onClose();
     } catch (error) {
       console.error("Google login error:", error);
@@ -111,6 +116,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
     
     setResendingEmail(true);
     try {
+      console.log("Resending verification email to:", emailError);
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: emailError,

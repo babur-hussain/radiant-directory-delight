@@ -88,6 +88,7 @@ export const loginWithEmail = async (
   employeeCode?: string
 ): Promise<User> => {
   try {
+    console.log("Attempting login for:", email);
     // Check for email confirmation bypass for development or default admin
     const isAdmin = isDefaultAdminEmail(email);
     
@@ -100,7 +101,7 @@ export const loginWithEmail = async (
     if (error) {
       if (error.message.includes('Email not confirmed') && isAdmin) {
         // Special handling for default admin - try to auto-confirm
-        console.log("Attempting to bypass email confirmation for default admin");
+        console.log("Email not confirmed for admin account");
         toast({
           title: "Admin login",
           description: "Attempting special login for admin account",
@@ -118,11 +119,13 @@ export const loginWithEmail = async (
       throw new Error("No user returned from login");
     }
 
+    console.log("Auth login successful, fetching user profile");
     // Fetch user profile data
     let userData = await fetchUserByUid(data.user.id);
     
     // Handle case where user exists in auth but not in public.users table
     if (!userData) {
+      console.log("User auth exists but no profile found, creating default profile");
       // Default user data
       userData = {
         uid: data.user.id,
@@ -148,6 +151,7 @@ export const loginWithEmail = async (
 
     // Special case for default admin email
     if (isAdmin && !userData.isAdmin) {
+      console.log("Assigning admin privileges to default admin account");
       userData.isAdmin = true;
       userData.role = 'Admin';
       
@@ -161,6 +165,7 @@ export const loginWithEmail = async (
       .update({ last_login: new Date().toISOString() })
       .eq('id', data.user.id);
 
+    console.log("Login successful, returning user data");
     return userData;
   } catch (error) {
     console.error("Error in loginWithEmail:", error);
@@ -223,6 +228,7 @@ export const getCurrentSession = async () => {
 // Get current user
 export const getCurrentUser = async () => {
   try {
+    console.log("Getting current user");
     const { data, error } = await supabase.auth.getUser();
     
     if (error) {
@@ -231,18 +237,44 @@ export const getCurrentUser = async () => {
     }
     
     if (!data.user) {
+      console.log("No authenticated user found");
       return null;
     }
     
+    console.log("Authenticated user found:", data.user.id, "email:", data.user.email);
+    
     // Fetch user profile data
     const userData = await fetchUserByUid(data.user.id);
+    
+    if (!userData) {
+      console.log("User auth exists but no profile found in database");
+      
+      // Create a basic user object if profile not found
+      const basicUserData: User = {
+        uid: data.user.id,
+        id: data.user.id,
+        email: data.user.email || '',
+        displayName: data.user.user_metadata?.name || '',
+        name: data.user.user_metadata?.name || '',
+        role: (data.user.user_metadata?.role as UserRole) || 'User',
+        isAdmin: isDefaultAdminEmail(data.user.email || '') || (data.user.user_metadata?.is_admin === true),
+        photoURL: null,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      };
+      
+      console.log("Created basic user profile:", basicUserData.email, "role:", basicUserData.role);
+      return basicUserData;
+    }
     
     // Special case for default admin
     if (isDefaultAdminEmail(data.user.email || '') && userData) {
       userData.isAdmin = true;
       userData.role = 'Admin';
+      console.log("Assigned admin privileges to user");
     }
     
+    console.log("Returning user data from profile:", userData.email, "role:", userData.role);
     return userData;
   } catch (error) {
     console.error("Error in getCurrentUser:", error);
