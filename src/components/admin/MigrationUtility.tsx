@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { migrateUsersFromFirestore, migrateSubscriptionsFromFirestore, migrateBusinessesFromFirestore } from '@/utils/firestore-to-mongodb-migration';
+import { AlertCircle } from 'lucide-react';
 
 const MigrationUtility: React.FC = () => {
   const [migrationStatus, setMigrationStatus] = useState<'idle' | 'processing' | 'completed' | 'error'>('idle');
@@ -70,6 +71,15 @@ const MigrationUtility: React.FC = () => {
       </CardHeader>
       
       <CardContent className="space-y-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Firebase Removed</AlertTitle>
+          <AlertDescription>
+            Firebase has been removed from this application. This migration utility is now 
+            provided only for backward compatibility. The application now uses Supabase exclusively.
+          </AlertDescription>
+        </Alert>
+        
         {migrationStatus === 'idle' && (
           <Alert>
             <AlertTitle>Ready to migrate</AlertTitle>
