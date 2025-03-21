@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { fetchBusinesses } from '@/lib/supabase/businessUtils';
+import { supabase } from '@/integrations/supabase/client';
 import { IBusiness } from '@/models/Business';
 
 export const useBusinessListings = () => {
@@ -15,11 +15,16 @@ export const useBusinessListings = () => {
     
     try {
       // Fetch businesses from Supabase
-      const businessesData = await fetchBusinesses();
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('*')
+        .order('name', { ascending: true });
       
-      if (businessesData && businessesData.length > 0) {
-        setBusinesses(businessesData as IBusiness[]);
-        console.log(`Loaded ${businessesData.length} businesses from Supabase`);
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setBusinesses(data as IBusiness[]);
+        console.log(`Loaded ${data.length} businesses from Supabase`);
       } else {
         console.warn('No businesses found in Supabase');
         setBusinesses([]);
@@ -38,11 +43,16 @@ export const useBusinessListings = () => {
     
     try {
       // Fetch businesses from Supabase
-      const businessesData = await fetchBusinesses();
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('*')
+        .order('name', { ascending: true });
       
-      if (businessesData && businessesData.length > 0) {
-        setBusinesses(businessesData as IBusiness[]);
-        console.log(`Refreshed ${businessesData.length} businesses from Supabase`);
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setBusinesses(data as IBusiness[]);
+        console.log(`Refreshed ${data.length} businesses from Supabase`);
       } else {
         console.warn('No businesses found in Supabase during refresh');
         setBusinesses([]);

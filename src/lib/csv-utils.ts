@@ -1,6 +1,6 @@
 
 import Papa from 'papaparse';
-import { saveBusiness, fetchBusinesses } from './mongodb-utils';
+import { supabase } from '@/integrations/supabase/client';
 import { IBusiness } from '@/models/Business';
 import { generateId } from '@/utils/id-generator';
 
@@ -26,21 +26,26 @@ export interface Business {
 let businessesCache: Business[] = [];
 const dataChangeListeners: Function[] = [];
 
-// Function to initialize data from MongoDB
+// Function to initialize data from Supabase
 export const initializeData = async (): Promise<void> => {
   try {
-    console.log("Initializing business data from MongoDB...");
-    const businesses = await fetchBusinesses();
-    businessesCache = businesses as Business[];
-    console.log(`Loaded ${businessesCache.length} businesses from MongoDB`);
+    console.log("Initializing business data from Supabase...");
+    const { data, error } = await supabase.from('businesses').select('*');
+    
+    if (error) {
+      throw error;
+    }
+    
+    businessesCache = data as Business[];
+    console.log(`Loaded ${businessesCache.length} businesses from Supabase`);
     notifyDataChangeListeners();
   } catch (error) {
-    console.error("Error initializing data from MongoDB:", error);
+    console.error("Error initializing data from Supabase:", error);
     businessesCache = [];
   }
 };
 
-// Process CSV data and upload to MongoDB
+// Process CSV data and upload to Supabase
 export const processCsvData = async (csvContent: string): Promise<{ success: boolean, businesses: Business[], message: string }> => {
   try {
     console.log("Processing CSV data...");
@@ -80,6 +85,7 @@ export const processCsvData = async (csvContent: string): Promise<{ success: boo
     console.log("CSV parsing result:", results);
     
     const businesses: Business[] = [];
+    const insertPromises = [];
     
     for (const row of results.data as any[]) {
       try {
@@ -88,9 +94,6 @@ export const processCsvData = async (csvContent: string): Promise<{ success: boo
           console.warn("Skipping row without business name:", row);
           continue;
         }
-        
-        // Generate a unique numeric ID
-        const businessId = parseInt(await generateUniqueId());
         
         // Parse rating value from string to number
         let rating = 0;
@@ -104,7 +107,7 @@ export const processCsvData = async (csvContent: string): Promise<{ success: boo
         
         // Create business object
         const business: Business = {
-          id: businessId,
+          id: Date.now() + Math.floor(Math.random() * 10000), // Simple unique ID generation
           name: row.name.trim(),
           category: row.category || "",
           description: row.description || `${row.name} is a business in the ${row.category || "various"} category.`,
@@ -121,19 +124,25 @@ export const processCsvData = async (csvContent: string): Promise<{ success: boo
           image: row.image || `/placeholder-${Math.floor(Math.random() * 5) + 1}.jpg`
         };
         
-        console.log("Saving business to MongoDB:", business.name);
+        console.log("Saving business to Supabase:", business.name);
         
-        // Save to MongoDB
-        await saveBusiness(business as IBusiness);
+        // Add to Supabase
+        const { error } = await supabase.from('businesses').insert([business]);
+        
+        if (error) {
+          console.error("Error inserting business to Supabase:", error);
+          continue;
+        }
+        
         businesses.push(business);
       } catch (rowError) {
         console.error("Error processing CSV row:", rowError);
       }
     }
     
-    // Update the cache after successfully saving to MongoDB
+    // Update the cache after successfully saving to Supabase
     if (businesses.length > 0) {
-      // Refresh the entire cache from MongoDB
+      // Refresh the entire cache from Supabase
       await initializeData();
     }
     
@@ -161,7 +170,7 @@ export const getAllBusinesses = (): Business[] => {
 export const addBusiness = async (businessData: Partial<Business>): Promise<Business> => {
   try {
     // Ensure ID exists
-    const businessId = businessData.id || parseInt(await generateUniqueId());
+    const businessId = businessData.id || (Date.now() + Math.floor(Math.random() * 10000));
     
     // Create complete business object
     const business: Business = {
@@ -183,8 +192,12 @@ export const addBusiness = async (businessData: Partial<Business>): Promise<Busi
       image: businessData.image || `/placeholder-${Math.floor(Math.random() * 5) + 1}.jpg`
     };
     
-    // Save to MongoDB
-    await saveBusiness(business as IBusiness);
+    // Save to Supabase
+    const { error } = await supabase.from('businesses').insert([business]);
+    
+    if (error) {
+      throw error;
+    }
     
     // Update cache
     businessesCache.push(business);
@@ -200,8 +213,15 @@ export const addBusiness = async (businessData: Partial<Business>): Promise<Busi
 // Update an existing business
 export const updateBusiness = async (businessData: Business): Promise<boolean> => {
   try {
-    // Save to MongoDB
-    await saveBusiness(businessData as IBusiness);
+    // Save to Supabase
+    const { error } = await supabase
+      .from('businesses')
+      .update(businessData)
+      .eq('id', businessData.id);
+    
+    if (error) {
+      throw error;
+    }
     
     // Update cache
     const index = businessesCache.findIndex(b => b.id === businessData.id);
@@ -222,9 +242,14 @@ export const updateBusiness = async (businessData: Business): Promise<boolean> =
 // Delete a business
 export const deleteBusiness = async (id: number): Promise<boolean> => {
   try {
-    await fetch(`http://localhost:3001/api/businesses/${id}`, {
-      method: 'DELETE'
-    });
+    const { error } = await supabase
+      .from('businesses')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      throw error;
+    }
     
     // Update cache
     businessesCache = businessesCache.filter(b => b.id !== id);
@@ -254,10 +279,4 @@ const notifyDataChangeListeners = (): void => {
   for (const listener of dataChangeListeners) {
     listener();
   }
-};
-
-// Generate a unique ID
-export const generateUniqueId = async (): Promise<string> => {
-  // Create a simple numeric ID based on timestamp and random number
-  return String(Date.now() + Math.floor(Math.random() * 10000));
 };

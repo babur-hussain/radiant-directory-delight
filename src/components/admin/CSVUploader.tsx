@@ -73,7 +73,7 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
                 title: "Upload Successful",
                 description: `${businesses.length} businesses processed successfully`,
               });
-              onUploadComplete(true, `Successfully added ${businesses.length} businesses to MongoDB`, businesses.length);
+              onUploadComplete(true, `Successfully added ${businesses.length} businesses to Supabase`, businesses.length);
             } else {
               onUploadComplete(false, message);
             }
