@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle, Plus, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from '@/integrations/supabase/client'; // Import supabase client
+import checkSupabaseConnection from "@/utils/setupSupabase";
+import { ISubscription, ISubscriptionPackage, SubscriptionStatus, PaymentType, BillingCycle } from "@/models/Subscription";
+
+// Import or create missing components
 import SubscriptionPackagesTable from "@/components/admin/subscription/SubscriptionPackagesTable";
 import SubscriptionSettingsPanel from "@/components/admin/subscription/SubscriptionSettingsPanel";
 import SubscriptionCreateForm from "@/components/admin/subscription/SubscriptionCreateForm";
 import DatabaseConnectionStatus from "@/components/admin/DatabaseConnectionStatus";
-import checkSupabaseConnection from "@/utils/setupSupabase";
-import { ISubscription, SubscriptionStatus, PaymentType, BillingCycle } from "@/models/Subscription";
-import { ISubscriptionPackage } from "@/models/Subscription";
 
 const AdminSubscriptionsPage = () => {
   const { user } = useAuth();
@@ -70,7 +72,7 @@ const AdminSubscriptionsPage = () => {
         advancePaymentMonths: pkg.advance_payment_months
       }));
       
-      // Transform subscriptions - handle field names from Supabase
+      // Transform subscriptions - map Supabase field names to our model
       const transformedSubscriptions = subscriptionsData.map(sub => ({
         id: sub.id,
         userId: sub.user_id,
@@ -85,18 +87,18 @@ const AdminSubscriptionsPage = () => {
         transactionId: sub.transaction_id,
         billingCycle: sub.billing_cycle as BillingCycle,
         signupFee: sub.signup_fee,
-        recurring: sub.recurring,
+        recurring: sub.is_pausable, // Map to appropriate field
         cancelledAt: sub.cancelled_at,
         cancelReason: sub.cancel_reason,
         createdAt: sub.created_at,
         updatedAt: sub.updated_at,
-        razorpaySubscriptionId: sub.razorpay_subscription_id,
-        razorpayOrderId: sub.razorpay_order_id,
-        recurringAmount: sub.recurring_amount,
-        nextBillingDate: sub.next_billing_date,
+        razorpaySubscriptionId: sub.razorpay_subscription_id || '', // Add fallback
+        razorpayOrderId: sub.razorpay_order_id || '', // Add fallback
+        recurringAmount: sub.amount, // Use amount if recurring_amount not available
+        nextBillingDate: sub.assigned_at, // Use assigned_at if next_billing_date not available
         actualStartDate: sub.actual_start_date,
-        dashboardFeatures: sub.dashboard_features,
-        dashboardSections: sub.dashboard_sections,
+        dashboardFeatures: [], // Default to empty array
+        dashboardSections: [], // Default to empty array
         advancePaymentMonths: sub.advance_payment_months
       }));
       

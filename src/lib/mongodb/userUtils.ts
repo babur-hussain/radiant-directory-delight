@@ -40,6 +40,7 @@ export const fetchUserByUid = async (uid: string): Promise<User | null> => {
     
     return {
       uid: data.id,
+      id: data.id, // Ensure id is set to match uid
       email: data.email || '',
       displayName: data.name || '',
       name: data.name || '',

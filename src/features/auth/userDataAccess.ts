@@ -1,3 +1,4 @@
+
 import { User, UserRole } from "@/types/auth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -35,7 +36,7 @@ export const getUserFromSupabase = async (userId: string): Promise<User | null> 
       verified: data.verified || false,
       city: data.city || '',
       country: data.country || '',
-      fullName: data.full_name || '',
+      fullName: data.name || '', // Use name instead of full_name
       niche: data.niche || '',
       followersCount: data.followers_count || '',
       bio: data.bio || '',
@@ -89,7 +90,7 @@ export const getAllUsersFromSupabase = async (): Promise<User[]> => {
       verified: user.verified || false,
       city: user.city || '',
       country: user.country || '',
-      fullName: user.full_name || '',
+      fullName: user.name || '', // Use name instead of full_name
       niche: user.niche || '',
       followersCount: user.followers_count || '',
       bio: user.bio || '',
@@ -130,6 +131,7 @@ export const getUserById = async (id: string): Promise<User | null> => {
     // Map from Supabase user to our User type
     return {
       uid: data.id,
+      id: data.id, // Ensure id is set to match uid
       email: data.email || '',
       displayName: data.name || '', // Add displayName property
       name: data.name || '',
@@ -197,6 +199,7 @@ export const getAllUsers = async (): Promise<User[]> => {
     // Map all users from Supabase to our User type
     return data.map(user => ({
       uid: user.id,
+      id: user.id, // Ensure id is set to match uid
       email: user.email || '',
       displayName: user.name || '', // Add displayName property
       name: user.name || '',

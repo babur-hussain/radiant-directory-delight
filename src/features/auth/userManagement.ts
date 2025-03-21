@@ -1,12 +1,19 @@
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole } from '@/types/auth';
+import { nanoid } from 'nanoid';
+
+interface TestUserData {
+  email: string;
+  name: string;
+  role: string;
+  isAdmin: boolean;
+  employeeCode?: string;
+}
 
 export const updateUserProfile = async (userId: string, userData: Partial<User>): Promise<User | null> => {
   try {
-    // Convert user data to Supabase format
     const supabaseData = {
       name: userData.name,
-      full_name: userData.fullName,
       phone: userData.phone,
       instagram_handle: userData.instagramHandle,
       facebook_handle: userData.facebookHandle,
@@ -24,14 +31,12 @@ export const updateUserProfile = async (userId: string, userData: Partial<User>)
       updated_at: new Date().toISOString(),
     };
     
-    // Remove undefined values
     Object.keys(supabaseData).forEach(key => {
       if (supabaseData[key] === undefined) {
         delete supabaseData[key];
       }
     });
     
-    // Update the user in Supabase
     const { data, error } = await supabase
       .from('users')
       .update(supabaseData)
@@ -44,10 +49,9 @@ export const updateUserProfile = async (userId: string, userData: Partial<User>)
       return null;
     }
     
-    // Map back to our User type
     return {
       uid: data.id,
-      id: data.id, // Ensure id is set to match uid
+      id: data.id,
       email: data.email,
       displayName: data.name,
       name: data.name,
@@ -63,7 +67,7 @@ export const updateUserProfile = async (userId: string, userData: Partial<User>)
       verified: data.verified,
       city: data.city,
       country: data.country,
-      fullName: data.full_name,
+      fullName: data.name,
       niche: data.niche,
       followersCount: data.followers_count,
       bio: data.bio,
@@ -72,7 +76,6 @@ export const updateUserProfile = async (userId: string, userData: Partial<User>)
       businessCategory: data.business_category,
       website: data.website,
       gstNumber: data.gst_number,
-      // Subscription details
       subscription: data.subscription,
       subscriptionId: data.subscription_id,
       subscriptionStatus: data.subscription_status,
@@ -154,9 +157,8 @@ export const createUser = async (userData: Partial<User>): Promise<User | null> 
   try {
     const now = new Date().toISOString();
     
-    // Prepare user data for Supabase
     const supabaseData = {
-      id: userData.uid, // Use uid as id
+      id: userData.uid,
       email: userData.email,
       name: userData.name || userData.displayName,
       role: userData.role || 'User',
@@ -169,7 +171,6 @@ export const createUser = async (userData: Partial<User>): Promise<User | null> 
       verified: userData.verified || false,
       city: userData.city,
       country: userData.country,
-      full_name: userData.fullName,
       niche: userData.niche,
       followers_count: userData.followersCount,
       bio: userData.bio,
@@ -182,7 +183,6 @@ export const createUser = async (userData: Partial<User>): Promise<User | null> 
       last_login: now,
     };
     
-    // Insert the user into Supabase
     const { data, error } = await supabase
       .from('users')
       .upsert(supabaseData)
@@ -194,10 +194,9 @@ export const createUser = async (userData: Partial<User>): Promise<User | null> 
       return null;
     }
     
-    // Map back to our User type
     return {
       uid: data.id,
-      id: data.id, // Ensure id is set to match uid
+      id: data.id,
       email: data.email,
       displayName: data.name,
       name: data.name,
@@ -213,7 +212,7 @@ export const createUser = async (userData: Partial<User>): Promise<User | null> 
       verified: data.verified,
       city: data.city,
       country: data.country,
-      fullName: data.full_name,
+      fullName: data.name,
       niche: data.niche,
       followersCount: data.followers_count,
       bio: data.bio,
@@ -222,7 +221,6 @@ export const createUser = async (userData: Partial<User>): Promise<User | null> 
       businessCategory: data.business_category,
       website: data.website,
       gstNumber: data.gst_number,
-      // Subscription details
       subscription: data.subscription,
       subscriptionId: data.subscription_id,
       subscriptionStatus: data.subscription_status,
@@ -250,6 +248,7 @@ export const getUserById = async (uid: string): Promise<User | null> => {
     
     return {
       uid: data.id,
+      id: data.id,
       email: data.email || '',
       displayName: data.name || '',
       name: data.name || '',
@@ -293,6 +292,7 @@ export const getAllUsers = async (): Promise<User[]> => {
     
     return data.map(user => ({
       uid: user.id,
+      id: user.id,
       email: user.email || '',
       displayName: user.name || '',
       name: user.name || '',
@@ -326,7 +326,6 @@ export const getAllUsers = async (): Promise<User[]> => {
 export const transformRole = (role: string | null): UserRole => {
   if (!role) return null;
   
-  // Match with expected UserRole values
   switch (role.toLowerCase()) {
     case 'admin':
       return 'Admin';
@@ -339,16 +338,14 @@ export const transformRole = (role: string | null): UserRole => {
     case 'staff':
       return 'staff';
     default:
-      return 'User'; // Default to User if unknown
+      return 'User';
   }
 };
 
 export const createTestUser = async (userData: TestUserData): Promise<User | null> => {
   try {
-    // Generate a random user ID
     const uid = nanoid();
     
-    // Insert new user into Supabase
     const { data, error } = await supabase
       .from('users')
       .insert([{
@@ -371,6 +368,7 @@ export const createTestUser = async (userData: TestUserData): Promise<User | nul
     
     return {
       uid: data.id,
+      id: data.id,
       email: data.email || '',
       displayName: data.name || '',
       name: data.name || '',
@@ -451,7 +449,6 @@ export const formatUser = (user: User): string => {
 };
 
 export const getLocalUsers = async (): Promise<User[]> => {
-  // Get users from Supabase
   return getAllUsers();
 };
 

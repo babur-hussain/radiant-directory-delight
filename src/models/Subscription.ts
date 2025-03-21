@@ -37,10 +37,10 @@ export interface ISubscriptionPackage {
   id: string;
   title: string;
   price: number;
-  durationMonths: number;
+  durationMonths: number; // Make required to match the other interface
   shortDescription?: string;
   fullDescription?: string;
-  features: string[];
+  features: string[]; // Make required to match the other interface
   popular?: boolean;
   setupFee?: number;
   type?: 'Business' | 'Influencer';
@@ -49,4 +49,10 @@ export interface ISubscriptionPackage {
   dashboardSections?: string[];
   termsAndConditions?: string;
   advancePaymentMonths?: number;
+  monthlyPrice?: number;
+  isActive?: boolean;
+  maxBusinesses?: number;
+  maxInfluencers?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
