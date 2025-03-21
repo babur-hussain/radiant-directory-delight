@@ -122,6 +122,21 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   
   if (!selectedPackage) return null;
   
+  // Check if this is a one-time package or recurring
+  const isOneTimePackage = selectedPackage.paymentType === 'one-time';
+  
+  // Calculate pricing details for display
+  const setupFee = selectedPackage.setupFee || 0;
+  const recurringAmount = isOneTimePackage ? 0 : selectedPackage.price || 0;
+  const advanceMonths = selectedPackage.advancePaymentMonths || 0;
+  
+  // Calculate initial payment (setup fee + advance payment for recurring)
+  const initialPayment = isOneTimePackage 
+    ? selectedPackage.price || 0 
+    : setupFee + (selectedPackage.billingCycle === 'monthly' 
+        ? (selectedPackage.monthlyPrice || 0) * advanceMonths 
+        : recurringAmount);
+  
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-xl">
@@ -130,7 +145,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
             <DialogHeader>
               <DialogTitle className="text-xl flex items-center justify-between">
                 <span>{selectedPackage.title}</span>
-                {selectedPackage.paymentType === 'one-time' ? (
+                {isOneTimePackage ? (
                   <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
                     One-time payment
                   </span>
@@ -153,7 +168,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                     <span>Package:</span>
                     <span className="font-medium">{selectedPackage.title}</span>
                   </li>
-                  {selectedPackage.paymentType === 'one-time' ? (
+                  {isOneTimePackage ? (
                     <>
                       <li className="flex justify-between">
                         <span>Duration:</span>
@@ -170,20 +185,31 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                         <span>Billing Cycle:</span>
                         <span className="font-medium">{selectedPackage.billingCycle || 'yearly'}</span>
                       </li>
-                      <li className="flex justify-between">
-                        <span>Setup Fee:</span>
-                        <span className="font-medium">{formatPrice(selectedPackage.setupFee || 0)}</span>
-                      </li>
-                      <li className="flex justify-between">
-                        <span>Recurring Payment:</span>
-                        <span className="font-medium">{formatPrice(selectedPackage.price || 0)}/{selectedPackage.billingCycle || 'year'}</span>
-                      </li>
-                      {selectedPackage.advancePaymentMonths > 0 && (
+                      {setupFee > 0 && (
                         <li className="flex justify-between">
-                          <span>Advance Payment:</span>
-                          <span className="font-medium">{selectedPackage.advancePaymentMonths} months</span>
+                          <span>Setup Fee:</span>
+                          <span className="font-medium">{formatPrice(setupFee)}</span>
                         </li>
                       )}
+                      <li className="flex justify-between">
+                        <span>Recurring Payment:</span>
+                        <span className="font-medium">
+                          {formatPrice(selectedPackage.billingCycle === 'monthly' 
+                            ? (selectedPackage.monthlyPrice || 0) 
+                            : (selectedPackage.price || 0))}
+                          /{selectedPackage.billingCycle || 'year'}
+                        </span>
+                      </li>
+                      {advanceMonths > 0 && (
+                        <li className="flex justify-between">
+                          <span>Advance Payment:</span>
+                          <span className="font-medium">{advanceMonths} months</span>
+                        </li>
+                      )}
+                      <li className="flex justify-between border-t pt-2 mt-2">
+                        <span>Initial Payment:</span>
+                        <span className="font-medium">{formatPrice(initialPayment)}</span>
+                      </li>
                     </>
                   )}
                 </ul>
@@ -212,7 +238,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                 </div>
                 <div className="text-sm text-muted-foreground">
                   I agree to the <span className="text-primary cursor-pointer">Terms & Conditions</span> and 
-                  <span className="text-primary cursor-pointer"> Privacy Policy</span>. {selectedPackage.paymentType === 'recurring' && 
+                  <span className="text-primary cursor-pointer"> Privacy Policy</span>. {!isOneTimePackage && 
                   "I understand that this is a recurring subscription that will be billed according to the package cycle."}
                 </div>
               </div>

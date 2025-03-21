@@ -56,19 +56,25 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   // Calculate the setup fee
   const setupFee = isOneTimePackage ? 0 : (selectedPackage.setupFee || 0);
   
-  // Calculate recurring amount
-  const recurringAmount = isOneTimePackage ? 0 : (selectedPackage.price || 0);
+  // Calculate recurring amount based on billing cycle
+  const recurringAmount = isOneTimePackage ? 0 : (
+    selectedPackage.billingCycle === 'monthly' 
+      ? (selectedPackage.monthlyPrice || 0)
+      : (selectedPackage.price || 0)
+  );
   
   // Advanced payment months
   const advanceMonths = isOneTimePackage ? 0 : (selectedPackage.advancePaymentMonths || 0);
   
   // Calculate advance payment amount
-  const advanceAmount = advanceMonths * recurringAmount;
+  const advanceAmount = selectedPackage.billingCycle === 'monthly'
+    ? (selectedPackage.monthlyPrice || 0) * advanceMonths
+    : (selectedPackage.price || 0);
   
   // Calculate the total initial payment
   const totalPaymentAmount = isOneTimePackage 
-    ? (selectedPackage.price || 999) // Default to 999 if price is 0 or undefined
-    : (setupFee + advanceAmount);
+    ? (selectedPackage.price || 0)
+    : (setupFee + (advanceMonths > 0 ? advanceAmount : 0));
   
   // Calculate when the first recurring payment will happen (after advance months)
   const firstRecurringDate = calculateNextBillingDate(
@@ -247,7 +253,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
                 
                 {advanceMonths > 0 && (
                   <div className="flex justify-between mt-1">
-                    <span>Advance payment ({advanceMonths} months)</span>
+                    <span>Advance payment ({advanceMonths} {selectedPackage.billingCycle === 'monthly' ? 'months' : 'years'})</span>
                     <span>₹{advanceAmount}</span>
                   </div>
                 )}
