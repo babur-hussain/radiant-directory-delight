@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, X, CreditCard, ChevronRight } from "lucide-react";
@@ -29,6 +30,20 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   
+  // Listen for Razorpay popup events
+  useEffect(() => {
+    const handleRazorpayOpen = () => {
+      // Auto-close the dialog when Razorpay opens
+      setIsOpen(false);
+    };
+    
+    window.addEventListener('razorpay-opened', handleRazorpayOpen);
+    
+    return () => {
+      window.removeEventListener('razorpay-opened', handleRazorpayOpen);
+    };
+  }, [setIsOpen]);
+  
   // Handle successful payment
   const handlePaymentSuccess = async (response: any) => {
     console.log("Payment success in dialog:", response);
@@ -53,7 +68,11 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
           .update({
             transaction_id: response.razorpay_payment_id,
             payment_method: 'razorpay',
-            amount: response.amount || selectedPackage.price
+            amount: response.amount || selectedPackage.price,
+            is_autopay_enabled: response.enableAutoPay || false,
+            autopay_next_date: response.nextBillingDate || null,
+            autopay_amount: response.recurringAmount || 0,
+            autopay_remaining_count: response.recurringPaymentCount || 0
           })
           .eq('id', subscription.id);
       }

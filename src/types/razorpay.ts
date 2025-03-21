@@ -77,3 +77,28 @@ export interface SubscriptionResult {
   recurringPaymentAmount?: number; // Amount for each recurring payment
   recurringPaymentCount?: number; // Number of recurring payments
 }
+
+// New interface for autopay details
+export interface AutopayDetails {
+  enabled: boolean;
+  nextBillingDate?: string;
+  recurringAmount?: number;
+  remainingPayments?: number;
+  totalRemainingAmount?: number;
+}
+
+// Extended payment response with autopay information
+export interface EnhancedPaymentResponse extends RazorpayResponse {
+  isRecurring?: boolean;
+  enableAutoPay?: boolean;
+  billingCycle?: string;
+  initialPayment?: number;
+  recurringAmount?: number;
+  totalPackageValue?: number;
+  remainingAmount?: number;
+  recurringPaymentCount?: number;
+  packageDuration?: number;
+  nextBillingDate?: string;
+  packageEndDate?: string;
+  autopayDetails?: AutopayDetails;
+}

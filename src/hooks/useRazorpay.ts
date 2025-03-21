@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,6 +22,21 @@ export const useRazorpay = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const razorpayInstanceRef = useRef<any>(null);
+  
+  // Cleanup function to ensure Razorpay instances are properly closed
+  useEffect(() => {
+    return () => {
+      if (razorpayInstanceRef.current) {
+        try {
+          razorpayInstanceRef.current.close();
+          razorpayInstanceRef.current = null;
+        } catch (err) {
+          console.error('Error closing Razorpay instance on unmount:', err);
+        }
+      }
+    };
+  }, []);
   
   // Create a subscription on the server and open Razorpay checkout
   const createSubscription = async (packageData: ISubscriptionPackage, enableAutoPay = true): Promise<any> => {
@@ -38,6 +53,16 @@ export const useRazorpay = () => {
     try {
       setIsLoading(true);
       setError(null);
+      
+      // Close any existing Razorpay instance
+      if (razorpayInstanceRef.current) {
+        try {
+          razorpayInstanceRef.current.close();
+          razorpayInstanceRef.current = null;
+        } catch (err) {
+          console.error('Error closing previous Razorpay instance:', err);
+        }
+      }
       
       // Ensure Razorpay is loaded
       const isLoaded = await ensureRazorpayAvailable();
@@ -106,6 +131,9 @@ export const useRazorpay = () => {
                 variant: "success"
               });
               
+              // Reset the razorpay instance reference
+              razorpayInstanceRef.current = null;
+              
               resolve({
                 ...response,
                 isRecurring: isRecurringPayment,
@@ -122,6 +150,9 @@ export const useRazorpay = () => {
                 variant: "info"
               });
               
+              // Reset the razorpay instance reference
+              razorpayInstanceRef.current = null;
+              
               reject(new Error('Payment cancelled by user'));
             }
           );
@@ -132,6 +163,9 @@ export const useRazorpay = () => {
           try {
             const razorpay = createRazorpayCheckout(options);
             
+            // Store the instance reference for cleanup
+            razorpayInstanceRef.current = razorpay;
+            
             // Set up additional event handlers for better error tracking
             razorpay.on('payment.error', (err: any) => {
               console.error("Razorpay payment error:", err);
@@ -140,6 +174,9 @@ export const useRazorpay = () => {
               if (err && err.error && err.error.description) {
                 errorMessage = err.error.description;
               }
+              
+              // Reset the razorpay instance reference
+              razorpayInstanceRef.current = null;
               
               // Show error toast
               toast({
@@ -154,8 +191,14 @@ export const useRazorpay = () => {
             // Finally, open the payment modal
             razorpay.open();
             console.log("Razorpay checkout modal opened");
+            
+            // Dispatch a custom event to close the payment summary dialog
+            window.dispatchEvent(new CustomEvent('razorpay-opened'));
           } catch (razorpayError) {
             console.error("Error during Razorpay checkout creation:", razorpayError);
+            
+            // Reset the razorpay instance reference
+            razorpayInstanceRef.current = null;
             
             const errorMessage = razorpayError instanceof Error ? 
               razorpayError.message : 

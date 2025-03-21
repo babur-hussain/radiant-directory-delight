@@ -115,6 +115,28 @@ function calculateRecurringPaymentAmount(packageData: any): number {
   }
 }
 
+// Calculate the next billing date after advance months
+function calculateNextBillingDate(packageData: any): string {
+  const today = new Date();
+  const advanceMonths = packageData.advancePaymentMonths || 0;
+  
+  // Add advance months to the current date
+  today.setMonth(today.getMonth() + (advanceMonths > 0 ? advanceMonths : 1));
+  
+  return today.toISOString();
+}
+
+// Calculate package end date
+function calculatePackageEndDate(packageData: any): string {
+  const today = new Date();
+  const durationMonths = packageData.durationMonths || 12;
+  
+  // Add total duration to the current date
+  today.setMonth(today.getMonth() + durationMonths);
+  
+  return today.toISOString();
+}
+
 // Server entrypoint
 serve(async (req) => {
   console.log("Request received:", req.method, new URL(req.url).pathname);
@@ -188,19 +210,19 @@ serve(async (req) => {
     const recurringPaymentCount = calculateRecurringPaymentCount(packageData);
     console.log(`Recurring payment amount: ${recurringPaymentAmount}, count: ${recurringPaymentCount}`);
     
+    // Calculate next billing date and package end date
+    const nextBillingDate = calculateNextBillingDate(packageData);
+    const packageEndDate = calculatePackageEndDate(packageData);
+    console.log(`Next billing: ${nextBillingDate}, End date: ${packageEndDate}`);
+    
     // Calculate amount in paise (100 paise = 1 INR)
     const amountInPaise = Math.round(initialPaymentAmount * 100);
     
     // Generate a receipt ID
     const receiptId = generateReceiptId();
     
-    // Calculate next billing date (after advance months)
-    const nextBillingDate = new Date();
-    nextBillingDate.setMonth(nextBillingDate.getMonth() + (packageData.advancePaymentMonths || 1));
-    
     // Key-only mode: Don't create an order or subscription ID
     // Instead, let Razorpay handle direct payment with just the key and amount
-    
     console.log("Setting up direct key-only mode payment with amount:", amountInPaise);
     
     // Return successful response with payment details
@@ -220,24 +242,33 @@ serve(async (req) => {
           initialPayment: initialPaymentAmount.toString(),
           setupFee: (packageData.setupFee || 0).toString(),
           advanceMonths: (packageData.advancePaymentMonths || 0).toString(),
-          nextBillingDate: nextBillingDate.toISOString(),
+          nextBillingDate: nextBillingDate,
           totalPackageMonths: (packageData.durationMonths || 12).toString(),
           totalAmount: totalPackagePrice.toString(),
           remainingAmount: remainingAmount.toString(),
           recurringPaymentAmount: recurringPaymentAmount.toString(),
-          recurringPaymentCount: recurringPaymentCount.toString()
+          recurringPaymentCount: recurringPaymentCount.toString(),
+          packageEndDate: packageEndDate
         },
         isOneTime,
         isSubscription: !isOneTime,
         enableAutoPay,
         setupFee: packageData.setupFee || 0,
         advanceMonths: packageData.advancePaymentMonths || 0,
-        nextBillingDate: nextBillingDate.toISOString(),
+        nextBillingDate: nextBillingDate,
+        packageEndDate: packageEndDate,
         totalPackageMonths: packageData.durationMonths || 12,
         totalAmount: totalPackagePrice,
         remainingAmount: remainingAmount,
         recurringPaymentAmount: recurringPaymentAmount,
-        recurringPaymentCount: recurringPaymentCount
+        recurringPaymentCount: recurringPaymentCount,
+        autopayDetails: {
+          enabled: enableAutoPay && isRecurring,
+          nextBillingDate: nextBillingDate,
+          recurringAmount: recurringPaymentAmount,
+          remainingPayments: recurringPaymentCount,
+          totalRemainingAmount: remainingAmount
+        }
       }),
       {
         status: 200,

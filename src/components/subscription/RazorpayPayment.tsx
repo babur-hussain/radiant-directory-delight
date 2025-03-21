@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, CreditCard, Shield, Loader2, RefreshCw, CheckCircle, Calendar, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -33,6 +34,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const [ready, setReady] = useState(false);
   const [enableAutoPay, setEnableAutoPay] = useState(true);
   const [scriptLoaded, setScriptLoaded] = useState(false);
+  const paymentComponentRef = useRef<HTMLDivElement>(null);
   
   // Determine if this package supports recurring payments
   const supportsRecurring = selectedPackage.paymentType === 'recurring';
@@ -316,139 +318,145 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   
   // Normal payment UI
   return (
-    <Card className="border-none shadow-none">
-      <CardHeader className="px-0 pt-0">
-        <CardTitle className="text-lg">Payment Summary</CardTitle>
-        <CardDescription>Review your payment details</CardDescription>
-      </CardHeader>
-      <CardContent className="px-0 space-y-4">
-        <div className="border rounded-md p-4 space-y-3">
-          <div className="flex justify-between">
-            <span className="font-medium">{selectedPackage.title}</span>
-            <span className="font-medium">
-              ₹{selectedPackage.price}
-              {supportsRecurring ? (
-                <span className="text-xs text-muted-foreground">
-                  /{selectedPackage.billingCycle || 'yearly'}
-                </span>
-              ) : ''}
-            </span>
-          </div>
-          
-          {setupFee > 0 && (
-            <div className="flex justify-between text-sm">
-              <span>Setup fee</span>
-              <span>₹{setupFee}</span>
-            </div>
-          )}
-          
-          {supportsRecurring && advanceMonths > 0 && (
-            <div className="flex justify-between text-sm">
-              <span>Advance payment ({advanceMonths} months)</span>
-              <span>₹{selectedPackage.billingCycle === 'monthly' ? 
-                (monthlyAmount * advanceMonths) : 
-                yearlyAmount}</span>
-            </div>
-          )}
-          
-          <div className="border-t pt-2 flex justify-between font-medium">
-            <span>Initial payment (today)</span>
-            <span>₹{initialPayment}</span>
-          </div>
-          
-          {supportsRecurring && enableAutoPay && remainingAmount > 0 && (
-            <>
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Total package value (validity: {packageDuration} months)</span>
-                <span>₹{totalPackageValue}</span>
+    <div ref={paymentComponentRef}>
+      <Card className="border-none shadow-none">
+        <CardHeader className="px-0 pt-0">
+          <CardTitle className="text-lg">Payment Summary</CardTitle>
+          <CardDescription>Review your payment details</CardDescription>
+        </CardHeader>
+        <CardContent className="px-0">
+          <ScrollArea className="h-[400px] pr-4">
+            <div className="space-y-4">
+              <div className="border rounded-md p-4 space-y-3">
+                <div className="flex justify-between">
+                  <span className="font-medium">{selectedPackage.title}</span>
+                  <span className="font-medium">
+                    ₹{selectedPackage.price}
+                    {supportsRecurring ? (
+                      <span className="text-xs text-muted-foreground">
+                        /{selectedPackage.billingCycle || 'yearly'}
+                      </span>
+                    ) : ''}
+                  </span>
+                </div>
+                
+                {setupFee > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span>Setup fee</span>
+                    <span>₹{setupFee}</span>
+                  </div>
+                )}
+                
+                {supportsRecurring && advanceMonths > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span>Advance payment ({advanceMonths} months)</span>
+                    <span>₹{selectedPackage.billingCycle === 'monthly' ? 
+                      (monthlyAmount * advanceMonths) : 
+                      yearlyAmount}</span>
+                  </div>
+                )}
+                
+                <div className="border-t pt-2 flex justify-between font-medium">
+                  <span>Initial payment (today)</span>
+                  <span>₹{initialPayment}</span>
+                </div>
+                
+                {supportsRecurring && enableAutoPay && remainingAmount > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>Total package value (validity: {packageDuration} months)</span>
+                      <span>₹{totalPackageValue}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>Remaining amount (autopay)</span>
+                      <span>₹{remainingAmount}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>Number of future payments</span>
+                      <span>{recurringPaymentCount}</span>
+                    </div>
+                  </>
+                )}
               </div>
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Remaining amount (autopay)</span>
-                <span>₹{remainingAmount}</span>
+              
+              {supportsRecurring && (
+                <div className="flex items-center justify-between space-x-2">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm">Enable AutoPay</h4>
+                    <p className="text-xs text-muted-foreground">
+                      We'll automatically renew your subscription using this payment method
+                    </p>
+                  </div>
+                  <Switch 
+                    checked={enableAutoPay}
+                    onCheckedChange={setEnableAutoPay}
+                    aria-label="Toggle autopay"
+                  />
+                </div>
+              )}
+              
+              {enableAutoPay && supportsRecurring && (
+                <>
+                  <div className="flex items-start gap-2 bg-blue-50 p-3 rounded-md">
+                    <Calendar className="h-5 w-5 text-blue-500 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium text-blue-800">Next payment on {getNextBillingDate()}</p>
+                      <p className="text-blue-600">
+                        {recurringPaymentCount > 0 
+                          ? `Your subscription will auto-renew with ${recurringPaymentCount} remaining payment${recurringPaymentCount !== 1 ? 's' : ''} of ₹${recurringAmount} each.`
+                          : 'No future payments needed - your subscription is fully paid.'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-2 bg-amber-50 p-3 rounded-md">
+                    <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium text-amber-800">Subscription ends on {getPackageEndDate()}</p>
+                      <p className="text-amber-600">
+                        Your total subscription duration is {packageDuration} months.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              <div className="flex items-start gap-2 bg-muted p-3 rounded-md">
+                <Shield className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-medium">Secure Payment</p>
+                  <p className="text-muted-foreground">
+                    Your payment information is securely processed
+                  </p>
+                </div>
               </div>
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Number of future payments</span>
-                <span>{recurringPaymentCount}</span>
-              </div>
-            </>
-          )}
-        </div>
-        
-        {supportsRecurring && (
-          <div className="flex items-center justify-between space-x-2">
-            <div className="flex-1">
-              <h4 className="font-medium text-sm">Enable AutoPay</h4>
-              <p className="text-xs text-muted-foreground">
-                We'll automatically renew your subscription using this payment method
-              </p>
             </div>
-            <Switch 
-              checked={enableAutoPay}
-              onCheckedChange={setEnableAutoPay}
-              aria-label="Toggle autopay"
-            />
-          </div>
-        )}
-        
-        {enableAutoPay && supportsRecurring && (
-          <>
-            <div className="flex items-start gap-2 bg-blue-50 p-3 rounded-md">
-              <Calendar className="h-5 w-5 text-blue-500 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium text-blue-800">Next payment on {getNextBillingDate()}</p>
-                <p className="text-blue-600">
-                  {recurringPaymentCount > 0 
-                    ? `Your subscription will auto-renew with ${recurringPaymentCount} remaining payment${recurringPaymentCount !== 1 ? 's' : ''} of ₹${recurringAmount} each.`
-                    : 'No future payments needed - your subscription is fully paid.'}
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-2 bg-amber-50 p-3 rounded-md">
-              <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium text-amber-800">Subscription ends on {getPackageEndDate()}</p>
-                <p className="text-amber-600">
-                  Your total subscription duration is {packageDuration} months.
-                </p>
-              </div>
-            </div>
-          </>
-        )}
-        
-        <div className="flex items-start gap-2 bg-muted p-3 rounded-md">
-          <Shield className="h-5 w-5 text-muted-foreground mt-0.5" />
-          <div className="text-sm">
-            <p className="font-medium">Secure Payment</p>
-            <p className="text-muted-foreground">
-              Your payment information is securely processed
-            </p>
-          </div>
-        </div>
-      </CardContent>
-      <CardFooter className="px-0 pt-2 flex flex-col space-y-2">
-        <Button 
-          onClick={handlePayment} 
-          className="w-full" 
-          disabled={isLoading || isProcessing}
-        >
-          {isLoading || isProcessing ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {isLoading ? 'Loading...' : 'Processing...'}
-            </>
-          ) : (
-            <>
-              <CreditCard className="mr-2 h-4 w-4" />
-              Pay ₹{totalPaymentAmount}
-            </>
-          )}
-        </Button>
-        <p className="text-xs text-center text-muted-foreground">
-          By proceeding, you agree to our Terms of Service and Privacy Policy
-        </p>
-      </CardFooter>
-    </Card>
+          </ScrollArea>
+        </CardContent>
+        <CardFooter className="px-0 pt-2 flex flex-col space-y-2">
+          <Button 
+            onClick={handlePayment} 
+            className="w-full" 
+            disabled={isLoading || isProcessing}
+          >
+            {isLoading || isProcessing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {isLoading ? 'Loading...' : 'Processing...'}
+              </>
+            ) : (
+              <>
+                <CreditCard className="mr-2 h-4 w-4" />
+                Pay ₹{totalPaymentAmount}
+              </>
+            )}
+          </Button>
+          <p className="text-xs text-center text-muted-foreground">
+            By proceeding, you agree to our Terms of Service and Privacy Policy
+          </p>
+        </CardFooter>
+      </Card>
+    </div>
   );
 };
 
