@@ -12,7 +12,7 @@ import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { User, UserSubscription } from "@/types/auth";
 import { useAuth } from "@/hooks/useAuth";
-import { getAllUsers } from "@/features/auth/userManagement";
+import { getAllUsers } from "@/features/auth/userDataAccess";
 
 interface UserSubscriptionMappingProps {
   onPermissionError?: (error: any) => void;

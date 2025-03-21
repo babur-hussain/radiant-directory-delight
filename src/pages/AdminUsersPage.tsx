@@ -9,7 +9,8 @@ import { AlertCircle, Loader2, RefreshCw, Search, UserPlus, Eye, Filter, IdCard 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/hooks/use-toast';
-import { getAllUsers, createTestUser } from '@/features/auth/userManagement';
+import { createTestUser } from '@/features/auth/userManagement';
+import { getAllUsers } from '@/features/auth/userDataAccess';
 import { User, UserRole } from '@/types/auth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';

@@ -1,3 +1,4 @@
+
 import { User, UserRole } from "@/types/auth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -90,3 +91,57 @@ export const getUserById = async (userId: string): Promise<User | null> => {
 
 // Add nanoid import at the top if it's used
 import { nanoid } from 'nanoid';
+
+// Export these functions from userDataAccess to make them available where needed
+export { getAllUsers } from './userDataAccess';
+
+// Create a test user for development environments
+export const createTestUser = async (userData: {
+  email: string;
+  name: string;
+  role?: UserRole;
+  isAdmin?: boolean;
+  employeeCode?: string;
+}): Promise<User> => {
+  try {
+    // Generate a unique ID using nanoid
+    const userId = nanoid();
+    
+    // Create user data object with defaults
+    const newUser: User = {
+      uid: userId,
+      id: userId,
+      email: userData.email,
+      displayName: userData.name,
+      name: userData.name,
+      role: userData.role || 'User',
+      isAdmin: userData.isAdmin || false,
+      photoURL: DEFAULT_PHOTO_URL,
+      employeeCode: userData.employeeCode || '',
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString(),
+      phone: '',
+      instagramHandle: '',
+      facebookHandle: '',
+      verified: false,
+      city: '',
+      country: '',
+      niche: '',
+      followersCount: '',
+      bio: '',
+      businessName: '',
+      ownerName: '',
+      businessCategory: '',
+      website: '',
+      gstNumber: ''
+    };
+    
+    // For a real application, you would store this user in a database
+    console.log('Test user created:', newUser);
+    
+    return newUser;
+  } catch (error) {
+    console.error('Error creating test user:', error);
+    throw new Error('Failed to create test user');
+  }
+};

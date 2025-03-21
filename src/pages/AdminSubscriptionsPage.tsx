@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -81,20 +82,22 @@ const AdminSubscriptionsPage = () => {
         paymentType: sub.payment_type as PaymentType,
         paymentMethod: sub.payment_method,
         transactionId: sub.transaction_id,
-        billingCycle: sub.billing_cycle as BillingCycle || 'yearly',
+        // Provide fallbacks for properties that might not exist in the database
+        billingCycle: (sub.payment_type === 'recurring' ? (sub.payment_type === 'monthly' ? 'monthly' : 'yearly') : 'yearly') as BillingCycle,
         signupFee: sub.signup_fee,
         recurring: sub.is_pausable,
         cancelledAt: sub.cancelled_at,
         cancelReason: sub.cancel_reason,
         createdAt: sub.created_at,
         updatedAt: sub.updated_at,
-        razorpaySubscriptionId: sub.razorpay_subscription_id || '',
-        razorpayOrderId: sub.razorpay_order_id || '',
-        recurringAmount: sub.recurring_amount || sub.amount,
-        nextBillingDate: sub.next_billing_date || sub.assigned_at,
+        // Provide fallbacks or default values for properties that might not exist
+        razorpaySubscriptionId: '',
+        razorpayOrderId: '',
+        recurringAmount: sub.amount,
+        nextBillingDate: sub.assigned_at,
         actualStartDate: sub.actual_start_date,
-        dashboardFeatures: sub.dashboard_features || [],
-        dashboardSections: sub.dashboard_sections || []
+        dashboardFeatures: [],
+        dashboardSections: []
       }));
       
       setPackages(transformedPackages);
