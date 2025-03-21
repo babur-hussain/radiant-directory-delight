@@ -186,8 +186,9 @@ async function handleCreateSubscription(req: Request, user: any) {
       );
     }
 
-    // For simplicity, we'll create an order object for both one-time and subscription payments
-    // This is more reliable for testing than trying to mock Razorpay's subscription API
+    // Determine if this is a one-time payment or a subscription
+    const isOneTime = packageData.paymentType === "one-time";
+    console.log(`Processing payment type: ${isOneTime ? 'one-time' : 'subscription'}`);
     
     // Calculate amount in paise (100 paise = 1 INR)
     const amountInPaise = Math.round(packageData.price * 100);
@@ -219,13 +220,18 @@ async function handleCreateSubscription(req: Request, user: any) {
     
     console.log("Order created successfully:", order);
     
-    // For subscription type, also create a subscription object
+    // Initialize subscription to null
     let subscription = null;
-    if (packageData.paymentType === "recurring") {
-      // Use a proper format for the subscription ID
-      // Replace any special characters that might cause issues
-      const randomString = Math.random().toString(36).substring(2, 10).replace(/[^a-z0-9]/g, "");
-      const subscriptionId = `sub_${randomString}`;
+    
+    // Only create a subscription object if this is a recurring payment
+    if (!isOneTime) {
+      // Format for Razorpay subscription IDs usually starts with "sub_" followed by alphanumeric characters
+      // We'll create a format that matches Razorpay's format but is unique for our mock implementation
+      const timestamp = Date.now().toString(36); // Convert timestamp to base36 string
+      const random = Math.random().toString(36).substring(2, 10);
+      const subscriptionId = `sub_${timestamp}${random}`;
+      
+      console.log("Created subscription ID:", subscriptionId);
       
       subscription = {
         id: subscriptionId,
@@ -240,27 +246,39 @@ async function handleCreateSubscription(req: Request, user: any) {
         notes: {
           packageId: packageData.id,
           userId: userId,
-        },
-        created_at: new Date().toISOString(),
-        order_id: orderId
+        }
       };
       
       console.log("Subscription created successfully:", subscription);
     }
     
-    // Return appropriate response
-    return new Response(
-      JSON.stringify({ 
-        order, 
-        subscription,
-        isSubscription: packageData.paymentType === "recurring",
-        isOneTime: packageData.paymentType === "one-time"
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    // Return appropriate response based on payment type
+    if (isOneTime) {
+      // For one-time payments, only return the order details
+      return new Response(
+        JSON.stringify({ 
+          order,
+          isOneTime: true
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    } else {
+      // For subscription payments, return both subscription and order
+      return new Response(
+        JSON.stringify({ 
+          subscription,
+          order,
+          isSubscription: true
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
   } catch (error) {
     console.error("Error creating subscription:", error);
     return new Response(

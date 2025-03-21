@@ -187,20 +187,9 @@ export const useRazorpay = () => {
       
       console.log("Received result from backend:", result);
       
-      // Determine whether to use order_id or subscription_id based on the response
-      let orderBasedPayment = false;
-      let subscriptionBasedPayment = false;
-      
-      if (result.order && result.order.id) {
-        orderBasedPayment = true;
-      }
-      
-      if (result.subscription && result.subscription.id) {
-        subscriptionBasedPayment = result.isSubscription || packageData.paymentType === 'recurring';
-      }
-      
-      // Open Razorpay checkout
+      // Open Razorpay checkout based on payment type
       return new Promise((resolve, reject) => {
+        // Base options for Razorpay
         const options: RazorpayOptions = {
           key: RAZORPAY_KEY_ID,
           name: 'Grow Bharat Vyapaar',
@@ -220,20 +209,28 @@ export const useRazorpay = () => {
           }
         };
         
-        // For order-based payments
-        if (orderBasedPayment) {
+        // For one-time and initial subscription payments, use order_id
+        if (result.order && result.order.id) {
+          console.log("Setting up order-based payment with order ID:", result.order.id);
           options.order_id = result.order.id;
           options.amount = result.order.amount; // amount in paise
           options.currency = result.order.currency || 'INR';
         }
         
-        // For subscription-based payments
-        if (subscriptionBasedPayment) {
+        // For recurring subscription payments, use subscription_id
+        if (result.isSubscription && result.subscription && result.subscription.id) {
+          console.log("Setting up subscription-based payment with subscription ID:", result.subscription.id);
+          // IMPORTANT: Only set subscription_id, do not set order_id at the same time
+          delete options.order_id; // Remove order_id if it was set
           options.subscription_id = result.subscription.id;
-          // Do NOT use recurring: true here as it can cause conflicts with subscription_id
+          
+          // Do NOT set recurring: true here as it can cause conflicts with subscription_id
+          // Instead, let Razorpay handle the recurring nature based on the subscription_id
         }
         
+        // Success handler
         options.handler = function(response: any) {
+          console.log("Payment success response:", response);
           resolve({
             ...response,
             subscription: result.subscription,
@@ -244,14 +241,16 @@ export const useRazorpay = () => {
           });
         };
         
+        // Modal dismiss handler
         options.modal = {
           ondismiss: function() {
+            console.log("Payment modal dismissed by user");
             reject(new Error('Payment cancelled by user'));
           }
         };
         
         try {
-          console.log("Initializing Razorpay with options:", options);
+          console.log("Initializing Razorpay with options:", JSON.stringify(options, null, 2));
           const razorpay = new (window as any).Razorpay(options);
           razorpay.open();
         } catch (err) {
@@ -335,7 +334,7 @@ export const useRazorpay = () => {
         throw new Error('Invalid order response from server');
       }
       
-      // Open Razorpay checkout
+      // Open Razorpay checkout for one-time payment
       return new Promise((resolve, reject) => {
         const options: RazorpayOptions = {
           key: RAZORPAY_KEY_ID,
@@ -359,6 +358,7 @@ export const useRazorpay = () => {
           },
           handler: function(response: any) {
             // Process the payment success
+            console.log("One-time payment success:", response);
             resolve({
               ...response,
               packageDetails: packageData,
@@ -368,13 +368,14 @@ export const useRazorpay = () => {
           },
           modal: {
             ondismiss: function() {
+              console.log("One-time payment modal dismissed");
               reject(new Error('Payment cancelled by user'));
             }
           }
         };
         
         try {
-          console.log("Initializing Razorpay one-time payment with options:", options);
+          console.log("Initializing Razorpay one-time payment with options:", JSON.stringify(options, null, 2));
           const razorpay = new (window as any).Razorpay(options);
           razorpay.open();
         } catch (err) {

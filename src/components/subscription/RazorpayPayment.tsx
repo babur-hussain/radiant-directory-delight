@@ -28,36 +28,28 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   
-  // Determine if this is a one-time package
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
   
-  // Determine if this package is eligible for recurring payments
   const canUseRecurring = !isOneTimePackage && selectedPackage.billingCycle !== undefined;
   
-  // Calculate the setup fee
   const setupFee = selectedPackage.setupFee || 0;
   
-  // Calculate recurring amount based on billing cycle
   const recurringAmount = isOneTimePackage ? 0 : (
     selectedPackage.billingCycle === 'monthly' 
       ? (selectedPackage.monthlyPrice || 0)
       : (selectedPackage.price || 0)
   );
   
-  // Advanced payment months
   const advanceMonths = isOneTimePackage ? 0 : (selectedPackage.advancePaymentMonths || 0);
   
-  // Calculate advance payment amount
   const advanceAmount = selectedPackage.billingCycle === 'monthly'
     ? (selectedPackage.monthlyPrice || 0) * advanceMonths
     : (selectedPackage.price || 0);
   
-  // Calculate the total initial payment
   const totalPaymentAmount = isOneTimePackage 
     ? (selectedPackage.price || 0)
     : (setupFee + (advanceMonths > 0 ? advanceAmount : 0));
   
-  // Calculate when the first recurring payment will happen (after advance months)
   const firstRecurringDate = new Date();
   if (advanceMonths > 0) {
     firstRecurringDate.setMonth(firstRecurringDate.getMonth() + advanceMonths);
@@ -68,7 +60,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   }
   
   const formattedFirstRecurringDate = formatSubscriptionDate(firstRecurringDate);
-  
+
   const handlePayment = async () => {
     if (isProcessing) return;
     
@@ -76,10 +68,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     setError(null);
     
     try {
-      // Start the subscription/payment process
+      console.log(`Initiating ${isOneTimePackage ? 'one-time payment' : 'subscription'} for package:`, selectedPackage);
+      
       const result = await createSubscription(selectedPackage);
       
-      // Handle success
       console.log('Payment success:', result);
       
       toast({
@@ -87,7 +79,6 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         description: `Your ${isOneTimePackage ? 'payment' : 'subscription'} was successful.`,
       });
       
-      // Call the parent component's success handler
       onSuccess({
         ...result,
         isRecurring: canUseRecurring,
@@ -106,10 +97,8 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         variant: "destructive"
       });
       
-      // Call the parent component's failure handler
       onFailure(error);
       
-      // Increment retry count
       setRetryCount(prev => prev + 1);
     } finally {
       setIsProcessing(false);
@@ -121,20 +110,17 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     setReady(false);
     setRetryCount(0);
     
-    // Reset states and try again after a short delay
     setTimeout(() => {
       setReady(true);
     }, 1000);
   };
   
-  // Use payment error from the hook if available
   useEffect(() => {
     if (paymentError) {
       setError(paymentError);
     }
   }, [paymentError]);
   
-  // Set ready after component mounts
   useEffect(() => {
     const timer = setTimeout(() => {
       setReady(true);
@@ -314,3 +300,4 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
 };
 
 export default RazorpayPayment;
+
