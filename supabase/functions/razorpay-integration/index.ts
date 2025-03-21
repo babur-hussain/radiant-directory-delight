@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 // Constants
-const RAZORPAY_KEY_ID = Deno.env.get("RAZORPAY_KEY_ID") || "";
+const RAZORPAY_KEY_ID = Deno.env.get("RAZORPAY_KEY_ID") || "rzp_test_iQ4CsQZE0XZFpj"; // Using test key
 const RAZORPAY_KEY_SECRET = Deno.env.get("RAZORPAY_KEY_SECRET") || "";
 
 // Define CORS headers
@@ -167,8 +167,8 @@ function generateValidSubscriptionId(): string {
 
 // Generate a valid Razorpay order ID that follows their format
 function generateValidOrderId(): string {
-  // Razorpay order IDs start with 'order_' followed by 16 alphanumeric characters
-  const randomPart = Array.from({ length: 16 }, () => 
+  // Razorpay order IDs start with 'order_' followed by 14 alphanumeric characters (NOT 16)
+  const randomPart = Array.from({ length: 14 }, () => 
     "0123456789abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 36)]
   ).join('');
   
@@ -219,6 +219,7 @@ async function handleCreateSubscription(req: Request, user: any) {
     
     // Create a unique order ID with proper Razorpay format 
     const orderId = generateValidOrderId();
+    console.log("Generated order ID:", orderId);
     
     // Create order object (this would be returned from Razorpay's API in a real implementation)
     const order = {
@@ -304,7 +305,6 @@ async function handleCreateSubscription(req: Request, user: any) {
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        
       }
     );
   }

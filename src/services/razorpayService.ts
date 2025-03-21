@@ -18,7 +18,12 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   if (typeof (window as any).Razorpay === 'undefined') {
     throw new Error('Razorpay is not loaded');
   }
-  return new (window as any).Razorpay(options);
+  
+  // Make a deep copy of options to avoid mutation issues
+  const safeOptions = JSON.parse(JSON.stringify(options));
+  
+  console.log("Creating Razorpay instance with options:", safeOptions);
+  return new (window as any).Razorpay(safeOptions);
 };
 
 /**
@@ -78,7 +83,9 @@ export const createSubscriptionViaEdgeFunction = async (
   
   // Parse the JSON response
   try {
-    return await response.json();
+    const result = await response.json();
+    console.log("Received result from edge function:", result);
+    return result;
   } catch (jsonError) {
     console.error('Error parsing JSON:', jsonError);
     throw new Error('Invalid response format from server');
@@ -97,6 +104,8 @@ export const buildRazorpayOptions = (
   onSuccess: (response: any) => void,
   onDismiss: () => void
 ): RazorpayOptions => {
+  console.log("Building Razorpay options with result:", result);
+  
   // Base options for Razorpay
   const options: RazorpayOptions = {
     key: RAZORPAY_KEY_ID,

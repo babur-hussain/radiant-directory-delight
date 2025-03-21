@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import { loadRazorpayScript, isRazorpayAvailable } from '@/utils/razorpayLoader';
+import { loadRazorpayScript, isRazorpayAvailable, RAZORPAY_KEY_ID } from '@/utils/razorpayLoader';
 import { 
   createSubscriptionViaEdgeFunction, 
   buildRazorpayOptions, 
@@ -36,6 +36,10 @@ export const useRazorpay = () => {
         throw new Error('Failed to load payment gateway');
       }
       
+      if (!isRazorpayAvailable()) {
+        throw new Error('Payment gateway is not available. Please refresh the page.');
+      }
+      
       // Determine payment type
       // If useOneTimePreferred is true, we'll use one-time payment even for recurring packages
       const isOneTime = packageData.paymentType === 'one-time' || useOneTimePreferred;
@@ -57,6 +61,10 @@ export const useRazorpay = () => {
       
       console.log("Received result from backend:", result);
       
+      if (!result || (!result.order && !result.subscription)) {
+        throw new Error('Invalid response from server');
+      }
+      
       // Open Razorpay checkout based on payment type
       return new Promise((resolve, reject) => {
         try {
@@ -67,7 +75,10 @@ export const useRazorpay = () => {
             customerData,
             result,
             isOneTime,
-            (response) => resolve(response),
+            (response) => {
+              console.log("Payment success callback triggered with:", response);
+              resolve(response);
+            },
             () => {
               console.log("Payment modal dismissed by user");
               reject(new Error('Payment cancelled by user'));
@@ -75,8 +86,23 @@ export const useRazorpay = () => {
           );
           
           console.log("Initializing Razorpay with options:", JSON.stringify(options, null, 2));
-          const razorpay = createRazorpayCheckout(options);
-          razorpay.open();
+          
+          // Create and open Razorpay checkout
+          try {
+            const razorpay = createRazorpayCheckout(options);
+            
+            // Set up any additional event handlers if needed
+            razorpay.on('payment.error', (err: any) => {
+              console.error("Razorpay payment error:", err);
+              reject(err);
+            });
+            
+            // Finally, open the payment modal
+            razorpay.open();
+          } catch (razorpayError) {
+            console.error("Error during Razorpay checkout creation:", razorpayError);
+            reject(razorpayError);
+          }
         } catch (err) {
           console.error('Razorpay initialization error:', err);
           reject(new Error('Failed to initialize payment gateway'));

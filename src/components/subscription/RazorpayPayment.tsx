@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -71,7 +70,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     try {
       console.log(`Initiating ${isOneTimePackage ? 'one-time payment' : 'subscription'} for package:`, selectedPackage);
       
-      // Set a flag to prefer one-time payments for now as a fallback strategy
+      if (!user) {
+        throw new Error("You must be logged in to make a payment.");
+      }
+      
       const useOneTimePreferred = true;
       
       const result = await createSubscription(selectedPackage, useOneTimePreferred);
@@ -93,11 +95,17 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     } catch (error) {
       console.error('Payment error:', error);
       
-      setError(error instanceof Error ? error.message : 'Payment failed');
+      let errorMessage = error instanceof Error ? error.message : 'Payment failed';
+      
+      if (typeof error === 'object' && error !== null && 'description' in error) {
+        errorMessage = (error as any).description || errorMessage;
+      }
+      
+      setError(errorMessage);
       
       toast({
         title: "Payment Failed",
-        description: error instanceof Error ? error.message : 'Payment could not be processed',
+        description: errorMessage,
         variant: "destructive"
       });
       
@@ -132,7 +140,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     
     return () => clearTimeout(timer);
   }, []);
-  
+
   if (!ready) {
     return (
       <div className="flex flex-col items-center justify-center py-8">
@@ -260,6 +268,13 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
             <span>Total Amount</span>
             <span>₹{totalPaymentAmount}</span>
           </div>
+        </div>
+        
+        <div className="bg-amber-50 p-3 rounded-md border border-amber-100">
+          <p className="text-amber-800 text-sm flex items-center">
+            <AlertCircle className="h-4 w-4 mr-2 text-amber-500" />
+            <span>Using test mode. No real payment will be processed.</span>
+          </p>
         </div>
         
         <div className="flex items-start gap-2 bg-muted p-3 rounded-md">

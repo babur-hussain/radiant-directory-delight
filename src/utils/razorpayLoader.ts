@@ -4,7 +4,7 @@
  */
 
 // Constants
-export const RAZORPAY_KEY_ID = 'rzp_live_8PGS0Ug3QeCb2I'; // Used client-side, so it's safe to use directly
+export const RAZORPAY_KEY_ID = 'rzp_test_iQ4CsQZE0XZFpj'; // Using test key instead of live
 
 /**
  * Load Razorpay script dynamically
