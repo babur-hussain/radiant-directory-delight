@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,15 +81,13 @@ const AdminSubscriptionsPage = () => {
         paymentType: sub.payment_type as PaymentType,
         paymentMethod: sub.payment_method,
         transactionId: sub.transaction_id,
-        // Provide fallbacks for properties that might not exist in the database
-        billingCycle: (sub.payment_type === 'recurring' ? (sub.payment_type === 'monthly' ? 'monthly' : 'yearly') : 'yearly') as BillingCycle,
+        billingCycle: (sub.payment_type === 'recurring' ? 'monthly' : 'yearly') as BillingCycle,
         signupFee: sub.signup_fee,
         recurring: sub.is_pausable,
         cancelledAt: sub.cancelled_at,
         cancelReason: sub.cancel_reason,
         createdAt: sub.created_at,
         updatedAt: sub.updated_at,
-        // Provide fallbacks or default values for properties that might not exist
         razorpaySubscriptionId: '',
         razorpayOrderId: '',
         recurringAmount: sub.amount,
