@@ -25,8 +25,8 @@ export const convertFromPaise = (amountInPaise: number): number => {
   return amountInPaise / 100;
 };
 
-// Razorpay key
-const RAZORPAY_KEY_ID = 'rzp_live_8PGS0Ug3QeCb2I';
+// Razorpay key - use test key for development 
+const RAZORPAY_KEY_ID = 'rzp_test_mxolTiKYIDkIpn';
 
 // Types for Razorpay integration
 export interface RazorpayOptions {
