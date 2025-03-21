@@ -31,10 +31,10 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
     throw new Error('Required parameter missing: key is mandatory for Razorpay checkout');
   }
   
-  // For key-only mode, we need either order_id or amount
-  if (!safeOptions.order_id && !safeOptions.amount) {
-    console.error("Either order_id or amount must be provided:", safeOptions);
-    throw new Error('Either order_id or amount must be provided for Razorpay checkout');
+  // For key-only mode, we need amount and currency
+  if (!safeOptions.amount) {
+    console.error("Amount must be provided for key-only mode:", safeOptions);
+    throw new Error('Amount must be provided for Razorpay checkout');
   }
   
   try {
@@ -102,17 +102,15 @@ const cleanRazorpayOptions = (options: Record<string, any>): void => {
     options.recurring = undefined;
   }
   
-  // For standard checkout with order_id, remove potentially conflicting options
+  // Remove order_id - we'll use key-only mode with amount
   if (options.order_id) {
-    // For standard checkout, these options can cause conflicts
-    options.recurring = undefined;
-    options.subscription_id = undefined;
-    
-    // Only remove amount if explicitly using order_id mode
-    if (options.amount) {
-      console.log("Order ID present, removing amount parameter");
-      options.amount = undefined;
-    }
+    console.log("Removing order_id to use key-only mode instead");
+    options.order_id = undefined;
+  }
+
+  // Ensure amount is present for key-only mode
+  if (!options.amount) {
+    console.warn("Amount is required for key-only mode");
   }
 
   // Ensure the callback URL is valid and absolute
@@ -210,18 +208,7 @@ export const createSubscriptionViaEdgeFunction = async (
     
     console.log("Received result from edge function:", data);
     
-    // Validate the response contains required fields
-    if (!data.order || !data.order.id) {
-      console.error('Invalid response from edge function:', data);
-      throw new Error('Invalid response: missing order information');
-    }
-    
-    // Validate order ID format
-    if (!data.order.id.startsWith('order_') || data.order.id.length < 20) {
-      console.error('Invalid order ID format from edge function:', data.order.id);
-      throw new Error('Invalid order ID format received from server');
-    }
-    
+    // Return the data directly from the edge function
     return data;
     
   } catch (error) {
@@ -261,6 +248,8 @@ export const buildRazorpayOptions = (
     name: 'Grow Bharat Vyapaar',
     description: `Payment for ${packageData.title}`,
     image: 'https://your-company-logo.png',
+    amount: result.amount || Math.round(packageData.price * 100), // Use amount from edge function or calculate
+    currency: 'INR',
     notes: {
       packageId: packageData.id.toString(),
       userId: user.id,
@@ -273,13 +262,11 @@ export const buildRazorpayOptions = (
       console.log("Payment success response:", response);
       onSuccess({
         ...response,
-        subscription: result.subscription,
-        order: result.order,
-        subscriptionId: result.subscription?.id,
-        orderId: result.order?.id,
+        isSubscription: !isOneTime,
+        enableAutoPay: enableAutoPay,
         packageDetails: packageData,
-        isSubscription: result.isSubscription,
-        enableAutoPay: enableAutoPay
+        // Include any other data needed for successful payment processing
+        amount: result.amount || Math.round(packageData.price * 100)
       });
     },
     modal: {
@@ -295,17 +282,6 @@ export const buildRazorpayOptions = (
   // Only add prefill if we have values
   if (Object.keys(cleanedPrefill).length > 0) {
     options.prefill = cleanedPrefill;
-  }
-  
-  // Use order-based payment if we have an order ID from backend
-  if (result.order && result.order.id) {
-    console.log("Setting up order-based payment with order ID:", result.order.id);
-    options.order_id = result.order.id;
-  } else {
-    // Fallback to direct payment with amount if order ID is missing
-    console.log("Order ID missing, using direct amount-based payment");
-    options.amount = Math.round(packageData.price * 100); // Convert to paise
-    options.currency = 'INR';
   }
   
   return options;

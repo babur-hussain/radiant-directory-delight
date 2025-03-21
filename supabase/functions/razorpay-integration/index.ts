@@ -90,57 +90,26 @@ serve(async (req) => {
     // Generate a receipt ID
     const receiptId = generateReceiptId();
     
-    // For live mode, we need to use dummy order IDs that look realistic
-    // We'll use a consistent format that Razorpay expects
-    // In a real implementation, we would call Razorpay API to create an order
-    const orderId = `order_${Date.now().toString().substring(0, 5)}${Math.random().toString(36).substring(2, 11)}`;
-    console.log("Generated dummy order ID for frontend use:", orderId);
+    // Key-only mode: Don't create an order or subscription ID
+    // Instead, let Razorpay handle direct payment with just the key and amount
     
-    // Create subscription data if recurring
-    const subscriptionData = isRecurring ? {
-      id: `sub_${Date.now().toString(36)}${Math.random().toString(36).substring(2, 7)}`,
-      entity: "subscription",
-      plan_id: `plan_${packageData.id}`,
-      customer_id: userId,
-      status: "created",
-      current_start: getCurrentTimestamp(),
-      current_end: getCurrentTimestamp() + (30 * 24 * 60 * 60), // 30 days
-      ended_at: null,
-      quantity: 1,
-      notes: {
-        packageId: packageData.id.toString(),
-        userId: userId,
-        enableAutoPay: enableAutoPay ? "true" : "false"
-      }
-    } : null;
+    console.log("Setting up direct key-only mode payment with amount:", amountInPaise);
     
-    // Create order object with autopay options
-    const order = {
-      id: orderId,
-      entity: "order",
-      amount: amountInPaise,
-      amount_paid: 0,
-      amount_due: amountInPaise,
-      currency: "INR",
-      receipt: receiptId,
-      status: "created",
-      attempts: 0,
-      notes: {
-        packageId: packageData.id.toString(),
-        userId: userId,
-        enableAutoPay: enableAutoPay ? "true" : "false",
-        isRecurring: isRecurring ? "true" : "false"
-      },
-      created_at: getCurrentTimestamp()
-    };
-    
-    console.log("Order created successfully:", order);
-    
-    // Return successful response
+    // Return successful response with payment details
     return new Response(
       JSON.stringify({ 
-        order,
-        subscription: subscriptionData,
+        key: RAZORPAY_KEY_ID,
+        amount: amountInPaise,
+        currency: "INR",
+        name: "Grow Bharat Vyapaar",
+        description: packageData.title || "Subscription payment",
+        receipt: receiptId,
+        notes: {
+          packageId: packageData.id.toString(),
+          userId: userId,
+          enableAutoPay: enableAutoPay ? "true" : "false",
+          isRecurring: isRecurring ? "true" : "false"
+        },
         isOneTime,
         isSubscription: !isOneTime,
         enableAutoPay

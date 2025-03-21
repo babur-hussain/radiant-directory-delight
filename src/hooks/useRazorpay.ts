@@ -85,33 +85,10 @@ export const useRazorpay = () => {
       
       console.log("Received result from backend:", result);
       
-      // Validate response from backend
-      if (!result || !result.order || !result.order.id) {
-        const errorMsg = 'Invalid response from server: missing order information';
-        toast({
-          title: "Server Error",
-          description: errorMsg,
-          variant: "destructive"
-        });
-        throw new Error(errorMsg);
-      }
-      
-      // Validate that the order ID format is correct
-      if (!result.order.id.startsWith('order_')) {
-        const errorMsg = 'Invalid order ID format from server';
-        console.error(errorMsg, result.order.id);
-        toast({
-          title: "Server Error",
-          description: errorMsg,
-          variant: "destructive"
-        });
-        throw new Error(errorMsg);
-      }
-      
       // Open Razorpay checkout for payment
       return new Promise((resolve, reject) => {
         try {
-          // Build Razorpay options
+          // Build Razorpay options for key-only mode (amount-based payment)
           const options = buildRazorpayOptions(
             user,
             packageData,
@@ -131,8 +108,6 @@ export const useRazorpay = () => {
               
               resolve({
                 ...response,
-                subscription: result.subscription,
-                order: result.order,
                 isRecurring: isRecurringPayment,
                 enableAutoPay: enableAutoPay
               });
