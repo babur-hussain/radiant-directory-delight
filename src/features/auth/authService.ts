@@ -1,144 +1,251 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole } from '@/types/auth';
+import { fetchUserByUid } from '@/lib/supabase/userUtils';
+import { updateUserRole } from './roleManagement';
+import { toast } from '@/hooks/use-toast';
 
-// Map from Supabase user to our User model
-export const mapUserFromSupabase = (user: any): User => {
-  return {
-    uid: user.id,
-    id: user.id, // Ensure id is set to match uid
-    email: user.email || '',
-    displayName: user.name || '',
-    name: user.name || '',
-    role: user.role || 'user',
-    isAdmin: user.is_admin || false,
-    photoURL: user.photo_url || null,
-    createdAt: user.created_at ? new Date(user.created_at).toISOString() : new Date().toISOString(),
-    lastLogin: user.last_login ? new Date(user.last_login).toISOString() : new Date().toISOString(),
-    // Add all other required properties from the User type
-    employeeCode: user.employee_code || null,
-    phone: user.phone || null,
-    instagramHandle: user.instagram_handle || null,
-    facebookHandle: user.facebook_handle || null,
-    verified: user.verified || false,
-    city: user.city || null,
-    country: user.country || null,
-    niche: user.niche || null,
-    followersCount: user.followers_count || null,
-    bio: user.bio || null,
-    businessName: user.business_name || null,
-    ownerName: user.owner_name || null,
-    businessCategory: user.business_category || null,
-    website: user.website || null,
-    gstNumber: user.gst_number || null
-  };
-};
-
-// Function to sign up a new user
-export const signUp = async (email: string, password: string): Promise<User | null> => {
+// Signup with email and password
+export const signupWithEmail = async (
+  email: string,
+  password: string,
+  name: string,
+  role: UserRole = 'User',
+  additionalData: any = {}
+): Promise<User> => {
   try {
+    // Check for default admin email
+    const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
+    const finalRole = isDefaultAdmin ? 'Admin' : role;
+    
+    // Register the user with Supabase
     const { data, error } = await supabase.auth.signUp({
-      email: email,
-      password: password,
+      email,
+      password,
+      options: {
+        data: {
+          name,
+          role: finalRole,
+          is_admin: isDefaultAdmin,
+          ...additionalData
+        }
+      }
     });
 
     if (error) {
-      console.error('Error signing up:', error);
-      return null;
+      console.error("Signup error:", error);
+      throw error;
     }
 
-    // Map the Supabase user data to our User model
-    return mapUserFromSupabase(data.user);
+    if (!data.user) {
+      throw new Error("No user returned from signup");
+    }
+
+    // For default admin or when email confirmation is not required,
+    // try to login immediately after signup
+    if (isDefaultAdmin || process.env.NODE_ENV === 'development') {
+      try {
+        await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+      } catch (loginError) {
+        console.warn("Auto login after signup failed:", loginError);
+        // Continue with signup flow even if auto-login fails
+      }
+    }
+
+    // Create a user object from the signup data
+    const newUser: User = {
+      uid: data.user.id,
+      id: data.user.id,
+      email: email,
+      displayName: name,
+      name: name,
+      photoURL: null,
+      role: finalRole,
+      isAdmin: isDefaultAdmin,
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString(),
+      // Include additional data
+      ...additionalData
+    };
+
+    // Set user role (this also updates the database)
+    await updateUserRole(newUser);
+
+    return newUser;
   } catch (error) {
-    console.error('Error in signUp:', error);
-    return null;
+    console.error("Error in signupWithEmail:", error);
+    throw error;
   }
 };
 
-// Function to sign in an existing user
-export const signIn = async (email: string, password: string): Promise<User | null> => {
+// Login with email and password
+export const loginWithEmail = async (
+  email: string,
+  password: string,
+  employeeCode?: string
+): Promise<User> => {
   try {
+    // Check for email confirmation bypass for development or default admin
+    const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
+    
+    // Sign in with Supabase
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
+      email,
+      password
     });
 
     if (error) {
-      console.error('Error signing in:', error);
-      return null;
+      if (error.message.includes('Email not confirmed') && isDefaultAdmin) {
+        // Special handling for default admin - try to auto-confirm
+        console.log("Attempting to bypass email confirmation for default admin");
+        toast({
+          title: "Admin login",
+          description: "Attempting special login for admin account",
+        });
+        
+        // You can add special handling here if needed
+        // For now, we'll just show a clearer error
+        throw new Error("Admin account needs email confirmation. Please check Supabase dashboard.");
+      }
+      console.error("Login error:", error);
+      throw error;
     }
 
-    // Map the Supabase user data to our User model
-    return mapUserFromSupabase(data.user);
+    if (!data.user) {
+      throw new Error("No user returned from login");
+    }
+
+    // Fetch user profile data
+    let userData = await fetchUserByUid(data.user.id);
+    
+    // Handle case where user exists in auth but not in public.users table
+    if (!userData) {
+      // Default user data
+      userData = {
+        uid: data.user.id,
+        id: data.user.id,
+        email: data.user.email || '',
+        displayName: data.user.user_metadata.name || '',
+        name: data.user.user_metadata.name || '',
+        role: (data.user.user_metadata.role as UserRole) || 'User',
+        isAdmin: isDefaultAdmin || (data.user.user_metadata.is_admin === true),
+        photoURL: null,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      };
+    }
+
+    // Check for employee code if provided
+    if (employeeCode && userData.employeeCode !== employeeCode) {
+      // Only enforce employee code check for staff or admin roles
+      if (['Staff', 'Admin'].includes(userData.role || '')) {
+        throw new Error("Invalid employee code");
+      }
+    }
+
+    // Special case for default admin email
+    if (isDefaultAdmin && !userData.isAdmin) {
+      userData.isAdmin = true;
+      userData.role = 'Admin';
+      
+      // Update role in database
+      await updateUserRole(userData);
+    }
+
+    // Update last login timestamp
+    await supabase
+      .from('users')
+      .update({ last_login: new Date().toISOString() })
+      .eq('id', data.user.id);
+
+    return userData;
   } catch (error) {
-    console.error('Error in signIn:', error);
-    return null;
+    console.error("Error in loginWithEmail:", error);
+    throw error;
   }
 };
 
-// Function to sign out the current user
-export const signOut = async (): Promise<void> => {
+// Login with Google
+export const loginWithGoogle = async (): Promise<void> => {
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      }
+    });
+
+    if (error) {
+      console.error("Google login error:", error);
+      throw error;
+    }
+  } catch (error) {
+    console.error("Error in loginWithGoogle:", error);
+    throw error;
+  }
+};
+
+// Logout
+export const logout = async (): Promise<void> => {
   try {
     const { error } = await supabase.auth.signOut();
 
     if (error) {
-      console.error('Error signing out:', error);
+      console.error("Logout error:", error);
+      throw error;
     }
   } catch (error) {
-    console.error('Error in signOut:', error);
+    console.error("Error in logout:", error);
+    throw error;
   }
 };
 
-// Function to get the current user
-export const getCurrentUser = async (): Promise<User | null> => {
+// Get current session
+export const getCurrentSession = async () => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return null;
+    const { data, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error("Get session error:", error);
+      throw error;
     }
-
-    // Map the Supabase user data to our User model
-    return mapUserFromSupabase(user);
+    
+    return data.session;
   } catch (error) {
-    console.error('Error in getCurrentUser:', error);
+    console.error("Error in getCurrentSession:", error);
     return null;
   }
 };
 
-export const mapUserData = (userData: any): User => {
-  return {
-    uid: userData.uid || userData.id,
-    id: userData.uid || userData.id, // Ensure id is set to match uid
-    email: userData.email,
-    displayName: userData.displayName,
-    name: userData.name,
-    role: userData.role,
-    isAdmin: userData.isAdmin,
-    photoURL: userData.photoURL,
-    createdAt: userData.createdAt || new Date().toISOString(),
-    lastLogin: userData.lastLogin || new Date().toISOString(),
-    employeeCode: userData.employeeCode,
-    phone: userData.phone,
-    instagramHandle: userData.instagramHandle,
-    facebookHandle: userData.facebookHandle,
-    verified: userData.verified,
-    city: userData.city,
-    country: userData.country,
-    fullName: userData.fullName,
-    niche: userData.niche,
-    followersCount: userData.followersCount,
-    bio: userData.bio,
-    businessName: userData.businessName,
-    ownerName: userData.ownerName,
-    businessCategory: userData.businessCategory,
-    website: userData.website,
-    address: userData.address,
-    gstNumber: userData.gstNumber,
-    subscription: userData.subscription,
-    subscriptionId: userData.subscriptionId,
-    subscriptionStatus: userData.subscriptionStatus,
-    subscriptionPackage: userData.subscriptionPackage,
-    customDashboardSections: userData.customDashboardSections,
-  };
+// Get current user
+export const getCurrentUser = async () => {
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    
+    if (error) {
+      console.error("Get user error:", error);
+      throw error;
+    }
+    
+    if (!data.user) {
+      return null;
+    }
+    
+    // Fetch user profile data
+    const userData = await fetchUserByUid(data.user.id);
+    
+    // Special case for default admin
+    if (data.user.email?.toLowerCase() === 'baburhussain660@gmail.com' && userData) {
+      userData.isAdmin = true;
+      userData.role = 'Admin';
+    }
+    
+    return userData;
+  } catch (error) {
+    console.error("Error in getCurrentUser:", error);
+    return null;
+  }
 };

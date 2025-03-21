@@ -14,10 +14,12 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { MailCheck, Lock, Loader2, IdCard } from "lucide-react";
+import { MailCheck, Lock, Loader2, IdCard, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import SocialLoginButtons from "./SocialLoginButtons";
 import { useAuth } from "@/hooks/useAuth";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -34,6 +36,8 @@ interface LoginFormProps {
 
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [resendingEmail, setResendingEmail] = useState(false);
   const { toast } = useToast();
   const { loginWithGoogle } = useAuth();
 
@@ -48,6 +52,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
 
   const onSubmit = async (data: LoginFormData) => {
     setIsSubmitting(true);
+    setEmailError(null);
     
     try {
       await onLogin(data.email, data.password, data.employeeCode || undefined);
@@ -61,11 +66,21 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
     } catch (error) {
       console.error("Login error:", error);
       
-      toast({
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "Invalid credentials",
-        variant: "destructive",
-      });
+      // Check for email confirmation error
+      if (error instanceof Error && error.message.includes("Email not confirmed")) {
+        setEmailError(data.email);
+        toast({
+          title: "Email verification required",
+          description: "Please check your inbox for a verification email",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Login failed",
+          description: error instanceof Error ? error.message : "Invalid credentials",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -87,6 +102,39 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
       setIsSubmitting(false);
     }
   };
+  
+  const resendVerificationEmail = async () => {
+    if (!emailError) return;
+    
+    setResendingEmail(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: emailError,
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Verification email sent",
+        description: "Please check your inbox for the verification link",
+      });
+    } catch (error) {
+      console.error("Error resending verification email:", error);
+      toast({
+        title: "Failed to resend verification email",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setResendingEmail(false);
+    }
+  };
+
+  // Is this the default admin email?
+  const isAdminEmail = form.watch('email').toLowerCase() === 'baburhussain660@gmail.com';
 
   return (
     <div className="space-y-6 py-4">
@@ -96,6 +144,46 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
           Log in to access your account
         </p>
       </div>
+      
+      {emailError && (
+        <Alert className="mb-4">
+          <AlertTitle>Email verification required</AlertTitle>
+          <AlertDescription className="space-y-2">
+            <p>
+              Please check your inbox for a verification email sent to{" "}
+              <strong>{emailError}</strong>.
+            </p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={resendVerificationEmail}
+              disabled={resendingEmail}
+              className="mt-2"
+            >
+              {resendingEmail ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Resend verification email
+                </>
+              )}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {isAdminEmail && (
+        <Alert variant="default" className="mb-4 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+          <AlertTitle>Admin Account Detected</AlertTitle>
+          <AlertDescription>
+            You're logging in with the default admin account. Make sure to confirm your email address.
+          </AlertDescription>
+        </Alert>
+      )}
       
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

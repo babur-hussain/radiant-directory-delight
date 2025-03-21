@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { 
@@ -14,11 +13,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
-// Import refactored components
-import LoginForm from "./LoginForm";
-import RegisterTypeSelector from "./RegisterTypeSelector";
-import RegisterForm from "./RegisterForm";
-
 type AuthModalProps = {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -30,7 +24,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
   const { signup, login, loginWithGoogle } = useAuth();
   const { toast } = useToast();
 
-  // Reset registration type when switching tabs
   const handleTabChange = (value: string) => {
     setAuthTab(value);
     if (value === "register") {
@@ -38,31 +31,42 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
     }
   };
 
-  // Handle close with cleanup
   const handleClose = (open: boolean) => {
     if (!open) {
-      // Reset state when closing modal
       setTimeout(() => {
         setAuthTab("login");
         setRegisterType(null);
-      }, 200); // Delay to allow animation to complete
+      }, 200);
     }
     onOpenChange(open);
   };
 
-  // Handle login using the auth context
   const handleLogin = async (email: string, password: string, employeeCode?: string): Promise<void> => {
     try {
+      const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
+      
       await login(email, password, employeeCode);
+      
+      if (isDefaultAdmin) {
+        toast({
+          title: "Admin login successful",
+          description: "Welcome to the admin dashboard",
+        });
+      }
+      
       onOpenChange(false);
       return Promise.resolve();
     } catch (error) {
       console.error("Error in handleLogin:", error);
+      
+      if (error instanceof Error && error.message.includes("Email not confirmed")) {
+        return Promise.reject(error);
+      }
+      
       return Promise.reject(error);
     }
   };
 
-  // Handle signup using the auth context
   const handleSignup = async (
     email: string,
     password: string,
@@ -71,12 +75,28 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
     additionalData?: any
   ): Promise<void> => {
     try {
-      await signup(email, password, name, role, additionalData);
+      const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
+      
+      await signup(email, password, name, isDefaultAdmin ? 'Admin' : role, additionalData);
+      
+      let message = `Your account has been created as a ${isDefaultAdmin ? 'Admin' : role}.`;
+      
+      message += " Please check your email for a verification link.";
+      
       toast({
         title: "Registration successful",
-        description: `Your account has been created as a ${role}.`,
+        description: message,
       });
-      onOpenChange(false);
+      
+      if (isDefaultAdmin) {
+        toast({
+          title: "Admin Account",
+          description: "This account has been set as an admin account",
+        });
+      }
+      
+      setAuthTab("login");
+      
       return Promise.resolve();
     } catch (error) {
       console.error("Error in handleSignup:", error);
@@ -89,7 +109,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
     }
   };
 
-  // Get title based on current state
   const getDialogTitle = () => {
     if (authTab === "login") {
       return "Login to Your Account";
@@ -100,7 +119,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
     }
   };
 
-  // Get description based on current state
   const getDialogDescription = () => {
     if (authTab === "login") {
       return "Enter your credentials to access your account";

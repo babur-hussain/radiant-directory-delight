@@ -1,191 +1,187 @@
 
-import { createContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AuthContextType, User, UserRole, SubscriptionStatus } from '@/types/auth';
+import { createContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Session } from '@supabase/supabase-js';
+import {
+  User,
+  UserRole,
+  AuthContextType,
+  SessionData
+} from '@/types/auth';
+import {
+  signupWithEmail,
+  loginWithEmail,
+  loginWithGoogle,
+  logout as authLogout,
+  getCurrentUser
+} from '@/features/auth/authService';
 import { toast } from '@/hooks/use-toast';
 
-export const AuthContext = createContext<AuthContextType | null>(null);
+// Create the auth context
+export const AuthContext = createContext<AuthContextType>({
+  currentUser: null,
+  user: null,
+  isAuthenticated: false,
+  loading: true,
+  initialized: false,
+  login: async () => null,
+  loginWithGoogle: async () => {},
+  signup: async () => null,
+  logout: async () => {},
+  refreshUserData: async () => null,
+});
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
-  const navigate = useNavigate();
+  const [session, setSession] = useState<SessionData | null>(null);
 
-  const formatUserData = async (session: Session | null): Promise<User | null> => {
-    if (!session?.user) return null;
-
-    try {
-      const { data: profile, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching user profile:', error);
-      }
-
-      // Create a properly structured address object
-      const address = {
-        street: null,  // These fields won't come directly from profile
-        city: profile?.city || null,
-        state: null,
-        country: profile?.country || null,
-        zipCode: null
-      };
-
-      // Check if addresses table has data for this user
-      const { data: addressData, error: addressError } = await supabase
-        .from('addresses')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-
-      if (!addressError && addressData) {
-        // Update with data from addresses table if available
-        address.street = addressData.street;
-        address.state = addressData.state;
-        address.city = addressData.city || profile?.city;
-        address.country = addressData.country || profile?.country;
-        address.zipCode = addressData.zip_code;
-      }
-
-      // Use type assertion to treat profile as a record with string keys
-      // This allows us to access potentially undefined properties safely
-      const profileData = profile as Record<string, any> || {};
-      
-      // Access possibly undefined properties safely with type assertions
-      const engagementRate = profileData.engagement_rate || null;
-      const preferredLanguage = profileData.preferred_language || null;
-      const interests = profileData.interests || null;
-      const location = profileData.location || null;
-      const assignedBusinessId = profileData.assigned_business_id || null;
-      const staffRole = profileData.staff_role || null;
-
-      return {
-        uid: session.user.id,
-        id: session.user.id,
-        email: session.user.email || '',
-        displayName: profile?.name || session.user.user_metadata?.name || null,
-        name: profile?.name || session.user.user_metadata?.name || null,
-        photoURL: profile?.photo_url || session.user.user_metadata?.avatar_url || null,
-        role: (profile?.role as UserRole) || 'User',
-        isAdmin: profile?.is_admin || false,
-        employeeCode: profile?.employee_code || null,
-        createdAt: profile?.created_at || new Date().toISOString(),
-        lastLogin: profile?.last_login || new Date().toISOString(),
-        phone: profile?.phone || null,
-        instagramHandle: profile?.instagram_handle || null,
-        facebookHandle: profile?.facebook_handle || null,
-        verified: profile?.verified || false,
-        city: profile?.city || null,
-        country: profile?.country || null,
-        niche: profile?.niche || null,
-        followersCount: profile?.followers_count || null,
-        bio: profile?.bio || null,
-        businessName: profile?.business_name || null,
-        ownerName: profile?.owner_name || null,
-        businessCategory: profile?.business_category || null,
-        website: profile?.website || null,
-        address: address,
-        gstNumber: profile?.gst_number || null,
-        subscription: profile?.subscription || null,
-        subscriptionId: profile?.subscription_id || null,
-        subscriptionStatus: profile?.subscription_status || null,
-        subscriptionPackage: profile?.subscription_package || null,
-        customDashboardSections: profile?.custom_dashboard_sections || [],
-        engagementRate: engagementRate,
-        preferredLanguage: preferredLanguage,
-        interests: interests,
-        location: location,
-        assignedBusinessId: assignedBusinessId,
-        staffRole: staffRole
-      };
-    } catch (error) {
-      console.error('Error formatting user data:', error);
-      return null;
-    }
-  };
-
+  // Effect to handle auth state changes and initialization
   useEffect(() => {
+    // Track if component is mounted to prevent state updates after unmount
+    let isMounted = true;
+
     const initializeAuth = async () => {
       try {
+        // Set up auth state change listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
-            console.log('Auth state changed:', event);
+          async (event, _session) => {
+            console.log("Auth state changed:", event);
             
-            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-              const userData = await formatUserData(session);
-              setUser(userData);
-              setSession(session);
+            if (!isMounted) return;
+            
+            if (_session) {
+              setSession({
+                accessToken: _session.access_token,
+                refreshToken: _session.refresh_token,
+                expiresAt: new Date(_session.expires_at!).toISOString(),
+                providerToken: _session.provider_token || null,
+                user: {
+                  id: _session.user.id,
+                  email: _session.user.email || '',
+                  phone: _session.user.phone || '',
+                  userMetadata: _session.user.user_metadata || {},
+                  appMetadata: _session.user.app_metadata || {},
+                  aud: _session.user.aud || ''
+                }
+              });
               
-              if (userData) {
-                await supabase
-                  .from('users')
-                  .update({ last_login: new Date().toISOString() })
-                  .eq('id', userData.uid);
+              // Get additional user data
+              try {
+                const userData = await getCurrentUser();
+                
+                // Special case for default admin
+                if (_session.user?.email?.toLowerCase() === 'baburhussain660@gmail.com' && userData) {
+                  userData.isAdmin = true;
+                  userData.role = 'Admin';
+                }
+                
+                if (isMounted) {
+                  setUser(userData);
+                }
+              } catch (error) {
+                console.error("Error fetching user data:", error);
+                if (isMounted) {
+                  setUser(null);
+                }
               }
-            } else if (event === 'SIGNED_OUT') {
-              setUser(null);
-              setSession(null);
+            } else {
+              if (isMounted) {
+                setSession(null);
+                setUser(null);
+              }
+            }
+            
+            if (isMounted) {
+              setLoading(false);
             }
           }
         );
-
+        
+        // Get current session
         const { data: { session: currentSession } } = await supabase.auth.getSession();
-        if (currentSession) {
-          const userData = await formatUserData(currentSession);
-          setUser(userData);
-          setSession(currentSession);
+        
+        if (currentSession && isMounted) {
+          setSession({
+            accessToken: currentSession.access_token,
+            refreshToken: currentSession.refresh_token,
+            expiresAt: new Date(currentSession.expires_at!).toISOString(),
+            providerToken: currentSession.provider_token || null,
+            user: {
+              id: currentSession.user.id,
+              email: currentSession.user.email || '',
+              phone: currentSession.user.phone || '',
+              userMetadata: currentSession.user.user_metadata || {},
+              appMetadata: currentSession.user.app_metadata || {},
+              aud: currentSession.user.aud || ''
+            }
+          });
+          
+          // Get additional user data
+          try {
+            const userData = await getCurrentUser();
+            
+            // Special case for default admin
+            if (currentSession.user?.email?.toLowerCase() === 'baburhussain660@gmail.com' && userData) {
+              userData.isAdmin = true;
+              userData.role = 'Admin';
+            }
+            
+            if (isMounted) {
+              setUser(userData);
+            }
+          } catch (error) {
+            console.error("Error fetching user data:", error);
+            if (isMounted) {
+              setUser(null);
+            }
+          }
         }
-
-        setLoading(false);
-        setInitialized(true);
-
+        
+        if (isMounted) {
+          setLoading(false);
+          setInitialized(true);
+        }
+        
+        // Cleanup function
         return () => {
           subscription.unsubscribe();
         };
       } catch (error) {
-        console.error('Error initializing auth:', error);
-        setLoading(false);
-        setInitialized(true);
+        console.error("Error initializing auth:", error);
+        if (isMounted) {
+          setLoading(false);
+          setInitialized(true);
+        }
       }
     };
-
+    
     initializeAuth();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const login = async (email: string, password: string, employeeCode?: string) => {
+  // Login function
+  const login = async (email: string, password: string, employeeCode?: string): Promise<User | null> => {
     try {
       setLoading(true);
+      const userData = await loginWithEmail(email, password, employeeCode);
+      setUser(userData);
+      return userData;
+    } catch (error) {
+      console.error("Login error:", error);
       
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      if (employeeCode && data.user) {
-        await supabase
-          .from('users')
-          .update({ employee_code: employeeCode })
-          .eq('id', data.user.id);
+      // Handle email not confirmed error
+      if (error instanceof Error && error.message.includes("Email not confirmed")) {
+        // Rethrow to let form handle UI
+        throw error;
       }
-
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
-    } catch (error: any) {
-      console.error('Login error:', error);
+      
       toast({
         title: "Login failed",
-        description: error.message || "Failed to sign in. Please check your credentials.",
+        description: error instanceof Error ? error.message : "Invalid credentials",
         variant: "destructive",
       });
       throw error;
@@ -194,121 +190,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const loginWithGoogle = async () => {
-    try {
-      setLoading(true);
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin + '/auth/callback',
-        },
-      });
-
-      if (error) throw error;
-    } catch (error: any) {
-      console.error('Google login error:', error);
-      toast({
-        title: "Google login failed",
-        description: error.message || "Failed to sign in with Google.",
-        variant: "destructive",
-      });
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Signup function
   const signup = async (
-    email: string, 
-    password: string, 
-    name: string, 
+    email: string,
+    password: string,
+    name: string,
     role: UserRole,
     additionalData?: any
-  ) => {
+  ): Promise<User | null> => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name,
-            role,
-            ...additionalData
-          },
-        },
-      });
-
-      if (error) throw error;
-
-      if (data.user) {
-        // Create the user profile record
-        const profileData: any = {
-          id: data.user.id,
-          name,
-          role,
-          email: email,
-          created_at: new Date().toISOString(),
-          last_login: new Date().toISOString(),
+      // Check if this is the admin email
+      const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
+      if (isDefaultAdmin) {
+        console.log("Registering default admin account");
+        role = 'Admin';
+        additionalData = {
+          ...additionalData,
+          isAdmin: true
         };
-        
-        // Copy fields from additionalData to the profile data
-        // Remove address and flatten it separately
-        const addressData = additionalData.address ? { 
-          ...additionalData.address,
-          user_id: data.user.id, 
-          created_at: new Date().toISOString()
-        } : null;
-        
-        // Copy the rest of the fields directly to the profile
-        for (const key in additionalData) {
-          if (key !== 'address') {
-            // Convert camelCase to snake_case for database compatibility
-            const snakeCaseKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-            profileData[snakeCaseKey] = additionalData[key];
-          }
-        }
-        
-        // Make sure all new fields are properly added
-        if (additionalData.engagementRate) profileData.engagement_rate = additionalData.engagementRate;
-        if (additionalData.preferredLanguage) profileData.preferred_language = additionalData.preferredLanguage;
-        if (additionalData.interests) profileData.interests = additionalData.interests;
-        if (additionalData.location) profileData.location = additionalData.location;
-        if (additionalData.assignedBusinessId) profileData.assigned_business_id = additionalData.assignedBusinessId;
-        if (additionalData.staffRole) profileData.staff_role = additionalData.staffRole;
-        
-        // Insert the profile
-        const { error: profileError } = await supabase
-          .from('users')
-          .upsert(profileData);
-          
-        if (profileError) {
-          console.error('Error creating user profile:', profileError);
-        }
-        
-        // Insert address data if it exists
-        if (addressData) {
-          const { error: addressError } = await supabase
-            .from('addresses')
-            .upsert(addressData);
-            
-          if (addressError) {
-            console.error('Error creating user address:', addressError);
-          }
-        }
       }
-
-      toast({
-        title: "Signup successful",
-        description: "Your account has been created. Please check your email for verification.",
-      });
-    } catch (error: any) {
-      console.error('Signup error:', error);
+      
+      const userData = await signupWithEmail(email, password, name, role, additionalData);
+      
+      // Don't set the user here as we want to make the user confirm their email
+      // unless we're in development mode and bypassing email confirmation
+      if (process.env.NODE_ENV === 'development' || isDefaultAdmin) {
+        setUser(userData);
+      }
+      
+      return userData;
+    } catch (error) {
+      console.error("Signup error:", error);
       toast({
         title: "Signup failed",
-        description: error.message || "Failed to create account.",
+        description: error instanceof Error ? error.message : "Failed to create account",
         variant: "destructive",
       });
       throw error;
@@ -317,25 +234,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const logout = async () => {
+  // Logout function
+  const logoutUser = async (): Promise<void> => {
     try {
       setLoading(true);
-      
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) throw error;
-      
-      navigate('/');
+      await authLogout();
+      setUser(null);
+      setSession(null);
       
       toast({
-        title: "Logout successful",
-        description: "You have been signed out.",
+        title: "Logged out",
+        description: "You have been successfully logged out.",
       });
-    } catch (error: any) {
-      console.error('Logout error:', error);
+    } catch (error) {
+      console.error("Logout error:", error);
       toast({
         title: "Logout failed",
-        description: error.message || "Failed to sign out.",
+        description: error instanceof Error ? error.message : "Failed to log out",
         variant: "destructive",
       });
     } finally {
@@ -343,122 +258,57 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const updateUserData = async (data: Partial<User>) => {
+  // Google login function
+  const handleGoogleLogin = async (): Promise<void> => {
     try {
-      if (!user?.uid) {
-        throw new Error('User not authenticated');
-      }
-      
-      // Create a new object with only the fields that are valid for the Supabase users table
-      const supabaseData: any = {
-        ...data,
-        // Don't include updated_at here, we'll add it separately
-      };
-      
-      // Execute the update with updated_at as a separate field since it's not in the User type
-      const { error } = await supabase
-        .from('users')
-        .update({
-          ...supabaseData,
-          updated_at: new Date().toISOString() // Add this separately from the User data
-        })
-        .eq('id', user.uid);
-      
-      if (error) throw error;
-
-      setUser(prev => prev ? { ...prev, ...data } : null);
-      
+      setLoading(true);
+      await loginWithGoogle();
+      // Auth state handler will update user state
+    } catch (error) {
+      console.error("Google login error:", error);
       toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully.",
-      });
-    } catch (error: any) {
-      console.error('Error updating user data:', error);
-      toast({
-        title: "Update failed",
-        description: error.message || "Failed to update profile.",
+        title: "Google login failed",
+        description: error instanceof Error ? error.message : "Failed to authenticate with Google",
         variant: "destructive",
       });
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const updateUserRole = async (user: User, role: UserRole) => {
+  // Refresh user data function
+  const refreshUserData = async (): Promise<User | null> => {
     try {
-      if (!user.uid) {
-        throw new Error('User not authenticated');
+      const userData = await getCurrentUser();
+      
+      // Special case for default admin
+      if (userData?.email?.toLowerCase() === 'baburhussain660@gmail.com') {
+        userData.isAdmin = true;
+        userData.role = 'Admin';
       }
       
-      const { error } = await supabase
-        .from('users')
-        .update({ 
-          role,
-          is_admin: role === 'Admin' ? true : user.isAdmin
-        })
-        .eq('id', user.uid);
-      
-      if (error) throw error;
-
-      const updatedUser = {
-        ...user,
-        role,
-        isAdmin: role === 'Admin' || user.isAdmin
-      };
-      
-      setUser(updatedUser);
-      
-      return updatedUser;
+      setUser(userData);
+      return userData;
     } catch (error) {
-      console.error('Error updating user role:', error);
-      throw error;
+      console.error("Error refreshing user data:", error);
+      return null;
     }
   };
 
-  const updateUserPermission = async (userId: string, isAdmin: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({ is_admin: isAdmin })
-        .eq('id', userId);
-      
-      if (error) throw error;
-
-      if (user && user.uid === userId) {
-        setUser({
-          ...user,
-          isAdmin
-        });
-      }
-      
-      return { userId, isAdmin };
-    } catch (error) {
-      console.error('Error updating user permission:', error);
-      throw error;
-    }
+  // Context value
+  const value: AuthContextType = {
+    currentUser: user,
+    user,
+    isAuthenticated: !!user,
+    loading,
+    initialized,
+    login,
+    loginWithGoogle: handleGoogleLogin,
+    signup,
+    logout: logoutUser,
+    refreshUserData,
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        currentUser: user,
-        loading,
-        initialized,
-        userRole: user?.role || null,
-        isAdmin: user?.isAdmin || false,
-        isAuthenticated: !!user,
-        login,
-        loginWithGoogle,
-        logout,
-        signup,
-        updateUserData,
-        updateUserRole,
-        updateUserPermission
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-
-export default AuthProvider;
