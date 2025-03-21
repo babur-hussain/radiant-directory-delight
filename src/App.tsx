@@ -1,14 +1,9 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import AuthProvider from '@/providers/AuthProvider';
-import Layout from '@/components/layout/Layout';
-import Index from '@/pages/Index';
-import AuthPage from '@/pages/AuthPage';
-import AuthCallbackPage from '@/pages/AuthCallbackPage';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import AdminLoginPage from '@/pages/AdminLoginPage';
+import AppRoutes from '@/routes';
 
 // Initialize QueryClient for React Query
 const queryClient = new QueryClient({
@@ -26,53 +21,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <AuthProvider>
-          <Routes>
-            {/* Public routes with Layout */}
-            <Route 
-              path="/" 
-              element={
-                <Layout>
-                  <Index />
-                </Layout>
-              } 
-            />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/auth/callback" element={<AuthCallbackPage />} />
-            <Route path="/admin/login" element={<AdminLoginPage />} />
-            
-            {/* Protected routes - add your protected routes here */}
-            {/* Example:
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <DashboardPage />
-                </ProtectedRoute>
-              } 
-            /> */}
-            
-            {/* Admin routes - add your admin routes here */}
-            {/* Example:
-            <Route 
-              path="/admin/dashboard" 
-              element={
-                <ProtectedRoute adminOnly>
-                  <AdminDashboardPage />
-                </ProtectedRoute>
-              } 
-            /> */}
-            
-            {/* Role-specific routes - add your role-specific routes here */}
-            {/* Example:
-            <Route 
-              path="/business/dashboard" 
-              element={
-                <ProtectedRoute requiredRole="Business">
-                  <BusinessDashboardPage />
-                </ProtectedRoute>
-              } 
-            /> */}
-          </Routes>
+          <AppRoutes />
           <Toaster />
         </AuthProvider>
       </Router>
