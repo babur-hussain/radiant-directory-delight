@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +18,6 @@ import { useDashboardServices } from "@/hooks/useDashboardServices";
 import { useSubscription } from "@/hooks";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks";
-import axios from "axios";
 
 interface InfluencerDashboardProps {
   userId: string;
@@ -29,7 +29,7 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
   const navigate = useNavigate();
   const { toast } = useToast();
   const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "Influencer");
-  const { getUserSubscription, getUserDashboardFeatures } = useSubscription();
+  const { fetchUserSubscription } = useSubscription();
   const { user } = useAuth();
   
   useEffect(() => {
@@ -43,11 +43,11 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
       
       try {
         console.log(`InfluencerDashboard: Fetching subscription for user ${userId}`);
-        const subscription = await getUserSubscription();
+        const result = await fetchUserSubscription();
         
-        if (subscription) {
-          console.log("InfluencerDashboard: Got subscription from MongoDB:", subscription);
-          setSubscriptionData(subscription);
+        if (result?.success && result?.data) {
+          console.log("InfluencerDashboard: Got subscription:", result.data);
+          setSubscriptionData(result.data);
         } else {
           console.log("InfluencerDashboard: No subscription found");
           setSubscriptionData(null);
@@ -61,7 +61,7 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
     };
     
     fetchSubscription();
-  }, [userId, getUserSubscription]);
+  }, [userId, fetchUserSubscription]);
   
   const handleExportData = (format: string) => {
     toast({
@@ -110,7 +110,7 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
     );
   }
 
-  const isAdmin = user?.role === "Admin" || user?.isAdmin;
+  const isAdmin = user?.isAdmin || user?.role === "Admin";
   
   const hasActiveSubscription = isAdmin || 
     (subscriptionData && 

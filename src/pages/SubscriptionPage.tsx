@@ -1,85 +1,94 @@
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { UserRole } from '@/types/auth';
-import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useSubscription } from '@/hooks/useSubscription';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
+import SubscriptionPackages from "@/components/subscription/SubscriptionPackages";
+import { Loader2 } from "lucide-react";
+import Layout from "@/components/layout/Layout";
 
-const SubscriptionPage: React.FC = () => {
-  const { user } = useAuth();
-  const { subscription, loading, error } = useSubscription();
-  const navigate = useNavigate();
-  
+const SubscriptionPage = () => {
+  const { user, isAuthenticated } = useAuth();
+  const { fetchUserSubscription } = useSubscription();
+  const [subscription, setSubscription] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    // Any initializations here
-  }, []);
+    const getSubscription = async () => {
+      if (isAuthenticated && user) {
+        try {
+          const result = await fetchUserSubscription();
+          if (result?.success && result?.data) {
+            setSubscription(result.data);
+          }
+        } catch (error) {
+          console.error("Error fetching subscription:", error);
+        }
+      }
+      setIsLoading(false);
+    };
 
-  if (!user) {
-    return (
-      <div className="container mx-auto py-10 px-4">
-        <Alert variant="warning" className="mb-8">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Not logged in</AlertTitle>
-          <AlertDescription>
-            Please log in to view subscription options.
-          </AlertDescription>
-        </Alert>
-        <Button onClick={() => navigate('/login')}>Log In</Button>
-      </div>
-    );
-  }
+    getSubscription();
+  }, [isAuthenticated, user, fetchUserSubscription]);
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="container mx-auto py-10 px-4">
-        <p>Loading subscription data...</p>
-      </div>
-    );
-  }
-
-  if (subscription) {
-    return (
-      <div className="container mx-auto py-10 px-4">
-        <h1 className="text-3xl font-bold mb-6">Your Subscription</h1>
-        
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-xl font-semibold mb-4">{subscription.packageName}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <p><span className="font-medium">Status:</span> {subscription.status}</p>
-              <p><span className="font-medium">Start Date:</span> {new Date(subscription.startDate).toLocaleDateString()}</p>
-              <p><span className="font-medium">End Date:</span> {new Date(subscription.endDate).toLocaleDateString()}</p>
-            </div>
-            <div>
-              <p><span className="font-medium">Amount:</span> ₹{subscription.amount}</p>
-              {subscription.paymentType && (
-                <p><span className="font-medium">Payment Type:</span> {subscription.paymentType}</p>
-              )}
-              {subscription.billingCycle && (
-                <p><span className="font-medium">Billing Cycle:</span> {subscription.billingCycle}</p>
-              )}
-            </div>
-          </div>
-          
-          <div className="mt-6">
-            <Button>Manage Subscription</Button>
-          </div>
+      <Layout>
+        <div className="container mx-auto px-4 py-16 flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading subscription data...</span>
         </div>
-        
-        <h2 className="text-2xl font-bold mb-6">Upgrade Options</h2>
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="container mx-auto py-10 px-4">
-      <h1 className="text-3xl font-bold mb-6">Choose a Subscription</h1>
-      <SubscriptionPackages userRole={user.role as UserRole} />
-    </div>
+    <Layout>
+      <div className="container mx-auto px-4 py-12">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold mb-4">Subscription Plans</h1>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            Choose the plan that fits your needs and start growing your business
+            today.
+          </p>
+        </div>
+
+        {subscription && subscription.status === "active" ? (
+          <Card className="max-w-2xl mx-auto mb-12">
+            <CardHeader>
+              <CardTitle>You have an active subscription</CardTitle>
+              <CardDescription>
+                You already have an active subscription plan.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-4">
+                You are currently subscribed to the{" "}
+                <strong>{subscription.packageName}</strong> plan which is active
+                until{" "}
+                {new Date(subscription.endDate).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+                .
+              </p>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button variant="outline" onClick={() => window.history.back()}>
+                Go Back
+              </Button>
+              <Button onClick={() => window.location.href = "/subscription/details"}>
+                View Subscription Details
+              </Button>
+            </CardFooter>
+          </Card>
+        ) : (
+          <SubscriptionPackages userRole={user?.role || "User"} />
+        )}
+      </div>
+    </Layout>
   );
 };
 

@@ -19,9 +19,11 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   currentUser: null,
   isAuthenticated: false,
-  isLoading: true,
+  loading: true,
+  initialized: false,
   userRole: null,
   isAdmin: false,
+  
   login: async () => {},
   loginWithGoogle: async () => {},
   logout: async () => {},

@@ -35,7 +35,7 @@ export function isUserSubscription(subscription: any): subscription is UserSubsc
 // Extended User interface
 export interface User {
   uid: string;
-  id: string;
+  id: string; // Ensure id is always present and matches uid
   email: string | null;
   displayName: string | null;
   name: string | null;

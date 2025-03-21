@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { CheckCircle, X, CreditCard, ChevronRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
+import { ISubscriptionPackage } from '@/models/Subscription';
 import RazorpayPayment from './RazorpayPayment';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks';
@@ -24,7 +24,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   const [step, setStep] = useState<'details' | 'payment'>('details');
   const [isAgreed, setIsAgreed] = useState(false);
   const { toast } = useToast();
-  const { initiateSubscription, isProcessing } = useSubscription();
+  const { purchaseSubscription, isProcessing } = useSubscription();
   const navigate = useNavigate();
   
   // Handle successful payment
@@ -57,7 +57,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
       };
       
       // Record the subscription in the database
-      await initiateSubscription(selectedPackage.id, paymentDetails);
+      await purchaseSubscription(selectedPackage);
       
       // Show success toast
       toast({

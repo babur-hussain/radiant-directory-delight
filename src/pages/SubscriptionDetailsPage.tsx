@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks";
@@ -24,11 +25,13 @@ const SubscriptionDetailsPage = () => {
       if (isAuthenticated && user?.id) {
         try {
           const result = await fetchUserSubscription();
-          setSubscription(result.data);
-          
-          if (result.data?.packageId) {
-            const pkgDetails = getPackageById(result.data.packageId);
-            setPackageDetails(pkgDetails);
+          if (result && result.success && result.data) {
+            setSubscription(result.data);
+            
+            if (result.data?.packageId) {
+              const pkgDetails = getPackageById(result.data.packageId);
+              setPackageDetails(pkgDetails);
+            }
           }
         } catch (error) {
           console.error("Error fetching subscription:", error);
@@ -261,12 +264,16 @@ const SubscriptionDetailsPage = () => {
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
-                {packageDetails?.features.map((feature: string, index: number) => (
-                  <li key={index} className="flex items-start">
-                    <CheckCircle className="h-4 w-4 text-primary mr-2 mt-0.5" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
+                {packageDetails?.features && packageDetails.features.length > 0 ? (
+                  packageDetails.features.map((feature: string, index: number) => (
+                    <li key={index} className="flex items-start">
+                      <CheckCircle className="h-4 w-4 text-primary mr-2 mt-0.5" />
+                      <span>{feature}</span>
+                    </li>
+                  ))
+                ) : (
+                  <li>No features listed for this package</li>
+                )}
               </ul>
             </CardContent>
           </Card>

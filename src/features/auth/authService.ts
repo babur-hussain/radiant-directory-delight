@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@/types/auth';
+import { User, UserRole } from '@/types/auth';
 
 // Map from Supabase user to our User model
 export const mapUserFromSupabase = (user: any): User => {
@@ -102,4 +102,41 @@ export const getCurrentUser = async (): Promise<User | null> => {
     console.error('Error in getCurrentUser:', error);
     return null;
   }
+};
+
+export const mapUserData = (userData: any): User => {
+  return {
+    uid: userData.uid || userData.id,
+    id: userData.uid || userData.id, // Ensure id is set to match uid
+    email: userData.email,
+    displayName: userData.displayName,
+    name: userData.name,
+    role: userData.role,
+    isAdmin: userData.isAdmin,
+    photoURL: userData.photoURL,
+    createdAt: userData.createdAt || new Date().toISOString(),
+    lastLogin: userData.lastLogin || new Date().toISOString(),
+    employeeCode: userData.employeeCode,
+    phone: userData.phone,
+    instagramHandle: userData.instagramHandle,
+    facebookHandle: userData.facebookHandle,
+    verified: userData.verified,
+    city: userData.city,
+    country: userData.country,
+    fullName: userData.fullName,
+    niche: userData.niche,
+    followersCount: userData.followersCount,
+    bio: userData.bio,
+    businessName: userData.businessName,
+    ownerName: userData.ownerName,
+    businessCategory: userData.businessCategory,
+    website: userData.website,
+    address: userData.address,
+    gstNumber: userData.gstNumber,
+    subscription: userData.subscription,
+    subscriptionId: userData.subscriptionId,
+    subscriptionStatus: userData.subscriptionStatus,
+    subscriptionPackage: userData.subscriptionPackage,
+    customDashboardSections: userData.customDashboardSections,
+  };
 };
