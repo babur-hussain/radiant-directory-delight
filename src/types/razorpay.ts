@@ -26,6 +26,10 @@ export interface RazorpayOptions {
   };
   callback_url?: string;
   redirect?: boolean;
+  recurring_token?: {
+    max_amount: number;
+    expire_by: number;
+  };
   [key: string]: any;
 }
 

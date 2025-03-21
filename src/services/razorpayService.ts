@@ -302,6 +302,29 @@ export const buildRazorpayOptions = (
     options.prefill = cleanedPrefill;
   }
   
+  // For recurring payments, set up the autopay configuration
+  if (!isOneTime && enableAutoPay && packageData.paymentType === 'recurring') {
+    console.log("Setting up recurring payment with autopay");
+    
+    // Set the recurring flag to indicate this is a recurring payment
+    options.recurring = true;
+    
+    // Add autopay details
+    options.recurring_token = {
+      max_amount: result.totalAmount ? Math.round((result.totalAmount) * 100) : Math.round(packageData.price * 100 * 12),
+      expire_by: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 365), // 1 year from now in seconds
+    };
+    
+    // If we have specific autopay details from the result, use those
+    if (result.autopayDetails) {
+      // Calculate total remaining amount in paise
+      const totalRemainingAmount = result.autopayDetails.totalRemainingAmount || result.remainingAmount || 0;
+      if (totalRemainingAmount > 0) {
+        options.recurring_token.max_amount = Math.round(totalRemainingAmount * 100);
+      }
+    }
+  }
+  
   return options;
 };
 
