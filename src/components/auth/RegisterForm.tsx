@@ -307,7 +307,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           <>
             <div className="bg-purple-50 p-4 rounded-lg mb-6 border border-purple-100">
               <h3 className="font-semibold text-purple-700 flex items-center text-lg mb-2">
-                <Users className="h-5 w-5 mr-2" /> Influencer Information
+                <User className="h-5 w-5 mr-2" /> Influencer Information
               </h3>
               <p className="text-sm text-purple-600">
                 Please provide your information as an influencer to help businesses find and connect with you.
@@ -388,7 +388,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
                     <FormControl>
                       <div className="relative">
                         <Input placeholder="e.g. 10000" {...field} />
-                        <Users className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                        <User className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -456,7 +456,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           <>
             <div className="bg-emerald-50 p-4 rounded-lg mb-6 border border-emerald-100">
               <h3 className="font-semibold text-emerald-700 flex items-center text-lg mb-2">
-                <Building2 className="h-5 w-5 mr-2" /> Business Information
+                <Building className="h-5 w-5 mr-2" /> Business Information
               </h3>
               <p className="text-sm text-emerald-600">
                 Please provide your business information to help influencers understand your brand.
@@ -609,7 +609,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           <>
             <div className="bg-amber-50 p-4 rounded-lg mb-6 border border-amber-100">
               <h3 className="font-semibold text-amber-700 flex items-center text-lg mb-2">
-                <UserCheck className="h-5 w-5 mr-2" /> Staff Information
+                <BadgeCheck className="h-5 w-5 mr-2" /> Staff Information
               </h3>
               <p className="text-sm text-amber-600">
                 Please provide your information to register as a staff member.

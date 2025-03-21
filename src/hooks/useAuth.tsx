@@ -44,8 +44,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   uid: session.user.id,
                   id: session.user.id,
                   email: session.user.email || '',
+                  name: session.user.user_metadata?.name || null,
                   displayName: session.user.user_metadata?.name || '',
-                  role: session.user.user_metadata?.role || 'User',
+                  photoURL: null,
+                  isAdmin: session.user.user_metadata?.role === 'Admin',
+                  role: session.user.user_metadata?.role as UserRole || 'User',
                 };
             
             setUser(mappedUser);
@@ -89,8 +92,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               uid: session.user.id,
               id: session.user.id,
               email: session.user.email || '',
+              name: session.user.user_metadata?.name || null,
               displayName: session.user.user_metadata?.name || '',
-              role: session.user.user_metadata?.role || 'User',
+              photoURL: null,
+              isAdmin: session.user.user_metadata?.role === 'Admin',
+              role: session.user.user_metadata?.role as UserRole || 'User',
             };
         
         setUser(mappedUser);
@@ -205,11 +211,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Create a full user profile with all the additional data
       const userData: Partial<User> & { uid: string } = {
         uid: data.user.id,
+        id: data.user.id,
         email: data.user.email!,
         displayName,
         name: displayName,
         role,
         isAdmin: role === 'Admin',
+        photoURL: null,
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString(),
         // Merge all the additional data

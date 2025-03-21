@@ -6,7 +6,7 @@ export interface User {
   uid: string;
   email: string;
   displayName?: string;
-  name?: string;
+  name?: string | null;
   photoURL?: string | null;
   isAdmin?: boolean;
   role?: UserRole;
