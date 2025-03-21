@@ -1,8 +1,22 @@
-
 export type UserRole = "User" | "Business" | "Influencer" | "Staff" | "Admin";
 
 export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled' | 'pending' | 'paused' | 'expired' | 'trial';
 export type PaymentType = 'recurring' | 'one-time';
+
+export interface SessionData {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: string;
+  providerToken: string | null;
+  user: {
+    id: string;
+    email: string;
+    phone: string;
+    userMetadata: Record<string, any>;
+    appMetadata: Record<string, any>;
+    aud: string;
+  };
+}
 
 export interface User {
   uid: string;
@@ -103,7 +117,6 @@ export interface UserSubscription {
   billingCycle?: string;
 }
 
-// Utility function to check if a value is a UserSubscription
 export function isUserSubscription(value: any): value is UserSubscription {
   return (
     typeof value === 'object' &&
@@ -119,14 +132,10 @@ export interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
   initialized: boolean;
-  userRole: UserRole | null;
-  isAdmin: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string, employeeCode?: string) => Promise<void>;
+  login: (email: string, password: string, employeeCode?: string) => Promise<User | null>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
-  signup: (email: string, password: string, name: string, role: UserRole, additionalData?: any) => Promise<void>;
-  updateUserData: (data: Partial<User>) => Promise<void>;
-  updateUserRole: (user: User, role: UserRole) => Promise<User>;
-  updateUserPermission: (userId: string, isAdmin: boolean) => Promise<{userId: string, isAdmin: boolean}>;
+  signup: (email: string, password: string, name: string, role: UserRole, additionalData?: any) => Promise<User | null>;
+  refreshUserData: () => Promise<User | null>;
 }

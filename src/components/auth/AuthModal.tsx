@@ -12,6 +12,9 @@ import { LogIn, UserPlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import LoginForm from "./LoginForm";
+import RegisterTypeSelector from "./RegisterTypeSelector";
+import RegisterForm from "./RegisterForm";
 
 type AuthModalProps = {
   isOpen: boolean;
