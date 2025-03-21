@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole, isDefaultAdminEmail } from '@/types/auth';
 import { fetchUserByUid } from '@/lib/supabase/userUtils';
@@ -178,23 +177,12 @@ export const loginWithEmail = async (
     });
 
     if (error) {
-      if (error.message.includes('Email not confirmed') && isAdmin) {
-        // Special handling for default admin - try to auto-confirm
-        console.log("Email not confirmed for admin account");
-        toast({
-          title: "Admin login",
-          description: "Attempting special login for admin account",
-        });
-        
-        // You can add special handling here if needed
-        // For now, we'll just show a clearer error
-        throw new Error("Admin account needs email confirmation. Please check your inbox or Supabase dashboard.");
-      }
       console.error("Login error:", error);
       throw error;
     }
 
     if (!data.user) {
+      console.error("No user returned from login");
       throw new Error("No user returned from login");
     }
 
@@ -207,13 +195,16 @@ export const loginWithEmail = async (
       console.log("User auth exists but no profile found, creating default profile");
       
       // Create a basic profile in the users table
+      const userMetadata = data.user.user_metadata || {};
+      
+      // Create a basic profile in the users table
       const { error: insertError } = await supabase
         .from('users')
         .insert({
           id: data.user.id,
-          email: data.user.email,
-          name: data.user.user_metadata.name || '',
-          role: isAdmin ? 'Admin' : (data.user.user_metadata.role || 'User'),
+          email: data.user.email || '',
+          name: userMetadata.name || '',
+          role: isAdmin ? 'Admin' : (userMetadata.role || 'User'),
           is_admin: isAdmin,
           created_at: new Date().toISOString(),
           last_login: new Date().toISOString()
@@ -230,10 +221,10 @@ export const loginWithEmail = async (
         uid: data.user.id,
         id: data.user.id,
         email: data.user.email || '',
-        displayName: data.user.user_metadata.name || '',
-        name: data.user.user_metadata.name || '',
-        role: isAdmin ? 'Admin' : (data.user.user_metadata.role as UserRole) || 'User',
-        isAdmin: isAdmin || (data.user.user_metadata.is_admin === true),
+        displayName: userMetadata.name || '',
+        name: userMetadata.name || '',
+        role: isAdmin ? 'Admin' : (userMetadata.role as UserRole) || 'User',
+        isAdmin: isAdmin || (userMetadata.is_admin === true),
         photoURL: null,
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString(),
@@ -348,15 +339,18 @@ export const getCurrentUser = async () => {
     if (!userData) {
       console.log("User auth exists but no profile found in database");
       
+      const userMetadata = data.user.user_metadata || {};
+      const isAdmin = isDefaultAdminEmail(data.user.email || '');
+      
       // Try to create a profile in the database
       const { error: insertError } = await supabase
         .from('users')
         .insert({
           id: data.user.id,
-          email: data.user.email,
-          name: data.user.user_metadata?.name || '',
-          role: isDefaultAdminEmail(data.user.email || '') ? 'Admin' : (data.user.user_metadata?.role || 'User'),
-          is_admin: isDefaultAdminEmail(data.user.email || '') || (data.user.user_metadata?.is_admin === true),
+          email: data.user.email || '',
+          name: userMetadata.name || '',
+          role: isAdmin ? 'Admin' : (userMetadata.role || 'User'),
+          is_admin: isAdmin,
           created_at: new Date().toISOString(),
           last_login: new Date().toISOString()
         });
@@ -376,10 +370,10 @@ export const getCurrentUser = async () => {
           uid: data.user.id,
           id: data.user.id,
           email: data.user.email || '',
-          displayName: data.user.user_metadata?.name || '',
-          name: data.user.user_metadata?.name || '',
-          role: isDefaultAdminEmail(data.user.email || '') ? 'Admin' : (data.user.user_metadata?.role as UserRole) || 'User',
-          isAdmin: isDefaultAdminEmail(data.user.email || '') || (data.user.user_metadata?.is_admin === true),
+          displayName: userMetadata.name || '',
+          name: userMetadata.name || '',
+          role: isAdmin ? 'Admin' : (userMetadata.role as UserRole) || 'User',
+          isAdmin: isAdmin,
           photoURL: null,
           createdAt: new Date().toISOString(),
           lastLogin: new Date().toISOString(),

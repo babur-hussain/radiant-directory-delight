@@ -35,7 +35,7 @@ interface LoginFormProps {
   onClose: () => void;
 }
 
-// Known demo credentials - WARNING: Only for development!
+// Known demo credentials - correctly set for testing
 const DEMO_CREDENTIALS = {
   email: DEFAULT_ADMIN_EMAIL,
   password: "admin123" // Make sure this matches what's set in Supabase

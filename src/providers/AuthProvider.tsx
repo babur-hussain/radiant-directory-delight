@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const initializeAuth = async () => {
       try {
         // Set up auth state change listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        const { data: authListener } = supabase.auth.onAuthStateChange(
           async (event, _session) => {
             console.log("Auth state changed:", event, "Session:", _session ? "exists" : "null");
             
@@ -108,10 +108,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         // Get current session
         console.log("Checking for existing session...");
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        const { data } = await supabase.auth.getSession();
+        const currentSession = data.session;
         
         if (currentSession && isMounted) {
-          console.log("Existing session found for user:", currentSession.user.email);
+          console.log("Existing session found for user:", currentSession.user.id);
           setSession({
             accessToken: currentSession.access_token,
             refreshToken: currentSession.refresh_token,
@@ -161,7 +162,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         // Cleanup function
         return () => {
-          subscription.unsubscribe();
+          authListener.subscription.unsubscribe();
         };
       } catch (error) {
         console.error("Error initializing auth:", error);
@@ -184,6 +185,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       console.log("Attempting login for:", email);
+      
+      // Add basic validation
+      if (!email.trim()) throw new Error("Email is required");
+      if (!password.trim()) throw new Error("Password is required");
+      
       const userData = await loginWithEmail(email, password, employeeCode);
       console.log("Login successful, user data:", userData ? userData.email : "null");
       setUser(userData);
@@ -197,12 +203,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
       
+      // Create a more user-friendly message for common auth errors
+      let errorMessage = "Invalid credentials or account not found";
+      
+      if (error instanceof Error) {
+        if (error.message.includes("Invalid login credentials")) {
+          errorMessage = "Invalid email or password";
+        } else if (error.message.includes("Email not confirmed")) {
+          errorMessage = "Please verify your email before logging in";
+        } else if (error.message.includes("Rate limit")) {
+          errorMessage = "Too many login attempts. Please try again later";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "Invalid credentials",
+        description: errorMessage,
         variant: "destructive",
       });
-      throw error;
+      
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -218,6 +240,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   ): Promise<User | null> => {
     try {
       setLoading(true);
+      
+      // Add basic validation
+      if (!email.trim()) throw new Error("Email is required");
+      if (!password.trim()) throw new Error("Password is required");
+      if (!name.trim()) throw new Error("Name is required");
       
       // Check if this is the admin email
       const isDefaultAdmin = email.toLowerCase() === DEFAULT_ADMIN_EMAIL.toLowerCase();
@@ -242,12 +269,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return userData;
     } catch (error) {
       console.error("Signup error:", error);
+      
+      // Create a more user-friendly message for common auth errors
+      let errorMessage = "Failed to create account";
+      
+      if (error instanceof Error) {
+        if (error.message.includes("already registered")) {
+          errorMessage = "This email is already registered";
+        } else if (error.message.includes("Password should be")) {
+          errorMessage = error.message; // Use the password requirements error as is
+        } else if (error.message.includes("invalid email")) {
+          errorMessage = "Please enter a valid email address";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Signup failed",
-        description: error instanceof Error ? error.message : "Failed to create account",
+        description: errorMessage,
         variant: "destructive",
       });
-      throw error;
+      
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
