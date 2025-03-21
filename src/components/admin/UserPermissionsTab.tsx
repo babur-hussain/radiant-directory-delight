@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -53,14 +52,12 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
   const checkMongoConnection = async () => {
     try {
       const connected = await connectToMongoDB();
-      console.log("MongoDB connection test result:", connected);
       setMongoConnected(connected);
       
       if (!connected) {
         setLoadingError("Cannot connect to MongoDB. Please check your connection settings.");
       }
     } catch (error) {
-      console.error("Error checking MongoDB connection:", error);
       setMongoConnected(false);
       setLoadingError("Error checking MongoDB connection: " + (error instanceof Error ? error.message : String(error)));
     }
@@ -69,7 +66,6 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
   const createTestUsersIfEmpty = async () => {
     try {
       setIsLoading(true);
-      // Generate 5 users of each type instead of using ensureTestUsers
       await generateTestUsers(5, 'User');
       await generateTestUsers(5, 'Business');
       await generateTestUsers(5, 'Influencer');
@@ -98,9 +94,6 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
     setIsLoading(true);
     setLoadingError(null);
     try {
-      console.log("Starting to load users...");
-      
-      // First test MongoDB connection
       const connected = await connectToMongoDB();
       setMongoConnected(connected);
       
@@ -108,12 +101,10 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
         throw new Error("Cannot connect to MongoDB. Please check your connection settings.");
       }
       
-      console.log("Attempting to load users from MongoDB via getAllUsers()...");
-      const allUsers = await getAllUsers();
-      console.log(`UserPermissionsTab - Loaded ${allUsers.length} users from getAllUsers()`);
+      const result = await getAllUsers();
+      const allUsers = result.users;
       
       if (allUsers && allUsers.length > 0) {
-        // Sort by name, or email if name is not available
         const sortedUsers = [...allUsers].sort((a, b) => {
           const nameA = a.name || a.displayName || a.email || '';
           const nameB = b.name || b.displayName || b.email || '';
@@ -122,19 +113,12 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
         
         setUsers(sortedUsers);
       } else {
-        console.warn("No users returned from getAllUsers()");
         setLoadingError("No users found in database");
       }
     } catch (error) {
-      console.error("Error loading users (FULL ERROR):", error);
-      
-      // Extract detailed error message
       let errorMessage = "Unknown error";
       if (error instanceof Error) {
         errorMessage = `${error.name}: ${error.message}`;
-        if (error.stack) {
-          console.error("Error stack:", error.stack);
-        }
       } else {
         errorMessage = String(error);
       }
@@ -165,9 +149,7 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
       }
       
       const typedRole = newRole as UserRole;
-      console.log(`Updating role for user ${userId} to ${typedRole}`);
-      
-      // Update user role directly
+
       await updateUserRole({
         ...user,
         role: typedRole
@@ -180,13 +162,11 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
       setUsers(updatedUsers);
       
       try {
-        // Update in MongoDB instead of Firestore
         await axios.post('http://localhost:3001/api/users', {
           id: userId,
           role: typedRole,
           lastUpdated: new Date()
         });
-        console.log(`✅ User role updated in MongoDB: ${typedRole} for ${userId}`);
       } catch (mongoError) {
         console.error("❌ MongoDB update failed:", mongoError);
       }
@@ -200,7 +180,6 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
         onRefresh();
       }
     } catch (error) {
-      console.error("Error updating role:", error);
       toast({
         title: "Update Failed",
         description: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -218,7 +197,6 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
   const handleAdminToggle = async (userId: string, isAdmin: boolean) => {
     try {
       setUpdatingUserId(userId);
-      console.log(`Updating admin status for user ${userId} to ${isAdmin}`);
       
       await updateUserPermission(userId, isAdmin);
       
@@ -229,13 +207,11 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
       setUsers(updatedUsers);
       
       try {
-        // Update in MongoDB instead of Firestore
         await axios.post('http://localhost:3001/api/users', {
           id: userId,
           isAdmin: isAdmin,
           lastUpdated: new Date()
         });
-        console.log(`✅ Admin status updated in MongoDB: ${isAdmin} for ${userId}`);
       } catch (mongoError) {
         console.error("❌ MongoDB update failed:", mongoError);
       }
@@ -249,7 +225,6 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
         onRefresh();
       }
     } catch (error) {
-      console.error("Error updating admin status:", error);
       toast({
         title: "Update Failed",
         description: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -267,7 +242,7 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
   const handleSubscriptionAssigned = async (userId: string, packageId: string) => {
     try {
       setUpdatingUserId(userId);
-      await loadUsers(); // Refresh users to get latest data
+      await loadUsers(); 
       
       toast({
         title: "Subscription Assigned",
@@ -275,14 +250,12 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
       });
       
       try {
-        // Update in MongoDB instead of Firestore
         await axios.post('http://localhost:3001/api/users', {
           id: userId,
           subscriptionPackage: packageId,
           subscriptionAssignedAt: new Date(),
           lastUpdated: new Date()
         });
-        console.log(`✅ Subscription assigned in MongoDB: ${packageId} to ${userId}`);
       } catch (mongoError) {
         console.error("❌ Failed to assign subscription in MongoDB:", mongoError);
       }
@@ -291,7 +264,6 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
         onRefresh();
       }
     } catch (error) {
-      console.error("Error handling subscription assignment:", error);
       toast({
         title: "Update Failed",
         description: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,

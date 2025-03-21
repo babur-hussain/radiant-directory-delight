@@ -33,7 +33,8 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
     setIsLoading(true);
     try {
       // Get all users directly from Firebase
-      const firebaseUsers = await getAllUsers();
+      const result = await getAllUsers();
+      const firebaseUsers = result.users;
       console.log("Fetched users for subscription mapping:", firebaseUsers.length);
       
       // Log each user to verify they're all available
