@@ -2,10 +2,10 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ISubscription } from '@/models/Subscription';
+import { Subscription } from '@/models/Subscription';
 
 interface RecentSubscriptionsCardProps {
-  subscriptions?: ISubscription[];
+  subscriptions?: Subscription[];
   isLoading?: boolean;
 }
 

@@ -4,10 +4,10 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
-import { ISubscription, SubscriptionStatus, PaymentType, BillingCycle } from '@/models/Subscription';
-import { ISubscriptionPackage } from '@/models/Subscription';
+import { Subscription, SubscriptionStatus, PaymentType, BillingCycle } from '@/models/Subscription';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 
-const getActiveUserSubscription = async (userId: string): Promise<ISubscription | null> => {
+const getActiveUserSubscription = async (userId: string): Promise<Subscription | null> => {
   if (!userId) return null;
   
   const { data, error } = await supabase
@@ -50,7 +50,7 @@ const getActiveUserSubscription = async (userId: string): Promise<ISubscription 
   };
 };
 
-const getUserSubscriptions = async (userId: string): Promise<ISubscription[]> => {
+const getUserSubscriptions = async (userId: string): Promise<Subscription[]> => {
   if (!userId) return [];
   
   const { data, error } = await supabase
@@ -90,7 +90,7 @@ const getUserSubscriptions = async (userId: string): Promise<ISubscription[]> =>
   }));
 };
 
-const createSubscription = async (subscriptionData: ISubscription): Promise<ISubscription> => {
+const createSubscription = async (subscriptionData: Subscription): Promise<Subscription> => {
   const dbData = {
     id: subscriptionData.id,
     user_id: subscriptionData.userId,
@@ -129,7 +129,7 @@ const createSubscription = async (subscriptionData: ISubscription): Promise<ISub
   return subscriptionData;
 };
 
-const updateSubscription = async (id: string, updates: Partial<ISubscription>): Promise<ISubscription> => {
+const updateSubscription = async (id: string, updates: Partial<Subscription>): Promise<Subscription> => {
   const dbData: any = {};
   
   if (updates.status) dbData.status = updates.status;
@@ -158,10 +158,10 @@ const updateSubscription = async (id: string, updates: Partial<ISubscription>): 
   
   if (error) throw error;
   
-  return { id, ...updates } as ISubscription;
+  return { id, ...updates } as Subscription;
 };
 
-const cancelSubscription = async (id: string, reason?: string): Promise<ISubscription> => {
+const cancelSubscription = async (id: string, reason?: string): Promise<Subscription> => {
   const cancelData = {
     status: 'cancelled' as SubscriptionStatus,
     cancelled_at: new Date().toISOString(),
@@ -183,7 +183,7 @@ const cancelSubscription = async (id: string, reason?: string): Promise<ISubscri
     status: 'cancelled',
     cancelledAt: new Date().toISOString(),
     cancelReason: reason || ''
-  } as ISubscription;
+  } as Subscription;
 };
 
 export const useSubscription = () => {
@@ -269,7 +269,7 @@ export const useSubscription = () => {
       const endDate = new Date();
       endDate.setMonth(endDate.getMonth() + durationMonths);
 
-      const newSubscription: ISubscription = {
+      const newSubscription: Subscription = {
         id: subscriptionId,
         userId: user.id,
         packageId: packageId,

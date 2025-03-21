@@ -1,10 +1,9 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
-import { ISubscription, PaymentType, BillingCycle } from '@/models/Subscription';
+import { Subscription, PaymentType, BillingCycle } from '@/models/Subscription';
 
 // Convert from Supabase to app model
-const fromSupabase = (data: any): ISubscription => {
+const fromSupabase = (data: any): Subscription => {
   return {
     id: data.id,
     userId: data.user_id,
@@ -29,16 +28,16 @@ const fromSupabase = (data: any): ISubscription => {
 };
 
 // Convert from app model to Supabase
-const toSupabase = (data: Partial<ISubscription>): any => {
+const toSupabase = (data: Partial<Subscription>): any => {
   return {
     id: data.id,
     user_id: data.userId,
     package_id: data.packageId,
-    package_name: data.packageName,
-    amount: data.amount,
-    start_date: data.startDate,
-    end_date: data.endDate,
-    status: data.status,
+    package_name: data.packageName || '',
+    amount: data.amount || 0,
+    start_date: data.startDate || new Date().toISOString(),
+    end_date: data.endDate || new Date().toISOString(),
+    status: data.status || 'active',
     payment_method: data.paymentMethod,
     transaction_id: data.transactionId,
     cancelled_at: data.cancelledAt,
@@ -52,7 +51,7 @@ const toSupabase = (data: Partial<ISubscription>): any => {
 };
 
 // Create subscription
-export const createSubscription = async (subscription: Partial<ISubscription>): Promise<ISubscription> => {
+export const createSubscription = async (subscription: Partial<Subscription>): Promise<Subscription> => {
   try {
     // Check for required fields
     if (!subscription.userId || !subscription.packageId) {
@@ -104,7 +103,7 @@ export const createSubscription = async (subscription: Partial<ISubscription>): 
 };
 
 // Get subscription by ID
-export const getSubscription = async (id: string): Promise<ISubscription | null> => {
+export const getSubscription = async (id: string): Promise<Subscription | null> => {
   try {
     const { data, error } = await supabase
       .from('user_subscriptions')
@@ -122,7 +121,7 @@ export const getSubscription = async (id: string): Promise<ISubscription | null>
 };
 
 // Get all subscriptions
-export const getSubscriptions = async (): Promise<ISubscription[]> => {
+export const getSubscriptions = async (): Promise<Subscription[]> => {
   try {
     const { data, error } = await supabase
       .from('user_subscriptions')
@@ -138,7 +137,7 @@ export const getSubscriptions = async (): Promise<ISubscription[]> => {
 };
 
 // Update subscription
-export const updateSubscription = async (id: string, subscription: Partial<ISubscription>): Promise<ISubscription | null> => {
+export const updateSubscription = async (id: string, subscription: Partial<Subscription>): Promise<Subscription | null> => {
   try {
     const subscriptionData = {
       ...toSupabase(subscription),
@@ -178,7 +177,7 @@ export const deleteSubscription = async (id: string): Promise<boolean> => {
 };
 
 // Get subscriptions by user ID
-export const getUserSubscriptions = async (userId: string): Promise<ISubscription[]> => {
+export const getUserSubscriptions = async (userId: string): Promise<Subscription[]> => {
   try {
     const { data, error } = await supabase
       .from('user_subscriptions')
@@ -196,7 +195,7 @@ export const getUserSubscriptions = async (userId: string): Promise<ISubscriptio
 };
 
 // Get active user subscription
-export const getActiveUserSubscription = async (userId: string): Promise<ISubscription | null> => {
+export const getActiveUserSubscription = async (userId: string): Promise<Subscription | null> => {
   try {
     const { data, error } = await supabase
       .from('user_subscriptions')
@@ -217,7 +216,7 @@ export const getActiveUserSubscription = async (userId: string): Promise<ISubscr
 };
 
 // Cancel subscription
-export const cancelSubscription = async (id: string, reason?: string): Promise<ISubscription | null> => {
+export const cancelSubscription = async (id: string, reason?: string): Promise<Subscription | null> => {
   try {
     const { data, error } = await supabase
       .from('user_subscriptions')

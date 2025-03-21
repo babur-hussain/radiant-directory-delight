@@ -9,7 +9,8 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import checkSupabaseConnection from "@/utils/setupSupabase";
-import { ISubscription, ISubscriptionPackage, SubscriptionStatus, PaymentType, BillingCycle } from "@/models/Subscription";
+import { Subscription, SubscriptionStatus, PaymentType, BillingCycle } from "@/models/Subscription";
+import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
 
 import SubscriptionPackagesTable from "@/components/admin/subscription/SubscriptionPackagesTable";
 import SubscriptionSettingsPanel from "@/components/admin/subscription/SubscriptionSettingsPanel";

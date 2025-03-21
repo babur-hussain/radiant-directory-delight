@@ -1,7 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import { getSubscriptionPackages } from '@/lib/supabase/subscriptionUtils';
+import { getSubscriptionPackages, createOrUpdatePackage, deletePackage } from '@/lib/supabase/subscriptionUtils';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useSubscriptionPackages = () => {
@@ -38,7 +38,7 @@ export const useSubscriptionPackages = () => {
             fullDescription: pkg.full_description || '',
             features: pkg.features || [],
             popular: pkg.popular || false,
-            type: pkg.type || 'Business',
+            type: (pkg.type as 'Business' | 'Influencer') || 'Business',
             termsAndConditions: pkg.terms_and_conditions,
             paymentType: pkg.payment_type || 'recurring',
             billingCycle: pkg.billing_cycle,
@@ -62,12 +62,29 @@ export const useSubscriptionPackages = () => {
       }
     }
   });
+  
+  // Add methods for SubscriptionManagement component
+  const createOrUpdate = async (packageData: ISubscriptionPackage) => {
+    const result = await createOrUpdatePackage(packageData);
+    await refetch();
+    return result;
+  };
+  
+  const remove = async (packageId: string) => {
+    const result = await deletePackage(packageId);
+    await refetch();
+    return result;
+  };
 
   return {
-    packages,
+    packages: packages || [],
     isLoading,
     isError,
     error,
-    refetch
+    refetch,
+    createOrUpdate,
+    remove
   };
 };
+
+export type { ISubscriptionPackage } from '@/models/SubscriptionPackage';

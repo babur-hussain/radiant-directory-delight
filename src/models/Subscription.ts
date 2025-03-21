@@ -24,7 +24,20 @@ export interface Subscription {
   isUserCancellable?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  billingCycle?: BillingCycle;
+  signupFee?: number;
+  recurring?: boolean;
+  razorpaySubscriptionId?: string;
+  razorpayOrderId?: string;
+  recurringAmount?: number;
+  nextBillingDate?: string;
+  actualStartDate?: string;
+  dashboardFeatures?: string[];
+  dashboardSections?: string[];
 }
+
+// For backward compatibility - use this type alias instead of renaming all instances
+export type ISubscription = Subscription;
 
 export type SubscriptionStatus = 
   | 'active'
@@ -75,3 +88,6 @@ export interface SubscriptionAdminUpdateParams extends SubscriptionUpdateParams 
   isPausable?: boolean;
   isUserCancellable?: boolean;
 }
+
+// Export ISubscriptionPackage for backward compatibility
+export type { ISubscriptionPackage } from './SubscriptionPackage';

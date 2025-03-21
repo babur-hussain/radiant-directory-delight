@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { CheckCircle, X, CreditCard, ChevronRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { ISubscriptionPackage } from '@/models/Subscription';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import RazorpayPayment from './RazorpayPayment';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks';
