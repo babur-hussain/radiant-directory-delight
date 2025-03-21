@@ -165,6 +165,16 @@ function generateValidSubscriptionId(): string {
   return `sub_${randomPart}`;
 }
 
+// Generate a valid Razorpay order ID that follows their format
+function generateValidOrderId(): string {
+  // Razorpay order IDs start with 'order_' followed by 16 alphanumeric characters
+  const randomPart = Array.from({ length: 16 }, () => 
+    "0123456789abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 36)]
+  ).join('');
+  
+  return `order_${randomPart}`;
+}
+
 // Handle creating a new subscription
 async function handleCreateSubscription(req: Request, user: any) {
   try {
@@ -207,8 +217,8 @@ async function handleCreateSubscription(req: Request, user: any) {
     // Generate a receipt ID
     const receiptId = `receipt_${Date.now()}`;
     
-    // Create a unique order ID 
-    const orderId = `order_${Date.now()}${Math.floor(Math.random() * 10000)}`;
+    // Create a unique order ID with proper Razorpay format 
+    const orderId = generateValidOrderId();
     
     // Create order object (this would be returned from Razorpay's API in a real implementation)
     const order = {
@@ -294,6 +304,7 @@ async function handleCreateSubscription(req: Request, user: any) {
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+        
       }
     );
   }
