@@ -105,13 +105,21 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
         return;
       }
       
+      // Log for debugging
+      console.log("Saving package with sections:", currentPackageSections);
+      
       // Update package with new sections
       const updatedPackage: ISubscriptionPackage = {
         ...pkg,
         dashboardSections: currentPackageSections
       };
       
-      await savePackage(updatedPackage);
+      // Log the updatedPackage to see what we're sending
+      console.log("Updating package:", JSON.stringify(updatedPackage, null, 2));
+      
+      const savedPackage = await savePackage(updatedPackage);
+      
+      console.log("Save result:", savedPackage);
       
       toast({
         title: "Success",
@@ -123,10 +131,11 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
       await refetch();
     } catch (error) {
       console.error("Error saving package sections:", error);
-      setPermissionError(error instanceof Error ? error.message : "Unknown error saving package sections");
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setPermissionError(errorMessage);
       toast({
         title: "Error",
-        description: `Failed to save package sections: ${error instanceof Error ? error.message : String(error)}`,
+        description: `Failed to save package sections: ${errorMessage}`,
         variant: "destructive"
       });
     } finally {

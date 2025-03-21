@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
@@ -101,6 +102,11 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
     packageData.features = [];
   }
 
+  // Ensure dashboardSections is an array
+  if (!Array.isArray(packageData.dashboardSections)) {
+    packageData.dashboardSections = [];
+  }
+
   // Prepare the data for Supabase (snake_case)
   const supabaseData = {
     id: packageData.id,
@@ -123,6 +129,8 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
     max_influencers: packageData.maxInfluencers
   };
   
+  console.log("Supabase data to save:", JSON.stringify(supabaseData, null, 2));
+  
   try {
     const { data, error } = await supabase
       .from('subscription_packages')
@@ -131,17 +139,23 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
     
     if (error) {
       console.error('Error saving subscription package:', error);
-      throw error;
+      throw new Error(`Failed to save package: ${error.message}`);
     }
     
     if (!data || data.length === 0) {
       throw new Error('No data returned after saving package');
     }
     
-    return mapToPackage(data[0]);
+    const savedPackage = mapToPackage(data[0]);
+    console.log("Package saved successfully:", savedPackage);
+    return savedPackage;
   } catch (error) {
     console.error('Error in savePackage:', error);
-    throw error;
+    if (error instanceof Error) {
+      throw new Error(`Error saving package: ${error.message}`);
+    } else {
+      throw new Error('Unknown error saving package');
+    }
   }
 };
 

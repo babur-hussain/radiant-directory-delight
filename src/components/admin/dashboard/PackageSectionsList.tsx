@@ -6,12 +6,12 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, Save, Info, AlertCircle } from "lucide-react";
+import { RefreshCw, Save, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { SubscriptionPackage, convertToSubscriptionPackage } from "@/data/subscriptionData";
+import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
 
 interface PackageSectionsListProps {
-  packages: any[];
+  packages: ISubscriptionPackage[];
   selectedPackage: string;
   setSelectedPackage: (packageId: string) => void;
   packageSections: string[];
@@ -31,9 +31,6 @@ const PackageSectionsList: React.FC<PackageSectionsListProps> = ({
   savePackageSections,
   refreshData,
 }) => {
-  // Convert packages to ensure type compatibility
-  const convertedPackages = packages.map(pkg => convertToSubscriptionPackage(pkg));
-
   return (
     <>
       <div className="flex items-center justify-between mb-4">
@@ -51,7 +48,7 @@ const PackageSectionsList: React.FC<PackageSectionsListProps> = ({
         </Button>
       </div>
       
-      {convertedPackages.length === 0 ? (
+      {packages.length === 0 ? (
         <Alert className="my-4">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>No packages available</AlertTitle>
@@ -67,7 +64,7 @@ const PackageSectionsList: React.FC<PackageSectionsListProps> = ({
               <SelectValue placeholder="Select a package" />
             </SelectTrigger>
             <SelectContent>
-              {convertedPackages.map((pkg) => (
+              {packages.map((pkg) => (
                 <SelectItem key={pkg.id} value={pkg.id}>
                   {pkg.title} ({pkg.type})
                 </SelectItem>
@@ -84,7 +81,7 @@ const PackageSectionsList: React.FC<PackageSectionsListProps> = ({
                   {availableSections.map((section) => (
                     <div key={section} className="flex items-center justify-between space-x-2 p-3 border rounded hover:bg-slate-50 transition-colors">
                       <Label htmlFor={`package-${section}`} className="flex-1 cursor-pointer">
-                        {section.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        {section.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </Label>
                       <Switch
                         id={`package-${section}`}
