@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import checkSupabaseConnection from "@/utils/setupSupabase";
 import { Subscription, SubscriptionStatus, PaymentType, BillingCycle } from "@/models/Subscription";
 import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
+import Loading from "@/components/ui/loading";
 
 import SubscriptionPackagesTable from "@/components/admin/subscription/SubscriptionPackagesTable";
 import SubscriptionSettingsPanel from "@/components/admin/subscription/SubscriptionSettingsPanel";
@@ -22,6 +23,7 @@ const AdminSubscriptionsPage = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("packages");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [dbConnected, setDbConnected] = useState(false);
@@ -65,7 +67,7 @@ const AdminSubscriptionsPage = () => {
       popular: pkg.popular || false,
       setupFee: pkg.setup_fee || 0,
       type: (pkg.type as 'Business' | 'Influencer') || 'Business',
-      paymentType: (pkg.payment_type as PaymentType) || 'recurring',
+      paymentType: pkg.payment_type as PaymentType || 'recurring',
       billingCycle: pkg.billing_cycle as BillingCycle,
       dashboardSections: pkg.dashboard_sections || [],
       termsAndConditions: pkg.terms_and_conditions,
@@ -126,6 +128,11 @@ const AdminSubscriptionsPage = () => {
     } catch (error) {
       console.error('Error fetching subscription data:', error);
       setConnectionError(error instanceof Error ? error.message : String(error));
+      toast({
+        title: "Error",
+        description: `Failed to fetch subscription data: ${error instanceof Error ? error.message : String(error)}`,
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -139,7 +146,7 @@ const AdminSubscriptionsPage = () => {
   
   const handleCreatePackage = async (data: ISubscriptionPackage) => {
     try {
-      setIsLoading(true);
+      setIsSaving(true);
       
       // Transform the ISubscriptionPackage data to match Supabase schema (snake_case)
       const supabaseData = {
@@ -166,10 +173,12 @@ const AdminSubscriptionsPage = () => {
       
       console.log('Saving package data to Supabase:', supabaseData);
       
-      const { data: savedData, error } = await supabase
+      const { data: savedData, error, status } = await supabase
         .from('subscription_packages')
-        .upsert(supabaseData)
+        .upsert([supabaseData]) // Ensure we're passing an array here
         .select();
+      
+      console.log('Supabase response:', { data: savedData, error, status });
       
       if (error) {
         console.error('Error creating package:', error);
@@ -179,6 +188,10 @@ const AdminSubscriptionsPage = () => {
           variant: "destructive"
         });
         throw error;
+      }
+      
+      if (!savedData || savedData.length === 0) {
+        throw new Error('No data returned from Supabase after save');
       }
       
       toast({
@@ -195,8 +208,13 @@ const AdminSubscriptionsPage = () => {
     } catch (error) {
       console.error('Error creating package:', error);
       setConnectionError(error instanceof Error ? error.message : String(error));
+      toast({
+        title: "Error",
+        description: `Failed to save package: ${error instanceof Error ? error.message : String(error)}`,
+        variant: "destructive"
+      });
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
   
@@ -305,11 +323,15 @@ const AdminSubscriptionsPage = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <SubscriptionPackagesTable 
-                    packages={packages}
-                    onEdit={handleEditPackage}
-                    onDelete={handleDeletePackage}
-                  />
+                  {isLoading ? (
+                    <Loading message="Loading subscription packages..." className="py-10" />
+                  ) : (
+                    <SubscriptionPackagesTable 
+                      packages={packages}
+                      onEdit={handleEditPackage}
+                      onDelete={handleDeletePackage}
+                    />
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -331,6 +353,7 @@ const AdminSubscriptionsPage = () => {
           handleSave={handleCreatePackage}
           handleCancelEdit={handleCancelEdit}
           initialData={emptyPackage}
+          isSaving={isSaving}
         />
       </div>
     </DashboardLayout>

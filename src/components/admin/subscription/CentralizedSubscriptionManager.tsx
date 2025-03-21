@@ -12,6 +12,7 @@ interface CentralizedSubscriptionManagerProps {
   handleSave: (packageData: ISubscriptionPackage) => Promise<void>;
   handleCancelEdit: () => void;
   initialData: ISubscriptionPackage;
+  isSaving?: boolean;
 }
 
 const CentralizedSubscriptionManager: React.FC<CentralizedSubscriptionManagerProps> = ({
@@ -22,10 +23,10 @@ const CentralizedSubscriptionManager: React.FC<CentralizedSubscriptionManagerPro
   handleSave,
   handleCancelEdit,
   initialData,
+  isSaving = false,
 }) => {
   const onSubmit = async (packageData: ISubscriptionPackage) => {
     await handleSave(packageData);
-    setIsDialogOpen(false);
   };
 
   const onCancel = () => {
@@ -46,6 +47,7 @@ const CentralizedSubscriptionManager: React.FC<CentralizedSubscriptionManagerPro
             package={selectedPackage || initialData}
             onSave={onSubmit}
             onCancel={onCancel}
+            isSaving={isSaving}
           />
         )}
       </DialogContent>

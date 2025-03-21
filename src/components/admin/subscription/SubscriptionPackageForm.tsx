@@ -25,7 +25,9 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
+import { Loader2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 // Form validation schema
@@ -36,7 +38,7 @@ const packageSchema = z.object({
   monthlyPrice: z.number().optional(),
   shortDescription: z.string().optional(),
   fullDescription: z.string().optional(),
-  features: z.string().optional(),
+  features: z.string().or(z.array(z.string())).optional(),
   setupFee: z.number().optional(),
   durationMonths: z.number().optional(),
   advancePaymentMonths: z.number().optional(),
@@ -55,12 +57,14 @@ interface SubscriptionPackageFormProps {
   package: ISubscriptionPackage;
   onSave: (pkg: ISubscriptionPackage) => Promise<void>;
   onCancel: () => void;
+  isSaving?: boolean;
 }
 
 const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   package: initialPackage,
   onSave,
-  onCancel
+  onCancel,
+  isSaving = false
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [featuresArray, setFeaturesArray] = useState<string[]>([]);
@@ -106,7 +110,7 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   
   // Initialize features array from initial package
   useEffect(() => {
-    if (initialPackage.features) {
+    if (initialPackage.features && Array.isArray(initialPackage.features)) {
       setFeaturesArray(initialPackage.features);
     }
   }, [initialPackage.features]);
@@ -153,11 +157,21 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
         featuresData = data.features.split('\n').filter(f => f.trim().length > 0);
       } else if (featuresArray.length > 0) {
         featuresData = featuresArray;
+      } else if (Array.isArray(data.features)) {
+        featuresData = data.features;
+      }
+      
+      // Ensure we have a valid ID
+      const packageId = data.id || uuidv4().substring(0, 8);
+      
+      // Ensure we have required title
+      if (!data.title) {
+        throw new Error("Package title is required");
       }
       
       // Prepare package data
       const packageData: ISubscriptionPackage = {
-        id: data.id || uuidv4().substring(0, 8),
+        id: packageId,
         title: data.title,
         price: data.price,
         monthlyPrice: data.monthlyPrice || 0,
@@ -606,11 +620,12 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
         </div>
         
         <div className="flex justify-end space-x-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving || isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : 'Save Package'}
+          <Button type="submit" disabled={isSaving || isSubmitting}>
+            {(isSaving || isSubmitting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {(isSaving || isSubmitting) ? 'Saving...' : 'Save Package'}
           </Button>
         </div>
       </form>
