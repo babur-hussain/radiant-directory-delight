@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +10,7 @@ import { Loader2, Search, UserCheck, CheckCircle, XCircle, RefreshCw } from "luc
 import { useToast } from "@/hooks/use-toast";
 import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { SubscriptionPackage } from "@/data/subscriptionData";
-import { User, UserSubscription } from "@/types/auth";
+import { User, UserSubscription, SubscriptionStatus } from "@/types/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { getAllUsers } from "@/features/auth/userDataAccess";
 

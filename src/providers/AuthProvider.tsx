@@ -29,8 +29,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.error('Error fetching user profile:', error);
       }
 
-      // Create a properly structured address object
-      const address = profile?.address || {
+      // Create a properly structured address object from the profile data
+      const address = {
         street: null,
         city: profile?.city || null,
         state: null,
