@@ -45,6 +45,7 @@ export const useRazorpay = () => {
       const isOneTime = packageData.paymentType === 'one-time' || useOneTimePreferred;
       console.log(`Processing payment as ${isOneTime ? 'one-time' : 'subscription'} payment`);
       
+      // Prepare customer data - ensure no empty values
       const customerData = {
         name: user.fullName || user.email?.split('@')[0] || 'Customer',
         email: user.email || '',

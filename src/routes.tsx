@@ -250,6 +250,18 @@ const AppRoutes = () => {
         } 
       />
       
+      <Route 
+        path="/dashboard" 
+        element={
+          <ProtectedRoute>
+            <Navigate 
+              to="/dashboard/business" 
+              replace 
+            />
+          </ProtectedRoute>
+        } 
+      />
+      
       {/* Catch all for 404 */}
       <Route 
         path="*" 

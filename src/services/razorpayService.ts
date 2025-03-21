@@ -38,6 +38,22 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
         delete safeOptions.prefill[key];
       }
     });
+    
+    // If prefill is empty after cleaning, remove it
+    if (Object.keys(safeOptions.prefill).length === 0) {
+      delete safeOptions.prefill;
+    }
+  }
+  
+  // If notes object exists, ensure all values are strings
+  if (safeOptions.notes) {
+    Object.keys(safeOptions.notes).forEach(key => {
+      if (safeOptions.notes[key] !== undefined && safeOptions.notes[key] !== null) {
+        safeOptions.notes[key] = String(safeOptions.notes[key]);
+      } else {
+        delete safeOptions.notes[key];
+      }
+    });
   }
   
   return new (window as any).Razorpay(safeOptions);
@@ -129,18 +145,11 @@ export const buildRazorpayOptions = (
   console.log("Building Razorpay options with result:", result);
   
   // Ensure we have properly formatted customer data with no empty values
-  const cleanedPrefill = {
-    name: customerData.name || '',
-    email: customerData.email || '',
-    contact: customerData.phone || ''
-  };
+  const cleanedPrefill: Record<string, string> = {};
   
-  // Remove empty values
-  Object.keys(cleanedPrefill).forEach(key => {
-    if (!cleanedPrefill[key]) {
-      delete cleanedPrefill[key];
-    }
-  });
+  if (customerData.name) cleanedPrefill.name = customerData.name;
+  if (customerData.email) cleanedPrefill.email = customerData.email;
+  if (customerData.phone) cleanedPrefill.contact = customerData.phone;
   
   // Base options for Razorpay
   const options: RazorpayOptions = {
@@ -148,7 +157,6 @@ export const buildRazorpayOptions = (
     name: 'Grow Bharat Vyapaar',
     description: `Payment for ${packageData.title}`,
     image: 'https://your-company-logo.png', // Replace with your logo
-    prefill: Object.keys(cleanedPrefill).length > 0 ? cleanedPrefill : undefined,
     notes: {
       packageId: packageData.id,
       userId: user.id
@@ -174,6 +182,11 @@ export const buildRazorpayOptions = (
       backdropclose: false
     }
   };
+  
+  // Only add prefill if we have values
+  if (Object.keys(cleanedPrefill).length > 0) {
+    options.prefill = cleanedPrefill;
+  }
   
   // Important: Only set either order_id OR subscription_id, never both
   if (result.isSubscription && result.subscription && result.subscription.id && !isOneTime) {
