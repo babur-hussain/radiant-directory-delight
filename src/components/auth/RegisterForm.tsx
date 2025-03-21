@@ -83,6 +83,7 @@ const businessSchema = z.object({
   country: z.string().min(2, "Country is required"),
   zipCode: z.string().optional(),
   gstin: z.string().optional(),
+  ownerName: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -92,7 +93,7 @@ const staffSchema = z.object({
   ...baseSchema,
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
   staffRole: z.string().min(2, "Staff role is required"),
-  assignedBusinessId: z.string().min(2, "Assigned business is required"),
+  assignedBusinessId: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -235,6 +236,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           country: "",
           zipCode: "",
           gstin: "",
+          ownerName: "",
         };
       case "Staff":
         return {
@@ -284,6 +286,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           country: influencerData.country,
           createdAt: new Date().toISOString(),
           verified: false,
+          
+          // Split name into firstName and lastName
+          firstName: influencerData.fullName.split(' ')[0],
+          lastName: influencerData.fullName.includes(' ') ? 
+            influencerData.fullName.split(' ').slice(1).join(' ') : '',
+          // Username can be derived from email or name
+          username: influencerData.email.split('@')[0] || influencerData.fullName.replace(/\s+/g, '_').toLowerCase()
         };
       } else if (userType === "Business") {
         const businessData = data as z.infer<typeof businessSchema>;
@@ -299,6 +308,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           city: businessData.city,
           country: businessData.country,
           gstNumber: businessData.gstin || null,
+          ownerName: businessData.ownerName || null,
           address: {
             street: businessData.street || null,
             city: businessData.city,
@@ -308,6 +318,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           },
           createdAt: new Date().toISOString(),
           verified: false,
+          
+          // Set owner name as the display name parts if available
+          firstName: businessData.ownerName ? businessData.ownerName.split(' ')[0] : null,
+          lastName: businessData.ownerName && businessData.ownerName.includes(' ') ? 
+            businessData.ownerName.split(' ').slice(1).join(' ') : null,
+          // Username can be derived from business name
+          username: businessData.businessName.replace(/\s+/g, '_').toLowerCase() || 
+            businessData.email.split('@')[0]
         };
       } else if (userType === "Staff") {
         const staffData = data as z.infer<typeof staffSchema>;
@@ -317,8 +335,16 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           ...additionalData,
           name: staffData.fullName,
           staffRole: staffData.staffRole,
-          assignedBusinessId: staffData.assignedBusinessId,
+          assignedBusinessId: staffData.assignedBusinessId || null,
           createdAt: new Date().toISOString(),
+          
+          // Split name into firstName and lastName
+          firstName: staffData.fullName.split(' ')[0],
+          lastName: staffData.fullName.includes(' ') ? 
+            staffData.fullName.split(' ').slice(1).join(' ') : '',
+          // Username can be derived from email or name
+          username: staffData.email.split('@')[0] || 
+            staffData.fullName.replace(/\s+/g, '_').toLowerCase()
         };
       } else {
         const userData = data as z.infer<typeof userSchema>;
@@ -331,8 +357,23 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           location: userData.location || null,
           preferredLanguage: userData.preferredLanguage || null,
           createdAt: new Date().toISOString(),
+          
+          // Split name into firstName and lastName
+          firstName: userData.fullName.split(' ')[0],
+          lastName: userData.fullName.includes(' ') ? 
+            userData.fullName.split(' ').slice(1).join(' ') : '',
+          // Username can be derived from email or name
+          username: userData.email.split('@')[0] || 
+            userData.fullName.replace(/\s+/g, '_').toLowerCase()
         };
       }
+      
+      console.log("Registration form data:", {
+        email: data.email,
+        name: displayName,
+        role: userType,
+        additionalData
+      });
       
       await onSignup(data.email, data.password, displayName, userType, additionalData);
       

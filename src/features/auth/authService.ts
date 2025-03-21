@@ -18,17 +18,41 @@ export const signupWithEmail = async (
     const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
     const finalRole = isDefaultAdmin ? 'Admin' : role;
     
+    // Format user metadata to ensure all fields are captured
+    const userMetadata = {
+      name,
+      role: finalRole,
+      is_admin: isDefaultAdmin,
+      phone: additionalData.phone || null,
+      instagram_handle: additionalData.instagramHandle || null,
+      facebook_handle: additionalData.facebookHandle || null,
+      business_name: additionalData.businessName || null,
+      business_category: additionalData.businessCategory || null,
+      website: additionalData.website || null,
+      niche: additionalData.niche || null,
+      followers_count: additionalData.followersCount || null,
+      bio: additionalData.bio || null,
+      city: additionalData.city || null,
+      country: additionalData.country || null,
+      owner_name: additionalData.ownerName || null,
+      gst_number: additionalData.gstNumber || null,
+      first_name: additionalData.firstName || additionalData.fullName?.split(' ')[0] || null,
+      last_name: additionalData.lastName || 
+        (additionalData.fullName?.includes(' ') ? 
+          additionalData.fullName.split(' ').slice(1).join(' ') : null),
+      username: additionalData.username || null,
+      // Include any other fields that might be in additionalData
+      ...additionalData
+    };
+    
+    console.log("User metadata for signup:", userMetadata);
+    
     // Register the user with Supabase
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: {
-          name,
-          role: finalRole,
-          is_admin: isDefaultAdmin,
-          ...additionalData
-        }
+        data: userMetadata
       }
     });
 
@@ -67,7 +91,21 @@ export const signupWithEmail = async (
       isAdmin: isDefaultAdmin,
       createdAt: new Date().toISOString(),
       lastLogin: new Date().toISOString(),
-      // Include additional data
+      // Include formatted additional data
+      phone: userMetadata.phone,
+      instagramHandle: userMetadata.instagram_handle,
+      facebookHandle: userMetadata.facebook_handle,
+      businessName: userMetadata.business_name,
+      businessCategory: userMetadata.business_category,
+      website: userMetadata.website,
+      niche: userMetadata.niche,
+      followersCount: userMetadata.followers_count,
+      bio: userMetadata.bio,
+      city: userMetadata.city,
+      country: userMetadata.country,
+      ownerName: userMetadata.owner_name,
+      gstNumber: userMetadata.gst_number,
+      // Include any other additional data
       ...additionalData
     };
 

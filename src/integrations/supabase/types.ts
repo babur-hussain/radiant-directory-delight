@@ -287,12 +287,14 @@ export type Database = {
           email: string
           employee_code: string | null
           facebook_handle: string | null
+          first_name: string | null
           followers_count: string | null
           gst_number: string | null
           id: string
           instagram_handle: string | null
           is_admin: boolean | null
           last_login: string | null
+          last_name: string | null
           name: string | null
           niche: string | null
           owner_name: string | null
@@ -303,6 +305,7 @@ export type Database = {
           subscription_id: string | null
           subscription_package: string | null
           subscription_status: string | null
+          username: string | null
           verified: boolean | null
           website: string | null
         }
@@ -317,12 +320,14 @@ export type Database = {
           email: string
           employee_code?: string | null
           facebook_handle?: string | null
+          first_name?: string | null
           followers_count?: string | null
           gst_number?: string | null
           id: string
           instagram_handle?: string | null
           is_admin?: boolean | null
           last_login?: string | null
+          last_name?: string | null
           name?: string | null
           niche?: string | null
           owner_name?: string | null
@@ -333,6 +338,7 @@ export type Database = {
           subscription_id?: string | null
           subscription_package?: string | null
           subscription_status?: string | null
+          username?: string | null
           verified?: boolean | null
           website?: string | null
         }
@@ -347,12 +353,14 @@ export type Database = {
           email?: string
           employee_code?: string | null
           facebook_handle?: string | null
+          first_name?: string | null
           followers_count?: string | null
           gst_number?: string | null
           id?: string
           instagram_handle?: string | null
           is_admin?: boolean | null
           last_login?: string | null
+          last_name?: string | null
           name?: string | null
           niche?: string | null
           owner_name?: string | null
@@ -363,6 +371,7 @@ export type Database = {
           subscription_id?: string | null
           subscription_package?: string | null
           subscription_status?: string | null
+          username?: string | null
           verified?: boolean | null
           website?: string | null
         }
