@@ -4,7 +4,10 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import { loadRazorpayScript, isRazorpayAvailable, RAZORPAY_KEY_ID } from '@/utils/razorpayLoader';
+import { 
+  ensureRazorpayAvailable, 
+  RAZORPAY_KEY_ID 
+} from '@/utils/razorpayLoader';
 import { 
   createSubscriptionViaEdgeFunction, 
   buildRazorpayOptions, 
@@ -23,40 +26,55 @@ export const useRazorpay = () => {
   // Create a subscription on the server and open Razorpay checkout
   const createSubscription = async (packageData: ISubscriptionPackage, enableAutoPay = true): Promise<any> => {
     if (!user) {
-      throw new Error('User must be logged in to create a subscription');
+      const errorMsg = 'User must be logged in to create a subscription';
+      toast({
+        title: "Authentication Required",
+        description: errorMsg,
+        variant: "destructive"
+      });
+      throw new Error(errorMsg);
     }
     
     try {
       setIsLoading(true);
       setError(null);
       
-      // Ensure Razorpay is loaded
-      const isLoaded = await loadRazorpayScript();
+      // Ensure Razorpay is loaded - using improved loader
+      const isLoaded = await ensureRazorpayAvailable();
       if (!isLoaded) {
-        throw new Error('Failed to load payment gateway');
-      }
-      
-      if (!isRazorpayAvailable()) {
-        throw new Error('Payment gateway is not available. Please refresh the page.');
+        const errorMsg = 'Failed to load payment gateway. Please check your internet connection and try again.';
+        toast({
+          title: "Payment Error",
+          description: errorMsg,
+          variant: "destructive"
+        });
+        throw new Error(errorMsg);
       }
       
       // Determine if this is a one-time or recurring payment
       const isRecurringPayment = packageData.paymentType === 'recurring' && enableAutoPay;
       console.log(`Processing payment as ${isRecurringPayment ? 'recurring' : 'one-time'} payment with autopay: ${enableAutoPay}`);
       
-      // Prepare customer data - ensure no empty values
+      // Prepare customer data with fallbacks to avoid empty values
       const customerData = {
-        name: user.fullName || user.email?.split('@')[0] || 'Customer',
+        name: user.fullName || user.name || user.email?.split('@')[0] || 'Customer',
         email: user.email || '',
         phone: user.phone || ''
       };
       
-      // Always validate critical data before sending
+      // Validate critical package data
       if (!packageData.id || !packageData.price) {
-        throw new Error('Invalid package data: missing required fields');
+        const errorMsg = 'Invalid package data: missing required fields';
+        toast({
+          title: "Configuration Error",
+          description: errorMsg,
+          variant: "destructive"
+        });
+        throw new Error(errorMsg);
       }
       
       // Create subscription via edge function
+      console.log("Creating subscription via edge function with autopay:", enableAutoPay);
       const result = await createSubscriptionViaEdgeFunction(
         user,
         packageData,
@@ -69,7 +87,13 @@ export const useRazorpay = () => {
       
       // Validate response from backend
       if (!result || !result.order || !result.order.id) {
-        throw new Error('Invalid response from server: missing order information');
+        const errorMsg = 'Invalid response from server: missing order information';
+        toast({
+          title: "Server Error",
+          description: errorMsg,
+          variant: "destructive"
+        });
+        throw new Error(errorMsg);
       }
       
       // Open Razorpay checkout for payment
@@ -85,6 +109,14 @@ export const useRazorpay = () => {
             enableAutoPay,      // Add autopay preference
             (response) => {
               console.log("Payment success callback triggered with:", response);
+              
+              // Show success toast
+              toast({
+                title: "Payment Successful",
+                description: `Your payment for ${packageData.title} was successful.`,
+                variant: "success"
+              });
+              
               resolve({
                 ...response,
                 subscription: result.subscription,
@@ -95,41 +127,87 @@ export const useRazorpay = () => {
             },
             () => {
               console.log("Payment modal dismissed by user");
+              
+              // Show info toast
+              toast({
+                title: "Payment Cancelled",
+                description: "You cancelled the payment process.",
+                variant: "info"
+              });
+              
               reject(new Error('Payment cancelled by user'));
             }
           );
           
           console.log("Initializing Razorpay with options:", JSON.stringify(options, null, 2));
           
-          // Ensure mandatory fields are present
-          if (!options.key || !options.order_id) {
-            throw new Error('Missing required parameters for Razorpay: key and order_id');
-          }
-          
           // Create and open Razorpay checkout
           try {
             const razorpay = createRazorpayCheckout(options);
             
-            // Set up any additional event handlers if needed
+            // Set up additional event handlers for better error tracking
             razorpay.on('payment.error', (err: any) => {
               console.error("Razorpay payment error:", err);
+              
+              // Show error toast
+              toast({
+                title: "Payment Failed",
+                description: err.error?.description || "There was a problem processing your payment.",
+                variant: "destructive"
+              });
+              
               reject(err);
             });
             
             // Finally, open the payment modal
             razorpay.open();
+            console.log("Razorpay checkout modal opened");
           } catch (razorpayError) {
             console.error("Error during Razorpay checkout creation:", razorpayError);
+            
+            // Show error toast
+            toast({
+              title: "Checkout Error",
+              description: razorpayError instanceof Error ? 
+                razorpayError.message : 
+                "Failed to initialize the payment gateway.",
+              variant: "destructive"
+            });
+            
             reject(razorpayError);
           }
         } catch (err) {
           console.error('Razorpay initialization error:', err);
+          
+          // Show error toast
+          toast({
+            title: "Payment Error",
+            description: err instanceof Error ? 
+              err.message : 
+              "Failed to initialize payment gateway",
+            variant: "destructive"
+          });
+          
           reject(new Error('Failed to initialize payment gateway'));
         }
       });
     } catch (error) {
       console.error('Error creating subscription:', error);
-      setError(error instanceof Error ? error.message : 'Unknown error');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setError(errorMessage);
+      
+      // Only show toast if not already shown in other error handlers
+      if (!errorMessage.includes('User must be logged in') && 
+          !errorMessage.includes('Failed to load payment gateway') &&
+          !errorMessage.includes('Invalid package data') &&
+          !errorMessage.includes('Invalid response from server')) {
+        toast({
+          title: "Payment Error",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      }
+      
       throw error;
     } finally {
       setIsLoading(false);

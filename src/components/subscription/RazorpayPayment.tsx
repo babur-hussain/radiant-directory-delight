@@ -9,7 +9,7 @@ import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useRazorpay } from '@/hooks/useRazorpay';
-import { formatSubscriptionDate } from '@/utils/razorpay';
+import { ensureRazorpayAvailable } from '@/utils/razorpayLoader';
 
 interface RazorpayPaymentProps {
   selectedPackage: ISubscriptionPackage;
@@ -30,12 +30,34 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [enableAutoPay, setEnableAutoPay] = useState(true);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
   
   // Determine if this package supports recurring payments
   const supportsRecurring = selectedPackage.paymentType === 'recurring';
   const isOneTimePackage = !supportsRecurring;
   const totalPaymentAmount = selectedPackage.price || 0;
   
+  // Load Razorpay script on component mount
+  useEffect(() => {
+    const loadScript = async () => {
+      try {
+        const loaded = await ensureRazorpayAvailable();
+        setScriptLoaded(loaded);
+        if (!loaded) {
+          setError("Failed to load payment gateway. Please refresh and try again.");
+        }
+      } catch (err) {
+        console.error("Error loading Razorpay script:", err);
+        setError("Failed to initialize payment system. Please refresh the page.");
+      } finally {
+        setReady(true);
+      }
+    };
+    
+    loadScript();
+  }, []);
+  
+  // Handle payment processing
   const handlePayment = async () => {
     if (isProcessing) return;
     
@@ -47,6 +69,14 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       
       if (!user) {
         throw new Error("You must be logged in to make a payment.");
+      }
+      
+      // Double-check script loading
+      if (!scriptLoaded) {
+        const loaded = await ensureRazorpayAvailable();
+        if (!loaded) {
+          throw new Error("Payment system not available. Please refresh the page.");
+        }
       }
       
       // Validate package data
@@ -62,6 +92,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       toast({
         title: "Payment Successful",
         description: `Your payment was successful.${enableAutoPay && supportsRecurring ? ' Autopay has been enabled for future payments.' : ''}`,
+        variant: "success"
       });
       
       onSuccess({
@@ -79,15 +110,20 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         errorMessage = (error as any).description || errorMessage;
       }
       
-      setError(errorMessage);
-      
-      toast({
-        title: "Payment Failed",
-        description: errorMessage,
-        variant: "destructive"
-      });
-      
-      onFailure(error);
+      // Don't show user cancelled errors as errors
+      if (errorMessage.includes('cancelled by user')) {
+        console.log("User cancelled payment");
+      } else {
+        setError(errorMessage);
+        
+        toast({
+          title: "Payment Failed",
+          description: errorMessage,
+          variant: "destructive"
+        });
+        
+        onFailure(error);
+      }
       
       setRetryCount(prev => prev + 1);
     } finally {
@@ -95,6 +131,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     }
   };
   
+  // Handle retry logic
   const handleRetry = () => {
     setError(null);
     setReady(false);
@@ -107,17 +144,29 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       existingScript.remove();
     }
     
-    setTimeout(() => {
-      setReady(true);
+    setTimeout(async () => {
+      try {
+        const loaded = await ensureRazorpayAvailable();
+        setScriptLoaded(loaded);
+        if (!loaded) {
+          setError("Failed to load payment gateway. Please try again later.");
+        }
+      } catch (err) {
+        setError("Failed to initialize payment system. Please try again later.");
+      } finally {
+        setReady(true);
+      }
     }, 1000);
   };
   
+  // Sync error state from hook
   useEffect(() => {
     if (paymentError) {
       setError(paymentError);
     }
   }, [paymentError]);
   
+  // Initial load effect
   useEffect(() => {
     const timer = setTimeout(() => {
       setReady(true);
@@ -126,6 +175,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     return () => clearTimeout(timer);
   }, []);
 
+  // Loading state
   if (!ready) {
     return (
       <div className="flex flex-col items-center justify-center py-8">
@@ -135,6 +185,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     );
   }
   
+  // Error state
   if (error) {
     return (
       <Alert variant="destructive" className="mb-4">
@@ -188,6 +239,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     );
   }
   
+  // Normal payment UI
   return (
     <Card className="border-none shadow-none">
       <CardHeader className="px-0 pt-0">

@@ -1,68 +1,89 @@
 
 /**
- * Utility functions for loading and checking Razorpay script
+ * Razorpay script loader and utilities
  */
 
-// Constants - using live key for production
-export const RAZORPAY_KEY_ID = 'rzp_live_8PGS0Ug3QeCb2I';
+// Constants
+export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_live_8PGS0Ug3QeCb2I"; // Default to live key
+export const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 
 /**
- * Load Razorpay script dynamically
+ * Check if Razorpay is already loaded in the window
  */
-export const loadRazorpayScript = async (): Promise<boolean> => {
+export const isRazorpayAvailable = (): boolean => {
+  return typeof (window as any).Razorpay !== 'undefined';
+};
+
+/**
+ * Load the Razorpay script if it's not already loaded
+ * @returns Promise that resolves to true if loading was successful
+ */
+export const loadRazorpayScript = (): Promise<boolean> => {
   return new Promise((resolve) => {
-    // Check if Razorpay is already loaded
-    if ((window as any).Razorpay) {
-      console.log("Razorpay already loaded");
+    // If Razorpay is already loaded, resolve immediately
+    if (isRazorpayAvailable()) {
+      console.log("Razorpay is already loaded");
       resolve(true);
       return;
     }
 
     console.log("Loading Razorpay script...");
     
-    // Clean up any existing script elements to avoid duplicates
-    const existingScript = document.querySelector('script[src*="checkout.razorpay.com"]');
+    // Check for existing script to avoid duplicates
+    const existingScript = document.querySelector(`script[src="${RAZORPAY_SCRIPT_URL}"]`);
     if (existingScript) {
-      console.log("Found existing Razorpay script, removing it");
-      existingScript.remove();
+      console.log("Razorpay script tag exists but not initialized yet, waiting...");
+      // Wait for existing script to load
+      const checkRazorpay = setInterval(() => {
+        if (isRazorpayAvailable()) {
+          clearInterval(checkRazorpay);
+          console.log("Razorpay initialized from existing script");
+          resolve(true);
+        }
+      }, 100);
+      return;
     }
-    
-    // Create fresh script element
+
+    // Create and append script tag
     const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.src = RAZORPAY_SCRIPT_URL;
     script.async = true;
-    script.setAttribute('crossorigin', 'anonymous');
+    script.defer = true;
     
+    // Setup event handlers
     script.onload = () => {
       console.log("Razorpay script loaded successfully");
       resolve(true);
     };
     
-    script.onerror = (error) => {
-      console.error('Failed to load Razorpay script:', error);
+    script.onerror = () => {
+      console.error("Failed to load Razorpay script");
+      // Remove the failed script
+      document.body.removeChild(script);
       resolve(false);
     };
     
+    // Append to body
     document.body.appendChild(script);
   });
 };
 
 /**
- * Check if Razorpay is available in the window object
+ * Ensure Razorpay is available before proceeding
+ * Will load the script if needed
  */
-export const isRazorpayAvailable = (): boolean => {
-  const available = typeof (window as any).Razorpay !== 'undefined';
-  console.log("Razorpay available:", available);
-  return available;
+export const ensureRazorpayAvailable = async (): Promise<boolean> => {
+  if (isRazorpayAvailable()) {
+    return true;
+  }
+  
+  return await loadRazorpayScript();
 };
 
 /**
- * Format a date for display in subscription details
+ * Get the Razorpay instance from window
+ * @returns Razorpay object or null if not available
  */
-export const formatSubscriptionDate = (date: Date): string => {
-  return date.toLocaleDateString('en-IN', {
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric'
-  });
+export const getRazorpay = (): any => {
+  return isRazorpayAvailable() ? (window as any).Razorpay : null;
 };

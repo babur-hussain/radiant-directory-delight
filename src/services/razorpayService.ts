@@ -16,7 +16,8 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://kyjdfhajtdqhd
  */
 export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   if (typeof (window as any).Razorpay === 'undefined') {
-    throw new Error('Razorpay is not loaded');
+    console.error("Razorpay is not available in window.");
+    throw new Error('Razorpay is not loaded. Please refresh the page and try again.');
   }
   
   // Make a deep copy of options to avoid mutation issues
@@ -29,10 +30,18 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   
   // Final validation to ensure mandatory params
   if (!safeOptions.key || !safeOptions.order_id) {
+    console.error("Missing required Razorpay parameters:", safeOptions);
     throw new Error('Required parameters missing: key and order_id are mandatory for Razorpay checkout');
   }
   
-  return new (window as any).Razorpay(safeOptions);
+  try {
+    // Create the Razorpay instance with cleaned options
+    const RazorpayConstructor = (window as any).Razorpay;
+    return new RazorpayConstructor(safeOptions);
+  } catch (error) {
+    console.error("Error creating Razorpay instance:", error);
+    throw new Error('Failed to initialize Razorpay checkout. Please try again.');
+  }
 };
 
 /**
@@ -89,6 +98,7 @@ const cleanRazorpayOptions = (options: RazorpayOptions): void => {
   
   // Final check to ensure mandatory fields are present
   if (!options.key) {
+    console.log("Setting default Razorpay key:", RAZORPAY_KEY_ID);
     options.key = RAZORPAY_KEY_ID;
   }
 };
@@ -107,13 +117,14 @@ export const createSubscriptionViaEdgeFunction = async (
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   
   if (sessionError) {
-    throw new Error(`Session error: ${sessionError.message}`);
+    console.error("Session error:", sessionError);
+    throw new Error(`Authentication error: ${sessionError.message}`);
   }
   
   const accessToken = sessionData?.session?.access_token;
   
   if (!accessToken) {
-    throw new Error('Not authenticated');
+    throw new Error('Not authenticated. Please log in again.');
   }
   
   // Make sure we have the correct URL format
@@ -135,6 +146,22 @@ export const createSubscriptionViaEdgeFunction = async (
       }
     });
     
+    // Create request payload
+    const payload = {
+      userId: user.id,
+      packageData: {
+        ...packageData,
+        // Ensure the correct payment type is set
+        paymentType: packageData.paymentType || 'one-time'
+      },
+      customerData: cleanedCustomerData,
+      // Add flags to indicate payment preferences
+      useOneTimePreferred: useOneTimePreferred,
+      enableAutoPay: enableAutoPay
+    };
+    
+    console.log("Sending payload to edge function:", JSON.stringify(payload, null, 2));
+    
     // Create subscription via edge function
     const response = await fetch(functionUrl, {
       method: 'POST',
@@ -142,25 +169,20 @@ export const createSubscriptionViaEdgeFunction = async (
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`
       },
-      body: JSON.stringify({
-        userId: user.id,
-        packageData: {
-          ...packageData,
-          // Ensure the correct payment type is set
-          paymentType: packageData.paymentType || 'one-time'
-        },
-        customerData: cleanedCustomerData,
-        // Add flags to indicate payment preferences
-        useOneTimePreferred: useOneTimePreferred,
-        enableAutoPay: enableAutoPay
-      })
+      body: JSON.stringify(payload)
     });
     
-    // Check if response is OK
+    // Check response status
     if (!response.ok) {
-      const responseText = await response.text();
-      console.error('Error response from server:', responseText);
-      throw new Error(`Server error: ${response.status} - ${responseText}`);
+      let errorText = '';
+      try {
+        errorText = await response.text();
+      } catch (e) {
+        errorText = `HTTP error ${response.status}`;
+      }
+      
+      console.error('Error response from server:', errorText);
+      throw new Error(`Server error: ${response.status} - ${errorText}`);
     }
     
     // Parse the JSON response
