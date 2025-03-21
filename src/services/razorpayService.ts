@@ -46,104 +46,99 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
  */
 const cleanRazorpayOptions = (options: Record<string, any>): void => {
   // Remove any undefined, null, or empty string values
+  // Instead of using delete operator which causes TS errors on read-only properties,
+  // we'll create a new object structure
+  const cleanObject = (obj: Record<string, any>): Record<string, any> => {
+    const result: Record<string, any> = {};
+    
+    // Copy only defined, non-null, non-empty string values
+    Object.keys(obj).forEach(key => {
+      const value = obj[key];
+      if (value !== undefined && value !== null && value !== '') {
+        // If it's an object, clean it recursively
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          const cleanedNestedObj = cleanObject(value);
+          // Only add if the cleaned object has properties
+          if (Object.keys(cleanedNestedObj).length > 0) {
+            result[key] = cleanedNestedObj;
+          }
+        } else {
+          result[key] = value;
+        }
+      }
+    });
+    
+    return result;
+  };
+  
+  // Clean the options object
+  const cleanedOptions = cleanObject(options);
+  
+  // Clear the original object
   Object.keys(options).forEach(key => {
-    if (options[key] === undefined || options[key] === null || options[key] === '') {
-      options[key] = undefined; // Instead of deleting, set to undefined
-    }
+    options[key] = undefined;
   });
+  
+  // Copy cleaned values back to original object
+  Object.assign(options, cleanedOptions);
   
   // Ensure we have a valid key
   if (!options.key) {
     options.key = RAZORPAY_KEY_ID;
   }
   
-  // Clean up prefill object
-  if (options.prefill) {
-    Object.keys(options.prefill).forEach(key => {
-      if (!options.prefill[key] || options.prefill[key] === '') {
-        options.prefill[key] = undefined; // Instead of deleting, set to undefined
-      }
-    });
-    
-    // If prefill is empty after cleaning, remove reference
-    if (Object.keys(options.prefill).filter(key => options.prefill[key] !== undefined).length === 0) {
-      options.prefill = undefined;
-    }
-  }
-  
-  // Ensure notes have only string values and remove empty notes
-  if (options.notes) {
-    Object.keys(options.notes).forEach(key => {
-      if (options.notes[key] !== undefined && options.notes[key] !== null) {
-        options.notes[key] = String(options.notes[key]);
-      } else {
-        options.notes[key] = undefined; // Instead of deleting, set to undefined
-      }
-    });
-    
-    // If notes is empty after cleaning, remove reference
-    if (Object.keys(options.notes).filter(key => options.notes[key] !== undefined).length === 0) {
-      options.notes = undefined;
-    }
-  }
-  
   // ** SPECIAL RAZORPAY VALIDATION **
   // 1. Ensure we don't have both subscription_id and order_id (Razorpay requirement)
   if (options.subscription_id && options.order_id) {
     console.warn("Both subscription_id and order_id present, removing subscription_id");
-    options.subscription_id = undefined; // Instead of deleting, set to undefined
+    const { subscription_id, ...rest } = options;
+    Object.assign(options, rest);
   }
   
   // 2. If recurring is true, ensure we have a valid subscription_id, otherwise remove recurring flag
   if (options.recurring === true && !options.subscription_id) {
     console.warn("Recurring flag present without subscription_id, removing recurring flag");
-    options.recurring = undefined; // Instead of deleting, set to undefined
+    const { recurring, ...rest } = options;
+    Object.assign(options, rest);
   }
   
   // 3. Remove amount if order_id is present (Razorpay recommendation)
   if (options.order_id && options.amount) {
     console.warn("Both order_id and amount present, removing amount since it's included in the order");
-    options.amount = undefined; // Instead of deleting, set to undefined
+    const { amount, ...rest } = options;
+    Object.assign(options, rest);
   }
   
   // 4. If we're using standard checkout mode, make sure we don't send problematic options
   if (options.order_id && options.order_id.startsWith('order_')) {
     // For standard checkout, these options can cause conflicts
-    options.recurring = undefined;
-    options.subscription_id = undefined;
-    options.amount = undefined;
-    options.currency = undefined;
+    const { recurring, subscription_id, amount, currency, ...rest } = options;
+    Object.assign(options, rest);
   }
 
-  // 5. Ensure the callback URL is valid (added for route not found fix)
+  // 5. Ensure the callback URL is valid and absolute
   if (options.callback_url) {
-    // Make sure it's a valid URL
     try {
-      new URL(options.callback_url);
+      // Make sure it's a valid URL and fully qualified
+      const url = new URL(options.callback_url);
+      // Check if protocol is present, if not, it's a relative URL
+      if (!url.protocol || (url.protocol !== 'http:' && url.protocol !== 'https:')) {
+        // Convert to absolute URL
+        const absoluteUrl = new URL(options.callback_url, window.location.origin).toString();
+        options.callback_url = absoluteUrl;
+      }
     } catch (e) {
-      console.warn("Invalid callback_url, removing it");
-      options.callback_url = undefined; // Instead of deleting, set to undefined
+      console.warn("Invalid callback_url, fixing it");
+      // If URL parsing fails, set to current page URL
+      options.callback_url = window.location.href;
     }
+  } else {
+    // Ensure we always have a callback URL
+    options.callback_url = window.location.href;
   }
   
-  // Final cleanup - remove all undefined properties
-  // This is a safe way to clean the object without using delete on potentially readonly properties
-  for (const key in options) {
-    if (options[key] === undefined) {
-      // Create a new object without the undefined properties
-      // This is safer than using delete operator
-      const { [key]: _, ...rest } = options;
-      Object.assign(options, rest);
-    } else if (typeof options[key] === 'object' && options[key] !== null) {
-      // Recursively clean nested objects
-      for (const nestedKey in options[key]) {
-        if (options[key][nestedKey] === undefined) {
-          const { [nestedKey]: _, ...rest } = options[key];
-          Object.assign(options[key], rest);
-        }
-      }
-    }
-  }
+  // Disable redirects to prevent routing issues
+  options.redirect = false;
 };
 
 /**
@@ -179,11 +174,9 @@ export const createSubscriptionViaEdgeFunction = async (
     };
     
     // Remove empty values
-    Object.keys(cleanedCustomerData).forEach(key => {
-      if (!cleanedCustomerData[key]) {
-        delete cleanedCustomerData[key];
-      }
-    });
+    const filteredCustomerData = Object.fromEntries(
+      Object.entries(cleanedCustomerData).filter(([_, value]) => value)
+    );
     
     // Create request payload
     const payload = {
@@ -193,7 +186,7 @@ export const createSubscriptionViaEdgeFunction = async (
         // Ensure the correct payment type is set
         paymentType: packageData.paymentType || 'one-time'
       },
-      customerData: cleanedCustomerData,
+      customerData: filteredCustomerData,
       // Add flags to indicate payment preferences
       useOneTimePreferred: useOneTimePreferred,
       enableAutoPay: enableAutoPay

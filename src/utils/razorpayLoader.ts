@@ -1,111 +1,91 @@
 
-/**
- * Razorpay script loader and utilities
- */
+// Key ID for Razorpay integration - public key that can be exposed in client code
+export const RAZORPAY_KEY_ID = 'rzp_live_8PGS0Ug3QeCb2I';
 
-// Constants
-export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_live_8PGS0Ug3QeCb2I"; // Default to live key
-export const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
+// Maximum number of load attempts
+const MAX_LOAD_ATTEMPTS = 3;
+
+// Track load attempts
+let loadAttempts = 0;
 
 /**
- * Check if Razorpay is already loaded in the window
+ * Checks if Razorpay is already loaded
  */
-export const isRazorpayAvailable = (): boolean => {
-  return typeof window !== 'undefined' && typeof (window as any).Razorpay !== 'undefined';
+export const isRazorpayLoaded = (): boolean => {
+  return typeof (window as any).Razorpay !== 'undefined';
 };
 
 /**
- * Load the Razorpay script if it's not already loaded
- * @returns Promise that resolves to true if loading was successful
+ * Loads the Razorpay script into the document
  */
 export const loadRazorpayScript = (): Promise<boolean> => {
   return new Promise((resolve) => {
-    // If Razorpay is already loaded, resolve immediately
-    if (isRazorpayAvailable()) {
-      console.log("Razorpay is already loaded");
-      resolve(true);
-      return;
+    // If already loaded, resolve immediately
+    if (isRazorpayLoaded()) {
+      console.info('Razorpay already loaded');
+      return resolve(true);
     }
 
-    console.log("Loading Razorpay script...");
-    
-    // First, remove any existing Razorpay script tags to prevent conflicts
-    const existingScripts = document.querySelectorAll(`script[src*="checkout.razorpay.com"]`);
-    existingScripts.forEach(script => {
-      console.log("Removing existing Razorpay script");
-      script.remove();
-    });
+    loadAttempts++;
+    console.info(`Loading Razorpay script attempt ${loadAttempts}/${MAX_LOAD_ATTEMPTS}`);
+    console.info('Loading Razorpay script...');
 
-    // Create and append script tag
+    // Remove any existing script to avoid duplication issues
+    const existingScript = document.querySelector('script[src*="checkout.razorpay.com"]');
+    if (existingScript) {
+      console.info('Removing existing Razorpay script');
+      existingScript.remove();
+      // Reset any potential Razorpay global objects
+      (window as any).Razorpay = undefined;
+    }
+
+    // Create and append the script
     const script = document.createElement('script');
-    script.src = RAZORPAY_SCRIPT_URL;
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.async = true;
     script.defer = true;
     
-    // Setup event handlers
+    // Set up load and error handlers
     script.onload = () => {
-      console.log("Razorpay script loaded successfully");
-      // Add a small delay to ensure Razorpay is fully initialized
-      setTimeout(() => {
-        if (isRazorpayAvailable()) {
-          resolve(true);
-        } else {
-          console.error("Razorpay failed to initialize properly");
-          resolve(false);
-        }
-      }, 500);
+      console.info('Razorpay script loaded successfully');
+      loadAttempts = 0; // Reset load attempts on success
+      resolve(true);
     };
     
-    script.onerror = () => {
-      console.error("Failed to load Razorpay script");
-      // Remove the failed script
-      script.remove();
-      resolve(false);
-    };
-    
-    // Append to body
-    document.body.appendChild(script);
-    
-    // Set a timeout as a fallback
-    setTimeout(() => {
-      if (!isRazorpayAvailable()) {
-        console.error("Razorpay script load timed out");
+    script.onerror = (error) => {
+      console.error('Error loading Razorpay script:', error);
+      
+      // If we have attempts left, try again
+      if (loadAttempts < MAX_LOAD_ATTEMPTS) {
+        console.info(`Retrying Razorpay script load (${loadAttempts}/${MAX_LOAD_ATTEMPTS})`);
+        // Remove failed script
+        script.remove();
+        // Try to load again
+        setTimeout(() => {
+          loadRazorpayScript().then(resolve);
+        }, 1000);
+      } else {
+        console.error(`Failed to load Razorpay after ${MAX_LOAD_ATTEMPTS} attempts`);
         resolve(false);
       }
-    }, 10000); // 10 second timeout
+    };
+    
+    // Add script to document
+    document.body.appendChild(script);
   });
 };
 
 /**
- * Ensure Razorpay is available before proceeding
- * Will load the script if needed
+ * Ensures Razorpay is available, loading it if necessary
  */
 export const ensureRazorpayAvailable = async (): Promise<boolean> => {
-  if (isRazorpayAvailable()) {
-    return true;
-  }
-  
-  // Try loading the script up to 3 times
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    console.log(`Loading Razorpay script attempt ${attempt}/3`);
-    const success = await loadRazorpayScript();
-    if (success && isRazorpayAvailable()) {
+  try {
+    if (isRazorpayLoaded()) {
       return true;
     }
-    
-    // Wait a bit before retrying
-    if (attempt < 3) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
+    return await loadRazorpayScript();
+  } catch (error) {
+    console.error('Error ensuring Razorpay is available:', error);
+    return false;
   }
-  
-  return false;
-};
-
-/**
- * Get the Razorpay instance from window
- * @returns Razorpay object or null if not available
- */
-export const getRazorpay = (): any => {
-  return isRazorpayAvailable() ? (window as any).Razorpay : null;
 };

@@ -56,6 +56,30 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     };
     
     loadScript();
+    
+    // Cleanup function to remove any existing Razorpay instances
+    return () => {
+      // Access window.Razorpay if it exists and try to close any open modals
+      if (typeof (window as any).Razorpay !== 'undefined') {
+        try {
+          // Attempt to access any potential razorpay instance
+          const razorpayInstances = (window as any)._rzp_instances;
+          if (razorpayInstances && razorpayInstances.length) {
+            razorpayInstances.forEach((instance: any) => {
+              try {
+                if (instance && typeof instance.close === 'function') {
+                  instance.close();
+                }
+              } catch (e) {
+                console.log('Error closing Razorpay instance:', e);
+              }
+            });
+          }
+        } catch (e) {
+          console.log('Error during Razorpay cleanup:', e);
+        }
+      }
+    };
   }, []);
   
   // Handle payment processing
