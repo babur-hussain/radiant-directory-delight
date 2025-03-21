@@ -44,15 +44,16 @@ const mapToSupabasePackage = (pkg: ISubscriptionPackage) => {
   // Generate an ID if one doesn't exist
   const packageId = pkg.id || `pkg_${Date.now()}`;
   
-  // Ensure features is an array
+  // Process features to ensure it's always an array
   let features: string[] = [];
   if (Array.isArray(pkg.features)) {
-    features = pkg.features;
+    features = pkg.features.filter(f => f.trim().length > 0);
   } else if (typeof pkg.features === 'string') {
     // Fix: Cast features to string before using split
     features = (pkg.features as string).split('\n').filter(f => f.trim().length > 0);
   }
   
+  // Create the Supabase object with all fields properly mapped
   return {
     id: packageId,
     title: pkg.title,
@@ -158,21 +159,26 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
     packageData.id = `pkg_${Date.now()}`;
   }
   
-  // Properly handle features conversion
+  // Process features field
   let features: string[] = [];
-  if (typeof packageData.features === 'string') {
+  if (Array.isArray(packageData.features)) {
+    features = packageData.features.filter(f => f && typeof f === 'string' && f.trim().length > 0);
+    packageData.features = features;
+  } else if (typeof packageData.features === 'string') {
     // Fix: Cast features to string before using split
     features = (packageData.features as string)
       .split('\n')
       .map(f => f.trim())
       .filter(f => f.length > 0);
     packageData.features = features;
-  } else if (Array.isArray(packageData.features)) {
-    features = packageData.features.filter(f => f.trim().length > 0);
-    packageData.features = features;
   } else {
     packageData.features = [];
   }
+
+  // Ensure text fields are properly handled
+  packageData.termsAndConditions = packageData.termsAndConditions || '';
+  packageData.fullDescription = packageData.fullDescription || '';
+  packageData.shortDescription = packageData.shortDescription || '';
 
   // Ensure dashboardSections is an array
   if (!Array.isArray(packageData.dashboardSections)) {

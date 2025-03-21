@@ -32,8 +32,23 @@ export const useSubscriptionPackages = () => {
   
   const createOrUpdateMutation = useMutation({
     mutationFn: async (packageData: ISubscriptionPackage) => {
-      console.log("Mutation received package data:", packageData);
-      return await savePackage(packageData);
+      // Ensure data has the correct types
+      let processedData = {
+        ...packageData,
+        // Handle features if it's a string
+        features: Array.isArray(packageData.features) 
+          ? packageData.features 
+          : typeof packageData.features === 'string'
+            ? (packageData.features as string).split('\n').filter(f => f.trim().length > 0)
+            : [],
+        // Ensure these fields are strings
+        termsAndConditions: packageData.termsAndConditions || '',
+        fullDescription: packageData.fullDescription || '',
+        shortDescription: packageData.shortDescription || ''
+      };
+      
+      console.log("Mutation received and processed package data:", processedData);
+      return await savePackage(processedData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
