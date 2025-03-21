@@ -45,11 +45,12 @@ const mapToSupabasePackage = (pkg: ISubscriptionPackage) => {
   const packageId = pkg.id || `pkg_${Date.now()}`;
   
   // Ensure features is an array
-  let features = [];
+  let features: string[] = [];
   if (Array.isArray(pkg.features)) {
     features = pkg.features;
   } else if (typeof pkg.features === 'string') {
-    features = pkg.features.split('\n').filter(f => f.trim().length > 0);
+    // Fix: Cast features to string before using split
+    features = (pkg.features as string).split('\n').filter(f => f.trim().length > 0);
   }
   
   return {
@@ -160,7 +161,8 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
   // Properly handle features conversion
   let features: string[] = [];
   if (typeof packageData.features === 'string') {
-    features = (packageData.features as unknown as string)
+    // Fix: Cast features to string before using split
+    features = (packageData.features as string)
       .split('\n')
       .map(f => f.trim())
       .filter(f => f.length > 0);
