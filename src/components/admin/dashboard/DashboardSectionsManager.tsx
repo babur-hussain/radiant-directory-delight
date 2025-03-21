@@ -9,13 +9,15 @@ import { useSubscriptionPackages } from "@/hooks/useSubscriptionPackages";
 import AdminPermissionError from "./AdminPermissionError";
 import PackageSectionsList from "./PackageSectionsList";
 import { toast } from "@/hooks/use-toast";
+import { IUser } from "@/models/User";
 
 interface DashboardSectionsManagerProps {
   userId: string;
   isAdmin: boolean;
+  selectedUser?: IUser;
 }
 
-const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ userId, isAdmin }) => {
+const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ userId, isAdmin, selectedUser }) => {
   const { subscription, loading: subscriptionLoading, error: subscriptionError } = useSubscription(userId);
   const { dashboardSections, isLoading: sectionsLoading, error: sectionsError } = useDashboardSections(userId);
   const { packages, isLoading: packagesLoading, error: packagesError, refetch } = useSubscriptionPackages();
