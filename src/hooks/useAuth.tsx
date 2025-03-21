@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,10 +12,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   const navigate = useNavigate();
   
   // Computed state
   const isAuthenticated = useMemo(() => !!user, [user]);
+  const userRole = useMemo<UserRole>(() => user?.role || null, [user]);
+  const isAdmin = useMemo(() => user?.isAdmin || false, [user]);
   
   // Initialize auth state
   useEffect(() => {
@@ -60,6 +64,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
         
         setLoading(false);
+        setInitialized(true);
       }
     );
     
@@ -70,6 +75,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         if (!session) {
           setLoading(false);
+          setInitialized(true);
           return;
         }
         
@@ -103,6 +109,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.error('Error initializing auth:', error);
       } finally {
         setLoading(false);
+        setInitialized(true);
       }
     };
     
@@ -332,8 +339,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Create context value
   const contextValue: AuthContextType = {
     user,
+    currentUser: user,
     loading,
     isAuthenticated,
+    initialized,
+    userRole,
+    isAdmin,
     login,
     loginWithGoogle,
     signup,

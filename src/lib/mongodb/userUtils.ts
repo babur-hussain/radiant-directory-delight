@@ -17,7 +17,7 @@ function transformRole(role: string | null): UserRole {
     case 'user':
       return 'User';
     case 'staff':
-      return 'staff';
+      return 'Staff';
     default:
       return 'User'; // Default to User if unknown
   }

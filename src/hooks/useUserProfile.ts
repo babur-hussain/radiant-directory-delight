@@ -50,7 +50,7 @@ export const useUserProfile = (userId?: string) => {
       
       // Validate role is a UserRole type
       if (data.role && typeof data.role === 'string') {
-        const validRoles: UserRole[] = ['Admin', 'Business', 'Influencer', 'User', 'staff'];
+        const validRoles: UserRole[] = ['Admin', 'Business', 'Influencer', 'User', 'Staff'];
         data.role = validRoles.includes(data.role as UserRole) ? (data.role as UserRole) : 'User';
       }
       
@@ -100,7 +100,7 @@ export const useUserProfile = (userId?: string) => {
   const saveProfile = async () => {
     // Validate role is a UserRole type if it exists
     if (formData.role && typeof formData.role === 'string') {
-      const validRoles: UserRole[] = ['Admin', 'Business', 'Influencer', 'User', 'staff'];
+      const validRoles: UserRole[] = ['Admin', 'Business', 'Influencer', 'User', 'Staff'];
       formData.role = validRoles.includes(formData.role as UserRole) ? (formData.role as UserRole) : 'User';
     }
     

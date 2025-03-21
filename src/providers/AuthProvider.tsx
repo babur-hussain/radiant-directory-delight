@@ -1,4 +1,3 @@
-
 import { createContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContextType, User, UserRole } from '@/types/auth';
@@ -15,12 +14,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [initialized, setInitialized] = useState(false);
   const navigate = useNavigate();
 
-  // Format user data from Supabase
   const formatUserData = async (session: Session | null): Promise<User | null> => {
     if (!session?.user) return null;
 
     try {
-      // Get user profile data from our users table
       const { data: profile, error } = await supabase
         .from('users')
         .select('*')
@@ -31,7 +28,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.error('Error fetching user profile:', error);
       }
 
-      // Combine auth user and profile data
       return {
         uid: session.user.id,
         id: session.user.id,
@@ -69,11 +65,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Initialize auth state
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Set up auth state listener FIRST
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
             console.log('Auth state changed:', event);
@@ -83,7 +77,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               setUser(userData);
               setSession(session);
               
-              // Update last login time
               if (userData) {
                 await supabase
                   .from('users')
@@ -97,7 +90,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         );
 
-        // THEN check for existing session
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (currentSession) {
           const userData = await formatUserData(currentSession);
@@ -121,7 +113,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     initializeAuth();
   }, []);
 
-  // Authentication methods
   const login = async (email: string, password: string, employeeCode?: string) => {
     try {
       setLoading(true);
@@ -133,7 +124,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (error) throw error;
 
-      // Set employee code if provided
       if (employeeCode && data.user) {
         await supabase
           .from('users')
@@ -193,7 +183,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       setLoading(true);
       
-      // Sign up with Supabase
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -208,8 +197,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (error) throw error;
 
-      // The user profile will be automatically created via the trigger
-      // but we'll update it with additional data
       if (data.user) {
         await supabase
           .from('users')
@@ -264,7 +251,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Role management
+  const updateUserData = async (data: Partial<User>) => {
+    try {
+      if (!user?.uid) {
+        throw new Error('User not authenticated');
+      }
+      
+      const { error } = await supabase
+        .from('users')
+        .update({
+          ...data,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.uid);
+      
+      if (error) throw error;
+
+      setUser(prev => prev ? { ...prev, ...data } : null);
+      
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+    } catch (error: any) {
+      console.error('Error updating user data:', error);
+      toast({
+        title: "Update failed",
+        description: error.message || "Failed to update profile.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   const updateUserRole = async (user: User, role: UserRole) => {
     try {
       if (!user.uid) {
@@ -333,6 +352,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         loginWithGoogle,
         logout,
         signup,
+        updateUserData,
         updateUserRole,
         updateUserPermission
       }}
