@@ -157,9 +157,10 @@ async function handleCreatePlan(req: Request, user: any) {
 
 // Generate a valid Razorpay subscription ID that follows their format
 function generateValidSubscriptionId(): string {
-  // Razorpay subscription IDs usually start with 'sub_' followed by 14 alphanumeric characters
+  // Razorpay subscription IDs start with 'sub_' followed by exactly 14 alphanumeric characters
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   const randomPart = Array.from({ length: 14 }, () => 
-    "abcdefghijklmnopqrstuvwxyz0123456789"[Math.floor(Math.random() * 36)]
+    chars[Math.floor(Math.random() * chars.length)]
   ).join('');
   
   return `sub_${randomPart}`;
@@ -168,8 +169,9 @@ function generateValidSubscriptionId(): string {
 // Generate a valid Razorpay order ID that follows their format
 function generateValidOrderId(): string {
   // Razorpay order IDs start with 'order_' followed by exactly 14 alphanumeric characters
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   const randomPart = Array.from({ length: 14 }, () => 
-    "abcdefghijklmnopqrstuvwxyz0123456789"[Math.floor(Math.random() * 36)]
+    chars[Math.floor(Math.random() * chars.length)]
   ).join('');
   
   return `order_${randomPart}`;
@@ -234,7 +236,7 @@ async function handleCreateSubscription(req: Request, user: any) {
       notes: {
         packageId: packageData.id,
         userId: userId,
-        paymentType: isOneTime ? "one-time" : "subscription"
+        paymentType: isOneTime ? "one-time" : "recurring"
       },
       created_at: Date.now()
     };

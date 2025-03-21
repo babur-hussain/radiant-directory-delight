@@ -75,6 +75,8 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         throw new Error("You must be logged in to make a payment.");
       }
       
+      // For now, we'll use one-time payments only while fixing the integration issues
+      // As a first step towards making everything work, this ensures stable functionality
       const useOneTimePreferred = true;
       
       const result = await createSubscription(selectedPackage, useOneTimePreferred);

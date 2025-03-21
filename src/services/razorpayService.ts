@@ -23,6 +23,23 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   const safeOptions = JSON.parse(JSON.stringify(options));
   
   console.log("Creating Razorpay instance with options:", safeOptions);
+  
+  // Remove any undefined or null values that could cause issues
+  Object.keys(safeOptions).forEach(key => {
+    if (safeOptions[key] === undefined || safeOptions[key] === null) {
+      delete safeOptions[key];
+    }
+  });
+  
+  // If we have prefill object, clean it as well
+  if (safeOptions.prefill) {
+    Object.keys(safeOptions.prefill).forEach(key => {
+      if (!safeOptions.prefill[key]) {
+        delete safeOptions.prefill[key];
+      }
+    });
+  }
+  
   return new (window as any).Razorpay(safeOptions);
 };
 
@@ -52,43 +69,48 @@ export const createSubscriptionViaEdgeFunction = async (
   const functionUrl = `${SUPABASE_URL}/functions/v1/razorpay-integration/create-subscription`;
   console.log("Calling edge function at:", functionUrl);
   
-  // Create subscription via edge function
-  const response = await fetch(functionUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`
-    },
-    body: JSON.stringify({
-      userId: user.id,
-      packageData: {
-        ...packageData,
-        // If we're using one-time preferred mode, treat recurring packages as one-time
-        paymentType: useOneTimePreferred && packageData.paymentType !== 'one-time' 
-          ? 'one-time' 
-          : packageData.paymentType
-      },
-      customerData,
-      // Add a flag to indicate we want to use one-time payment for all
-      useOneTimePreferred
-    })
-  });
-  
-  // Check if response is OK
-  if (!response.ok) {
-    const responseText = await response.text();
-    console.error('Error response from server:', responseText);
-    throw new Error(`Server error: ${response.status} - ${responseText}`);
-  }
-  
-  // Parse the JSON response
   try {
-    const result = await response.json();
-    console.log("Received result from edge function:", result);
-    return result;
-  } catch (jsonError) {
-    console.error('Error parsing JSON:', jsonError);
-    throw new Error('Invalid response format from server');
+    // Create subscription via edge function
+    const response = await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({
+        userId: user.id,
+        packageData: {
+          ...packageData,
+          // If we're using one-time preferred mode, treat recurring packages as one-time
+          paymentType: useOneTimePreferred && packageData.paymentType !== 'one-time' 
+            ? 'one-time' 
+            : packageData.paymentType
+        },
+        customerData,
+        // Add a flag to indicate we want to use one-time payment for all
+        useOneTimePreferred
+      })
+    });
+    
+    // Check if response is OK
+    if (!response.ok) {
+      const responseText = await response.text();
+      console.error('Error response from server:', responseText);
+      throw new Error(`Server error: ${response.status} - ${responseText}`);
+    }
+    
+    // Parse the JSON response
+    try {
+      const result = await response.json();
+      console.log("Received result from edge function:", result);
+      return result;
+    } catch (jsonError) {
+      console.error('Error parsing JSON:', jsonError);
+      throw new Error('Invalid response format from server');
+    }
+  } catch (error) {
+    console.error('Error calling edge function:', error);
+    throw error;
   }
 };
 
@@ -106,17 +128,27 @@ export const buildRazorpayOptions = (
 ): RazorpayOptions => {
   console.log("Building Razorpay options with result:", result);
   
+  // Ensure we have properly formatted customer data with no empty values
+  const cleanedPrefill = {
+    name: customerData.name || '',
+    email: customerData.email || '',
+    contact: customerData.phone || ''
+  };
+  
+  // Remove empty values
+  Object.keys(cleanedPrefill).forEach(key => {
+    if (!cleanedPrefill[key]) {
+      delete cleanedPrefill[key];
+    }
+  });
+  
   // Base options for Razorpay
   const options: RazorpayOptions = {
     key: RAZORPAY_KEY_ID,
     name: 'Grow Bharat Vyapaar',
     description: `Payment for ${packageData.title}`,
     image: 'https://your-company-logo.png', // Replace with your logo
-    prefill: {
-      name: customerData.name,
-      email: customerData.email,
-      contact: customerData.phone
-    },
+    prefill: Object.keys(cleanedPrefill).length > 0 ? cleanedPrefill : undefined,
     notes: {
       packageId: packageData.id,
       userId: user.id
