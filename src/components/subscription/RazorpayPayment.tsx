@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -268,13 +269,6 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
             <span>Total Amount</span>
             <span>₹{totalPaymentAmount}</span>
           </div>
-        </div>
-        
-        <div className="bg-amber-50 p-3 rounded-md border border-amber-100">
-          <p className="text-amber-800 text-sm flex items-center">
-            <AlertCircle className="h-4 w-4 mr-2 text-amber-500" />
-            <span>Using test mode. No real payment will be processed.</span>
-          </p>
         </div>
         
         <div className="flex items-start gap-2 bg-muted p-3 rounded-md">

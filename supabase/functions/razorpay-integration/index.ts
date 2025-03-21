@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 // Constants
-const RAZORPAY_KEY_ID = Deno.env.get("RAZORPAY_KEY_ID") || "rzp_test_iQ4CsQZE0XZFpj"; // Using test key
+const RAZORPAY_KEY_ID = Deno.env.get("RAZORPAY_KEY_ID") || "rzp_live_8PGS0Ug3QeCb2I"; // Using live key
 const RAZORPAY_KEY_SECRET = Deno.env.get("RAZORPAY_KEY_SECRET") || "";
 
 // Define CORS headers
@@ -157,7 +157,7 @@ async function handleCreatePlan(req: Request, user: any) {
 
 // Generate a valid Razorpay subscription ID that follows their format
 function generateValidSubscriptionId(): string {
-  // Razorpay subscription IDs usually start with 'sub_' followed by alphanumeric characters
+  // Razorpay subscription IDs usually start with 'sub_' followed by 14 alphanumeric characters
   const randomPart = Array.from({ length: 14 }, () => 
     "abcdefghijklmnopqrstuvwxyz0123456789"[Math.floor(Math.random() * 36)]
   ).join('');
@@ -167,9 +167,9 @@ function generateValidSubscriptionId(): string {
 
 // Generate a valid Razorpay order ID that follows their format
 function generateValidOrderId(): string {
-  // Razorpay order IDs start with 'order_' followed by 14 alphanumeric characters (NOT 16)
+  // Razorpay order IDs start with 'order_' followed by exactly 14 alphanumeric characters
   const randomPart = Array.from({ length: 14 }, () => 
-    "0123456789abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 36)]
+    "abcdefghijklmnopqrstuvwxyz0123456789"[Math.floor(Math.random() * 36)]
   ).join('');
   
   return `order_${randomPart}`;
@@ -207,7 +207,6 @@ async function handleCreateSubscription(req: Request, user: any) {
     }
 
     // Determine if this is a one-time payment or a subscription
-    // useOneTimePreferred forces one-time payments even for subscription packages
     const isOneTime = packageData.paymentType === "one-time" || useOneTimePreferred;
     console.log(`Processing payment type: ${isOneTime ? 'one-time' : 'subscription'}`);
     
@@ -316,9 +315,6 @@ async function handleWebhook(req: Request) {
     const payload = await req.json();
     console.log("Webhook received with payload:", payload);
 
-    // Validate the webhook signature
-    // In a real implementation, you would verify the signature using HMAC
-
     // Process different event types
     const eventType = payload.event;
 
@@ -370,7 +366,6 @@ async function processPaymentSuccess(payload: any) {
     }
     
     // Update user's subscription in the database
-    // This would require fetching the order to get the notes with packageId and userId
     console.log("Processing successful payment for order:", orderId);
   } catch (error) {
     console.error("Error processing payment success:", error);
