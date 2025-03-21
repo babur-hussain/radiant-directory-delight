@@ -1,6 +1,6 @@
 
-// Key ID for Razorpay integration - public key that can be exposed in client code
-export const RAZORPAY_KEY_ID = 'rzp_live_8PGS0Ug3QeCb2I';
+// Key ID for Razorpay integration - using test key for development environment
+export const RAZORPAY_KEY_ID = 'rzp_test_mxolTiKYIDkIpn';
 
 // Maximum number of load attempts
 const MAX_LOAD_ATTEMPTS = 3;
@@ -28,7 +28,6 @@ export const loadRazorpayScript = (): Promise<boolean> => {
 
     loadAttempts++;
     console.info(`Loading Razorpay script attempt ${loadAttempts}/${MAX_LOAD_ATTEMPTS}`);
-    console.info('Loading Razorpay script...');
 
     // Remove any existing script to avoid duplication issues
     const existingScript = document.querySelector('script[src*="checkout.razorpay.com"]');

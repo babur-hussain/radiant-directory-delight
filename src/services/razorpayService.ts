@@ -45,9 +45,7 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
  * Thoroughly clean Razorpay options to prevent errors
  */
 const cleanRazorpayOptions = (options: Record<string, any>): void => {
-  // Remove any undefined, null, or empty string values
-  // Instead of using delete operator which causes TS errors on read-only properties,
-  // we'll create a new object structure
+  // Create a new clean object instead of deleting properties
   const cleanObject = (obj: Record<string, any>): Record<string, any> => {
     const result: Record<string, any> = {};
     
@@ -87,36 +85,32 @@ const cleanRazorpayOptions = (options: Record<string, any>): void => {
     options.key = RAZORPAY_KEY_ID;
   }
   
-  // ** SPECIAL RAZORPAY VALIDATION **
-  // 1. Ensure we don't have both subscription_id and order_id (Razorpay requirement)
+  // Special validation for Razorpay options
   if (options.subscription_id && options.order_id) {
-    console.warn("Both subscription_id and order_id present, removing subscription_id");
-    const { subscription_id, ...rest } = options;
-    Object.assign(options, rest);
+    // Cannot have both subscription_id and order_id
+    options.subscription_id = undefined;
   }
   
-  // 2. If recurring is true, ensure we have a valid subscription_id, otherwise remove recurring flag
+  // If recurring flag is true but no subscription_id, remove recurring flag
   if (options.recurring === true && !options.subscription_id) {
-    console.warn("Recurring flag present without subscription_id, removing recurring flag");
-    const { recurring, ...rest } = options;
-    Object.assign(options, rest);
+    options.recurring = undefined;
   }
   
-  // 3. Remove amount if order_id is present (Razorpay recommendation)
+  // Remove amount if order_id is present
   if (options.order_id && options.amount) {
-    console.warn("Both order_id and amount present, removing amount since it's included in the order");
-    const { amount, ...rest } = options;
-    Object.assign(options, rest);
+    options.amount = undefined;
   }
   
-  // 4. If we're using standard checkout mode, make sure we don't send problematic options
+  // For standard checkout with order_id, remove potentially conflicting options
   if (options.order_id && options.order_id.startsWith('order_')) {
     // For standard checkout, these options can cause conflicts
-    const { recurring, subscription_id, amount, currency, ...rest } = options;
-    Object.assign(options, rest);
+    options.recurring = undefined;
+    options.subscription_id = undefined;
+    options.amount = undefined;
+    options.currency = undefined;
   }
 
-  // 5. Ensure the callback URL is valid and absolute
+  // Ensure the callback URL is valid and absolute
   if (options.callback_url) {
     try {
       // Make sure it's a valid URL and fully qualified
