@@ -9,7 +9,7 @@ import { Loader2, Search, UserCheck, CheckCircle, XCircle, RefreshCw } from "luc
 import { useToast } from "@/hooks/use-toast";
 import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { SubscriptionPackage } from "@/data/subscriptionData";
-import { User, UserRole, SubscriptionStatus } from "@/types/auth";
+import { User, UserRole, SubscriptionStatus, UserSubscription } from "@/types/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { getAllUsers } from "@/features/auth/userDataAccess";
 
@@ -114,6 +114,7 @@ const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPer
         startDate: new Date().toISOString(),
         endDate: new Date(Date.now() + selectedPackage.durationMonths * 30 * 24 * 60 * 60 * 1000).toISOString(),
         status: 'active' as SubscriptionStatus,
+        paymentType: 'one-time'
       };
       
       const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");

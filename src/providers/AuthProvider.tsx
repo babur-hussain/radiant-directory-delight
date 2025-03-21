@@ -54,6 +54,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         address.zipCode = addressData.zip_code;
       }
 
+      // These fields might not exist in the database yet, so we need to handle them carefully
+      const engagementRate = profile?.engagement_rate || null;
+      const preferredLanguage = profile?.preferred_language || null;
+      const interests = profile?.interests || null;
+      const location = profile?.location || null;
+      const assignedBusinessId = profile?.assigned_business_id || null;
+      const staffRole = profile?.staff_role || null;
+
       return {
         uid: session.user.id,
         id: session.user.id,
@@ -86,12 +94,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         subscriptionStatus: profile?.subscription_status || null,
         subscriptionPackage: profile?.subscription_package || null,
         customDashboardSections: profile?.custom_dashboard_sections || [],
-        engagementRate: profile?.engagement_rate || null,
-        preferredLanguage: profile?.preferred_language || null,
-        interests: profile?.interests || null,
-        location: profile?.location || null,
-        assignedBusinessId: profile?.assigned_business_id || null,
-        staffRole: profile?.staff_role || null
+        engagementRate: engagementRate,
+        preferredLanguage: preferredLanguage,
+        interests: interests,
+        location: location,
+        assignedBusinessId: assignedBusinessId,
+        staffRole: staffRole
       };
     } catch (error) {
       console.error('Error formatting user data:', error);
@@ -233,7 +241,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (data.user) {
         // Create the user profile record
-        const profileData = {
+        const profileData: any = {
           id: data.user.id,
           name,
           role,
@@ -258,6 +266,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             profileData[snakeCaseKey] = additionalData[key];
           }
         }
+        
+        // Make sure all new fields are properly added
+        if (additionalData.engagementRate) profileData.engagement_rate = additionalData.engagementRate;
+        if (additionalData.preferredLanguage) profileData.preferred_language = additionalData.preferredLanguage;
+        if (additionalData.interests) profileData.interests = additionalData.interests;
+        if (additionalData.location) profileData.location = additionalData.location;
+        if (additionalData.assignedBusinessId) profileData.assigned_business_id = additionalData.assignedBusinessId;
+        if (additionalData.staffRole) profileData.staff_role = additionalData.staffRole;
         
         // Insert the profile
         const { error: profileError } = await supabase
