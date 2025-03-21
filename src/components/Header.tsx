@@ -14,30 +14,10 @@ const Header = () => {
   const { 
     currentUser = null, 
     logout = async () => {}, 
-    initialized = false,
-    isAuthenticated
+    isAuthenticated = false
   } = useAuth();
   
   const user = currentUser;
-
-  // Simple header when auth isn't initialized
-  if (!initialized) {
-    return (
-      <header className="sticky top-0 z-50 w-full bg-white border-b shadow-sm dark:bg-gray-900 dark:border-gray-800">
-        <div className="container flex items-center justify-between h-16 mx-auto px-4">
-          <div className="flex-shrink-0">
-            <Link to="/" className="text-xl font-bold">
-              Grow Bharat Vyapaar
-            </Link>
-          </div>
-          
-          <div className="flex items-center">
-            <span className="text-sm">Loading...</span>
-          </div>
-        </div>
-      </header>
-    );
-  }
 
   const handleDashboardClick = () => {
     if (!isAuthenticated || !user) return;
@@ -69,7 +49,7 @@ const Header = () => {
       <div className="container flex items-center justify-between h-16 mx-auto px-4">
         {/* Logo */}
         <div className="flex-shrink-0">
-          <Link to="/" className="text-xl font-bold">
+          <Link to="/" className="text-xl font-bold bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 bg-clip-text text-transparent hover:from-indigo-500 hover:via-purple-500 hover:to-violet-500 transition-all duration-300">
             Grow Bharat Vyapaar
           </Link>
         </div>
