@@ -21,7 +21,7 @@ export const useRazorpay = () => {
   const [error, setError] = useState<string | null>(null);
   
   // Create a subscription on the server and open Razorpay checkout
-  const createSubscription = async (packageData: ISubscriptionPackage, useOneTimePreferred = false): Promise<any> => {
+  const createSubscription = async (packageData: ISubscriptionPackage, useOneTimePreferred = true): Promise<any> => {
     if (!user) {
       throw new Error('User must be logged in to create a subscription');
     }
@@ -40,10 +40,9 @@ export const useRazorpay = () => {
         throw new Error('Payment gateway is not available. Please refresh the page.');
       }
       
-      // Determine payment type
-      // If useOneTimePreferred is true, we'll use one-time payment even for recurring packages
-      const isOneTime = packageData.paymentType === 'one-time' || useOneTimePreferred;
-      console.log(`Processing payment as ${isOneTime ? 'one-time' : 'subscription'} payment`);
+      // Always use one-time payment for now until subscription issues are resolved
+      // Force useOneTimePreferred to true to ensure we're using order API
+      console.log(`Processing payment as one-time payment`);
       
       // Prepare customer data - ensure no empty values
       const customerData = {
@@ -57,25 +56,25 @@ export const useRazorpay = () => {
         user,
         packageData,
         customerData,
-        useOneTimePreferred
+        true // Force one-time payment
       );
       
       console.log("Received result from backend:", result);
       
-      if (!result || (!result.order && !result.subscription)) {
+      if (!result || !result.order) {
         throw new Error('Invalid response from server');
       }
       
-      // Open Razorpay checkout based on payment type
+      // Open Razorpay checkout for one-time payment
       return new Promise((resolve, reject) => {
         try {
-          // Build Razorpay options
+          // Build Razorpay options for one-time payment
           const options = buildRazorpayOptions(
             user,
             packageData,
             customerData,
             result,
-            isOneTime,
+            true, // Force isOneTime to true
             (response) => {
               console.log("Payment success callback triggered with:", response);
               resolve(response);

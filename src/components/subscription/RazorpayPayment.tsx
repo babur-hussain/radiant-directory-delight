@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, CreditCard, Shield, Loader2, RefreshCw, Calendar, CheckCircle } from 'lucide-react';
+import { AlertCircle, CreditCard, Shield, Loader2, RefreshCw, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
@@ -29,39 +29,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   
-  const isOneTimePackage = selectedPackage.paymentType === "one-time";
+  // Always treat everything as one-time package for now for stability
+  const isOneTimePackage = true;
+  const totalPaymentAmount = selectedPackage.price || 0;
   
-  const canUseRecurring = !isOneTimePackage && selectedPackage.billingCycle !== undefined;
-  
-  const setupFee = selectedPackage.setupFee || 0;
-  
-  const recurringAmount = isOneTimePackage ? 0 : (
-    selectedPackage.billingCycle === 'monthly' 
-      ? (selectedPackage.monthlyPrice || 0)
-      : (selectedPackage.price || 0)
-  );
-  
-  const advanceMonths = isOneTimePackage ? 0 : (selectedPackage.advancePaymentMonths || 0);
-  
-  const advanceAmount = selectedPackage.billingCycle === 'monthly'
-    ? (selectedPackage.monthlyPrice || 0) * advanceMonths
-    : (selectedPackage.price || 0);
-  
-  const totalPaymentAmount = isOneTimePackage 
-    ? (selectedPackage.price || 0)
-    : (setupFee + (advanceMonths > 0 ? advanceAmount : 0));
-  
-  const firstRecurringDate = new Date();
-  if (advanceMonths > 0) {
-    firstRecurringDate.setMonth(firstRecurringDate.getMonth() + advanceMonths);
-  } else if (selectedPackage.billingCycle === 'yearly') {
-    firstRecurringDate.setFullYear(firstRecurringDate.getFullYear() + 1);
-  } else {
-    firstRecurringDate.setMonth(firstRecurringDate.getMonth() + 1);
-  }
-  
-  const formattedFirstRecurringDate = formatSubscriptionDate(firstRecurringDate);
-
   const handlePayment = async () => {
     if (isProcessing) return;
     
@@ -69,14 +40,13 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     setError(null);
     
     try {
-      console.log(`Initiating ${isOneTimePackage ? 'one-time payment' : 'subscription'} for package:`, selectedPackage);
+      console.log(`Initiating one-time payment for package:`, selectedPackage);
       
       if (!user) {
         throw new Error("You must be logged in to make a payment.");
       }
       
-      // For now, we'll use one-time payments only while fixing the integration issues
-      // As a first step towards making everything work, this ensures stable functionality
+      // Force one-time payment mode for all payments
       const useOneTimePreferred = true;
       
       const result = await createSubscription(selectedPackage, useOneTimePreferred);
@@ -85,15 +55,13 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       
       toast({
         title: "Payment Successful",
-        description: `Your ${isOneTimePackage ? 'payment' : 'subscription'} was successful.`,
+        description: `Your payment was successful.`,
       });
       
       onSuccess({
         ...result,
-        isRecurring: result.isSubscription || false,
-        nextBillingDate: formattedFirstRecurringDate,
-        recurringAmount: recurringAmount,
-        billingCycle: selectedPackage.billingCycle || 'monthly'
+        isRecurring: false,
+        billingCycle: 'yearly'
       });
     } catch (error) {
       console.error('Payment error:', error);
@@ -222,49 +190,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           </div>
           
           <div className="text-sm text-muted-foreground">
-            {isOneTimePackage ? (
-              <p>One-time payment for {selectedPackage.durationMonths || 12} months of service</p>
-            ) : (
-              <>
-                {setupFee > 0 && (
-                  <div className="flex justify-between">
-                    <span>Setup fee</span>
-                    <span>₹{setupFee}</span>
-                  </div>
-                )}
-                
-                {advanceMonths > 0 && (
-                  <div className="flex justify-between mt-1">
-                    <span>Advance payment ({advanceMonths} {selectedPackage.billingCycle === 'monthly' ? 'months' : 'years'})</span>
-                    <span>₹{advanceAmount}</span>
-                  </div>
-                )}
-                
-                {canUseRecurring && (
-                  <div className="mt-2 bg-blue-50 p-3 rounded text-blue-800 flex items-start">
-                    <Calendar className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium">Automatic Payments Enabled</p>
-                      <p className="text-xs mt-1">
-                        Your subscription will begin immediately. Recurring payment of ₹{recurringAmount} will be automatically charged every {selectedPackage.billingCycle || 'month'} starting from {formattedFirstRecurringDate}.
-                      </p>
-                      <div className="mt-2 text-xs flex items-center">
-                        <CheckCircle className="h-3 w-3 mr-1 text-green-600" />
-                        <span>Hassle-free automatic billing</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                {!canUseRecurring && advanceMonths > 0 && (
-                  <p className="mt-2">Your subscription will begin immediately. You'll need to renew manually after {advanceMonths} months.</p>
-                )}
-                
-                {recurringAmount > 0 && (
-                  <p className="mt-2 font-medium">Recurring payment: ₹{recurringAmount}/{selectedPackage.billingCycle || 'month'}</p>
-                )}
-              </>
-            )}
+            <p>One-time payment for {selectedPackage.durationMonths || 12} months of service</p>
           </div>
           
           <div className="flex justify-between pt-2 font-medium text-primary">
@@ -278,9 +204,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           <div className="text-sm">
             <p className="font-medium">Secure Payment</p>
             <p className="text-muted-foreground">
-              {canUseRecurring 
-                ? "Automatic renewal ensures uninterrupted service" 
-                : "Your payment information is securely processed"}
+              Your payment information is securely processed
             </p>
           </div>
         </div>
@@ -299,15 +223,12 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           ) : (
             <>
               <CreditCard className="mr-2 h-4 w-4" />
-              {canUseRecurring
-                ? `Pay ₹${totalPaymentAmount} and setup auto-pay` 
-                : `Pay ₹${totalPaymentAmount}`}
+              Pay ₹{totalPaymentAmount}
             </>
           )}
         </Button>
         <p className="text-xs text-center text-muted-foreground">
           By proceeding, you agree to our Terms of Service and Privacy Policy
-          {canUseRecurring && " including automatic renewal terms"}
         </p>
       </CardFooter>
     </Card>

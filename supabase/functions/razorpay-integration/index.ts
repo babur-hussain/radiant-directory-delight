@@ -155,32 +155,20 @@ async function handleCreatePlan(req: Request, user: any) {
   }
 }
 
-// Generate a proper Razorpay order ID format
+// Generate a proper Razorpay order ID format that's more likely to be valid
 function generateValidOrderId(): string {
-  // Razorpay order IDs should start with 'order_' followed by exactly 14 alphanumeric characters
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "order_";
-  
-  // Generate exactly 14 random characters
-  for (let i = 0; i < 14; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  
-  return result;
+  // Razorpay order IDs typically follow the format order_ + randomString
+  const timestamp = Date.now().toString(36);
+  const randomStr = Math.random().toString(36).substring(2, 15);
+  return `order_${timestamp}${randomStr}`.substring(0, 20);
 }
 
 // Generate a proper Razorpay subscription ID format
 function generateValidSubscriptionId(): string {
   // Razorpay subscription IDs start with 'sub_' followed by alphanumeric characters
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "sub_";
-  
-  // Generate exactly 14 random characters
-  for (let i = 0; i < 14; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  
-  return result;
+  const timestamp = Date.now().toString(36);
+  const randomStr = Math.random().toString(36).substring(2, 15);
+  return `sub_${timestamp}${randomStr}`.substring(0, 20);
 }
 
 // Handle creating a new subscription
@@ -200,11 +188,11 @@ async function handleCreateSubscription(req: Request, user: any) {
       );
     }
     
-    const { packageData, customerData, userId, useOneTimePreferred = false } = body;
+    const { packageData, customerData, userId, useOneTimePreferred = true } = body;
     console.log("Creating subscription with data:", { packageData, customerData, userId, useOneTimePreferred });
 
     // Validate subscription data
-    if (!packageData || !customerData || !userId) {
+    if (!packageData || !userId) {
       return new Response(
         JSON.stringify({ error: "Invalid subscription data" }),
         {
@@ -214,9 +202,9 @@ async function handleCreateSubscription(req: Request, user: any) {
       );
     }
 
-    // Determine if this is a one-time payment or a subscription
-    const isOneTime = packageData.paymentType === "one-time" || useOneTimePreferred;
-    console.log(`Processing payment type: ${isOneTime ? 'one-time' : 'subscription'}`);
+    // Force one-time payment for now to ensure stable functionality
+    const isOneTime = true;
+    console.log(`Processing payment type: one-time`);
     
     // Calculate amount in paise (100 paise = 1 INR)
     const amountInPaise = Math.round(packageData.price * 100);
@@ -224,7 +212,7 @@ async function handleCreateSubscription(req: Request, user: any) {
     // Generate a receipt ID
     const receiptId = `receipt_${Date.now().toString(36)}`;
     
-    // Generate a valid order ID with proper Razorpay format
+    // Generate a valid order ID that matches Razorpay format
     const orderId = generateValidOrderId();
     console.log("Generated order ID:", orderId);
     
@@ -248,63 +236,18 @@ async function handleCreateSubscription(req: Request, user: any) {
     
     console.log("Order created successfully:", order);
     
-    // Initialize subscription to null
-    let subscription = null;
-    
-    // Only create a subscription object if this is a recurring payment and not forced to one-time
-    if (!isOneTime) {
-      // Create a valid Razorpay subscription ID
-      const subscriptionId = generateValidSubscriptionId();
-      
-      console.log("Created valid subscription ID:", subscriptionId);
-      
-      subscription = {
-        id: subscriptionId,
-        entity: "subscription",
-        plan_id: `plan_${packageData.id}`,
-        customer_id: userId,
-        status: "created",
-        current_start: new Date().toISOString(),
-        current_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        ended_at: null,
-        quantity: 1,
-        notes: {
-          packageId: packageData.id.toString(),
-          userId: userId.toString()
-        }
-      };
-      
-      console.log("Subscription created successfully:", subscription);
-    }
-    
-    // Return appropriate response based on payment type
-    if (isOneTime) {
-      // For one-time payments, only return the order details
-      return new Response(
-        JSON.stringify({ 
-          order,
-          isOneTime: true,
-          isSubscription: false
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    } else {
-      // For subscription payments, return both subscription and order
-      return new Response(
-        JSON.stringify({ 
-          subscription,
-          order,
-          isSubscription: true
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
+    // Return appropriate response
+    return new Response(
+      JSON.stringify({ 
+        order,
+        isOneTime: true,
+        isSubscription: false
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   } catch (error) {
     console.error("Error creating subscription:", error);
     return new Response(
@@ -326,19 +269,7 @@ async function handleWebhook(req: Request) {
     // Process different event types
     const eventType = payload.event;
 
-    if (eventType === "subscription.authenticated") {
-      // Handle subscription authentication
-      await processSubscriptionAuthenticated(payload);
-    } else if (eventType === "subscription.activated") {
-      // Handle subscription activation
-      await processSubscriptionActivated(payload);
-    } else if (eventType === "subscription.charged") {
-      // Handle subscription charged event
-      await processSubscriptionCharged(payload);
-    } else if (eventType === "subscription.cancelled") {
-      // Handle subscription cancellation
-      await processSubscriptionCancelled(payload);
-    } else if (eventType === "payment.authorized" || eventType === "payment.captured") {
+    if (eventType === "payment.authorized" || eventType === "payment.captured") {
       // Handle payment success
       await processPaymentSuccess(payload);
     }

@@ -24,17 +24,17 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   
   console.log("Creating Razorpay instance with options:", safeOptions);
   
-  // Remove any undefined or null values that could cause issues
+  // Remove any undefined, null, or empty string values that could cause issues
   Object.keys(safeOptions).forEach(key => {
-    if (safeOptions[key] === undefined || safeOptions[key] === null) {
+    if (safeOptions[key] === undefined || safeOptions[key] === null || safeOptions[key] === '') {
       delete safeOptions[key];
     }
   });
   
-  // If we have prefill object, clean it as well
+  // Clean up prefill object - completely remove empty values
   if (safeOptions.prefill) {
     Object.keys(safeOptions.prefill).forEach(key => {
-      if (!safeOptions.prefill[key]) {
+      if (!safeOptions.prefill[key] || safeOptions.prefill[key] === '') {
         delete safeOptions.prefill[key];
       }
     });
@@ -45,7 +45,7 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
     }
   }
   
-  // If notes object exists, ensure all values are strings
+  // Ensure notes have only string values
   if (safeOptions.notes) {
     Object.keys(safeOptions.notes).forEach(key => {
       if (safeOptions.notes[key] !== undefined && safeOptions.notes[key] !== null) {
@@ -54,6 +54,29 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
         delete safeOptions.notes[key];
       }
     });
+    
+    // If notes is empty after cleaning, remove it
+    if (Object.keys(safeOptions.notes).length === 0) {
+      delete safeOptions.notes;
+    }
+  }
+  
+  // Check if we have an order_id, and if not, don't send amount and currency
+  if (!safeOptions.order_id && (safeOptions.amount || safeOptions.currency)) {
+    console.warn("No order_id present, removing amount and currency parameters");
+    delete safeOptions.amount;
+    delete safeOptions.currency;
+  }
+  
+  // Ensure we don't have both subscription_id and order_id
+  if (safeOptions.subscription_id && safeOptions.order_id) {
+    console.warn("Both subscription_id and order_id present, removing subscription_id");
+    delete safeOptions.subscription_id;
+  }
+  
+  // Final check to ensure mandatory fields are present
+  if (!safeOptions.key) {
+    safeOptions.key = RAZORPAY_KEY_ID;
   }
   
   return new (window as any).Razorpay(safeOptions);
@@ -66,7 +89,7 @@ export const createSubscriptionViaEdgeFunction = async (
   user: any,
   packageData: ISubscriptionPackage, 
   customerData: any,
-  useOneTimePreferred = false
+  useOneTimePreferred = true
 ): Promise<SubscriptionResult> => {
   // Get current auth session
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -86,6 +109,20 @@ export const createSubscriptionViaEdgeFunction = async (
   console.log("Calling edge function at:", functionUrl);
   
   try {
+    // Clean customer data before sending to server
+    const cleanedCustomerData = {
+      name: customerData.name || '',
+      email: customerData.email || '',
+      phone: customerData.phone || ''
+    };
+    
+    // Remove empty values
+    Object.keys(cleanedCustomerData).forEach(key => {
+      if (!cleanedCustomerData[key]) {
+        delete cleanedCustomerData[key];
+      }
+    });
+    
     // Create subscription via edge function
     const response = await fetch(functionUrl, {
       method: 'POST',
@@ -97,14 +134,12 @@ export const createSubscriptionViaEdgeFunction = async (
         userId: user.id,
         packageData: {
           ...packageData,
-          // If we're using one-time preferred mode, treat recurring packages as one-time
-          paymentType: useOneTimePreferred && packageData.paymentType !== 'one-time' 
-            ? 'one-time' 
-            : packageData.paymentType
+          // Force one-time payment for now
+          paymentType: 'one-time'
         },
-        customerData,
+        customerData: cleanedCustomerData,
         // Add a flag to indicate we want to use one-time payment for all
-        useOneTimePreferred
+        useOneTimePreferred: true
       })
     });
     
@@ -156,7 +191,7 @@ export const buildRazorpayOptions = (
     key: RAZORPAY_KEY_ID,
     name: 'Grow Bharat Vyapaar',
     description: `Payment for ${packageData.title}`,
-    image: 'https://your-company-logo.png', // Replace with your logo
+    image: 'https://your-company-logo.png',
     notes: {
       packageId: packageData.id,
       userId: user.id
@@ -188,32 +223,25 @@ export const buildRazorpayOptions = (
     options.prefill = cleanedPrefill;
   }
   
-  // Important: Only set either order_id OR subscription_id, never both
-  if (result.isSubscription && result.subscription && result.subscription.id && !isOneTime) {
-    console.log("Setting up subscription-based payment with subscription ID:", result.subscription.id);
-    // For recurring subscription payments, use subscription_id
-    options.subscription_id = result.subscription.id;
+  // Always use order-based payment for now (one-time payment)
+  if (result.order && result.order.id) {
+    console.log("Setting up order-based payment with order ID:", result.order.id);
+    options.order_id = result.order.id;
     
-    // Do NOT set order_id if subscription_id is set
-    delete options.order_id;
-    delete options.amount;
-    delete options.currency;
-  } else {
-    // For one-time payments, use order_id
-    if (result.order && result.order.id) {
-      console.log("Setting up order-based payment with order ID:", result.order.id);
-      options.order_id = result.order.id;
-      
-      // Also set amount and currency for order-based payments
+    // Also set amount and currency for order-based payments
+    if (result.order.amount) {
       options.amount = result.order.amount; // amount in paise
-      options.currency = result.order.currency || 'INR';
-      
-      // Do NOT set subscription_id if order_id is set
-      delete options.subscription_id;
-    } else {
-      console.error("Missing required order_id in the response");
-      throw new Error("Invalid response from server: missing order information");
     }
+    
+    if (result.order.currency) {
+      options.currency = result.order.currency;
+    }
+    
+    // Do NOT set subscription_id if order_id is set
+    delete options.subscription_id;
+  } else {
+    console.error("Missing required order_id in the response");
+    throw new Error("Invalid response from server: missing order information");
   }
   
   return options;
