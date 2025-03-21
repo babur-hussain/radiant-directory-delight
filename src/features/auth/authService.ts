@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole } from '@/types/auth';
 
@@ -5,6 +6,7 @@ import { User, UserRole } from '@/types/auth';
 export const mapUserFromSupabase = (user: any): User => {
   return {
     uid: user.id,
+    id: user.id, // Ensure id is set to match uid
     email: user.email || '',
     displayName: user.name || '',
     name: user.name || '',

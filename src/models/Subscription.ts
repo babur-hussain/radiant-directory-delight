@@ -29,6 +29,7 @@ export interface ISubscription {
   actualStartDate?: string;
   dashboardFeatures?: string[];
   dashboardSections?: string[];
+  advancePaymentMonths?: number;
   [key: string]: any;
 }
 
@@ -36,15 +37,16 @@ export interface ISubscriptionPackage {
   id: string;
   title: string;
   price: number;
+  durationMonths: number;
   shortDescription?: string;
   fullDescription?: string;
-  features?: string[];
+  features: string[];
   popular?: boolean;
   setupFee?: number;
-  durationMonths?: number;
   type?: 'Business' | 'Influencer';
   paymentType?: PaymentType;
   billingCycle?: BillingCycle;
   dashboardSections?: string[];
   termsAndConditions?: string;
+  advancePaymentMonths?: number;
 }

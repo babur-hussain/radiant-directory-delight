@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +16,7 @@ interface SubscriptionCheckoutProps {
 
 export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ selectedPackage, onBack }) => {
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const { initiateSubscription, isProcessing } = useSubscription();
+  const { purchaseSubscription, isProcessing } = useSubscription();
   const [showPaymentUI, setShowPaymentUI] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const { toast } = useToast();
@@ -41,12 +40,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
     
     try {
       // Now initiate the subscription with payment details
-      await initiateSubscription(selectedPackage.id, {
-        paymentId: paymentResponse.razorpay_payment_id,
-        orderId: paymentResponse.razorpay_order_id,
-        signature: paymentResponse.razorpay_signature,
-        paymentStatus: "completed"
-      });
+      await purchaseSubscription(selectedPackage);
       
       toast({
         title: "Subscription Activated",
@@ -75,7 +69,6 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
     });
   };
   
-  // Use a dedicated full-page UI for payment processing
   if (showPaymentUI) {
     return (
       <div className="max-w-2xl mx-auto">
@@ -252,3 +245,5 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
     </div>
   );
 };
+
+export default SubscriptionCheckout;

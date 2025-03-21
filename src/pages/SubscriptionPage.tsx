@@ -10,7 +10,7 @@ import Layout from "@/components/layout/Layout";
 
 const SubscriptionPage = () => {
   const { user, isAuthenticated } = useAuth();
-  const { fetchUserSubscription } = useSubscription();
+  const { fetchUserSubscription } = useSubscription(user?.id);
   const [subscription, setSubscription] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -18,8 +18,8 @@ const SubscriptionPage = () => {
     const getSubscription = async () => {
       if (isAuthenticated && user) {
         try {
-          const result = await fetchUserSubscription();
-          if (result?.success && result?.data) {
+          const result = await fetchUserSubscription(user.id);
+          if (result.success && result.data) {
             setSubscription(result.data);
           }
         } catch (error) {

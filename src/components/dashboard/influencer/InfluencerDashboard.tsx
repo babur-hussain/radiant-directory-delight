@@ -29,7 +29,7 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
   const navigate = useNavigate();
   const { toast } = useToast();
   const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "Influencer");
-  const { fetchUserSubscription } = useSubscription();
+  const { fetchUserSubscription, getUserDashboardFeatures } = useSubscription(userId);
   const { user } = useAuth();
   
   useEffect(() => {
@@ -43,9 +43,9 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
       
       try {
         console.log(`InfluencerDashboard: Fetching subscription for user ${userId}`);
-        const result = await fetchUserSubscription();
+        const result = await fetchUserSubscription(userId);
         
-        if (result?.success && result?.data) {
+        if (result.success && result.data) {
           console.log("InfluencerDashboard: Got subscription:", result.data);
           setSubscriptionData(result.data);
         } else {

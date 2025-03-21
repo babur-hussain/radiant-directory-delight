@@ -14,7 +14,7 @@ import AdvancedSubscriptionDetails from "@/components/admin/subscription/Advance
 
 const SubscriptionDetailsPage = () => {
   const { user, isAuthenticated } = useAuth();
-  const { fetchUserSubscription, cancelSubscription } = useSubscription();
+  const { fetchUserSubscription, cancelSubscription } = useSubscription(user?.id);
   const navigate = useNavigate();
   const [subscription, setSubscription] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,8 +24,8 @@ const SubscriptionDetailsPage = () => {
     const fetchSubscription = async () => {
       if (isAuthenticated && user?.id) {
         try {
-          const result = await fetchUserSubscription();
-          if (result && result.success && result.data) {
+          const result = await fetchUserSubscription(user.id);
+          if (result.success && result.data) {
             setSubscription(result.data);
             
             if (result.data?.packageId) {

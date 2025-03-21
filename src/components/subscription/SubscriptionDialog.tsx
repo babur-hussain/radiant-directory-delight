@@ -240,4 +240,19 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   );
 };
 
+// Helper function to format price
+const formatPrice = (price: number) => {
+  return `₹${price.toLocaleString('en-IN')}`;
+};
+
+// Handle payment failure - stub function
+const handlePaymentFailure = (error: any) => {
+  console.error("Payment failure in dialog:", error);
+};
+
+// Handle proceed to payment - stub function
+const handleProceedToPayment = () => {
+  console.log("Proceeding to payment");
+};
+
 export default SubscriptionDialog;

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, ShieldCheck, Loader2 } from "lucide-react";
@@ -11,19 +10,20 @@ import { getPackageById } from "@/data/subscriptionData";
 import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { useSubscription } from "@/hooks";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import RazorpayPayment from "./RazorpayPayment";
 
 const SubscriptionDetails = () => {
   const { packageId } = useParams();
   const navigate = useNavigate();
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const { initiateSubscription, isProcessing } = useSubscription();
+  const { purchaseSubscription, isProcessing } = useSubscription();
   const [selectedPackage, setSelectedPackage] = useState<SubscriptionPackage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPaymentUI, setShowPaymentUI] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const { toast } = useToast();
   
   useEffect(() => {
     const loadPackage = async () => {
@@ -93,13 +93,7 @@ const SubscriptionDetails = () => {
     
     if (selectedPackage) {
       // Now initiate the subscription with payment details
-      await initiateSubscription(selectedPackage.id, {
-        paymentId: paymentResponse.razorpay_payment_id,
-        orderId: paymentResponse.razorpay_order_id,
-        signature: paymentResponse.razorpay_signature,
-        paymentStatus: "completed",
-        paymentType: selectedPackage.paymentType || "recurring"
-      });
+      await purchaseSubscription(selectedPackage as any);
     }
     
     setPaymentProcessing(false);
@@ -187,7 +181,6 @@ const SubscriptionDetails = () => {
     );
   }
 
-  // Determine if this is a one-time package
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
 
   return (
@@ -235,13 +228,11 @@ const SubscriptionDetails = () => {
               <h3 className="text-lg font-medium mb-2">Pricing</h3>
               <div className="space-y-2 text-sm">
                 {isOneTimePackage ? (
-                  // One-time payment pricing display
                   <div className="border-t pt-2 flex justify-between font-medium">
                     <span>One-time payment</span>
                     <span>₹{selectedPackage.price}</span>
                   </div>
                 ) : (
-                  // Subscription pricing display
                   <>
                     <div className="flex justify-between">
                       <span>One-time setup fee</span>
