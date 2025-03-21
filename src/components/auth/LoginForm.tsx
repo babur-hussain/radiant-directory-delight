@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { MailCheck, Lock, Loader2, IdCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import SocialLoginButtons from "./SocialLoginButtons";
+import { useAuth } from "@/hooks/useAuth";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -34,6 +35,7 @@ interface LoginFormProps {
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { loginWithGoogle } = useAuth();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -62,6 +64,23 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
       toast({
         title: "Login failed",
         description: error instanceof Error ? error.message : "Invalid credentials",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setIsSubmitting(true);
+      await loginWithGoogle();
+      onClose();
+    } catch (error) {
+      console.error("Google login error:", error);
+      toast({
+        title: "Google login failed",
+        description: error instanceof Error ? error.message : "Failed to authenticate with Google",
         variant: "destructive",
       });
     } finally {
@@ -186,7 +205,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
       </div>
 
       <SocialLoginButtons
-        onGoogleLogin={() => {}}
+        onGoogleLogin={handleGoogleLogin}
         isDisabled={isSubmitting}
       />
     </div>

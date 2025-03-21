@@ -144,7 +144,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
           <div className="px-6 pb-6 pt-2 h-[calc(90vh-180px)]">
             <ScrollArea className="h-full pr-4">
               <TabsContent value="login" className="m-0 mt-2">
-                <LoginForm onLogin={handleLogin} onClose={() => onOpenChange(false)} />
+                <LoginForm 
+                  onLogin={handleLogin} 
+                  onClose={() => onOpenChange(false)} 
+                />
               </TabsContent>
 
               <TabsContent value="register" className="m-0 mt-2">

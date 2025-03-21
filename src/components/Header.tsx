@@ -5,9 +5,11 @@ import { Menu, X, LogIn, LayoutDashboard } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/hooks/useAuth';
 import UserMenu from './UserMenu';
+import AuthModal from './auth/AuthModal';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const navigate = useNavigate();
   
   // Get auth context with safe defaults
@@ -36,7 +38,7 @@ const Header = () => {
   };
 
   const handleLoginClick = () => {
-    navigate("/auth");
+    setIsAuthModalOpen(true);
   };
 
   const shouldShowDashboard = () => {
@@ -158,6 +160,12 @@ const Header = () => {
           </div>
         </div>
       )}
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onOpenChange={setIsAuthModalOpen} 
+      />
     </header>
   );
 };
