@@ -94,19 +94,35 @@ export const updateUserSubscription = async (userId: string, subscriptionData: I
     // Create a new subscription ID if one doesn't exist
     const subscriptionId = subscriptionData.id || `sub_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     
-    // Prepare subscription data with IDs
+    // Prepare subscription data with correct field names for Supabase
     const subscriptionWithIds = {
-      ...subscriptionData,
       id: subscriptionId,
-      userId: userId,
-      updatedAt: new Date().toISOString()
+      user_id: userId,
+      package_id: subscriptionData.packageId,
+      package_name: subscriptionData.packageName,
+      amount: subscriptionData.amount,
+      start_date: subscriptionData.startDate,
+      end_date: subscriptionData.endDate,
+      status: subscriptionData.status,
+      payment_method: subscriptionData.paymentMethod,
+      transaction_id: subscriptionData.transactionId,
+      created_at: subscriptionData.createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      cancelled_at: subscriptionData.cancelledAt,
+      cancel_reason: subscriptionData.cancelReason,
+      assigned_by: subscriptionData.assignedBy,
+      assigned_at: subscriptionData.assignedAt,
+      advance_payment_months: subscriptionData.advancePaymentMonths,
+      is_paused: subscriptionData.isPaused,
+      is_pausable: subscriptionData.isPausable,
+      is_user_cancellable: subscriptionData.isUserCancellable,
+      payment_type: subscriptionData.paymentType,
+      invoice_ids: subscriptionData.invoiceIds,
+      actual_start_date: subscriptionData.actualStartDate,
+      signup_fee: subscriptionData.signupFee
     };
     
-    if (!subscriptionData.createdAt) {
-      subscriptionWithIds.createdAt = new Date().toISOString();
-    }
-    
-    // Update or create the subscription in Supabase - FIXED: changed from 'subscriptions' to 'user_subscriptions'
+    // Update or create the subscription in Supabase
     const { error: subError } = await supabase
       .from('user_subscriptions')
       .upsert(subscriptionWithIds);
