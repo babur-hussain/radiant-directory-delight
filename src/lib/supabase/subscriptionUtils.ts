@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import { ISubscription, SubscriptionStatus, PaymentType } from '@/models/Subscription';
+import { ISubscription, SubscriptionStatus, PaymentType, BillingCycle } from '@/models/Subscription';
 import { User } from '@/types/auth';
 
 // Helper to ensure correct type casting
@@ -14,6 +14,13 @@ const transformType = (type: string): 'Business' | 'Influencer' => {
 const transformPaymentType = (type: string): PaymentType => {
   if (type?.toLowerCase() === 'one-time') return 'one-time';
   return 'recurring'; // Default
+};
+
+// Helper to ensure billing cycle is valid
+const transformBillingCycle = (cycle: string | null): BillingCycle => {
+  if (cycle?.toLowerCase() === 'monthly') return 'monthly';
+  if (cycle?.toLowerCase() === 'yearly') return 'yearly';
+  return undefined; // Default value for BillingCycle
 };
 
 // Helper to ensure subscription status is valid
@@ -51,10 +58,10 @@ export const getSubscriptionPackages = async (): Promise<ISubscriptionPackage[]>
       fullDescription: pkg.full_description || '',
       features: Array.isArray(pkg.features) ? pkg.features : [],
       popular: pkg.popular || false,
-      type: transformType(pkg.type), // Fix: ensure type is valid
+      type: transformType(pkg.type),
       termsAndConditions: pkg.terms_and_conditions,
-      paymentType: transformPaymentType(pkg.payment_type), // Fix: ensure paymentType is valid
-      billingCycle: pkg.billing_cycle,
+      paymentType: transformPaymentType(pkg.payment_type),
+      billingCycle: transformBillingCycle(pkg.billing_cycle),
       advancePaymentMonths: pkg.advance_payment_months || 0,
       dashboardSections: pkg.dashboard_sections || []
     })) : [];
@@ -87,10 +94,10 @@ export const getPackagesByType = async (type: string): Promise<ISubscriptionPack
       fullDescription: pkg.full_description || '',
       features: Array.isArray(pkg.features) ? pkg.features : [],
       popular: pkg.popular || false,
-      type: transformType(pkg.type), // Fix: ensure type is valid
+      type: transformType(pkg.type),
       termsAndConditions: pkg.terms_and_conditions,
-      paymentType: transformPaymentType(pkg.payment_type), // Fix: ensure paymentType is valid
-      billingCycle: pkg.billing_cycle,
+      paymentType: transformPaymentType(pkg.payment_type),
+      billingCycle: transformBillingCycle(pkg.billing_cycle),
       advancePaymentMonths: pkg.advance_payment_months || 0,
       dashboardSections: pkg.dashboard_sections || []
     })) : [];
@@ -112,7 +119,7 @@ export const createOrUpdatePackage = async (packageData: ISubscriptionPackage): 
     
     // Format features if it's a string
     if (typeof packageData.features === 'string') {
-      packageData.features = (packageData.features as any).split(',').map((f: string) => f.trim());
+      packageData.features = (packageData.features as unknown as string).split(',').map((f: string) => f.trim());
     }
     
     const { data, error } = await supabase
@@ -174,14 +181,14 @@ export const getUserSubscription = async (userId: string): Promise<ISubscription
         id: data.id,
         userId: data.user_id,
         packageId: data.package_id,
-        packageName: data.package_name,
+        packageName: data.package_name || 'Subscription',
         amount: data.amount,
         startDate: data.start_date,
         endDate: data.end_date,
-        status: transformStatus(data.status), // Fix: ensure status is valid
+        status: transformStatus(data.status),
         paymentMethod: data.payment_method,
         transactionId: data.transaction_id,
-        paymentType: transformPaymentType(data.payment_type), // Fix: ensure payment type is valid
+        paymentType: transformPaymentType(data.payment_type),
         createdAt: data.created_at,
         updatedAt: data.updated_at,
         cancelledAt: data.cancelled_at,
@@ -216,11 +223,12 @@ export const getUserSubscription = async (userId: string): Promise<ISubscription
         id: userData.subscription_id,
         userId: userId,
         packageId: userData.subscription_package || '',
-        status: transformStatus(userData.subscription_status || ''), // Fix: ensure status is valid
-        startDate: new Date().toISOString(), // Default values
+        packageName: 'Subscription', // Add required packageName
+        status: transformStatus(userData.subscription_status || ''),
+        startDate: new Date().toISOString(),
         endDate: new Date().toISOString(),
         amount: 0,
-        paymentType: 'recurring' // Default payment type
+        paymentType: 'recurring'
       };
     }
     
