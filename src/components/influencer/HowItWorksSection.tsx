@@ -2,33 +2,47 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-interface HowItWorksSectionProps {
-  steps: {
-    step: number;
-    title: string;
-    description: string;
-  }[];
+interface Step {
+  step: number;
+  title: string;
+  description: string;
 }
 
-const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ steps }) => {
+interface HowItWorksSectionProps {
+  steps?: Step[];
+}
+
+const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ steps = [] }) => {
+  if (steps.length === 0) {
+    return (
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>How It Works</CardTitle>
+          <CardDescription>Getting started as an influencer</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground text-center py-8">No steps information available at this time</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="mb-8">
       <CardHeader>
         <CardTitle>How It Works</CardTitle>
-        <CardDescription>Simple steps to get started as an influencer</CardDescription>
+        <CardDescription>Getting started as an influencer</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          {steps.map((step, index) => (
-            <div key={index} className="flex">
-              <div className="flex-shrink-0 mr-4">
-                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold">
-                  {step.step}
-                </div>
+          {steps.map((item) => (
+            <div key={item.step} className="flex gap-4">
+              <div className="min-w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                {item.step}
               </div>
               <div>
-                <h3 className="font-semibold">{step.title}</h3>
-                <p className="text-gray-500">{step.description}</p>
+                <h3 className="font-medium mb-1">{item.title}</h3>
+                <p className="text-sm text-muted-foreground">{item.description}</p>
               </div>
             </div>
           ))}

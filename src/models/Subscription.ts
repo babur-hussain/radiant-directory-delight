@@ -1,7 +1,7 @@
 
 export type PaymentType = 'recurring' | 'one-time';
 export type BillingCycle = 'monthly' | 'yearly';
-export type SubscriptionStatus = 'active' | 'paused' | 'pending' | 'cancelled' | 'expired';
+export type SubscriptionStatus = 'active' | 'paused' | 'pending' | 'cancelled' | 'expired' | 'inactive';
 
 export interface ISubscription {
   id: string;
@@ -30,4 +30,21 @@ export interface ISubscription {
   dashboardFeatures?: string[];
   dashboardSections?: string[];
   [key: string]: any;
+}
+
+export interface ISubscriptionPackage {
+  id: string;
+  title: string;
+  price: number;
+  shortDescription?: string;
+  fullDescription?: string;
+  features?: string[];
+  popular?: boolean;
+  setupFee?: number;
+  durationMonths?: number;
+  type?: 'Business' | 'Influencer';
+  paymentType?: PaymentType;
+  billingCycle?: BillingCycle;
+  dashboardSections?: string[];
+  termsAndConditions?: string;
 }

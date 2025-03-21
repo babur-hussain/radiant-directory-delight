@@ -35,27 +35,27 @@ export function isUserSubscription(subscription: any): subscription is UserSubsc
 // Extended User interface
 export interface User {
   uid: string;
+  id: string;
   email: string | null;
   displayName: string | null;
+  name: string | null;
   photoURL: string | null;
   isAdmin: boolean;
   role: UserRole;
   employeeCode?: string | null;
   createdAt?: string;
   
-  // Modified field from string to object
+  // Subscription fields
   subscription?: string | UserSubscription | null;
   subscriptionId?: string;
   subscriptionStatus?: string;
   subscriptionPackage?: string;
   customDashboardSections?: string[];
   
-  // Added fields from Supabase
-  name?: string | null;
-  id?: string; // Virtual field for compatibility with Supabase IDs
+  // Last login field
   lastLogin?: Date | string;
   
-  // Shared fields
+  // User profile fields
   phone?: string;
   instagramHandle?: string;
   facebookHandle?: string;
@@ -87,7 +87,7 @@ export interface User {
 // Auth context type for the context provider
 export interface AuthContextType {
   user: User | null;
-  currentUser: User | null; // Alias for user for compatibility
+  currentUser: User | null;
   isAuthenticated: boolean;
   loading: boolean;
   initialized: boolean;
