@@ -13,9 +13,30 @@ export const signupWithEmail = async (
   additionalData: any = {}
 ): Promise<User> => {
   try {
+    console.log("Starting signup for:", email);
     // Check for default admin email
     const isAdmin = isDefaultAdminEmail(email);
     const finalRole = isAdmin ? 'Admin' : role;
+    
+    // First, check if user already exists
+    const { data: existingUser } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    }).catch(() => ({ data: null }));
+    
+    if (existingUser?.user) {
+      console.log("User already exists, fetching profile");
+      const userData = await fetchUserByUid(existingUser.user.id);
+      if (userData) {
+        // Ensure admin privileges for default admin
+        if (isAdmin && (!userData.isAdmin || userData.role !== 'Admin')) {
+          userData.isAdmin = true;
+          userData.role = 'Admin';
+          await updateUserRole(userData);
+        }
+        return userData;
+      }
+    }
     
     // Register the user with Supabase
     const { data, error } = await supabase.auth.signUp({
@@ -40,18 +61,46 @@ export const signupWithEmail = async (
       throw new Error("No user returned from signup");
     }
 
+    console.log("User registered, ID:", data.user.id, "Session:", data.session ? "exists" : "null");
+
     // For default admin or when email confirmation is not required,
     // try to login immediately after signup
     if (isAdmin || process.env.NODE_ENV === 'development') {
       try {
+        console.log("Attempting immediate login after signup");
         await supabase.auth.signInWithPassword({
           email,
           password
         });
+        console.log("Auto-login successful");
       } catch (loginError) {
         console.warn("Auto login after signup failed:", loginError);
         // Continue with signup flow even if auto-login fails
       }
+    }
+
+    // Create a user profile in the database
+    try {
+      console.log("Creating user profile in database");
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: data.user.id,
+          email: email,
+          name: name,
+          role: finalRole,
+          is_admin: isAdmin,
+          created_at: new Date().toISOString(),
+          last_login: new Date().toISOString()
+        });
+        
+      if (insertError) {
+        console.error("Error creating user profile:", insertError);
+      } else {
+        console.log("User profile created successfully");
+      }
+    } catch (dbError) {
+      console.error("Database error creating profile:", dbError);
     }
 
     // Create a user object from the signup data
@@ -70,9 +119,7 @@ export const signupWithEmail = async (
       ...additionalData
     };
 
-    // Set user role (this also updates the database)
-    await updateUserRole(newUser);
-
+    console.log("Signup completed successfully, returning user");
     return newUser;
   } catch (error) {
     console.error("Error in signupWithEmail:", error);
@@ -122,6 +169,7 @@ export const loginWithEmail = async (
     // Otherwise proceed with normal login
     const isAdmin = isDefaultAdminEmail(email);
     
+    console.log("Attempting to sign in with password");
     // Sign in with Supabase
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -172,6 +220,8 @@ export const loginWithEmail = async (
         
       if (insertError) {
         console.error("Error creating user profile:", insertError);
+      } else {
+        console.log("Created user profile in database");
       }
       
       // Default user data

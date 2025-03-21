@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               setSession({
                 accessToken: _session.access_token,
                 refreshToken: _session.refresh_token,
-                expiresAt: new Date(_session.expires_at!).toISOString(),
+                expiresAt: _session.expires_at ? new Date(_session.expires_at * 1000).toISOString() : new Date().toISOString(),
                 providerToken: _session.provider_token || null,
                 user: {
                   id: _session.user.id,
@@ -115,7 +115,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setSession({
             accessToken: currentSession.access_token,
             refreshToken: currentSession.refresh_token,
-            expiresAt: new Date(currentSession.expires_at!).toISOString(),
+            expiresAt: currentSession.expires_at ? new Date(currentSession.expires_at * 1000).toISOString() : new Date().toISOString(),
             providerToken: currentSession.provider_token || null,
             user: {
               id: currentSession.user.id,
