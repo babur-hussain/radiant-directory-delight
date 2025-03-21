@@ -67,14 +67,17 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
   }, []);
   
   // Function to handle business deletion
-  const handleDeleteBusiness = async (businessId: string) => {
+  const handleDeleteBusiness = async (businessId: string | number) => {
     try {
       setIsSubmitting(true);
+      
+      // Convert businessId to a number if it's a string
+      const id = typeof businessId === 'string' ? parseInt(businessId, 10) : businessId;
       
       const { error } = await supabase
         .from('businesses')
         .delete()
-        .eq('id', businessId);
+        .eq('id', id);
       
       if (error) throw error;
       
@@ -284,7 +287,7 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
         business={selectedBusiness}
         open={isDeleteDialogOpen}
         onOpenChange={() => setIsDeleteDialogOpen(false)}
-        onConfirmDelete={() => selectedBusiness && handleDeleteBusiness(selectedBusiness.id.toString())}
+        onConfirmDelete={() => selectedBusiness && handleDeleteBusiness(selectedBusiness.id)}
         isDeleting={isSubmitting}
       />
     </div>
