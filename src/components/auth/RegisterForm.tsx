@@ -19,7 +19,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import RegisterTypeSelector from "./RegisterTypeSelector";
 import { UserRole } from "@/types/auth";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MailCheck, Loader2, IdCard, MapPin, Briefcase, User, Instagram, Facebook, Phone, Globe, Building } from "lucide-react";
+import { 
+  ArrowLeft, 
+  MailCheck, 
+  Loader2, 
+  IdCard, 
+  MapPin, 
+  Briefcase, 
+  User, 
+  Instagram, 
+  Facebook, 
+  Phone, 
+  Globe, 
+  Building, 
+  Languages, 
+  Heart, 
+  Percent, 
+  Users
+} from "lucide-react";
 import SocialLoginButtons from "./SocialLoginButtons";
 
 // Create a base schema with common fields
@@ -30,7 +47,7 @@ const baseSchema = {
     .min(6, "Password must be at least 6 characters")
     .max(50, "Password must be at most 50 characters"),
   confirmPassword: z.string(),
-  phone: z.string().min(10, "Please enter a valid phone number").optional(),
+  phoneNumber: z.string().min(10, "Please enter a valid phone number"),
   employeeCode: z.string().optional(),
 };
 
@@ -38,13 +55,14 @@ const baseSchema = {
 const influencerSchema = z.object({
   ...baseSchema,
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  instagramHandle: z.string().optional(),
-  facebookHandle: z.string().optional(),
-  niche: z.string().min(2, "Please select a category"),
+  instagramHandle: z.string().min(2, "Instagram handle is required"),
+  facebookProfile: z.string().optional(),
+  category: z.string().min(2, "Please select a category"),
   followersCount: z.string().min(1, "Please enter your followers count"),
-  bio: z.string().optional(),
+  engagementRate: z.string().optional(),
   city: z.string().min(2, "City is required"),
   country: z.string().min(2, "Country is required"),
+  bio: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -53,17 +71,28 @@ const influencerSchema = z.object({
 const businessSchema = z.object({
   ...baseSchema,
   businessName: z.string().min(2, "Business name must be at least 2 characters"),
-  ownerName: z.string().min(2, "Owner name must be at least 2 characters"),
   businessCategory: z.string().min(2, "Please select a business category"),
-  website: z.string().optional(),
-  instagramHandle: z.string().optional(),
-  facebookHandle: z.string().optional(),
-  gstNumber: z.string().optional(),
-  street: z.string().optional(),
+  websiteURL: z.string().optional(),
+  socialMediaLinks: z.object({
+    instagram: z.string().optional(),
+    facebook: z.string().optional(),
+  }).optional(),
+  street: z.string().min(2, "Street address is required"),
   city: z.string().min(2, "City is required"),
   state: z.string().optional(),
   country: z.string().min(2, "Country is required"),
   zipCode: z.string().optional(),
+  gstin: z.string().optional(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+const staffSchema = z.object({
+  ...baseSchema,
+  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  staffRole: z.string().min(2, "Staff role is required"),
+  assignedBusinessId: z.string().min(2, "Assigned business is required"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -71,7 +100,10 @@ const businessSchema = z.object({
 
 const userSchema = z.object({
   ...baseSchema,
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  fullName: z.string().min(2, "Name must be at least 2 characters"),
+  interests: z.string().optional(),
+  location: z.string().optional(),
+  preferredLanguage: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -84,12 +116,14 @@ const getSchemaForRole = (role: UserRole) => {
       return influencerSchema;
     case "Business":
       return businessSchema;
+    case "Staff":
+      return staffSchema;
     default:
       return userSchema;
   }
 };
 
-type FormData = z.infer<typeof influencerSchema> | z.infer<typeof businessSchema> | z.infer<typeof userSchema>;
+type FormData = z.infer<typeof influencerSchema> | z.infer<typeof businessSchema> | z.infer<typeof staffSchema> | z.infer<typeof userSchema>;
 
 interface RegisterFormProps {
   onSignup: (
@@ -126,6 +160,16 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
     "Education", "Professional Services", "Entertainment", "Real Estate", "Other"
   ];
 
+  // Define staff roles
+  const staffRoles = [
+    "Admin", "Manager", "Sales", "Support", "Content Creator", "Marketing", "Other"
+  ];
+
+  // Define languages
+  const languages = [
+    "English", "Hindi", "Spanish", "French", "German", "Chinese", "Japanese", "Other"
+  ];
+
   // Define countries
   const countries = [
     "India", "United States", "United Kingdom", "Canada", "Australia", 
@@ -157,7 +201,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
       email: "",
       password: "",
       confirmPassword: "",
-      phone: "",
+      phoneNumber: "",
       employeeCode: "",
     };
 
@@ -167,9 +211,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           ...baseValues,
           fullName: "",
           instagramHandle: "",
-          facebookHandle: "",
-          niche: "",
+          facebookProfile: "",
+          category: "",
           followersCount: "",
+          engagementRate: "",
           bio: "",
           city: "",
           country: "",
@@ -178,22 +223,33 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
         return {
           ...baseValues,
           businessName: "",
-          ownerName: "",
           businessCategory: "",
-          website: "",
-          instagramHandle: "",
-          facebookHandle: "",
-          gstNumber: "",
+          websiteURL: "",
+          socialMediaLinks: {
+            instagram: "",
+            facebook: "",
+          },
           street: "",
           city: "",
           state: "",
           country: "",
           zipCode: "",
+          gstin: "",
+        };
+      case "Staff":
+        return {
+          ...baseValues,
+          fullName: "",
+          staffRole: "",
+          assignedBusinessId: "",
         };
       default:
         return {
           ...baseValues,
-          name: "",
+          fullName: "",
+          interests: "",
+          location: "",
+          preferredLanguage: "",
         };
     }
   }
@@ -206,7 +262,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
       // Create additionalData object based on role
       let additionalData: any = {
         employeeCode: data.employeeCode || null,
-        phone: data.phone || null,
+        phone: data.phoneNumber || null,
       };
       
       let displayName = "";
@@ -219,9 +275,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           ...additionalData,
           name: influencerData.fullName,
           instagramHandle: influencerData.instagramHandle || null,
-          facebookHandle: influencerData.facebookHandle || null,
-          niche: influencerData.niche,
+          facebookHandle: influencerData.facebookProfile || null,
+          niche: influencerData.category,
           followersCount: influencerData.followersCount,
+          engagementRate: influencerData.engagementRate || null,
           bio: influencerData.bio || null,
           city: influencerData.city,
           country: influencerData.country,
@@ -235,14 +292,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
         additionalData = {
           ...additionalData,
           businessName: businessData.businessName,
-          ownerName: businessData.ownerName,
           businessCategory: businessData.businessCategory,
-          website: businessData.website || null,
-          instagramHandle: businessData.instagramHandle || null,
-          facebookHandle: businessData.facebookHandle || null,
-          gstNumber: businessData.gstNumber || null,
+          website: businessData.websiteURL || null,
+          instagramHandle: businessData.socialMediaLinks?.instagram || null,
+          facebookHandle: businessData.socialMediaLinks?.facebook || null,
           city: businessData.city,
           country: businessData.country,
+          gstNumber: businessData.gstin || null,
           address: {
             street: businessData.street || null,
             city: businessData.city,
@@ -253,13 +309,27 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           createdAt: new Date().toISOString(),
           verified: false,
         };
-      } else {
-        const userData = data as z.infer<typeof userSchema>;
-        displayName = userData.name;
+      } else if (userType === "Staff") {
+        const staffData = data as z.infer<typeof staffSchema>;
+        displayName = staffData.fullName;
         
         additionalData = {
           ...additionalData,
-          name: userData.name,
+          name: staffData.fullName,
+          staffRole: staffData.staffRole,
+          assignedBusinessId: staffData.assignedBusinessId,
+          createdAt: new Date().toISOString(),
+        };
+      } else {
+        const userData = data as z.infer<typeof userSchema>;
+        displayName = userData.fullName;
+        
+        additionalData = {
+          ...additionalData,
+          name: userData.fullName,
+          interests: userData.interests || null,
+          location: userData.location || null,
+          preferredLanguage: userData.preferredLanguage || null,
           createdAt: new Date().toISOString(),
         };
       }
@@ -309,7 +379,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="phone"
+                name="phoneNumber"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Phone Number*</FormLabel>
@@ -326,7 +396,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
 
               <FormField
                 control={form.control}
-                name="niche"
+                name="category"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Niche/Category*</FormLabel>
@@ -361,7 +431,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
                   <FormItem>
                     <FormLabel>Followers Count*</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. 10000" {...field} />
+                      <div className="relative">
+                        <Input placeholder="e.g. 10000" {...field} />
+                        <Users className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -370,14 +443,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
 
               <FormField
                 control={form.control}
-                name="instagramHandle"
+                name="engagementRate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Instagram Handle</FormLabel>
+                    <FormLabel>Engagement Rate</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Input placeholder="e.g. @username" {...field} />
-                        <Instagram className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input placeholder="e.g. 3.5" {...field} />
+                        <Percent className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -389,10 +462,27 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="facebookHandle"
+                name="instagramHandle"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Facebook Handle</FormLabel>
+                    <FormLabel>Instagram Handle*</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input placeholder="e.g. @username" {...field} />
+                        <Instagram className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="facebookProfile"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Facebook Profile</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input placeholder="e.g. username" {...field} />
@@ -403,7 +493,9 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
                   </FormItem>
                 )}
               />
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="country"
@@ -431,9 +523,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
                   </FormItem>
                 )}
               />
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="city"
@@ -484,7 +574,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
                     <FormControl>
                       <div className="relative">
                         <Input placeholder="Enter business name" {...field} />
-                        <Briefcase className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                        <Building className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -494,26 +584,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
 
               <FormField
                 control={form.control}
-                name="ownerName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Owner Name*</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input placeholder="Enter owner's name" {...field} />
-                        <User className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="phone"
+                name="phoneNumber"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Phone Number*</FormLabel>
@@ -527,7 +598,9 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
                   </FormItem>
                 )}
               />
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="businessCategory"
@@ -555,31 +628,18 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
                   </FormItem>
                 )}
               />
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="website"
+                name="websiteURL"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Website</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. https://yourbusiness.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="gstNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>GST Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter GST number if applicable" {...field} />
+                      <div className="relative">
+                        <Input placeholder="e.g. https://yourbusiness.com" {...field} />
+                        <Globe className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -590,7 +650,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="instagramHandle"
+                name="socialMediaLinks.instagram"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Instagram Handle</FormLabel>
@@ -607,7 +667,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
 
               <FormField
                 control={form.control}
-                name="facebookHandle"
+                name="socialMediaLinks.facebook"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Facebook Handle</FormLabel>
@@ -623,6 +683,23 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
               />
             </div>
 
+            <FormField
+              control={form.control}
+              name="gstin"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>GSTIN</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input placeholder="Enter GST number if applicable" {...field} />
+                      <IdCard className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <h3 className="text-md font-medium mt-4 mb-2">Business Address</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -631,7 +708,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
                 name="street"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Street Address</FormLabel>
+                    <FormLabel>Street Address*</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter street address" {...field} />
                     </FormControl>
@@ -714,21 +791,194 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             </div>
           </>
         );
+      case "Staff":
+        return (
+          <>
+            <FormField
+              control={form.control}
+              name="fullName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name*</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input placeholder="Enter your full name" {...field} />
+                      <User className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="phoneNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number*</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input placeholder="Enter your phone number" {...field} />
+                        <Phone className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="staffRole"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Staff Role*</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {staffRoles.map((role) => (
+                          <SelectItem key={role} value={role}>
+                            {role}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="assignedBusinessId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Assigned Business ID*</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input placeholder="Enter assigned business ID" {...field} />
+                      <Building className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
+        );
       default:
         return (
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Full Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="John Doe" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <>
+            <FormField
+              control={form.control}
+              name="fullName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name*</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input placeholder="Enter your full name" {...field} />
+                      <User className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="phoneNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number*</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input placeholder="Enter your phone number" {...field} />
+                        <Phone className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="preferredLanguage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preferred Language</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select preferred language" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {languages.map((language) => (
+                          <SelectItem key={language} value={language}>
+                            {language}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input placeholder="City, State" {...field} />
+                        <MapPin className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="interests"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Interests</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input placeholder="E.g. Music, Sports, Travel" {...field} />
+                        <Heart className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </>
         );
     }
   };
@@ -751,7 +1001,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
               className="mb-4" 
               onClick={onBack}
             >
-              ← Back to type selection
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to type selection
             </Button>
           )}
           
@@ -767,11 +1018,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
                     <FormItem>
                       <FormLabel>Email*</FormLabel>
                       <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="you@example.com"
-                          {...field}
-                        />
+                        <div className="relative">
+                          <Input
+                            type="email"
+                            placeholder="you@example.com"
+                            {...field}
+                          />
+                          <MailCheck className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

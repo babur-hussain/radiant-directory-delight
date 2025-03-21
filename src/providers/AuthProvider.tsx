@@ -1,7 +1,7 @@
 
 import { createContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContextType, User, UserRole } from '@/types/auth';
+import { AuthContextType, User, UserRole, SubscriptionStatus } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { Session } from '@supabase/supabase-js';
 import { toast } from '@/hooks/use-toast';
@@ -85,7 +85,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         subscriptionId: profile?.subscription_id || null,
         subscriptionStatus: profile?.subscription_status || null,
         subscriptionPackage: profile?.subscription_package || null,
-        customDashboardSections: profile?.custom_dashboard_sections || []
+        customDashboardSections: profile?.custom_dashboard_sections || [],
+        engagementRate: profile?.engagement_rate || null,
+        preferredLanguage: profile?.preferred_language || null,
+        interests: profile?.interests || null,
+        location: profile?.location || null,
+        assignedBusinessId: profile?.assigned_business_id || null,
+        staffRole: profile?.staff_role || null
       };
     } catch (error) {
       console.error('Error formatting user data:', error);

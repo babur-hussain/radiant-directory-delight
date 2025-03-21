@@ -22,6 +22,9 @@ export interface User {
   
   // User-specific fields
   fullName?: string | null;
+  preferredLanguage?: string | null;
+  interests?: string | null;
+  location?: string | null;
   
   // Influencer-specific fields
   instagramHandle?: string | null;
@@ -32,6 +35,7 @@ export interface User {
   niche?: string | null;
   followersCount?: string | null;
   bio?: string | null;
+  engagementRate?: string | null;
   
   // Business-specific fields
   businessName?: string | null;
@@ -46,6 +50,10 @@ export interface User {
     zipCode?: string | null;
   } | null;
   gstNumber?: string | null;
+  
+  // Staff-specific fields
+  staffRole?: string | null;
+  assignedBusinessId?: string | null;
   
   // Subscription-related fields
   subscription?: UserSubscription | string | null;
