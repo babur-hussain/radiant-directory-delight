@@ -1,135 +1,111 @@
-import React, { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+
+import React, { useState, useEffect } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { UserRole } from '@/types/auth';
+import { useAuth } from '@/features/auth/useAuth';
+import { useBusinessPageData } from '@/hooks/useBusinessPageData';
 import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
-import { useBusinessData } from '@/hooks/useBusinessPageData';
-import { CheckCircle, Users, Star, TrendingUp, Award, Zap, CheckSquare, ArrowRight, Check } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import Loading from '@/components/ui/loading';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
+import FreelancersSection from '@/components/business/FreelancersSection';
+import FAQsSection from '@/components/business/FAQsSection';
+import StatisticsSection from '@/components/business/StatisticsSection';
+import { Button } from '@/components/ui/button';
+import { Image } from 'lucide-react';
 
-const BusinessPage = () => {
-  const { id } = useParams();
-  const { toast } = useToast();
-  const { businessData } = useBusinessData();
+const BusinessPage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('features');
+  const { user } = useAuth();
+  const { 
+    statistics,
+    features,
+    faqs,
+    loading,
+    error
+  } = useBusinessPageData();
 
-  useEffect(() => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
-  }, []);
+  if (loading) {
+    return (
+      <div className="container mx-auto py-20 text-center">
+        <p>Loading business page content...</p>
+      </div>
+    );
+  }
 
-  const benefits = [
-    {
-      icon: Users,
-      title: "Expand Your Audience",
-      description: "Connect with our network of influencers to reach new potential customers and grow your business."
-    },
-    {
-      icon: Star,
-      title: "Premium Influencer Partnerships",
-      description: "Get exclusive access to our top influencers who can promote your products and services."
-    },
-    {
-      icon: TrendingUp,
-      title: "Boost Your Online Presence",
-      description: "Transform your digital footprint with expert marketing strategies and influencer collaborations."
-    },
-    {
-      icon: Award,
-      title: "Verified Business Badge",
-      description: "Stand out with our verified badge that shows customers you're a trusted business partner."
-    },
-    {
-      icon: Zap,
-      title: "Analytics Dashboard",
-      description: "Track your campaign performance, engagement, and ROI with our intuitive analytics tools."
-    },
-    {
-      icon: CheckSquare,
-      title: "Personalized Marketing Plans",
-      description: "Receive tailored marketing strategies that match your business goals and budget."
-    },
-  ];
+  if (error) {
+    return (
+      <div className="container mx-auto py-20 text-center">
+        <p className="text-red-500">Error: {error}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <main className="flex-grow">
-        <section className="relative py-20 md:py-28 bg-gradient-to-br from-blue-500/10 to-primary/10 overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-50"></div>
-          
-          <div className="container px-4 mx-auto relative z-10">
-            <div className="max-w-3xl mx-auto text-center">
-              <h1 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900">
-                Grow Your Business with Influencer Marketing
-              </h1>
-              <p className="text-xl text-gray-600 mb-8">
-                Connect with our network of influencers to amplify your brand message and drive meaningful business growth.
-              </p>
-              <Button size="lg" className="bg-blue-500 hover:bg-blue-600 animate-pulse">
-                Start Your Journey <ArrowRight className="ml-2 h-4 w-4" />
+    <div className="container mx-auto px-4 py-8">
+      <section className="py-10 md:py-20">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold mb-6">
+              Grow Your Business with Effective Tools
+            </h1>
+            <p className="text-xl text-gray-600 mb-8">
+              Unlock the potential of your business with our comprehensive range of tools and services designed to help you thrive in today's competitive market.
+            </p>
+            <div className="space-x-4">
+              <Button size="lg" onClick={() => setActiveTab('packages')}>
+                View Packages
+              </Button>
+              <Button size="lg" variant="outline">
+                Learn More
               </Button>
             </div>
           </div>
-        </section>
-
-        <section className="py-20 bg-white">
-          <div className="container px-4 mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4 text-gray-900">Key Benefits for Businesses</h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Our platform provides everything you need to thrive in today's competitive market through influencer partnerships.
-              </p>
+          <div className="relative">
+            <div className="aspect-video bg-gray-200 rounded-xl flex items-center justify-center">
+              <Image className="w-16 h-16 text-gray-400" />
             </div>
+          </div>
+        </div>
+      </section>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {benefits.map((benefit, index) => (
-                <div key={index} className="bg-gray-50 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-4">
-                    <benefit.icon className="h-6 w-6 text-blue-500" />
+      <StatisticsSection statistics={statistics} />
+
+      <section className="py-12">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <div className="flex justify-center mb-8">
+            <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+              <TabsTrigger value="features">Features</TabsTrigger>
+              <TabsTrigger value="packages">Packages</TabsTrigger>
+              <TabsTrigger value="freelancers">Freelancers</TabsTrigger>
+              <TabsTrigger value="faqs">FAQs</TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="features" className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {features.map((feature, index) => (
+                <div key={index} className="bg-white p-6 rounded-lg shadow-sm border">
+                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                    <feature.icon className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">{benefit.title}</h3>
-                  <p className="text-gray-600">{benefit.description}</p>
+                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-gray-600">{feature.description}</p>
                 </div>
               ))}
             </div>
-          </div>
-        </section>
+          </TabsContent>
 
-        <section className="py-20 bg-gray-50">
-          <div className="container px-4 mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4 text-gray-900">Choose Your Business Package</h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Select the plan that best fits your goals and take your business to the next level.
-              </p>
-            </div>
-            
+          <TabsContent value="packages">
             <SubscriptionPackages userRole="Business" />
-          </div>
-        </section>
+          </TabsContent>
 
-        <section className="py-16 bg-blue-500 text-white">
-          <div className="container px-4 mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-6">Ready to Start Your Business Growth?</h2>
-            <p className="text-lg mb-8 max-w-2xl mx-auto text-white/80">
-              Join thousands of successful businesses who are expanding their reach and growing their revenue with our platform.
-            </p>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="bg-white text-blue-500 hover:bg-white/90 border-white"
-            >
-              Join Now <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        </section>
-      </main>
-      <Footer />
+          <TabsContent value="freelancers">
+            <FreelancersSection />
+          </TabsContent>
+
+          <TabsContent value="faqs">
+            <FAQsSection faqs={faqs} />
+          </TabsContent>
+        </Tabs>
+      </section>
     </div>
   );
 };

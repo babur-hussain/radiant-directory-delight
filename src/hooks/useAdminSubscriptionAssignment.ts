@@ -1,83 +1,107 @@
 
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createSubscription, updateSubscription, deleteSubscription } from '@/services/subscriptionService';
-import { ISubscription, PaymentType } from '@/models/Subscription';
+import { useState, useEffect } from 'react';
+import { ISubscription, PaymentType, BillingCycle } from '@/models/Subscription';
+import { createSubscription, updateSubscription, cancelSubscription } from '@/services/subscriptionService';
 import { nanoid } from 'nanoid';
 
-const useAdminSubscriptionAssignment = () => {
-  const [isEditing, setIsEditing] = useState(false);
-  const queryClient = useQueryClient();
+export interface SubscriptionAssignment {
+  id: string;
+  userId: string;
+  userName: string;
+  packageId: string;
+  packageName: string;
+  assignedBy: string;
+  assignedAt: string;
+  status: string;
+}
 
-  const createSubscriptionMutation = useMutation({
-    mutationFn: async (subscriptionData: Omit<ISubscription, 'id'>) => {
-      // Ensure all required fields are present
-      if (!subscriptionData.userId || !subscriptionData.packageId) {
-        throw new Error("User ID and Package ID are required.");
+export const useAdminSubscriptionAssignment = () => {
+  const [assignments, setAssignments] = useState<SubscriptionAssignment[]>([]);
+  
+  const assignSubscription = async (userId: string, subscriptionId: string, assignedBy: string) => {
+    try {
+      // Create a subscription record
+      const now = new Date().toISOString();
+      const endDate = new Date();
+      endDate.setFullYear(endDate.getFullYear() + 1);
+      
+      const subscriptionData: Partial<ISubscription> = {
+        id: nanoid(),
+        userId,
+        packageId: subscriptionId,
+        packageName: "Premium Package", // This should be fetched from the package
+        status: "active",
+        startDate: now,
+        endDate: endDate.toISOString(),
+        amount: 0, // This should be fetched from the package
+        paymentType: 'one-time' as PaymentType,
+        billingCycle: 'yearly' as BillingCycle,
+        assignedBy,
+        assignedAt: now,
+        createdAt: now
+      };
+      
+      const subscription = await createSubscription(subscriptionData);
+      
+      if (subscription) {
+        const newAssignment: SubscriptionAssignment = {
+          id: subscription.id,
+          userId: subscription.userId,
+          userName: "User Name", // This should be fetched from user data
+          packageId: subscription.packageId,
+          packageName: subscription.packageName,
+          assignedBy: assignedBy,
+          assignedAt: now,
+          status: subscription.status
+        };
+        
+        setAssignments(prev => [...prev, newAssignment]);
       }
-
-      const subscription = await createSubscription({
-        ...subscriptionData,
-        // Ensure all required fields are present
-        status: subscriptionData.status || 'active',
-        startDate: subscriptionData.startDate || new Date().toISOString(),
-        endDate: subscriptionData.endDate || new Date().toISOString(),
-        packageId: subscriptionData.packageId || '',
-        packageName: subscriptionData.packageName || '',
-        userId: subscriptionData.userId || '',
-        amount: subscriptionData.amount || 0,
-        paymentType: subscriptionData.paymentType as PaymentType || 'recurring'
-      });
-      return subscription;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
-      queryClient.invalidateQueries({ queryKey: ['userSubscriptions'] });
-    },
-    onError: (error) => {
-      console.error("Error creating subscription:", error);
-    },
-  });
-
-  const updateSubscriptionMutation = useMutation({
-    mutationFn: async (subscriptionData: ISubscription) => {
-      if (!subscriptionData.id) {
-        throw new Error("Subscription ID is required for updating.");
+    } catch (error) {
+      console.error('Error assigning subscription:', error);
+    }
+  };
+  
+  const updateAssignmentStatus = async (userId: string, status: 'active' | 'cancelled' | 'inactive') => {
+    try {
+      const assignment = assignments.find(a => a.userId === userId);
+      
+      if (!assignment) {
+        console.error('No assignment found for user:', userId);
+        return;
       }
-      const subscription = await updateSubscription(subscriptionData.id, subscriptionData);
-      return subscription;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
-      queryClient.invalidateQueries({ queryKey: ['userSubscriptions'] });
-    },
-    onError: (error) => {
-      console.error("Error updating subscription:", error);
-    },
-  });
-
-  const deleteSubscriptionMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await deleteSubscription(id);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
-      queryClient.invalidateQueries({ queryKey: ['userSubscriptions'] });
-    },
-    onError: (error) => {
-      console.error("Error deleting subscription:", error);
-    },
-  });
-
+      
+      if (status === 'cancelled') {
+        const updatedSubscription = await cancelSubscription(assignment.id, 'Cancelled by admin');
+        
+        if (updatedSubscription) {
+          setAssignments(prev => 
+            prev.map(a => a.id === assignment.id 
+              ? { ...a, status: 'cancelled' } 
+              : a
+            )
+          );
+        }
+      } else {
+        const updatedSubscription = await updateSubscription(assignment.id, { status });
+        
+        if (updatedSubscription) {
+          setAssignments(prev => 
+            prev.map(a => a.id === assignment.id 
+              ? { ...a, status: updatedSubscription.status } 
+              : a
+            )
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error updating assignment status:', error);
+    }
+  };
+  
   return {
-    isEditing,
-    setIsEditing,
-    createSubscription: createSubscriptionMutation.mutateAsync,
-    updateSubscription: updateSubscriptionMutation.mutateAsync,
-    deleteSubscription: deleteSubscriptionMutation.mutateAsync,
-    isLoading: createSubscriptionMutation.isPending || updateSubscriptionMutation.isPending || deleteSubscriptionMutation.isPending,
-    error: createSubscriptionMutation.error || updateSubscriptionMutation.error || deleteSubscriptionMutation.error,
+    assignments,
+    assignSubscription,
+    updateAssignmentStatus
   };
 };
-
-export default useAdminSubscriptionAssignment;

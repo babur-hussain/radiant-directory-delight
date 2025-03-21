@@ -1,181 +1,172 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { useAuth } from '@/hooks/useAuth';
+
+import React, { useState, useEffect } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { UserRole } from '@/types/auth';
+import { useAuth } from '@/features/auth/useAuth';
 import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
-import { InfoCircle } from '@/components/ui/InfoCircle';
-import TestimonialSection from '@/components/TestimonialSection';
+import StatisticsSection from '@/components/influencer/StatisticsSection';
+import FeaturesSection from '@/components/influencer/FeaturesSection';
+import HowItWorksSection from '@/components/influencer/HowItWorksSection';
+import FAQsSection from '@/components/influencer/FAQsSection';
+import TestimonialsSection from '@/components/influencer/TestimonialsSection';
+import { Button } from '@/components/ui/button';
+import { Image } from 'lucide-react';
 
-import { CheckCircle, Users, Star, TrendingUp, Award, Zap, CheckSquare, ArrowRight, Check } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { SubscriptionPackage, convertToSubscriptionPackage } from '@/data/subscriptionData';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import { useToast } from '@/hooks/use-toast';
-import { fetchSubscriptionPackagesByType } from '@/lib/mongodb-utils';
-import Loading from '@/components/ui/loading';
-
-const InfluencerPage = () => {
-  const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+const InfluencerPage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('features');
+  const { user } = useAuth();
   
   useEffect(() => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
-    
-    const loadPackages = async () => {
-      setIsLoading(true);
-      try {
-        const fetchedPackages = await fetchSubscriptionPackagesByType('Influencer');
-        console.log('Fetched influencer packages:', fetchedPackages);
-        const convertedPackages = fetchedPackages.map(pkg => convertToSubscriptionPackage(pkg));
-        setPackages(convertedPackages);
-      } catch (error) {
-        console.error('Error loading packages:', error);
-        toast({
-          title: "Failed to load packages",
-          description: "Could not fetch subscription packages. Please try again later.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    loadPackages();
-  }, [toast]);
+    // Any initializations here
+  }, []);
 
-  const benefits = [
-    {
-      icon: Users,
-      title: "Expand Your Audience",
-      description: "Connect with businesses looking for influencers in your niche and grow your follower base."
-    },
-    {
-      icon: Star,
-      title: "Premium Brand Partnerships",
-      description: "Get exclusive access to collaboration opportunities with top brands and businesses."
-    },
-    {
-      icon: TrendingUp,
-      title: "Monetize Your Content",
-      description: "Transform your social media presence into a sustainable income stream through partnerships."
-    },
-    {
-      icon: Award,
-      title: "Verified Influencer Badge",
-      description: "Stand out with our verified badge that shows businesses you're a trusted partner."
-    },
-    {
-      icon: Zap,
-      title: "Analytics Dashboard",
-      description: "Track your performance, engagement, and earnings with our intuitive analytics tools."
-    },
-    {
-      icon: CheckSquare,
-      title: "Personalized Opportunities",
-      description: "Receive tailored collaboration offers that match your audience and content style."
-    },
+  const statistics = [
+    { value: '25K+', label: 'Active Influencers' },
+    { value: '150+', label: 'Brands Connected' },
+    { value: '₹500K+', label: 'Average Earnings' },
+    { value: '90%', label: 'Satisfaction Rate' }
   ];
 
-  const navigate = useNavigate();
+  const features = [
+    {
+      title: 'Brand Connections',
+      description: 'Connect with top brands seeking influencers in your niche.',
+      icon: () => <div className="w-8 h-8 bg-primary/20 rounded-full"></div>
+    },
+    {
+      title: 'Campaign Management',
+      description: 'Easily manage and track all your brand campaigns in one place.',
+      icon: () => <div className="w-8 h-8 bg-primary/20 rounded-full"></div>
+    },
+    {
+      title: 'Earnings Dashboard',
+      description: 'Track your earnings and get insights to maximize your revenue.',
+      icon: () => <div className="w-8 h-8 bg-primary/20 rounded-full"></div>
+    },
+    {
+      title: 'Content Performance',
+      description: 'Analyze what content performs best and optimize your strategy.',
+      icon: () => <div className="w-8 h-8 bg-primary/20 rounded-full"></div>
+    },
+    {
+      title: 'Audience Insights',
+      description: 'Understand your audience demographics and engagement patterns.',
+      icon: () => <div className="w-8 h-8 bg-primary/20 rounded-full"></div>
+    },
+    {
+      title: 'Growth Tools',
+      description: 'Access tools and resources to grow your following and engagement.',
+      icon: () => <div className="w-8 h-8 bg-primary/20 rounded-full"></div>
+    }
+  ];
+
+  const howItWorks = [
+    {
+      step: 1,
+      title: 'Create Your Profile',
+      description: 'Sign up and build your influencer profile showcasing your niche and audience.'
+    },
+    {
+      step: 2,
+      title: 'Connect Your Accounts',
+      description: 'Link your social media accounts to analyze performance and audience insights.'
+    },
+    {
+      step: 3,
+      title: 'Browse Brand Opportunities',
+      description: 'Explore brand campaigns looking for influencers in your niche.'
+    },
+    {
+      step: 4,
+      title: 'Create Great Content',
+      description: 'Collaborate with brands and create content that resonates with your audience.'
+    },
+    {
+      step: 5,
+      title: 'Get Paid',
+      description: 'Receive payment directly to your account once campaigns are completed.'
+    }
+  ];
+
+  const faqs = [
+    {
+      question: 'How do I join as an influencer?',
+      answer: 'You can sign up using our registration form, select the "Influencer" option, and fill in your profile details including your niche and social media links.'
+    },
+    {
+      question: 'What are the requirements to join?',
+      answer: 'We accept influencers with at least 1,000 followers on any major social media platform and consistent engagement rates. Quality of content is also important.'
+    },
+    {
+      question: 'How do payments work?',
+      answer: 'We offer secure payments via bank transfer or PayPal once your campaign deliverables are approved. Payment periods vary by campaign but are typically within 30 days.'
+    },
+    {
+      question: 'Can I choose which brands to work with?',
+      answer: 'Yes, you have complete freedom to choose which campaign opportunities you want to apply for based on your preferences and niche.'
+    }
+  ];
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-grow">
-        <section className="relative py-20 md:py-28 bg-gradient-to-br from-primary/10 to-blue-400/10 overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-50"></div>
-          
-          <div className="container px-4 mx-auto relative z-10">
-            <div className="max-w-3xl mx-auto text-center">
-              <h1 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900">
-                Maximize Your Earning Potential as an Influencer
-              </h1>
-              <p className="text-xl text-gray-600 mb-8">
-                Join our platform and turn your passion into profit by connecting with brands that value your unique voice and audience.
-              </p>
-              <Button size="lg" className="animate-pulse" onClick={() => {
-                const packagesSection = document.getElementById('subscription-packages');
-                if (packagesSection) {
-                  packagesSection.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}>
-                Start Your Journey <ArrowRight className="ml-2 h-4 w-4" />
+    <div className="container mx-auto px-4 py-8">
+      <section className="py-10 md:py-20">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold mb-6">
+              Grow Your Influence & Earn More
+            </h1>
+            <p className="text-xl text-gray-600 mb-8">
+              Join our platform to connect with premium brands, grow your audience, and monetize your influence more effectively.
+            </p>
+            <div className="space-x-4">
+              <Button size="lg" onClick={() => setActiveTab('packages')}>
+                View Packages
+              </Button>
+              <Button size="lg" variant="outline">
+                How It Works
               </Button>
             </div>
           </div>
-        </section>
-
-        <section className="py-20 bg-white">
-          <div className="container px-4 mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4 text-gray-900">Key Benefits for Influencers</h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Our platform provides everything you need to succeed as an influencer in today's competitive market.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {benefits.map((benefit, index) => (
-                <div key={index} className="bg-gray-50 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <benefit.icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">{benefit.title}</h3>
-                  <p className="text-gray-600">{benefit.description}</p>
-                </div>
-              ))}
+          <div className="relative">
+            <div className="aspect-video bg-gray-200 rounded-xl flex items-center justify-center">
+              <Image className="w-16 h-16 text-gray-400" />
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section id="subscription-packages" className="py-20 bg-gray-50">
-          <div className="container px-4 mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4 text-gray-900">Choose Your Influencer Package</h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Select the plan that best fits your goals and take your influencer career to the next level.
-              </p>
-            </div>
+      <StatisticsSection statistics={statistics} />
 
-            {isLoading ? (
-              <div className="flex justify-center items-center py-20">
-                <Loading size="lg" message="Loading subscription packages..." />
-              </div>
-            ) : (
-              <SubscriptionPackages userRole="Influencer" />
-            )}
+      <section className="py-12">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <div className="flex justify-center mb-8">
+            <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+              <TabsTrigger value="features">Features</TabsTrigger>
+              <TabsTrigger value="packages">Packages</TabsTrigger>
+              <TabsTrigger value="howItWorks">How It Works</TabsTrigger>
+              <TabsTrigger value="faqs">FAQs</TabsTrigger>
+            </TabsList>
           </div>
-        </section>
 
-        <section className="py-16 bg-primary text-white">
-          <div className="container px-4 mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-6">Ready to Start Your Influencer Journey?</h2>
-            <p className="text-lg mb-8 max-w-2xl mx-auto text-white/80">
-              Join thousands of successful influencers who are growing their audience and income with our platform.
-            </p>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="bg-white text-primary hover:bg-white/90 border-white"
-              onClick={() => {
-                const packagesSection = document.getElementById('subscription-packages');
-                if (packagesSection) {
-                  packagesSection.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
-            >
-              Join Now <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        </section>
-      </main>
-      <Footer />
+          <TabsContent value="features">
+            <FeaturesSection features={features} />
+          </TabsContent>
+
+          <TabsContent value="packages">
+            <SubscriptionPackages userRole="Influencer" />
+          </TabsContent>
+
+          <TabsContent value="howItWorks">
+            <HowItWorksSection steps={howItWorks} />
+          </TabsContent>
+
+          <TabsContent value="faqs">
+            <FAQsSection faqs={faqs} />
+          </TabsContent>
+        </Tabs>
+      </section>
+
+      <TestimonialsSection />
     </div>
   );
 };

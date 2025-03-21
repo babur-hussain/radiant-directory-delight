@@ -1,5 +1,6 @@
 
 export type PaymentType = 'recurring' | 'one-time';
+export type BillingCycle = 'monthly' | 'yearly';
 
 export interface ISubscription {
   id: string;
@@ -13,7 +14,7 @@ export interface ISubscription {
   paymentType: PaymentType;
   paymentMethod?: string;
   transactionId?: string;
-  billingCycle?: string;
+  billingCycle?: BillingCycle;
   signupFee?: number;
   recurring?: boolean;
   cancelledAt?: string;

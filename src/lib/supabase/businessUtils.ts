@@ -28,21 +28,30 @@ export const saveBusiness = async (businessData: Partial<IBusiness>): Promise<IB
       throw new Error("Business name is required");
     }
     
-    // Ensure hours is in the correct format
+    // Prepare the data for Supabase
     const formattedData = {
-      ...businessData,
+      name: businessData.name, // Ensure name is included
+      description: businessData.description,
+      category: businessData.category,
+      address: businessData.address,
+      phone: businessData.phone,
+      email: businessData.email,
+      website: businessData.website,
+      image: businessData.image,
       hours: businessData.hours ? 
         (typeof businessData.hours === 'string' ? businessData.hours : JSON.stringify(businessData.hours)) 
-        : null
+        : null,
+      rating: businessData.rating,
+      reviews: businessData.reviews,
+      latitude: businessData.latitude,
+      longitude: businessData.longitude,
+      tags: businessData.tags,
+      featured: businessData.featured
     };
     
-    // For insert, make sure to include the name property
     const { data, error } = await supabase
       .from('businesses')
-      .upsert([{
-        ...formattedData,
-        name: businessData.name // Explicitly include name since it's required
-      }])
+      .upsert([formattedData])
       .select();
     
     if (error) throw error;

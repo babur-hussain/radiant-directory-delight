@@ -1,54 +1,84 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
-import { useSubscription } from '@/hooks/useSubscription';
-import { useAuth } from "@/hooks/useAuth";
-import { UserRole } from "@/contexts/AuthContext";
-import Loading from "@/components/ui/loading";
-import { useLocation } from "react-router-dom";
 
-const SubscriptionPage = () => {
-  const { user, isAuthenticated, loading } = useAuth();
-  const location = useLocation();
-  
-  const getRoleFromPath = (): UserRole => {
-    const path = location.pathname.toLowerCase();
-    if (path.includes('influencer')) return 'Influencer';
-    return 'Business';
-  };
-  
-  const userRole: UserRole = getRoleFromPath() || user?.role || "Business";
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/features/auth/useAuth';
+import { UserRole } from '@/types/auth';
+import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useSubscription } from '@/hooks/useSubscription';
+import { useNavigate } from 'react-router-dom';
+
+const SubscriptionPage: React.FC = () => {
+  const { user } = useAuth();
+  const { subscription, loading, error } = useSubscription(user?.uid || null);
+  const navigate = useNavigate();
   
   useEffect(() => {
-    console.log("Subscription page loaded", { 
-      isAuthenticated, 
-      userRole,
-      user,
-      path: location.pathname,
-      loading
-    });
-  }, [isAuthenticated, userRole, user, loading, location.pathname]);
+    // Any initializations here
+  }, []);
+
+  if (!user) {
+    return (
+      <div className="container mx-auto py-10 px-4">
+        <Alert variant="warning" className="mb-8">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Not logged in</AlertTitle>
+          <AlertDescription>
+            Please log in to view subscription options.
+          </AlertDescription>
+        </Alert>
+        <Button onClick={() => navigate('/login')}>Log In</Button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-20 flex justify-center">
-        <Loading size="lg" message="Loading subscription information..." />
+      <div className="container mx-auto py-10 px-4">
+        <p>Loading subscription data...</p>
+      </div>
+    );
+  }
+
+  if (subscription) {
+    return (
+      <div className="container mx-auto py-10 px-4">
+        <h1 className="text-3xl font-bold mb-6">Your Subscription</h1>
+        
+        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+          <h2 className="text-xl font-semibold mb-4">{subscription.packageName}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <p><span className="font-medium">Status:</span> {subscription.status}</p>
+              <p><span className="font-medium">Start Date:</span> {new Date(subscription.startDate).toLocaleDateString()}</p>
+              <p><span className="font-medium">End Date:</span> {new Date(subscription.endDate).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <p><span className="font-medium">Amount:</span> ₹{subscription.amount}</p>
+              {subscription.paymentType && (
+                <p><span className="font-medium">Payment Type:</span> {subscription.paymentType}</p>
+              )}
+              {subscription.billingCycle && (
+                <p><span className="font-medium">Billing Cycle:</span> {subscription.billingCycle}</p>
+              )}
+            </div>
+          </div>
+          
+          <div className="mt-6">
+            <Button>Manage Subscription</Button>
+          </div>
+        </div>
+        
+        <h2 className="text-2xl font-bold mb-6">Upgrade Options</h2>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-10">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">
-          {userRole === 'Influencer' ? 'Earn as an Influencer' : 'Grow Your Business'}
-        </h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          Select the best plan for your needs. All plans include our core features with different levels of access.
-        </p>
-      </div>
-      
-      <SubscriptionPackages userRole={userRole} />
+    <div className="container mx-auto py-10 px-4">
+      <h1 className="text-3xl font-bold mb-6">Choose a Subscription</h1>
+      <SubscriptionPackages userRole={user.role} />
     </div>
   );
 };

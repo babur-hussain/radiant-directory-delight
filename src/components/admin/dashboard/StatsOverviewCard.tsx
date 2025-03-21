@@ -1,28 +1,52 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
 
-interface StatsOverviewCardProps {
+interface StatsData {
   title: string;
   value: string | number;
-  description: string;
-  icon: React.ReactNode;
+  description?: string;
+  change?: number;
+  icon?: React.ReactNode;
 }
 
-const StatsOverviewCard: React.FC<StatsOverviewCardProps> = ({ title, value, description, icon }) => {
+interface StatsOverviewCardProps {
+  data: StatsData[];
+}
+
+const StatsOverviewCard: React.FC<StatsOverviewCardProps> = ({ data }) => {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-          {icon}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        <p className="text-xs text-muted-foreground mt-1">{description}</p>
-      </CardContent>
-    </Card>
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {data.map((stat, index) => (
+        <Card key={index}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {stat.title}
+            </CardTitle>
+            {stat.icon}
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stat.value}</div>
+            {(stat.description || stat.change !== undefined) && (
+              <p className="text-xs text-muted-foreground">
+                {stat.change !== undefined && (
+                  <span className={`inline-flex items-center mr-1 ${stat.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {stat.change >= 0 ? (
+                      <ArrowUpIcon className="h-3 w-3 mr-1" />
+                    ) : (
+                      <ArrowDownIcon className="h-3 w-3 mr-1" />
+                    )}
+                    {Math.abs(stat.change)}%
+                  </span>
+                )}
+                {stat.description}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 };
 

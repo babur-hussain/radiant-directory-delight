@@ -1,79 +1,97 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { checkAndInitializeBusinesses } from './businessInitialization';
 
-// Check if database is initialized
-export const isDatabaseInitialized = async (): Promise<boolean> => {
+export interface SetupSupabaseOptions {
+  initializeDatabase?: boolean;
+  initializeCollections?: boolean;
+  clearExistingData?: boolean;
+}
+
+export interface SetupSupabaseProgress {
+  progress: number;
+  message: string;
+}
+
+export interface SetupSupabaseResult {
+  success: boolean;
+  collections: string[];
+  error?: string;
+}
+
+export const setupSupabase = async (
+  progressCallback?: (progress: number, message: string) => void,
+  options: SetupSupabaseOptions = {}
+): Promise<SetupSupabaseResult> => {
+  const { 
+    initializeDatabase = true,
+    initializeCollections = true,
+    clearExistingData = false
+  } = options;
+  
   try {
-    // Try to select from the users table
-    const { data, error } = await supabase
+    // Check connection
+    progressCallback?.(5, "Checking Supabase connection...");
+    const { error: connectionError } = await supabase
       .from('users')
       .select('id')
       .limit(1);
     
-    if (error) {
-      console.error('Error checking database initialization:', error);
-      return false;
+    if (connectionError) {
+      throw new Error(`Failed to connect to Supabase: ${connectionError.message}`);
     }
     
-    // If we can select from the users table, assume the database is initialized
-    return true;
-  } catch (error) {
-    console.error('Error checking database initialization:', error);
-    return false;
-  }
-};
-
-// Initialize database tables and data
-export const initializeDatabase = async (): Promise<boolean> => {
-  try {
-    console.log('Initializing database...');
+    const collections = ['users', 'businesses', 'subscription_packages', 'user_subscriptions', 'addresses'];
     
-    // Check if tables exist by trying to query them
-    const tableNames = ['users', 'businesses', 'subscription_packages', 'user_subscriptions'];
-    let allTablesExist = true;
+    // Check if tables exist
+    progressCallback?.(20, "Checking Supabase tables...");
+    let existingCollections: string[] = [];
     
-    for (const tableName of tableNames) {
-      const { error } = await supabase
-        .from(tableName as any)
-        .select('count')
-        .limit(1);
-      
-      if (error) {
-        console.error(`Table '${tableName}' does not exist or is not accessible:`, error);
-        allTablesExist = false;
-        break;
+    for (const collection of collections) {
+      try {
+        const { error } = await supabase
+          .from(collection)
+          .select('*')
+          .limit(1);
+          
+        if (!error) {
+          existingCollections.push(collection);
+        }
+      } catch (error) {
+        console.warn(`Table check error for ${collection}:`, error);
       }
     }
     
-    if (allTablesExist) {
-      console.log('Database already initialized');
-      return true;
+    progressCallback?.(30, `Found ${existingCollections.length} existing collections`);
+    
+    // Initialize business data if needed
+    progressCallback?.(50, "Initializing business data...");
+    const businessResult = await checkAndInitializeBusinesses();
+    
+    if (businessResult.initialized) {
+      progressCallback?.(70, `Initialized ${businessResult.count} businesses`);
+    } else {
+      progressCallback?.(70, `Found ${businessResult.count} existing businesses`);
     }
     
-    // If tables don't exist, we would normally create them
-    // But in this case, with Supabase we're assuming tables are created via SQL migrations
-    console.error('One or more tables do not exist in the database. Please run migrations.');
-    return false;
-  } catch (error) {
-    console.error('Error initializing database:', error);
-    return false;
-  }
-};
-
-// Setup function to be called on app initialization
-export const setupSupabase = async (): Promise<boolean> => {
-  try {
-    const initialized = await isDatabaseInitialized();
+    // Initialize other collections if needed
+    // This would be where you'd add more initialization logic for other collections
     
-    if (!initialized) {
-      console.log('Database not initialized, attempting to initialize...');
-      return await initializeDatabase();
-    }
+    progressCallback?.(100, "Supabase setup complete");
     
-    return true;
+    return {
+      success: true,
+      collections: existingCollections
+    };
   } catch (error) {
-    console.error('Error setting up Supabase:', error);
-    return false;
+    console.error("Supabase setup error:", error);
+    progressCallback?.(0, `Error: ${error instanceof Error ? error.message : String(error)}`);
+    
+    return {
+      success: false,
+      collections: [],
+      error: error instanceof Error ? error.message : String(error)
+    };
   }
 };
 

@@ -1,28 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
-
-export interface ISubscription {
-  id: string;
-  userId: string;
-  packageId: string;
-  packageName: string;
-  amount: number;
-  startDate: string;
-  endDate: string;
-  status: string;
-  paymentMethod?: string;
-  transactionId?: string;
-  cancelledAt?: string;
-  cancelReason?: string;
-  paymentType?: "recurring" | "one-time";
-  billingCycle?: "monthly" | "yearly";
-  signupFee?: number;
-  recurringAmount?: number;
-  razorpaySubscriptionId?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { ISubscription, PaymentType, BillingCycle } from '@/models/Subscription';
 
 // Convert from Supabase to app model
 const fromSupabase = (data: any): ISubscription => {
@@ -39,8 +18,8 @@ const fromSupabase = (data: any): ISubscription => {
     transactionId: data.transaction_id,
     cancelledAt: data.cancelled_at,
     cancelReason: data.cancel_reason,
-    paymentType: data.payment_type,
-    billingCycle: data.billing_cycle,
+    paymentType: data.payment_type as PaymentType || 'recurring',
+    billingCycle: data.billing_cycle as BillingCycle,
     signupFee: data.signup_fee,
     recurringAmount: data.recurring_amount,
     razorpaySubscriptionId: data.razorpay_subscription_id,
@@ -50,7 +29,7 @@ const fromSupabase = (data: any): ISubscription => {
 };
 
 // Convert from app model to Supabase
-const toSupabase = (data: ISubscription): any => {
+const toSupabase = (data: Partial<ISubscription>): any => {
   return {
     id: data.id,
     user_id: data.userId,
@@ -108,7 +87,7 @@ export const createSubscription = async (subscription: Partial<ISubscription>): 
     
     const { data, error } = await supabase
       .from('user_subscriptions')
-      .insert(subscriptionData)
+      .insert([subscriptionData])
       .select();
     
     if (error) throw error;
@@ -151,7 +130,7 @@ export const getSubscriptions = async (): Promise<ISubscription[]> => {
     
     if (error) throw error;
     
-    return data.map(fromSupabase);
+    return data ? data.map(fromSupabase) : [];
   } catch (error) {
     console.error('Error getting subscriptions:', error);
     return [];
@@ -162,7 +141,7 @@ export const getSubscriptions = async (): Promise<ISubscription[]> => {
 export const updateSubscription = async (id: string, subscription: Partial<ISubscription>): Promise<ISubscription | null> => {
   try {
     const subscriptionData = {
-      ...toSupabase(subscription as ISubscription),
+      ...toSupabase(subscription),
       updated_at: new Date().toISOString()
     };
     
@@ -209,7 +188,7 @@ export const getUserSubscriptions = async (userId: string): Promise<ISubscriptio
     
     if (error) throw error;
     
-    return data.map(fromSupabase);
+    return data ? data.map(fromSupabase) : [];
   } catch (error) {
     console.error('Error getting user subscriptions:', error);
     return [];
