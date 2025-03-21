@@ -34,6 +34,11 @@ export interface Subscription {
   actualStartDate?: string;
   dashboardFeatures?: string[];
   dashboardSections?: string[];
+  // Add missing properties
+  assignedBy?: string;
+  assignedAt?: string;
+  advancePaymentMonths?: number;
+  invoiceIds?: string[];
 }
 
 // For backward compatibility - use this type alias instead of renaming all instances

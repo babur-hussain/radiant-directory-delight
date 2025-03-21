@@ -22,7 +22,7 @@ const AdminSubscriptionsPage = () => {
   const [activeTab, setActiveTab] = useState("packages");
   const [isLoading, setIsLoading] = useState(true);
   const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);
-  const [subscriptions, setSubscriptions] = useState<ISubscription[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [dbConnected, setDbConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [editingPackage, setEditingPackage] = useState<ISubscriptionPackage | null>(null);

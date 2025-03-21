@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { getSubscriptionPackages, createOrUpdatePackage, deletePackage } from '@/lib/supabase/subscriptionUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { PaymentType, BillingCycle } from '@/models/Subscription';
 
 export const useSubscriptionPackages = () => {
   const {
@@ -40,8 +41,8 @@ export const useSubscriptionPackages = () => {
             popular: pkg.popular || false,
             type: (pkg.type as 'Business' | 'Influencer') || 'Business',
             termsAndConditions: pkg.terms_and_conditions,
-            paymentType: pkg.payment_type || 'recurring',
-            billingCycle: pkg.billing_cycle,
+            paymentType: (pkg.payment_type as PaymentType) || 'recurring',
+            billingCycle: pkg.billing_cycle as BillingCycle,
             advancePaymentMonths: pkg.advance_payment_months || 0,
             dashboardSections: pkg.dashboard_sections || [],
             isActive: true
