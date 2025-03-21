@@ -65,7 +65,10 @@ export interface SubscriptionResult {
   isOneTime: boolean;
   isSubscription: boolean;
   enableAutoPay: boolean;
-  amount?: number; // Add this property to fix the TypeScript error
+  amount?: number; // Payment amount in paise
   key?: string;
   currency?: string;
+  setupFee?: number;
+  advanceMonths?: number;
+  nextBillingDate?: string;
 }

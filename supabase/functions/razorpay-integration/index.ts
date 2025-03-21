@@ -28,6 +28,32 @@ function getCurrentTimestamp(): number {
   return Math.floor(Date.now() / 1000);
 }
 
+// Calculate initial payment including setup fee and advance payments
+function calculateInitialPayment(packageData: any, enableAutoPay: boolean): number {
+  if (!packageData) return 0;
+  
+  // One-time payment case
+  if (packageData.paymentType === 'one-time') {
+    return packageData.price || 0;
+  }
+  
+  // Recurring payment case
+  let initialAmount = packageData.setupFee || 0;
+  const advanceMonths = packageData.advancePaymentMonths || 0;
+  
+  // Add advance payment if specified
+  if (advanceMonths > 0) {
+    if (packageData.billingCycle === 'monthly' && packageData.monthlyPrice) {
+      initialAmount += (packageData.monthlyPrice * advanceMonths);
+    } else {
+      // For yearly billing or when monthlyPrice is not available
+      initialAmount += packageData.price || 0;
+    }
+  }
+  
+  return initialAmount;
+}
+
 // Server entrypoint
 serve(async (req) => {
   console.log("Request received:", req.method, new URL(req.url).pathname);
@@ -84,11 +110,19 @@ serve(async (req) => {
     
     console.log(`Processing payment type: ${isOneTime ? 'one-time' : 'recurring'} with autopay: ${enableAutoPay}`);
     
+    // Calculate the initial payment amount including setup fee and advance payments
+    const initialPaymentAmount = calculateInitialPayment(packageData, enableAutoPay);
+    console.log(`Calculated initial payment amount: ${initialPaymentAmount}`);
+    
     // Calculate amount in paise (100 paise = 1 INR)
-    const amountInPaise = Math.round(packageData.price * 100);
+    const amountInPaise = Math.round(initialPaymentAmount * 100);
     
     // Generate a receipt ID
     const receiptId = generateReceiptId();
+    
+    // Calculate next billing date (after advance months)
+    const nextBillingDate = new Date();
+    nextBillingDate.setMonth(nextBillingDate.getMonth() + (packageData.advancePaymentMonths || 1));
     
     // Key-only mode: Don't create an order or subscription ID
     // Instead, let Razorpay handle direct payment with just the key and amount
@@ -108,11 +142,18 @@ serve(async (req) => {
           packageId: packageData.id.toString(),
           userId: userId,
           enableAutoPay: enableAutoPay ? "true" : "false",
-          isRecurring: isRecurring ? "true" : "false"
+          isRecurring: isRecurring ? "true" : "false",
+          initialPayment: initialPaymentAmount.toString(),
+          setupFee: (packageData.setupFee || 0).toString(),
+          advanceMonths: (packageData.advancePaymentMonths || 0).toString(),
+          nextBillingDate: nextBillingDate.toISOString()
         },
         isOneTime,
         isSubscription: !isOneTime,
-        enableAutoPay
+        enableAutoPay,
+        setupFee: packageData.setupFee || 0,
+        advanceMonths: packageData.advancePaymentMonths || 0,
+        nextBillingDate: nextBillingDate.toISOString()
       }),
       {
         status: 200,
