@@ -4,6 +4,7 @@
 import * as subscriptionUtils from './supabase/subscriptionUtils';
 import * as businessUtils from './supabase/businessUtils';
 import * as userUtils from './supabase/userUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 // Re-export all functions for backward compatibility
 export const {
@@ -46,5 +47,3 @@ export const isServerRunning = async (): Promise<boolean> => {
 export const isMongoDBConnected = () => true; // Always return true since we're using Supabase
 export const isMongoDB_Connected = isMongoDBConnected;
 export const connectToMongoDB = async () => true; // No-op, always succeeds
-
-import { supabase } from '@/integrations/supabase/client';

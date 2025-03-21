@@ -59,7 +59,7 @@ const SubscriptionLoader: React.FC<SubscriptionLoaderProps> = ({
         ) : (
           <>
             <Database className="h-8 w-8 text-green-500" />
-            <p className="text-sm text-muted-foreground">Loading data from MongoDB...</p>
+            <p className="text-sm text-muted-foreground">Loading data from Supabase...</p>
           </>
         )}
       </div>

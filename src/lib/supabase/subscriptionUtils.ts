@@ -1,11 +1,11 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import { nanoid } from 'nanoid';
-import { PaymentType, BillingCycle } from '@/models/Subscription';
+import { ISubscription, SubscriptionStatus } from '@/models/Subscription';
+import { User } from '@/types/auth';
 
 /**
- * Get all subscription packages
+ * Gets subscription packages from Supabase
  */
 export const getSubscriptionPackages = async (): Promise<ISubscriptionPackage[]> => {
   try {
@@ -14,33 +14,15 @@ export const getSubscriptionPackages = async (): Promise<ISubscriptionPackage[]>
       .select('*');
     
     if (error) throw error;
-    
-    return data.map(pkg => ({
-      id: pkg.id,
-      title: pkg.title,
-      price: pkg.price,
-      monthlyPrice: pkg.monthly_price,
-      setupFee: pkg.setup_fee,
-      durationMonths: pkg.duration_months,
-      shortDescription: pkg.short_description || '',
-      fullDescription: pkg.full_description || '',
-      features: pkg.features || [],
-      popular: pkg.popular,
-      type: (pkg.type as 'Business' | 'Influencer') || 'Business',
-      termsAndConditions: pkg.terms_and_conditions,
-      paymentType: (pkg.payment_type as PaymentType) || 'recurring',
-      billingCycle: pkg.billing_cycle as BillingCycle,
-      advancePaymentMonths: pkg.advance_payment_months,
-      dashboardSections: pkg.dashboard_sections || []
-    }));
+    return data || [];
   } catch (error) {
-    console.error('Error fetching subscription packages:', error);
+    console.error("Error getting subscription packages:", error);
     return [];
   }
 };
 
 /**
- * Get subscription packages by type
+ * Gets subscription packages by type from Supabase
  */
 export const getPackagesByType = async (type: string): Promise<ISubscriptionPackage[]> => {
   try {
@@ -50,103 +32,43 @@ export const getPackagesByType = async (type: string): Promise<ISubscriptionPack
       .eq('type', type);
     
     if (error) throw error;
-    
-    return data.map(pkg => ({
-      id: pkg.id,
-      title: pkg.title,
-      price: pkg.price,
-      monthlyPrice: pkg.monthly_price,
-      setupFee: pkg.setup_fee,
-      durationMonths: pkg.duration_months,
-      shortDescription: pkg.short_description || '',
-      fullDescription: pkg.full_description || '',
-      features: pkg.features || [],
-      popular: pkg.popular,
-      type: (pkg.type as 'Business' | 'Influencer') || 'Business',
-      termsAndConditions: pkg.terms_and_conditions,
-      paymentType: (pkg.payment_type as 'recurring' | 'one-time') || 'recurring',
-      billingCycle: pkg.billing_cycle as 'monthly' | 'yearly' | undefined,
-      advancePaymentMonths: pkg.advance_payment_months,
-      dashboardSections: pkg.dashboard_sections || []
-    }));
+    return data || [];
   } catch (error) {
-    console.error(`Error fetching ${type} subscription packages:`, error);
+    console.error(`Error getting ${type} subscription packages:`, error);
     return [];
   }
 };
 
 /**
- * Create or update a subscription package
+ * Creates or updates a subscription package in Supabase
  */
-export const createOrUpdatePackage = async (packageData: Partial<ISubscriptionPackage>): Promise<ISubscriptionPackage | null> => {
+export const createOrUpdatePackage = async (packageData: ISubscriptionPackage): Promise<ISubscriptionPackage | null> => {
   try {
-    // Ensure required fields
-    if (!packageData.title || !packageData.price) {
-      throw new Error('Title and price are required');
+    // Ensure all required fields are present
+    if (!packageData.id || !packageData.title || packageData.price === undefined) {
+      throw new Error("Missing required package data");
     }
     
-    // Generate ID if not provided
-    const id = packageData.id || nanoid();
-    
-    // Map package data to Supabase format
-    const formattedData = {
-      id,
-      title: packageData.title,
-      price: packageData.price,
-      monthly_price: packageData.monthlyPrice,
-      setup_fee: packageData.setupFee || 0,
-      duration_months: packageData.durationMonths || 12,
-      short_description: packageData.shortDescription,
-      full_description: packageData.fullDescription,
-      features: packageData.features || [],
-      popular: packageData.popular || false,
-      type: packageData.type || 'Business',
-      terms_and_conditions: packageData.termsAndConditions,
-      payment_type: packageData.paymentType || 'recurring',
-      billing_cycle: packageData.billingCycle,
-      advance_payment_months: packageData.advancePaymentMonths || 0,
-      dashboard_sections: packageData.dashboardSections || []
-    };
+    // Format features if it's a string
+    if (typeof packageData.features === 'string') {
+      packageData.features = packageData.features.split(',').map(f => f.trim());
+    }
     
     const { data, error } = await supabase
       .from('subscription_packages')
-      .upsert(formattedData)
+      .upsert([packageData])
       .select();
     
     if (error) throw error;
-    
-    if (!data || data.length === 0) {
-      return null;
-    }
-    
-    const savedPackage = data[0];
-    
-    return {
-      id: savedPackage.id,
-      title: savedPackage.title,
-      price: savedPackage.price,
-      monthlyPrice: savedPackage.monthly_price,
-      setupFee: savedPackage.setup_fee,
-      durationMonths: savedPackage.duration_months,
-      shortDescription: savedPackage.short_description || '',
-      fullDescription: savedPackage.full_description || '',
-      features: savedPackage.features || [],
-      popular: savedPackage.popular,
-      type: (savedPackage.type as 'Business' | 'Influencer') || 'Business',
-      termsAndConditions: savedPackage.terms_and_conditions,
-      paymentType: (savedPackage.payment_type as PaymentType) || 'recurring',
-      billingCycle: savedPackage.billing_cycle as BillingCycle,
-      advancePaymentMonths: savedPackage.advance_payment_months,
-      dashboardSections: savedPackage.dashboard_sections || []
-    };
+    return data && data.length > 0 ? data[0] : null;
   } catch (error) {
-    console.error('Error creating/updating subscription package:', error);
+    console.error("Error creating/updating subscription package:", error);
     return null;
   }
 };
 
 /**
- * Delete a subscription package
+ * Deletes a subscription package from Supabase
  */
 export const deletePackage = async (id: string): Promise<boolean> => {
   try {
@@ -158,86 +80,192 @@ export const deletePackage = async (id: string): Promise<boolean> => {
     if (error) throw error;
     return true;
   } catch (error) {
-    console.error('Error deleting subscription package:', error);
+    console.error(`Error deleting subscription package with ID ${id}:`, error);
     return false;
   }
 };
 
 /**
- * Get user subscription
+ * Gets a user's subscription from Supabase
  */
-export const getUserSubscription = async (userId: string): Promise<any | null> => {
+export const getUserSubscription = async (userId: string): Promise<ISubscription | null> => {
   try {
+    // First try to get from user_subscriptions table
     const { data, error } = await supabase
       .from('user_subscriptions')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
-      .limit(1)
       .maybeSingle();
     
-    if (error) throw error;
+    if (error) {
+      console.error(`Error getting subscription for user ${userId}:`, error);
+      // Don't throw, try the next method
+    }
     
-    if (!data) return null;
+    if (data) {
+      return {
+        id: data.id,
+        userId: data.user_id,
+        packageId: data.package_id,
+        packageName: data.package_name,
+        amount: data.amount,
+        startDate: data.start_date,
+        endDate: data.end_date,
+        status: data.status as SubscriptionStatus,
+        paymentMethod: data.payment_method,
+        transactionId: data.transaction_id,
+        paymentType: data.payment_type,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        cancelledAt: data.cancelled_at,
+        cancelReason: data.cancel_reason,
+        assignedBy: data.assigned_by,
+        assignedAt: data.assigned_at,
+        advancePaymentMonths: data.advance_payment_months,
+        signupFee: data.signup_fee,
+        actualStartDate: data.actual_start_date,
+        isPaused: data.is_paused,
+        isPausable: data.is_pausable,
+        isUserCancellable: data.is_user_cancellable,
+        invoiceIds: data.invoice_ids
+      };
+    }
     
-    return {
-      id: data.id,
-      userId: data.user_id,
-      packageId: data.package_id,
-      packageName: data.package_name,
-      amount: data.amount,
-      startDate: data.start_date,
-      endDate: data.end_date,
-      status: data.status,
-      paymentMethod: data.payment_method,
-      transactionId: data.transaction_id,
-      cancelledAt: data.cancelled_at,
-      cancelReason: data.cancel_reason,
-      paymentType: data.payment_type,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
-    };
+    // If not found, check the user table for subscription info
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('subscription, subscription_id, subscription_status, subscription_package')
+      .eq('id', userId)
+      .maybeSingle();
+    
+    if (userError) {
+      console.error(`Error getting user ${userId} for subscription info:`, userError);
+      return null;
+    }
+    
+    if (userData && userData.subscription_id) {
+      // Create a simple subscription object from user data
+      return {
+        id: userData.subscription_id,
+        userId: userId,
+        packageId: userData.subscription_package || '',
+        status: (userData.subscription_status as SubscriptionStatus) || 'inactive',
+        startDate: new Date().toISOString(), // Default values
+        endDate: new Date().toISOString(),
+        amount: 0
+      };
+    }
+    
+    return null;
   } catch (error) {
-    console.error('Error fetching user subscription:', error);
+    console.error(`Error getting subscription for user ${userId}:`, error);
     return null;
   }
 };
 
-// Get active user subscription
-export const getActiveUserSubscription = async (userId: string): Promise<any | null> => {
+/**
+ * Assigns a subscription to a user
+ */
+export const assignSubscription = async (
+  userId: string, 
+  packageId: string, 
+  packageName: string,
+  amount: number,
+  startDate: string,
+  endDate: string,
+  assignedBy: string = 'admin'
+): Promise<boolean> => {
   try {
-    const { data, error } = await supabase
+    const subscriptionId = `sub_${Date.now()}`;
+    const now = new Date().toISOString();
+    
+    // Create subscription record
+    const { error: subscriptionError } = await supabase
       .from('user_subscriptions')
-      .select('*')
+      .insert([{
+        id: subscriptionId,
+        user_id: userId,
+        package_id: packageId,
+        package_name: packageName,
+        amount: amount,
+        start_date: startDate,
+        end_date: endDate,
+        status: 'active',
+        assigned_by: assignedBy,
+        assigned_at: now,
+        created_at: now,
+        updated_at: now
+      }]);
+    
+    if (subscriptionError) throw subscriptionError;
+    
+    // Update user record with subscription info
+    const { error: userError } = await supabase
+      .from('users')
+      .update({
+        subscription_id: subscriptionId,
+        subscription_status: 'active',
+        subscription_package: packageId,
+        updated_at: now
+      })
+      .eq('id', userId);
+    
+    if (userError) throw userError;
+    
+    return true;
+  } catch (error) {
+    console.error(`Error assigning subscription to user ${userId}:`, error);
+    return false;
+  }
+};
+
+/**
+ * Cancels a user's subscription
+ */
+export const cancelSubscription = async (userId: string, reason: string = 'user_cancelled'): Promise<boolean> => {
+  try {
+    const now = new Date().toISOString();
+    
+    // Get current subscription
+    const { data: subscription, error: subError } = await supabase
+      .from('user_subscriptions')
+      .select('id')
       .eq('user_id', userId)
       .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1)
       .maybeSingle();
     
-    if (error) throw error;
+    if (subError) throw subError;
     
-    if (!data) return null;
+    if (subscription) {
+      // Update subscription record
+      const { error: updateError } = await supabase
+        .from('user_subscriptions')
+        .update({
+          status: 'cancelled',
+          cancelled_at: now,
+          cancel_reason: reason,
+          updated_at: now
+        })
+        .eq('id', subscription.id);
+      
+      if (updateError) throw updateError;
+    }
     
-    return {
-      id: data.id,
-      userId: data.user_id,
-      packageId: data.package_id,
-      packageName: data.package_name,
-      amount: data.amount,
-      startDate: data.start_date,
-      endDate: data.end_date,
-      status: data.status,
-      paymentMethod: data.payment_method,
-      transactionId: data.transaction_id,
-      cancelledAt: data.cancelled_at,
-      cancelReason: data.cancel_reason,
-      paymentType: data.payment_type,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
-    };
+    // Update user record
+    const { error: userError } = await supabase
+      .from('users')
+      .update({
+        subscription_status: 'cancelled',
+        updated_at: now
+      })
+      .eq('id', userId);
+    
+    if (userError) throw userError;
+    
+    return true;
   } catch (error) {
-    console.error('Error fetching active user subscription:', error);
-    return null;
+    console.error(`Error cancelling subscription for user ${userId}:`, error);
+    return false;
   }
 };

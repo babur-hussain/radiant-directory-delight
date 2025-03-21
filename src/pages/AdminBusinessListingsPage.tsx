@@ -1,14 +1,15 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { getAllBusinesses, addBusiness, updateBusiness, Business } from "@/lib/csv-utils";
 import { BusinessFormValues } from "@/components/admin/BusinessForm";
 import TableBusinessListings from "@/components/admin/TableBusinessListings";
 import UnauthorizedView from "@/components/admin/UnauthorizedView";
 import BusinessListingsHeader from "@/components/admin/BusinessListingsHeader";
 import BusinessFormDialog from "@/components/admin/BusinessFormDialog";
 import BusinessPermissionError from "@/components/admin/table/BusinessPermissionError";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminBusinessListingsPage = () => {
   const { user, isAuthenticated } = useAuth();
@@ -17,21 +18,40 @@ const AdminBusinessListingsPage = () => {
   const [showBusinessFormDialog, setShowBusinessFormDialog] = useState(false);
   const [businessCount, setBusinessCount] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [currentBusinessToEdit, setCurrentBusinessToEdit] = useState<Business | null>(null);
+  const [currentBusinessToEdit, setCurrentBusinessToEdit] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [permissionError, setPermissionError] = useState(null);
+  
+  // Fetch business count from Supabase
+  const fetchBusinessCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('businesses')
+        .select('*', { count: 'exact', head: true });
+      
+      if (error) throw error;
+      setBusinessCount(count || 0);
+    } catch (error) {
+      console.error("Error fetching business count:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch business count",
+        variant: "destructive"
+      });
+    }
+  };
   
   useEffect(() => {
-    setBusinessCount(getAllBusinesses().length);
+    fetchBusinessCount();
   }, []);
   
   if (!isAuthenticated) {
     return <UnauthorizedView />;
   }
   
-  const handleUploadComplete = (success: boolean, message: string, count?: number) => {
+  const handleUploadComplete = async (success: boolean, message: string, count?: number) => {
     if (success) {
-      setBusinessCount(getAllBusinesses().length);
+      await fetchBusinessCount();
       toast({
         title: "Upload Successful",
         description: `${count} businesses have been imported successfully.`,
@@ -46,12 +66,10 @@ const AdminBusinessListingsPage = () => {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    setTimeout(() => {
-      setBusinessCount(getAllBusinesses().length);
-      setIsRefreshing(false);
-    }, 500);
+    await fetchBusinessCount();
+    setIsRefreshing(false);
   };
   
   const handleAddBusiness = () => {
@@ -60,7 +78,7 @@ const AdminBusinessListingsPage = () => {
     setShowBusinessFormDialog(true);
   };
   
-  const handleEditBusiness = (business: Business) => {
+  const handleEditBusiness = (business) => {
     setCurrentBusinessToEdit(business);
     setShowBusinessFormDialog(true);
   };
@@ -70,21 +88,32 @@ const AdminBusinessListingsPage = () => {
     setPermissionError(null);
     
     try {
+      // Prepare tags as an array
+      const tags = typeof values.tags === "string" 
+        ? values.tags.split(",").map(tag => tag.trim()) 
+        : values.tags;
+      
       if (currentBusinessToEdit) {
-        const updated = updateBusiness({
-          ...currentBusinessToEdit,
-          ...values,
-          tags: typeof values.tags === "string" ? values.tags.split(",").map(tag => tag.trim()) : values.tags,
-        });
+        // Update existing business
+        const { error } = await supabase
+          .from('businesses')
+          .update({
+            ...values,
+            tags,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentBusinessToEdit.id);
         
-        if (updated) {
-          toast({ title: "Business Updated", description: `${values.name} has been updated successfully.` });
-        } else {
-          toast({ title: "Update Failed", description: "Failed to update the business.", variant: "destructive" });
-        }
+        if (error) throw error;
+        
+        toast({ 
+          title: "Business Updated", 
+          description: `${values.name} has been updated successfully.` 
+        });
       } else {
+        // Create new business
         const randomReviews = Math.floor(Math.random() * 500) + 50;
-        const newBusiness = await addBusiness({
+        const newBusiness = {
           name: values.name,
           category: values.category,
           address: values.address,
@@ -92,12 +121,23 @@ const AdminBusinessListingsPage = () => {
           rating: values.rating,
           description: values.description,
           featured: values.featured,
-          tags: typeof values.tags === "string" ? values.tags.split(",").map(tag => tag.trim()) : values.tags,
+          tags,
           reviews: randomReviews,
-          image: values.image || `https://source.unsplash.com/random/500x350/?${values.category.toLowerCase().replace(/\s+/g, ",")}`
-        });
+          image: values.image || `https://source.unsplash.com/random/500x350/?${values.category.toLowerCase().replace(/\s+/g, ",")}`,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
         
-        toast({ title: "Business Added", description: `${newBusiness.name} has been added successfully.` });
+        const { error } = await supabase
+          .from('businesses')
+          .insert([newBusiness]);
+        
+        if (error) throw error;
+        
+        toast({ 
+          title: "Business Added", 
+          description: `${values.name} has been added successfully.` 
+        });
       }
       
       setShowBusinessFormDialog(false);
@@ -124,8 +164,6 @@ const AdminBusinessListingsPage = () => {
       setIsSubmitting(false);
     }
   };
-
-  console.log("Rendering AdminBusinessListingsPage", { showUploadDialog, showBusinessFormDialog });
 
   return (
     <div className="container mx-auto px-4 py-10">

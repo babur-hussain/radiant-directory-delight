@@ -1,6 +1,10 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole } from '@/types/auth';
+import * as userUtils from '../supabase/userUtils';
+
+// Re-export functions for backwards compatibility
+export const { fetchUserByUid } = userUtils;
 
 // Helper function to convert role string to UserRole type
 function transformRole(role: string | null): UserRole {

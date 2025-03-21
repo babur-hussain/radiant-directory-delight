@@ -63,10 +63,9 @@ const MigrationUtility: React.FC = () => {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Firestore to MongoDB Migration Utility</CardTitle>
+        <CardTitle>Firestore to Supabase Migration Utility</CardTitle>
         <CardDescription>
-          Migrate all your data from Firestore to MongoDB. This process is non-destructive and will
-          not delete any data from Firestore.
+          Migrate all your data from Firestore to Supabase for improved performance and scalability.
         </CardDescription>
       </CardHeader>
       

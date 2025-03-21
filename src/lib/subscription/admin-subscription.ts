@@ -1,6 +1,7 @@
 
 import { ISubscription } from '../../models/Subscription';
 import { User } from '../../models/User';
+import { supabase } from '@/integrations/supabase/client';
 
 export const adminAssignSubscription = async (userId: string, subscriptionData: any): Promise<boolean> => {
   try {
@@ -13,7 +14,7 @@ export const adminAssignSubscription = async (userId: string, subscriptionData: 
     const subscriptionId = subscriptionData.id || `sub_${Date.now()}`;
     
     // Prepare subscription data
-    const subscription: ISubscription = {
+    const subscription: Partial<ISubscription> = {
       id: subscriptionId,
       userId: userId,
       packageId: subscriptionData.packageId || subscriptionData.id,
@@ -36,17 +37,55 @@ export const adminAssignSubscription = async (userId: string, subscriptionData: 
       paymentType: subscriptionData.paymentType || "recurring" // Default to recurring if not specified
     };
     
-    // Save subscription to MongoDB
-    console.log(`Attempting to save subscription ${subscriptionId} to MongoDB for user ${userId}`);
+    // Prepare data for Supabase (snake_case)
+    const supabaseData = {
+      id: subscription.id,
+      user_id: subscription.userId,
+      package_id: subscription.packageId,
+      package_name: subscription.packageName,
+      amount: subscription.amount,
+      start_date: subscription.startDate,
+      end_date: subscription.endDate,
+      status: subscription.status,
+      created_at: subscription.createdAt,
+      updated_at: subscription.updatedAt,
+      assigned_by: subscription.assignedBy,
+      assigned_at: subscription.assignedAt,
+      advance_payment_months: subscription.advancePaymentMonths,
+      signup_fee: subscription.signupFee,
+      actual_start_date: subscription.actualStartDate,
+      is_paused: subscription.isPaused,
+      is_pausable: subscription.isPausable,
+      is_user_cancellable: subscription.isUserCancellable,
+      invoice_ids: subscription.invoiceIds,
+      payment_type: subscription.paymentType
+    };
     
-    // Update or create the subscription in MongoDB
-    await fetch('http://localhost:3001/api/subscriptions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(subscription),
-    });
+    // Save to Supabase
+    const { error } = await supabase
+      .from('user_subscriptions')
+      .upsert([supabaseData]);
+    
+    if (error) {
+      console.error("Error saving subscription:", error);
+      return false;
+    }
+    
+    // Update user record
+    const { error: userError } = await supabase
+      .from('users')
+      .update({
+        subscription: subscription.id,
+        subscription_id: subscription.id,
+        subscription_status: subscription.status,
+        subscription_package: subscription.packageId
+      })
+      .eq('id', userId);
+    
+    if (userError) {
+      console.error("Error updating user with subscription:", userError);
+      return false;
+    }
     
     console.log(`Subscription ${subscriptionId} assigned to user ${userId}`);
     return true;
@@ -64,31 +103,46 @@ export const adminCancelSubscription = async (userId: string, subscriptionId: st
     }
     
     // Get the subscription
-    const response = await fetch(`http://localhost:3001/api/subscriptions/user/${userId}`);
-    if (!response.ok) {
-      console.error("No subscription found for this user");
+    const { data: subscription, error: getError } = await supabase
+      .from('user_subscriptions')
+      .select('*')
+      .eq('id', subscriptionId)
+      .maybeSingle();
+    
+    if (getError || !subscription) {
+      console.error("No subscription found with this ID:", getError);
       return false;
     }
     
-    const subscription = await response.json();
-    
     // Update subscription with cancelled status
-    const updatedSubscription = {
-      ...subscription,
-      status: "cancelled",
-      cancelledAt: new Date().toISOString(),
-      cancelReason: "admin_cancelled",
-      updatedAt: new Date().toISOString()
-    };
+    const now = new Date().toISOString();
+    const { error: updateError } = await supabase
+      .from('user_subscriptions')
+      .update({
+        status: "cancelled",
+        cancelled_at: now,
+        cancel_reason: "admin_cancelled",
+        updated_at: now
+      })
+      .eq('id', subscriptionId);
     
-    // Save updated subscription
-    await fetch('http://localhost:3001/api/subscriptions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updatedSubscription),
-    });
+    if (updateError) {
+      console.error("Error updating subscription:", updateError);
+      return false;
+    }
+    
+    // Update user record
+    const { error: userError } = await supabase
+      .from('users')
+      .update({
+        subscription_status: "cancelled"
+      })
+      .eq('id', userId);
+    
+    if (userError) {
+      console.error("Error updating user subscription status:", userError);
+      return false;
+    }
     
     console.log(`Subscription ${subscriptionId} cancelled for user ${userId}`);
     return true;

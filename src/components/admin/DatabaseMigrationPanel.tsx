@@ -10,7 +10,7 @@ const DatabaseMigrationPanel = () => {
     <Card className="w-full">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-bold">Firestore to MongoDB Migration</CardTitle>
+          <CardTitle className="text-xl font-bold">Firestore to Supabase Migration</CardTitle>
           <div className="flex items-center space-x-2">
             <Database className="h-5 w-5 text-muted-foreground" />
             <span className="text-muted-foreground">↔</span>
@@ -18,7 +18,7 @@ const DatabaseMigrationPanel = () => {
           </div>
         </div>
         <CardDescription>
-          Migrate your Firestore data to MongoDB for improved performance and scalability.
+          Migrate your Firestore data to Supabase for improved performance and scalability.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -34,16 +34,16 @@ const DatabaseMigrationPanel = () => {
           
           <TabsContent value="info" className="space-y-4">
             <div className="prose max-w-none">
-              <h3>Firestore to MongoDB Migration</h3>
+              <h3>Firestore to Supabase Migration</h3>
               <p>
-                This tool helps you migrate your data from Firebase Firestore to MongoDB. The migration process preserves all your existing data structure and relationships.
+                This tool helps you migrate your data from Firebase Firestore to Supabase. The migration process preserves all your existing data structure and relationships.
               </p>
               
               <h4>Why Migrate?</h4>
               <ul>
-                <li><strong>Improved Performance:</strong> MongoDB offers better performance for complex queries and large datasets.</li>
-                <li><strong>Cost Optimization:</strong> MongoDB pricing model can be more cost-effective for growing applications.</li>
-                <li><strong>Advanced Features:</strong> MongoDB provides advanced features like aggregation pipelines, transactions, and more flexible indexing.</li>
+                <li><strong>Improved Performance:</strong> Supabase offers better performance for complex queries and large datasets.</li>
+                <li><strong>Cost Optimization:</strong> Supabase pricing model can be more cost-effective for growing applications.</li>
+                <li><strong>Advanced Features:</strong> Supabase provides advanced features like real-time subscriptions, Row Level Security, and more flexible querying.</li>
               </ul>
               
               <h4>Migration Process</h4>
@@ -56,7 +56,7 @@ const DatabaseMigrationPanel = () => {
               
               <h4>Post-Migration</h4>
               <p>
-                After migration, the application will continue using Firebase for authentication, but all data operations will use MongoDB. This hybrid approach gives you the best of both worlds.
+                After migration, the application will continue using Supabase for authentication and all data operations.
               </p>
               
               <div className="bg-muted p-4 rounded-md text-sm mt-4">

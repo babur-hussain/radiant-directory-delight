@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
 import { Subscription, PaymentType, BillingCycle } from '@/models/Subscription';
@@ -139,44 +140,28 @@ export const getSubscriptions = async (): Promise<Subscription[]> => {
 // Update subscription
 export const updateSubscription = async (id: string, subscription: Partial<Subscription>): Promise<Subscription | null> => {
   try {
-    const subscriptionData = {
-      ...toSupabase(subscription),
-      updated_at: new Date().toISOString()
-    };
+    const data = toSupabase({
+      ...subscription,
+      updatedAt: new Date().toISOString()
+    });
     
-    const { data, error } = await supabase
+    const { data: result, error } = await supabase
       .from('user_subscriptions')
-      .update(subscriptionData)
+      .update(data)
       .eq('id', id)
-      .select();
+      .select()
+      .single();
     
     if (error) throw error;
     
-    return data && data.length > 0 ? fromSupabase(data[0]) : null;
+    return fromSupabase(result);
   } catch (error) {
     console.error('Error updating subscription:', error);
     return null;
   }
 };
 
-// Delete subscription
-export const deleteSubscription = async (id: string): Promise<boolean> => {
-  try {
-    const { error } = await supabase
-      .from('user_subscriptions')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
-    
-    return true;
-  } catch (error) {
-    console.error('Error deleting subscription:', error);
-    return false;
-  }
-};
-
-// Get subscriptions by user ID
+// Get user subscriptions
 export const getUserSubscriptions = async (userId: string): Promise<Subscription[]> => {
   try {
     const { data, error } = await supabase
@@ -189,51 +174,29 @@ export const getUserSubscriptions = async (userId: string): Promise<Subscription
     
     return data ? data.map(fromSupabase) : [];
   } catch (error) {
-    console.error('Error getting user subscriptions:', error);
+    console.error(`Error getting subscriptions for user ${userId}:`, error);
     return [];
   }
 };
 
-// Get active user subscription
-export const getActiveUserSubscription = async (userId: string): Promise<Subscription | null> => {
-  try {
-    const { data, error } = await supabase
-      .from('user_subscriptions')
-      .select()
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    
-    if (error) throw error;
-    
-    return data ? fromSupabase(data) : null;
-  } catch (error) {
-    console.error('Error getting active user subscription:', error);
-    return null;
-  }
-};
-
 // Cancel subscription
-export const cancelSubscription = async (id: string, reason?: string): Promise<Subscription | null> => {
+export const cancelSubscription = async (id: string, reason: string = 'user_cancelled'): Promise<boolean> => {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('user_subscriptions')
       .update({
         status: 'cancelled',
         cancelled_at: new Date().toISOString(),
-        cancel_reason: reason || '',
+        cancel_reason: reason,
         updated_at: new Date().toISOString()
       })
-      .eq('id', id)
-      .select();
+      .eq('id', id);
     
     if (error) throw error;
     
-    return data && data.length > 0 ? fromSupabase(data[0]) : null;
+    return true;
   } catch (error) {
-    console.error('Error cancelling subscription:', error);
-    return null;
+    console.error(`Error cancelling subscription ${id}:`, error);
+    return false;
   }
 };
