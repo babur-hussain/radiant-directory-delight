@@ -114,6 +114,17 @@ const cleanRazorpayOptions = (options: RazorpayOptions): void => {
     delete options.amount;
     delete options.currency;
   }
+
+  // 5. Ensure the callback URL is valid (added for route not found fix)
+  if (options.callback_url) {
+    // Make sure it's a valid URL
+    try {
+      new URL(options.callback_url);
+    } catch (e) {
+      console.warn("Invalid callback_url, removing it");
+      delete options.callback_url;
+    }
+  }
 };
 
 /**
@@ -143,9 +154,9 @@ export const createSubscriptionViaEdgeFunction = async (
   try {
     // Clean customer data before sending to server
     const cleanedCustomerData = {
-      name: customerData.name || '',
-      email: customerData.email || '',
-      phone: customerData.phone || ''
+      name: customerData?.name || '',
+      email: customerData?.email || '',
+      phone: customerData?.phone || ''
     };
     
     // Remove empty values
@@ -220,9 +231,12 @@ export const buildRazorpayOptions = (
   // Ensure we have properly formatted customer data with no empty values
   const cleanedPrefill: Record<string, string> = {};
   
-  if (customerData.name) cleanedPrefill.name = customerData.name;
-  if (customerData.email) cleanedPrefill.email = customerData.email;
-  if (customerData.phone) cleanedPrefill.contact = customerData.phone;
+  if (customerData?.name) cleanedPrefill.name = customerData.name;
+  if (customerData?.email) cleanedPrefill.email = customerData.email;
+  if (customerData?.phone) cleanedPrefill.contact = customerData.phone;
+  
+  // Get current URL (to create valid return URLs)
+  const currentUrl = window.location.href.split('?')[0].split('#')[0];
   
   // Base options for Razorpay
   const options: RazorpayOptions = {
@@ -255,7 +269,10 @@ export const buildRazorpayOptions = (
       ondismiss: onDismiss,
       escape: false,
       backdropclose: false
-    }
+    },
+    // Add return URLs to prevent routing errors
+    callback_url: currentUrl,
+    redirect: false
   };
   
   // Only add prefill if we have values

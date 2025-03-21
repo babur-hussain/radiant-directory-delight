@@ -18,7 +18,7 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Generate a proper Razorpay order ID format (order_XXX where XXX is 14 chars)
+// Generate a valid Razorpay order ID format (order_XXX where XXX is 14 chars)
 function generateValidOrderId(): string {
   // Format: order_[14 random alphanumeric characters]
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

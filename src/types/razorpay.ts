@@ -1,8 +1,4 @@
 
-/**
- * Type definitions for Razorpay integration
- */
-
 export interface RazorpayOptions {
   key: string;
   amount?: number;
@@ -21,18 +17,15 @@ export interface RazorpayOptions {
     color?: string;
   };
   subscription_id?: string;
+  readonly recurring?: boolean;
+  remember_customer?: boolean;
   modal?: {
-    ondismiss?: () => void;
     escape?: boolean;
     backdropclose?: boolean;
+    ondismiss?: () => void;
   };
-  handler?: (response: any) => void;
-  [key: string]: any;
-}
-
-export interface RazorpayInstance {
-  open: () => void;
-  on: (event: string, callback: (response: any) => void) => void;
+  callback_url?: string;
+  redirect?: boolean;
   [key: string]: any;
 }
 
@@ -40,21 +33,36 @@ export interface RazorpayResponse {
   razorpay_payment_id?: string;
   razorpay_order_id?: string;
   razorpay_signature?: string;
-  razorpay_subscription_id?: string;
   [key: string]: any;
 }
 
 export interface SubscriptionResult {
-  isSubscription: boolean;
-  subscription?: {
-    id: string;
-    [key: string]: any;
-  };
   order?: {
     id: string;
+    entity: string;
     amount: number;
+    amount_paid: number;
+    amount_due: number;
     currency: string;
-    [key: string]: any;
+    receipt: string;
+    status: string;
+    attempts: number;
+    notes: Record<string, string>;
+    created_at: number;
   };
-  [key: string]: any;
+  subscription?: {
+    id: string;
+    entity: string;
+    plan_id: string;
+    customer_id: string;
+    status: string;
+    current_start: number;
+    current_end: number;
+    ended_at: number | null;
+    quantity: number;
+    notes: Record<string, string>;
+  };
+  isOneTime: boolean;
+  isSubscription: boolean;
+  enableAutoPay: boolean;
 }
