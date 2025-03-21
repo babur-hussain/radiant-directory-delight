@@ -6,11 +6,14 @@ import DashboardSectionsManager from "./DashboardSectionsManager";
 import UserDashboardCustomizer from "./UserDashboardCustomizer";
 
 const AdminDashboardTabs = () => {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
 
   if (!user) {
     return <div>Loading user data...</div>;
   }
+  
+  // Check if user is admin - don't destructure isAdmin directly
+  const userIsAdmin = user.isAdmin === true || user.role === 'Admin';
 
   return (
     <Tabs defaultValue="packages" className="w-full">
@@ -22,7 +25,7 @@ const AdminDashboardTabs = () => {
       <TabsContent value="packages" className="py-4">
         <DashboardSectionsManager 
           userId={user.uid}
-          isAdmin={isAdmin}
+          isAdmin={userIsAdmin}
         />
       </TabsContent>
       
