@@ -2,7 +2,7 @@
 import { User as SupabaseUser } from '@supabase/supabase-js';
 
 // User roles enum for type safety
-export type UserRole = 'Admin' | 'Business' | 'Influencer' | 'User' | 'staff' | null;
+export type UserRole = 'Admin' | 'Business' | 'Influencer' | 'User' | 'Staff' | null;
 
 // Subscription interface for type safety
 export interface UserSubscription {
@@ -105,6 +105,9 @@ export interface AuthContextType {
     role: UserRole, 
     additionalData?: any
   ) => Promise<void>;
+  
+  // User data management
+  updateUserData: (data: Partial<User>) => Promise<void>;
   
   // Role management
   updateUserRole?: (user: User, role: UserRole) => Promise<User>;

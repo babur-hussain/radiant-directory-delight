@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import RegisterTypeSelector from "./RegisterTypeSelector";
 import { UserRole } from "@/types/auth";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MailCheck, Loader2, IdCard, MapPin, Briefcase, User, Instagram, Facebook, Phone, Globe, Building, Hash, BarChart, Languages, MapPinned, BadgeCheck } from "lucide-react";
+import { ArrowLeft, MailCheck, Loader2, IdCard, MapPin, Briefcase, User, Instagram, Facebook, Phone, Globe, Building, Hash, BarChart, Languages, MapPinned, BadgeCheck, Users, UserCheck } from "lucide-react";
 import SocialLoginButtons from "./SocialLoginButtons";
 
 // Create a base schema with common fields
