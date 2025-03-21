@@ -63,14 +63,23 @@ export const useRazorpay = () => {
   const createPlan = async (packageData: ISubscriptionPackage): Promise<any> => {
     try {
       // Get current auth session
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        throw new Error(`Session error: ${sessionError.message}`);
+      }
+      
       const accessToken = sessionData?.session?.access_token;
       
       if (!accessToken) {
         throw new Error('Not authenticated');
       }
       
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/razorpay-integration/create-plan`, {
+      // Make sure we have the correct URL format
+      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/razorpay-integration/create-plan`;
+      console.log("Calling edge function at:", functionUrl);
+      
+      const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -79,12 +88,21 @@ export const useRazorpay = () => {
         body: JSON.stringify({ packageData })
       });
       
+      // Check if response is OK
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create plan');
+        const responseText = await response.text();
+        console.error('Error response from server:', responseText);
+        throw new Error(`Server error: ${response.status} - ${responseText}`);
       }
       
-      return await response.json();
+      // Parse the JSON response
+      try {
+        const data = await response.json();
+        return data;
+      } catch (jsonError) {
+        console.error('Error parsing JSON:', jsonError);
+        throw new Error('Invalid response format from server');
+      }
     } catch (error) {
       console.error('Error creating plan:', error);
       throw error;
@@ -120,15 +138,24 @@ export const useRazorpay = () => {
       };
       
       // Get current auth session
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        throw new Error(`Session error: ${sessionError.message}`);
+      }
+      
       const accessToken = sessionData?.session?.access_token;
       
       if (!accessToken) {
         throw new Error('Not authenticated');
       }
       
+      // Make sure we have the correct URL format
+      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/razorpay-integration/create-subscription`;
+      console.log("Calling edge function at:", functionUrl);
+      
       // Create subscription via edge function
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/razorpay-integration/create-subscription`, {
+      const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -141,12 +168,22 @@ export const useRazorpay = () => {
         })
       });
       
+      // Check if response is OK
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create subscription');
+        const responseText = await response.text();
+        console.error('Error response from server:', responseText);
+        throw new Error(`Server error: ${response.status} - ${responseText}`);
       }
       
-      const result = await response.json();
+      // Parse the JSON response
+      let result;
+      try {
+        result = await response.json();
+      } catch (jsonError) {
+        console.error('Error parsing JSON:', jsonError);
+        throw new Error('Invalid response format from server');
+      }
+      
       const subscription = result.subscription;
       
       if (!subscription || !subscription.id) {

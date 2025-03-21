@@ -20,6 +20,8 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // Server entrypoint
 serve(async (req) => {
+  console.log("Request received:", req.method, new URL(req.url).pathname);
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -47,7 +49,7 @@ serve(async (req) => {
 
     if (authError || !user) {
       return new Response(
-        JSON.stringify({ error: "Invalid token or user not found" }),
+        JSON.stringify({ error: "Invalid token or user not found", details: authError }),
         {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -58,6 +60,8 @@ serve(async (req) => {
     // Get URL path
     const url = new URL(req.url);
     const path = url.pathname.split("/").pop();
+    
+    console.log("Processing request for path:", path);
 
     // Route the request based on the path
     if (path === "create-plan") {
@@ -67,8 +71,9 @@ serve(async (req) => {
     } else if (path === "webhook") {
       return await handleWebhook(req);
     } else {
+      console.error("Invalid endpoint requested:", path);
       return new Response(
-        JSON.stringify({ error: "Invalid endpoint" }),
+        JSON.stringify({ error: "Invalid endpoint", path }),
         {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -91,6 +96,7 @@ serve(async (req) => {
 async function handleCreatePlan(req: Request, user: any) {
   try {
     const { packageData } = await req.json();
+    console.log("Creating plan for package:", packageData);
 
     // Validate plan data
     if (!packageData || !packageData.id || !packageData.title || !packageData.price) {
@@ -113,6 +119,7 @@ async function handleCreatePlan(req: Request, user: any) {
       created_at: new Date().toISOString(),
     };
 
+    console.log("Plan created successfully:", plan);
     return new Response(
       JSON.stringify({ plan }),
       {
@@ -136,6 +143,7 @@ async function handleCreatePlan(req: Request, user: any) {
 async function handleCreateSubscription(req: Request, user: any) {
   try {
     const { packageData, customerData, userId } = await req.json();
+    console.log("Creating subscription with data:", { packageData, customerData, userId });
 
     // Validate subscription data
     if (!packageData || !customerData || !userId) {
@@ -166,6 +174,7 @@ async function handleCreateSubscription(req: Request, user: any) {
       created_at: new Date().toISOString(),
     };
 
+    console.log("Subscription created successfully:", subscription);
     return new Response(
       JSON.stringify({ subscription }),
       {
@@ -189,6 +198,7 @@ async function handleCreateSubscription(req: Request, user: any) {
 async function handleWebhook(req: Request) {
   try {
     const payload = await req.json();
+    console.log("Webhook received with payload:", payload);
 
     // Validate the webhook signature
     // In a real implementation, you would verify the signature using HMAC
