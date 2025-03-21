@@ -34,6 +34,7 @@ serve(async (req) => {
     // Extract the Supabase auth token
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
+      console.error("Missing Authorization header");
       return new Response(
         JSON.stringify({ error: "Missing Authorization header" }),
         {
@@ -48,6 +49,7 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
+      console.error("Auth error:", authError);
       return new Response(
         JSON.stringify({ error: "Invalid token or user not found", details: authError }),
         {
@@ -95,7 +97,21 @@ serve(async (req) => {
 // Handle creating a new plan
 async function handleCreatePlan(req: Request, user: any) {
   try {
-    const { packageData } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      console.error("Error parsing request body:", e);
+      return new Response(
+        JSON.stringify({ error: "Invalid request body" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+    
+    const { packageData } = body;
     console.log("Creating plan for package:", packageData);
 
     // Validate plan data
@@ -142,7 +158,21 @@ async function handleCreatePlan(req: Request, user: any) {
 // Handle creating a new subscription
 async function handleCreateSubscription(req: Request, user: any) {
   try {
-    const { packageData, customerData, userId } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      console.error("Error parsing request body:", e);
+      return new Response(
+        JSON.stringify({ error: "Invalid request body" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+    
+    const { packageData, customerData, userId } = body;
     console.log("Creating subscription with data:", { packageData, customerData, userId });
 
     // Validate subscription data

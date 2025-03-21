@@ -75,8 +75,14 @@ export const useRazorpay = () => {
         throw new Error('Not authenticated');
       }
       
+      // Get the Supabase URL from the client
+      const supabaseUrl = supabase.supabaseUrl;
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL not found');
+      }
+      
       // Make sure we have the correct URL format
-      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/razorpay-integration/create-plan`;
+      const functionUrl = `${supabaseUrl}/functions/v1/razorpay-integration/create-plan`;
       console.log("Calling edge function at:", functionUrl);
       
       const response = await fetch(functionUrl, {
@@ -150,8 +156,14 @@ export const useRazorpay = () => {
         throw new Error('Not authenticated');
       }
       
+      // Get the Supabase URL from the client
+      const supabaseUrl = supabase.supabaseUrl;
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL not found');
+      }
+      
       // Make sure we have the correct URL format
-      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/razorpay-integration/create-subscription`;
+      const functionUrl = `${supabaseUrl}/functions/v1/razorpay-integration/create-subscription`;
       console.log("Calling edge function at:", functionUrl);
       
       // Create subscription via edge function
