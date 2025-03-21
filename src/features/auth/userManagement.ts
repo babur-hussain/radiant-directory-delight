@@ -1,6 +1,7 @@
 
 import { User, UserRole } from "@/types/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { nanoid } from 'nanoid';
 
 // Constants for default user data
 const DEFAULT_PHOTO_URL = 'https://example.com/default-avatar.png';
@@ -22,7 +23,7 @@ interface TestUserData {
 }
 
 // Helper function to convert role string to UserRole type
-function transformRole(role: string | null): UserRole {
+export function transformRole(role: string | null): UserRole {
   if (!role) return null;
   
   // Match with expected UserRole values
@@ -89,10 +90,7 @@ export const getUserById = async (userId: string): Promise<User | null> => {
   }
 };
 
-// Add nanoid import at the top if it's used
-import { nanoid } from 'nanoid';
-
-// Export these functions from userDataAccess to make them available where needed
+// Export the getAllUsers function from userDataAccess
 export { getAllUsers } from './userDataAccess';
 
 // Create a test user for development environments

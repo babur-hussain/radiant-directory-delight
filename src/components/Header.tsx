@@ -19,19 +19,19 @@ const Header = () => {
   } = useAuth();
   
   const user = currentUser;
-  
+
   // Simple header when auth isn't initialized
   if (!initialized) {
     return (
-      <header className="main-header">
-        <div className="container">
-          <div className="logo-container">
-            <Link to="/" className="logo-text">
+      <header className="sticky top-0 z-50 w-full bg-white border-b shadow-sm dark:bg-gray-900 dark:border-gray-800">
+        <div className="container flex items-center justify-between h-16 mx-auto px-4">
+          <div className="flex-shrink-0">
+            <Link to="/" className="text-xl font-bold">
               Grow Bharat Vyapaar
             </Link>
           </div>
           
-          <div className="actions">
+          <div className="flex items-center">
             <span className="text-sm">Loading...</span>
           </div>
         </div>
@@ -65,30 +65,30 @@ const Header = () => {
   };
 
   return (
-    <header className="main-header">
-      <div className="container">
+    <header className="sticky top-0 z-50 w-full bg-white border-b shadow-sm dark:bg-gray-900 dark:border-gray-800">
+      <div className="container flex items-center justify-between h-16 mx-auto px-4">
         {/* Logo */}
-        <div className="logo-container">
-          <Link to="/" className="logo-text">
+        <div className="flex-shrink-0">
+          <Link to="/" className="text-xl font-bold">
             Grow Bharat Vyapaar
           </Link>
         </div>
 
-        {/* Navigation */}
-        <nav>
-          <Link to="/">Home</Link>
-          <Link to="/categories">Categories</Link>
-          <Link to="/businesses">Businesses</Link>
-          <Link to="/about">About</Link>
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center space-x-6">
+          <Link to="/" className="text-sm font-medium hover:text-primary">Home</Link>
+          <Link to="/categories" className="text-sm font-medium hover:text-primary">Categories</Link>
+          <Link to="/businesses" className="text-sm font-medium hover:text-primary">Businesses</Link>
+          <Link to="/about" className="text-sm font-medium hover:text-primary">About</Link>
         </nav>
 
         {/* Actions */}
-        <div className="actions">
+        <div className="flex items-center space-x-3">
           {shouldShowDashboard() && (
             <Button 
               variant="outline" 
               size="sm" 
-              className="dashboard-btn rounded-full"
+              className="hidden md:flex rounded-full"
               onClick={handleDashboardClick}
             >
               <LayoutDashboard className="h-4 w-4 mr-2" />
@@ -109,59 +109,75 @@ const Header = () => {
               Login / Register
             </Button>
           )}
-        </div>
 
-        {/* Mobile Menu Button */}
-        <button 
-          className="mobile-menu-button p-2 rounded-md text-gray-600 hover:text-gray-900"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        >
-          {isMobileMenuOpen ? (
-            <X size={20} />
-          ) : (
-            <Menu size={20} />
-          )}
-        </button>
+          {/* Mobile Menu Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="md:hidden"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
+            <span className="sr-only">Toggle menu</span>
+          </Button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
-      <div className={`mobile-menu ${isMobileMenuOpen ? 'visible' : ''}`}>
-        <Link to="/">Home</Link>
-        <Link to="/categories">Categories</Link>
-        <Link to="/businesses">Businesses</Link>
-        <Link to="/about">About</Link>
-        
-        {shouldShowDashboard() && (
-          <Button 
-            variant="outline" 
-            className="justify-start w-full mt-4" 
-            onClick={handleDashboardClick}
-          >
-            <LayoutDashboard className="h-4 w-4 mr-2" />
-            Dashboard
-          </Button>
-        )}
-        
-        {isAuthenticated ? (
-          <Button 
-            variant="default" 
-            className="justify-start w-full mt-2" 
-            onClick={logout}
-          >
-            <LogIn className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
-        ) : (
-          <Button 
-            variant="default" 
-            className="justify-start w-full mt-2" 
-            onClick={handleLoginClick}
-          >
-            <LogIn className="h-4 w-4 mr-2" />
-            Login / Register
-          </Button>
-        )}
-      </div>
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t">
+          <div className="container py-3 px-4 space-y-2">
+            <Link to="/" className="block py-2 hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
+            <Link to="/categories" className="block py-2 hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>Categories</Link>
+            <Link to="/businesses" className="block py-2 hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>Businesses</Link>
+            <Link to="/about" className="block py-2 hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>About</Link>
+            
+            {shouldShowDashboard() && (
+              <Button 
+                variant="outline" 
+                className="w-full justify-start mt-2" 
+                onClick={() => {
+                  handleDashboardClick();
+                  setIsMobileMenuOpen(false);
+                }}
+              >
+                <LayoutDashboard className="h-4 w-4 mr-2" />
+                Dashboard
+              </Button>
+            )}
+            
+            {isAuthenticated ? (
+              <Button 
+                variant="default" 
+                className="w-full justify-start mt-2" 
+                onClick={() => {
+                  logout();
+                  setIsMobileMenuOpen(false);
+                }}
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            ) : (
+              <Button 
+                variant="default" 
+                className="w-full justify-start mt-2" 
+                onClick={() => {
+                  handleLoginClick();
+                  setIsMobileMenuOpen(false);
+                }}
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                Login / Register
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 };

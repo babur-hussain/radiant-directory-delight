@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import AuthProvider from '@/providers/AuthProvider';
+import Layout from '@/components/layout/Layout';
 import Index from '@/pages/Index';
 import AuthPage from '@/pages/AuthPage';
 import AuthCallbackPage from '@/pages/AuthCallbackPage';
@@ -26,8 +27,15 @@ function App() {
       <Router>
         <AuthProvider>
           <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Index />} />
+            {/* Public routes with Layout */}
+            <Route 
+              path="/" 
+              element={
+                <Layout>
+                  <Index />
+                </Layout>
+              } 
+            />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/admin/login" element={<AdminLoginPage />} />

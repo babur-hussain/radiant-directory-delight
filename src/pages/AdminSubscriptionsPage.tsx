@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Plus, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import checkSupabaseConnection from "@/utils/setupSupabase";
 import { ISubscription, ISubscriptionPackage, SubscriptionStatus, PaymentType, BillingCycle } from "@/models/Subscription";
