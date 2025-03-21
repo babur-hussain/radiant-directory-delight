@@ -29,14 +29,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.error('Error fetching user profile:', error);
       }
 
-      // Create a properly structured address object from the profile data
+      // Create a properly structured address object
       const address = {
-        street: profile?.street || null,
+        street: null,  // These fields won't come directly from profile
         city: profile?.city || null,
-        state: profile?.state || null,
+        state: null,
         country: profile?.country || null,
-        zipCode: profile?.zip_code || null
+        zipCode: null
       };
+
+      // Check if addresses table has data for this user
+      const { data: addressData, error: addressError } = await supabase
+        .from('addresses')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (!addressError && addressData) {
+        // Update with data from addresses table if available
+        address.street = addressData.street;
+        address.state = addressData.state;
+        address.city = addressData.city || profile?.city;
+        address.country = addressData.country || profile?.country;
+        address.zipCode = addressData.zip_code;
+      }
 
       return {
         uid: session.user.id,
@@ -218,25 +234,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           email: email,
           created_at: new Date().toISOString(),
           last_login: new Date().toISOString(),
-          ...additionalData
         };
         
-        // Remove any nested objects that need to be flattened
-        if (profileData.address) {
-          if (typeof profileData.address === 'object') {
-            profileData.street = profileData.address.street;
-            profileData.city = profileData.address.city || profileData.city;
-            profileData.state = profileData.address.state;
-            profileData.country = profileData.address.country || profileData.country;
-            profileData.zip_code = profileData.address.zipCode;
-          }
-          delete profileData.address;
-        }
+        // Copy fields from additionalData to the profile data
+        // Remove address and flatten it separately
+        const addressData = additionalData.address ? { 
+          ...additionalData.address,
+          user_id: data.user.id, 
+          created_at: new Date().toISOString()
+        } : null;
         
-        // Ensure any data formatting matches the database schema
-        if (profileData.phoneNumber) {
-          profileData.phone = profileData.phoneNumber;
-          delete profileData.phoneNumber;
+        // Copy the rest of the fields directly to the profile
+        for (const key in additionalData) {
+          if (key !== 'address') {
+            // Convert camelCase to snake_case for database compatibility
+            const snakeCaseKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+            profileData[snakeCaseKey] = additionalData[key];
+          }
         }
         
         // Insert the profile
@@ -246,6 +260,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           
         if (profileError) {
           console.error('Error creating user profile:', profileError);
+        }
+        
+        // Insert address data if it exists
+        if (addressData) {
+          const { error: addressError } = await supabase
+            .from('addresses')
+            .upsert(addressData);
+            
+          if (addressError) {
+            console.error('Error creating user address:', addressError);
+          }
         }
       }
 
