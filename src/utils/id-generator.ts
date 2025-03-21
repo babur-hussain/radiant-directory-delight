@@ -30,33 +30,36 @@ export const generateEmployeeCode = (prefix: string = 'EMP'): string => {
 };
 
 /**
- * Generates a unique order ID for Razorpay that follows their best practices
+ * Generates a unique order ID for Razorpay that follows their required format
+ * Format: order_<14-character alphanumeric ID>
  * 
  * IMPORTANT: In production, order IDs should be created on your backend server
- * using the Razorpay Orders API:
- * POST https://api.razorpay.com/v1/orders
+ * using the Razorpay Orders API
  * 
  * @returns A properly formatted order ID
  */
 export const generateOrderId = (): string => {
-  // Use simple format to avoid validation issues
-  // In production, get real order IDs from Razorpay Orders API
-  return `order_${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
+  // Generate a 14-character alphanumeric string
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 14; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  // Return the formatted order ID
+  return `order_${result}`;
 };
 
 /**
  * Generates a unique subscription ID for Razorpay
  * 
  * IMPORTANT: In production, subscription IDs should be created on your backend server
- * using the Razorpay Subscriptions API:
- * POST https://api.razorpay.com/v1/subscriptions
+ * using the Razorpay Subscriptions API
  * 
  * @returns A properly formatted subscription ID
  */
 export const generateSubscriptionId = (): string => {
   // Simple format that matches Razorpay's subscription ID format
-  // In production, get real subscription IDs from Razorpay Subscriptions API
-  return `sub_${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
+  return `sub_${nanoid(14)}`;
 };
 
 export { nanoid };

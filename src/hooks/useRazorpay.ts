@@ -21,7 +21,7 @@ export const useRazorpay = () => {
   const [error, setError] = useState<string | null>(null);
   
   // Create a subscription on the server and open Razorpay checkout
-  const createSubscription = async (packageData: ISubscriptionPackage, useOneTimePreferred = true): Promise<any> => {
+  const createSubscription = async (packageData: ISubscriptionPackage, enableAutoPay = true): Promise<any> => {
     if (!user) {
       throw new Error('User must be logged in to create a subscription');
     }
@@ -40,9 +40,9 @@ export const useRazorpay = () => {
         throw new Error('Payment gateway is not available. Please refresh the page.');
       }
       
-      // Always use one-time payment for now until subscription issues are resolved
-      // Force useOneTimePreferred to true to ensure we're using order API
-      console.log(`Processing payment as one-time payment`);
+      // Determine if this is a one-time or recurring payment
+      const isRecurringPayment = packageData.paymentType === 'recurring' && enableAutoPay;
+      console.log(`Processing payment as ${isRecurringPayment ? 'recurring' : 'one-time'} payment with autopay: ${enableAutoPay}`);
       
       // Prepare customer data - ensure no empty values
       const customerData = {
@@ -56,7 +56,7 @@ export const useRazorpay = () => {
         user,
         packageData,
         customerData,
-        true // Force one-time payment
+        !isRecurringPayment // Use one-time API if not recurring
       );
       
       console.log("Received result from backend:", result);
@@ -65,16 +65,16 @@ export const useRazorpay = () => {
         throw new Error('Invalid response from server');
       }
       
-      // Open Razorpay checkout for one-time payment
+      // Open Razorpay checkout for payment
       return new Promise((resolve, reject) => {
         try {
-          // Build Razorpay options for one-time payment
+          // Build Razorpay options
           const options = buildRazorpayOptions(
             user,
             packageData,
             customerData,
             result,
-            true, // Force isOneTime to true
+            !isRecurringPayment, // isOneTime
             (response) => {
               console.log("Payment success callback triggered with:", response);
               resolve(response);

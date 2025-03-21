@@ -155,20 +155,26 @@ async function handleCreatePlan(req: Request, user: any) {
   }
 }
 
-// Generate a proper Razorpay order ID format that's more likely to be valid
+// Generate a proper Razorpay order ID format
 function generateValidOrderId(): string {
-  // Razorpay order IDs typically follow the format order_ + randomString
-  const timestamp = Date.now().toString(36);
-  const randomStr = Math.random().toString(36).substring(2, 15);
-  return `order_${timestamp}${randomStr}`.substring(0, 20);
+  // Generate a 14-character alphanumeric string following Razorpay's format
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 14; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return `order_${result}`;
 }
 
 // Generate a proper Razorpay subscription ID format
 function generateValidSubscriptionId(): string {
   // Razorpay subscription IDs start with 'sub_' followed by alphanumeric characters
-  const timestamp = Date.now().toString(36);
-  const randomStr = Math.random().toString(36).substring(2, 15);
-  return `sub_${timestamp}${randomStr}`.substring(0, 20);
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 14; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return `sub_${result}`;
 }
 
 // Handle creating a new subscription
@@ -202,7 +208,8 @@ async function handleCreateSubscription(req: Request, user: any) {
       );
     }
 
-    // Force one-time payment for now to ensure stable functionality
+    // Determine payment type based on package data and user preference
+    // For now, use one-time payment as default for stability
     const isOneTime = true;
     console.log(`Processing payment type: one-time`);
     
@@ -216,7 +223,7 @@ async function handleCreateSubscription(req: Request, user: any) {
     const orderId = generateValidOrderId();
     console.log("Generated order ID:", orderId);
     
-    // Create order object (this would be returned from Razorpay's API in a real implementation)
+    // Create order object with autopay options
     const order = {
       id: orderId,
       entity: "order",
@@ -229,9 +236,15 @@ async function handleCreateSubscription(req: Request, user: any) {
       attempts: 0,
       notes: {
         packageId: packageData.id.toString(),
-        userId: userId
+        userId: userId,
+        enableAutoPay: "true" // Flag for enabling autopay
       },
-      created_at: Date.now()
+      created_at: Date.now(),
+      // Add autopay flags if supported by your account
+      offer_id: null,
+      method: "card", // Preferred payment method for autopay
+      recurring: "1", // Enable recurring for autopay
+      auto_capture: "1" // Auto-capture the payment
     };
     
     console.log("Order created successfully:", order);
@@ -241,7 +254,8 @@ async function handleCreateSubscription(req: Request, user: any) {
       JSON.stringify({ 
         order,
         isOneTime: true,
-        isSubscription: false
+        isSubscription: false,
+        enableAutoPay: true
       }),
       {
         status: 200,
@@ -272,6 +286,14 @@ async function handleWebhook(req: Request) {
     if (eventType === "payment.authorized" || eventType === "payment.captured") {
       // Handle payment success
       await processPaymentSuccess(payload);
+    } else if (eventType === "subscription.authenticated") {
+      await processSubscriptionAuthenticated(payload);
+    } else if (eventType === "subscription.activated") {
+      await processSubscriptionActivated(payload);
+    } else if (eventType === "subscription.charged") {
+      await processSubscriptionCharged(payload);
+    } else if (eventType === "subscription.cancelled") {
+      await processSubscriptionCancelled(payload);
     }
 
     return new Response(

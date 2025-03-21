@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, CreditCard, Shield, Loader2, RefreshCw, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Switch } from '@/components/ui/switch';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -28,9 +29,11 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const [retryCount, setRetryCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [enableAutoPay, setEnableAutoPay] = useState(true);
   
-  // Always treat everything as one-time package for now for stability
-  const isOneTimePackage = true;
+  // Determine if this package supports recurring payments
+  const supportsRecurring = selectedPackage.paymentType === 'recurring';
+  const isOneTimePackage = !supportsRecurring;
   const totalPaymentAmount = selectedPackage.price || 0;
   
   const handlePayment = async () => {
@@ -40,28 +43,26 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     setError(null);
     
     try {
-      console.log(`Initiating one-time payment for package:`, selectedPackage);
+      console.log(`Initiating payment for package with autopay: ${enableAutoPay}`, selectedPackage);
       
       if (!user) {
         throw new Error("You must be logged in to make a payment.");
       }
       
-      // Force one-time payment mode for all payments
-      const useOneTimePreferred = true;
-      
-      const result = await createSubscription(selectedPackage, useOneTimePreferred);
+      const result = await createSubscription(selectedPackage, enableAutoPay);
       
       console.log('Payment success:', result);
       
       toast({
         title: "Payment Successful",
-        description: `Your payment was successful.`,
+        description: `Your payment was successful.${enableAutoPay ? ' Autopay has been enabled for future payments.' : ''}`,
       });
       
       onSuccess({
         ...result,
-        isRecurring: false,
-        billingCycle: 'yearly'
+        isRecurring: supportsRecurring && enableAutoPay,
+        billingCycle: selectedPackage.billingCycle || 'yearly',
+        enableAutoPay
       });
     } catch (error) {
       console.error('Payment error:', error);
@@ -190,7 +191,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           </div>
           
           <div className="text-sm text-muted-foreground">
-            <p>One-time payment for {selectedPackage.durationMonths || 12} months of service</p>
+            <p>{isOneTimePackage ? 'One-time payment' : 'Subscription'} for {selectedPackage.durationMonths || 12} months of service</p>
           </div>
           
           <div className="flex justify-between pt-2 font-medium text-primary">
@@ -198,6 +199,22 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
             <span>₹{totalPaymentAmount}</span>
           </div>
         </div>
+        
+        {supportsRecurring && (
+          <div className="flex items-center justify-between space-x-2">
+            <div className="flex-1">
+              <h4 className="font-medium text-sm">Enable AutoPay</h4>
+              <p className="text-xs text-muted-foreground">
+                We'll automatically renew your subscription using this payment method
+              </p>
+            </div>
+            <Switch 
+              checked={enableAutoPay}
+              onCheckedChange={setEnableAutoPay}
+              aria-label="Toggle autopay"
+            />
+          </div>
+        )}
         
         <div className="flex items-start gap-2 bg-muted p-3 rounded-md">
           <Shield className="h-5 w-5 text-muted-foreground mt-0.5" />

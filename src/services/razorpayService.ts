@@ -24,62 +24,70 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   
   console.log("Creating Razorpay instance with options:", safeOptions);
   
-  // Remove any undefined, null, or empty string values that could cause issues
-  Object.keys(safeOptions).forEach(key => {
-    if (safeOptions[key] === undefined || safeOptions[key] === null || safeOptions[key] === '') {
-      delete safeOptions[key];
+  // Clean options before sending to Razorpay
+  cleanRazorpayOptions(safeOptions);
+  
+  return new (window as any).Razorpay(safeOptions);
+};
+
+/**
+ * Clean Razorpay options to prevent errors
+ */
+const cleanRazorpayOptions = (options: RazorpayOptions): void => {
+  // Remove any undefined, null, or empty string values
+  Object.keys(options).forEach(key => {
+    if (options[key] === undefined || options[key] === null || options[key] === '') {
+      delete options[key];
     }
   });
   
-  // Clean up prefill object - completely remove empty values
-  if (safeOptions.prefill) {
-    Object.keys(safeOptions.prefill).forEach(key => {
-      if (!safeOptions.prefill[key] || safeOptions.prefill[key] === '') {
-        delete safeOptions.prefill[key];
+  // Clean up prefill object
+  if (options.prefill) {
+    Object.keys(options.prefill).forEach(key => {
+      if (!options.prefill[key] || options.prefill[key] === '') {
+        delete options.prefill[key];
       }
     });
     
     // If prefill is empty after cleaning, remove it
-    if (Object.keys(safeOptions.prefill).length === 0) {
-      delete safeOptions.prefill;
+    if (Object.keys(options.prefill).length === 0) {
+      delete options.prefill;
     }
   }
   
   // Ensure notes have only string values
-  if (safeOptions.notes) {
-    Object.keys(safeOptions.notes).forEach(key => {
-      if (safeOptions.notes[key] !== undefined && safeOptions.notes[key] !== null) {
-        safeOptions.notes[key] = String(safeOptions.notes[key]);
+  if (options.notes) {
+    Object.keys(options.notes).forEach(key => {
+      if (options.notes[key] !== undefined && options.notes[key] !== null) {
+        options.notes[key] = String(options.notes[key]);
       } else {
-        delete safeOptions.notes[key];
+        delete options.notes[key];
       }
     });
     
     // If notes is empty after cleaning, remove it
-    if (Object.keys(safeOptions.notes).length === 0) {
-      delete safeOptions.notes;
+    if (Object.keys(options.notes).length === 0) {
+      delete options.notes;
     }
   }
   
   // Check if we have an order_id, and if not, don't send amount and currency
-  if (!safeOptions.order_id && (safeOptions.amount || safeOptions.currency)) {
+  if (!options.order_id && (options.amount || options.currency)) {
     console.warn("No order_id present, removing amount and currency parameters");
-    delete safeOptions.amount;
-    delete safeOptions.currency;
+    delete options.amount;
+    delete options.currency;
   }
   
   // Ensure we don't have both subscription_id and order_id
-  if (safeOptions.subscription_id && safeOptions.order_id) {
+  if (options.subscription_id && options.order_id) {
     console.warn("Both subscription_id and order_id present, removing subscription_id");
-    delete safeOptions.subscription_id;
+    delete options.subscription_id;
   }
   
   // Final check to ensure mandatory fields are present
-  if (!safeOptions.key) {
-    safeOptions.key = RAZORPAY_KEY_ID;
+  if (!options.key) {
+    options.key = RAZORPAY_KEY_ID;
   }
-  
-  return new (window as any).Razorpay(safeOptions);
 };
 
 /**
@@ -134,12 +142,13 @@ export const createSubscriptionViaEdgeFunction = async (
         userId: user.id,
         packageData: {
           ...packageData,
-          // Force one-time payment for now
-          paymentType: 'one-time'
+          // Use the appropriate payment type
+          paymentType: packageData.paymentType || 'one-time'
         },
         customerData: cleanedCustomerData,
-        // Add a flag to indicate we want to use one-time payment for all
-        useOneTimePreferred: true
+        // Add a flag to indicate autopay preference
+        useOneTimePreferred: useOneTimePreferred,
+        enableAutoPay: true
       })
     });
     
@@ -194,7 +203,8 @@ export const buildRazorpayOptions = (
     image: 'https://your-company-logo.png',
     notes: {
       packageId: packageData.id,
-      userId: user.id
+      userId: user.id,
+      enableAutoPay: "true" // Flag for autopay
     },
     theme: {
       color: '#3399cc'
@@ -208,14 +218,18 @@ export const buildRazorpayOptions = (
         subscriptionId: result.subscription?.id,
         orderId: result.order?.id,
         packageDetails: packageData,
-        isSubscription: result.isSubscription
+        isSubscription: result.isSubscription,
+        enableAutoPay: true
       });
     },
     modal: {
       ondismiss: onDismiss,
       escape: false,
       backdropclose: false
-    }
+    },
+    // Add recurring and auto_capture flags if using autopay
+    recurring: true,
+    remember_customer: true
   };
   
   // Only add prefill if we have values
@@ -223,7 +237,7 @@ export const buildRazorpayOptions = (
     options.prefill = cleanedPrefill;
   }
   
-  // Always use order-based payment for now (one-time payment)
+  // Always use order-based payment
   if (result.order && result.order.id) {
     console.log("Setting up order-based payment with order ID:", result.order.id);
     options.order_id = result.order.id;
