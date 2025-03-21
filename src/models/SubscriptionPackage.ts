@@ -17,6 +17,4 @@ export interface ISubscriptionPackage {
   billingCycle?: 'monthly' | 'yearly';
   termsAndConditions?: string;
   dashboardSections?: string[];
-  maxBusinesses?: number;
-  maxInfluencers?: number;
 }

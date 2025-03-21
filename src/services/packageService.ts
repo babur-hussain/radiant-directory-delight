@@ -33,9 +33,7 @@ const mapToPackage = (pkg: any): ISubscriptionPackage => {
     paymentType: getPaymentType(pkg.payment_type),
     billingCycle: getBillingCycle(pkg.billing_cycle),
     advancePaymentMonths: pkg.advance_payment_months || 0,
-    dashboardSections: pkg.dashboard_sections || [],
-    maxBusinesses: pkg.max_businesses || 1,
-    maxInfluencers: pkg.max_influencers || 1
+    dashboardSections: pkg.dashboard_sections || []
   };
 };
 
@@ -124,9 +122,7 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
     payment_type: packageData.paymentType,
     billing_cycle: packageData.billingCycle,
     advance_payment_months: packageData.advancePaymentMonths,
-    dashboard_sections: packageData.dashboardSections,
-    max_businesses: packageData.maxBusinesses,
-    max_influencers: packageData.maxInfluencers
+    dashboard_sections: packageData.dashboardSections
   };
   
   console.log("Supabase data to save:", JSON.stringify(supabaseData, null, 2));
