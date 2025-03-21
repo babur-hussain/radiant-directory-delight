@@ -33,6 +33,7 @@ export interface ISubscription {
   [key: string]: any;
 }
 
+// Make this interface compatible with the one in SubscriptionPackage.ts
 export interface ISubscriptionPackage {
   id: string;
   title: string;
@@ -43,7 +44,7 @@ export interface ISubscriptionPackage {
   features: string[]; // Make required to match the other interface
   popular?: boolean;
   setupFee?: number;
-  type?: 'Business' | 'Influencer';
+  type?: 'Business' | 'Influencer'; // Ensure this is a union type
   paymentType?: PaymentType;
   billingCycle?: BillingCycle;
   dashboardSections?: string[];

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,11 +6,10 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle, Plus, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from '@/integrations/supabase/client'; // Import supabase client
+import { supabase } from '@/integrations/supabase/client';
 import checkSupabaseConnection from "@/utils/setupSupabase";
 import { ISubscription, ISubscriptionPackage, SubscriptionStatus, PaymentType, BillingCycle } from "@/models/Subscription";
 
-// Import or create missing components
 import SubscriptionPackagesTable from "@/components/admin/subscription/SubscriptionPackagesTable";
 import SubscriptionSettingsPanel from "@/components/admin/subscription/SubscriptionSettingsPanel";
 import SubscriptionCreateForm from "@/components/admin/subscription/SubscriptionCreateForm";
@@ -53,7 +51,6 @@ const AdminSubscriptionsPage = () => {
       
       if (subscriptionsError) throw subscriptionsError;
       
-      // Transform Supabase data to our model
       const transformedPackages: ISubscriptionPackage[] = packagesData.map(pkg => ({
         id: pkg.id,
         title: pkg.title,
@@ -64,7 +61,7 @@ const AdminSubscriptionsPage = () => {
         features: pkg.features || [],
         popular: pkg.popular,
         setupFee: pkg.setup_fee,
-        type: pkg.type,
+        type: (pkg.type as 'Business' | 'Influencer') || 'Business',
         paymentType: pkg.payment_type as PaymentType,
         billingCycle: pkg.billing_cycle as BillingCycle,
         dashboardSections: pkg.dashboard_sections,
@@ -72,7 +69,6 @@ const AdminSubscriptionsPage = () => {
         advancePaymentMonths: pkg.advance_payment_months
       }));
       
-      // Transform subscriptions - map Supabase field names to our model
       const transformedSubscriptions = subscriptionsData.map(sub => ({
         id: sub.id,
         userId: sub.user_id,
@@ -85,21 +81,20 @@ const AdminSubscriptionsPage = () => {
         paymentType: sub.payment_type as PaymentType,
         paymentMethod: sub.payment_method,
         transactionId: sub.transaction_id,
-        billingCycle: sub.billing_cycle as BillingCycle,
+        billingCycle: sub.billing_cycle as BillingCycle || 'yearly',
         signupFee: sub.signup_fee,
-        recurring: sub.is_pausable, // Map to appropriate field
+        recurring: sub.is_pausable,
         cancelledAt: sub.cancelled_at,
         cancelReason: sub.cancel_reason,
         createdAt: sub.created_at,
         updatedAt: sub.updated_at,
-        razorpaySubscriptionId: sub.razorpay_subscription_id || '', // Add fallback
-        razorpayOrderId: sub.razorpay_order_id || '', // Add fallback
-        recurringAmount: sub.amount, // Use amount if recurring_amount not available
-        nextBillingDate: sub.assigned_at, // Use assigned_at if next_billing_date not available
+        razorpaySubscriptionId: sub.razorpay_subscription_id || '',
+        razorpayOrderId: sub.razorpay_order_id || '',
+        recurringAmount: sub.recurring_amount || sub.amount,
+        nextBillingDate: sub.next_billing_date || sub.assigned_at,
         actualStartDate: sub.actual_start_date,
-        dashboardFeatures: [], // Default to empty array
-        dashboardSections: [], // Default to empty array
-        advancePaymentMonths: sub.advance_payment_months
+        dashboardFeatures: sub.dashboard_features || [],
+        dashboardSections: sub.dashboard_sections || []
       }));
       
       setPackages(transformedPackages);
@@ -122,14 +117,12 @@ const AdminSubscriptionsPage = () => {
     try {
       setIsLoading(true);
       
-      // Generate a unique ID if not provided
       const packageData = {
         ...data,
         id: data.id || `pkg_${Date.now()}`,
         features: data.features || []
       };
       
-      // Transform to Supabase format
       const supabaseData = {
         id: packageData.id,
         title: packageData.title,
@@ -154,7 +147,6 @@ const AdminSubscriptionsPage = () => {
       
       if (error) throw error;
       
-      // Success! Refresh data
       await fetchData();
       setShowCreateForm(false);
       setEditingPackage(null);
@@ -182,7 +174,6 @@ const AdminSubscriptionsPage = () => {
       
       if (error) throw error;
       
-      // Success! Refresh data
       await fetchData();
     } catch (error) {
       console.error('Error deleting package:', error);
@@ -194,10 +185,8 @@ const AdminSubscriptionsPage = () => {
   
   const handleConfigureRazorpay = () => {
     console.log('Configure Razorpay clicked');
-    // Implement Razorpay configuration
   };
   
-  // Check if user is admin
   if (user && !user.isAdmin) {
     return (
       <DashboardLayout>

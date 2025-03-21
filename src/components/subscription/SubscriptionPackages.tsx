@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserRole } from '@/types/auth';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import SubscriptionDialog from './SubscriptionDialog';
-import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
+import { ISubscriptionPackage } from '@/models/Subscription'; // Import from Subscription.ts
 
 export interface SubscriptionPackagesProps {
   userRole: UserRole | string;

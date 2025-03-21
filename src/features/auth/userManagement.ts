@@ -1,331 +1,30 @@
-import { supabase } from '@/integrations/supabase/client';
-import { User, UserRole } from '@/types/auth';
-import { nanoid } from 'nanoid';
+import { User, UserRole } from "@/types/auth";
+import { supabase } from "@/integrations/supabase/client";
 
+// Constants for default user data
+const DEFAULT_PHOTO_URL = 'https://example.com/default-avatar.png';
+
+// Test user data
+const testUsers: TestUserData[] = [
+  { email: 'admin@example.com', name: 'Admin User', role: 'Admin', password: 'password123' },
+  { email: 'business@example.com', name: 'Business User', role: 'Business', password: 'password123' },
+  { email: 'influencer@example.com', name: 'Influencer User', role: 'Influencer', password: 'password123' },
+  { email: 'user@example.com', name: 'Regular User', role: 'User', password: 'password123' },
+];
+
+// Fix TestUserData interface
 interface TestUserData {
   email: string;
   name: string;
-  role: string;
-  isAdmin: boolean;
-  employeeCode?: string;
+  role: UserRole;
+  password: string;
 }
 
-export const updateUserProfile = async (userId: string, userData: Partial<User>): Promise<User | null> => {
-  try {
-    const supabaseData = {
-      name: userData.name,
-      phone: userData.phone,
-      instagram_handle: userData.instagramHandle,
-      facebook_handle: userData.facebookHandle,
-      city: userData.city,
-      country: userData.country,
-      niche: userData.niche,
-      followers_count: userData.followersCount,
-      bio: userData.bio,
-      business_name: userData.businessName,
-      owner_name: userData.ownerName,
-      business_category: userData.businessCategory,
-      website: userData.website,
-      gst_number: userData.gstNumber,
-      photo_url: userData.photoURL,
-      updated_at: new Date().toISOString(),
-    };
-    
-    Object.keys(supabaseData).forEach(key => {
-      if (supabaseData[key] === undefined) {
-        delete supabaseData[key];
-      }
-    });
-    
-    const { data, error } = await supabase
-      .from('users')
-      .update(supabaseData)
-      .eq('id', userId)
-      .select('*')
-      .single();
-    
-    if (error) {
-      console.error('Error updating user profile:', error);
-      return null;
-    }
-    
-    return {
-      uid: data.id,
-      id: data.id,
-      email: data.email,
-      displayName: data.name,
-      name: data.name,
-      role: data.role as UserRole,
-      isAdmin: data.is_admin,
-      photoURL: data.photo_url,
-      createdAt: data.created_at,
-      lastLogin: data.last_login,
-      employeeCode: data.employee_code,
-      phone: data.phone,
-      instagramHandle: data.instagram_handle,
-      facebookHandle: data.facebook_handle,
-      verified: data.verified,
-      city: data.city,
-      country: data.country,
-      fullName: data.name,
-      niche: data.niche,
-      followersCount: data.followers_count,
-      bio: data.bio,
-      businessName: data.business_name,
-      ownerName: data.owner_name,
-      businessCategory: data.business_category,
-      website: data.website,
-      gstNumber: data.gst_number,
-      subscription: data.subscription,
-      subscriptionId: data.subscription_id,
-      subscriptionStatus: data.subscription_status,
-      subscriptionPackage: data.subscription_package,
-      customDashboardSections: data.custom_dashboard_sections,
-    };
-  } catch (error) {
-    console.error('Error in updateUserProfile:', error);
-    return null;
-  }
-};
-
-export const updateUserRole = async (uid: string, role: string): Promise<User | null> => {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .update({ role, is_admin: role.toLowerCase() === 'admin' })
-      .eq('id', uid)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error updating user role:', error);
-      return null;
-    }
-    
-    return {
-      uid: data.id,
-      email: data.email || '',
-      displayName: data.name || '',
-      name: data.name || '',
-      role: transformRole(data.role),
-      isAdmin: data.is_admin || false,
-      photoURL: data.photo_url || null,
-      createdAt: data.created_at ? new Date(data.created_at).toISOString() : new Date().toISOString(),
-      lastLogin: data.last_login ? new Date(data.last_login).toISOString() : new Date().toISOString(),
-      employeeCode: data.employee_code || null,
-      phone: data.phone || null,
-      instagramHandle: data.instagram_handle || null,
-      facebookHandle: data.facebook_handle || null,
-      verified: data.verified || false,
-      city: data.city || null,
-      country: data.country || null,
-      niche: data.niche || null,
-      followersCount: data.followers_count || null,
-      bio: data.bio || null,
-      businessName: data.business_name || null,
-      ownerName: data.owner_name || null,
-      businessCategory: data.business_category || null,
-      website: data.website || null,
-      gstNumber: data.gst_number || null
-    };
-  } catch (error) {
-    console.error('Error in updateUserRole:', error);
-    return null;
-  }
-};
-
-export const updateUserPermission = async (uid: string, isAdmin: boolean): Promise<boolean> => {
-  try {
-    const { error } = await supabase
-      .from('users')
-      .update({ is_admin: isAdmin })
-      .eq('id', uid);
-    
-    if (error) {
-      console.error('Error updating user permission:', error);
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error in updateUserPermission:', error);
-    return false;
-  }
-};
-
-export const createUser = async (userData: Partial<User>): Promise<User | null> => {
-  try {
-    const now = new Date().toISOString();
-    
-    const supabaseData = {
-      id: userData.uid,
-      email: userData.email,
-      name: userData.name || userData.displayName,
-      role: userData.role || 'User',
-      is_admin: userData.isAdmin || false,
-      photo_url: userData.photoURL,
-      employee_code: userData.employeeCode,
-      phone: userData.phone,
-      instagram_handle: userData.instagramHandle,
-      facebook_handle: userData.facebookHandle,
-      verified: userData.verified || false,
-      city: userData.city,
-      country: userData.country,
-      niche: userData.niche,
-      followers_count: userData.followersCount,
-      bio: userData.bio,
-      business_name: userData.businessName,
-      owner_name: userData.ownerName,
-      business_category: userData.businessCategory,
-      website: userData.website,
-      gst_number: userData.gstNumber,
-      created_at: now,
-      last_login: now,
-    };
-    
-    const { data, error } = await supabase
-      .from('users')
-      .upsert(supabaseData)
-      .select('*')
-      .single();
-    
-    if (error) {
-      console.error('Error creating user:', error);
-      return null;
-    }
-    
-    return {
-      uid: data.id,
-      id: data.id,
-      email: data.email,
-      displayName: data.name,
-      name: data.name,
-      role: data.role as UserRole,
-      isAdmin: data.is_admin,
-      photoURL: data.photo_url,
-      createdAt: data.created_at,
-      lastLogin: data.last_login,
-      employeeCode: data.employee_code,
-      phone: data.phone,
-      instagramHandle: data.instagram_handle,
-      facebookHandle: data.facebook_handle,
-      verified: data.verified,
-      city: data.city,
-      country: data.country,
-      fullName: data.name,
-      niche: data.niche,
-      followersCount: data.followers_count,
-      bio: data.bio,
-      businessName: data.business_name,
-      ownerName: data.owner_name,
-      businessCategory: data.business_category,
-      website: data.website,
-      gstNumber: data.gst_number,
-      subscription: data.subscription,
-      subscriptionId: data.subscription_id,
-      subscriptionStatus: data.subscription_status,
-      subscriptionPackage: data.subscription_package,
-      customDashboardSections: data.custom_dashboard_sections,
-    };
-  } catch (error) {
-    console.error('Error in createUser:', error);
-    return null;
-  }
-};
-
-export const getUserById = async (uid: string): Promise<User | null> => {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', uid)
-      .single();
-    
-    if (error) {
-      console.error('Error fetching user by ID:', error);
-      return null;
-    }
-    
-    return {
-      uid: data.id,
-      id: data.id,
-      email: data.email || '',
-      displayName: data.name || '',
-      name: data.name || '',
-      role: transformRole(data.role),
-      isAdmin: data.is_admin || false,
-      photoURL: data.photo_url || null,
-      createdAt: data.created_at ? new Date(data.created_at).toISOString() : new Date().toISOString(),
-      lastLogin: data.last_login ? new Date(data.last_login).toISOString() : new Date().toISOString(),
-      employeeCode: data.employee_code || null,
-      phone: data.phone || null,
-      instagramHandle: data.instagram_handle || null,
-      facebookHandle: data.facebook_handle || null,
-      verified: data.verified || false,
-      city: data.city || null,
-      country: data.country || null,
-      niche: data.niche || null,
-      followersCount: data.followers_count || null,
-      bio: data.bio || null,
-      businessName: data.business_name || null,
-      ownerName: data.owner_name || null,
-      businessCategory: data.business_category || null,
-      website: data.website || null,
-      gstNumber: data.gst_number || null
-    };
-  } catch (error) {
-    console.error('Error fetching user by ID:', error);
-    return null;
-  }
-};
-
-export const getAllUsers = async (): Promise<User[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*');
-    
-    if (error) {
-      console.error('Error fetching all users:', error);
-      return [];
-    }
-    
-    return data.map(user => ({
-      uid: user.id,
-      id: user.id,
-      email: user.email || '',
-      displayName: user.name || '',
-      name: user.name || '',
-      role: transformRole(user.role),
-      isAdmin: user.is_admin || false,
-      photoURL: user.photo_url || null,
-      createdAt: user.created_at ? new Date(user.created_at).toISOString() : new Date().toISOString(),
-      lastLogin: user.last_login ? new Date(user.last_login).toISOString() : new Date().toISOString(),
-      employeeCode: user.employee_code || null,
-      phone: user.phone || null,
-      instagramHandle: user.instagram_handle || null,
-      facebookHandle: user.facebook_handle || null,
-      verified: user.verified || false,
-      city: user.city || null,
-      country: user.country || null,
-      niche: user.niche || null,
-      followersCount: user.followers_count || null,
-      bio: user.bio || null,
-      businessName: user.business_name || null,
-      ownerName: user.owner_name || null,
-      businessCategory: user.business_category || null,
-      website: user.website || null,
-      gstNumber: user.gst_number || null
-    }));
-  } catch (error) {
-    console.error('Error fetching all users:', error);
-    return [];
-  }
-};
-
-export const transformRole = (role: string | null): UserRole => {
+// Helper function to convert role string to UserRole type
+function transformRole(role: string | null): UserRole {
   if (!role) return null;
   
+  // Match with expected UserRole values
   switch (role.toLowerCase()) {
     case 'admin':
       return 'Admin';
@@ -338,118 +37,56 @@ export const transformRole = (role: string | null): UserRole => {
     case 'staff':
       return 'staff';
     default:
-      return 'User';
+      return 'User'; // Default to User if unknown
   }
-};
+}
 
-export const createTestUser = async (userData: TestUserData): Promise<User | null> => {
+// Get user by ID
+export const getUserById = async (userId: string): Promise<User | null> => {
   try {
-    const uid = nanoid();
-    
     const { data, error } = await supabase
       .from('users')
-      .insert([{
-        id: uid,
-        email: userData.email,
-        name: userData.name,
-        role: userData.role,
-        is_admin: userData.isAdmin,
-        employee_code: userData.employeeCode || `EMP${Math.floor(10000 + Math.random() * 90000)}`,
-        created_at: new Date().toISOString(),
-        last_login: new Date().toISOString()
-      }])
-      .select()
-      .single();
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
     
-    if (error) {
-      console.error('Error creating test user:', error);
+    if (error || !data) {
+      console.error("Error fetching user by ID:", error);
       return null;
     }
     
     return {
       uid: data.id,
-      id: data.id,
+      id: data.id, // Add id property
       email: data.email || '',
       displayName: data.name || '',
       name: data.name || '',
       role: transformRole(data.role),
       isAdmin: data.is_admin || false,
-      photoURL: data.photo_url || null,
-      createdAt: data.created_at ? new Date(data.created_at).toISOString() : new Date().toISOString(),
-      lastLogin: data.last_login ? new Date(data.last_login).toISOString() : new Date().toISOString(),
-      employeeCode: data.employee_code || null,
-      phone: data.phone || null,
-      instagramHandle: data.instagram_handle || null,
-      facebookHandle: data.facebook_handle || null,
+      photoURL: data.photo_url || '',
+      employeeCode: data.employee_code || '',
+      createdAt: data.created_at || new Date().toISOString(),
+      lastLogin: data.last_login || new Date().toISOString(),
+      phone: data.phone || '',
+      instagramHandle: data.instagram_handle || '',
+      facebookHandle: data.facebook_handle || '',
       verified: data.verified || false,
-      city: data.city || null,
-      country: data.country || null,
-      niche: data.niche || null,
-      followersCount: data.followers_count || null,
-      bio: data.bio || null,
-      businessName: data.business_name || null,
-      ownerName: data.owner_name || null,
-      businessCategory: data.business_category || null,
-      website: data.website || null,
-      gstNumber: data.gst_number || null
+      city: data.city || '',
+      country: data.country || '',
+      niche: data.niche || '',
+      followersCount: data.followers_count || '',
+      bio: data.bio || '',
+      businessName: data.business_name || '',
+      ownerName: data.owner_name || '',
+      businessCategory: data.business_category || '',
+      website: data.website || '',
+      gstNumber: data.gst_number || ''
     };
   } catch (error) {
-    console.error('Error in createTestUser:', error);
+    console.error("Error in getUserById:", error);
     return null;
   }
 };
 
-export const generateTestUsers = async (count = 1): Promise<User[]> => {
-  const users: User[] = [];
-  
-  for (let i = 0; i < count; i++) {
-    const user = await createTestUser({
-      email: `test-user-${i}@example.com`,
-      name: `Test User ${i}`,
-      role: 'User',
-      isAdmin: false,
-      employeeCode: `EMP${Math.floor(10000 + Math.random() * 90000)}`
-    });
-    
-    if (user) users.push(user);
-  }
-  
-  return users;
-};
-
-export const generateAdminUser = async (): Promise<User | null> => {
-  return createTestUser({
-    email: `admin-${Date.now()}@example.com`,
-    name: 'Test Admin',
-    role: 'Admin',
-    isAdmin: true,
-    employeeCode: `EMP${Math.floor(10000 + Math.random() * 90000)}`
-  });
-};
-
-export const generateAllTypesOfUsers = async (): Promise<User[]> => {
-  const users: User[] = [];
-  
-  const userTypes = [
-    { email: `admin-${Date.now()}@example.com`, name: 'Test Admin', role: 'Admin', isAdmin: true },
-    { email: `business-${Date.now()}@example.com`, name: 'Test Business', role: 'Business', isAdmin: false },
-    { email: `influencer-${Date.now()}@example.com`, name: 'Test Influencer', role: 'Influencer', isAdmin: false }
-  ];
-  
-  for (const userData of userTypes) {
-    const user = await createTestUser(userData);
-    if (user) users.push(user);
-  }
-  
-  return users;
-};
-
-export const formatUser = (user: User): string => {
-  return `${user.name} (${user.email}) - ${user.role}`;
-};
-
-export const getLocalUsers = async (): Promise<User[]> => {
-  return getAllUsers();
-};
-
-export const AUTH_MODULE_VERSION = '1.0.2';
+// Add nanoid import at the top if it's used
+import { nanoid } from 'nanoid';
