@@ -1,100 +1,80 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export const setupSupabase = async (progressCallback?: (progress: number, message: string) => void) => {
+// Check if database is initialized
+export const isDatabaseInitialized = async (): Promise<boolean> => {
   try {
-    // Start progress
-    progressCallback?.(0, 'Checking Supabase connection...');
-    
-    // Check connection by making a simple query
-    const { error: connectionError } = await supabase.from('users').select('id').limit(1);
-    
-    if (connectionError) {
-      throw new Error(`Failed to connect to Supabase: ${connectionError.message}`);
-    }
-    
-    progressCallback?.(20, 'Supabase connection successful');
-    
-    // Verify access to tables
-    progressCallback?.(30, 'Verifying table access...');
-    
-    const tables = ['users', 'businesses', 'user_subscriptions', 'subscription_packages'];
-    const verifiedTables = [];
-    
-    for (const [index, table] of tables.entries()) {
-      progressCallback?.(30 + (index * 15), `Verifying access to ${table} table...`);
-      
-      const { error } = await supabase.from(table).select('*').limit(1);
-      
-      if (error) {
-        console.warn(`Warning: Table ${table} access issue: ${error.message}`);
-      } else {
-        verifiedTables.push(table);
-      }
-    }
-    
-    progressCallback?.(100, 'Supabase setup complete');
-    
-    return {
-      success: true,
-      tables: verifiedTables,
-      error: null
-    };
-  } catch (error) {
-    console.error('Supabase setup error:', error);
-    
-    return {
-      success: false,
-      tables: [],
-      error: error instanceof Error ? error.message : String(error)
-    };
-  }
-};
-
-// Function to test connection with retry
-export const testSupabaseConnection = async (retries = 3, delay = 1000): Promise<boolean> => {
-  let attempts = 0;
-  
-  while (attempts < retries) {
-    try {
-      const { error } = await supabase.from('users').select('id').limit(1);
-      
-      if (!error) {
-        console.log('Supabase connection successful');
-        return true;
-      }
-      
-      console.warn(`Connection attempt ${attempts + 1} failed:`, error.message);
-    } catch (error) {
-      console.warn(`Connection attempt ${attempts + 1} failed:`, error);
-    }
-    
-    attempts++;
-    
-    if (attempts < retries) {
-      console.log(`Retrying in ${delay}ms...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-  }
-  
-  console.error(`Failed to connect to Supabase after ${retries} attempts`);
-  return false;
-};
-
-// Automatically initialize Supabase (for use in components)
-export const autoInitSupabase = async (): Promise<boolean> => {
-  try {
-    // Simple connection test
-    const { error } = await supabase.from('users').select('id').limit(1);
+    // Try to select from the users table
+    const { data, error } = await supabase
+      .from('users')
+      .select('id')
+      .limit(1);
     
     if (error) {
-      console.warn('Error connecting to Supabase:', error.message);
+      console.error('Error checking database initialization:', error);
       return false;
+    }
+    
+    // If we can select from the users table, assume the database is initialized
+    return true;
+  } catch (error) {
+    console.error('Error checking database initialization:', error);
+    return false;
+  }
+};
+
+// Initialize database tables and data
+export const initializeDatabase = async (): Promise<boolean> => {
+  try {
+    console.log('Initializing database...');
+    
+    // Check if tables exist by trying to query them
+    const tables = ['users', 'businesses', 'subscription_packages', 'user_subscriptions'];
+    let allTablesExist = true;
+    
+    for (const table of tables) {
+      const { error } = await supabase
+        .from(table)
+        .select('count')
+        .limit(1);
+      
+      if (error) {
+        console.error(`Table '${table}' does not exist or is not accessible:`, error);
+        allTablesExist = false;
+        break;
+      }
+    }
+    
+    if (allTablesExist) {
+      console.log('Database already initialized');
+      return true;
+    }
+    
+    // If tables don't exist, we would normally create them
+    // But in this case, with Supabase we're assuming tables are created via SQL migrations
+    console.error('One or more tables do not exist in the database. Please run migrations.');
+    return false;
+  } catch (error) {
+    console.error('Error initializing database:', error);
+    return false;
+  }
+};
+
+// Setup function to be called on app initialization
+export const setupSupabase = async (): Promise<boolean> => {
+  try {
+    const initialized = await isDatabaseInitialized();
+    
+    if (!initialized) {
+      console.log('Database not initialized, attempting to initialize...');
+      return await initializeDatabase();
     }
     
     return true;
   } catch (error) {
-    console.error('Error initializing Supabase:', error);
+    console.error('Error setting up Supabase:', error);
     return false;
   }
 };
+
+export default setupSupabase;

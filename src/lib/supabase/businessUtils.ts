@@ -38,10 +38,8 @@ export const saveBusiness = async (businessData: Partial<IBusiness>): Promise<IB
     
     const { data, error } = await supabase
       .from('businesses')
-      .upsert([formattedData], { 
-        onConflict: 'id',
-        returning: 'representation'
-      });
+      .upsert([formattedData])
+      .select();
     
     if (error) throw error;
     return data?.[0] ? fromSupabase(data[0]) : null;

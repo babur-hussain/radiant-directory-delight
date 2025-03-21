@@ -8,7 +8,19 @@ import { seedDummyUsers, seedDummyBusinesses, seedDummySubscriptionPackages, see
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 
-const SeedDataPanel = () => {
+interface SeedDataPanelProps {
+  onPermissionError?: (error: any) => void;
+  dbInitialized: boolean;
+  connectionStatus: string;
+  onRetryConnection?: () => void;
+}
+
+const SeedDataPanel: React.FC<SeedDataPanelProps> = ({
+  onPermissionError,
+  dbInitialized,
+  connectionStatus,
+  onRetryConnection
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingType, setIsLoadingType] = useState<string | null>(null);
   const [result, setResult] = useState<any | null>(null);
@@ -164,6 +176,42 @@ const SeedDataPanel = () => {
       setIsLoadingType(null);
     }
   };
+
+  const handleRetryConnection = () => {
+    if (onRetryConnection) {
+      onRetryConnection();
+    }
+  };
+
+  if (connectionStatus !== 'connected' || !dbInitialized) {
+    return (
+      <Card className="bg-white border-gray-200 shadow-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Seed Dummy Data
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Connection Error</AlertTitle>
+            <AlertDescription>
+              Cannot seed data. Database connection not established.
+            </AlertDescription>
+          </Alert>
+          
+          <Button 
+            onClick={handleRetryConnection} 
+            className="w-full flex items-center justify-center gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Retry Connection
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="bg-white border-gray-200 shadow-sm">

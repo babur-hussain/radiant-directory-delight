@@ -1,180 +1,261 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
-import { ISubscription, mapFromSupabase } from '@/models/Subscription';
 
-// Helper function to map ISubscription to database fields
-const mapToSupabase = (subscription: Partial<ISubscription>): Record<string, any> => {
+export interface ISubscription {
+  id: string;
+  userId: string;
+  packageId: string;
+  packageName: string;
+  amount: number;
+  startDate: string;
+  endDate: string;
+  status: string;
+  paymentMethod?: string;
+  transactionId?: string;
+  cancelledAt?: string;
+  cancelReason?: string;
+  paymentType?: "recurring" | "one-time";
+  billingCycle?: "monthly" | "yearly";
+  signupFee?: number;
+  recurringAmount?: number;
+  razorpaySubscriptionId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Convert from Supabase to app model
+const fromSupabase = (data: any): ISubscription => {
   return {
-    id: subscription.id,
-    user_id: subscription.userId,
-    package_id: subscription.packageId,
-    package_name: subscription.packageName,
-    amount: subscription.amount,
-    start_date: subscription.startDate,
-    end_date: subscription.endDate,
-    status: subscription.status,
-    assigned_by: subscription.assignedBy,
-    assigned_at: subscription.assignedAt,
-    advance_payment_months: subscription.advancePaymentMonths,
-    signup_fee: subscription.signupFee,
-    actual_start_date: subscription.actualStartDate,
-    is_paused: subscription.isPaused,
-    is_pausable: subscription.isPausable,
-    is_user_cancellable: subscription.isUserCancellable,
-    invoice_ids: subscription.invoiceIds,
-    payment_type: subscription.paymentType,
-    payment_method: subscription.paymentMethod,
-    transaction_id: subscription.transactionId,
-    cancelled_at: subscription.cancelledAt,
-    cancel_reason: subscription.cancelReason
+    id: data.id,
+    userId: data.user_id,
+    packageId: data.package_id,
+    packageName: data.package_name,
+    amount: data.amount,
+    startDate: data.start_date,
+    endDate: data.end_date,
+    status: data.status,
+    paymentMethod: data.payment_method,
+    transactionId: data.transaction_id,
+    cancelledAt: data.cancelled_at,
+    cancelReason: data.cancel_reason,
+    paymentType: data.payment_type,
+    billingCycle: data.billing_cycle,
+    signupFee: data.signup_fee,
+    recurringAmount: data.recurring_amount,
+    razorpaySubscriptionId: data.razorpay_subscription_id,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at
   };
 };
 
-// Get a single subscription by ID
-export const getSubscription = async (id: string): Promise<ISubscription | null> => {
-  const { data, error } = await supabase
-    .from('user_subscriptions')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-  
-  if (error) {
-    console.error('Error getting subscription:', error);
+// Convert from app model to Supabase
+const toSupabase = (data: ISubscription): any => {
+  return {
+    id: data.id,
+    user_id: data.userId,
+    package_id: data.packageId,
+    package_name: data.packageName,
+    amount: data.amount,
+    start_date: data.startDate,
+    end_date: data.endDate,
+    status: data.status,
+    payment_method: data.paymentMethod,
+    transaction_id: data.transactionId,
+    cancelled_at: data.cancelledAt,
+    cancel_reason: data.cancelReason,
+    payment_type: data.paymentType,
+    billing_cycle: data.billingCycle,
+    signup_fee: data.signupFee,
+    recurring_amount: data.recurringAmount,
+    razorpay_subscription_id: data.razorpaySubscriptionId
+  };
+};
+
+// Create subscription
+export const createSubscription = async (subscription: Partial<ISubscription>): Promise<ISubscription> => {
+  try {
+    // Check for required fields
+    if (!subscription.userId || !subscription.packageId) {
+      throw new Error('userId and packageId are required');
+    }
+    
+    const id = subscription.id || nanoid();
+    const now = new Date().toISOString();
+    
+    // Prepare subscription data with defaults
+    const subscriptionData = toSupabase({
+      id,
+      userId: subscription.userId,
+      packageId: subscription.packageId,
+      packageName: subscription.packageName || '',
+      amount: subscription.amount || 0,
+      startDate: subscription.startDate || now,
+      endDate: subscription.endDate || now,
+      status: subscription.status || 'active',
+      paymentMethod: subscription.paymentMethod,
+      transactionId: subscription.transactionId,
+      cancelledAt: subscription.cancelledAt,
+      cancelReason: subscription.cancelReason,
+      paymentType: subscription.paymentType || 'recurring',
+      billingCycle: subscription.billingCycle,
+      signupFee: subscription.signupFee,
+      recurringAmount: subscription.recurringAmount,
+      razorpaySubscriptionId: subscription.razorpaySubscriptionId,
+      createdAt: now,
+      updatedAt: now
+    });
+    
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .insert(subscriptionData)
+      .select();
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      throw new Error('Failed to create subscription');
+    }
+    
+    return fromSupabase(data[0]);
+  } catch (error) {
+    console.error('Error creating subscription:', error);
     throw error;
   }
-  
-  return data ? mapFromSupabase(data) : null;
+};
+
+// Get subscription by ID
+export const getSubscription = async (id: string): Promise<ISubscription | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .select()
+      .eq('id', id)
+      .maybeSingle();
+    
+    if (error) throw error;
+    
+    return data ? fromSupabase(data) : null;
+  } catch (error) {
+    console.error('Error getting subscription:', error);
+    return null;
+  }
 };
 
 // Get all subscriptions
 export const getSubscriptions = async (): Promise<ISubscription[]> => {
-  const { data, error } = await supabase
-    .from('user_subscriptions')
-    .select('*')
-    .order('created_at', { ascending: false });
-  
-  if (error) {
+  try {
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .select();
+    
+    if (error) throw error;
+    
+    return data.map(fromSupabase);
+  } catch (error) {
     console.error('Error getting subscriptions:', error);
-    throw error;
+    return [];
   }
-  
-  return data.map(subscription => mapFromSupabase(subscription));
 };
 
-// Create a new subscription
-export const createSubscription = async (subscriptionData: Omit<ISubscription, 'id'>): Promise<ISubscription> => {
-  // Generate ID if not provided
-  const id = (subscriptionData as any).id || nanoid();
-  
-  const dbData = mapToSupabase({ ...subscriptionData, id });
-  
-  const { data, error } = await supabase
-    .from('user_subscriptions')
-    .insert([dbData])
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error creating subscription:', error);
-    throw error;
-  }
-  
-  // Update user's subscription info
-  if (subscriptionData.userId) {
-    await supabase
-      .from('users')
-      .update({
-        subscription_id: id,
-        subscription_status: subscriptionData.status,
-        subscription_package: subscriptionData.packageId
-      })
-      .eq('id', subscriptionData.userId);
-  }
-  
-  return mapFromSupabase(data);
-};
-
-// Update an existing subscription
-export const updateSubscription = async (id: string, subscriptionData: Partial<ISubscription>): Promise<ISubscription> => {
-  const dbData = mapToSupabase({ ...subscriptionData, id });
-  
-  // Remove undefined values
-  Object.keys(dbData).forEach(key => {
-    if (dbData[key] === undefined) {
-      delete dbData[key];
-    }
-  });
-  
-  const { data, error } = await supabase
-    .from('user_subscriptions')
-    .update(dbData)
-    .eq('id', id)
-    .select()
-    .single();
-  
-  if (error) {
+// Update subscription
+export const updateSubscription = async (id: string, subscription: Partial<ISubscription>): Promise<ISubscription | null> => {
+  try {
+    const subscriptionData = {
+      ...toSupabase(subscription as ISubscription),
+      updated_at: new Date().toISOString()
+    };
+    
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .update(subscriptionData)
+      .eq('id', id)
+      .select();
+    
+    if (error) throw error;
+    
+    return data && data.length > 0 ? fromSupabase(data[0]) : null;
+  } catch (error) {
     console.error('Error updating subscription:', error);
-    throw error;
+    return null;
   }
-  
-  // Update user's subscription info if status changed
-  if (subscriptionData.status && data.user_id) {
-    await supabase
-      .from('users')
-      .update({
-        subscription_status: subscriptionData.status
-      })
-      .eq('id', data.user_id);
-  }
-  
-  return mapFromSupabase(data);
 };
 
-// Delete a subscription
-export const deleteSubscription = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('user_subscriptions')
-    .delete()
-    .eq('id', id);
-  
-  if (error) {
+// Delete subscription
+export const deleteSubscription = async (id: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('user_subscriptions')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+    
+    return true;
+  } catch (error) {
     console.error('Error deleting subscription:', error);
-    throw error;
+    return false;
   }
 };
 
-// Get user subscriptions
+// Get subscriptions by user ID
 export const getUserSubscriptions = async (userId: string): Promise<ISubscription[]> => {
-  const { data, error } = await supabase
-    .from('user_subscriptions')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
-  
-  if (error) {
+  try {
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .select()
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    return data.map(fromSupabase);
+  } catch (error) {
     console.error('Error getting user subscriptions:', error);
-    throw error;
+    return [];
   }
-  
-  return data.map(subscription => mapFromSupabase(subscription));
 };
 
 // Get active user subscription
 export const getActiveUserSubscription = async (userId: string): Promise<ISubscription | null> => {
-  const { data, error } = await supabase
-    .from('user_subscriptions')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  
-  if (error) {
+  try {
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .select()
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    if (error) throw error;
+    
+    return data ? fromSupabase(data) : null;
+  } catch (error) {
     console.error('Error getting active user subscription:', error);
-    throw error;
+    return null;
   }
-  
-  return data ? mapFromSupabase(data) : null;
+};
+
+// Cancel subscription
+export const cancelSubscription = async (id: string, reason?: string): Promise<ISubscription | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .update({
+        status: 'cancelled',
+        cancelled_at: new Date().toISOString(),
+        cancel_reason: reason || '',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select();
+    
+    if (error) throw error;
+    
+    return data && data.length > 0 ? fromSupabase(data[0]) : null;
+  } catch (error) {
+    console.error('Error cancelling subscription:', error);
+    return null;
+  }
 };

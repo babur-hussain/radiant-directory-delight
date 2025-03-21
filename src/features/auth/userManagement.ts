@@ -1,7 +1,29 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@/types/auth';
+import { User, UserRole } from '@/types/auth';
 import { nanoid } from 'nanoid';
+import { getUserById, getAllUsers } from './userDataAccess';
+
+// Helper function to ensure role is a valid UserRole
+function transformRole(role: string | null): UserRole {
+  if (!role) return null;
+  
+  // Match with expected UserRole values
+  switch (role.toLowerCase()) {
+    case 'admin':
+      return 'Admin';
+    case 'business':
+      return 'Business';
+    case 'influencer':
+      return 'Influencer';
+    case 'user':
+      return 'User';
+    case 'staff':
+      return 'staff';
+    default:
+      return 'User'; // Default to User if unknown
+  }
+}
 
 // Export user role and permission functions
 export const updateUserRole = async (uid: string, role: string): Promise<User | null> => {
@@ -23,7 +45,7 @@ export const updateUserRole = async (uid: string, role: string): Promise<User | 
       email: data.email || '',
       displayName: data.name || '',
       name: data.name || '',
-      role: data.role || 'user',
+      role: transformRole(data.role),
       isAdmin: data.is_admin || false,
       photoURL: data.photo_url || null,
       createdAt: data.created_at ? new Date(data.created_at).toISOString() : new Date().toISOString(),
@@ -70,7 +92,7 @@ export const updateUserPermission = async (uid: string, isAdmin: boolean): Promi
 };
 
 // Export user data access functions
-export { getUserById, getAllUsers } from './userDataAccess';
+export { getUserById, getAllUsers };
 
 // Test user creation function to fix the error in AdminUsersPage.tsx
 export interface TestUserData {
@@ -78,6 +100,7 @@ export interface TestUserData {
   name: string;
   role: string;
   isAdmin: boolean;
+  employeeCode?: string;
 }
 
 export const createTestUser = async (userData: TestUserData): Promise<User | null> => {
@@ -94,6 +117,7 @@ export const createTestUser = async (userData: TestUserData): Promise<User | nul
         name: userData.name,
         role: userData.role,
         is_admin: userData.isAdmin,
+        employee_code: userData.employeeCode || `EMP${Math.floor(10000 + Math.random() * 90000)}`,
         created_at: new Date().toISOString(),
         last_login: new Date().toISOString()
       }])
@@ -110,7 +134,7 @@ export const createTestUser = async (userData: TestUserData): Promise<User | nul
       email: data.email || '',
       displayName: data.name || '',
       name: data.name || '',
-      role: data.role || 'user',
+      role: transformRole(data.role),
       isAdmin: data.is_admin || false,
       photoURL: data.photo_url || null,
       createdAt: data.created_at ? new Date(data.created_at).toISOString() : new Date().toISOString(),
@@ -146,7 +170,8 @@ export const generateTestUsers = async (count = 1): Promise<User[]> => {
       email: `test-user-${i}@example.com`,
       name: `Test User ${i}`,
       role: 'User',
-      isAdmin: false
+      isAdmin: false,
+      employeeCode: `EMP${Math.floor(10000 + Math.random() * 90000)}`
     });
     
     if (user) users.push(user);
@@ -160,7 +185,8 @@ export const generateAdminUser = async (): Promise<User | null> => {
     email: `admin-${Date.now()}@example.com`,
     name: 'Test Admin',
     role: 'Admin',
-    isAdmin: true
+    isAdmin: true,
+    employeeCode: `EMP${Math.floor(10000 + Math.random() * 90000)}`
   });
 };
 

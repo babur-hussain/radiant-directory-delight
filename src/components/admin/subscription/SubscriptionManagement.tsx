@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Card,
@@ -24,7 +25,19 @@ import { useToast } from "@/hooks/use-toast"
 import { ISubscriptionPackage, useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import { CheckCircle2, AlertCircle, RefreshCw, Database, Activity } from 'lucide-react';
 
-const SubscriptionPackageManagement: React.FC<{ onPermissionError?: (error: any) => void; dbInitialized: boolean; connectionStatus: string }> = ({ onPermissionError, dbInitialized, connectionStatus }) => {
+interface SubscriptionPackageManagementProps {
+  onPermissionError?: (error: any) => void; 
+  dbInitialized: boolean; 
+  connectionStatus: string;
+  onRetryConnection?: () => void;
+}
+
+const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps> = ({ 
+  onPermissionError, 
+  dbInitialized, 
+  connectionStatus,
+  onRetryConnection
+}) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newPackage, setNewPackage] = useState<Partial<ISubscriptionPackage>>({
     type: 'Business',
@@ -136,43 +149,41 @@ const SubscriptionPackageManagement: React.FC<{ onPermissionError?: (error: any)
                 <Label htmlFor="fullDescription">Full Description</Label>
                 <Input type="text" id="fullDescription" name="fullDescription" value={newPackage.fullDescription || ''} onChange={handleInputChange} />
               </div>
-              <div className="flex items-center space-x-2">
-                <Label htmlFor="popular">Popular</Label>
-                <Switch id="popular" name="popular" checked={newPackage.popular || false} onCheckedChange={(checked) => setNewPackage(prev => ({ ...prev, popular: checked }))} />
+              <div className="flex justify-end">
+                <Button variant="outline" className="mr-2" onClick={() => setIsAdding(false)}>Cancel</Button>
+                <Button onClick={handleAddPackage}>Add Package</Button>
               </div>
-              <Button onClick={handleAddPackage}>Add Package</Button>
             </CardContent>
           </Card>
         )}
 
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">ID</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+        <Table>
+          <TableCaption>List of available subscription packages.</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>ID</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {packages.map((pkg) => (
+              <TableRow key={pkg.id}>
+                <TableCell className="font-mono text-xs">{pkg.id}</TableCell>
+                <TableCell>{pkg.title}</TableCell>
+                <TableCell>₹{pkg.price}</TableCell>
+                <TableCell>{pkg.type}</TableCell>
+                <TableCell>
+                  <Button variant="destructive" size="sm" onClick={() => handleRemovePackage(pkg.id)}>
+                    Remove
+                  </Button>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {packages?.map((pkg) => (
-                <TableRow key={pkg.id}>
-                  <TableCell className="font-medium">{pkg.id}</TableCell>
-                  <TableCell>{pkg.title}</TableCell>
-                  <TableCell>{pkg.price}</TableCell>
-                  <TableCell>{pkg.durationMonths}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => handleRemovePackage(pkg.id)}>
-                      Remove
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );

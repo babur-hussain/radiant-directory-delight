@@ -1,248 +1,162 @@
-import React, { useEffect, useState } from "react";
-import { Check, AlertCircle, Info, RefreshCw, WifiOff } from "lucide-react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { UserRole } from "@/contexts/AuthContext";
-import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
-import { useSubscriptionPackages } from "@/hooks/useSubscriptionPackages";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import Loading from "@/components/ui/loading";
-import SubscriptionDialog from "./SubscriptionDialog";
+
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle, ChevronRight } from 'lucide-react';
+import { useSubscriptionPackagesByType } from '@/hooks/useSubscriptionPackages';
+import { ISubscriptionPackage } from '@/hooks/useSubscriptionPackages';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/router';
 
 interface SubscriptionPackagesProps {
-  userRole: UserRole | string;
+  type?: 'Business' | 'Influencer';
+  onSelectPackage?: (pkg: ISubscriptionPackage) => void;
+  compact?: boolean;
+  showTitle?: boolean;
+  showComparisonLink?: boolean;
 }
 
-export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ userRole }) => {
-  const navigate = useNavigate();
+const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ 
+  type = 'Business',
+  onSelectPackage,
+  compact = false,
+  showTitle = true,
+  showComparisonLink = true
+}) => {
+  const { data: packages = [], isLoading, isError } = useSubscriptionPackagesByType(type);
+  const [view, setView] = useState<'monthly' | 'yearly'>('yearly');
+  const { user } = useAuth();
+  const router = useRouter();
   
-  // State for managing the subscription dialog
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState<any>(null);
-  
-  // Use our hook to fetch packages from MongoDB
-  const { 
-    packages, 
-    isLoading, 
-    isError, 
-    error, 
-    refetch,
-    serverStatus
-  } = useSubscriptionPackages({ 
-    type: userRole as string
-  });
-
-  // Log for debugging
-  useEffect(() => {
-    console.log("SubscriptionPackages component", { 
-      userRole, 
-      packagesCount: packages?.length || 0,
-      packages,
-      isLoading,
-      error,
-      serverStatus
-    });
-  }, [userRole, packages, isLoading, error, serverStatus]);
-
-  const handleSubscribe = (pkg: any) => {
-    console.log("Selected package:", pkg);
-    setSelectedPackage(pkg);
-    setIsDialogOpen(true);
-  };
-  
-  const handleRetryConnection = () => {
-    console.log("Retrying connection...");
-    // retryConnection();
+  const handleSelectPackage = (pkg: ISubscriptionPackage) => {
+    if (onSelectPackage) {
+      onSelectPackage(pkg);
+    } else if (user) {
+      router.push(`/checkout?package=${pkg.id}`);
+    } else {
+      router.push(`/auth?redirect=checkout&package=${pkg.id}`);
+    }
   };
   
   if (isLoading) {
+    return <div className="text-center py-8">Loading packages...</div>;
+  }
+  
+  if (isError || packages.length === 0) {
     return (
-      <div className="flex justify-center items-center py-20">
-        <Loading size="lg" message={`Loading ${userRole} subscription packages...`} />
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">No subscription packages available. Please check back later.</p>
       </div>
     );
   }
-  
-  if (error && serverStatus !== 'offline' && packages.length === 0) {
-    return (
-      <div className="text-center py-10">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error loading packages</AlertTitle>
-          <AlertDescription className="flex flex-col gap-2">
-            {typeof error === 'string' ? error : 'Failed to load subscription packages'}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRetryConnection}
-              className="w-fit mt-2"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Retry
-            </Button>
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-  
-  if (!packages || packages.length === 0) {
-    return (
-      <div className="text-center py-10">
-        <Alert className="max-w-xl mx-auto">
-          <Info className="h-4 w-4" />
-          <AlertTitle>No packages available</AlertTitle>
-          <AlertDescription className="flex flex-col gap-2">
-            {serverStatus === 'connected' 
-              ? `No subscription packages found for ${userRole}s in the database. Please contact an administrator.`
-              : `No subscription packages are currently available for ${userRole}s.`
-            }
-            {(serverStatus === 'error' || serverStatus === 'offline') && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRetryConnection}
-                className="w-fit mt-2"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Retry Connection
-              </Button>
-            )}
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-  
-  // Split packages into recurring and one-time
-  const recurringPackages = packages.filter(pkg => pkg.paymentType === "recurring" || !pkg.paymentType);
-  const oneTimePackages = packages.filter(pkg => pkg.paymentType === "one-time");
   
   return (
-    <div className="space-y-10">
-      {serverStatus === 'offline' && (
-        <Alert className="bg-amber-50 border-amber-200">
-          <WifiOff className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-amber-800">Offline Mode</AlertTitle>
-          <AlertDescription className="text-amber-700">
-            Unable to connect to the database server. Displaying sample subscription packages.
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRetryConnection}
-              className="ml-2 border-amber-300 text-amber-800 hover:bg-amber-100"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Try to reconnect
-            </Button>
-          </AlertDescription>
-        </Alert>
+    <div className="space-y-6">
+      {showTitle && (
+        <div className="text-center">
+          <h2 className="text-3xl font-bold tracking-tight">{type} Subscription Plans</h2>
+          <p className="text-muted-foreground mt-2">Choose the perfect plan for your needs</p>
+        </div>
       )}
       
-      {/* Subscription Dialog */}
-      <SubscriptionDialog 
-        isOpen={isDialogOpen} 
-        setIsOpen={setIsDialogOpen} 
-        selectedPackage={selectedPackage} 
-      />
-      
-      {/* Recurring Subscription Packages */}
-      {recurringPackages.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold">Recurring Subscriptions</h2>
-          <p className="text-muted-foreground">Pay monthly or yearly for continuous service</p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {recurringPackages.map((pkg) => (
-              <Card key={pkg.id} className={`flex flex-col ${pkg.popular ? 'border-primary shadow-lg' : ''}`}>
-                <CardHeader className="pb-1">
-                  {pkg.popular && <Badge className="mb-2 self-start">Most Popular</Badge>}
-                  <CardTitle className="text-xl">{pkg.title}</CardTitle>
-                  <div className="flex items-end gap-1">
-                    <span className="text-3xl font-bold">₹{pkg.price}</span>
-                    <span className="text-muted-foreground mb-1">/{pkg.billingCycle || 'year'}</span>
-                  </div>
-                  <CardDescription>{pkg.shortDescription}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  <ul className="space-y-2 mb-4">
-                    {pkg.features && pkg.features.length > 0 ? (
-                      pkg.features.map((feature, i) => (
-                        <li key={i} className="flex items-start">
-                          <Check className="mr-2 h-4 w-4 text-primary mt-1 flex-shrink-0" />
-                          <span>{feature}</span>
-                        </li>
-                      ))
-                    ) : (
-                      <li className="text-muted-foreground">No features listed</li>
-                    )}
-                  </ul>
-                </CardContent>
-                <CardFooter>
-                  <Button 
-                    onClick={() => handleSubscribe(pkg)} 
-                    className="w-full" 
-                    variant={pkg.popular ? 'default' : 'outline'}
-                  >
-                    Subscribe Now
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+      {packages.some(pkg => pkg.paymentType === 'recurring' && pkg.billingCycle === 'monthly') && (
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex items-center p-1 bg-muted rounded-lg">
+            <Button 
+              variant={view === 'monthly' ? 'default' : 'ghost'} 
+              size="sm" 
+              onClick={() => setView('monthly')}
+              className="rounded-md"
+            >
+              Monthly
+            </Button>
+            <Button 
+              variant={view === 'yearly' ? 'default' : 'ghost'} 
+              size="sm" 
+              onClick={() => setView('yearly')}
+              className="rounded-md"
+            >
+              Yearly
+            </Button>
           </div>
         </div>
       )}
       
-      {/* One-Time Payment Packages */}
-      {oneTimePackages.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold">One-Time Packages</h2>
-          <p className="text-muted-foreground">Pay once for a fixed duration of service</p>
+      <div className={`grid ${compact ? 'grid-cols-1 md:grid-cols-3 gap-4' : 'grid-cols-1 md:grid-cols-3 gap-6'}`}>
+        {packages.map((pkg) => {
+          // Skip monthly packages when in yearly view and vice versa
+          if (pkg.paymentType === 'recurring') {
+            if (view === 'monthly' && pkg.billingCycle !== 'monthly') {
+              return null;
+            }
+            if (view === 'yearly' && pkg.billingCycle !== 'yearly') {
+              return null;
+            }
+          }
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {oneTimePackages.map((pkg) => (
-              <Card key={pkg.id} className="flex flex-col border-amber-200 bg-amber-50/30">
-                <CardHeader className="pb-1">
-                  <Badge variant="secondary" className="mb-2 self-start bg-amber-100 text-amber-800">One-Time Payment</Badge>
-                  <CardTitle className="text-xl">{pkg.title}</CardTitle>
-                  <div className="flex items-end gap-1">
-                    <span className="text-3xl font-bold">₹{pkg.price}</span>
-                    <span className="text-muted-foreground mb-1">one-time</span>
+          return (
+            <Card 
+              key={pkg.id}
+              className={`flex flex-col ${pkg.popular === true ? 'border-primary shadow-lg' : ''}`}
+            >
+              <CardHeader className={compact ? 'pb-2' : ''}>
+                {pkg.popular === true && (
+                  <Badge className="w-fit mb-2" variant="default">Most Popular</Badge>
+                )}
+                <CardTitle className={compact ? 'text-lg' : 'text-xl'}>{pkg.title}</CardTitle>
+                <CardDescription>{pkg.shortDescription}</CardDescription>
+                
+                <div className="mt-2">
+                  <span className="text-3xl font-bold">₹{pkg.price}</span>
+                  {pkg.paymentType === 'recurring' && (
+                    <span className="text-muted-foreground ml-1">
+                      /{pkg.billingCycle === 'monthly' ? 'mo' : 'yr'}
+                    </span>
+                  )}
+                </div>
+                
+                {pkg.paymentType === 'recurring' && pkg.billingCycle === 'yearly' && pkg.monthlyPrice && (
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Just ₹{pkg.monthlyPrice}/mo billed annually
                   </div>
-                  <CardDescription>{pkg.shortDescription}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  <ul className="space-y-2 mb-4">
-                    {pkg.features && pkg.features.length > 0 ? (
-                      pkg.features.map((feature, i) => (
-                        <li key={i} className="flex items-start">
-                          <Check className="mr-2 h-4 w-4 text-amber-600 mt-1 flex-shrink-0" />
-                          <span>{feature}</span>
-                        </li>
-                      ))
-                    ) : (
-                      <li className="text-muted-foreground">No features listed</li>
-                    )}
-                  </ul>
-                  <p className="text-sm text-amber-700 mt-2">
-                    Valid for {pkg.durationMonths || 12} months
-                  </p>
-                </CardContent>
-                <CardFooter>
-                  <Button 
-                    onClick={() => handleSubscribe(pkg)} 
-                    className="w-full" 
-                    variant="outline"
-                  >
-                    Buy Now
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
+                )}
+              </CardHeader>
+              
+              <CardContent className={compact ? 'pt-0 pb-2' : ''}>
+                <ul className={`space-y-${compact ? '1' : '2'}`}>
+                  {pkg.features && pkg.features.map((feature, index) => (
+                    <li key={index} className="flex items-start">
+                      <CheckCircle className="h-5 w-5 text-primary mr-2 shrink-0 mt-0.5" />
+                      <span className={compact ? 'text-sm' : ''}>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+              
+              <CardFooter className="mt-auto">
+                <Button 
+                  onClick={() => handleSelectPackage(pkg)} 
+                  className="w-full"
+                  variant={pkg.popular === true ? 'default' : 'outline'}
+                >
+                  Get Started
+                </Button>
+              </CardFooter>
+            </Card>
+          );
+        })}
+      </div>
+      
+      {showComparisonLink && (
+        <div className="text-center mt-8">
+          <Button variant="link" onClick={() => router.push('/pricing/comparison')}>
+            Compare all features <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
         </div>
       )}
     </div>
   );
 };
+
+export default SubscriptionPackages;

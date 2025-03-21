@@ -1,185 +1,234 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import SubscriptionPackageManagement from '@/components/admin/subscription/SubscriptionManagement';
-import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, RefreshCw, ServerOff, Database } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { setupMongoDB } from '@/utils/setupMongoDB';
-import { connectToMongoDB } from '@/config/mongodb';
-import { testMongoDBConnection, isServerRunning, API_BASE_URL } from '@/api/mongoAPI';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+import SubscriptionPackageManagement from '@/components/admin/subscription/SubscriptionManagement';
+import UserSubscriptionsTable from '@/components/admin/subscription/UserSubscriptionsTable';
+import CentralizedSubscriptionManager from '@/components/admin/subscription/CentralizedSubscriptionManager';
+import { ISubscriptionPackage, useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
+import { setupSupabase } from '@/utils/setupSupabase';
+import { useToast } from '@/hooks/use-toast';
 
 const AdminSubscriptionsPage = () => {
-  const { toast } = useToast();
-  const [error, setError] = useState<string | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [dbInitialized, setDbInitialized] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error' | 'offline'>('connecting');
+  const [dbInitialized, setDbInitialized] = useState<boolean>(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
+  const { packages, createOrUpdate, remove, isCreating, isDeleting, refetch } = useSubscriptionPackages();
+  const { toast } = useToast();
 
-  const initializeDatabase = useCallback(async () => {
-    setIsConnecting(true);
-    setError(null);
-    setConnectionStatus('connecting');
-    
-    try {
-      console.log("Testing MongoDB connection availability...");
-      console.log(`API_BASE_URL: ${API_BASE_URL}`);
-      
-      // First check if the MongoDB server is even reachable
-      const connectionTest = await testMongoDBConnection();
-      
-      if (!connectionTest || !connectionTest.success) {
-        console.log("MongoDB server is not available:", connectionTest?.message || "Unknown error");
-        setConnectionStatus('offline');
-        setError("MongoDB server is not available. Operating in offline mode with limited functionality.");
-        toast({
-          title: "Database Offline",
-          description: "MongoDB server is not available. Using fallback data.",
-          variant: "destructive"
-        });
-        setIsConnecting(false);
-        return;
-      }
-      
-      console.log("MongoDB server is available, attempting connection...");
-      const connected = await connectToMongoDB();
-      
-      if (!connected) {
-        setError("Could not connect to MongoDB database");
+  // Initial empty package template
+  const initialPackage: ISubscriptionPackage = {
+    id: '',
+    title: '',
+    price: 0,
+    durationMonths: 12,
+    shortDescription: '',
+    fullDescription: '',
+    features: [],
+    type: 'Business',
+    paymentType: 'recurring',
+  };
+
+  // Check connection to supabase
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        setConnectionStatus('connecting');
+        const initialized = await setupSupabase();
+        setDbInitialized(initialized);
+        setConnectionStatus(initialized ? 'connected' : 'error');
+      } catch (error) {
+        console.error('Error connecting to database:', error);
         setConnectionStatus('error');
+        setDbInitialized(false);
+      }
+    };
+
+    checkConnection();
+  }, []);
+
+  const handleRetryConnection = async () => {
+    try {
+      setConnectionStatus('connecting');
+      const initialized = await setupSupabase();
+      setDbInitialized(initialized);
+      setConnectionStatus(initialized ? 'connected' : 'error');
+      
+      if (initialized) {
+        await refetch();
         toast({
-          title: "Database Error",
-          description: "Failed to connect to MongoDB. Using fallback data.",
+          title: "Connection Restored",
+          description: "Successfully connected to the database.",
+        });
+      } else {
+        toast({
+          title: "Connection Error",
+          description: "Could not initialize the database. Please check your configuration.",
           variant: "destructive"
         });
-        setIsConnecting(false);
-        return;
       }
-      
-      await setupMongoDB((progress, message) => {
-        console.log(`MongoDB setup: ${progress}% - ${message}`);
-      });
-      
-      setDbInitialized(true);
-      setConnectionStatus('connected');
-      
-      toast({
-        title: "Database Connected",
-        description: "Successfully connected to MongoDB database.",
-      });
-    } catch (err) {
-      console.error("Error initializing database:", err);
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      setError(`Database initialization error: ${errorMessage}`);
+    } catch (error) {
+      console.error('Error retrying connection:', error);
       setConnectionStatus('error');
+      setDbInitialized(false);
       
       toast({
-        title: "Database Error",
-        description: "Failed to initialize the subscription database. Using fallback data.",
+        title: "Connection Error",
+        description: error instanceof Error ? error.message : "Failed to connect to the database",
         variant: "destructive"
       });
-    } finally {
-      setIsConnecting(false);
     }
-  }, [toast]);
+  };
 
-  useEffect(() => {
-    initializeDatabase();
-  }, [initializeDatabase]);
+  const handleEditPackage = (pkg: ISubscriptionPackage) => {
+    setSelectedPackage(pkg);
+    setIsEditing(true);
+    setIsDialogOpen(true);
+  };
+
+  const handleNewPackage = () => {
+    setSelectedPackage(null);
+    setIsEditing(false);
+    setIsDialogOpen(true);
+  };
+
+  const handleSavePackage = async (packageData: ISubscriptionPackage) => {
+    try {
+      await createOrUpdate(packageData);
+      toast({
+        title: "Success",
+        description: `Package ${isEditing ? 'updated' : 'created'} successfully.`,
+      });
+      setIsDialogOpen(false);
+      setSelectedPackage(null);
+    } catch (err) {
+      console.error("Error saving package:", err);
+      toast({
+        title: "Error",
+        description: `Failed to ${isEditing ? 'update' : 'create'} package: ${err instanceof Error ? err.message : String(err)}`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeletePackage = async (id: string) => {
+    try {
+      await remove(id);
+      toast({
+        title: "Success",
+        description: "Package deleted successfully.",
+      });
+    } catch (err) {
+      console.error("Error deleting package:", err);
+      toast({
+        title: "Error",
+        description: `Failed to delete package: ${err instanceof Error ? err.message : String(err)}`,
+        variant: "destructive"
+      });
+    }
+  };
 
   const handlePermissionError = (error: any) => {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    setError(errorMessage);
     toast({
       title: "Permission Error",
-      description: errorMessage,
+      description: error instanceof Error ? error.message : "You don't have permission to perform this action",
       variant: "destructive"
     });
   };
 
-  const handleRetry = () => {
-    setError(null);
-    setDbInitialized(false);
-    initializeDatabase();
-    toast({
-      title: "Retrying Connection",
-      description: "Attempting to reconnect to the subscription database...",
-    });
+  const handleCancelEdit = () => {
+    setIsDialogOpen(false);
+    setSelectedPackage(null);
   };
 
-  const getConnectionStatusIcon = () => {
-    switch (connectionStatus) {
-      case 'connecting':
-        return <RefreshCw className="h-5 w-5 animate-spin text-yellow-500" />;
-      case 'connected':
-        return <Database className="h-5 w-5 text-green-500" />;
-      case 'error':
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
-      case 'offline':
-        return <ServerOff className="h-5 w-5 text-gray-500" />;
-    }
-  };
+  if (connectionStatus === 'connecting') {
+    return (
+      <AdminLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <RefreshCw className="h-12 w-12 animate-spin text-primary mb-4" />
+          <h2 className="text-2xl font-semibold mb-2">Connecting to Database</h2>
+          <p className="text-muted-foreground">Please wait while we establish a connection...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (connectionStatus === 'error' || connectionStatus === 'offline') {
+    return (
+      <AdminLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <Alert variant="destructive" className="max-w-md">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Connection Error</AlertTitle>
+            <AlertDescription>
+              {connectionStatus === 'error' 
+                ? "Could not connect to the database. Please check your configuration." 
+                : "You are currently offline. Please check your internet connection."}
+            </AlertDescription>
+          </Alert>
+          <Button 
+            onClick={handleRetryConnection} 
+            className="mt-4"
+            variant="default"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry Connection
+          </Button>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold">Subscription Management</h1>
-            <div className="flex items-center">
-              {getConnectionStatusIcon()}
-              <span className="ml-2 text-sm text-muted-foreground">
-                {connectionStatus === 'connecting' && 'Connecting to database...'}
-                {connectionStatus === 'connected' && 'Database connected'}
-                {connectionStatus === 'error' && 'Database connection error'}
-                {connectionStatus === 'offline' && 'Offline mode'}
-              </span>
-            </div>
-          </div>
-          
-          {(error || !dbInitialized) && (
-            <Button 
-              variant="outline" 
-              onClick={handleRetry}
-              disabled={isConnecting}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${isConnecting ? 'animate-spin' : ''}`} />
-              {isConnecting ? 'Connecting...' : 'Retry Connection'}
-            </Button>
-          )}
-        </div>
-        
-        {error && (
-          <Alert variant={connectionStatus === 'offline' ? 'default' : 'destructive'}>
-            {connectionStatus === 'offline' ? <ServerOff className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-            <AlertTitle>{connectionStatus === 'offline' ? 'Offline Mode' : 'Error'}</AlertTitle>
-            <AlertDescription>
-              {error}
-              {connectionStatus === 'offline' && (
-                <div className="mt-2">
-                  <p className="text-sm text-muted-foreground">
-                    You can still view and modify subscription packages, but changes will only be stored locally until a connection is established.
-                  </p>
-                </div>
-              )}
-            </AlertDescription>
-          </Alert>
-        )}
-        
-        <Card>
-          <CardContent className="pt-6">
-            <SubscriptionPackageManagement 
-              onPermissionError={handlePermissionError} 
-              dbInitialized={dbInitialized || connectionStatus === 'offline'}
-              connectionStatus={connectionStatus}
-              onRetryConnection={handleRetry}
-            />
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Subscription Management</h1>
+        <Button onClick={handleNewPackage}>Add New Package</Button>
       </div>
+
+      <Tabs defaultValue="packages">
+        <TabsList className="mb-4">
+          <TabsTrigger value="packages">Packages</TabsTrigger>
+          <TabsTrigger value="subscriptions">User Subscriptions</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="packages">
+          <SubscriptionPackageManagement 
+            onPermissionError={handlePermissionError} 
+            dbInitialized={dbInitialized}
+            connectionStatus={connectionStatus}
+            onRetryConnection={handleRetryConnection}
+          />
+        </TabsContent>
+        
+        <TabsContent value="subscriptions">
+          <Card>
+            <CardHeader>
+              <CardTitle>User Subscriptions</CardTitle>
+              <CardDescription>Manage user subscriptions and assignments</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <UserSubscriptionsTable />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <CentralizedSubscriptionManager
+        isDialogOpen={isDialogOpen}
+        setIsDialogOpen={setIsDialogOpen}
+        isEditing={isEditing}
+        selectedPackage={selectedPackage}
+        handleSave={handleSavePackage}
+        handleCancelEdit={handleCancelEdit}
+        initialData={initialPackage}
+      />
     </AdminLayout>
   );
 };

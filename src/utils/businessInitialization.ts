@@ -1,77 +1,101 @@
 
-import { Business, IBusiness } from '../models/Business';
-import { getAllBusinesses } from '@/lib/csv-utils';
+import { supabase } from '@/integrations/supabase/client';
+import { IBusiness } from '../models/Business';
 
-export const initializeBusinessesInMongoDB = async (
-  progressCallback?: (progress: number) => void
-): Promise<{ loaded: number; failed: number }> => {
+// Create a sample business if none exist
+export const createSampleBusinessIfNoneExist = async (): Promise<boolean> => {
   try {
-    console.log('Starting business initialization in MongoDB');
+    // Check if businesses exist
+    const { count, error: countError } = await supabase
+      .from('businesses')
+      .select('*', { count: 'exact', head: true });
     
-    // Check if businesses already exist in MongoDB
-    const existingCount = await Business.countDocuments();
-    console.log(`Found ${existingCount} existing businesses in MongoDB`);
-    
-    if (existingCount > 0) {
-      console.log('Businesses already exist in MongoDB, skipping initialization');
-      return { loaded: existingCount, failed: 0 };
+    if (countError) {
+      console.error('Error checking business count:', countError);
+      return false;
     }
     
-    // Get all businesses from CSV data or Firestore
-    const businesses = getAllBusinesses();
-    console.log(`Retrieved ${businesses.length} businesses to load into MongoDB`);
-    
-    if (!businesses || businesses.length === 0) {
-      console.warn('No businesses found to load into MongoDB');
-      return { loaded: 0, failed: 0 };
+    // If there are already businesses, we don't need to create samples
+    if (count && count > 0) {
+      return true;
     }
     
-    let loaded = 0;
-    let failed = 0;
-    
-    // Import businesses to MongoDB
-    for (let i = 0; i < businesses.length; i++) {
-      const business = businesses[i];
-      
-      try {
-        // Convert to MongoDB model format
-        const businessData: IBusiness = {
-          id: business.id,
-          name: business.name,
-          description: business.description || '',
-          category: business.category || '',
-          address: business.address || '',
-          phone: business.phone || '',
-          email: business.email || '',
-          website: business.website || '',
-          rating: Number(business.rating) || 0,
-          reviews: Number(business.reviews) || 0,
-          latitude: Number(business.latitude) || 0,
-          longitude: Number(business.longitude) || 0,
-          hours: business.hours || {},
-          tags: business.tags || [],
-          featured: Boolean(business.featured) || false,
-          image: business.image || ''
-        };
-        
-        // Save to MongoDB
-        await Business.create(businessData);
-        loaded++;
-      } catch (error) {
-        console.error(`Failed to load business "${business.name}" to MongoDB:`, error);
-        failed++;
+    // Create sample businesses
+    const sampleBusinesses: Partial<IBusiness>[] = [
+      {
+        name: 'Sample Restaurant',
+        description: 'A delicious sample restaurant to showcase the platform.',
+        category: 'Restaurant',
+        address: '123 Sample Street, Sampleville',
+        phone: '555-123-4567',
+        email: 'info@samplerestaurant.com',
+        website: 'https://samplerestaurant.com',
+        rating: 4.5,
+        reviews: 42,
+        featured: true,
+        tags: ['sample', 'restaurant', 'food'],
+        hours: {
+          monday: '9:00 AM - 10:00 PM',
+          tuesday: '9:00 AM - 10:00 PM',
+          wednesday: '9:00 AM - 10:00 PM',
+          thursday: '9:00 AM - 10:00 PM',
+          friday: '9:00 AM - 11:00 PM',
+          saturday: '10:00 AM - 11:00 PM',
+          sunday: '10:00 AM - 9:00 PM'
+        },
+        latitude: 40.7128,
+        longitude: -74.0060,
+        image: 'https://placehold.co/600x400/png?text=Sample+Restaurant'
+      },
+      {
+        name: 'Sample Retail Store',
+        description: 'A fantastic sample retail store with amazing products.',
+        category: 'Retail',
+        address: '456 Example Avenue, Exampletown',
+        phone: '555-987-6543',
+        email: 'sales@sampleretail.com',
+        website: 'https://sampleretail.com',
+        rating: 4.2,
+        reviews: 36,
+        featured: false,
+        tags: ['sample', 'retail', 'shopping'],
+        hours: {
+          monday: '10:00 AM - 9:00 PM',
+          tuesday: '10:00 AM - 9:00 PM',
+          wednesday: '10:00 AM - 9:00 PM',
+          thursday: '10:00 AM - 9:00 PM',
+          friday: '10:00 AM - 9:00 PM',
+          saturday: '9:00 AM - 9:00 PM',
+          sunday: '11:00 AM - 7:00 PM'
+        },
+        latitude: 34.0522,
+        longitude: -118.2437,
+        image: 'https://placehold.co/600x400/png?text=Sample+Retail'
       }
-      
-      // Update progress
-      if (progressCallback) {
-        progressCallback((i + 1) / businesses.length);
-      }
+    ];
+    
+    // Format hours as JSON strings
+    const formattedBusinesses = sampleBusinesses.map(business => ({
+      ...business,
+      hours: JSON.stringify(business.hours)
+    }));
+    
+    // Insert sample businesses
+    const { error: insertError } = await supabase
+      .from('businesses')
+      .insert(formattedBusinesses);
+    
+    if (insertError) {
+      console.error('Error creating sample businesses:', insertError);
+      return false;
     }
     
-    console.log(`Successfully loaded ${loaded} businesses to MongoDB, ${failed} failed`);
-    return { loaded, failed };
+    console.log('Sample businesses created successfully');
+    return true;
   } catch (error) {
-    console.error('Error initializing businesses in MongoDB:', error);
-    throw error;
+    console.error('Error in createSampleBusinessIfNoneExist:', error);
+    return false;
   }
 };
+
+export default createSampleBusinessIfNoneExist;

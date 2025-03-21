@@ -96,7 +96,7 @@ const savePackage = async (packageData: Partial<ISubscriptionPackage>): Promise<
     title: packageData.title,
     price: packageData.price,
     monthly_price: packageData.monthlyPrice,
-    setup_fee: packageData.setupFee,
+    setup_fee: packageData.setupFee || 0,
     duration_months: packageData.durationMonths,
     short_description: packageData.shortDescription,
     full_description: packageData.fullDescription,
@@ -112,14 +112,19 @@ const savePackage = async (packageData: Partial<ISubscriptionPackage>): Promise<
   
   const { data, error } = await supabase
     .from('subscription_packages')
-    .upsert([supabaseData], { onConflict: 'id', returning: 'representation' });
+    .upsert(supabaseData)
+    .select();
   
   if (error) {
     console.error('Error saving subscription package:', error);
     throw error;
   }
   
-  const savedPackage = data?.[0];
+  if (!data || data.length === 0) {
+    throw new Error('No data returned after saving package');
+  }
+  
+  const savedPackage = data[0];
   
   return {
     id: savedPackage.id,

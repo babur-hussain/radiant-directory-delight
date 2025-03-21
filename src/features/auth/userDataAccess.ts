@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@/types/auth';
+import { User, UserRole } from '@/types/auth';
 
 // Get user by ID
 export const getUserById = async (id: string): Promise<User | null> => {
@@ -24,7 +24,7 @@ export const getUserById = async (id: string): Promise<User | null> => {
       email: data.email || '',
       displayName: data.name || '', // Add displayName property
       name: data.name || '',
-      role: data.role || 'user',
+      role: transformRole(data.role),
       isAdmin: data.is_admin || false,
       photoURL: data.photo_url || null,
       employeeCode: data.employee_code || null,
@@ -51,6 +51,27 @@ export const getUserById = async (id: string): Promise<User | null> => {
   }
 };
 
+// Helper function to ensure role is a valid UserRole
+function transformRole(role: string | null): UserRole {
+  if (!role) return null;
+  
+  // Match with expected UserRole values
+  switch (role.toLowerCase()) {
+    case 'admin':
+      return 'Admin';
+    case 'business':
+      return 'Business';
+    case 'influencer':
+      return 'Influencer';
+    case 'user':
+      return 'User';
+    case 'staff':
+      return 'staff';
+    default:
+      return 'User'; // Default to User if unknown
+  }
+}
+
 // Get all users
 export const getAllUsers = async (): Promise<User[]> => {
   try {
@@ -70,7 +91,7 @@ export const getAllUsers = async (): Promise<User[]> => {
       email: user.email || '',
       displayName: user.name || '', // Add displayName property
       name: user.name || '',
-      role: user.role || 'user',
+      role: transformRole(user.role),
       isAdmin: user.is_admin || false,
       photoURL: user.photo_url || null,
       employeeCode: user.employee_code || null,

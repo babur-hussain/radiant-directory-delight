@@ -1,32 +1,26 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SupabaseBusinessRow } from '@/lib/supabase/types';
-
-// Define our application business interface
-export interface IBusiness {
-  id: number;
-  name: string;
-  description?: string;
-  category?: string;
-  address?: string;
-  phone?: string;
-  email?: string;
-  website?: string;
-  image?: string;
-  hours: Record<string, any>;
-  rating?: number;
-  reviews?: number;
-  featured?: boolean;
-  tags?: string[];
-  latitude?: number;
-  longitude?: number;
-}
+import { IBusiness } from '@/models/Business';
 
 // Convert from Supabase format to our application format
-const convertBusinessData = (data: SupabaseBusinessRow): IBusiness => {
+const convertBusinessData = (data: any): IBusiness => {
   return {
-    ...data,
-    hours: typeof data.hours === 'string' ? JSON.parse(data.hours as string) : data.hours
+    id: data.id,
+    name: data.name || '',
+    description: data.description || '',
+    category: data.category || '',
+    address: data.address || '',
+    phone: data.phone || '',
+    email: data.email || '',
+    website: data.website || '',
+    image: data.image || '',
+    hours: typeof data.hours === 'string' ? JSON.parse(data.hours) : (data.hours || {}),
+    rating: data.rating || 0,
+    reviews: data.reviews || 0,
+    featured: data.featured || false,
+    tags: data.tags || [],
+    latitude: data.latitude || 0,
+    longitude: data.longitude || 0
   };
 };
 
@@ -40,7 +34,7 @@ export const fetchBusinesses = async (): Promise<IBusiness[]> => {
       .select('*');
     
     if (error) throw error;
-    return data.map(convertBusinessData) as IBusiness[];
+    return data.map(convertBusinessData);
   } catch (error) {
     console.error("Error getting businesses:", error);
     return [];
@@ -52,21 +46,26 @@ export const fetchBusinesses = async (): Promise<IBusiness[]> => {
  */
 export const saveBusiness = async (businessData: Partial<IBusiness>): Promise<IBusiness | null> => {
   try {
+    // Ensure required fields
+    if (!businessData.name) {
+      throw new Error("Business name is required");
+    }
+    
     // Ensure hours is in the correct format
     const formattedData = {
       ...businessData,
-      hours: businessData.hours && typeof businessData.hours !== 'string' 
-        ? businessData.hours 
-        : businessData.hours
+      hours: businessData.hours ? 
+        (typeof businessData.hours === 'string' ? businessData.hours : JSON.stringify(businessData.hours)) 
+        : null
     };
     
     const { data, error } = await supabase
       .from('businesses')
-      .upsert(formattedData)
+      .upsert([formattedData])
       .select();
     
     if (error) throw error;
-    return data?.[0] ? convertBusinessData(data[0] as SupabaseBusinessRow) : null;
+    return data && data.length > 0 ? convertBusinessData(data[0]) : null;
   } catch (error) {
     console.error("Error creating/updating business:", error);
     return null;

@@ -1,6 +1,27 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@/types/auth';
+import { User, UserRole } from '@/types/auth';
+
+// Helper function to convert role string to UserRole type
+function transformRole(role: string | null): UserRole {
+  if (!role) return null;
+  
+  // Match with expected UserRole values
+  switch (role.toLowerCase()) {
+    case 'admin':
+      return 'Admin';
+    case 'business':
+      return 'Business';
+    case 'influencer':
+      return 'Influencer';
+    case 'user':
+      return 'User';
+    case 'staff':
+      return 'staff';
+    default:
+      return 'User'; // Default to User if unknown
+  }
+}
 
 export const fetchUserByUid = async (uid: string): Promise<User | null> => {
   try {
@@ -22,7 +43,7 @@ export const fetchUserByUid = async (uid: string): Promise<User | null> => {
       email: data.email || '',
       displayName: data.name || '',
       name: data.name || '',
-      role: data.role || 'user',
+      role: transformRole(data.role),
       isAdmin: data.is_admin || false,
       photoURL: data.photo_url || null,
       createdAt: data.created_at ? new Date(data.created_at).toISOString() : new Date().toISOString(),
