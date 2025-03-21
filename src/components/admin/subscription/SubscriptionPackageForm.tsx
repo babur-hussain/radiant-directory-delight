@@ -44,8 +44,6 @@ const packageSchema = z.object({
   type: z.enum(["Business", "Influencer"]),
   paymentType: z.enum(["recurring", "one-time"]),
   billingCycle: z.enum(["monthly", "yearly"]).optional(),
-  maxBusinesses: z.number().optional(),
-  maxInfluencers: z.number().optional(),
   popular: z.boolean().default(false).optional()
 });
 
@@ -89,8 +87,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
       type: initialPackage.type || 'Business',
       paymentType: initialPackage.paymentType || 'recurring',
       billingCycle: initialPackage.billingCycle || 'yearly',
-      maxBusinesses: initialPackage.maxBusinesses || 1,
-      maxInfluencers: initialPackage.maxInfluencers || 1,
       popular: initialPackage.popular || false
     }
   });
@@ -170,8 +166,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
         advancePaymentMonths: data.advancePaymentMonths || 0,
         billingCycle: data.billingCycle,
         termsAndConditions: data.termsAndConditions || '',
-        maxBusinesses: data.maxBusinesses || 1,
-        maxInfluencers: data.maxInfluencers || 1,
         popular: data.popular || false,
         dashboardSections: initialPackage.dashboardSections || [],
       };
@@ -537,46 +531,6 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
         
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Additional Settings</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="maxBusinesses"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Max Businesses</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                      placeholder="Maximum number of businesses"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="maxInfluencers"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Max Influencers</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                      placeholder="Maximum number of influencers"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
           
           <FormField
             control={form.control}

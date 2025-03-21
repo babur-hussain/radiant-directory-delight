@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,9 +70,7 @@ const AdminSubscriptionsPage = () => {
       billingCycle: pkg.billing_cycle as BillingCycle,
       dashboardSections: pkg.dashboard_sections || [],
       termsAndConditions: pkg.terms_and_conditions,
-      advancePaymentMonths: pkg.advance_payment_months || 0,
-      maxBusinesses: pkg.max_businesses || 1, 
-      maxInfluencers: pkg.max_influencers || 1
+      advancePaymentMonths: pkg.advance_payment_months || 0
     };
   };
   
@@ -162,9 +159,7 @@ const AdminSubscriptionsPage = () => {
         billing_cycle: data.billingCycle || 'yearly',
         dashboard_sections: data.dashboardSections || [],
         terms_and_conditions: data.termsAndConditions || '',
-        advance_payment_months: data.advancePaymentMonths || 0,
-        max_businesses: data.maxBusinesses || 1,
-        max_influencers: data.maxInfluencers || 1
+        advance_payment_months: data.advancePaymentMonths || 0
       };
       
       console.log('Saving package data to Supabase:', supabaseData);
