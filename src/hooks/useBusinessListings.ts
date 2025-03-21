@@ -1,8 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { fetchBusinesses } from '@/lib/mongodb/businessUtils';
+import { fetchBusinesses } from '@/lib/supabase/businessUtils';
 import { IBusiness } from '@/models/Business';
-import { autoInitMongoDB } from '@/utils/setupMongoDB';
 
 export const useBusinessListings = () => {
   const [businesses, setBusinesses] = useState<IBusiness[]>([]);
@@ -15,17 +14,14 @@ export const useBusinessListings = () => {
     setError(null);
     
     try {
-      // Ensure MongoDB is initialized before fetching data
-      await autoInitMongoDB();
-      
-      // Fetch businesses from MongoDB
+      // Fetch businesses from Supabase
       const businessesData = await fetchBusinesses();
       
       if (businessesData && businessesData.length > 0) {
-        setBusinesses(businessesData);
-        console.log(`Loaded ${businessesData.length} businesses from MongoDB`);
+        setBusinesses(businessesData as IBusiness[]);
+        console.log(`Loaded ${businessesData.length} businesses from Supabase`);
       } else {
-        console.warn('No businesses found in MongoDB');
+        console.warn('No businesses found in Supabase');
         setBusinesses([]);
       }
     } catch (err) {
@@ -41,14 +37,14 @@ export const useBusinessListings = () => {
     setIsRefreshing(true);
     
     try {
-      // Fetch businesses from MongoDB
+      // Fetch businesses from Supabase
       const businessesData = await fetchBusinesses();
       
       if (businessesData && businessesData.length > 0) {
-        setBusinesses(businessesData);
-        console.log(`Refreshed ${businessesData.length} businesses from MongoDB`);
+        setBusinesses(businessesData as IBusiness[]);
+        console.log(`Refreshed ${businessesData.length} businesses from Supabase`);
       } else {
-        console.warn('No businesses found in MongoDB during refresh');
+        console.warn('No businesses found in Supabase during refresh');
         setBusinesses([]);
       }
     } catch (err) {

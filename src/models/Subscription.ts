@@ -1,5 +1,5 @@
 
-import { SupabaseUserSubscriptionRow } from '@/lib/supabase/types';
+import { Database } from '@/integrations/supabase/types';
 
 export interface ISubscription {
   id: string;
@@ -29,21 +29,21 @@ export interface ISubscription {
 }
 
 // Map Supabase data to our application model
-export const mapFromSupabase = (data: SupabaseUserSubscriptionRow): ISubscription => {
+export const mapFromSupabase = (data: Database['public']['Tables']['user_subscriptions']['Row']): ISubscription => {
   return {
     id: data.id,
     userId: data.user_id || '',
     packageId: data.package_id || '',
     packageName: data.package_name || '',
     amount: data.amount,
-    startDate: data.start_date.toString(),
-    endDate: data.end_date.toString(),
+    startDate: data.start_date ? new Date(data.start_date).toISOString() : new Date().toISOString(),
+    endDate: data.end_date ? new Date(data.end_date).toISOString() : new Date().toISOString(),
     status: data.status || 'pending',
     assignedBy: data.assigned_by,
-    assignedAt: data.assigned_at?.toString(),
+    assignedAt: data.assigned_at ? new Date(data.assigned_at).toISOString() : undefined,
     advancePaymentMonths: data.advance_payment_months,
     signupFee: data.signup_fee,
-    actualStartDate: data.actual_start_date?.toString(),
+    actualStartDate: data.actual_start_date ? new Date(data.actual_start_date).toISOString() : undefined,
     isPaused: data.is_paused,
     isPausable: data.is_pausable,
     isUserCancellable: data.is_user_cancellable,
@@ -51,10 +51,10 @@ export const mapFromSupabase = (data: SupabaseUserSubscriptionRow): ISubscriptio
     paymentType: data.payment_type,
     paymentMethod: data.payment_method,
     transactionId: data.transaction_id,
-    cancelledAt: data.cancelled_at?.toString(),
+    cancelledAt: data.cancelled_at ? new Date(data.cancelled_at).toISOString() : undefined,
     cancelReason: data.cancel_reason,
-    createdAt: data.created_at?.toString(),
-    updatedAt: data.updated_at?.toString()
+    createdAt: data.created_at ? new Date(data.created_at).toISOString() : undefined,
+    updatedAt: data.updated_at ? new Date(data.updated_at).toISOString() : undefined
   };
 };
 

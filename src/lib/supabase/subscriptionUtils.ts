@@ -1,5 +1,4 @@
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
 
@@ -14,22 +13,22 @@ export interface ISubscriptionPackage {
   fullDescription: string;
   features: string[];
   popular?: boolean;
-  type: 'Business' | 'Influencer';
+  type: string;
   termsAndConditions?: string;
-  paymentType: 'recurring' | 'one-time';
-  billingCycle?: 'monthly' | 'yearly';
+  paymentType: string;
+  billingCycle?: string;
   advancePaymentMonths?: number;
   dashboardSections?: string[];
 }
 
-// Function to fetch subscription packages from Supabase
-const fetchPackages = async (): Promise<ISubscriptionPackage[]> => {
+// Get all subscription packages
+export const getSubscriptionPackages = async (): Promise<ISubscriptionPackage[]> => {
   const { data, error } = await supabase
     .from('subscription_packages')
     .select('*');
   
   if (error) {
-    console.error('Error fetching subscription packages:', error);
+    console.error('Error getting subscription packages:', error);
     throw error;
   }
   
@@ -37,31 +36,31 @@ const fetchPackages = async (): Promise<ISubscriptionPackage[]> => {
     id: pkg.id,
     title: pkg.title,
     price: pkg.price,
-    monthlyPrice: pkg.monthly_price || undefined,
+    monthlyPrice: pkg.monthly_price,
     setupFee: pkg.setup_fee,
     durationMonths: pkg.duration_months,
     shortDescription: pkg.short_description || '',
     fullDescription: pkg.full_description || '',
     features: pkg.features || [],
     popular: pkg.popular,
-    type: (pkg.type as 'Business' | 'Influencer') || 'Business',
+    type: pkg.type || 'Business',
     termsAndConditions: pkg.terms_and_conditions,
-    paymentType: (pkg.payment_type as 'recurring' | 'one-time') || 'recurring',
-    billingCycle: pkg.billing_cycle as 'monthly' | 'yearly' | undefined,
+    paymentType: pkg.payment_type || 'recurring',
+    billingCycle: pkg.billing_cycle,
     advancePaymentMonths: pkg.advance_payment_months,
     dashboardSections: pkg.dashboard_sections || []
   }));
 };
 
-// Function to fetch packages by type
-const fetchPackagesByType = async (type: string): Promise<ISubscriptionPackage[]> => {
+// Get packages by type
+export const getPackagesByType = async (type: string): Promise<ISubscriptionPackage[]> => {
   const { data, error } = await supabase
     .from('subscription_packages')
     .select('*')
     .eq('type', type);
   
   if (error) {
-    console.error(`Error fetching ${type} subscription packages:`, error);
+    console.error(`Error getting ${type} subscription packages:`, error);
     throw error;
   }
   
@@ -69,24 +68,28 @@ const fetchPackagesByType = async (type: string): Promise<ISubscriptionPackage[]
     id: pkg.id,
     title: pkg.title,
     price: pkg.price,
-    monthlyPrice: pkg.monthly_price || undefined,
+    monthlyPrice: pkg.monthly_price,
     setupFee: pkg.setup_fee,
     durationMonths: pkg.duration_months,
     shortDescription: pkg.short_description || '',
     fullDescription: pkg.full_description || '',
     features: pkg.features || [],
     popular: pkg.popular,
-    type: (pkg.type as 'Business' | 'Influencer') || 'Business',
+    type: pkg.type || 'Business',
     termsAndConditions: pkg.terms_and_conditions,
-    paymentType: (pkg.payment_type as 'recurring' | 'one-time') || 'recurring',
-    billingCycle: pkg.billing_cycle as 'monthly' | 'yearly' | undefined,
+    paymentType: pkg.payment_type || 'recurring',
+    billingCycle: pkg.billing_cycle,
     advancePaymentMonths: pkg.advance_payment_months,
     dashboardSections: pkg.dashboard_sections || []
   }));
 };
 
-// Function to create or update a package
-const savePackage = async (packageData: Partial<ISubscriptionPackage>): Promise<ISubscriptionPackage> => {
+// Create or update a package
+export const createOrUpdatePackage = async (packageData: Partial<ISubscriptionPackage>): Promise<ISubscriptionPackage> => {
+  if (!packageData.title || packageData.price === undefined) {
+    throw new Error("Package title and price are required");
+  }
+  
   // Generate ID if not provided
   const id = packageData.id || nanoid();
   
@@ -115,7 +118,7 @@ const savePackage = async (packageData: Partial<ISubscriptionPackage>): Promise<
     .upsert([supabaseData], { onConflict: 'id', returning: 'representation' });
   
   if (error) {
-    console.error('Error saving subscription package:', error);
+    console.error('Error creating/updating subscription package:', error);
     throw error;
   }
   
@@ -125,24 +128,24 @@ const savePackage = async (packageData: Partial<ISubscriptionPackage>): Promise<
     id: savedPackage.id,
     title: savedPackage.title,
     price: savedPackage.price,
-    monthlyPrice: savedPackage.monthly_price || undefined,
+    monthlyPrice: savedPackage.monthly_price,
     setupFee: savedPackage.setup_fee,
     durationMonths: savedPackage.duration_months,
     shortDescription: savedPackage.short_description || '',
     fullDescription: savedPackage.full_description || '',
     features: savedPackage.features || [],
     popular: savedPackage.popular,
-    type: (savedPackage.type as 'Business' | 'Influencer') || 'Business',
+    type: savedPackage.type || 'Business',
     termsAndConditions: savedPackage.terms_and_conditions,
-    paymentType: (savedPackage.payment_type as 'recurring' | 'one-time') || 'recurring',
-    billingCycle: savedPackage.billing_cycle as 'monthly' | 'yearly' | undefined,
+    paymentType: savedPackage.payment_type || 'recurring',
+    billingCycle: savedPackage.billing_cycle,
     advancePaymentMonths: savedPackage.advance_payment_months,
     dashboardSections: savedPackage.dashboard_sections || []
   };
 };
 
-// Function to delete a package
-const deletePackage = async (id: string): Promise<void> => {
+// Delete a package
+export const deletePackage = async (id: string): Promise<void> => {
   const { error } = await supabase
     .from('subscription_packages')
     .delete()
@@ -154,53 +157,48 @@ const deletePackage = async (id: string): Promise<void> => {
   }
 };
 
-// Hook for managing subscription packages
-export const useSubscriptionPackages = () => {
-  const queryClient = useQueryClient();
+// Get user subscription
+export const getUserSubscription = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('user_subscriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
   
-  // Query to fetch all packages
-  const { data = [], isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['subscription-packages'],
-    queryFn: fetchPackages
-  });
+  if (error) {
+    console.error('Error getting user subscription:', error);
+    throw error;
+  }
   
-  // Mutation for creating/updating packages
-  const createOrUpdateMutation = useMutation({
-    mutationFn: savePackage,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
-    }
-  });
-  
-  // Mutation for deleting packages
-  const deleteMutation = useMutation({
-    mutationFn: deletePackage,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
-    }
-  });
-  
-  // Query to check server status (optional)
-  const serverStatus = true; // Since we're using Supabase, we can assume the server is available
+  if (!data) return null;
   
   return {
-    packages: data,
-    isLoading,
-    isError,
-    error,
-    refetch,
-    createOrUpdate: createOrUpdateMutation.mutate,
-    remove: deleteMutation.mutate,
-    isCreating: createOrUpdateMutation.isPending,
-    isDeleting: deleteMutation.isPending,
-    serverStatus
+    id: data.id,
+    userId: data.user_id,
+    packageId: data.package_id,
+    packageName: data.package_name,
+    amount: data.amount,
+    startDate: data.start_date,
+    endDate: data.end_date,
+    status: data.status,
+    assignedBy: data.assigned_by,
+    assignedAt: data.assigned_at,
+    advancePaymentMonths: data.advance_payment_months,
+    signupFee: data.signup_fee,
+    actualStartDate: data.actual_start_date,
+    isPaused: data.is_paused,
+    isPausable: data.is_pausable,
+    isUserCancellable: data.is_user_cancellable,
+    invoiceIds: data.invoice_ids,
+    paymentType: data.payment_type,
+    paymentMethod: data.payment_method,
+    transactionId: data.transaction_id,
+    cancelledAt: data.cancelled_at,
+    cancelReason: data.cancel_reason,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at
   };
-};
-
-// Hook to fetch packages by type
-export const useSubscriptionPackagesByType = (type: string) => {
-  return useQuery({
-    queryKey: ['subscription-packages', type],
-    queryFn: () => fetchPackagesByType(type)
-  });
 };

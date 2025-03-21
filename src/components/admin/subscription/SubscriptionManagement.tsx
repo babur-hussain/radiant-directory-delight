@@ -1,278 +1,180 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { RefreshCw, AlertCircle } from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { Button } from '@/components/ui/button';
-import SubscriptionPackageForm from './SubscriptionPackageForm';
-import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
-import SubscriptionPermissionError from './SubscriptionPermissionError';
-import SubscriptionLoader from './SubscriptionLoader';
-import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from "@/components/ui/switch"
+import { useToast } from "@/hooks/use-toast"
+import { ISubscriptionPackage, useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
+import { CheckCircle2, AlertCircle, RefreshCw, Database, Activity } from 'lucide-react';
 
-export interface SubscriptionPackageManagementProps {
-  onPermissionError: (error: any) => void;
-  dbInitialized?: boolean;
-  connectionStatus?: 'connecting' | 'connected' | 'error' | 'offline';
-  onRetryConnection?: () => void;
-}
-
-const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps> = ({
-  onPermissionError,
-  dbInitialized = true,
-  connectionStatus = 'connected',
-  onRetryConnection
-}) => {
-  const [activeTab, setActiveTab] = useState<string>('business');
-  const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
-  const [forceRefresh, setForceRefresh] = useState<number>(0);
+const SubscriptionPackageManagement: React.FC<{ onPermissionError?: (error: any) => void; dbInitialized: boolean; connectionStatus: string }> = ({ onPermissionError, dbInitialized, connectionStatus }) => {
+  const [isAdding, setIsAdding] = useState(false);
+  const [newPackage, setNewPackage] = useState<Partial<ISubscriptionPackage>>({
+    type: 'Business',
+    paymentType: 'recurring'
+  });
   const { toast } = useToast();
-  
-  const {
-    packages,
-    isLoading,
-    error,
-    connectionStatus: hookConnectionStatus,
-    retryConnection,
-    fetchPackages,
-    addOrUpdatePackage,
-    removePackage
-  } = useSubscriptionPackages({});
+  const { packages, isLoading, isError, error, refetch, serverStatus } = useSubscriptionPackages();
 
-  const safePackages = Array.isArray(packages) ? packages : [];
-  
-  const businessPackages = safePackages.filter(pkg => pkg && pkg.type === 'Business');
-  const influencerPackages = safePackages.filter(pkg => pkg && pkg.type === 'Influencer');
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setNewPackage(prev => ({ ...prev, [name]: value }));
+  };
 
-  useEffect(() => {
-    console.log("Fetching packages due to tab change or force refresh");
-    fetchPackages();
-  }, [activeTab, fetchPackages, forceRefresh]);
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setNewPackage(prev => ({ ...prev, [name]: checked }));
+  };
 
-  const handleSavePackage = async (packageData: ISubscriptionPackage) => {
+  const handleAddPackage = async () => {
+    if (!newPackage.title || !newPackage.price || !newPackage.durationMonths || !newPackage.shortDescription || !newPackage.fullDescription) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      console.log('Handling save package:', packageData);
-      
-      if (!packageData) {
-        throw new Error("Package data is required");
-      }
-      
-      if (!packageData.type) {
-        packageData.type = activeTab === 'business' ? 'Business' : 'Influencer';
-      }
-      
-      await addOrUpdatePackage(packageData);
-      setSelectedPackage(null);
-      
-      console.log("Package saved, triggering refresh");
-      setForceRefresh(prevCount => prevCount + 1);
-      
+      await useSubscriptionPackages().createOrUpdate(newPackage as ISubscriptionPackage);
       toast({
         title: "Success",
-        description: `Package "${packageData.title}" has been saved.`,
+        description: "Subscription package added successfully.",
       });
-      
+      setNewPackage({ type: 'Business', paymentType: 'recurring' });
+      setIsAdding(false);
+      await refetch();
     } catch (err) {
-      console.error('Error saving package:', err);
-      onPermissionError(err);
+      console.error("Error adding package:", err);
+      toast({
+        title: "Error",
+        description: `Failed to add package: ${err instanceof Error ? err.message : String(err)}`,
+        variant: "destructive"
+      });
     }
   };
 
-  const handleEditPackage = (pkg: ISubscriptionPackage) => {
-    setSelectedPackage(pkg);
-  };
-
-  const handleDeletePackage = async (packageId: string) => {
+  const handleRemovePackage = async (id: string) => {
     try {
-      await removePackage(packageId);
-      
-      console.log("Package deleted, triggering refresh");
-      setForceRefresh(prevCount => prevCount + 1);
-      
+      await useSubscriptionPackages().remove(id);
       toast({
         title: "Success",
-        description: `Package has been deleted.`,
+        description: "Subscription package removed successfully.",
       });
-      
-      await fetchPackages();
-      console.log('Packages refreshed after delete');
+      await refetch();
     } catch (err) {
-      console.error('Error deleting package:', err);
-      onPermissionError(err);
+      console.error("Error removing package:", err);
+      toast({
+        title: "Error",
+        description: `Failed to remove package: ${err instanceof Error ? err.message : String(err)}`,
+        variant: "destructive"
+      });
     }
   };
 
-  const handleCreatePackage = () => {
-    const newPackage: ISubscriptionPackage = {
-      id: '',
-      title: 'Untitled Package',
-      type: activeTab === 'business' ? 'Business' : 'Influencer',
-      price: 999,
-      setupFee: 0,
-      billingCycle: 'yearly',
-      features: [],
-      shortDescription: '',
-      fullDescription: '',
-      durationMonths: 12,
-      advancePaymentMonths: 0,
-      paymentType: 'recurring',
-      popular: false,
-      isActive: true,
-      maxBusinesses: 1,
-      maxInfluencers: 1
-    };
-    
-    setSelectedPackage(newPackage);
-  };
-
-  const handleCancelEdit = () => {
-    setSelectedPackage(null);
-  };
-
-  const handleRetryConnection = () => {
-    console.log('Retrying connection and refreshing packages...');
-    fetchPackages();
-    if (onRetryConnection) onRetryConnection();
-  };
-
-  if (error && hookConnectionStatus === 'error') {
-    return <SubscriptionPermissionError error={error} onRetry={handleRetryConnection} />;
+  if (isLoading) {
+    return <p>Loading subscription packages...</p>;
   }
 
-  const effectiveConnectionStatus = connectionStatus || hookConnectionStatus || 'connected';
-
-  useEffect(() => {
-    console.log('SubscriptionManagement state:', {
-      isLoading,
-      packagesCount: safePackages.length,
-      businessPackages: businessPackages.length,
-      influencerPackages: influencerPackages.length,
-      connectionStatus: effectiveConnectionStatus,
-      forceRefresh
-    });
-  }, [safePackages, businessPackages, influencerPackages, isLoading, effectiveConnectionStatus, forceRefresh]);
+  if (isError) {
+    return <p>Error: {error?.message}</p>;
+  }
 
   return (
-    <div className="space-y-6">
-      {effectiveConnectionStatus === 'error' && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Connection Error</AlertTitle>
-          <AlertDescription className="flex flex-col gap-2">
-            <p>Failed to connect to MongoDB server.</p>
-            <Button variant="outline" size="sm" className="w-fit" onClick={handleRetryConnection}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Retry connection
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Subscription Package Management</CardTitle>
+        <CardDescription>
+          Add, edit, and remove subscription packages.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="mb-4">
+          <Button onClick={() => setIsAdding(true)} disabled={isAdding}>
+            {isAdding ? 'Adding...' : 'Add New Package'}
+          </Button>
+        </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Subscription Packages</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="flex justify-between items-center mb-4">
-              <TabsList>
-                <TabsTrigger value="business">Business</TabsTrigger>
-                <TabsTrigger value="influencer">Influencer</TabsTrigger>
-              </TabsList>
-              
-              <Button onClick={handleCreatePackage}>
-                Create New Package
-              </Button>
-            </div>
+        {isAdding && (
+          <Card className="mb-4">
+            <CardContent className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="title">Title</Label>
+                <Input type="text" id="title" name="title" value={newPackage.title || ''} onChange={handleInputChange} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="price">Price</Label>
+                <Input type="number" id="price" name="price" value={newPackage.price || ''} onChange={handleInputChange} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="durationMonths">Duration (Months)</Label>
+                <Input type="number" id="durationMonths" name="durationMonths" value={newPackage.durationMonths || ''} onChange={handleInputChange} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="shortDescription">Short Description</Label>
+                <Input type="text" id="shortDescription" name="shortDescription" value={newPackage.shortDescription || ''} onChange={handleInputChange} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="fullDescription">Full Description</Label>
+                <Input type="text" id="fullDescription" name="fullDescription" value={newPackage.fullDescription || ''} onChange={handleInputChange} />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="popular">Popular</Label>
+                <Switch id="popular" name="popular" checked={newPackage.popular || false} onCheckedChange={(checked) => setNewPackage(prev => ({ ...prev, popular: checked }))} />
+              </div>
+              <Button onClick={handleAddPackage}>Add Package</Button>
+            </CardContent>
+          </Card>
+        )}
 
-            <SubscriptionLoader 
-              isLoading={isLoading} 
-              connectionStatus={effectiveConnectionStatus} 
-              onRetry={handleRetryConnection} 
-            />
-
-            <TabsContent value="business" className="mt-0">
-              {!isLoading && (
-                <div className="space-y-6">
-                  {selectedPackage && selectedPackage.type === 'Business' ? (
-                    <SubscriptionPackageForm 
-                      package={selectedPackage} 
-                      onSave={handleSavePackage}
-                      onCancel={handleCancelEdit}
-                    />
-                  ) : (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {businessPackages.map((pkg) => (
-                        <div key={pkg.id} className="border rounded-lg p-4 relative">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="font-medium">{pkg.title}</h3>
-                              <p className="text-sm text-muted-foreground mt-1">{pkg.shortDescription}</p>
-                              <div className="mt-2">
-                                <span className="font-medium">₹{pkg.price}</span>
-                                <span className="text-sm text-muted-foreground"> / {pkg.billingCycle || 'year'}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center mt-4 pt-4 border-t">
-                            <Button variant="outline" size="sm" className="mr-2" onClick={() => handleEditPackage(pkg)}>
-                              Edit
-                            </Button>
-                            <Button variant="destructive" size="sm" onClick={() => handleDeletePackage(pkg.id)}>
-                              Delete
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="influencer" className="mt-0">
-              {!isLoading && (
-                <div className="space-y-6">
-                  {selectedPackage && selectedPackage.type === 'Influencer' ? (
-                    <SubscriptionPackageForm 
-                      package={selectedPackage} 
-                      onSave={handleSavePackage}
-                      onCancel={handleCancelEdit}
-                    />
-                  ) : (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {influencerPackages.map((pkg) => (
-                        <div key={pkg.id} className="border rounded-lg p-4 relative">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="font-medium">{pkg.title}</h3>
-                              <p className="text-sm text-muted-foreground mt-1">{pkg.shortDescription}</p>
-                              <div className="mt-2">
-                                <span className="font-medium">₹{pkg.price}</span>
-                                <span className="text-sm text-muted-foreground"> / {pkg.billingCycle || 'year'}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center mt-4 pt-4 border-t">
-                            <Button variant="outline" size="sm" className="mr-2" onClick={() => handleEditPackage(pkg)}>
-                              Edit
-                            </Button>
-                            <Button variant="destructive" size="sm" onClick={() => handleDeletePackage(pkg.id)}>
-                              Delete
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[100px]">ID</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {packages?.map((pkg) => (
+                <TableRow key={pkg.id}>
+                  <TableCell className="font-medium">{pkg.id}</TableCell>
+                  <TableCell>{pkg.title}</TableCell>
+                  <TableCell>{pkg.price}</TableCell>
+                  <TableCell>{pkg.durationMonths}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="outline" size="sm" onClick={() => handleRemovePackage(pkg.id)}>
+                      Remove
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

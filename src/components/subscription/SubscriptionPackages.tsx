@@ -25,10 +25,10 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
   const { 
     packages, 
     isLoading, 
+    isError, 
     error, 
-    connectionStatus,
-    retryConnection,
-    fetchPackages 
+    refetch,
+    serverStatus
   } = useSubscriptionPackages({ 
     type: userRole as string
   });
@@ -41,9 +41,9 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
       packages,
       isLoading,
       error,
-      connectionStatus
+      serverStatus
     });
-  }, [userRole, packages, isLoading, error, connectionStatus]);
+  }, [userRole, packages, isLoading, error, serverStatus]);
 
   const handleSubscribe = (pkg: any) => {
     console.log("Selected package:", pkg);
@@ -53,7 +53,7 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
   
   const handleRetryConnection = () => {
     console.log("Retrying connection...");
-    retryConnection();
+    // retryConnection();
   };
   
   if (isLoading) {
@@ -64,7 +64,7 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
     );
   }
   
-  if (error && connectionStatus !== 'offline' && packages.length === 0) {
+  if (error && serverStatus !== 'offline' && packages.length === 0) {
     return (
       <div className="text-center py-10">
         <Alert variant="destructive">
@@ -94,11 +94,11 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
           <Info className="h-4 w-4" />
           <AlertTitle>No packages available</AlertTitle>
           <AlertDescription className="flex flex-col gap-2">
-            {connectionStatus === 'connected' 
+            {serverStatus === 'connected' 
               ? `No subscription packages found for ${userRole}s in the database. Please contact an administrator.`
               : `No subscription packages are currently available for ${userRole}s.`
             }
-            {(connectionStatus === 'error' || connectionStatus === 'offline') && (
+            {(serverStatus === 'error' || serverStatus === 'offline') && (
               <Button
                 variant="outline"
                 size="sm"
@@ -121,7 +121,7 @@ export const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ user
   
   return (
     <div className="space-y-10">
-      {connectionStatus === 'offline' && (
+      {serverStatus === 'offline' && (
         <Alert className="bg-amber-50 border-amber-200">
           <WifiOff className="h-4 w-4 text-amber-600" />
           <AlertTitle className="text-amber-800">Offline Mode</AlertTitle>

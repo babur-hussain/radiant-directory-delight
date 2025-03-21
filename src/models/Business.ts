@@ -1,5 +1,5 @@
 
-import { mongoose } from '../config/mongodb';
+import { Database } from '@/integrations/supabase/types';
 
 export interface IBusiness {
   id: number;
@@ -20,31 +20,24 @@ export interface IBusiness {
   image: string;
 }
 
-// Create a schema using the mongoose Schema
-const schemaDefinition = {
-  id: { type: Number, required: true, unique: true },
-  name: { type: String, required: true },
-  description: { type: String, default: '' },
-  category: { type: String, default: '' },
-  address: { type: String, default: '' },
-  phone: { type: String, default: '' },
-  email: { type: String, default: '' },
-  website: { type: String, default: '' },
-  rating: { type: Number, default: 0 },
-  reviews: { type: Number, default: 0 },
-  latitude: { type: Number, default: 0 },
-  longitude: { type: Number, default: 0 },
-  hours: { type: Object, default: {} },
-  tags: [{ type: String }],
-  featured: { type: Boolean, default: false },
-  image: { type: String, default: '' }
+// Define an adapter function to convert Supabase business data to our application model
+export const fromSupabase = (data: Database['public']['Tables']['businesses']['Row']): IBusiness => {
+  return {
+    id: data.id,
+    name: data.name || '',
+    description: data.description || '',
+    category: data.category || '',
+    address: data.address || '',
+    phone: data.phone || '',
+    email: data.email || '',
+    website: data.website || '',
+    rating: data.rating || 0,
+    reviews: data.reviews || 0,
+    latitude: data.latitude || 0,
+    longitude: data.longitude || 0,
+    hours: typeof data.hours === 'string' ? JSON.parse(data.hours) : (data.hours || {}),
+    tags: data.tags || [],
+    featured: data.featured || false,
+    image: data.image || ''
+  };
 };
-
-const BusinessSchema = mongoose.Schema(schemaDefinition);
-
-// Create indexes for frequently queried fields
-BusinessSchema.index({ category: 1 });
-BusinessSchema.index({ featured: 1 });
-BusinessSchema.index({ name: 1 });
-
-export const Business = mongoose.model('Business', BusinessSchema);

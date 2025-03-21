@@ -1,128 +1,98 @@
-import { User, UserRole } from "@/types/auth";
-import { connectToMongoDB } from '@/config/mongodb';
-import { createOrUpdateUser, fetchUserByUid, getAllUsers as getAPIAllUsers } from '@/api/services/userAPI';
-import { formatUser, getLocalUsers } from './utils/userUtils';
 
-const mapDatabaseUserToUser = (dbUser: any) => {
-  return {
-    uid: dbUser.id,
-    email: dbUser.email,
-    name: dbUser.name,
-    role: dbUser.role,
-    isAdmin: dbUser.is_admin,
-    photoURL: dbUser.photo_url,
-    employeeCode: dbUser.employee_code,
-    createdAt: dbUser.created_at || new Date().toISOString(),
-    lastLogin: dbUser.last_login || dbUser.created_at,
-    
-    // Shared fields
-    phone: dbUser.phone,
-    instagramHandle: dbUser.instagram_handle,
-    facebookHandle: dbUser.facebook_handle,
-    verified: dbUser.verified,
-    city: dbUser.city,
-    country: dbUser.country,
-    
-    // Influencer fields
-    niche: dbUser.niche,
-    followersCount: dbUser.followers_count,
-    bio: dbUser.bio,
-    
-    // Business fields
-    businessName: dbUser.business_name,
-    ownerName: dbUser.owner_name,
-    businessCategory: dbUser.business_category,
-    website: dbUser.website,
-    address: dbUser.address,
-    gstNumber: dbUser.gst_number
-  };
-};
+import { supabase } from '@/integrations/supabase/client';
+import { User } from '@/types/auth';
 
-export const getUserById = async (userId: string): Promise<User | null> => {
+// Get user by ID
+export const getUserById = async (id: string): Promise<User | null> => {
   try {
-    // First try to get user from MongoDB through API
-    const mongoUser = await fetchUserByUid(userId);
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
     
-    if (mongoUser) {
-      return mapDatabaseUserToUser(mongoUser);
+    if (error) {
+      console.error('Error fetching user by ID:', error);
+      return null;
     }
     
-    // Fall back to localStorage
-    console.log(`User ${userId} not found in MongoDB, checking localStorage`);
-    const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
-    const user = allUsers.find((u: any) => u.id === userId || u.uid === userId);
+    if (!data) return null;
     
-    if (user) {
-      // Make sure returned user conforms to User interface
-      return mapDatabaseUserToUser(user);
-    }
-    
-    return null;
+    // Map from Supabase user to our User type
+    return {
+      uid: data.id,
+      email: data.email || '',
+      displayName: data.name || '', // Add displayName property
+      name: data.name || '',
+      role: data.role || 'user',
+      isAdmin: data.is_admin || false,
+      photoURL: data.photo_url || null,
+      employeeCode: data.employee_code || null,
+      createdAt: data.created_at ? new Date(data.created_at).toISOString() : new Date().toISOString(),
+      lastLogin: data.last_login ? new Date(data.last_login).toISOString() : new Date().toISOString(),
+      phone: data.phone || null,
+      instagramHandle: data.instagram_handle || null,
+      facebookHandle: data.facebook_handle || null,
+      verified: data.verified || false,
+      city: data.city || null,
+      country: data.country || null,
+      niche: data.niche || null,
+      followersCount: data.followers_count || null,
+      bio: data.bio || null,
+      businessName: data.business_name || null,
+      ownerName: data.owner_name || null,
+      businessCategory: data.business_category || null,
+      website: data.website || null,
+      gstNumber: data.gst_number || null
+    };
   } catch (error) {
-    console.error("Error getting user by ID:", error);
-    
-    // Last resort fallback to localStorage
-    const allUsers = JSON.parse(localStorage.getItem('all_users_data') || '[]');
-    const user = allUsers.find((u: any) => u.id === userId || u.uid === userId);
-    
-    if (user) {
-      return mapDatabaseUserToUser(user);
-    }
-    
+    console.error('Error in getUserById:', error);
     return null;
   }
 };
 
-// Updated: Direct access to localStorage data to ensure users are loaded
+// Get all users
 export const getAllUsers = async (): Promise<User[]> => {
   try {
-    console.log("Fetching ALL users from MongoDB collection");
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
     
-    // First ensure MongoDB is connected with a clear error message
-    console.log("Checking MongoDB connection...");
-    const connected = await connectToMongoDB();
-    
-    if (!connected) {
-      console.error("MongoDB connection failed - could not establish connection");
-      // Instead of throwing an error, let's fall back to localStorage
-      console.log("Falling back to localStorage for user data");
-      return getLocalUsers();
+    if (error) {
+      console.error('Error fetching all users:', error);
+      return [];
     }
     
-    console.log("MongoDB connection verified");
-    
-    // Try to get users from the API first
-    try {
-      const apiUsers = await getAPIAllUsers();
-      
-      if (Array.isArray(apiUsers) && apiUsers.length > 0) {
-        console.log(`Retrieved ${apiUsers.length} users from MongoDB API`);
-        
-        // Format the users properly and save to localStorage
-        const formattedUsers = apiUsers.map((user: any) => mapDatabaseUserToUser(user));
-        
-        localStorage.setItem('all_users_data', JSON.stringify(formattedUsers));
-        
-        return formattedUsers;
-      } else {
-        console.warn('No users returned from API, checking localStorage');
-      }
-    } catch (apiError) {
-      console.error('Error fetching users from API:', apiError);
-    }
-    
-    // Fall back to direct localStorage access
-    return getLocalUsers();
+    // Map all users from Supabase to our User type
+    return data.map(user => ({
+      uid: user.id,
+      email: user.email || '',
+      displayName: user.name || '', // Add displayName property
+      name: user.name || '',
+      role: user.role || 'user',
+      isAdmin: user.is_admin || false,
+      photoURL: user.photo_url || null,
+      employeeCode: user.employee_code || null,
+      createdAt: user.created_at ? new Date(user.created_at).toISOString() : new Date().toISOString(),
+      lastLogin: user.last_login ? new Date(user.last_login).toISOString() : new Date().toISOString(),
+      phone: user.phone || null,
+      instagramHandle: user.instagram_handle || null,
+      facebookHandle: user.facebook_handle || null,
+      verified: user.verified || false,
+      city: user.city || null,
+      country: user.country || null,
+      niche: user.niche || null,
+      followersCount: user.followers_count || null,
+      bio: user.bio || null,
+      businessName: user.business_name || null,
+      ownerName: user.owner_name || null,
+      businessCategory: user.business_category || null,
+      website: user.website || null,
+      gstNumber: user.gst_number || null
+    }));
   } catch (error) {
-    console.error("Error getting all users from MongoDB:", error);
-    
-    if (error instanceof Error) {
-      console.error(`Error name: ${error.name}`);
-      console.error(`Error message: ${error.message}`);
-      console.error(`Error stack: ${error.stack}`);
-    }
-    
-    // Last resort: return from localStorage
-    return getLocalUsers();
+    console.error('Error in getAllUsers:', error);
+    return [];
   }
 };

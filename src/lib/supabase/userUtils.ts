@@ -1,5 +1,4 @@
 
-// This file is a compatibility layer redirecting to Supabase
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types/auth';
 
