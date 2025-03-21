@@ -1,3 +1,4 @@
+
 import { createContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContextType, User, UserRole } from '@/types/auth';
@@ -257,11 +258,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error('User not authenticated');
       }
       
+      // Create a new object with only the fields that are valid for the Supabase users table
+      const supabaseData: any = {
+        ...data,
+        // Don't include updated_at here, we'll add it separately
+      };
+      
+      // Execute the update with updated_at as a separate field since it's not in the User type
       const { error } = await supabase
         .from('users')
         .update({
-          ...data,
-          updated_at: new Date().toISOString()
+          ...supabaseData,
+          updated_at: new Date().toISOString() // Add this separately from the User data
         })
         .eq('id', user.uid);
       
