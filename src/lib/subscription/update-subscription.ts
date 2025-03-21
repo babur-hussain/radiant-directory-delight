@@ -106,9 +106,9 @@ export const updateUserSubscription = async (userId: string, subscriptionData: I
       subscriptionWithIds.createdAt = new Date().toISOString();
     }
     
-    // Update or create the subscription in Supabase
+    // Update or create the subscription in Supabase - FIXED: changed from 'subscriptions' to 'user_subscriptions'
     const { error: subError } = await supabase
-      .from('subscriptions')
+      .from('user_subscriptions')
       .upsert(subscriptionWithIds);
       
     if (subError) {
