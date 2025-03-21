@@ -234,9 +234,27 @@ async function handleCreateSubscription(req: Request, user: any) {
     // Generate a receipt ID
     const receiptId = `receipt_${Date.now().toString(36)}`;
     
-    // Generate a valid order ID that matches Razorpay format
+    // Generate a valid order ID that exactly matches Razorpay format requirements
     const orderId = generateValidOrderId();
     console.log("Generated order ID:", orderId);
+    
+    // For subscription data
+    const subscriptionData = isRecurring ? {
+      id: generateValidSubscriptionId(),
+      entity: "subscription",
+      plan_id: `plan_${packageData.id}`,
+      customer_id: userId,
+      status: "created",
+      current_start: Date.now(),
+      current_end: Date.now() + (30 * 24 * 60 * 60 * 1000), // 30 days
+      ended_at: null,
+      quantity: 1,
+      notes: {
+        packageId: packageData.id.toString(),
+        userId: userId,
+        enableAutoPay: enableAutoPay ? "true" : "false"
+      }
+    } : null;
     
     // Create order object with autopay options
     const order = {
@@ -255,10 +273,7 @@ async function handleCreateSubscription(req: Request, user: any) {
         enableAutoPay: enableAutoPay ? "true" : "false", // Flag for enabling autopay
         isRecurring: isRecurring ? "true" : "false"
       },
-      created_at: Date.now(),
-      // Add autopay flags if supported by your account
-      recurring: isRecurring ? "1" : "0", // Enable recurring for autopay
-      auto_capture: "1" // Auto-capture the payment
+      created_at: Date.now()
     };
     
     console.log("Order created successfully:", order);
@@ -267,6 +282,7 @@ async function handleCreateSubscription(req: Request, user: any) {
     return new Response(
       JSON.stringify({ 
         order,
+        subscription: subscriptionData,
         isOneTime,
         isSubscription: !isOneTime,
         enableAutoPay

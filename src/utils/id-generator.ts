@@ -30,48 +30,54 @@ export const generateEmployeeCode = (prefix: string = 'EMP'): string => {
 };
 
 /**
- * Generates a unique order ID for Razorpay that follows their required format
- * Format: order_<14-character alphanumeric ID>
+ * Generates a valid order ID for Razorpay that strictly follows their required format
+ * Format: order_<exactly 14 characters of alphanumeric ID>
  * 
  * @returns A properly formatted order ID for Razorpay
  */
 export const generateOrderId = (): string => {
-  // Generate exactly 14 alphanumeric characters as per Razorpay requirements
+  // Define allowed characters (alphanumeric only - per Razorpay requirements)
   const allowedChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
   
-  // Create a 14-character string using cryptographically secure random values
+  // Generate exactly 14 characters as required by Razorpay
+  let result = '';
   const randomValues = new Uint8Array(14);
+  
+  // Use cryptographically secure random number generator
   window.crypto.getRandomValues(randomValues);
   
+  // Generate 14 characters string using the random values
   for (let i = 0; i < 14; i++) {
     result += allowedChars.charAt(randomValues[i] % allowedChars.length);
   }
   
-  // Return the formatted order ID with the required prefix
+  // Return the formatted ID with the required 'order_' prefix
   return `order_${result}`;
 };
 
 /**
  * Generates a unique subscription ID for Razorpay
- * Format: sub_<14-character alphanumeric ID>
+ * Format: sub_<exactly 14 characters of alphanumeric ID>
  * 
  * @returns A properly formatted subscription ID
  */
 export const generateSubscriptionId = (): string => {
-  // Generate exactly 14 alphanumeric characters as per Razorpay requirements
+  // Define allowed characters (alphanumeric only - per Razorpay requirements)
   const allowedChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
   
-  // Create a 14-character string using cryptographically secure random values
+  // Generate exactly 14 characters as required by Razorpay
+  let result = '';
   const randomValues = new Uint8Array(14);
+  
+  // Use cryptographically secure random number generator
   window.crypto.getRandomValues(randomValues);
   
+  // Generate 14 characters string using the random values
   for (let i = 0; i < 14; i++) {
     result += allowedChars.charAt(randomValues[i] % allowedChars.length);
   }
   
-  // Return the formatted subscription ID with the required prefix
+  // Return the formatted ID with the required 'sub_' prefix
   return `sub_${result}`;
 };
 

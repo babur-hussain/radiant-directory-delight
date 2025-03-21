@@ -49,6 +49,12 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         throw new Error("You must be logged in to make a payment.");
       }
       
+      // Validate package data
+      if (!selectedPackage.id || !selectedPackage.price) {
+        throw new Error("Invalid package data. Please refresh and try again.");
+      }
+      
+      // Create subscription and open Razorpay checkout
       const result = await createSubscription(selectedPackage, enableAutoPay);
       
       console.log('Payment success:', result);
@@ -93,6 +99,13 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     setError(null);
     setReady(false);
     setRetryCount(0);
+    
+    // Reload the Razorpay script
+    // This ensures we get a fresh instance of Razorpay on retry
+    const existingScript = document.querySelector('script[src*="checkout.razorpay.com"]');
+    if (existingScript) {
+      existingScript.remove();
+    }
     
     setTimeout(() => {
       setReady(true);

@@ -27,11 +27,16 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   // Clean options before sending to Razorpay
   cleanRazorpayOptions(safeOptions);
   
+  // Final validation to ensure mandatory params
+  if (!safeOptions.key || !safeOptions.order_id) {
+    throw new Error('Required parameters missing: key and order_id are mandatory for Razorpay checkout');
+  }
+  
   return new (window as any).Razorpay(safeOptions);
 };
 
 /**
- * Clean Razorpay options to prevent errors
+ * Thoroughly clean Razorpay options to prevent errors
  */
 const cleanRazorpayOptions = (options: RazorpayOptions): void => {
   // Remove any undefined, null, or empty string values
@@ -55,7 +60,7 @@ const cleanRazorpayOptions = (options: RazorpayOptions): void => {
     }
   }
   
-  // Ensure notes have only string values
+  // Ensure notes have only string values and remove empty notes
   if (options.notes) {
     Object.keys(options.notes).forEach(key => {
       if (options.notes[key] !== undefined && options.notes[key] !== null) {
@@ -71,17 +76,15 @@ const cleanRazorpayOptions = (options: RazorpayOptions): void => {
     }
   }
   
-  // Check if we have an order_id, and if not, don't send amount and currency
-  if (!options.order_id && (options.amount || options.currency)) {
-    console.warn("No order_id present, removing amount and currency parameters");
-    delete options.amount;
-    delete options.currency;
-  }
-  
-  // Ensure we don't have both subscription_id and order_id
+  // Ensure we don't have both subscription_id and order_id (Razorpay requirement)
   if (options.subscription_id && options.order_id) {
     console.warn("Both subscription_id and order_id present, removing subscription_id");
     delete options.subscription_id;
+  }
+  
+  // Remove recurring flag if not a recurring payment
+  if (options.remember_customer === false) {
+    delete options.recurring;
   }
   
   // Final check to ensure mandatory fields are present
@@ -143,7 +146,7 @@ export const createSubscriptionViaEdgeFunction = async (
         userId: user.id,
         packageData: {
           ...packageData,
-          // Use the appropriate payment type
+          // Ensure the correct payment type is set
           paymentType: packageData.paymentType || 'one-time'
         },
         customerData: cleanedCustomerData,
@@ -164,6 +167,12 @@ export const createSubscriptionViaEdgeFunction = async (
     try {
       const result = await response.json();
       console.log("Received result from edge function:", result);
+      
+      // Validate the response contains required fields
+      if (!result.order || !result.order.id) {
+        throw new Error('Invalid response: missing order information');
+      }
+      
       return result;
     } catch (jsonError) {
       console.error('Error parsing JSON:', jsonError);
@@ -204,7 +213,7 @@ export const buildRazorpayOptions = (
     description: `Payment for ${packageData.title}`,
     image: 'https://your-company-logo.png',
     notes: {
-      packageId: packageData.id,
+      packageId: packageData.id.toString(),
       userId: user.id,
       enableAutoPay: enableAutoPay ? "true" : "false" // Flag for autopay
     },
@@ -231,7 +240,7 @@ export const buildRazorpayOptions = (
     }
   };
   
-  // Add autopay flags if applicable
+  // Add autopay flags if applicable (only for recurring payments)
   if (!isOneTime && enableAutoPay) {
     options.recurring = true;
     options.remember_customer = true;
@@ -242,7 +251,7 @@ export const buildRazorpayOptions = (
     options.prefill = cleanedPrefill;
   }
   
-  // Always use order-based payment
+  // Always use order-based payment (Razorpay's preferred approach)
   if (result.order && result.order.id) {
     console.log("Setting up order-based payment with order ID:", result.order.id);
     options.order_id = result.order.id;
@@ -253,10 +262,10 @@ export const buildRazorpayOptions = (
     }
     
     if (result.order.currency) {
-      options.currency = result.order.currency;
+      options.currency = result.order.currency || 'INR';
     }
     
-    // Do NOT set subscription_id if order_id is set
+    // Do NOT set subscription_id if order_id is set (Razorpay requirement)
     delete options.subscription_id;
   } else {
     console.error("Missing required order_id in the response");

@@ -51,19 +51,25 @@ export const useRazorpay = () => {
         phone: user.phone || ''
       };
       
+      // Always validate critical data before sending
+      if (!packageData.id || !packageData.price) {
+        throw new Error('Invalid package data: missing required fields');
+      }
+      
       // Create subscription via edge function
       const result = await createSubscriptionViaEdgeFunction(
         user,
         packageData,
         customerData,
         !isRecurringPayment, // Use one-time API if not recurring
-        enableAutoPay // Pass the autopay preference
+        enableAutoPay       // Pass the autopay preference
       );
       
       console.log("Received result from backend:", result);
       
-      if (!result || !result.order) {
-        throw new Error('Invalid response from server');
+      // Validate response from backend
+      if (!result || !result.order || !result.order.id) {
+        throw new Error('Invalid response from server: missing order information');
       }
       
       // Open Razorpay checkout for payment
@@ -76,7 +82,7 @@ export const useRazorpay = () => {
             customerData,
             result,
             !isRecurringPayment, // isOneTime
-            enableAutoPay, // Add autopay preference
+            enableAutoPay,      // Add autopay preference
             (response) => {
               console.log("Payment success callback triggered with:", response);
               resolve({
@@ -94,6 +100,11 @@ export const useRazorpay = () => {
           );
           
           console.log("Initializing Razorpay with options:", JSON.stringify(options, null, 2));
+          
+          // Ensure mandatory fields are present
+          if (!options.key || !options.order_id) {
+            throw new Error('Missing required parameters for Razorpay: key and order_id');
+          }
           
           // Create and open Razorpay checkout
           try {
