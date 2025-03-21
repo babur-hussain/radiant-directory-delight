@@ -128,7 +128,7 @@ async function handleCreatePlan(req: Request, user: any) {
     // In a real implementation, you would make an API call to Razorpay here
     // For now, we're returning a mock plan
     const plan = {
-      id: `plan_${packageData.id}`,
+      id: `plan_${packageData.id}${Math.floor(Math.random() * 100000)}`,
       name: packageData.title,
       amount: packageData.price * 100, // Convert to paise
       interval: packageData.billingCycle || "yearly",
@@ -191,8 +191,10 @@ async function handleCreateSubscription(req: Request, user: any) {
     // For now, we're returning a mock subscription with the data needed
     // by the frontend to proceed with the payment
     
-    // Generate a unique ID for the subscription
-    const subscriptionId = `sub_${Date.now()}`;
+    // Generate a unique ID for the subscription with a format compatible with Razorpay
+    // Using a proper format like "sub_xxxxxx" where xxxxxx is an alphanumeric string
+    const randomId = Math.random().toString(36).substring(2, 10);
+    const subscriptionId = `sub_${randomId}`;
     
     const subscription = {
       id: subscriptionId,

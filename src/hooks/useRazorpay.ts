@@ -191,6 +191,8 @@ export const useRazorpay = () => {
         throw new Error('Invalid subscription response');
       }
       
+      console.log("Received subscription from backend:", subscription);
+      
       // Open Razorpay checkout for subscription
       return new Promise((resolve, reject) => {
         const options: RazorpayOptions = {
@@ -211,7 +213,7 @@ export const useRazorpay = () => {
           theme: {
             color: '#3399cc'
           },
-          recurring: true, // Add this to indicate it's a recurring payment
+          // Do not use recurring: true here as it can cause conflicts with subscription_id
           handler: function(response: any) {
             resolve({
               ...response,
