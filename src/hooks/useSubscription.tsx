@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useAuth } from './useAuth';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import { 
   createSubscription as createSubscriptionAPI, 
@@ -11,18 +11,20 @@ import {
   cancelSubscription as cancelSubscriptionAPI 
 } from '@/api/services/subscriptionAPI';
 import { nanoid } from 'nanoid';
+import { ISubscription } from '@/models/Subscription';
+import { ISubscriptionPackage } from '@/hooks/useSubscriptionPackages';
 
 export const useSubscription = () => {
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Get the user's active subscription
   const {
     data: subscription,
-    isLoading: isSubscriptionLoading,
-    isError: isSubscriptionError,
-    error: subscriptionError,
+    isLoading,
+    isError,
+    error,
+    refetch: fetchUserSubscription
   } = useQuery({
     queryKey: ['user-subscription', user?.uid],
     queryFn: () => getActiveUserSubscription(user?.uid || ''),
@@ -45,8 +47,7 @@ export const useSubscription = () => {
   const createSubscriptionMutation = useMutation({
     mutationFn: createSubscriptionAPI,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-subscription', user?.uid] });
-      queryClient.invalidateQueries({ queryKey: ['user-subscriptions', user?.uid] });
+      fetchUserSubscription();
     },
   });
 
@@ -54,8 +55,7 @@ export const useSubscription = () => {
   const updateSubscriptionMutation = useMutation({
     mutationFn: (data: any) => updateSubscriptionAPI(data.id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-subscription', user?.uid] });
-      queryClient.invalidateQueries({ queryKey: ['user-subscriptions', user?.uid] });
+      fetchUserSubscription();
     },
   });
 
@@ -82,19 +82,19 @@ export const useSubscription = () => {
 
       const newSubscription = {
         id: nanoid(),
-        user_id: user.uid,
-        package_id: packageId,
-        package_name: paymentDetails?.packageName || 'Subscription Package',
-        status: 'active',
-        start_date: today.toISOString(),
-        end_date: endDate.toISOString(),
+        userId: user.uid,
+        packageId: packageId,
+        packageName: paymentDetails?.packageName || 'Subscription Package',
+        status: 'active' as const,
+        startDate: today.toISOString(),
+        endDate: endDate.toISOString(),
         amount: isOneTime ? (paymentDetails?.amount || 0) : (paymentDetails?.recurringAmount || 0),
-        payment_type: paymentDetails?.paymentType || 'recurring',
-        payment_method: 'razorpay',
-        transaction_id: paymentDetails?.paymentId || '',
-        billing_cycle: paymentDetails?.billingCycle || 'yearly',
-        signup_fee: isOneTime ? 0 : (paymentDetails?.amount || 0),
-        actual_start_date: today.toISOString(),
+        paymentType: (paymentDetails?.paymentType || 'recurring') as 'recurring' | 'one-time',
+        paymentMethod: 'razorpay',
+        transactionId: paymentDetails?.paymentId || '',
+        billingCycle: (paymentDetails?.billingCycle || 'yearly') as 'monthly' | 'yearly',
+        signupFee: isOneTime ? 0 : (paymentDetails?.amount || 0),
+        actualStartDate: today.toISOString(),
         ...paymentDetails
       };
 
@@ -109,6 +109,48 @@ export const useSubscription = () => {
     }
   };
 
+  // For compatibility with existing components
+  const getUserSubscription = async () => {
+    const data = await fetchUserSubscription();
+    return data.data;
+  };
+
+  // Get dashboard features for a user - compatibility method
+  const getUserDashboardFeatures = async (userId: string) => {
+    if (!subscription) {
+      return [];
+    }
+    // Return default dashboard features or fetch from package details
+    return subscription.dashboardFeatures || [];
+  };
+
+  // Purchase subscription (alternative to initiateSubscription)
+  const purchaseSubscription = async (packageData: ISubscriptionPackage) => {
+    return initiateSubscription(packageData.id, {
+      packageName: packageData.title,
+      amount: packageData.price,
+      paymentType: packageData.paymentType,
+      billingCycle: packageData.billingCycle
+    });
+  };
+
+  // Renew an existing subscription
+  const renewSubscription = async (months: number = 12) => {
+    if (!subscription) {
+      throw new Error("No active subscription to renew");
+    }
+    
+    const endDate = new Date(subscription.endDate);
+    endDate.setMonth(endDate.getMonth() + months);
+    
+    const updated = await updateSubscriptionMutation.mutateAsync({
+      id: subscription.id,
+      endDate: endDate.toISOString()
+    });
+    
+    return updated;
+  };
+
   // Cancel an active subscription
   const cancelSubscription = async (reason?: string) => {
     setIsProcessing(true);
@@ -121,7 +163,14 @@ export const useSubscription = () => {
         throw new Error("No active subscription found");
       }
 
-      const result = await cancelSubscriptionAPI(subscription.id, reason);
+      const cancellationData = {
+        id: subscription.id,
+        status: 'cancelled' as const,
+        cancelledAt: new Date().toISOString(),
+        cancelReason: reason || ''
+      };
+
+      const result = await cancelSubscriptionAPI(cancellationData.id, reason);
       
       toast({
         title: 'Subscription Cancelled',
@@ -147,13 +196,20 @@ export const useSubscription = () => {
   return {
     subscription,
     subscriptions,
-    isSubscriptionLoading,
+    loading: isLoading,
+    error: error as Error,
+    fetchUserSubscription,
+    isSubscriptionLoading: isLoading,
     isSubscriptionsLoading,
-    isSubscriptionError,
+    isSubscriptionError: isError,
     isSubscriptionsError,
-    subscriptionError,
+    subscriptionError: error,
     subscriptionsError,
     initiateSubscription,
+    getUserSubscription,
+    getUserDashboardFeatures,
+    purchaseSubscription,
+    renewSubscription,
     cancelSubscription,
     isProcessing,
     isCreating: createSubscriptionMutation.isPending,

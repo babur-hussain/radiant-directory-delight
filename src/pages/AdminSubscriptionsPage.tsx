@@ -12,6 +12,9 @@ import CentralizedSubscriptionManager from '@/components/admin/subscription/Cent
 import { ISubscriptionPackage, useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import { setupSupabase } from '@/utils/setupSupabase';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { ISubscription } from '@/models/Subscription';
 
 const AdminSubscriptionsPage = () => {
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error' | 'offline'>('connecting');
@@ -21,6 +24,20 @@ const AdminSubscriptionsPage = () => {
   const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
   const { packages, createOrUpdate, remove, isCreating, isDeleting, refetch } = useSubscriptionPackages();
   const { toast } = useToast();
+
+  // Fetch all subscriptions
+  const { data: subscriptions = [], isLoading: isLoadingSubscriptions } = useQuery({
+    queryKey: ['admin-subscriptions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      return data as ISubscription[];
+    }
+  });
 
   // Initial empty package template
   const initialPackage: ISubscriptionPackage = {
@@ -40,9 +57,9 @@ const AdminSubscriptionsPage = () => {
     const checkConnection = async () => {
       try {
         setConnectionStatus('connecting');
-        const initialized = await setupSupabase();
-        setDbInitialized(initialized);
-        setConnectionStatus(initialized ? 'connected' : 'error');
+        const result = await setupSupabase();
+        setDbInitialized(result.success);
+        setConnectionStatus(result.success ? 'connected' : 'error');
       } catch (error) {
         console.error('Error connecting to database:', error);
         setConnectionStatus('error');
@@ -56,11 +73,11 @@ const AdminSubscriptionsPage = () => {
   const handleRetryConnection = async () => {
     try {
       setConnectionStatus('connecting');
-      const initialized = await setupSupabase();
-      setDbInitialized(initialized);
-      setConnectionStatus(initialized ? 'connected' : 'error');
+      const result = await setupSupabase();
+      setDbInitialized(result.success);
+      setConnectionStatus(result.success ? 'connected' : 'error');
       
-      if (initialized) {
+      if (result.success) {
         await refetch();
         toast({
           title: "Connection Restored",
@@ -147,6 +164,23 @@ const AdminSubscriptionsPage = () => {
     setSelectedPackage(null);
   };
 
+  const handleViewSubscriptionDetails = (subscription: ISubscription) => {
+    // Handle viewing subscription details
+    toast({
+      title: "View Subscription",
+      description: `Viewing details for subscription ${subscription.id}`,
+    });
+  };
+
+  const handleCancelSubscription = (subscription: ISubscription) => {
+    // Handle cancelling subscription
+    toast({
+      title: "Cancel Subscription",
+      description: `Cancelling subscription ${subscription.id}`,
+      variant: "destructive"
+    });
+  };
+
   if (connectionStatus === 'connecting') {
     return (
       <AdminLayout>
@@ -214,7 +248,12 @@ const AdminSubscriptionsPage = () => {
               <CardDescription>Manage user subscriptions and assignments</CardDescription>
             </CardHeader>
             <CardContent>
-              <UserSubscriptionsTable />
+              <UserSubscriptionsTable 
+                subscriptions={subscriptions} 
+                isLoading={isLoadingSubscriptions}
+                onViewDetails={handleViewSubscriptionDetails}
+                onCancel={handleCancelSubscription}
+              />
             </CardContent>
           </Card>
         </TabsContent>

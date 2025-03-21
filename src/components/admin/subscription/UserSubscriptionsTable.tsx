@@ -36,11 +36,11 @@ const UserSubscriptionsTable: React.FC<UserSubscriptionsTableProps> = ({
   const getStatusBadgeVariant = (status?: string) => {
     switch (status?.toLowerCase()) {
       case 'active':
-        return 'success';
+        return 'default';
       case 'cancelled':
         return 'destructive';
       case 'expired':
-        return 'warning';
+        return 'secondary';
       case 'pending':
         return 'outline';
       default:

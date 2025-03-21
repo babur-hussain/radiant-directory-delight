@@ -6,7 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Users, Package, HelpCircle, AlertCircle, RefreshCw, BarChart3 } from 'lucide-react';
-import StatsOverviewCard from '@/components/admin/dashboard/StatsOverviewCard';
+import { SimpleStatsCard } from '@/components/admin/dashboard/StatsOverviewCard';
 import RecentUsersCard from '@/components/admin/dashboard/RecentUsersCard';
 import RecentSubscriptionsCard from '@/components/admin/dashboard/RecentSubscriptionsCard';
 import SeedDataPanel from '@/components/admin/dashboard/SeedDataPanel';
@@ -27,9 +27,9 @@ const AdminDashboard = () => {
     const checkConnection = async () => {
       try {
         setConnectionStatus('connecting');
-        const initialized = await setupSupabase();
-        setDbInitialized(initialized);
-        setConnectionStatus(initialized ? 'connected' : 'error');
+        const result = await setupSupabase();
+        setDbInitialized(result.success);
+        setConnectionStatus(result.success ? 'connected' : 'error');
       } catch (error) {
         console.error('Error connecting to database:', error);
         setConnectionStatus('error');
@@ -43,11 +43,11 @@ const AdminDashboard = () => {
   const handleRetryConnection = async () => {
     try {
       setConnectionStatus('connecting');
-      const initialized = await setupSupabase();
-      setDbInitialized(initialized);
-      setConnectionStatus(initialized ? 'connected' : 'error');
+      const result = await setupSupabase();
+      setDbInitialized(result.success);
+      setConnectionStatus(result.success ? 'connected' : 'error');
       
-      if (initialized) {
+      if (result.success) {
         toast({
           title: "Connection Restored",
           description: "Successfully connected to the database.",
@@ -129,19 +129,19 @@ const AdminDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <StatsOverviewCard 
+        <SimpleStatsCard 
           title="Total Users" 
           value="Loading..." 
           description="Active accounts" 
           icon={<Users className="h-5 w-5" />} 
         />
-        <StatsOverviewCard 
+        <SimpleStatsCard 
           title="Subscriptions" 
           value="Loading..." 
           description="Active subscriptions" 
           icon={<Package className="h-5 w-5" />} 
         />
-        <StatsOverviewCard 
+        <SimpleStatsCard 
           title="Revenue" 
           value="₹0" 
           description="Monthly recurring" 
@@ -171,9 +171,9 @@ const AdminDashboard = () => {
         
         <TabsContent value="seed">
           <SeedDataPanel
-            onPermissionError={handlePermissionError}
             dbInitialized={dbInitialized}
             connectionStatus={connectionStatus}
+            onPermissionError={handlePermissionError}
             onRetryConnection={handleRetryConnection}
           />
         </TabsContent>

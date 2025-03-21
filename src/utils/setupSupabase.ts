@@ -19,6 +19,10 @@ export interface SetupSupabaseResult {
   error?: string;
 }
 
+// List of valid collections
+const VALID_COLLECTIONS = ['users', 'businesses', 'subscription_packages', 'user_subscriptions', 'addresses'] as const;
+type ValidCollection = typeof VALID_COLLECTIONS[number];
+
 export const setupSupabase = async (
   progressCallback?: (progress: number, message: string) => void,
   options: SetupSupabaseOptions = {}
@@ -41,13 +45,11 @@ export const setupSupabase = async (
       throw new Error(`Failed to connect to Supabase: ${connectionError.message}`);
     }
     
-    const collections = ['users', 'businesses', 'subscription_packages', 'user_subscriptions', 'addresses'];
-    
     // Check if tables exist
     progressCallback?.(20, "Checking Supabase tables...");
     let existingCollections: string[] = [];
     
-    for (const collection of collections) {
+    for (const collection of VALID_COLLECTIONS) {
       try {
         const { error } = await supabase
           .from(collection)

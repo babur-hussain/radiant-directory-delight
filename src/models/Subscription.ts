@@ -1,13 +1,14 @@
 
 export type PaymentType = 'recurring' | 'one-time';
 export type BillingCycle = 'monthly' | 'yearly';
+export type SubscriptionStatus = 'active' | 'paused' | 'pending' | 'cancelled' | 'expired';
 
 export interface ISubscription {
   id: string;
   userId: string;
   packageId: string;
   packageName: string;
-  status: string;
+  status: SubscriptionStatus;
   startDate: string;
   endDate: string;
   amount: number;
