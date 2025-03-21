@@ -15,7 +15,7 @@ export interface ISubscriptionPackage {
   popular?: boolean;
   type?: "Business" | "Influencer";
   termsAndConditions?: string;
-  paymentType: PaymentType; // Changed from optional to required
+  paymentType: PaymentType; 
   billingCycle?: BillingCycle;
   advancePaymentMonths?: number;
   dashboardSections?: string[];
