@@ -77,18 +77,43 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onOpenChange }) => {
     }
   };
 
+  // Get title based on current state
+  const getDialogTitle = () => {
+    if (authTab === "login") {
+      return "Login to Your Account";
+    } else if (!registerType) {
+      return "Choose Registration Type";
+    } else {
+      return `Register as ${registerType}`;
+    }
+  };
+
+  // Get description based on current state
+  const getDialogDescription = () => {
+    if (authTab === "login") {
+      return "Enter your credentials to access your account";
+    } else if (!registerType) {
+      return "Select the type of account you want to create";
+    } else {
+      const descriptions = {
+        User: "Create a personal account to explore our platform",
+        Business: "Register your business to connect with influencers",
+        Influencer: "Join as an influencer to collaborate with businesses",
+        Staff: "Join as a staff member to help manage the platform"
+      };
+      return descriptions[registerType] || "Create a new account to get started";
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 sticky top-0 bg-background z-10">
           <DialogTitle className="text-xl font-bold text-center">
-            {authTab === "login" ? "Login to Your Account" : 
-             registerType ? `Register as ${registerType}` : "Choose Registration Type"}
+            {getDialogTitle()}
           </DialogTitle>
           <DialogDescription className="text-center text-sm text-muted-foreground">
-            {authTab === "login" 
-              ? "Enter your credentials to access your account" 
-              : "Create a new account to get started"}
+            {getDialogDescription()}
           </DialogDescription>
         </DialogHeader>
 

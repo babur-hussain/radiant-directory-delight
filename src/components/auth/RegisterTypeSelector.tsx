@@ -3,11 +3,12 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserRole } from "@/types/auth";
-import { Building2, User, Users } from "lucide-react";
+import { Building2, User, Users, UserCheck, CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface RegisterTypeSelectorProps {
   onSelectType: (type: UserRole) => void;
-  selectedType: UserRole; // Added missing prop
+  selectedType: UserRole; 
 }
 
 const RegisterTypeSelector: React.FC<RegisterTypeSelectorProps> = ({ 
@@ -20,55 +21,83 @@ const RegisterTypeSelector: React.FC<RegisterTypeSelectorProps> = ({
       id: "User",
       title: "Regular User",
       description: "Create an account to explore and interact with the platform.",
-      icon: <User className="h-8 w-8 mb-2 text-blue-500" />,
+      icon: <User className="h-10 w-10 mb-3 text-blue-500" />,
+      color: "bg-blue-500/10 border-blue-200 hover:border-blue-500",
+      activeColor: "border-blue-500 bg-blue-500/10",
+      iconBg: "bg-blue-100",
+      buttonColor: "bg-blue-500 hover:bg-blue-600"
     },
     {
       id: "Business",
       title: "Business Owner",
       description: "Register your business to connect with influencers and customers.",
-      icon: <Building2 className="h-8 w-8 mb-2 text-emerald-500" />,
+      icon: <Building2 className="h-10 w-10 mb-3 text-emerald-500" />,
+      color: "bg-emerald-500/10 border-emerald-200 hover:border-emerald-500",
+      activeColor: "border-emerald-500 bg-emerald-500/10",
+      iconBg: "bg-emerald-100",
+      buttonColor: "bg-emerald-500 hover:bg-emerald-600"
     },
     {
       id: "Influencer",
       title: "Influencer",
       description: "Join as an influencer to showcase your reach and partner with businesses.",
-      icon: <Users className="h-8 w-8 mb-2 text-purple-500" />,
+      icon: <Users className="h-10 w-10 mb-3 text-purple-500" />,
+      color: "bg-purple-500/10 border-purple-200 hover:border-purple-500",
+      activeColor: "border-purple-500 bg-purple-500/10",
+      iconBg: "bg-purple-100",
+      buttonColor: "bg-purple-500 hover:bg-purple-600"
+    },
+    {
+      id: "Staff",
+      title: "Staff Member",
+      description: "Join as a staff member to manage businesses and platform operations.",
+      icon: <UserCheck className="h-10 w-10 mb-3 text-amber-500" />,
+      color: "bg-amber-500/10 border-amber-200 hover:border-amber-500",
+      activeColor: "border-amber-500 bg-amber-500/10",
+      iconBg: "bg-amber-100",
+      buttonColor: "bg-amber-500 hover:bg-amber-600"
     },
   ];
 
   return (
-    <div className="space-y-4 py-2">
-      <div className="text-center mb-6">
-        <h3 className="text-lg font-medium">Choose Your Account Type</h3>
-        <p className="text-sm text-muted-foreground">
-          Select the type of account you want to create
+    <div className="space-y-6 py-4">
+      <div className="text-center mb-8">
+        <h3 className="text-2xl font-bold">Choose Your Account Type</h3>
+        <p className="text-muted-foreground mt-2">
+          Select the type of account that best describes you
         </p>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-6 md:grid-cols-2">
         {registrationTypes.map((type) => (
           <Card 
             key={type.id} 
-            className={`cursor-pointer transition-all hover:border-primary ${
-              selectedType === type.id ? 'border-2 border-primary bg-primary/5' : ''
-            }`}
+            className={cn(
+              "cursor-pointer transition-all border-2",
+              selectedType === type.id ? type.activeColor : type.color
+            )}
             onClick={() => onSelectType(type.id as UserRole)}
           >
-            <CardHeader className="pb-2">
-              <div className="flex justify-center">{type.icon}</div>
-              <CardTitle className="text-center">{type.title}</CardTitle>
+            <CardHeader className="pb-3">
+              <div className="flex justify-center">
+                <div className={cn("p-3 rounded-full", type.iconBg)}>
+                  {type.icon}
+                </div>
+              </div>
+              <CardTitle className="text-center mt-2">{type.title}</CardTitle>
             </CardHeader>
             <CardContent>
-              <CardDescription className="text-center">
+              <CardDescription className="text-center text-sm">
                 {type.description}
               </CardDescription>
             </CardContent>
-            <CardFooter className="pt-0 justify-center">
+            <CardFooter className="pt-0 justify-center pb-4">
               <Button 
                 variant={selectedType === type.id ? "default" : "outline"}
-                className="w-full"
+                className={cn("w-full", selectedType === type.id && type.buttonColor)}
                 onClick={() => onSelectType(type.id as UserRole)}
               >
+                {selectedType === type.id && <CheckCircle2 className="mr-2 h-4 w-4" />}
                 {selectedType === type.id ? "Selected" : "Select"}
               </Button>
             </CardFooter>

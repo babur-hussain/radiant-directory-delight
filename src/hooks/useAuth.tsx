@@ -1,402 +1,352 @@
 
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Session } from '@supabase/supabase-js';
-import { AuthContextType, User as AppUser, UserRole } from '@/types/auth';
+import { User, UserRole, AuthContextType } from '@/types/auth';
+import { createOrUpdateUser } from '@/api/services/userAPI';
+import { mapUserData } from '@/features/auth/authService';
+import { toast } from './use-toast';
 
-interface AuthState {
-  user: AppUser | null;
-  session: Session | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  role: UserRole;
-  uid: string | null;
-  id: string | null;
-  isAdmin: boolean;
-}
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  currentUser: null,
-  isAuthenticated: false,
-  loading: true,
-  initialized: false,
-  userRole: null,
-  isAdmin: false,
-  
-  login: async () => {},
-  loginWithGoogle: async () => {},
-  logout: async () => {},
-  signup: async () => {}
-});
-
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<AppUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
-  const [userRole, setUserRole] = useState<UserRole>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-
+  const navigate = useNavigate();
+  
+  // Computed state
+  const isAuthenticated = useMemo(() => !!user, [user]);
+  
+  // Initialize auth state
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // First set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (session?.user) {
+        setLoading(true);
+        
+        if (session && session.user) {
           try {
-            // Fetch user data to get role
-            const { data: userData } = await supabase
+            // Fetch user profile from users table
+            const { data: userData, error: userError } = await supabase
               .from('users')
               .select('*')
               .eq('id', session.user.id)
               .single();
             
-            if (userData) {
-              const appUser: AppUser = {
-                uid: session.user.id,
-                id: session.user.id,
-                email: session.user.email,
-                displayName: userData.name || null,
-                name: userData.name || null,
-                photoURL: userData.photo_url || null,
-                role: (userData.role as UserRole) || 'User',
-                isAdmin: userData.is_admin || false,
-                employeeCode: userData.employee_code || null,
-                createdAt: userData.created_at || new Date().toISOString(),
-                phone: userData.phone || null,
-                instagramHandle: userData.instagram_handle || null,
-                facebookHandle: userData.facebook_handle || null,
-                verified: userData.verified || false,
-                city: userData.city || null,
-                country: userData.country || null,
-                fullName: userData.name || null,
-                niche: userData.niche || null,
-                followersCount: userData.followers_count || null,
-                bio: userData.bio || null,
-                businessName: userData.business_name || null,
-                ownerName: userData.owner_name || null,
-                businessCategory: userData.business_category || null,
-                website: userData.website || null,
-                gstNumber: userData.gst_number || null,
-              };
-              
-              setUser(appUser);
-              setUserRole(appUser.role);
-              setIsAdmin(appUser.isAdmin);
-            } else {
-              // Create minimal user if no profile data exists
-              setUser({
-                uid: session.user.id,
-                id: session.user.id,
-                email: session.user.email,
-                displayName: null,
-                name: null,
-                photoURL: null,
-                role: 'User',
-                isAdmin: false
-              });
-              setUserRole('User');
-              setIsAdmin(false);
+            if (userError && userError.code !== 'PGRST116') {
+              console.error('Error fetching user data:', userError);
             }
+            
+            // Map the user data to our User model
+            const mappedUser: User = userData 
+              ? mapUserData({ ...userData, uid: session.user.id })
+              : {
+                  uid: session.user.id,
+                  id: session.user.id,
+                  email: session.user.email || '',
+                  displayName: session.user.user_metadata?.name || '',
+                  role: session.user.user_metadata?.role || 'User',
+                };
+            
+            setUser(mappedUser);
           } catch (error) {
-            console.error('Error fetching user role:', error);
-            // Fallback user with minimal data
-            setUser({
-              uid: session.user.id,
-              id: session.user.id,
-              email: session.user.email,
-              displayName: null,
-              name: null,
-              photoURL: null,
-              role: 'User',
-              isAdmin: false
-            });
-            setUserRole('User');
-            setIsAdmin(false);
+            console.error('Error in auth state change handler:', error);
+            setUser(null);
           }
-          
-          setSession(session);
         } else {
           setUser(null);
-          setSession(null);
-          setUserRole(null);
-          setIsAdmin(false);
         }
         
         setLoading(false);
-        setInitialized(true);
       }
     );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        try {
-          // Fetch user data to get role
-          const { data: userData } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (userData) {
-            const appUser: AppUser = {
-              uid: session.user.id,
-              id: session.user.id,
-              email: session.user.email,
-              displayName: userData.name || null,
-              name: userData.name || null,
-              photoURL: userData.photo_url || null,
-              role: (userData.role as UserRole) || 'User',
-              isAdmin: userData.is_admin || false,
-              employeeCode: userData.employee_code || null,
-              createdAt: userData.created_at || new Date().toISOString(),
-              phone: userData.phone || null,
-              instagramHandle: userData.instagram_handle || null,
-              facebookHandle: userData.facebook_handle || null,
-              verified: userData.verified || false,
-              city: userData.city || null,
-              country: userData.country || null,
-              fullName: userData.name || null,
-              niche: userData.niche || null,
-              followersCount: userData.followers_count || null,
-              bio: userData.bio || null,
-              businessName: userData.business_name || null,
-              ownerName: userData.owner_name || null,
-              businessCategory: userData.business_category || null,
-              website: userData.website || null,
-              gstNumber: userData.gst_number || null,
-            };
-            
-            setUser(appUser);
-            setUserRole(appUser.role);
-            setIsAdmin(appUser.isAdmin);
-          } else {
-            // Create minimal user if no profile data exists
-            setUser({
-              uid: session.user.id,
-              id: session.user.id,
-              email: session.user.email,
-              displayName: null,
-              name: null,
-              photoURL: null,
-              role: 'User',
-              isAdmin: false
-            });
-            setUserRole('User');
-            setIsAdmin(false);
-          }
-        } catch (error) {
-          console.error('Error fetching user role:', error);
-          // Fallback user with minimal data
-          setUser({
-            uid: session.user.id,
-            id: session.user.id,
-            email: session.user.email,
-            displayName: null,
-            name: null,
-            photoURL: null,
-            role: 'User',
-            isAdmin: false
-          });
-          setUserRole('User');
-          setIsAdmin(false);
+    
+    // Then check for existing session
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          setLoading(false);
+          return;
         }
         
-        setSession(session);
+        // Fetch user profile data
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (userError && userError.code !== 'PGRST116') {
+          console.error('Error fetching initial user data:', userError);
+        }
+        
+        // Map the user data to our User model
+        const mappedUser: User = userData 
+          ? mapUserData({ ...userData, uid: session.user.id })
+          : {
+              uid: session.user.id,
+              id: session.user.id,
+              email: session.user.email || '',
+              displayName: session.user.user_metadata?.name || '',
+              role: session.user.user_metadata?.role || 'User',
+            };
+        
+        setUser(mappedUser);
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
-      setInitialized(true);
-    });
-
+    };
+    
+    initializeAuth();
+    
+    // Clean up subscription
     return () => {
       subscription.unsubscribe();
     };
   }, []);
-
-  const login = async (email: string, password: string, employeeCode?: string) => {
+  
+  // Login function
+  const login = async (email: string, password: string, employeeCode?: string): Promise<void> => {
+    setLoading(true);
+    
     try {
-      setLoading(true);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-      if (error) throw error;
-
-      // Set employee code if provided
-      if (employeeCode && data.user) {
-        await supabase
-          .from('users')
-          .update({ employee_code: employeeCode })
-          .eq('id', data.user.id);
+      if (error) {
+        throw error;
       }
+      
+      // If employee code is provided, update the user data
+      if (employeeCode && data.user) {
+        await createOrUpdateUser({
+          uid: data.user.id,
+          employeeCode,
+        });
+      }
+      
+      // Redirect will happen automatically via auth state change
     } catch (error: any) {
       console.error('Login error:', error);
+      toast({
+        title: "Login failed",
+        description: error.message || "Failed to login. Please check your credentials.",
+        variant: "destructive"
+      });
       throw error;
     } finally {
       setLoading(false);
     }
   };
-
-  const loginWithGoogle = async () => {
+  
+  // Login with Google
+  const loginWithGoogle = async (): Promise<void> => {
     try {
-      setLoading(true);
-      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/auth/callback',
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
-
-      if (error) throw error;
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Redirect will be handled by OAuth provider
     } catch (error: any) {
       console.error('Google login error:', error);
+      toast({
+        title: "Login failed",
+        description: error.message || "Failed to login with Google.",
+        variant: "destructive"
+      });
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
-
+  
+  // Signup function
   const signup = async (
     email: string, 
     password: string, 
-    name: string, 
+    displayName: string, 
     role: UserRole,
-    additionalData?: any
-  ) => {
+    additionalData: any = {}
+  ): Promise<void> => {
+    setLoading(true);
+    
     try {
-      setLoading(true);
-      
-      // Sign up with Supabase
+      // Sign up the user
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            name,
-            role,
-            ...additionalData
+            name: displayName,
+            role: role,
           },
         },
       });
-
-      if (error) throw error;
-
-      // The user profile will be automatically created via the trigger
-      // but we'll update it with additional data
-      if (data.user) {
-        await supabase
-          .from('users')
-          .update({
-            name,
-            role,
-            ...additionalData
-          })
-          .eq('id', data.user.id);
-      }
-    } catch (error: any) {
-      console.error('Signup error:', error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const logout = async () => {
-    try {
-      setLoading(true);
       
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) throw error;
-      
-    } catch (error: any) {
-      console.error('Logout error:', error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Role management
-  const updateUserRole = async (user: AppUser, role: UserRole) => {
-    try {
-      if (!user.uid) {
-        throw new Error('User not authenticated');
+      if (error) {
+        throw error;
       }
       
-      const { error } = await supabase
-        .from('users')
-        .update({ 
-          role,
-          is_admin: role === 'Admin' ? true : user.isAdmin
-        })
-        .eq('id', user.uid);
+      if (!data.user) {
+        throw new Error('User registration failed.');
+      }
       
-      if (error) throw error;
-
-      const updatedUser = {
-        ...user,
+      // Create a full user profile with all the additional data
+      const userData: Partial<User> & { uid: string } = {
+        uid: data.user.id,
+        email: data.user.email!,
+        displayName,
+        name: displayName,
         role,
-        isAdmin: role === 'Admin' || user.isAdmin
+        isAdmin: role === 'Admin',
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+        // Merge all the additional data
+        ...additionalData,
       };
       
-      setUser(updatedUser);
+      // Save the user data to our users table
+      await createOrUpdateUser(userData);
       
-      return updatedUser;
-    } catch (error) {
-      console.error('Error updating user role:', error);
-      throw error;
-    }
-  };
-
-  const updateUserPermission = async (userId: string, isAdmin: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({ is_admin: isAdmin })
-        .eq('id', userId);
-      
-      if (error) throw error;
-
-      if (user && user.uid === userId) {
-        setUser({
-          ...user,
-          isAdmin
-        });
+      // Navigate based on role after successful signup
+      if (role === 'Business' || role === 'Influencer') {
+        navigate('/dashboard');
+      } else {
+        navigate('/');
       }
       
-      return { userId, isAdmin };
-    } catch (error) {
-      console.error('Error updating user permission:', error);
+      toast({
+        title: "Registration successful",
+        description: "Your account has been created successfully.",
+      });
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      toast({
+        title: "Registration failed",
+        description: error.message || "Failed to create account.",
+        variant: "destructive"
+      });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Logout function
+  const logout = async (): Promise<void> => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Clear user state and navigate to home
+      setUser(null);
+      navigate('/');
+      
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Logout failed",
+        description: error.message || "Failed to logout.",
+        variant: "destructive"
+      });
       throw error;
     }
   };
-
+  
+  // Update user data
+  const updateUserData = async (updatedData: Partial<User>): Promise<void> => {
+    if (!user) {
+      throw new Error('No user is logged in');
+    }
+    
+    setLoading(true);
+    
+    try {
+      // Update user metadata in auth
+      if (updatedData.displayName || updatedData.name || updatedData.role) {
+        const { error: metadataError } = await supabase.auth.updateUser({
+          data: {
+            name: updatedData.displayName || updatedData.name || user.displayName,
+            role: updatedData.role || user.role,
+          },
+        });
+        
+        if (metadataError) {
+          throw metadataError;
+        }
+      }
+      
+      // Update user profile in our users table
+      const userData = {
+        ...updatedData,
+        uid: user.uid,
+      };
+      
+      await createOrUpdateUser(userData);
+      
+      // Update local user state
+      setUser((prevUser) => prevUser ? { ...prevUser, ...updatedData } : null);
+      
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+    } catch (error: any) {
+      console.error('Update user data error:', error);
+      toast({
+        title: "Update failed",
+        description: error.message || "Failed to update profile.",
+        variant: "destructive"
+      });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Create context value
+  const contextValue: AuthContextType = {
+    user,
+    loading,
+    isAuthenticated,
+    login,
+    loginWithGoogle,
+    signup,
+    logout,
+    updateUserData,
+  };
+  
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        currentUser: user, // Alias for backward compatibility
-        isAuthenticated: !!user,
-        loading,
-        initialized,
-        userRole: user?.role || null,
-        isAdmin: user?.isAdmin || false,
-        login,
-        loginWithGoogle,
-        logout,
-        signup,
-        updateUserRole,
-        updateUserPermission
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
-
-export default useAuth;
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  
+  return context;
+};
