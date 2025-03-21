@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, CreditCard, Shield, Loader2, RefreshCw, CheckCircle, Calendar } from 'lucide-react';
+import { AlertCircle, CreditCard, Shield, Loader2, RefreshCw, CheckCircle, Calendar, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
@@ -38,6 +38,9 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const supportsRecurring = selectedPackage.paymentType === 'recurring';
   const isOneTimePackage = !supportsRecurring;
   
+  // Get package duration
+  const packageDuration = selectedPackage.durationMonths || 12;
+  
   // Calculate payment details
   const setupFee = selectedPackage.setupFee || 0;
   const monthlyAmount = selectedPackage.monthlyPrice || 0;
@@ -52,30 +55,67 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     return formatSubscriptionDate(nextDate);
   };
   
+  // Calculate the final package end date
+  const getPackageEndDate = () => {
+    const today = new Date();
+    const endDate = new Date(today);
+    endDate.setMonth(today.getMonth() + packageDuration);
+    return formatSubscriptionDate(endDate);
+  };
+  
   // Calculate totals based on package type
   let initialPayment = 0;
   let recurringAmount = 0;
+  let totalPackageValue = 0;
+  let remainingAmount = 0;
+  let recurringPaymentCount = 0;
   
   if (isOneTimePackage) {
     // One-time payment
     initialPayment = yearlyAmount;
+    totalPackageValue = yearlyAmount;
     recurringAmount = 0;
+    remainingAmount = 0;
+    recurringPaymentCount = 0;
   } else {
-    // Recurring payment
-    initialPayment = setupFee;
+    // Calculate total package value first
+    if (selectedPackage.billingCycle === 'monthly') {
+      totalPackageValue = setupFee + (monthlyAmount * packageDuration);
+    } else {
+      // For yearly billing
+      const totalYears = Math.ceil(packageDuration / 12);
+      totalPackageValue = setupFee + (yearlyAmount * totalYears);
+    }
     
-    // Add advance payment if needed
+    // Calculate initial payment (setup fee + advance months)
+    initialPayment = setupFee;
     if (advanceMonths > 0) {
       if (selectedPackage.billingCycle === 'monthly') {
         initialPayment += monthlyAmount * advanceMonths;
-        recurringAmount = monthlyAmount;
       } else {
         initialPayment += yearlyAmount;
-        recurringAmount = yearlyAmount;
       }
+    }
+    
+    // Calculate remaining amount for autopay
+    remainingAmount = Math.max(0, totalPackageValue - initialPayment);
+    
+    // Calculate recurring payment amount based on billing cycle
+    recurringAmount = selectedPackage.billingCycle === 'monthly' ? monthlyAmount : yearlyAmount;
+    
+    // Calculate number of recurring payments needed
+    if (advanceMonths >= packageDuration) {
+      // No recurring payments needed if advance covers entire duration
+      recurringPaymentCount = 0;
     } else {
-      // No advance payment, just recurring
-      recurringAmount = selectedPackage.billingCycle === 'monthly' ? monthlyAmount : yearlyAmount;
+      // Calculate remaining payments needed
+      const remainingMonths = packageDuration - advanceMonths;
+      if (selectedPackage.billingCycle === 'monthly') {
+        recurringPaymentCount = remainingMonths;
+      } else {
+        // For yearly billing, calculate years (rounded up)
+        recurringPaymentCount = Math.ceil(remainingMonths / 12);
+      }
     }
   }
   
@@ -174,7 +214,12 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         enableAutoPay,
         initialPayment,
         recurringAmount,
-        nextBillingDate: getNextBillingDate()
+        totalPackageValue,
+        remainingAmount,
+        recurringPaymentCount,
+        packageDuration,
+        nextBillingDate: getNextBillingDate(),
+        packageEndDate: getPackageEndDate()
       });
     } catch (error) {
       console.error('Payment error:', error);
@@ -311,11 +356,21 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
             <span>₹{initialPayment}</span>
           </div>
           
-          {supportsRecurring && enableAutoPay && (
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Next autopay on {getNextBillingDate()}</span>
-              <span>₹{recurringAmount}</span>
-            </div>
+          {supportsRecurring && enableAutoPay && remainingAmount > 0 && (
+            <>
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Total package value (validity: {packageDuration} months)</span>
+                <span>₹{totalPackageValue}</span>
+              </div>
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Remaining amount (autopay)</span>
+                <span>₹{remainingAmount}</span>
+              </div>
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Number of future payments</span>
+                <span>{recurringPaymentCount}</span>
+              </div>
+            </>
           )}
         </div>
         
@@ -336,15 +391,29 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         )}
         
         {enableAutoPay && supportsRecurring && (
-          <div className="flex items-start gap-2 bg-blue-50 p-3 rounded-md">
-            <Calendar className="h-5 w-5 text-blue-500 mt-0.5" />
-            <div className="text-sm">
-              <p className="font-medium text-blue-800">Next payment on {getNextBillingDate()}</p>
-              <p className="text-blue-600">
-                Your subscription will auto-renew on this date. You can cancel anytime.
-              </p>
+          <>
+            <div className="flex items-start gap-2 bg-blue-50 p-3 rounded-md">
+              <Calendar className="h-5 w-5 text-blue-500 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-blue-800">Next payment on {getNextBillingDate()}</p>
+                <p className="text-blue-600">
+                  {recurringPaymentCount > 0 
+                    ? `Your subscription will auto-renew with ${recurringPaymentCount} remaining payment${recurringPaymentCount !== 1 ? 's' : ''} of ₹${recurringAmount} each.`
+                    : 'No future payments needed - your subscription is fully paid.'}
+                </p>
+              </div>
             </div>
-          </div>
+            
+            <div className="flex items-start gap-2 bg-amber-50 p-3 rounded-md">
+              <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-amber-800">Subscription ends on {getPackageEndDate()}</p>
+                <p className="text-amber-600">
+                  Your total subscription duration is {packageDuration} months.
+                </p>
+              </div>
+            </div>
+          </>
         )}
         
         <div className="flex items-start gap-2 bg-muted p-3 rounded-md">

@@ -71,4 +71,9 @@ export interface SubscriptionResult {
   setupFee?: number;
   advanceMonths?: number;
   nextBillingDate?: string;
+  totalPackageMonths?: number; // Total package duration in months
+  remainingAmount?: number; // Amount to be paid after initial payment
+  totalAmount?: number; // Total package value
+  recurringPaymentAmount?: number; // Amount for each recurring payment
+  recurringPaymentCount?: number; // Number of recurring payments
 }

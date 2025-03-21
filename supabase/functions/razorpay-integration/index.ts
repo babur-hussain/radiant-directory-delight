@@ -54,6 +54,67 @@ function calculateInitialPayment(packageData: any, enableAutoPay: boolean): numb
   return initialAmount;
 }
 
+// Calculate the total package price for the full duration
+function calculateTotalPackagePrice(packageData: any): number {
+  if (!packageData) return 0;
+  
+  // One-time payment case
+  if (packageData.paymentType === 'one-time') {
+    return packageData.price || 0;
+  }
+  
+  // For recurring packages
+  const durationMonths = packageData.durationMonths || 12;
+  const setupFee = packageData.setupFee || 0;
+  
+  // Calculate total based on billing cycle
+  if (packageData.billingCycle === 'monthly' && packageData.monthlyPrice) {
+    return setupFee + (packageData.monthlyPrice * durationMonths);
+  } else {
+    // For yearly billing
+    const yearlyPrice = packageData.price || 0;
+    const totalYears = Math.ceil(durationMonths / 12);
+    return setupFee + (yearlyPrice * totalYears);
+  }
+}
+
+// Calculate the remaining amount to be paid after the initial payment
+function calculateRemainingAmount(packageData: any, initialPayment: number): number {
+  const totalPrice = calculateTotalPackagePrice(packageData);
+  return Math.max(0, totalPrice - initialPayment);
+}
+
+// Calculate how many recurring payments will be needed based on package duration
+function calculateRecurringPaymentCount(packageData: any): number {
+  if (!packageData || packageData.paymentType === 'one-time') return 0;
+  
+  const durationMonths = packageData.durationMonths || 12;
+  const advanceMonths = packageData.advancePaymentMonths || 0;
+  
+  // No recurring payments if advance months covers the whole duration
+  if (advanceMonths >= durationMonths) return 0;
+  
+  if (packageData.billingCycle === 'monthly') {
+    // For monthly billing, it's just the remaining months
+    return durationMonths - advanceMonths;
+  } else {
+    // For yearly billing, calculate remaining years (rounded up)
+    const remainingMonths = durationMonths - advanceMonths;
+    return Math.ceil(remainingMonths / 12);
+  }
+}
+
+// Calculate the amount for each recurring payment
+function calculateRecurringPaymentAmount(packageData: any): number {
+  if (!packageData || packageData.paymentType === 'one-time') return 0;
+  
+  if (packageData.billingCycle === 'monthly' && packageData.monthlyPrice) {
+    return packageData.monthlyPrice;
+  } else {
+    return packageData.price || 0;
+  }
+}
+
 // Server entrypoint
 serve(async (req) => {
   console.log("Request received:", req.method, new URL(req.url).pathname);
@@ -114,6 +175,19 @@ serve(async (req) => {
     const initialPaymentAmount = calculateInitialPayment(packageData, enableAutoPay);
     console.log(`Calculated initial payment amount: ${initialPaymentAmount}`);
     
+    // Calculate total package price
+    const totalPackagePrice = calculateTotalPackagePrice(packageData);
+    console.log(`Total package price: ${totalPackagePrice}`);
+    
+    // Calculate remaining amount for autopay
+    const remainingAmount = calculateRemainingAmount(packageData, initialPaymentAmount);
+    console.log(`Remaining amount for autopay: ${remainingAmount}`);
+    
+    // Calculate recurring payment details
+    const recurringPaymentAmount = calculateRecurringPaymentAmount(packageData);
+    const recurringPaymentCount = calculateRecurringPaymentCount(packageData);
+    console.log(`Recurring payment amount: ${recurringPaymentAmount}, count: ${recurringPaymentCount}`);
+    
     // Calculate amount in paise (100 paise = 1 INR)
     const amountInPaise = Math.round(initialPaymentAmount * 100);
     
@@ -146,14 +220,24 @@ serve(async (req) => {
           initialPayment: initialPaymentAmount.toString(),
           setupFee: (packageData.setupFee || 0).toString(),
           advanceMonths: (packageData.advancePaymentMonths || 0).toString(),
-          nextBillingDate: nextBillingDate.toISOString()
+          nextBillingDate: nextBillingDate.toISOString(),
+          totalPackageMonths: (packageData.durationMonths || 12).toString(),
+          totalAmount: totalPackagePrice.toString(),
+          remainingAmount: remainingAmount.toString(),
+          recurringPaymentAmount: recurringPaymentAmount.toString(),
+          recurringPaymentCount: recurringPaymentCount.toString()
         },
         isOneTime,
         isSubscription: !isOneTime,
         enableAutoPay,
         setupFee: packageData.setupFee || 0,
         advanceMonths: packageData.advancePaymentMonths || 0,
-        nextBillingDate: nextBillingDate.toISOString()
+        nextBillingDate: nextBillingDate.toISOString(),
+        totalPackageMonths: packageData.durationMonths || 12,
+        totalAmount: totalPackagePrice,
+        remainingAmount: remainingAmount,
+        recurringPaymentAmount: recurringPaymentAmount,
+        recurringPaymentCount: recurringPaymentCount
       }),
       {
         status: 200,
