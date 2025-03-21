@@ -1,14 +1,8 @@
 
-import React from "react";
-import { AuthContextType, User, UserRole } from "../types/auth";
-import AuthProvider, { AuthContext } from "../providers/AuthProvider";
-import { useAuth } from "../hooks/useAuth";
+// Re-export the provider and context from our main implementation
+import { AuthProvider, AuthContext } from "@/hooks/useAuth";
+import { User, UserRole, AuthContextType } from "@/types/auth";
 
-// Re-export the provider and context
-export { AuthProvider, AuthContext };
-
-// Re-export the useAuth hook for backward compatibility
-export { useAuth };
-
-// Re-export types for backward compatibility
-export type { User, UserRole };
+// Re-export what's needed for backward compatibility
+export { AuthProvider, AuthContext, User, UserRole, AuthContextType };
+export { useAuth } from "@/hooks/useAuth";

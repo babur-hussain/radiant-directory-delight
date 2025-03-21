@@ -350,12 +350,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     <AuthContext.Provider
       value={{
         user,
-        currentUser: user, // Alias for backward compatibility
-        isAuthenticated: !!user,
+        currentUser: user,
         loading,
         initialized,
         userRole: user?.role || null,
         isAdmin: user?.isAdmin || false,
+        isAuthenticated: !!user,
         login,
         loginWithGoogle,
         logout,
