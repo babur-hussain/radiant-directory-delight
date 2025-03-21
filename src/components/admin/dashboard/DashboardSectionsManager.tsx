@@ -1,130 +1,165 @@
-
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import SubscriptionError from "../subscription/SubscriptionError";
-import UserSectionsList from "./UserSectionsList";
-import PackageSectionsList from "./PackageSectionsList";
-import { connectToMongoDB } from "@/config/mongodb";
-import { SubscriptionPackage } from "@/models/SubscriptionPackage";
-import { User } from "@/models/User";
-import { useDashboardSections } from "@/hooks/useDashboardSections";
-
-// Define available dashboard sections
-const BUSINESS_SECTIONS = [
-  "marketing", "reels", "creatives", "ratings", 
-  "seo", "google_listing", "growth", "leads", "reach"
-];
-
-const INFLUENCER_SECTIONS = [
-  "marketing", "reels", "creatives", "reach", 
-  "audience", "growth", "engagement", "content"
-];
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from '@/hooks/use-toast';
+import { useSubscription } from '@/hooks/useSubscription';
+import { useDashboardSections } from '@/hooks/useDashboardSections';
+import { supabase } from '@/integrations/supabase/client';
+import Loading from '@/components/ui/loading';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
+import AdminPermissionError from './AdminPermissionError';
 
 interface DashboardSectionsManagerProps {
-  selectedUser?: any;
+  userId: string;
+  isAdmin: boolean;
 }
 
-const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ selectedUser }) => {
-  const {
-    activeTab,
-    setActiveTab,
-    isLoading,
-    loadingMessage,
-    userSections,
-    packageSections,
-    availableSections,
-    packages,
-    selectedPackage,
-    setSelectedPackage,
-    error,
-    setError,
-    toggleUserSection,
-    togglePackageSection,
-    saveUserSections,
-    savePackageSections,
-    refreshData
-  } = useDashboardSections({ selectedUser });
-  
-  // Load data based on selected user or tab
-  useEffect(() => {
-    if (selectedUser) {
-      // Set active tab to user when user is selected
-      setActiveTab("user");
-    }
-  }, [selectedUser, setActiveTab]);
+const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ userId, isAdmin }) => {
+  const { subscription, isLoading: isSubscriptionLoading, isError: isSubscriptionError } = useSubscription(userId);
+  const { dashboardSections, setDashboardSections, isLoading: isSectionsLoading, isError: isSectionsError } = useDashboardSections(userId);
+  const [availableSections, setAvailableSections] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (subscription?.packageId) {
+      fetchSubscriptionPackage(subscription.packageId);
+    }
+  }, [subscription?.packageId]);
+
+  const fetchSubscriptionPackage = async (packageId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('subscription_packages')
+        .select('dashboard_sections')
+        .eq('id', packageId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching subscription package:", error);
+        setError("Failed to load subscription package details.");
+        return;
+      }
+
+      if (data && data.dashboard_sections) {
+        setAvailableSections(data.dashboard_sections);
+      } else {
+        setAvailableSections([]);
+      }
+    } catch (err) {
+      console.error("Unexpected error fetching subscription package:", err);
+      setError("Failed to load subscription package details.");
+    }
+  };
+
+  const handleSectionToggle = (section: string) => {
+    if (dashboardSections) {
+      const newSections = dashboardSections.includes(section)
+        ? dashboardSections.filter(s => s !== section)
+        : [...dashboardSections, section];
+      setDashboardSections(newSections);
+    }
+  };
+
+  const saveDashboardSections = async () => {
+    setIsSaving(true);
+    setError(null);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ custom_dashboard_sections: dashboardSections })
+        .eq('id', userId);
+
+      if (error) {
+        console.error("Error updating dashboard sections:", error);
+        setError("Failed to update dashboard sections.");
+        toast({
+          title: "Error",
+          description: "Failed to update dashboard sections.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Dashboard sections updated successfully.",
+      });
+    } catch (err) {
+      console.error("Unexpected error updating dashboard sections:", err);
+      setError("Failed to update dashboard sections.");
+      toast({
+        title: "Error",
+        description: "Failed to update dashboard sections.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!isAdmin) {
+    return <AdminPermissionError />;
+  }
+
+  if (isSubscriptionLoading || isSectionsLoading) {
+    return <Loading message="Loading dashboard sections..." />;
+  }
+
+  if (isSubscriptionError || isSectionsError || error) {
     return (
       <Card>
-        <CardContent className="flex flex-col items-center justify-center p-6">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-          <p>{loadingMessage || "Loading dashboard sections..."}</p>
+        <CardContent>
+          <p className="text-red-500">
+            Error: {error || isSubscriptionError?.message || isSectionsError?.message || "Failed to load dashboard sections."}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!subscription) {
+    return (
+      <Card>
+        <CardContent>
+          <p>No subscription found for this user.</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="shadow-sm w-full max-w-full">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Dashboard Sections Manager</CardTitle>
-          <CardDescription>
-            Customize which dashboard elements are visible to users and included in subscription packages
-          </CardDescription>
-        </div>
-        <Button
-          variant="outline"
-          onClick={refreshData}
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
+    <Card>
+      <CardHeader>
+        <CardTitle>Manage Dashboard Sections</CardTitle>
       </CardHeader>
-      
-      <CardContent className="w-full max-w-full">
-        {error && <SubscriptionError error={error} onRetry={refreshData} />}
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-2 mb-4">
-            <TabsTrigger value="user" disabled={!selectedUser}>
-              User Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="package">
-              Subscription Packages
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="user" className="space-y-4 w-full max-w-full">
-            <UserSectionsList
-              selectedUser={selectedUser}
-              userSections={userSections}
-              availableSections={availableSections}
-              isLoading={isLoading}
-              toggleUserSection={toggleUserSection}
-              saveUserSections={saveUserSections}
-              refreshData={refreshData}
-            />
-          </TabsContent>
-          
-          <TabsContent value="package" className="space-y-4 w-full max-w-full">
-            <PackageSectionsList
-              packages={packages}
-              selectedPackage={selectedPackage}
-              setSelectedPackage={setSelectedPackage}
-              packageSections={packageSections}
-              availableSections={availableSections}
-              togglePackageSection={togglePackageSection}
-              savePackageSections={savePackageSections}
-              refreshData={refreshData}
-            />
-          </TabsContent>
-        </Tabs>
+      <CardContent>
+        {availableSections.length > 0 ? (
+          <div className="space-y-2">
+            {availableSections.map(section => (
+              <div key={section} className="flex items-center space-x-2">
+                <Checkbox
+                  id={section}
+                  checked={dashboardSections?.includes(section) || false}
+                  onCheckedChange={() => handleSectionToggle(section)}
+                />
+                <label
+                  htmlFor={section}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {section}
+                </label>
+              </div>
+            ))}
+            <Button onClick={saveDashboardSections} disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        ) : (
+          <p>No dashboard sections available for this subscription.</p>
+        )}
       </CardContent>
     </Card>
   );

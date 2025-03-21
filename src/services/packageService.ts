@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { SubscriptionPackage, ISubscriptionPackage } from '@/models/SubscriptionPackage';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
 
 // Helper function to ensure payment type is valid
@@ -34,9 +33,6 @@ const mapToPackage = (pkg: any): ISubscriptionPackage => {
     billingCycle: getBillingCycle(pkg.billing_cycle),
     advancePaymentMonths: pkg.advance_payment_months || 0,
     dashboardSections: pkg.dashboard_sections || [],
-    createdAt: pkg.created_at,
-    updatedAt: pkg.updated_at,
-    isActive: pkg.is_active !== undefined ? pkg.is_active : true,
     maxBusinesses: pkg.max_businesses || 1,
     maxInfluencers: pkg.max_influencers || 1
   };
@@ -123,7 +119,6 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
     billing_cycle: packageData.billingCycle,
     advance_payment_months: packageData.advancePaymentMonths,
     dashboard_sections: packageData.dashboardSections,
-    is_active: packageData.isActive,
     max_businesses: packageData.maxBusinesses,
     max_influencers: packageData.maxInfluencers
   };

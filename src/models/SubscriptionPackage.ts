@@ -19,5 +19,5 @@ export interface ISubscriptionPackage {
   dashboardSections?: string[];
   maxBusinesses?: number;
   maxInfluencers?: number;
-  isActive?: boolean;
+  // Remove isActive as it doesn't exist in the Supabase schema
 }

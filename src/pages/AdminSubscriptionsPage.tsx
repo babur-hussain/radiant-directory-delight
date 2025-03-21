@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,7 +71,6 @@ const AdminSubscriptionsPage = () => {
       dashboardSections: pkg.dashboard_sections || [],
       termsAndConditions: pkg.terms_and_conditions,
       advancePaymentMonths: pkg.advance_payment_months || 0,
-      isActive: pkg.is_active !== undefined ? pkg.is_active : true,
       maxBusinesses: pkg.max_businesses || 1, 
       maxInfluencers: pkg.max_influencers || 1
     };
@@ -95,7 +93,8 @@ const AdminSubscriptionsPage = () => {
       
       const transformedPackages: ISubscriptionPackage[] = packagesData.map(pkg => transformPackageData(pkg));
       
-      const transformedSubscriptions = subscriptionsData.map(sub => ({
+      setPackages(transformedPackages);
+      setSubscriptions(subscriptionsData.map(sub => ({
         id: sub.id,
         userId: sub.user_id,
         packageId: sub.package_id,
@@ -121,10 +120,7 @@ const AdminSubscriptionsPage = () => {
         actualStartDate: sub.actual_start_date,
         dashboardFeatures: [],
         dashboardSections: []
-      }));
-      
-      setPackages(transformedPackages);
-      setSubscriptions(transformedSubscriptions);
+      })));
     } catch (error) {
       console.error('Error fetching subscription data:', error);
       setConnectionError(error instanceof Error ? error.message : String(error));
@@ -166,7 +162,6 @@ const AdminSubscriptionsPage = () => {
         dashboard_sections: data.dashboardSections || [],
         terms_and_conditions: data.termsAndConditions || '',
         advance_payment_months: data.advancePaymentMonths || 0,
-        is_active: data.isActive !== undefined ? data.isActive : true,
         max_businesses: data.maxBusinesses || 1,
         max_influencers: data.maxInfluencers || 1
       };
