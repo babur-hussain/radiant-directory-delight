@@ -7,7 +7,7 @@ import { CheckCircle, ChevronRight } from 'lucide-react';
 import { useSubscriptionPackagesByType } from '@/hooks/useSubscriptionPackages';
 import { ISubscriptionPackage } from '@/hooks/useSubscriptionPackages';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/router';
+import { useNavigate } from 'react-router-dom';
 
 interface SubscriptionPackagesProps {
   type?: 'Business' | 'Influencer';
@@ -27,15 +27,15 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   const { data: packages = [], isLoading, isError } = useSubscriptionPackagesByType(type);
   const [view, setView] = useState<'monthly' | 'yearly'>('yearly');
   const { user } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
   
   const handleSelectPackage = (pkg: ISubscriptionPackage) => {
     if (onSelectPackage) {
       onSelectPackage(pkg);
     } else if (user) {
-      router.push(`/checkout?package=${pkg.id}`);
+      navigate(`/checkout?package=${pkg.id}`);
     } else {
-      router.push(`/auth?redirect=checkout&package=${pkg.id}`);
+      navigate(`/auth?redirect=checkout&package=${pkg.id}`);
     }
   };
   
@@ -98,10 +98,10 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
           return (
             <Card 
               key={pkg.id}
-              className={`flex flex-col ${pkg.popular === true ? 'border-primary shadow-lg' : ''}`}
+              className={`flex flex-col ${pkg.popular ? 'border-primary shadow-lg' : ''}`}
             >
               <CardHeader className={compact ? 'pb-2' : ''}>
-                {pkg.popular === true && (
+                {pkg.popular && (
                   <Badge className="w-fit mb-2" variant="default">Most Popular</Badge>
                 )}
                 <CardTitle className={compact ? 'text-lg' : 'text-xl'}>{pkg.title}</CardTitle>
@@ -138,7 +138,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
                 <Button 
                   onClick={() => handleSelectPackage(pkg)} 
                   className="w-full"
-                  variant={pkg.popular === true ? 'default' : 'outline'}
+                  variant={pkg.popular ? 'default' : 'outline'}
                 >
                   Get Started
                 </Button>
@@ -150,7 +150,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
       
       {showComparisonLink && (
         <div className="text-center mt-8">
-          <Button variant="link" onClick={() => router.push('/pricing/comparison')}>
+          <Button variant="link" onClick={() => navigate('/pricing/comparison')}>
             Compare all features <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>

@@ -1,19 +1,21 @@
-
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { CheckCircle, Users, Star, TrendingUp, Award, Zap, CheckSquare, ArrowRight, Check } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
+import { useBusinessData } from '@/hooks/useBusinessPageData';
+import { CheckCircle, Users, Star, TrendingUp, Award, Zap, CheckSquare, ArrowRight, Check } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { SubscriptionPackages } from '@/components/subscription/SubscriptionPackages';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
 import Loading from '@/components/ui/loading';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 const BusinessPage = () => {
-  const [isLoading, setIsLoading] = useState(false);
+  const { id } = useParams();
   const { toast } = useToast();
-  
+  const { businessData } = useBusinessData();
+
   useEffect(() => {
     window.scrollTo({
       top: 0,
@@ -53,8 +55,6 @@ const BusinessPage = () => {
       description: "Receive tailored marketing strategies that match your business goals and budget."
     },
   ];
-
-  const navigate = useNavigate();
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -109,7 +109,6 @@ const BusinessPage = () => {
               </p>
             </div>
             
-            {/* Using the SubscriptionPackages component for consistent implementation */}
             <SubscriptionPackages userRole="Business" />
           </div>
         </section>
@@ -124,7 +123,6 @@ const BusinessPage = () => {
               size="lg" 
               variant="outline" 
               className="bg-white text-blue-500 hover:bg-white/90 border-white"
-              onClick={() => navigate("/subscription")}
             >
               Join Now <ArrowRight className="ml-2 h-4 w-4" />
             </Button>

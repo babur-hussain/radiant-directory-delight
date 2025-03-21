@@ -21,7 +21,7 @@ export const createSampleBusinessIfNoneExist = async (): Promise<boolean> => {
     }
     
     // Create sample businesses
-    const sampleBusinesses: Partial<IBusiness>[] = [
+    const sampleBusinesses = [
       {
         name: 'Sample Restaurant',
         description: 'A delicious sample restaurant to showcase the platform.',
@@ -34,7 +34,7 @@ export const createSampleBusinessIfNoneExist = async (): Promise<boolean> => {
         reviews: 42,
         featured: true,
         tags: ['sample', 'restaurant', 'food'],
-        hours: {
+        hours: JSON.stringify({
           monday: '9:00 AM - 10:00 PM',
           tuesday: '9:00 AM - 10:00 PM',
           wednesday: '9:00 AM - 10:00 PM',
@@ -42,7 +42,7 @@ export const createSampleBusinessIfNoneExist = async (): Promise<boolean> => {
           friday: '9:00 AM - 11:00 PM',
           saturday: '10:00 AM - 11:00 PM',
           sunday: '10:00 AM - 9:00 PM'
-        },
+        }),
         latitude: 40.7128,
         longitude: -74.0060,
         image: 'https://placehold.co/600x400/png?text=Sample+Restaurant'
@@ -59,7 +59,7 @@ export const createSampleBusinessIfNoneExist = async (): Promise<boolean> => {
         reviews: 36,
         featured: false,
         tags: ['sample', 'retail', 'shopping'],
-        hours: {
+        hours: JSON.stringify({
           monday: '10:00 AM - 9:00 PM',
           tuesday: '10:00 AM - 9:00 PM',
           wednesday: '10:00 AM - 9:00 PM',
@@ -67,31 +67,29 @@ export const createSampleBusinessIfNoneExist = async (): Promise<boolean> => {
           friday: '10:00 AM - 9:00 PM',
           saturday: '9:00 AM - 9:00 PM',
           sunday: '11:00 AM - 7:00 PM'
-        },
+        }),
         latitude: 34.0522,
         longitude: -118.2437,
         image: 'https://placehold.co/600x400/png?text=Sample+Retail'
       }
     ];
     
-    // Format hours as JSON strings
-    const formattedBusinesses = sampleBusinesses.map(business => ({
-      ...business,
-      hours: JSON.stringify(business.hours)
-    }));
-    
-    // Insert sample businesses
-    const { error: insertError } = await supabase
-      .from('businesses')
-      .insert(formattedBusinesses);
-    
-    if (insertError) {
-      console.error('Error creating sample businesses:', insertError);
-      return false;
+    // Insert sample businesses one by one to avoid type issues
+    let successCount = 0;
+    for (const business of sampleBusinesses) {
+      const { error: insertError } = await supabase
+        .from('businesses')
+        .insert(business);
+      
+      if (!insertError) {
+        successCount++;
+      } else {
+        console.error('Error creating sample business:', insertError);
+      }
     }
     
-    console.log('Sample businesses created successfully');
-    return true;
+    console.log(`Sample businesses created successfully: ${successCount} of ${sampleBusinesses.length}`);
+    return successCount > 0;
   } catch (error) {
     console.error('Error in createSampleBusinessIfNoneExist:', error);
     return false;

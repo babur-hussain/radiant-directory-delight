@@ -34,7 +34,7 @@ export const fetchBusinesses = async (): Promise<IBusiness[]> => {
       .select('*');
     
     if (error) throw error;
-    return data.map(convertBusinessData);
+    return data ? data.map(convertBusinessData) : [];
   } catch (error) {
     console.error("Error getting businesses:", error);
     return [];
@@ -54,6 +54,7 @@ export const saveBusiness = async (businessData: Partial<IBusiness>): Promise<IB
     // Ensure hours is in the correct format
     const formattedData = {
       ...businessData,
+      name: businessData.name, // Explicitly include name since it's required
       hours: businessData.hours ? 
         (typeof businessData.hours === 'string' ? businessData.hours : JSON.stringify(businessData.hours)) 
         : null

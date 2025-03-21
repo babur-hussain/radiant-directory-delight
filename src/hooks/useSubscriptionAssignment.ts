@@ -5,6 +5,7 @@ import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
 import { useToast } from '@/hooks/use-toast';
+import { PaymentType } from '@/models/Subscription';
 
 interface SubscriptionAssignment {
   userId: string;
@@ -57,7 +58,7 @@ export const useSubscriptionAssignment = (
             transactionId: data.transaction_id,
             cancelledAt: data.cancelled_at,
             cancelReason: data.cancel_reason,
-            paymentType: data.payment_type
+            paymentType: data.payment_type as PaymentType
           });
         }
       } catch (err) {
@@ -121,7 +122,7 @@ export const useSubscriptionAssignment = (
         start_date: startDate.toISOString(),
         end_date: endDate.toISOString(),
         status: 'active',
-        payment_type: packageToAssign.paymentType,
+        payment_type: packageToAssign.paymentType as PaymentType || 'recurring',
         assigned_at: startDate.toISOString(),
         assigned_by: 'admin'
       };

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Business } from "@/lib/csv-utils";
 import BusinessTable from "../table/BusinessTable";
@@ -59,7 +58,10 @@ const BusinessesTab: React.FC<BusinessesTabProps> = ({
       
       {showSeedPanel && (
         <div className="mb-6">
-          <SeedDataPanel />
+          <SeedDataPanel
+            dbInitialized={true}
+            connectionStatus="connected"
+          />
         </div>
       )}
       

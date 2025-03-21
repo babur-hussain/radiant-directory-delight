@@ -1,299 +1,325 @@
 
-import { createTestUser, generateAllTypesOfUsers } from '@/features/auth/userManagement';
-import { ISubscriptionPackage } from '@/hooks/useSubscriptionPackages';
-import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
+import { supabase } from '@/integrations/supabase/client';
+import { IBusiness } from '@/models/Business';
+import { PaymentType } from '@/models/Subscription';
 
-// Generate random dummy users
 export const seedDummyUsers = async (count = 10) => {
   try {
     const users = [];
     
     for (let i = 0; i < count; i++) {
       const role = i % 3 === 0 ? 'Business' : i % 3 === 1 ? 'Influencer' : 'User';
-      const isAdmin = i === 0; // Make first user admin
+      const isAdmin = i === 0;
       
-      const user = await createTestUser({
-        email: `test${role.toLowerCase()}${i}@example.com`,
-        name: `Test ${role} ${i}`,
+      users.push({
+        id: nanoid(),
+        email: `user${i}@example.com`,
+        name: `Test User ${i}`,
         role: role,
-        isAdmin: isAdmin
+        is_admin: isAdmin,
+        photo_url: `https://randomuser.me/api/portraits/${i % 2 === 0 ? 'men' : 'women'}/${i % 70}.jpg`,
+        created_at: new Date().toISOString(),
+        city: ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata'][i % 5],
+        verified: i % 3 === 0,
+        followers_count: role === 'Influencer' ? Math.floor(Math.random() * 100000).toString() : null,
+        business_name: role === 'Business' ? `Business ${i}` : null,
       });
-      
-      if (user) users.push(user);
     }
     
-    return {
-      success: true,
-      count: users.length,
-      users
+    const { data, error } = await supabase
+      .from('users')
+      .upsert(users)
+      .select();
+      
+    if (error) throw error;
+    
+    return { 
+      success: true, 
+      count: data.length,
+      message: `Created ${data.length} dummy users`
     };
   } catch (error) {
-    console.error('Error creating dummy users:', error);
-    return {
-      success: false,
+    console.error("Error seeding dummy users:", error);
+    return { 
+      success: false, 
+      count: 0,
       error: error instanceof Error ? error.message : String(error)
     };
   }
 };
 
-// Generate random dummy businesses
-export const seedDummyBusinesses = async (count = 20) => {
+export const seedDummyBusinesses = async (count = 10) => {
   try {
     const businesses = [];
-    const categories = ['Restaurant', 'Retail', 'Tech', 'Healthcare', 'Entertainment'];
+    const categories = ['Restaurant', 'Retail', 'Service', 'Technology', 'Healthcare', 'Education', 'Entertainment'];
     
     for (let i = 0; i < count; i++) {
-      const business = {
-        name: `Dummy Business ${i}`,
-        description: `This is a dummy business number ${i}`,
-        category: categories[i % categories.length],
-        address: `${100 + i} Main Street, Test City`,
-        phone: `555-${1000 + i}`,
-        email: `business${i}@example.com`,
-        website: `https://dummybusiness${i}.com`,
-        rating: Math.floor(Math.random() * 5) + 1,
-        reviews: Math.floor(Math.random() * 100),
-        featured: i % 5 === 0,
-        tags: ['dummy', `tag${i}`, 'test'],
-        hours: JSON.stringify({
-          monday: '9:00 AM - 5:00 PM',
-          tuesday: '9:00 AM - 5:00 PM',
-          wednesday: '9:00 AM - 5:00 PM',
-          thursday: '9:00 AM - 5:00 PM',
-          friday: '9:00 AM - 5:00 PM'
-        })
+      const businessHours = {
+        monday: '9:00 AM - 6:00 PM',
+        tuesday: '9:00 AM - 6:00 PM',
+        wednesday: '9:00 AM - 6:00 PM',
+        thursday: '9:00 AM - 6:00 PM',
+        friday: '9:00 AM - 6:00 PM',
+        saturday: i % 2 === 0 ? '10:00 AM - 4:00 PM' : 'Closed',
+        sunday: 'Closed'
       };
       
-      const { data, error } = await supabase.from('businesses').insert(business).select();
-      
-      if (error) throw error;
-      if (data && data.length > 0) businesses.push(data[0]);
+      businesses.push({
+        name: `Business ${i}`, 
+        description: `Description for Business ${i}. This is a sample business.`,
+        category: categories[i % categories.length],
+        address: `${i + 100} Sample Street, Test City`,
+        phone: `+91-${9000000000 + i}`,
+        email: `business${i}@example.com`,
+        website: `https://business${i}.example.com`,
+        rating: Math.floor(Math.random() * 5 * 10) / 10,
+        reviews: Math.floor(Math.random() * 100),
+        latitude: 18.52 + (Math.random() * 0.1),
+        longitude: 73.85 + (Math.random() * 0.1),
+        hours: JSON.stringify(businessHours),
+        tags: [`tag${i}`, `sample`, categories[i % categories.length].toLowerCase()],
+        featured: i < 3,
+        image: `https://picsum.photos/seed/business${i}/500/300`
+      });
     }
     
-    return {
-      success: true,
-      count: businesses.length,
-      businesses
+    // Insert the businesses one by one because the types don't align perfectly
+    let insertedCount = 0;
+    for (const business of businesses) {
+      const { error } = await supabase
+        .from('businesses')
+        .insert(business);
+        
+      if (!error) {
+        insertedCount++;
+      } else {
+        console.error("Error inserting business:", error);
+      }
+    }
+    
+    return { 
+      success: true, 
+      count: insertedCount,
+      message: `Created ${insertedCount} dummy businesses`
     };
   } catch (error) {
-    console.error('Error creating dummy businesses:', error);
-    return {
-      success: false,
+    console.error("Error seeding dummy businesses:", error);
+    return { 
+      success: false, 
+      count: 0,
       error: error instanceof Error ? error.message : String(error)
     };
   }
 };
 
-// Generate subscription packages
 export const seedDummySubscriptionPackages = async () => {
   try {
-    const packageTemplates: ISubscriptionPackage[] = [
+    const businessPackages = [
       {
-        id: `business-basic-${nanoid(6)}`,
-        title: 'Business Basic',
-        price: 999,
-        monthlyPrice: 99,
-        durationMonths: 12,
-        shortDescription: 'Essential tools for small businesses',
-        fullDescription: 'Get started with the essential tools needed to grow your small business.',
-        features: ['Business profile', 'Basic analytics', 'Up to 5 product listings'],
-        popular: false,
-        type: 'Business',
-        paymentType: 'recurring',
-        billingCycle: 'monthly',
-        setupFee: 499
-      },
-      {
-        id: `business-pro-${nanoid(6)}`,
-        title: 'Business Pro',
-        price: 2499,
-        monthlyPrice: 249,
-        durationMonths: 12,
-        shortDescription: 'Complete solution for growing businesses',
-        fullDescription: 'All the tools you need to take your business to the next level.',
-        features: ['Business profile', 'Advanced analytics', 'Unlimited product listings', 'Priority support', 'Marketing tools'],
-        popular: true,
-        type: 'Business',
-        paymentType: 'recurring',
-        billingCycle: 'yearly'
-      },
-      {
-        id: `influencer-starter-${nanoid(6)}`,
-        title: 'Influencer Starter',
-        price: 799,
-        monthlyPrice: 79,
-        durationMonths: 12,
-        shortDescription: 'Perfect for new influencers',
-        fullDescription: 'Start your influencer journey with all the tools you need.',
-        features: ['Influencer profile', 'Basic analytics', 'Up to 3 brand connections'],
-        popular: false,
-        type: 'Influencer',
-        paymentType: 'recurring',
-        billingCycle: 'monthly'
-      },
-      {
-        id: `influencer-elite-${nanoid(6)}`,
-        title: 'Influencer Elite',
+        id: nanoid(),
+        title: 'Business Starter',
         price: 1999,
-        monthlyPrice: 199,
-        durationMonths: 12,
-        shortDescription: 'For professional influencers',
-        fullDescription: 'Take your influencer career to new heights with premium tools and connections.',
-        features: ['Verified profile', 'Advanced analytics', 'Unlimited brand connections', 'Content planning tools', 'Engagement tracking'],
-        popular: true,
-        type: 'Influencer',
-        paymentType: 'recurring',
-        billingCycle: 'yearly'
+        monthly_price: 199,
+        setup_fee: 0,
+        duration_months: 12,
+        short_description: 'Essential tools for small businesses',
+        full_description: 'Get your business online with our starter package. Includes business listing, basic analytics, and customer management.',
+        features: ['Business listing', 'Basic analytics', 'Customer management', 'Email support'],
+        popular: false,
+        payment_type: 'recurring' as PaymentType,
+        billing_cycle: 'yearly',
+        type: 'Business',
+        dashboard_sections: ['basic_profile', 'ratings_reviews', 'customer_leads']
       },
       {
-        id: `one-time-special-${nanoid(6)}`,
-        title: 'One-time Special',
+        id: nanoid(),
+        title: 'Business Pro',
         price: 4999,
-        durationMonths: 12,
-        shortDescription: 'One-time payment, full year access',
-        fullDescription: 'Get all premium features with a single payment for a full year.',
-        features: ['All Business Pro features', 'One-time payment', 'Full year access', 'No recurring charges'],
-        popular: false,
+        monthly_price: 499,
+        setup_fee: 0,
+        duration_months: 12,
+        short_description: 'Advanced tools for growing businesses',
+        full_description: 'Take your business to the next level with enhanced visibility and marketing tools.',
+        features: ['Everything in Starter', 'Featured listing placement', 'Analytics dashboard', 'Marketing tools', 'Priority support'],
+        popular: true,
+        payment_type: 'recurring' as PaymentType,
+        billing_cycle: 'yearly',
         type: 'Business',
-        paymentType: 'one-time'
+        dashboard_sections: ['basic_profile', 'ratings_reviews', 'customer_leads', 'marketing_campaigns', 'analytics_dashboard']
       }
     ];
     
-    const createdPackages = [];
+    const influencerPackages = [
+      {
+        id: nanoid(),
+        title: 'Influencer Basic',
+        price: 999,
+        monthly_price: 99,
+        setup_fee: 0,
+        duration_months: 12,
+        short_description: 'Essential tools for new influencers',
+        full_description: 'Start your influencer journey with the tools you need to grow your audience.',
+        features: ['Influencer profile', 'Basic analytics', 'Collaboration tools', 'Email support'],
+        popular: false,
+        payment_type: 'recurring' as PaymentType,
+        billing_cycle: 'yearly',
+        type: 'Influencer',
+        dashboard_sections: ['influencer_profile', 'basic_analytics', 'collaboration_tools']
+      },
+      {
+        id: nanoid(),
+        title: 'Influencer Pro',
+        price: 2999,
+        monthly_price: 299,
+        setup_fee: 0,
+        duration_months: 12,
+        short_description: 'Advanced tools for established influencers',
+        full_description: 'Take your influence to the next level with enhanced analytics and collaboration opportunities.',
+        features: ['Everything in Basic', 'Advanced analytics', 'Featured profile placement', 'Priority collaborations', 'Priority support'],
+        popular: true,
+        payment_type: 'recurring' as PaymentType,
+        billing_cycle: 'yearly',
+        type: 'Influencer',
+        dashboard_sections: ['influencer_profile', 'advanced_analytics', 'collaboration_tools', 'campaign_management', 'monetization_tools']
+      }
+    ];
     
-    for (const pkg of packageTemplates) {
-      // Convert to Supabase format
-      const packageData = {
-        id: pkg.id,
-        title: pkg.title,
-        price: pkg.price,
-        monthly_price: pkg.monthlyPrice,
-        setup_fee: pkg.setupFee || 0,
-        duration_months: pkg.durationMonths,
-        short_description: pkg.shortDescription,
-        full_description: pkg.fullDescription,
-        features: pkg.features,
-        popular: pkg.popular,
-        type: pkg.type,
-        payment_type: pkg.paymentType,
-        billing_cycle: pkg.billingCycle,
-        dashboard_sections: []
-      };
-      
-      const { data, error } = await supabase
+    const packages = [...businessPackages, ...influencerPackages];
+    
+    // Insert each package one by one
+    let insertedCount = 0;
+    for (const pkg of packages) {
+      const { error } = await supabase
         .from('subscription_packages')
-        .upsert(packageData)
-        .select();
-      
-      if (error) throw error;
-      if (data && data.length > 0) createdPackages.push(data[0]);
+        .upsert(pkg);
+        
+      if (!error) {
+        insertedCount++;
+      } else {
+        console.error("Error inserting package:", error);
+      }
     }
     
-    return {
-      success: true,
-      count: createdPackages.length,
-      packages: createdPackages
+    return { 
+      success: true, 
+      count: insertedCount,
+      message: `Created ${insertedCount} subscription packages`
     };
   } catch (error) {
-    console.error('Error creating dummy subscription packages:', error);
-    return {
-      success: false,
+    console.error("Error seeding subscription packages:", error);
+    return { 
+      success: false, 
+      count: 0,
       error: error instanceof Error ? error.message : String(error)
     };
   }
 };
 
-// Generate dummy subscriptions
 export const seedDummySubscriptions = async (count = 10) => {
   try {
-    // Get users and packages to assign
-    const { data: users, error: usersError } = await supabase
+    // First, get users
+    const { data: users, error: userError } = await supabase
       .from('users')
       .select('id, role')
       .limit(count);
+      
+    if (userError) throw userError;
+    if (!users || users.length === 0) {
+      throw new Error("No users found to assign subscriptions");
+    }
     
-    if (usersError) throw usersError;
-    if (!users || users.length === 0) throw new Error('No users found to assign subscriptions to');
-    
-    const { data: packages, error: packagesError } = await supabase
+    // Get packages
+    const { data: packages, error: pkgError } = await supabase
       .from('subscription_packages')
-      .select('id, title, price, type, payment_type');
+      .select('id, title, price, type');
+      
+    if (pkgError) throw pkgError;
+    if (!packages || packages.length === 0) {
+      throw new Error("No subscription packages found");
+    }
     
-    if (packagesError) throw packagesError;
-    if (!packages || packages.length === 0) throw new Error('No subscription packages found');
-    
+    // Create subscriptions
     const subscriptions = [];
     
     for (let i = 0; i < Math.min(count, users.length); i++) {
       const user = users[i];
-      // Find appropriate package for user role
-      const userRole = user.role || 'User';
-      const matchingPackages = packages.filter(pkg => pkg.type === userRole || pkg.type === 'Business');
+      let matchingPackages = packages.filter(pkg => pkg.type === user.role);
       
-      if (matchingPackages.length === 0) continue;
+      // If no matching packages, use any package
+      if (matchingPackages.length === 0) {
+        matchingPackages = packages;
+      }
       
-      // Select random package
-      const selectedPackage = matchingPackages[Math.floor(Math.random() * matchingPackages.length)];
+      const pkg = matchingPackages[Math.floor(Math.random() * matchingPackages.length)];
       
       const startDate = new Date();
-      const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + 12); // 12 months subscription
+      startDate.setDate(startDate.getDate() - Math.floor(Math.random() * 60)); // Random start in the past 60 days
       
-      const subscription = {
+      const endDate = new Date(startDate);
+      endDate.setFullYear(endDate.getFullYear() + 1); // 1 year subscription
+      
+      subscriptions.push({
         id: nanoid(),
         user_id: user.id,
-        package_id: selectedPackage.id,
-        package_name: selectedPackage.title,
-        amount: selectedPackage.price,
+        package_id: pkg.id,
+        package_name: pkg.title,
+        amount: pkg.price,
         start_date: startDate.toISOString(),
         end_date: endDate.toISOString(),
-        status: Math.random() > 0.8 ? 'cancelled' : 'active', // 20% chance of being cancelled
-        payment_type: selectedPackage.payment_type || 'recurring',
+        status: i % 5 === 0 ? 'cancelled' : 'active', // Some cancelled subscriptions
+        payment_type: 'recurring' as PaymentType,
         assigned_at: startDate.toISOString(),
-        assigned_by: 'system'
-      };
-      
-      const { data, error } = await supabase
-        .from('user_subscriptions')
-        .upsert(subscription)
-        .select();
-      
-      if (error) throw error;
-      if (data && data.length > 0) subscriptions.push(data[0]);
+        assigned_by: 'admin'
+      });
     }
     
-    return {
-      success: true,
-      count: subscriptions.length,
-      subscriptions
+    // Insert the subscriptions one by one to handle type issues
+    let insertedCount = 0;
+    for (const subscription of subscriptions) {
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .upsert(subscription);
+        
+      if (!error) {
+        insertedCount++;
+      } else {
+        console.error("Error inserting subscription:", error);
+      }
+    }
+    
+    return { 
+      success: true, 
+      count: insertedCount,
+      message: `Created ${insertedCount} dummy subscriptions`
     };
   } catch (error) {
-    console.error('Error creating dummy subscriptions:', error);
-    return {
-      success: false,
+    console.error("Error seeding dummy subscriptions:", error);
+    return { 
+      success: false, 
+      count: 0,
       error: error instanceof Error ? error.message : String(error)
     };
   }
 };
 
-// Seed all data at once
 export const seedAllDummyData = async () => {
   try {
-    const userResult = await seedDummyUsers(15);
-    const businessResult = await seedDummyBusinesses(20);
+    const userResult = await seedDummyUsers(20);
+    const businessResult = await seedDummyBusinesses(15);
     const packageResult = await seedDummySubscriptionPackages();
-    const subscriptionResult = await seedDummySubscriptions(25);
+    const subscriptionResult = await seedDummySubscriptions(15);
     
     return {
-      success: true,
-      users: userResult.success ? userResult.count : 0,
-      businesses: businessResult.success ? businessResult.count : 0,
-      packages: packageResult.success ? packageResult.count : 0,
-      subscriptions: subscriptionResult.success ? subscriptionResult.count : 0
+      success: userResult.success && businessResult.success && packageResult.success && subscriptionResult.success,
+      users: userResult.count,
+      businesses: businessResult.count,
+      packages: packageResult.count,
+      subscriptions: subscriptionResult.count,
+      message: "Seed data operation completed"
     };
   } catch (error) {
-    console.error('Error seeding all data:', error);
+    console.error("Error in seedAllDummyData:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error)

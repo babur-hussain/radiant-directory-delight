@@ -1,15 +1,19 @@
-
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { CheckCircle, Users, Star, TrendingUp, Award, Zap, CheckSquare, ArrowRight, Check } from 'lucide-react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useAuth } from '@/hooks/useAuth';
+import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
+import { InfoCircle } from '@/components/ui/InfoCircle';
+import TestimonialSection from '@/components/TestimonialSection';
+
+import { CheckCircle, Users, Star, TrendingUp, Award, Zap, CheckSquare, ArrowRight, Check } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { SubscriptionPackage, convertToSubscriptionPackage } from '@/data/subscriptionData';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
 import { fetchSubscriptionPackagesByType } from '@/lib/mongodb-utils';
-import { SubscriptionPackages } from '@/components/subscription/SubscriptionPackages';
 import Loading from '@/components/ui/loading';
 
 const InfluencerPage = () => {
@@ -23,13 +27,11 @@ const InfluencerPage = () => {
       behavior: 'smooth',
     });
     
-    // Fetch packages from MongoDB
     const loadPackages = async () => {
       setIsLoading(true);
       try {
         const fetchedPackages = await fetchSubscriptionPackagesByType('Influencer');
         console.log('Fetched influencer packages:', fetchedPackages);
-        // Convert the packages to the correct type
         const convertedPackages = fetchedPackages.map(pkg => convertToSubscriptionPackage(pkg));
         setPackages(convertedPackages);
       } catch (error) {

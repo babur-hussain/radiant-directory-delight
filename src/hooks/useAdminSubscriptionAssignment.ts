@@ -1,7 +1,8 @@
+
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createSubscription, updateSubscription, deleteSubscription } from '@/services/subscriptionService';
-import { ISubscription } from '@/models/Subscription';
+import { ISubscription, PaymentType } from '@/models/Subscription';
 import { nanoid } from 'nanoid';
 
 const useAdminSubscriptionAssignment = () => {
@@ -25,7 +26,7 @@ const useAdminSubscriptionAssignment = () => {
         packageName: subscriptionData.packageName || '',
         userId: subscriptionData.userId || '',
         amount: subscriptionData.amount || 0,
-        paymentType: subscriptionData.paymentType || 'recurring'
+        paymentType: subscriptionData.paymentType as PaymentType || 'recurring'
       });
       return subscription;
     },

@@ -29,17 +29,17 @@ export const initializeDatabase = async (): Promise<boolean> => {
     console.log('Initializing database...');
     
     // Check if tables exist by trying to query them
-    const tables = ['users', 'businesses', 'subscription_packages', 'user_subscriptions'];
+    const tableNames = ['users', 'businesses', 'subscription_packages', 'user_subscriptions'];
     let allTablesExist = true;
     
-    for (const table of tables) {
+    for (const tableName of tableNames) {
       const { error } = await supabase
-        .from(table)
+        .from(tableName as any)
         .select('count')
         .limit(1);
       
       if (error) {
-        console.error(`Table '${table}' does not exist or is not accessible:`, error);
+        console.error(`Table '${tableName}' does not exist or is not accessible:`, error);
         allTablesExist = false;
         break;
       }

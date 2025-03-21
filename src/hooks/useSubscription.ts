@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { ISubscription } from '@/models/Subscription';
+import { ISubscription, PaymentType } from '@/models/Subscription';
 import { createSubscription as createSubscriptionAPI, updateSubscription as updateSubscriptionAPI, getSubscription as getSubscriptionAPI, getSubscriptions as getSubscriptionsAPI, deleteSubscription as deleteSubscriptionAPI, getUserSubscriptions as getUserSubscriptionsAPI, getActiveUserSubscription } from '@/services/subscriptionService';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
@@ -47,7 +47,7 @@ export const useSubscription = () => {
   });
 
   const updateSubscriptionMutation = useMutation({
-    mutationFn: (subscriptionData: ISubscription) => updateSubscriptionAPI(subscriptionData.id, subscriptionData),
+    mutationFn: (subscriptionData: Partial<ISubscription>) => updateSubscriptionAPI(subscriptionData.id as string, subscriptionData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
       queryClient.invalidateQueries({ queryKey: ['subscription', subscription?.id] });
@@ -72,7 +72,7 @@ export const useSubscription = () => {
       packageName: subscriptionData.packageName || '',
       userId: subscriptionData.userId || '',
       amount: subscriptionData.amount || 0,
-      paymentType: subscriptionData.paymentType || 'recurring'
+      paymentType: (subscriptionData.paymentType as PaymentType) || 'recurring'
     } as ISubscription;
 
     const result = await createSubscriptionMutation.mutateAsync(newSubscription);
@@ -115,7 +115,7 @@ export const useSubscription = () => {
         startDate: today.toISOString(),
         endDate: endDate.toISOString(),
         amount: isOneTime ? (paymentDetails?.amount || 0) : (paymentDetails?.recurringAmount || 0),
-        paymentType: paymentDetails?.paymentType || 'recurring',
+        paymentType: (paymentDetails?.paymentType as PaymentType) || 'recurring',
         paymentMethod: 'razorpay',
         transactionId: paymentDetails?.paymentId || '',
         billingCycle: paymentDetails?.billingCycle || 'yearly',

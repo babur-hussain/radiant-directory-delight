@@ -12,7 +12,7 @@ export const fetchBusinesses = async (): Promise<IBusiness[]> => {
       .select('*');
     
     if (error) throw error;
-    return data.map(business => fromSupabase(business));
+    return data ? data.map(business => fromSupabase(business)) : [];
   } catch (error) {
     console.error("Error getting businesses:", error);
     return [];
@@ -36,13 +36,17 @@ export const saveBusiness = async (businessData: Partial<IBusiness>): Promise<IB
         : null
     };
     
+    // For insert, make sure to include the name property
     const { data, error } = await supabase
       .from('businesses')
-      .upsert([formattedData])
+      .upsert([{
+        ...formattedData,
+        name: businessData.name // Explicitly include name since it's required
+      }])
       .select();
     
     if (error) throw error;
-    return data?.[0] ? fromSupabase(data[0]) : null;
+    return data && data.length > 0 ? fromSupabase(data[0]) : null;
   } catch (error) {
     console.error("Error creating/updating business:", error);
     return null;

@@ -408,7 +408,12 @@ const Dashboard = () => {
           </TabsContent>
           
           <TabsContent value="seed" className="space-y-4">
-            <SeedDataPanel />
+            <SeedDataPanel
+              onPermissionError={handlePermissionError}
+              dbInitialized={dbInitialized}
+              connectionStatus={connectionStatus}
+              onRetryConnection={handleRetryConnection}
+            />
           </TabsContent>
           
           <TabsContent value="stats" className="space-y-4">
