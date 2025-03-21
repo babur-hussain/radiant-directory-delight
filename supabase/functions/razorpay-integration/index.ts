@@ -99,7 +99,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         key: RAZORPAY_KEY_ID,
-        amount: amountInPaise,
+        amount: amountInPaise, // Make sure this is included in the response
         currency: "INR",
         name: "Grow Bharat Vyapaar",
         description: packageData.title || "Subscription payment",

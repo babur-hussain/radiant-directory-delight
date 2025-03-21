@@ -65,4 +65,7 @@ export interface SubscriptionResult {
   isOneTime: boolean;
   isSubscription: boolean;
   enableAutoPay: boolean;
+  amount?: number; // Add this property to fix the TypeScript error
+  key?: string;
+  currency?: string;
 }

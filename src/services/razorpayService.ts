@@ -248,7 +248,8 @@ export const buildRazorpayOptions = (
     name: 'Grow Bharat Vyapaar',
     description: `Payment for ${packageData.title}`,
     image: 'https://your-company-logo.png',
-    amount: result.amount || Math.round(packageData.price * 100), // Use amount from edge function or calculate
+    // Fix the TypeScript error by adding fallback when result.amount is undefined
+    amount: result.amount !== undefined ? result.amount : Math.round(packageData.price * 100),
     currency: 'INR',
     notes: {
       packageId: packageData.id.toString(),
@@ -265,8 +266,8 @@ export const buildRazorpayOptions = (
         isSubscription: !isOneTime,
         enableAutoPay: enableAutoPay,
         packageDetails: packageData,
-        // Include any other data needed for successful payment processing
-        amount: result.amount || Math.round(packageData.price * 100)
+        // Fix the TypeScript error by adding fallback when result.amount is undefined
+        amount: result.amount !== undefined ? result.amount : Math.round(packageData.price * 100)
       });
     },
     modal: {
