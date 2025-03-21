@@ -126,6 +126,24 @@ export const loginWithEmail = async (
     // Handle case where user exists in auth but not in public.users table
     if (!userData) {
       console.log("User auth exists but no profile found, creating default profile");
+      
+      // Create a basic profile in the users table
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.user_metadata.name || '',
+          role: isAdmin ? 'Admin' : (data.user.user_metadata.role || 'User'),
+          is_admin: isAdmin,
+          created_at: new Date().toISOString(),
+          last_login: new Date().toISOString()
+        });
+        
+      if (insertError) {
+        console.error("Error creating user profile:", insertError);
+      }
+      
       // Default user data
       userData = {
         uid: data.user.id,
@@ -133,7 +151,7 @@ export const loginWithEmail = async (
         email: data.user.email || '',
         displayName: data.user.user_metadata.name || '',
         name: data.user.user_metadata.name || '',
-        role: (data.user.user_metadata.role as UserRole) || 'User',
+        role: isAdmin ? 'Admin' : (data.user.user_metadata.role as UserRole) || 'User',
         isAdmin: isAdmin || (data.user.user_metadata.is_admin === true),
         photoURL: null,
         createdAt: new Date().toISOString(),
@@ -165,7 +183,7 @@ export const loginWithEmail = async (
       .update({ last_login: new Date().toISOString() })
       .eq('id', data.user.id);
 
-    console.log("Login successful, returning user data");
+    console.log("Login successful, returning user data:", userData);
     return userData;
   } catch (error) {
     console.error("Error in loginWithEmail:", error);
@@ -244,27 +262,51 @@ export const getCurrentUser = async () => {
     console.log("Authenticated user found:", data.user.id, "email:", data.user.email);
     
     // Fetch user profile data
-    const userData = await fetchUserByUid(data.user.id);
+    let userData = await fetchUserByUid(data.user.id);
     
     if (!userData) {
       console.log("User auth exists but no profile found in database");
       
-      // Create a basic user object if profile not found
-      const basicUserData: User = {
-        uid: data.user.id,
-        id: data.user.id,
-        email: data.user.email || '',
-        displayName: data.user.user_metadata?.name || '',
-        name: data.user.user_metadata?.name || '',
-        role: (data.user.user_metadata?.role as UserRole) || 'User',
-        isAdmin: isDefaultAdminEmail(data.user.email || '') || (data.user.user_metadata?.is_admin === true),
-        photoURL: null,
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-      };
+      // Try to create a profile in the database
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.user_metadata?.name || '',
+          role: isDefaultAdminEmail(data.user.email || '') ? 'Admin' : (data.user.user_metadata?.role || 'User'),
+          is_admin: isDefaultAdminEmail(data.user.email || '') || (data.user.user_metadata?.is_admin === true),
+          created_at: new Date().toISOString(),
+          last_login: new Date().toISOString()
+        });
+        
+      if (insertError) {
+        console.error("Error creating user profile:", insertError);
+      } else {
+        console.log("Created new user profile in database");
+        // Try to fetch the newly created profile
+        userData = await fetchUserByUid(data.user.id);
+      }
       
-      console.log("Created basic user profile:", basicUserData.email, "role:", basicUserData.role);
-      return basicUserData;
+      // If we still don't have a profile, create a basic user object
+      if (!userData) {
+        // Create a basic user object if profile not found
+        const basicUserData: User = {
+          uid: data.user.id,
+          id: data.user.id,
+          email: data.user.email || '',
+          displayName: data.user.user_metadata?.name || '',
+          name: data.user.user_metadata?.name || '',
+          role: isDefaultAdminEmail(data.user.email || '') ? 'Admin' : (data.user.user_metadata?.role as UserRole) || 'User',
+          isAdmin: isDefaultAdminEmail(data.user.email || '') || (data.user.user_metadata?.is_admin === true),
+          photoURL: null,
+          createdAt: new Date().toISOString(),
+          lastLogin: new Date().toISOString(),
+        };
+        
+        console.log("Created basic user profile:", basicUserData.email, "role:", basicUserData.role);
+        return basicUserData;
+      }
     }
     
     // Special case for default admin

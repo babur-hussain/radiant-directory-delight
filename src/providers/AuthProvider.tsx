@@ -5,7 +5,8 @@ import {
   User,
   UserRole,
   AuthContextType,
-  SessionData
+  SessionData,
+  DEFAULT_ADMIN_EMAIL
 } from '@/types/auth';
 import {
   signupWithEmail,
@@ -75,7 +76,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 console.log("User data fetched:", userData ? "success" : "null");
                 
                 // Special case for default admin
-                if (_session.user?.email?.toLowerCase() === 'baburhussain660@gmail.com' && userData) {
+                if (_session.user?.email?.toLowerCase() === DEFAULT_ADMIN_EMAIL.toLowerCase() && userData) {
                   userData.isAdmin = true;
                   userData.role = 'Admin';
                   console.log("Admin user detected, forcing admin role");
@@ -133,7 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.log("User data for existing session:", userData ? userData.email : "null");
             
             // Special case for default admin
-            if (currentSession.user?.email?.toLowerCase() === 'baburhussain660@gmail.com' && userData) {
+            if (currentSession.user?.email?.toLowerCase() === DEFAULT_ADMIN_EMAIL.toLowerCase() && userData) {
               userData.isAdmin = true;
               userData.role = 'Admin';
               console.log("Setting admin privileges for default admin account");
@@ -219,7 +220,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       
       // Check if this is the admin email
-      const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
+      const isDefaultAdmin = email.toLowerCase() === DEFAULT_ADMIN_EMAIL.toLowerCase();
       if (isDefaultAdmin) {
         console.log("Registering default admin account");
         role = 'Admin';
@@ -304,7 +305,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userData = await getCurrentUser();
       
       // Special case for default admin
-      if (userData?.email?.toLowerCase() === 'baburhussain660@gmail.com') {
+      if (userData?.email?.toLowerCase() === DEFAULT_ADMIN_EMAIL.toLowerCase()) {
         userData.isAdmin = true;
         userData.role = 'Admin';
         console.log("Refreshed user data with admin privileges");

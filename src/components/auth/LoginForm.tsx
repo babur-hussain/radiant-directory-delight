@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,7 +20,7 @@ import SocialLoginButtons from "./SocialLoginButtons";
 import { useAuth } from "@/hooks/useAuth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
-import { isDefaultAdminEmail } from "@/types/auth";
+import { isDefaultAdminEmail, DEFAULT_ADMIN_EMAIL } from "@/types/auth";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -144,6 +145,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
 
   // Is this the default admin email?
   const isAdminEmail = isDefaultAdminEmail(form.watch('email'));
+
+  // Auto-fill admin email and password for demo purposes
+  React.useEffect(() => {
+    // Only set default values if the form is empty
+    if (!form.getValues("email") && !form.getValues("password")) {
+      // Set the default admin email
+      form.setValue("email", DEFAULT_ADMIN_EMAIL);
+      // For demo, you can set a default password - but be careful with this in production
+      form.setValue("password", "password123");
+    }
+  }, [form]);
 
   return (
     <div className="space-y-6 py-4">

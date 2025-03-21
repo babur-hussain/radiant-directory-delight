@@ -133,7 +133,7 @@ export const DEFAULT_ADMIN_EMAIL = 'baburhussain660@gmail.com';
 
 // Helper function to check if an email is the default admin
 export function isDefaultAdminEmail(email: string): boolean {
-  return email.toLowerCase() === DEFAULT_ADMIN_EMAIL.toLowerCase();
+  return email?.toLowerCase() === DEFAULT_ADMIN_EMAIL.toLowerCase();
 }
 
 export interface AuthContextType {
