@@ -54,17 +54,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         address.zipCode = addressData.zip_code;
       }
 
-      // Use optional chaining and type assertions to safely access these properties
-      // TypeScript will no longer complain about these properties not existing
-      const profileData = profile || {};
+      // Use type assertion to treat profile as a record with string keys
+      // This allows us to access potentially undefined properties safely
+      const profileData = profile as Record<string, any> || {};
       
-      // Access possibly undefined properties safely
-      const engagementRate = profileData.engagement_rate as string | null || null;
-      const preferredLanguage = profileData.preferred_language as string | null || null;
-      const interests = profileData.interests as string | null || null;
-      const location = profileData.location as string | null || null;
-      const assignedBusinessId = profileData.assigned_business_id as string | null || null;
-      const staffRole = profileData.staff_role as string | null || null;
+      // Access possibly undefined properties safely with type assertions
+      const engagementRate = profileData.engagement_rate || null;
+      const preferredLanguage = profileData.preferred_language || null;
+      const interests = profileData.interests || null;
+      const location = profileData.location || null;
+      const assignedBusinessId = profileData.assigned_business_id || null;
+      const staffRole = profileData.staff_role || null;
 
       return {
         uid: session.user.id,
