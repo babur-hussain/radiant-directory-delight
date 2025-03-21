@@ -1,5 +1,5 @@
 
-// Update the ISubscriptionPackage type to properly reflect the structure needed
+// Define the ISubscriptionPackage type to properly reflect the structure needed
 export interface ISubscriptionPackage {
   id: string;
   title: string;

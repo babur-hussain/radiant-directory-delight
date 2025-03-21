@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { ISubscription, SubscriptionStatus, PaymentType, BillingCycle } from '@/models/Subscription';
@@ -122,9 +121,36 @@ export const createOrUpdatePackage = async (packageData: ISubscriptionPackage): 
       packageData.features = (packageData.features as unknown as string).split(',').map((f: string) => f.trim());
     }
     
+    // Ensure dashboardSections is an array
+    if (!Array.isArray(packageData.dashboardSections)) {
+      packageData.dashboardSections = [];
+    }
+    
+    // Prepare the data for Supabase (snake_case)
+    const supabaseData = {
+      id: packageData.id,
+      title: packageData.title,
+      price: packageData.price,
+      monthly_price: packageData.monthlyPrice || 0,
+      setup_fee: packageData.setupFee || 0,
+      duration_months: packageData.durationMonths || 12,
+      short_description: packageData.shortDescription || '',
+      full_description: packageData.fullDescription || '',
+      features: packageData.features,
+      popular: packageData.popular || false,
+      type: packageData.type || 'Business',
+      terms_and_conditions: packageData.termsAndConditions || '',
+      payment_type: packageData.paymentType || 'recurring',
+      billing_cycle: packageData.billingCycle || undefined,
+      advance_payment_months: packageData.advancePaymentMonths || 0,
+      dashboard_sections: packageData.dashboardSections || []
+    };
+    
+    console.log("Supabase data to save:", JSON.stringify(supabaseData, null, 2));
+    
     const { data, error } = await supabase
       .from('subscription_packages')
-      .upsert([packageData])
+      .upsert([supabaseData])
       .select();
     
     if (error) throw error;
@@ -136,7 +162,7 @@ export const createOrUpdatePackage = async (packageData: ISubscriptionPackage): 
     } : null;
   } catch (error) {
     console.error("Error creating/updating subscription package:", error);
-    return null;
+    throw error;
   }
 };
 

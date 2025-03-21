@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -156,8 +157,8 @@ const AdminSubscriptionsPage = () => {
         setup_fee: data.setupFee || 0,
         type: data.type || 'Business',
         payment_type: data.paymentType || 'recurring',
-        billing_cycle: data.billingCycle || 'yearly',
-        dashboard_sections: data.dashboardSections || [],
+        billing_cycle: data.billingCycle || undefined,
+        dashboard_sections: Array.isArray(data.dashboardSections) ? data.dashboardSections : [],
         terms_and_conditions: data.termsAndConditions || '',
         advance_payment_months: data.advancePaymentMonths || 0
       };
