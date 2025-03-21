@@ -6,7 +6,7 @@
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { supabase } from '@/integrations/supabase/client';
 import { RAZORPAY_KEY_ID } from '@/utils/razorpayLoader';
-import { RazorpayOptions, SubscriptionResult } from '@/types/razorpay';
+import { RazorpayOptions, SubscriptionResult, AutopayDetails } from '@/types/razorpay';
 
 /**
  * Create a new Razorpay checkout instance
@@ -243,7 +243,7 @@ export const buildRazorpayOptions = (
   const currentUrl = window.location.href.split('?')[0].split('#')[0];
   
   // Include autopay information in notes
-  const notes = {
+  const notes: Record<string, string> = {
     packageId: packageData.id.toString(),
     userId: user.id,
     enableAutoPay: enableAutoPay ? "true" : "false",
@@ -255,11 +255,12 @@ export const buildRazorpayOptions = (
     notes.autopayDetails = JSON.stringify(result.autopayDetails);
   }
   
+  // Add autopay details to notes if they exist in the result
   if (enableAutoPay && packageData.paymentType === 'recurring') {
-    notes.nextBillingDate = result.nextBillingDate || '';
-    notes.recurringAmount = String(result.recurringPaymentAmount || 0);
-    notes.remainingPayments = String(result.recurringPaymentCount || 0);
-    notes.totalRemainingAmount = String(result.remainingAmount || 0);
+    if (result.nextBillingDate) notes.nextBillingDate = result.nextBillingDate;
+    if (result.recurringPaymentAmount) notes.recurringAmount = String(result.recurringPaymentAmount);
+    if (result.recurringPaymentCount) notes.remainingPayments = String(result.recurringPaymentCount);
+    if (result.remainingAmount) notes.totalRemainingAmount = String(result.remainingAmount);
   }
   
   // Base options for Razorpay
@@ -303,3 +304,4 @@ export const buildRazorpayOptions = (
   
   return options;
 };
+
