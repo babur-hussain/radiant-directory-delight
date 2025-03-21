@@ -1,4 +1,3 @@
-
 export interface RazorpayOptions {
   key: string;
   amount?: number;
@@ -17,7 +16,7 @@ export interface RazorpayOptions {
     color?: string;
   };
   subscription_id?: string;
-  readonly recurring?: boolean;
+  recurring?: boolean;
   remember_customer?: boolean;
   modal?: {
     escape?: boolean;
