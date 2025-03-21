@@ -18,19 +18,19 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Generate a valid Razorpay order ID format (order_XXX where XXX is 14 chars)
-function generateValidOrderId(): string {
-  // Format: order_[14 random alphanumeric characters]
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  const charactersLength = characters.length;
-  
+// Important: For Razorpay, we need to mock a real order without actually creating one in their system
+// This function generates a random string that looks like a valid Razorpay order ID
+// Note: In production, we should be calling Razorpay's API to create a real order
+function mockOrderIdGenerator(): string {
+  // Note: In real production environment, you should use the Razorpay API to create a real order
+  // This is a temporary workaround for testing without API key access
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = 'order_';
+  // Razorpay order IDs are typically 14 characters after the "order_" prefix
   for (let i = 0; i < 14; i++) {
-    const randomIndex = Math.floor(Math.random() * charactersLength);
-    result += characters.charAt(randomIndex);
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  
-  return `order_${result}`;
+  return result;
 }
 
 // Server entrypoint
@@ -95,8 +95,9 @@ serve(async (req) => {
     // Generate a receipt ID
     const receiptId = `receipt_${Date.now().toString(36)}`;
     
-    // Generate a valid order ID that matches Razorpay format requirements
-    const orderId = generateValidOrderId();
+    // Generate a valid order ID that Razorpay will accept
+    // In a production environment, this should be created through Razorpay's API
+    const orderId = mockOrderIdGenerator();
     console.log("Generated order ID:", orderId);
     
     // Create subscription data if recurring

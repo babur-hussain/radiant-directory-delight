@@ -114,6 +114,13 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   if (!isRazorpayAvailable()) {
     throw new Error('Razorpay SDK not loaded');
   }
+  
+  // Validate order ID format if present
+  if (options.order_id && (!options.order_id.startsWith('order_') || options.order_id.length < 20)) {
+    console.error("Invalid order_id format:", options.order_id);
+    throw new Error('Invalid order ID format. Please try again.');
+  }
+  
   return new (window as any).Razorpay(options);
 };
 

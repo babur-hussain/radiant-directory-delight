@@ -1,4 +1,3 @@
-
 /**
  * Service for Razorpay API interactions
  */
@@ -29,6 +28,12 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   if (!safeOptions.key || !safeOptions.order_id) {
     console.error("Missing required Razorpay parameters:", safeOptions);
     throw new Error('Required parameters missing: key and order_id are mandatory for Razorpay checkout');
+  }
+  
+  // Validate order_id format
+  if (!safeOptions.order_id.startsWith('order_') || safeOptions.order_id.length < 20) {
+    console.error("Invalid order_id format:", safeOptions.order_id);
+    throw new Error('Invalid order ID format. Please try again.');
   }
   
   try {
@@ -209,6 +214,12 @@ export const createSubscriptionViaEdgeFunction = async (
     if (!data.order || !data.order.id) {
       console.error('Invalid response from edge function:', data);
       throw new Error('Invalid response: missing order information');
+    }
+    
+    // Validate order ID format
+    if (!data.order.id.startsWith('order_') || data.order.id.length < 20) {
+      console.error('Invalid order ID format from edge function:', data.order.id);
+      throw new Error('Invalid order ID format received from server');
     }
     
     return data;
