@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useRazorpay } from '@/hooks/useRazorpay';
 import { ensureRazorpayAvailable } from '@/utils/razorpayLoader';
+import PaymentErrorFallback from './PaymentErrorFallback';
 
 interface RazorpayPaymentProps {
   selectedPackage: ISubscriptionPackage;
@@ -85,7 +86,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       }
       
       // Create subscription and open Razorpay checkout
-      const result = await createSubscription(selectedPackage, enableAutoPay);
+      const result = await createSubscription(
+        selectedPackage, 
+        enableAutoPay
+      );
       
       console.log('Payment success:', result);
       
@@ -187,56 +191,11 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   
   // Error state
   if (error) {
-    return (
-      <Alert variant="destructive" className="mb-4">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Payment Error</AlertTitle>
-        <AlertDescription className="space-y-2">
-          <p>{error}</p>
-          {retryCount >= 2 ? (
-            <div className="mt-2">
-              <p className="text-sm mb-2">We're experiencing issues with the payment provider. You can:</p>
-              <div className="flex space-x-2 mt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleRetry}
-                  disabled={isProcessing}
-                  className="flex items-center"
-                >
-                  <RefreshCw className="h-3 w-3 mr-1" /> Try Again
-                </Button>
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  onClick={() => window.location.reload()}
-                >
-                  Reload Page
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex space-x-2 mt-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleRetry}
-                disabled={isProcessing}
-              >
-                Try Again
-              </Button>
-              <Button 
-                variant="default" 
-                size="sm" 
-                onClick={() => window.location.reload()}
-              >
-                Reload Page
-              </Button>
-            </div>
-          )}
-        </AlertDescription>
-      </Alert>
-    );
+    return <PaymentErrorFallback 
+      error={error} 
+      onRetry={handleRetry} 
+      retryCount={retryCount} 
+    />;
   }
   
   // Normal payment UI

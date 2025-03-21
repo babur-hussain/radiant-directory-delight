@@ -21,6 +21,7 @@ const PaymentErrorFallback: React.FC<PaymentErrorFallbackProps> = ({
   const isNetworkError = error.includes('network') || error.includes('connection') || error.includes('offline');
   const isRazorpayError = error.includes('Razorpay') || error.includes('payment') || error.includes('gateway');
   const isAuthError = error.includes('authentication') || error.includes('login') || error.includes('logged in');
+  const isBadRequestError = error.includes('400') || error.includes('Bad Request');
   
   return (
     <div className="w-full max-w-lg mx-auto p-4">
@@ -40,6 +41,13 @@ const PaymentErrorFallback: React.FC<PaymentErrorFallbackProps> = ({
             {isRazorpayError && (
               <p className="text-sm mb-2">
                 There was an issue with the payment gateway. This might be temporary, please try again in a few moments.
+              </p>
+            )}
+            
+            {isBadRequestError && (
+              <p className="text-sm mb-2">
+                The payment gateway rejected the request. This could be due to invalid data or configuration issues.
+                Please try refreshing the page and trying again.
               </p>
             )}
             

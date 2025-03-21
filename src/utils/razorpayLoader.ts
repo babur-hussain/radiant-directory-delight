@@ -29,20 +29,12 @@ export const loadRazorpayScript = (): Promise<boolean> => {
 
     console.log("Loading Razorpay script...");
     
-    // Check for existing script to avoid duplicates
-    const existingScript = document.querySelector(`script[src="${RAZORPAY_SCRIPT_URL}"]`);
-    if (existingScript) {
-      console.log("Razorpay script tag exists but not initialized yet, waiting...");
-      // Wait for existing script to load
-      const checkRazorpay = setInterval(() => {
-        if (isRazorpayAvailable()) {
-          clearInterval(checkRazorpay);
-          console.log("Razorpay initialized from existing script");
-          resolve(true);
-        }
-      }, 100);
-      return;
-    }
+    // First, remove any existing Razorpay script tags to prevent conflicts
+    const existingScripts = document.querySelectorAll(`script[src*="checkout.razorpay.com"]`);
+    existingScripts.forEach(script => {
+      console.log("Removing existing Razorpay script");
+      script.remove();
+    });
 
     // Create and append script tag
     const script = document.createElement('script');
@@ -59,12 +51,20 @@ export const loadRazorpayScript = (): Promise<boolean> => {
     script.onerror = () => {
       console.error("Failed to load Razorpay script");
       // Remove the failed script
-      document.body.removeChild(script);
+      script.remove();
       resolve(false);
     };
     
     // Append to body
     document.body.appendChild(script);
+    
+    // Set a timeout as a fallback
+    setTimeout(() => {
+      if (!isRazorpayAvailable()) {
+        console.error("Razorpay script load timed out");
+        resolve(false);
+      }
+    }, 10000); // 10 second timeout
   });
 };
 
@@ -77,7 +77,21 @@ export const ensureRazorpayAvailable = async (): Promise<boolean> => {
     return true;
   }
   
-  return await loadRazorpayScript();
+  // Try loading the script up to 3 times
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    console.log(`Loading Razorpay script attempt ${attempt}/3`);
+    const success = await loadRazorpayScript();
+    if (success && isRazorpayAvailable()) {
+      return true;
+    }
+    
+    // Wait a bit before retrying
+    if (attempt < 3) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+  
+  return false;
 };
 
 /**

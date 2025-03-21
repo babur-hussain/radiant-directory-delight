@@ -39,7 +39,7 @@ export const useRazorpay = () => {
       setIsLoading(true);
       setError(null);
       
-      // Ensure Razorpay is loaded - using improved loader
+      // Ensure Razorpay is loaded
       const isLoaded = await ensureRazorpayAvailable();
       if (!isLoaded) {
         const errorMsg = 'Failed to load payment gateway. Please check your internet connection and try again.';
@@ -88,6 +88,18 @@ export const useRazorpay = () => {
       // Validate response from backend
       if (!result || !result.order || !result.order.id) {
         const errorMsg = 'Invalid response from server: missing order information';
+        toast({
+          title: "Server Error",
+          description: errorMsg,
+          variant: "destructive"
+        });
+        throw new Error(errorMsg);
+      }
+      
+      // Validate that the order ID format is correct
+      if (!result.order.id.startsWith('order_')) {
+        const errorMsg = 'Invalid order ID format from server';
+        console.error(errorMsg, result.order.id);
         toast({
           title: "Server Error",
           description: errorMsg,
@@ -149,10 +161,15 @@ export const useRazorpay = () => {
             razorpay.on('payment.error', (err: any) => {
               console.error("Razorpay payment error:", err);
               
+              let errorMessage = "There was a problem processing your payment.";
+              if (err && err.error && err.error.description) {
+                errorMessage = err.error.description;
+              }
+              
               // Show error toast
               toast({
                 title: "Payment Failed",
-                description: err.error?.description || "There was a problem processing your payment.",
+                description: errorMessage,
                 variant: "destructive"
               });
               
@@ -165,12 +182,14 @@ export const useRazorpay = () => {
           } catch (razorpayError) {
             console.error("Error during Razorpay checkout creation:", razorpayError);
             
+            const errorMessage = razorpayError instanceof Error ? 
+              razorpayError.message : 
+              "Failed to initialize the payment gateway.";
+              
             // Show error toast
             toast({
               title: "Checkout Error",
-              description: razorpayError instanceof Error ? 
-                razorpayError.message : 
-                "Failed to initialize the payment gateway.",
+              description: errorMessage,
               variant: "destructive"
             });
             
@@ -179,16 +198,18 @@ export const useRazorpay = () => {
         } catch (err) {
           console.error('Razorpay initialization error:', err);
           
+          const errorMessage = err instanceof Error ? 
+            err.message : 
+            "Failed to initialize payment gateway";
+            
           // Show error toast
           toast({
             title: "Payment Error",
-            description: err instanceof Error ? 
-              err.message : 
-              "Failed to initialize payment gateway",
+            description: errorMessage,
             variant: "destructive"
           });
           
-          reject(new Error('Failed to initialize payment gateway'));
+          reject(new Error(errorMessage));
         }
       });
     } catch (error) {

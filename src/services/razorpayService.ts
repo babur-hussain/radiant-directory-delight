@@ -55,6 +55,11 @@ const cleanRazorpayOptions = (options: RazorpayOptions): void => {
     }
   });
   
+  // Ensure we have a valid key
+  if (!options.key) {
+    options.key = RAZORPAY_KEY_ID;
+  }
+  
   // Clean up prefill object
   if (options.prefill) {
     Object.keys(options.prefill).forEach(key => {
@@ -85,21 +90,32 @@ const cleanRazorpayOptions = (options: RazorpayOptions): void => {
     }
   }
   
-  // Ensure we don't have both subscription_id and order_id (Razorpay requirement)
+  // ** SPECIAL RAZORPAY VALIDATION **
+  // 1. Ensure we don't have both subscription_id and order_id (Razorpay requirement)
   if (options.subscription_id && options.order_id) {
     console.warn("Both subscription_id and order_id present, removing subscription_id");
     delete options.subscription_id;
   }
   
-  // Remove recurring flag if not a recurring payment
-  if (options.remember_customer === false) {
+  // 2. If recurring is true, ensure we have a valid subscription_id, otherwise remove recurring flag
+  if (options.recurring === true && !options.subscription_id) {
+    console.warn("Recurring flag present without subscription_id, removing recurring flag");
     delete options.recurring;
   }
   
-  // Final check to ensure mandatory fields are present
-  if (!options.key) {
-    console.log("Setting default Razorpay key:", RAZORPAY_KEY_ID);
-    options.key = RAZORPAY_KEY_ID;
+  // 3. Remove amount if order_id is present (Razorpay recommendation)
+  if (options.order_id && options.amount) {
+    console.warn("Both order_id and amount present, removing amount since it's included in the order");
+    delete options.amount;
+  }
+  
+  // 4. If we're using standard checkout mode, make sure we don't send problematic options
+  if (options.order_id && options.order_id.startsWith('order_')) {
+    // For standard checkout, these options can cause conflicts
+    delete options.recurring;
+    delete options.subscription_id;
+    delete options.amount;
+    delete options.currency;
   }
 };
 
@@ -128,7 +144,7 @@ export const createSubscriptionViaEdgeFunction = async (
   }
   
   // Make sure we have the correct URL format
-  const functionUrl = `${SUPABASE_URL}/functions/v1/razorpay-integration/create-subscription`;
+  const functionUrl = `${SUPABASE_URL}/functions/v1/razorpay-integration`;
   console.log("Calling edge function at:", functionUrl);
   
   try {
@@ -160,7 +176,7 @@ export const createSubscriptionViaEdgeFunction = async (
       enableAutoPay: enableAutoPay
     };
     
-    console.log("Sending payload to edge function:", JSON.stringify(payload, null, 2));
+    console.log("Sending payload to edge function:", JSON.stringify(payload));
     
     // Create subscription via edge function
     const response = await fetch(functionUrl, {
@@ -262,12 +278,6 @@ export const buildRazorpayOptions = (
     }
   };
   
-  // Add autopay flags if applicable (only for recurring payments)
-  if (!isOneTime && enableAutoPay) {
-    options.recurring = true;
-    options.remember_customer = true;
-  }
-  
   // Only add prefill if we have values
   if (Object.keys(cleanedPrefill).length > 0) {
     options.prefill = cleanedPrefill;
@@ -277,15 +287,6 @@ export const buildRazorpayOptions = (
   if (result.order && result.order.id) {
     console.log("Setting up order-based payment with order ID:", result.order.id);
     options.order_id = result.order.id;
-    
-    // Also set amount and currency for order-based payments
-    if (result.order.amount) {
-      options.amount = result.order.amount; // amount in paise
-    }
-    
-    if (result.order.currency) {
-      options.currency = result.order.currency || 'INR';
-    }
     
     // Do NOT set subscription_id if order_id is set (Razorpay requirement)
     delete options.subscription_id;
