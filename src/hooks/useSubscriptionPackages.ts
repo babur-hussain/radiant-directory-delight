@@ -34,7 +34,7 @@ export const useSubscriptionPackages = () => {
     }
   });
   
-  // Create or update mutation with consistent error handling
+  // Create or update mutation with simplified error handling
   const createOrUpdateMutation = useMutation({
     mutationFn: async (packageData: ISubscriptionPackage) => {
       console.log("Starting save package mutation with data:", packageData);
@@ -46,14 +46,7 @@ export const useSubscriptionPackages = () => {
       
       try {
         console.log("Calling savePackage service function");
-        const result = await savePackage(packageData);
-        console.log("Save package mutation result:", result);
-        
-        if (!result || !result.id) {
-          throw new Error("Package save failed: No valid package was returned");
-        }
-        
-        return result;
+        return await savePackage(packageData);
       } catch (error) {
         console.error("Error in save package mutation:", error);
         throw error;
@@ -125,9 +118,7 @@ export const useSubscriptionPackages = () => {
     console.log("createOrUpdate function called with data:", packageData);
     try {
       // This will trigger the mutation and all its callbacks
-      const result = await createOrUpdateMutation.mutateAsync(packageData);
-      console.log("createOrUpdate completed successfully:", result);
-      return result;
+      return await createOrUpdateMutation.mutateAsync(packageData);
     } catch (error) {
       console.error("createOrUpdate failed:", error);
       // Re-throw to allow callers to handle the error if needed

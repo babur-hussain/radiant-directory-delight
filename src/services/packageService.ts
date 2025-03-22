@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
@@ -133,77 +132,48 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
     
     console.log("Prepared Supabase data:", supabaseData);
     
-    try {
-      console.log("Attempting to upsert package with ID:", packageId);
+    // Simple direct insert approach
+    console.log("Attempting direct insert for package with ID:", packageId);
+    const { data, error } = await supabase
+      .from('subscription_packages')
+      .insert(supabaseData)
+      .select('*')
+      .single();
       
-      // Use upsert with single object (not array)
-      const { data, error } = await supabase
-        .from('subscription_packages')
-        .upsert(supabaseData)
-        .select()
-        .maybeSingle();
-      
-      if (error) {
-        console.error("Upsert error:", error);
-        throw error;
-      }
-      
-      if (!data) {
-        console.log("No data returned from upsert, doing fallback check");
-        
-        // Fallback check if record exists
-        const { data: checkData, error: checkError } = await supabase
+    if (error) {
+      // If insert fails because the record already exists, try an update
+      if (error.code === '23505') { // Unique violation
+        console.log("Package already exists, attempting update:", packageId);
+        const { data: updateData, error: updateError } = await supabase
           .from('subscription_packages')
-          .select('*')
+          .update(supabaseData)
           .eq('id', packageId)
-          .maybeSingle();
-        
-        if (checkError) {
-          console.error("Fallback check failed:", checkError);
-          throw checkError;
+          .select('*')
+          .single();
+          
+        if (updateError) {
+          console.error("Update error:", updateError);
+          throw new Error(`Failed to update package: ${updateError.message}`);
         }
         
-        if (!checkData) {
-          console.error("Package not found in fallback check");
-          throw new Error("Failed to save package: Package not found after save attempt");
+        if (!updateData) {
+          throw new Error("Failed to update package: No data returned");
         }
         
-        console.log("Found package in fallback check:", checkData);
-        const mappedPackage = mapDbRowToPackage(checkData);
-        console.log("Returning mapped package from fallback:", mappedPackage);
-        return mappedPackage;
+        console.log("Package updated successfully:", updateData);
+        return mapDbRowToPackage(updateData);
+      } else {
+        console.error("Insert error:", error);
+        throw new Error(`Failed to save package: ${error.message}`);
       }
-      
-      console.log("Package saved successfully, data returned:", data);
-      const mappedPackage = mapDbRowToPackage(data);
-      console.log("Returning mapped package:", mappedPackage);
-      return mappedPackage;
-      
-    } catch (innerError) {
-      console.error("Error in Supabase operations:", innerError);
-      
-      // Last resort fallback - try direct insert
-      console.log("Attempting direct insert as last resort");
-      const { data: insertData, error: insertError } = await supabase
-        .from('subscription_packages')
-        .insert(supabaseData)
-        .select()
-        .maybeSingle();
-      
-      if (insertError) {
-        console.error("Direct insert failed:", insertError);
-        throw new Error(`Failed to save package using fallback method: ${insertError.message}`);
-      }
-      
-      if (!insertData) {
-        throw new Error("Failed to save package: No data returned from any save attempt");
-      }
-      
-      console.log("Package saved through direct insert:", insertData);
-      const mappedPackage = mapDbRowToPackage(insertData);
-      console.log("Returning mapped package from direct insert:", mappedPackage);
-      return mappedPackage;
     }
+    
+    if (!data) {
+      throw new Error("Failed to save package: No data returned from insert");
+    }
+    
+    console.log("Package saved successfully:", data);
+    return mapDbRowToPackage(data);
   } catch (error) {
     console.error("Error in savePackage:", error);
     throw error;
