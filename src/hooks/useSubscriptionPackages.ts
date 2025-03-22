@@ -37,7 +37,15 @@ export const useSubscriptionPackages = () => {
       console.log("Mutation starting with package data:", packageData);
       return await savePackage(packageData);
     },
-    onSuccess: () => {
+    onSuccess: (savedPackage) => {
+      console.log("Package saved successfully in mutation:", savedPackage);
+      
+      // Show success toast
+      toast({
+        title: "Success",
+        description: `Package "${savedPackage.title}" saved successfully`,
+      });
+      
       // Invalidate the query to refetch the data
       queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
     },
@@ -52,8 +60,20 @@ export const useSubscriptionPackages = () => {
   });
   
   const deleteMutation = useMutation({
-    mutationFn: deletePackage,
-    onSuccess: () => {
+    mutationFn: async (packageId: string) => {
+      console.log("Delete mutation starting for package:", packageId);
+      await deletePackage(packageId);
+      return packageId;
+    },
+    onSuccess: (packageId) => {
+      console.log("Package deleted successfully in mutation:", packageId);
+      
+      // Show success toast
+      toast({
+        title: "Success",
+        description: "Package deleted successfully",
+      });
+      
       // Invalidate the query to refetch the data
       queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
     },
@@ -70,24 +90,23 @@ export const useSubscriptionPackages = () => {
   // Simplified helper methods that don't duplicate toast logic
   const createOrUpdate = async (packageData: ISubscriptionPackage) => {
     try {
-      console.log("Creating/updating package:", packageData);
-      const result = await createOrUpdateMutation.mutateAsync(packageData);
-      console.log("Package saved successfully:", result);
-      return result;
+      console.log("Creating/updating package via helper method:", packageData);
+      return await createOrUpdateMutation.mutateAsync(packageData);
     } catch (error) {
-      console.error('Error in createOrUpdate:', error);
+      console.error('Error in createOrUpdate helper:', error);
+      // Don't show toast here as it's already handled in the mutation
       throw error;
     }
   };
   
   const remove = async (packageId: string) => {
     try {
-      console.log("Deleting package:", packageId);
+      console.log("Deleting package via helper method:", packageId);
       await deleteMutation.mutateAsync(packageId);
-      console.log("Package deleted successfully");
       return true;
     } catch (error) {
-      console.error('Error in remove:', error);
+      console.error('Error in remove helper:', error);
+      // Don't show toast here as it's already handled in the mutation
       throw error;
     }
   };
