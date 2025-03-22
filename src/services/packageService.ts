@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
@@ -201,15 +202,15 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
   console.log("Preparing to save package data:", JSON.stringify(supabaseData, null, 2));
   
   try {
-    // Important: For new packages, use insert operation rather than upsert
-    console.log(`Saving package with ID: ${supabaseData.id}, operation determined by existence of ID`);
+    console.log("Attempting to insert package with ID:", supabaseData.id);
     
-    // Always use insert for consistent behavior with new packages
-    const { data, error } = await supabase
+    // Use plain insert operation with explicit array wrapping
+    const { data, error, status } = await supabase
       .from('subscription_packages')
-      .insert([supabaseData]) // Use an array here as insert expects an array
-      .select('*')
-      .maybeSingle();
+      .insert([supabaseData]) // Explicitly wrap in array
+      .select();
+    
+    console.log("Supabase operation response:", { data, error, status });
     
     if (error) {
       console.error('Error saving subscription package:', error);
@@ -221,12 +222,13 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
       throw new Error(`Failed to save package: ${error.message}`);
     }
     
-    if (!data) {
+    if (!data || data.length === 0) {
       console.error('No data returned after saving package');
       throw new Error('No data returned after saving package');
     }
     
-    const savedPackage = mapToPackage(data);
+    // Since we're using .select() without single(), data is an array
+    const savedPackage = mapToPackage(data[0]);
     console.log("Package saved successfully:", savedPackage);
     toast({
       title: "Success",

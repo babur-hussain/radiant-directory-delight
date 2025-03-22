@@ -32,6 +32,8 @@ export const useSubscriptionPackages = () => {
   
   const createOrUpdateMutation = useMutation({
     mutationFn: async (packageData: ISubscriptionPackage) => {
+      console.log("Mutation starting with package data:", packageData);
+      
       // Ensure data has the correct types and text fields are handled properly
       let processedData = {
         ...packageData,
@@ -47,10 +49,18 @@ export const useSubscriptionPackages = () => {
         shortDescription: String(packageData.shortDescription || '')
       };
       
-      console.log("Mutation received and processed package data:", processedData);
-      return await savePackage(processedData);
+      console.log("Mutation processed package data:", processedData);
+      try {
+        const result = await savePackage(processedData);
+        console.log("Mutation completed successfully:", result);
+        return result;
+      } catch (err) {
+        console.error("Error in mutation:", err);
+        throw err;
+      }
     },
     onSuccess: () => {
+      console.log("Mutation successful, invalidating queries");
       queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
     },
     onError: (error: any) => {
