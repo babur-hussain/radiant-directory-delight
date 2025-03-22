@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
@@ -132,28 +133,21 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
     
     console.log("Prepared Supabase data:", supabaseData);
     
-    let result;
-    let savedData;
-    let error;
-    
-    // Direct approach - try upsert with returning data
-    console.log("Using direct upsert approach");
-    const response = await supabase
+    // First, try to insert the record with onConflict: 'update' to handle both insert and update cases
+    const { data, error } = await supabase
       .from('subscription_packages')
-      .upsert([supabaseData], { 
-        onConflict: 'id',
-        returning: 'representation'
-      });
-    
-    savedData = response.data;
-    error = response.error;
-    
+      .upsert(supabaseData, { 
+        onConflict: 'id'
+      })
+      .select('*')
+      .single();
+      
     if (error) {
       console.error("Error saving package:", error);
       throw new Error(`Failed to save package: ${error.message || JSON.stringify(error)}`);
     }
     
-    if (!savedData || savedData.length === 0) {
+    if (!data) {
       console.error("No data returned after save operation");
       
       // Fallback - check if the package exists after upsert
@@ -173,15 +167,13 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
         throw new Error("Failed to save package: No data returned from database");
       }
       
-      result = checkData;
-      console.log("Fallback retrieved saved package:", result);
-    } else {
-      result = savedData[0];
-      console.log("Package saved successfully:", result);
+      const savedPackage = mapDbRowToPackage(checkData);
+      console.log("Fallback retrieved saved package:", savedPackage);
+      return savedPackage;
     }
     
-    const savedPackage = mapDbRowToPackage(result);
-    console.log("Mapped saved package:", savedPackage);
+    const savedPackage = mapDbRowToPackage(data);
+    console.log("Package saved successfully:", savedPackage);
     
     return savedPackage;
   } catch (error) {
