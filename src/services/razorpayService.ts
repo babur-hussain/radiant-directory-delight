@@ -309,10 +309,10 @@ export const buildRazorpayOptions = (
     // Set the recurring flag to indicate this is a recurring payment
     options.recurring = true;
     
-    // Add autopay details
+    // Add recurring_token for autopay
     options.recurring_token = {
-      max_amount: result.totalAmount ? Math.round((result.totalAmount) * 100) : Math.round(packageData.price * 100 * 12),
-      expire_by: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 365), // 1 year from now in seconds
+      max_amount: result.totalAmount ? Math.round(result.totalAmount * 100) : Math.round(packageData.price * 100 * 12),
+      expire_by: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 365) // 1 year from now in seconds
     };
     
     // If we have specific autopay details from the result, use those
@@ -322,7 +322,12 @@ export const buildRazorpayOptions = (
       if (totalRemainingAmount > 0) {
         options.recurring_token.max_amount = Math.round(totalRemainingAmount * 100);
       }
+    } else if (result.remainingAmount && result.remainingAmount > 0) {
+      // Use remainingAmount if available
+      options.recurring_token.max_amount = Math.round(result.remainingAmount * 100);
     }
+    
+    console.log("Configured recurring_token for autopay:", options.recurring_token);
   }
   
   return options;
