@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
@@ -133,59 +132,56 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
     
     console.log("Prepared Supabase data:", supabaseData);
     
-    // First check if the record exists
-    const { data: existingData, error: checkError } = await supabase
-      .from('subscription_packages')
-      .select('id')
-      .eq('id', packageId)
-      .maybeSingle();
-    
-    console.log("Check for existing record:", existingData, "Error:", checkError);
-    
     let result;
+    let savedData;
+    let error;
     
-    if (existingData) {
-      // Update existing record
-      console.log("Updating existing record with ID:", packageId);
-      const { data: updateData, error: updateError } = await supabase
-        .from('subscription_packages')
-        .update(supabaseData)
-        .eq('id', packageId)
-        .select('*')
-        .single();
-      
-      if (updateError) {
-        console.error("Error updating package:", updateError);
-        throw new Error(`Failed to update package: ${updateError.message || JSON.stringify(updateError)}`);
-      }
-      
-      console.log("Update result:", updateData);
-      result = updateData;
-    } else {
-      // Insert new record
-      console.log("Inserting new record with ID:", packageId);
-      const { data: insertData, error: insertError } = await supabase
-        .from('subscription_packages')
-        .insert(supabaseData)
-        .select('*')
-        .single();
-      
-      if (insertError) {
-        console.error("Error inserting package:", insertError);
-        throw new Error(`Failed to insert package: ${insertError.message || JSON.stringify(insertError)}`);
-      }
-      
-      console.log("Insert result:", insertData);
-      result = insertData;
+    // Direct approach - try upsert with returning data
+    console.log("Using direct upsert approach");
+    const response = await supabase
+      .from('subscription_packages')
+      .upsert([supabaseData], { 
+        onConflict: 'id',
+        returning: 'representation'
+      });
+    
+    savedData = response.data;
+    error = response.error;
+    
+    if (error) {
+      console.error("Error saving package:", error);
+      throw new Error(`Failed to save package: ${error.message || JSON.stringify(error)}`);
     }
     
-    if (!result) {
+    if (!savedData || savedData.length === 0) {
       console.error("No data returned after save operation");
-      throw new Error("Failed to save package: No data returned from database");
+      
+      // Fallback - check if the package exists after upsert
+      console.log("Attempting fallback - fetch package after upsert");
+      const { data: checkData, error: checkError } = await supabase
+        .from('subscription_packages')
+        .select('*')
+        .eq('id', packageId)
+        .single();
+      
+      if (checkError) {
+        console.error("Fallback check failed:", checkError);
+        throw new Error("Failed to save package: No data returned and fallback check failed");
+      }
+      
+      if (!checkData) {
+        throw new Error("Failed to save package: No data returned from database");
+      }
+      
+      result = checkData;
+      console.log("Fallback retrieved saved package:", result);
+    } else {
+      result = savedData[0];
+      console.log("Package saved successfully:", result);
     }
     
     const savedPackage = mapDbRowToPackage(result);
-    console.log("Package saved successfully:", savedPackage);
+    console.log("Mapped saved package:", savedPackage);
     
     return savedPackage;
   } catch (error) {

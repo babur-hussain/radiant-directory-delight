@@ -34,7 +34,7 @@ export const useSubscriptionPackages = () => {
     }
   });
   
-  // Create or update mutation
+  // Create or update mutation with consistent error handling
   const createOrUpdateMutation = useMutation({
     mutationFn: async (packageData: ISubscriptionPackage) => {
       console.log("Starting save package mutation with data:", packageData);
@@ -46,11 +46,18 @@ export const useSubscriptionPackages = () => {
       
       try {
         console.log("Calling savePackage service function");
+        // Ensure we await the result and pass it through
         const result = await savePackage(packageData);
         console.log("Save package mutation result:", result);
+        
+        if (!result || !result.id) {
+          throw new Error("Package save failed: No valid package was returned");
+        }
+        
         return result;
       } catch (error) {
         console.error("Error in save package mutation:", error);
+        // Re-throw the error so it can be handled by onError
         throw error;
       }
     },
@@ -76,7 +83,7 @@ export const useSubscriptionPackages = () => {
     }
   });
   
-  // Delete mutation
+  // Delete mutation with improved error handling
   const deleteMutation = useMutation({
     mutationFn: async (packageId: string) => {
       console.log("Starting delete package mutation for ID:", packageId);
@@ -115,20 +122,22 @@ export const useSubscriptionPackages = () => {
     }
   });
   
-  // Direct function to create or update a package
+  // Direct function to create or update a package with better error handling
   const createOrUpdate = async (packageData: ISubscriptionPackage) => {
     console.log("createOrUpdate function called with data:", packageData);
     try {
+      // This will trigger the mutation and all its callbacks
       const result = await createOrUpdateMutation.mutateAsync(packageData);
       console.log("createOrUpdate completed successfully:", result);
       return result;
     } catch (error) {
       console.error("createOrUpdate failed:", error);
+      // Re-throw to allow callers to handle the error if needed
       throw error;
     }
   };
   
-  // Direct function to delete a package
+  // Direct function to delete a package with better error handling
   const remove = async (packageId: string) => {
     console.log("remove function called with ID:", packageId);
     try {
