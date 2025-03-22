@@ -46,7 +46,6 @@ export const useSubscriptionPackages = () => {
       
       try {
         console.log("Calling savePackage service function");
-        // Ensure we await the result and pass it through
         const result = await savePackage(packageData);
         console.log("Save package mutation result:", result);
         
@@ -57,7 +56,6 @@ export const useSubscriptionPackages = () => {
         return result;
       } catch (error) {
         console.error("Error in save package mutation:", error);
-        // Re-throw the error so it can be handled by onError
         throw error;
       }
     },
