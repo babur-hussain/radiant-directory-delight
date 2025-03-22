@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
@@ -157,7 +156,7 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
     throw new Error('Package price is required');
   }
   
-  // Ensure package has an ID
+  // Ensure package has an ID - important for new packages
   if (!packageData.id) {
     packageData.id = `pkg_${Date.now()}`;
   }
@@ -202,22 +201,15 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
   console.log("Preparing to save package data:", JSON.stringify(supabaseData, null, 2));
   
   try {
-    // Fix: Use insert instead of upsert when no id is specified or when it's a new record
-    const operation = supabaseData.id ? 'upsert' : 'insert';
-    console.log(`Using ${operation} operation for package:`, supabaseData.id);
+    // Important: For new packages, use insert operation rather than upsert
+    console.log(`Saving package with ID: ${supabaseData.id}, operation determined by existence of ID`);
     
-    let query;
-    if (operation === 'upsert') {
-      query = supabase
-        .from('subscription_packages')
-        .upsert(supabaseData);
-    } else {
-      query = supabase
-        .from('subscription_packages')
-        .insert(supabaseData);
-    }
-    
-    const { data, error } = await query.select('*').maybeSingle();
+    // Always use insert for consistent behavior with new packages
+    const { data, error } = await supabase
+      .from('subscription_packages')
+      .insert([supabaseData]) // Use an array here as insert expects an array
+      .select('*')
+      .maybeSingle();
     
     if (error) {
       console.error('Error saving subscription package:', error);
