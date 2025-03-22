@@ -131,13 +131,13 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
     
     console.log("Saving package to Supabase with data:", supabaseData);
     
-    // Use upsert with onConflict for reliable insert/update
+    // Fixed: Use upsert with a single object and fix the onConflict option format
     const { data, error } = await supabase
       .from('subscription_packages')
-      .upsert([supabaseData], { 
-        onConflict: 'id',
-        returning: 'representation'  // Return the entire inserted/updated row
-      });
+      .upsert(supabaseData, { 
+        onConflict: 'id'
+      })
+      .select();
     
     if (error) {
       console.error("Supabase error saving package:", error);

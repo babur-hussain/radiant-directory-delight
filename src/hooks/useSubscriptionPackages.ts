@@ -43,9 +43,11 @@ export const useSubscriptionPackages = () => {
         throw new Error("Package title is required");
       }
       
-      return await savePackage(packageData);
+      const result = await savePackage(packageData);
+      console.log("Save package mutation result:", result);
+      return result;
     },
-    onSuccess: (savedPackage, variables) => {
+    onSuccess: (savedPackage) => {
       console.log("Package saved successfully:", savedPackage);
       
       toast({
@@ -56,9 +58,8 @@ export const useSubscriptionPackages = () => {
       // Invalidate and refetch
       queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
     },
-    onError: (error: any, variables) => {
+    onError: (error: any) => {
       console.error("Package save error:", error);
-      console.error("Failed package data:", variables);
       
       toast({
         title: "Error",
@@ -77,9 +78,10 @@ export const useSubscriptionPackages = () => {
         throw new Error("Package ID is required");
       }
       
-      return await deletePackage(packageId);
+      await deletePackage(packageId);
+      return packageId;
     },
-    onSuccess: (_, packageId) => {
+    onSuccess: (packageId) => {
       console.log("Package deleted successfully:", packageId);
       
       toast({
@@ -103,25 +105,15 @@ export const useSubscriptionPackages = () => {
   
   // Direct function to create or update a package
   const createOrUpdate = async (packageData: ISubscriptionPackage) => {
-    try {
-      console.log("createOrUpdate function called with data:", packageData);
-      return await createOrUpdateMutation.mutateAsync(packageData);
-    } catch (error) {
-      console.error('Error in createOrUpdate function:', error);
-      throw error;
-    }
+    console.log("createOrUpdate function called with data:", packageData);
+    return await createOrUpdateMutation.mutateAsync(packageData);
   };
   
   // Direct function to delete a package
   const remove = async (packageId: string) => {
-    try {
-      console.log("remove function called with ID:", packageId);
-      await deleteMutation.mutateAsync(packageId);
-      return true;
-    } catch (error) {
-      console.error('Error in remove function:', error);
-      throw error;
-    }
+    console.log("remove function called with ID:", packageId);
+    await deleteMutation.mutateAsync(packageId);
+    return true;
   };
 
   return {
