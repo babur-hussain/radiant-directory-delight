@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
@@ -148,6 +147,8 @@ const getPackageById = async (id: string): Promise<ISubscriptionPackage | null> 
 
 // Create or update package
 const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscriptionPackage> => {
+  console.log("savePackage called with:", JSON.stringify(packageData, null, 2));
+  
   // Validate required fields
   if (!packageData.title) {
     throw new Error('Package title is required');
@@ -157,97 +158,91 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
     throw new Error('Package price is required');
   }
   
-  // Ensure package has an ID - important for new packages
+  // Ensure package has an ID
   if (!packageData.id) {
     packageData.id = `pkg_${Date.now()}`;
+    console.log("Generated new ID for package:", packageData.id);
   }
   
-  // Process features field
-  let features: string[] = [];
-  if (Array.isArray(packageData.features)) {
-    features = packageData.features.filter(f => f && typeof f === 'string' && f.trim().length > 0);
-    packageData.features = features;
-  } else if (typeof packageData.features === 'string') {
-    features = (packageData.features as string)
-      .split('\n')
-      .map(f => f.trim())
-      .filter(f => f.length > 0);
-    packageData.features = features;
-  } else {
-    packageData.features = [];
-  }
-
-  // Clean up one-time package data
-  if (packageData.paymentType === 'one-time') {
-    packageData.billingCycle = undefined;
-    packageData.setupFee = 0;
-    packageData.monthlyPrice = 0;
-    packageData.advancePaymentMonths = 0;
-  }
-
-  // Ensure text fields are properly handled without truncation
-  packageData.termsAndConditions = String(packageData.termsAndConditions || '');
-  packageData.fullDescription = String(packageData.fullDescription || '');
-  packageData.shortDescription = String(packageData.shortDescription || '');
-
-  // Ensure dashboardSections is an array
-  if (!Array.isArray(packageData.dashboardSections)) {
-    packageData.dashboardSections = [];
-  }
-
-  // Prepare the data for Supabase (snake_case)
+  // Prepare data for Supabase (this includes all necessary transformations)
   const supabaseData = mapToSupabasePackage(packageData);
-  
-  console.log("Preparing to save package data:", JSON.stringify(supabaseData, null, 2));
+  console.log("Transformed data for Supabase:", JSON.stringify(supabaseData, null, 2));
   
   try {
-    console.log("Attempting to INSERT package with ID:", supabaseData.id);
-    
-    // Explicitly force insert operation and ensure data is wrapped in an array
-    const { data, error, status } = await supabase
+    // First check if this package already exists
+    const { data: existingPackage, error: checkError } = await supabase
       .from('subscription_packages')
-      .insert([supabaseData]) // Explicit array wrapping is crucial
-      .select();
-    
-    console.log("Supabase operation complete with status:", status);
-    console.log("Response data:", data);
-    console.log("Response error:", error);
-    
-    if (error) {
-      console.error('Error saving subscription package:', error);
-      toast({
-        title: "Error",
-        description: `Failed to save package: ${error.message}`,
-        variant: "destructive"
-      });
-      throw new Error(`Failed to save package: ${error.message}`);
+      .select('id')
+      .eq('id', supabaseData.id)
+      .maybeSingle();
+      
+    if (checkError) {
+      console.error("Error checking if package exists:", checkError);
+      throw new Error(`Database error: ${checkError.message}`);
     }
     
-    if (!data || data.length === 0) {
-      console.error('No data returned after saving package');
-      throw new Error('No data returned after saving package');
+    let result;
+    
+    if (existingPackage) {
+      console.log(`Package with ID ${supabaseData.id} exists, updating...`);
+      // Update existing package
+      const { data, error } = await supabase
+        .from('subscription_packages')
+        .update(supabaseData)
+        .eq('id', supabaseData.id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error("Error updating package:", error);
+        throw new Error(`Error updating package: ${error.message}`);
+      }
+      
+      result = data;
+      console.log("Package updated successfully:", result);
+    } else {
+      console.log(`Package with ID ${supabaseData.id} is new, inserting...`);
+      // Insert new package
+      const { data, error } = await supabase
+        .from('subscription_packages')
+        .insert([supabaseData]) // Must be wrapped in array
+        .select()
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Error inserting package:", error);
+        throw new Error(`Error inserting package: ${error.message}`);
+      }
+      
+      if (!data) {
+        console.error("No data returned after insert");
+        throw new Error("Failed to insert package: No data returned");
+      }
+      
+      result = data;
+      console.log("Package inserted successfully:", result);
     }
     
-    // Since we're using .select() without single(), data is an array
-    const savedPackage = mapToPackage(data[0]);
-    console.log("Package saved successfully:", savedPackage);
+    // Map back to our model
+    const savedPackage = mapToPackage(result);
+    
+    // Send success toast
     toast({
       title: "Success",
       description: `Package "${savedPackage.title}" saved successfully`,
     });
+    
     return savedPackage;
   } catch (error) {
-    console.error('Error in savePackage:', error);
+    console.error("Error in savePackage:", error);
+    
     toast({
       title: "Error",
       description: `Failed to save package: ${error instanceof Error ? error.message : 'Unknown error'}`,
       variant: "destructive"
     });
-    if (error instanceof Error) {
-      throw new Error(`Error saving package: ${error.message}`);
-    } else {
-      throw new Error('Unknown error saving package');
-    }
+    
+    throw error;
   }
 };
 

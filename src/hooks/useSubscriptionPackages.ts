@@ -17,7 +17,9 @@ export const useSubscriptionPackages = () => {
     queryKey: ['subscription-packages'],
     queryFn: async (): Promise<ISubscriptionPackage[]> => {
       try {
-        return await getAllPackages();
+        const packages = await getAllPackages();
+        console.log("Fetched packages:", packages.length);
+        return packages;
       } catch (err) {
         console.error('Error in useSubscriptionPackages hook:', err);
         toast({
@@ -35,35 +37,22 @@ export const useSubscriptionPackages = () => {
       console.log("Mutation starting with package data:", packageData);
       
       try {
-        // Ensure data has the correct types and text fields are handled properly
-        let processedData = {
-          ...packageData,
-          // Handle features if it's a string
-          features: Array.isArray(packageData.features) 
-            ? packageData.features 
-            : typeof packageData.features === 'string'
-              ? (packageData.features as string).split('\n').filter(f => f.trim().length > 0)
-              : [],
-          // Ensure these fields are strings without truncation
-          termsAndConditions: String(packageData.termsAndConditions || ''),
-          fullDescription: String(packageData.fullDescription || ''),
-          shortDescription: String(packageData.shortDescription || '')
-        };
-        
-        console.log("Processed package data for saving:", processedData);
-        
-        // Call the savePackage function and await its result
-        const result = await savePackage(processedData);
+        // Call the savePackage function directly
+        const result = await savePackage(packageData);
         console.log("Package saved successfully:", result);
         return result;
       } catch (err) {
         console.error("Error saving package in mutation:", err);
+        // Let the error propagate to onError
         throw err;
       }
     },
     onSuccess: (data) => {
-      console.log("Mutation successful, invalidating queries", data);
+      console.log("Mutation successful:", data);
+      // Invalidate the query to refetch the data
       queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
+      
+      // Show success toast (though we already do this in the service)
       toast({
         title: "Success",
         description: "Package saved successfully",
@@ -71,6 +60,8 @@ export const useSubscriptionPackages = () => {
     },
     onError: (error: any) => {
       console.error("Mutation error:", error);
+      
+      // Show error toast (though we already do this in the service)
       toast({
         title: "Error",
         description: `Failed to save package: ${error instanceof Error ? error.message : String(error)}`,
@@ -82,9 +73,19 @@ export const useSubscriptionPackages = () => {
   const deleteMutation = useMutation({
     mutationFn: deletePackage,
     onSuccess: () => {
+      // Invalidate the query to refetch the data
       queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
+      
+      // Show success toast
+      toast({
+        title: "Success",
+        description: "Package deleted successfully",
+      });
     },
     onError: (error: any) => {
+      console.error("Delete mutation error:", error);
+      
+      // Show error toast
       toast({
         title: "Error",
         description: `Failed to delete package: ${error instanceof Error ? error.message : String(error)}`,
@@ -93,12 +94,13 @@ export const useSubscriptionPackages = () => {
     }
   });
   
-  // Helper methods with better error handling
+  // Improved helper methods
   const createOrUpdate = async (packageData: ISubscriptionPackage) => {
     try {
       console.log("Creating/updating package:", packageData);
+      // Call the mutation
       const result = await createOrUpdateMutation.mutateAsync(packageData);
-      console.log("Package created/updated:", result);
+      console.log("Package created/updated successfully:", result);
       return result;
     } catch (error) {
       console.error('Error in createOrUpdate:', error);
@@ -108,7 +110,9 @@ export const useSubscriptionPackages = () => {
   
   const remove = async (packageId: string) => {
     try {
+      console.log("Deleting package:", packageId);
       await deleteMutation.mutateAsync(packageId);
+      console.log("Package deleted successfully");
       return true;
     } catch (error) {
       console.error('Error in remove:', error);
