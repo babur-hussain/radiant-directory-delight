@@ -1,3 +1,4 @@
+
 import { Link } from 'react-router-dom';
 import { Facebook, Twitter, Instagram, Linkedin, Youtube, Mail, Phone, MapPin } from 'lucide-react';
 const Footer = () => {
@@ -126,7 +127,7 @@ Branch Office: Bhopal, MP Nagar Zone 2</span>
         {/* Bottom Copyright */}
         <div className="mt-12 pt-8 border-t border-gray-100">
           <p className="text-sm text-center text-gray-400">
-            © {new Date().getFullYear()} Sarvrachna. All rights reserved.
+            © {new Date().getFullYear()} Grow Bharat Vyapaar. All rights reserved.
           </p>
         </div>
       </div>
