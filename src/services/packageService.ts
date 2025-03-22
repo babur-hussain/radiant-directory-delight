@@ -2,7 +2,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
-import { toast } from '@/hooks/use-toast';
 
 // Helper function to ensure payment type is valid
 const getPaymentType = (type: string | null): PaymentType => {
@@ -47,9 +46,8 @@ const mapToSupabasePackage = (pkg: ISubscriptionPackage) => {
   // Process features to ensure it's always an array
   let features: string[] = [];
   if (Array.isArray(pkg.features)) {
-    features = pkg.features.filter(f => f.trim().length > 0);
+    features = pkg.features.filter(f => f && f.trim && f.trim().length > 0);
   } else if (typeof pkg.features === 'string') {
-    // Cast features to string before using split
     features = (pkg.features as string).split('\n').filter(f => f.trim().length > 0);
   }
   
@@ -80,6 +78,7 @@ const mapToSupabasePackage = (pkg: ISubscriptionPackage) => {
 // Get all subscription packages
 const getAllPackages = async (): Promise<ISubscriptionPackage[]> => {
   try {
+    console.log("Fetching all packages from Supabase");
     const { data, error } = await supabase
       .from('subscription_packages')
       .select('*')
@@ -95,7 +94,9 @@ const getAllPackages = async (): Promise<ISubscriptionPackage[]> => {
       return [];
     }
     
-    return data.map(mapToPackage);
+    const mappedPackages = data.map(mapToPackage);
+    console.log(`Successfully fetched ${mappedPackages.length} packages`);
+    return mappedPackages;
   } catch (error) {
     console.error('Error in getAllPackages:', error);
     throw new Error(`Failed to fetch packages: ${error instanceof Error ? error.message : String(error)}`);
@@ -146,87 +147,48 @@ const getPackageById = async (id: string): Promise<ISubscriptionPackage | null> 
   }
 };
 
-// Save package function - completely rewritten for reliability
+// Simple direct approach to save a package
 const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscriptionPackage> => {
+  console.log("Starting save package operation:", packageData);
+  
+  // Generate ID if missing
+  if (!packageData.id) {
+    packageData.id = `pkg_${Date.now()}`;
+    console.log("Generated new package ID:", packageData.id);
+  }
+  
+  // Validate required fields
+  if (!packageData.title) {
+    throw new Error('Package title is required');
+  }
+  
+  if (packageData.price === undefined) {
+    throw new Error('Package price is required');
+  }
+  
   try {
-    console.log("savePackage called with:", JSON.stringify(packageData, null, 2));
-    
-    // Validate required fields
-    if (!packageData.title) {
-      throw new Error('Package title is required');
-    }
-    
-    if (packageData.price === undefined || packageData.price === null) {
-      throw new Error('Package price is required');
-    }
-    
-    // Ensure package has an ID
-    if (!packageData.id) {
-      packageData.id = `pkg_${Date.now()}`;
-      console.log("Generated new ID for package:", packageData.id);
-    }
-    
-    // Prepare data for Supabase
+    // Convert to Supabase format
     const supabaseData = mapToSupabasePackage(packageData);
-    console.log("Transformed data for Supabase:", JSON.stringify(supabaseData, null, 2));
+    console.log("Prepared data for Supabase:", supabaseData);
     
-    // Try first to check if the package already exists
-    const { data: existingPackage, error: checkError } = await supabase
+    // Direct upsert approach
+    const { data, error } = await supabase
       .from('subscription_packages')
-      .select('id')
-      .eq('id', supabaseData.id)
-      .maybeSingle();
+      .upsert([supabaseData], { onConflict: 'id' })
+      .select();
     
-    if (checkError) {
-      console.error("Error checking if package exists:", checkError);
-      throw new Error(`Error checking if package exists: ${checkError.message}`);
+    if (error) {
+      console.error("Failed to save package:", error);
+      throw new Error(`Failed to save package: ${error.message}`);
     }
     
-    let result;
-    
-    if (existingPackage) {
-      // Package exists, update it
-      console.log(`Package with ID ${supabaseData.id} exists, updating...`);
-      
-      const { data: updatedData, error: updateError } = await supabase
-        .from('subscription_packages')
-        .update(supabaseData)
-        .eq('id', supabaseData.id)
-        .select('*')
-        .single();
-      
-      if (updateError) {
-        console.error("Error updating package:", updateError);
-        throw new Error(`Error updating package: ${updateError.message}`);
-      }
-      
-      result = updatedData;
-      console.log("Package updated successfully:", result);
-    } else {
-      // Package doesn't exist, insert it
-      console.log(`Package with ID ${supabaseData.id} doesn't exist, inserting...`);
-      
-      const { data: insertedData, error: insertError } = await supabase
-        .from('subscription_packages')
-        .insert([supabaseData]) // Make sure it's an array
-        .select('*')
-        .single();
-      
-      if (insertError) {
-        console.error("Error inserting package:", insertError);
-        throw new Error(`Error inserting package: ${insertError.message}`);
-      }
-      
-      result = insertedData;
-      console.log("Package inserted successfully:", result);
+    if (!data || data.length === 0) {
+      console.error("No data returned after save operation");
+      throw new Error("Failed to save package: No data returned");
     }
     
-    if (!result) {
-      throw new Error("No data returned after saving package");
-    }
-    
-    // Map back to our model
-    const savedPackage = mapToPackage(result);
+    const savedPackage = mapToPackage(data[0]);
+    console.log("Package saved successfully:", savedPackage);
     
     return savedPackage;
   } catch (error) {
@@ -235,8 +197,10 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
   }
 };
 
-// Delete package
+// Delete package function - simplified for reliability
 const deletePackage = async (id: string): Promise<void> => {
+  console.log(`Attempting to delete package with ID: ${id}`);
+  
   try {
     const { error } = await supabase
       .from('subscription_packages')
@@ -245,11 +209,13 @@ const deletePackage = async (id: string): Promise<void> => {
     
     if (error) {
       console.error(`Error deleting package with ID ${id}:`, error);
-      throw error;
+      throw new Error(`Failed to delete package: ${error.message}`);
     }
+    
+    console.log(`Package ${id} deleted successfully`);
   } catch (error) {
     console.error(`Error in deletePackage:`, error);
-    throw new Error(`Failed to delete package: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
   }
 };
 
