@@ -146,31 +146,31 @@ const getPackageById = async (id: string): Promise<ISubscriptionPackage | null> 
   }
 };
 
-// Create or update package - completely rewritten for reliability
+// Save package function - completely rewritten for reliability
 const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscriptionPackage> => {
-  console.log("savePackage called with:", JSON.stringify(packageData, null, 2));
-  
-  // Validate required fields
-  if (!packageData.title) {
-    throw new Error('Package title is required');
-  }
-  
-  if (packageData.price === undefined || packageData.price === null) {
-    throw new Error('Package price is required');
-  }
-  
-  // Ensure package has an ID
-  if (!packageData.id) {
-    packageData.id = `pkg_${Date.now()}`;
-    console.log("Generated new ID for package:", packageData.id);
-  }
-  
-  // Prepare data for Supabase
-  const supabaseData = mapToSupabasePackage(packageData);
-  console.log("Transformed data for Supabase:", JSON.stringify(supabaseData, null, 2));
-  
   try {
-    // First, check if the package exists
+    console.log("savePackage called with:", JSON.stringify(packageData, null, 2));
+    
+    // Validate required fields
+    if (!packageData.title) {
+      throw new Error('Package title is required');
+    }
+    
+    if (packageData.price === undefined || packageData.price === null) {
+      throw new Error('Package price is required');
+    }
+    
+    // Ensure package has an ID
+    if (!packageData.id) {
+      packageData.id = `pkg_${Date.now()}`;
+      console.log("Generated new ID for package:", packageData.id);
+    }
+    
+    // Prepare data for Supabase
+    const supabaseData = mapToSupabasePackage(packageData);
+    console.log("Transformed data for Supabase:", JSON.stringify(supabaseData, null, 2));
+    
+    // Try first to check if the package already exists
     const { data: existingPackage, error: checkError } = await supabase
       .from('subscription_packages')
       .select('id')
@@ -192,7 +192,7 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
         .from('subscription_packages')
         .update(supabaseData)
         .eq('id', supabaseData.id)
-        .select()
+        .select('*')
         .single();
       
       if (updateError) {
@@ -208,8 +208,8 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
       
       const { data: insertedData, error: insertError } = await supabase
         .from('subscription_packages')
-        .insert([supabaseData])
-        .select()
+        .insert([supabaseData]) // Make sure it's an array
+        .select('*')
         .single();
       
       if (insertError) {

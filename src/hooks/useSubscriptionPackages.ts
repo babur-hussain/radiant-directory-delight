@@ -7,6 +7,7 @@ import { toast } from '@/hooks/use-toast';
 export const useSubscriptionPackages = () => {
   const queryClient = useQueryClient();
   
+  // Query to fetch all packages
   const {
     data: packages,
     isLoading,
@@ -32,15 +33,15 @@ export const useSubscriptionPackages = () => {
     }
   });
   
+  // Mutation to create or update a package
   const createOrUpdateMutation = useMutation({
     mutationFn: async (packageData: ISubscriptionPackage) => {
-      console.log("Mutation starting with package data:", packageData);
+      console.log("Starting mutation with package data:", packageData);
       return await savePackage(packageData);
     },
     onSuccess: (savedPackage) => {
-      console.log("Package saved successfully in mutation:", savedPackage);
+      console.log("Package saved successfully:", savedPackage);
       
-      // Show success toast
       toast({
         title: "Success",
         description: `Package "${savedPackage.title}" saved successfully`,
@@ -59,6 +60,7 @@ export const useSubscriptionPackages = () => {
     }
   });
   
+  // Mutation to delete a package
   const deleteMutation = useMutation({
     mutationFn: async (packageId: string) => {
       console.log("Delete mutation starting for package:", packageId);
@@ -66,9 +68,8 @@ export const useSubscriptionPackages = () => {
       return packageId;
     },
     onSuccess: (packageId) => {
-      console.log("Package deleted successfully in mutation:", packageId);
+      console.log("Package deleted successfully:", packageId);
       
-      // Show success toast
       toast({
         title: "Success",
         description: "Package deleted successfully",
@@ -87,26 +88,25 @@ export const useSubscriptionPackages = () => {
     }
   });
   
-  // Simplified helper methods that don't duplicate toast logic
+  // Helper method to create or update a package
   const createOrUpdate = async (packageData: ISubscriptionPackage) => {
     try {
-      console.log("Creating/updating package via helper method:", packageData);
       return await createOrUpdateMutation.mutateAsync(packageData);
     } catch (error) {
       console.error('Error in createOrUpdate helper:', error);
-      // Don't show toast here as it's already handled in the mutation
+      // Error is already handled in the mutation's onError
       throw error;
     }
   };
   
+  // Helper method to delete a package
   const remove = async (packageId: string) => {
     try {
-      console.log("Deleting package via helper method:", packageId);
       await deleteMutation.mutateAsync(packageId);
       return true;
     } catch (error) {
       console.error('Error in remove helper:', error);
-      // Don't show toast here as it's already handled in the mutation
+      // Error is already handled in the mutation's onError
       throw error;
     }
   };
