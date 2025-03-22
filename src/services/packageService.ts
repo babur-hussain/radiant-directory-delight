@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
@@ -201,11 +202,22 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
   console.log("Preparing to save package data:", JSON.stringify(supabaseData, null, 2));
   
   try {
-    const { data, error } = await supabase
-      .from('subscription_packages')
-      .upsert(supabaseData)
-      .select('*')
-      .maybeSingle();
+    // Fix: Use insert instead of upsert when no id is specified or when it's a new record
+    const operation = supabaseData.id ? 'upsert' : 'insert';
+    console.log(`Using ${operation} operation for package:`, supabaseData.id);
+    
+    let query;
+    if (operation === 'upsert') {
+      query = supabase
+        .from('subscription_packages')
+        .upsert(supabaseData);
+    } else {
+      query = supabase
+        .from('subscription_packages')
+        .insert(supabaseData);
+    }
+    
+    const { data, error } = await query.select('*').maybeSingle();
     
     if (error) {
       console.error('Error saving subscription package:', error);
@@ -218,6 +230,7 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
     }
     
     if (!data) {
+      console.error('No data returned after saving package');
       throw new Error('No data returned after saving package');
     }
     
