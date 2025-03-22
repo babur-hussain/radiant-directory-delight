@@ -186,7 +186,6 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
   }
 
   // Ensure text fields are properly handled without truncation
-  // Cast to String to handle any potential non-string values
   packageData.termsAndConditions = String(packageData.termsAndConditions || '');
   packageData.fullDescription = String(packageData.fullDescription || '');
   packageData.shortDescription = String(packageData.shortDescription || '');
@@ -202,15 +201,17 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
   console.log("Preparing to save package data:", JSON.stringify(supabaseData, null, 2));
   
   try {
-    console.log("Attempting to insert package with ID:", supabaseData.id);
+    console.log("Attempting to INSERT package with ID:", supabaseData.id);
     
-    // Use plain insert operation with explicit array wrapping
+    // Explicitly force insert operation and ensure data is wrapped in an array
     const { data, error, status } = await supabase
       .from('subscription_packages')
-      .insert([supabaseData]) // Explicitly wrap in array
+      .insert([supabaseData]) // Explicit array wrapping is crucial
       .select();
     
-    console.log("Supabase operation response:", { data, error, status });
+    console.log("Supabase operation complete with status:", status);
+    console.log("Response data:", data);
+    console.log("Response error:", error);
     
     if (error) {
       console.error('Error saving subscription package:', error);

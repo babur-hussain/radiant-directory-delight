@@ -34,34 +34,40 @@ export const useSubscriptionPackages = () => {
     mutationFn: async (packageData: ISubscriptionPackage) => {
       console.log("Mutation starting with package data:", packageData);
       
-      // Ensure data has the correct types and text fields are handled properly
-      let processedData = {
-        ...packageData,
-        // Handle features if it's a string
-        features: Array.isArray(packageData.features) 
-          ? packageData.features 
-          : typeof packageData.features === 'string'
-            ? (packageData.features as string).split('\n').filter(f => f.trim().length > 0)
-            : [],
-        // Ensure these fields are strings without truncation
-        termsAndConditions: String(packageData.termsAndConditions || ''),
-        fullDescription: String(packageData.fullDescription || ''),
-        shortDescription: String(packageData.shortDescription || '')
-      };
-      
-      console.log("Mutation processed package data:", processedData);
       try {
+        // Ensure data has the correct types and text fields are handled properly
+        let processedData = {
+          ...packageData,
+          // Handle features if it's a string
+          features: Array.isArray(packageData.features) 
+            ? packageData.features 
+            : typeof packageData.features === 'string'
+              ? (packageData.features as string).split('\n').filter(f => f.trim().length > 0)
+              : [],
+          // Ensure these fields are strings without truncation
+          termsAndConditions: String(packageData.termsAndConditions || ''),
+          fullDescription: String(packageData.fullDescription || ''),
+          shortDescription: String(packageData.shortDescription || '')
+        };
+        
+        console.log("Processed package data for saving:", processedData);
+        
+        // Call the savePackage function and await its result
         const result = await savePackage(processedData);
-        console.log("Mutation completed successfully:", result);
+        console.log("Package saved successfully:", result);
         return result;
       } catch (err) {
-        console.error("Error in mutation:", err);
+        console.error("Error saving package in mutation:", err);
         throw err;
       }
     },
-    onSuccess: () => {
-      console.log("Mutation successful, invalidating queries");
+    onSuccess: (data) => {
+      console.log("Mutation successful, invalidating queries", data);
       queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
+      toast({
+        title: "Success",
+        description: "Package saved successfully",
+      });
     },
     onError: (error: any) => {
       console.error("Mutation error:", error);
@@ -91,7 +97,9 @@ export const useSubscriptionPackages = () => {
   const createOrUpdate = async (packageData: ISubscriptionPackage) => {
     try {
       console.log("Creating/updating package:", packageData);
-      return await createOrUpdateMutation.mutateAsync(packageData);
+      const result = await createOrUpdateMutation.mutateAsync(packageData);
+      console.log("Package created/updated:", result);
+      return result;
     } catch (error) {
       console.error('Error in createOrUpdate:', error);
       throw error;
