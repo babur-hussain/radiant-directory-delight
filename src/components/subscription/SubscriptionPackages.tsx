@@ -84,7 +84,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ userRole })
                   </div>
                   
                   <ul className="space-y-3">
-                    {pkg.features && pkg.features.length > 0 ? (
+                    {Array.isArray(pkg.features) && pkg.features.length > 0 ? (
                       pkg.features.slice(0, 5).map((feature, index) => (
                         <li key={index} className="flex items-start">
                           <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
@@ -92,12 +92,10 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ userRole })
                         </li>
                       ))
                     ) : (
-                      <>
-                        <li className="flex items-start">
-                          <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-                          <span>No features specified</span>
-                        </li>
-                      </>
+                      <li className="flex items-start">
+                        <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                        <span>No features specified</span>
+                      </li>
                     )}
                   </ul>
                 </div>
