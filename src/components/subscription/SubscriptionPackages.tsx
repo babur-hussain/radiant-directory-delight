@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, GemIcon, ShieldCheck } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { UserRole } from '@/types/auth';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
@@ -25,15 +25,6 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ userRole })
   const handleSelectPackage = (pkg: ISubscriptionPackage) => {
     setSelectedPackage(pkg);
     setShowDialog(true);
-  };
-
-  const handleDetailsClick = (pkg: ISubscriptionPackage) => {
-    navigate(`/subscription/details/${pkg.id}`);
-  };
-
-  const handleCloseDialog = () => {
-    setShowDialog(false);
-    setSelectedPackage(null);
   };
 
   if (isLoading) {
@@ -59,93 +50,85 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ userRole })
         {filteredPackages.map((pkg) => {
           const isPopular = pkg.popular;
           const isOneTime = pkg.paymentType === 'one-time';
-          const gradientClass = userRole === "Business" 
-            ? "from-blue-500 via-cyan-500 to-teal-500" 
-            : "from-purple-500 via-violet-500 to-indigo-500";
-            
+          const billingCycle = pkg.billingCycle || 'yearly';
+          const timeframe = isOneTime ? 'total' : `/${billingCycle}`;
+          
           // Determine price to display based on payment type
-          const displayMonthlyPrice = !isOneTime && pkg.monthlyPrice;
-          const displayPrice = isOneTime ? pkg.price : (displayMonthlyPrice ? pkg.monthlyPrice : pkg.price);
-          const priceLabel = isOneTime ? 'total' : (displayMonthlyPrice ? '/month' : '/year');
-            
+          const displayPrice = isOneTime ? pkg.price : 
+                              (billingCycle === 'monthly' && pkg.monthlyPrice) ? pkg.monthlyPrice : pkg.price;
+          
           return (
             <Card 
               key={pkg.id} 
-              className={`overflow-hidden transition-all duration-300 hover:shadow-xl relative ${
-                isPopular ? 'border-2 border-primary shadow-lg' : 'border shadow-md'
+              className={`overflow-hidden transition-all duration-200 ${
+                isPopular ? 'border-2 border-blue-600 shadow-md' : 'border shadow'
               }`}
             >
               {isPopular && (
-                <div className="absolute top-0 right-0">
-                  <Badge className="bg-gradient-to-r from-primary to-primary-foreground text-white font-medium m-2 px-3 py-1">
-                    <GemIcon className="h-3.5 w-3.5 mr-1" /> Popular Choice
+                <div className="flex justify-center -mt-0.5">
+                  <Badge className="bg-blue-600 text-white font-medium rounded-t-none rounded-b-md px-4 py-1">
+                    Most Popular
                   </Badge>
                 </div>
               )}
               
-              {isOneTime && (
-                <div className="absolute top-0 left-0">
-                  <Badge className="bg-amber-500 text-white font-medium m-2 px-3 py-1">
-                    One-time
-                  </Badge>
-                </div>
-              )}
-              
-              <CardHeader className={`pb-4 ${isPopular ? 'bg-gradient-to-r bg-opacity-10 ' + gradientClass : ''}`}>
-                <CardTitle className="text-2xl font-bold flex flex-col">
-                  <span>{pkg.title}</span>
-                  <div className="flex flex-col mt-2">
-                    <div className="flex items-baseline">
-                      <span className="text-3xl font-bold text-primary">₹{displayPrice}</span>
-                      <span className="text-sm font-normal text-muted-foreground ml-1">{priceLabel}</span>
+              <CardContent className="p-6 pt-8">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-2xl font-bold">{pkg.title}</h3>
+                    <div className="flex items-baseline mt-2">
+                      <span className="text-4xl font-extrabold">₹{displayPrice}</span>
+                      <span className="text-gray-500 ml-1">{timeframe}</span>
                     </div>
-                    
-                    {/* Only show subscription details for recurring packages */}
-                    {!isOneTime && (
-                      <span className="text-sm text-muted-foreground mt-1">
-                        {pkg.billingCycle === 'monthly' ? 'Monthly billing' : 'Annual billing'}
-                      </span>
-                    )}
+                    <p className="text-gray-600 mt-2">{pkg.shortDescription || `${pkg.type} package for your needs`}</p>
                   </div>
-                </CardTitle>
-                <CardDescription className="text-sm mt-1">{pkg.shortDescription}</CardDescription>
-              </CardHeader>
-              
-              <CardContent className="pb-4">
-                <div className="mb-4">
-                  <p className="text-sm text-muted-foreground">
-                    {isOneTime 
-                      ? `One-time payment valid for ${pkg.durationMonths || 12} months` 
-                      : displayMonthlyPrice 
-                        ? `Monthly subscription` 
-                        : `Annual subscription`}
-                  </p>
+                  
+                  <ul className="space-y-3">
+                    {pkg.features?.slice(0, 5).map((feature, index) => (
+                      <li key={index} className="flex items-start">
+                        <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                    
+                    {/* If no features are specified, show some defaults based on package type */}
+                    {(!pkg.features || pkg.features.length === 0) && (
+                      <>
+                        <li className="flex items-start">
+                          <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                          <span>{pkg.title.includes('Premium') ? 'Premium' : 'Basic'} {pkg.type.toLowerCase()} listing</span>
+                        </li>
+                        <li className="flex items-start">
+                          <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                          <span>{pkg.title.includes('Premium') ? 'Priority' : 'Email'} support</span>
+                        </li>
+                        <li className="flex items-start">
+                          <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                          <span>{pkg.title.includes('Premium') ? '5' : '1'} location{pkg.title.includes('Premium') ? 's' : ''}</span>
+                        </li>
+                        {pkg.title.includes('Premium') && (
+                          <li className="flex items-start">
+                            <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                            <span>Featured in search</span>
+                          </li>
+                        )}
+                      </>
+                    )}
+                  </ul>
                 </div>
-                
-                <ul className="space-y-2.5">
-                  {pkg.features?.map((feature, index) => (
-                    <li key={index} className="flex items-start text-sm">
-                      <CheckCircle className="h-4 w-4 mr-2 mt-0.5 text-green-500 shrink-0" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
               </CardContent>
               
-              <CardFooter className="flex-col space-y-3 pt-2 pb-6">
+              <CardFooter className="p-6 pt-2">
                 <Button 
-                  className={`w-full bg-gradient-to-r ${gradientClass} hover:shadow-md transition-all duration-300`}
-                  onClick={() => handleDetailsClick(pkg)}
-                >
-                  <ShieldCheck className="h-4 w-4 mr-2" />
-                  Get Started
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full text-sm border-primary/30 hover:bg-primary/5"
+                  className={`w-full h-12 text-base font-medium ${
+                    isPopular 
+                      ? 'bg-blue-600 hover:bg-blue-700' 
+                      : 'bg-white text-gray-800 border-2 border-gray-300 hover:bg-gray-50'
+                  }`}
+                  variant={isPopular ? 'default' : 'outline'}
                   onClick={() => handleSelectPackage(pkg)}
                 >
-                  View Details
+                  Subscribe Now
                 </Button>
               </CardFooter>
             </Card>

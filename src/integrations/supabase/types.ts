@@ -123,7 +123,7 @@ export type Database = {
           created_at: string | null
           dashboard_sections: string[] | null
           duration_months: number | null
-          features: string[] | null
+          features: string | null
           full_description: string | null
           id: string
           monthly_price: number | null
@@ -143,7 +143,7 @@ export type Database = {
           created_at?: string | null
           dashboard_sections?: string[] | null
           duration_months?: number | null
-          features?: string[] | null
+          features?: string | null
           full_description?: string | null
           id: string
           monthly_price?: number | null
@@ -163,7 +163,7 @@ export type Database = {
           created_at?: string | null
           dashboard_sections?: string[] | null
           duration_months?: number | null
-          features?: string[] | null
+          features?: string | null
           full_description?: string | null
           id?: string
           monthly_price?: number | null

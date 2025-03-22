@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, X, CreditCard, ChevronRight } from "lucide-react";
+import { Check, CreditCard, Info } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import RazorpayPayment from './RazorpayPayment';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +29,14 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   const { purchaseSubscription, isProcessing } = useSubscription();
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  // Reset state when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setStep('details');
+      setIsAgreed(false);
+    }
+  }, [isOpen]);
   
   // Listen for Razorpay popup events
   useEffect(() => {
@@ -167,114 +175,119 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
         {step === 'details' ? (
           <>
             <DialogHeader>
-              <DialogTitle className="text-xl flex items-center justify-between">
-                <span>{selectedPackage.title}</span>
-                {isOneTimePackage ? (
-                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
-                    One-time payment
-                  </span>
-                ) : (
-                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                    Recurring subscription
-                  </span>
-                )}
+              <DialogTitle className="text-xl font-bold">
+                {selectedPackage.title}
               </DialogTitle>
               <DialogDescription className="text-base pt-2">
-                {selectedPackage.shortDescription}
+                {selectedPackage.shortDescription || `${selectedPackage.type} package for your needs`}
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4">
-              <div className="bg-muted p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Subscription Details</h3>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex justify-between">
-                    <span>Package:</span>
-                    <span className="font-medium">{selectedPackage.title}</span>
-                  </li>
-                  {isOneTimePackage ? (
-                    <>
-                      <li className="flex justify-between">
-                        <span>Duration:</span>
-                        <span className="font-medium">{selectedPackage.durationMonths || 12} months</span>
+            <div className="space-y-6">
+              {/* Package details */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Package Details</h3>
+                <p className="text-sm text-gray-600 mb-4">{selectedPackage.fullDescription || selectedPackage.shortDescription}</p>
+                
+                <div className="bg-gray-50 p-4 rounded-lg border">
+                  <div className="flex justify-between mb-2">
+                    <span className="font-medium">Billing</span>
+                    <span>
+                      {isOneTimePackage 
+                        ? 'One-time payment' 
+                        : `${selectedPackage.billingCycle === 'monthly' ? 'Monthly' : 'Annual'} subscription`}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between mb-2">
+                    <span className="font-medium">Duration</span>
+                    <span>
+                      {isOneTimePackage 
+                        ? `${selectedPackage.durationMonths || 12} months` 
+                        : 'Ongoing until cancelled'}
+                    </span>
+                  </div>
+                  
+                  <Separator className="my-2" />
+                  
+                  <div className="flex justify-between mb-2 font-medium">
+                    <span>Price</span>
+                    <span>
+                      {formatPrice(selectedPackage.billingCycle === 'monthly' && selectedPackage.monthlyPrice
+                        ? selectedPackage.monthlyPrice
+                        : selectedPackage.price)} 
+                      {isOneTimePackage ? '' : `/${selectedPackage.billingCycle || 'year'}`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Features section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Features</h3>
+                <ul className="space-y-2">
+                  {selectedPackage.features && selectedPackage.features.length > 0 ? (
+                    selectedPackage.features.map((feature, index) => (
+                      <li key={index} className="flex">
+                        <Check className="h-5 w-5 text-green-500 mr-2" />
+                        <span>{feature}</span>
                       </li>
-                      <li className="flex justify-between">
-                        <span>Payment:</span>
-                        <span className="font-medium">{formatPrice(selectedPackage.price || 0)} one-time</span>
-                      </li>
-                    </>
+                    ))
                   ) : (
+                    // Default features if none specified
                     <>
-                      <li className="flex justify-between">
-                        <span>Billing Cycle:</span>
-                        <span className="font-medium">{selectedPackage.billingCycle || 'yearly'}</span>
+                      <li className="flex">
+                        <Check className="h-5 w-5 text-green-500 mr-2" />
+                        <span>{selectedPackage.title.includes('Premium') ? 'Premium' : 'Basic'} {selectedPackage.type.toLowerCase()} listing</span>
                       </li>
-                      {setupFee > 0 && (
-                        <li className="flex justify-between">
-                          <span>Setup Fee:</span>
-                          <span className="font-medium">{formatPrice(setupFee)}</span>
+                      <li className="flex">
+                        <Check className="h-5 w-5 text-green-500 mr-2" />
+                        <span>{selectedPackage.title.includes('Premium') ? 'Priority' : 'Email'} support</span>
+                      </li>
+                      <li className="flex">
+                        <Check className="h-5 w-5 text-green-500 mr-2" />
+                        <span>{selectedPackage.title.includes('Premium') ? '5' : '1'} location{selectedPackage.title.includes('Premium') ? 's' : ''}</span>
+                      </li>
+                      {selectedPackage.title.includes('Premium') && (
+                        <li className="flex">
+                          <Check className="h-5 w-5 text-green-500 mr-2" />
+                          <span>Featured in search</span>
                         </li>
                       )}
-                      <li className="flex justify-between">
-                        <span>Recurring Payment:</span>
-                        <span className="font-medium">
-                          {formatPrice(selectedPackage.billingCycle === 'monthly' 
-                            ? (selectedPackage.monthlyPrice || 0) 
-                            : (selectedPackage.price || 0))}
-                          /{selectedPackage.billingCycle || 'year'}
-                        </span>
-                      </li>
-                      {advanceMonths > 0 && (
-                        <li className="flex justify-between">
-                          <span>Advance Payment:</span>
-                          <span className="font-medium">{advanceMonths} months</span>
-                        </li>
-                      )}
-                      <li className="flex justify-between border-t pt-2 mt-2">
-                        <span>Initial Payment:</span>
-                        <span className="font-medium">{formatPrice(initialPayment)}</span>
-                      </li>
                     </>
                   )}
                 </ul>
               </div>
               
+              {/* Terms and conditions */}
               <div>
-                <h3 className="font-semibold mb-2">Features</h3>
-                <ul className="space-y-1">
-                  {selectedPackage.features?.map((feature, index) => (
-                    <li key={index} className="flex items-start">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              
-              <Separator />
-              
-              <div className="flex items-start space-x-2">
-                <div 
-                  className="w-5 h-5 rounded border border-gray-300 flex items-center justify-center cursor-pointer mt-0.5" 
-                  onClick={() => setIsAgreed(!isAgreed)}
-                >
-                  {isAgreed && <CheckCircle className="h-4 w-4 text-primary" />}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  I agree to the <span className="text-primary cursor-pointer">Terms & Conditions</span> and 
-                  <span className="text-primary cursor-pointer"> Privacy Policy</span>. {!isOneTimePackage && 
-                  "I understand that this is a recurring subscription that will be billed according to the package cycle."}
+                <div className="flex items-start space-x-2">
+                  <div 
+                    className="w-5 h-5 rounded border border-gray-300 flex items-center justify-center cursor-pointer mt-0.5" 
+                    onClick={() => setIsAgreed(!isAgreed)}
+                  >
+                    {isAgreed && <Check className="h-4 w-4 text-primary" />}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    I agree to the <span className="text-primary cursor-pointer">Terms & Conditions</span> and 
+                    <span className="text-primary cursor-pointer"> Privacy Policy</span>. {!isOneTimePackage && 
+                    "I understand that this is a recurring subscription that will be billed according to the package cycle."}
+                  </div>
                 </div>
               </div>
             </div>
             
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsOpen(false)}>
+            <DialogFooter className="flex flex-col sm:flex-row gap-2">
+              <Button variant="outline" className="w-full sm:w-auto" onClick={() => setIsOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleProceedToPayment} disabled={!isAgreed || isProcessing}>
-                {isProcessing ? 'Processing...' : 'Continue to Payment'}
-                <ChevronRight className="ml-1 h-4 w-4" />
+              <Button 
+                className="w-full sm:w-auto" 
+                onClick={handleProceedToPayment} 
+                disabled={!isAgreed || isProcessing}
+              >
+                <CreditCard className="mr-2 h-4 w-4" />
+                {isProcessing ? 'Processing...' : 'Proceed to Payment'}
               </Button>
             </DialogFooter>
           </>
