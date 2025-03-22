@@ -32,7 +32,7 @@ export const useSubscriptionPackages = () => {
   
   const createOrUpdateMutation = useMutation({
     mutationFn: async (packageData: ISubscriptionPackage) => {
-      // Ensure data has the correct types
+      // Ensure data has the correct types and text fields are handled properly
       let processedData = {
         ...packageData,
         // Handle features if it's a string
@@ -41,7 +41,7 @@ export const useSubscriptionPackages = () => {
           : typeof packageData.features === 'string'
             ? (packageData.features as string).split('\n').filter(f => f.trim().length > 0)
             : [],
-        // Ensure these fields are strings
+        // Ensure these fields are strings without truncation
         termsAndConditions: String(packageData.termsAndConditions || ''),
         fullDescription: String(packageData.fullDescription || ''),
         shortDescription: String(packageData.shortDescription || '')

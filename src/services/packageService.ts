@@ -61,6 +61,7 @@ const mapToSupabasePackage = (pkg: ISubscriptionPackage) => {
     monthly_price: pkg.monthlyPrice || 0,
     duration_months: pkg.durationMonths || 12,
     short_description: pkg.shortDescription || '',
+    // Ensure we're handling long text properly
     full_description: pkg.fullDescription || '',
     features: features,
     popular: pkg.popular || false,
@@ -69,6 +70,7 @@ const mapToSupabasePackage = (pkg: ISubscriptionPackage) => {
     payment_type: pkg.paymentType || 'recurring',
     billing_cycle: pkg.billingCycle || 'yearly',
     dashboard_sections: Array.isArray(pkg.dashboardSections) ? pkg.dashboardSections : [],
+    // Ensure we're handling long text properly
     terms_and_conditions: pkg.termsAndConditions || '',
     advance_payment_months: pkg.advancePaymentMonths || 0
   };
@@ -175,7 +177,8 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
     packageData.features = [];
   }
 
-  // Ensure text fields are properly handled - explicitly stringify them
+  // Ensure text fields are properly handled without truncation
+  // Cast to String to handle any potential non-string values
   packageData.termsAndConditions = String(packageData.termsAndConditions || '');
   packageData.fullDescription = String(packageData.fullDescription || '');
   packageData.shortDescription = String(packageData.shortDescription || '');

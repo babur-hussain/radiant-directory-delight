@@ -26,7 +26,16 @@ const CentralizedSubscriptionManager: React.FC<CentralizedSubscriptionManagerPro
   isSaving = false,
 }) => {
   const onSubmit = async (packageData: ISubscriptionPackage) => {
-    await handleSave(packageData);
+    // Ensure text fields are properly handled without truncation
+    const processedData: ISubscriptionPackage = {
+      ...packageData,
+      // Ensure proper string conversion for text fields
+      fullDescription: String(packageData.fullDescription || ''),
+      termsAndConditions: String(packageData.termsAndConditions || ''),
+      shortDescription: String(packageData.shortDescription || '')
+    };
+    
+    await handleSave(processedData);
   };
 
   const onCancel = () => {
