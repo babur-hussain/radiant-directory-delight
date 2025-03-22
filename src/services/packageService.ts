@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
@@ -120,7 +121,7 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
       duration_months: packageData.durationMonths || 12,
       short_description: String(packageData.shortDescription || ''),
       full_description: String(packageData.fullDescription || ''),
-      features: JSON.stringify(Array.isArray(packageData.features) ? packageData.features : []),
+      features: Array.isArray(packageData.features) ? JSON.stringify(packageData.features) : '[]',
       popular: packageData.popular || false,
       type: packageData.type || 'Business',
       terms_and_conditions: String(packageData.termsAndConditions || ''),
@@ -239,12 +240,26 @@ const mapDbRowToPackage = (dbRow: any): ISubscriptionPackage => {
   let features: string[] = [];
   try {
     if (typeof dbRow.features === 'string' && dbRow.features) {
+      // Try to parse as JSON
       features = JSON.parse(dbRow.features);
     } else if (Array.isArray(dbRow.features)) {
       features = dbRow.features;
+    } else if (typeof dbRow.features === 'string' && dbRow.features.includes('✅')) {
+      // Handle non-JSON formatted features with checkmarks
+      features = dbRow.features.split('\n').map((feature: string) => feature.trim());
     }
   } catch (e) {
     console.warn("Error parsing features:", e);
+    // If parsing fails, try to split by newlines or commas
+    if (typeof dbRow.features === 'string') {
+      if (dbRow.features.includes('\n')) {
+        features = dbRow.features.split('\n').map((f: string) => f.trim()).filter(Boolean);
+      } else if (dbRow.features.includes(',')) {
+        features = dbRow.features.split(',').map((f: string) => f.trim()).filter(Boolean);
+      } else if (dbRow.features.trim()) {
+        features = [dbRow.features.trim()];
+      }
+    }
   }
   
   // Parse dashboard_sections from JSON string or use empty array

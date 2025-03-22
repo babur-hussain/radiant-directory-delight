@@ -94,7 +94,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ userRole })
                     ) : (
                       <li className="flex items-start">
                         <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-                        <span>No features specified</span>
+                        <span>Basic features included</span>
                       </li>
                     )}
                   </ul>
