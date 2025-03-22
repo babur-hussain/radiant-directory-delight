@@ -38,12 +38,14 @@ export const useSubscriptionPackages = () => {
   const createOrUpdateMutation = useMutation({
     mutationFn: async (packageData: ISubscriptionPackage) => {
       console.log("Starting save package mutation with data:", packageData);
+      
       if (!packageData.title) {
         console.error("Package title is missing");
         throw new Error("Package title is required");
       }
       
       try {
+        console.log("Calling savePackage service function");
         const result = await savePackage(packageData);
         console.log("Save package mutation result:", result);
         return result;
