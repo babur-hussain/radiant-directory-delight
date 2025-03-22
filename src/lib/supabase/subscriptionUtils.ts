@@ -46,24 +46,50 @@ export const getSubscriptionPackages = async (): Promise<ISubscriptionPackage[]>
     
     if (error) throw error;
     
-    return data ? data.map(pkg => ({
-      id: pkg.id,
-      title: pkg.title || '',
-      price: pkg.price || 0,
-      monthlyPrice: pkg.monthly_price,
-      setupFee: pkg.setup_fee || 0,
-      durationMonths: pkg.duration_months || 12,
-      shortDescription: pkg.short_description || '',
-      fullDescription: pkg.full_description || '',
-      features: Array.isArray(pkg.features) ? pkg.features : [],
-      popular: pkg.popular || false,
-      type: transformType(pkg.type),
-      termsAndConditions: pkg.terms_and_conditions,
-      paymentType: transformPaymentType(pkg.payment_type),
-      billingCycle: transformBillingCycle(pkg.billing_cycle),
-      advancePaymentMonths: pkg.advance_payment_months || 0,
-      dashboardSections: pkg.dashboard_sections || []
-    })) : [];
+    return data ? data.map(pkg => {
+      // Parse features from JSON string if needed
+      let features: string[] = [];
+      try {
+        if (typeof pkg.features === 'string' && pkg.features) {
+          features = JSON.parse(pkg.features);
+        } else if (Array.isArray(pkg.features)) {
+          features = pkg.features;
+        }
+      } catch (e) {
+        console.warn("Error parsing features:", e);
+      }
+      
+      // Parse dashboard sections from JSON string if needed
+      let dashboardSections: string[] = [];
+      try {
+        if (typeof pkg.dashboard_sections === 'string' && pkg.dashboard_sections) {
+          dashboardSections = JSON.parse(pkg.dashboard_sections);
+        } else if (Array.isArray(pkg.dashboard_sections)) {
+          dashboardSections = pkg.dashboard_sections;
+        }
+      } catch (e) {
+        console.warn("Error parsing dashboard_sections:", e);
+      }
+      
+      return {
+        id: pkg.id,
+        title: pkg.title || '',
+        price: pkg.price || 0,
+        monthlyPrice: pkg.monthly_price,
+        setupFee: pkg.setup_fee || 0,
+        durationMonths: pkg.duration_months || 12,
+        shortDescription: pkg.short_description || '',
+        fullDescription: pkg.full_description || '',
+        features: features,
+        popular: pkg.popular || false,
+        type: transformType(pkg.type),
+        termsAndConditions: pkg.terms_and_conditions,
+        paymentType: transformPaymentType(pkg.payment_type),
+        billingCycle: transformBillingCycle(pkg.billing_cycle),
+        advancePaymentMonths: pkg.advance_payment_months || 0,
+        dashboardSections: dashboardSections
+      };
+    }) : [];
   } catch (error) {
     console.error("Error getting subscription packages:", error);
     return [];
@@ -82,24 +108,50 @@ export const getPackagesByType = async (type: string): Promise<ISubscriptionPack
     
     if (error) throw error;
     
-    return data ? data.map(pkg => ({
-      id: pkg.id,
-      title: pkg.title || '',
-      price: pkg.price || 0,
-      monthlyPrice: pkg.monthly_price,
-      setupFee: pkg.setup_fee || 0,
-      durationMonths: pkg.duration_months || 12,
-      shortDescription: pkg.short_description || '',
-      fullDescription: pkg.full_description || '',
-      features: Array.isArray(pkg.features) ? pkg.features : [],
-      popular: pkg.popular || false,
-      type: transformType(pkg.type),
-      termsAndConditions: pkg.terms_and_conditions,
-      paymentType: transformPaymentType(pkg.payment_type),
-      billingCycle: transformBillingCycle(pkg.billing_cycle),
-      advancePaymentMonths: pkg.advance_payment_months || 0,
-      dashboardSections: pkg.dashboard_sections || []
-    })) : [];
+    return data ? data.map(pkg => {
+      // Parse features from JSON string if needed
+      let features: string[] = [];
+      try {
+        if (typeof pkg.features === 'string' && pkg.features) {
+          features = JSON.parse(pkg.features);
+        } else if (Array.isArray(pkg.features)) {
+          features = pkg.features;
+        }
+      } catch (e) {
+        console.warn("Error parsing features:", e);
+      }
+      
+      // Parse dashboard sections from JSON string if needed
+      let dashboardSections: string[] = [];
+      try {
+        if (typeof pkg.dashboard_sections === 'string' && pkg.dashboard_sections) {
+          dashboardSections = JSON.parse(pkg.dashboard_sections);
+        } else if (Array.isArray(pkg.dashboard_sections)) {
+          dashboardSections = pkg.dashboard_sections;
+        }
+      } catch (e) {
+        console.warn("Error parsing dashboard_sections:", e);
+      }
+      
+      return {
+        id: pkg.id,
+        title: pkg.title || '',
+        price: pkg.price || 0,
+        monthlyPrice: pkg.monthly_price,
+        setupFee: pkg.setup_fee || 0,
+        durationMonths: pkg.duration_months || 12,
+        shortDescription: pkg.short_description || '',
+        fullDescription: pkg.full_description || '',
+        features: features,
+        popular: pkg.popular || false,
+        type: transformType(pkg.type),
+        termsAndConditions: pkg.terms_and_conditions,
+        paymentType: transformPaymentType(pkg.payment_type),
+        billingCycle: transformBillingCycle(pkg.billing_cycle),
+        advancePaymentMonths: pkg.advance_payment_months || 0,
+        dashboardSections: dashboardSections
+      };
+    }) : [];
   } catch (error) {
     console.error(`Error getting ${type} subscription packages:`, error);
     return [];
@@ -116,14 +168,29 @@ export const createOrUpdatePackage = async (packageData: ISubscriptionPackage): 
       throw new Error("Missing required package data");
     }
     
-    // Format features if it's a string
-    if (typeof packageData.features === 'string') {
-      packageData.features = (packageData.features as unknown as string).split(',').map((f: string) => f.trim());
+    // Process features array
+    let featuresString = '';
+    if (Array.isArray(packageData.features)) {
+      featuresString = JSON.stringify(packageData.features);
+    } else if (typeof packageData.features === 'string') {
+      // If it's already a string, check if it's JSON format
+      try {
+        JSON.parse(packageData.features as string);
+        featuresString = packageData.features as string;
+      } catch (e) {
+        // Not valid JSON, convert to array then stringify
+        featuresString = JSON.stringify((packageData.features as unknown as string).split(',').map(f => f.trim()));
+      }
+    } else {
+      featuresString = JSON.stringify([]);
     }
     
-    // Ensure dashboardSections is an array
-    if (!Array.isArray(packageData.dashboardSections)) {
-      packageData.dashboardSections = [];
+    // Process dashboard sections array
+    let dashboardSectionsString = '';
+    if (Array.isArray(packageData.dashboardSections)) {
+      dashboardSectionsString = JSON.stringify(packageData.dashboardSections);
+    } else {
+      dashboardSectionsString = JSON.stringify([]);
     }
     
     // Prepare the data for Supabase (snake_case)
@@ -136,21 +203,21 @@ export const createOrUpdatePackage = async (packageData: ISubscriptionPackage): 
       duration_months: packageData.durationMonths || 12,
       short_description: packageData.shortDescription || '',
       full_description: packageData.fullDescription || '',
-      features: packageData.features,
+      features: featuresString,
       popular: packageData.popular || false,
       type: packageData.type || 'Business',
       terms_and_conditions: packageData.termsAndConditions || '',
       payment_type: packageData.paymentType || 'recurring',
       billing_cycle: packageData.billingCycle || undefined,
       advance_payment_months: packageData.advancePaymentMonths || 0,
-      dashboard_sections: packageData.dashboardSections || []
+      dashboard_sections: dashboardSectionsString
     };
     
     console.log("Supabase data to save:", JSON.stringify(supabaseData, null, 2));
     
     const { data, error } = await supabase
       .from('subscription_packages')
-      .upsert([supabaseData])
+      .upsert(supabaseData)
       .select();
     
     if (error) throw error;

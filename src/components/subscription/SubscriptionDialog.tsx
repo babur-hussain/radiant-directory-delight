@@ -6,7 +6,7 @@ import { Check, CreditCard, Info } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import RazorpayPayment from './RazorpayPayment';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';

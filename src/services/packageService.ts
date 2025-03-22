@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
@@ -111,7 +110,7 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
     const packageId = packageData.id || `pkg_${uuidv4().substring(0, 8)}`;
     console.log(`Using package ID: ${packageId}`);
     
-    // Prepare the data for Supabase - handle text fields explicitly
+    // Prepare the data for Supabase - handle arrays as JSON strings
     const supabaseData = {
       id: packageId,
       title: String(packageData.title || '').trim(),
@@ -121,14 +120,14 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
       duration_months: packageData.durationMonths || 12,
       short_description: String(packageData.shortDescription || ''),
       full_description: String(packageData.fullDescription || ''),
-      features: Array.isArray(packageData.features) ? packageData.features : [],
+      features: JSON.stringify(Array.isArray(packageData.features) ? packageData.features : []),
       popular: packageData.popular || false,
       type: packageData.type || 'Business',
       terms_and_conditions: String(packageData.termsAndConditions || ''),
       payment_type: packageData.paymentType || 'recurring',
       billing_cycle: packageData.paymentType === 'one-time' ? null : packageData.billingCycle || 'yearly',
       advance_payment_months: packageData.advancePaymentMonths || 0,
-      dashboard_sections: Array.isArray(packageData.dashboardSections) ? packageData.dashboardSections : []
+      dashboard_sections: JSON.stringify(Array.isArray(packageData.dashboardSections) ? packageData.dashboardSections : [])
     };
     
     console.log("Prepared Supabase data:", supabaseData);
@@ -236,11 +235,29 @@ const mapDbRowToPackage = (dbRow: any): ISubscriptionPackage => {
     }
   }
   
-  // Ensure features is always an array
-  const features = Array.isArray(dbRow.features) ? dbRow.features : [];
+  // Parse features from JSON string or use empty array
+  let features: string[] = [];
+  try {
+    if (typeof dbRow.features === 'string' && dbRow.features) {
+      features = JSON.parse(dbRow.features);
+    } else if (Array.isArray(dbRow.features)) {
+      features = dbRow.features;
+    }
+  } catch (e) {
+    console.warn("Error parsing features:", e);
+  }
   
-  // Ensure dashboard_sections is always an array
-  const dashboardSections = Array.isArray(dbRow.dashboard_sections) ? dbRow.dashboard_sections : [];
+  // Parse dashboard_sections from JSON string or use empty array
+  let dashboardSections: string[] = [];
+  try {
+    if (typeof dbRow.dashboard_sections === 'string' && dbRow.dashboard_sections) {
+      dashboardSections = JSON.parse(dbRow.dashboard_sections);
+    } else if (Array.isArray(dbRow.dashboard_sections)) {
+      dashboardSections = dbRow.dashboard_sections;
+    }
+  } catch (e) {
+    console.warn("Error parsing dashboard_sections:", e);
+  }
   
   return {
     id: dbRow.id,

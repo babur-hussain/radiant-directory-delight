@@ -38,14 +38,14 @@ export const seedDatabase = async (): Promise<boolean> => {
       price: 999,
       short_description: "Essential features for businesses",
       full_description: "This package includes all essential features needed to get started.",
-      features: ["Feature 1", "Feature 2", "Feature 3"],
+      features: JSON.stringify(["Feature 1", "Feature 2", "Feature 3"]),
       popular: true,
       setup_fee: 0,
       duration_months: 12,
       type: "Business" as const,
       payment_type: "recurring" as PaymentType,
       billing_cycle: "yearly" as BillingCycle,
-      dashboard_sections: ["analytics", "content", "reports"]
+      dashboard_sections: JSON.stringify(["analytics", "content", "reports"])
     };
     
     const { error: packageError } = await supabase
