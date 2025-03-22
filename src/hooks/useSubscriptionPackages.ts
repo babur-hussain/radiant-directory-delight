@@ -20,7 +20,7 @@ export const useSubscriptionPackages = () => {
       try {
         console.log("Fetching all subscription packages");
         const packages = await getAllPackages();
-        console.log("Successfully fetched packages:", packages.length);
+        console.log("Successfully fetched packages:", packages?.length);
         return packages;
       } catch (err) {
         console.error('Error fetching subscription packages:', err);
@@ -43,9 +43,14 @@ export const useSubscriptionPackages = () => {
         throw new Error("Package title is required");
       }
       
-      const result = await savePackage(packageData);
-      console.log("Save package mutation result:", result);
-      return result;
+      try {
+        const result = await savePackage(packageData);
+        console.log("Save package mutation result:", result);
+        return result;
+      } catch (error) {
+        console.error("Error in save package mutation:", error);
+        throw error;
+      }
     },
     onSuccess: (savedPackage) => {
       console.log("Package saved successfully:", savedPackage);
@@ -78,8 +83,13 @@ export const useSubscriptionPackages = () => {
         throw new Error("Package ID is required");
       }
       
-      await deletePackage(packageId);
-      return packageId;
+      try {
+        await deletePackage(packageId);
+        return packageId;
+      } catch (error) {
+        console.error("Error in delete package mutation:", error);
+        throw error;
+      }
     },
     onSuccess: (packageId) => {
       console.log("Package deleted successfully:", packageId);
