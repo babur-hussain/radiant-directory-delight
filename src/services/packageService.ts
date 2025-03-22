@@ -2,80 +2,11 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
+import { v4 as uuidv4 } from 'uuid';
 
-// Helper function to ensure payment type is valid
-const getPaymentType = (type: string | null): PaymentType => {
-  return (type?.toLowerCase() === 'one-time') ? 'one-time' : 'recurring';
-};
-
-// Helper function to ensure billing cycle is valid
-const getBillingCycle = (cycle: string | null): BillingCycle | undefined => {
-  if (cycle?.toLowerCase() === 'monthly') return 'monthly';
-  if (cycle?.toLowerCase() === 'yearly') return 'yearly';
-  return undefined;
-};
-
-// Map a Supabase row to an ISubscriptionPackage object
-const mapToPackage = (pkg: any): ISubscriptionPackage => {
-  return {
-    id: pkg.id,
-    title: pkg.title || '',
-    price: pkg.price || 0,
-    monthlyPrice: pkg.monthly_price,
-    setupFee: pkg.setup_fee || 0,
-    durationMonths: pkg.duration_months || 12,
-    shortDescription: pkg.short_description || '',
-    fullDescription: pkg.full_description || '',
-    features: Array.isArray(pkg.features) ? pkg.features : [],
-    popular: pkg.popular || false,
-    type: pkg.type as "Business" | "Influencer" || 'Business',
-    termsAndConditions: pkg.terms_and_conditions || '',
-    paymentType: getPaymentType(pkg.payment_type),
-    billingCycle: getBillingCycle(pkg.billing_cycle),
-    advancePaymentMonths: pkg.advance_payment_months || 0,
-    dashboardSections: pkg.dashboard_sections || [],
-    isActive: true
-  };
-};
-
-// Map an ISubscriptionPackage to a Supabase row
-const mapToSupabasePackage = (pkg: ISubscriptionPackage) => {
-  // Generate an ID if one doesn't exist
-  const packageId = pkg.id || `pkg_${Date.now()}`;
-  
-  // Process features to ensure it's always an array
-  let features: string[] = [];
-  if (Array.isArray(pkg.features)) {
-    features = pkg.features.filter(f => f && f.trim && f.trim().length > 0);
-  } else if (typeof pkg.features === 'string') {
-    features = (pkg.features as string).split('\n').filter(f => f.trim().length > 0);
-  }
-  
-  // Handle one-time packages appropriately
-  const isOneTime = pkg.paymentType === 'one-time';
-  
-  // Create the Supabase object with all fields properly mapped
-  return {
-    id: packageId,
-    title: pkg.title,
-    price: pkg.price,
-    monthly_price: isOneTime ? null : (pkg.monthlyPrice || null),
-    duration_months: pkg.durationMonths || 12,
-    short_description: pkg.shortDescription || '',
-    full_description: pkg.fullDescription || '',
-    features: features,
-    popular: pkg.popular || false,
-    setup_fee: isOneTime ? 0 : (pkg.setupFee || 0),
-    type: pkg.type || 'Business',
-    payment_type: isOneTime ? 'one-time' : 'recurring',
-    billing_cycle: isOneTime ? null : (pkg.billingCycle || 'yearly'),
-    dashboard_sections: Array.isArray(pkg.dashboardSections) ? pkg.dashboardSections : [],
-    terms_and_conditions: pkg.termsAndConditions || '',
-    advance_payment_months: isOneTime ? 0 : (pkg.advancePaymentMonths || 0)
-  };
-};
-
-// Get all subscription packages
+/**
+ * Get all subscription packages
+ */
 const getAllPackages = async (): Promise<ISubscriptionPackage[]> => {
   try {
     console.log("Fetching all packages from Supabase");
@@ -85,27 +16,30 @@ const getAllPackages = async (): Promise<ISubscriptionPackage[]> => {
       .order('price', { ascending: true });
     
     if (error) {
-      console.error('Error fetching subscription packages:', error);
-      throw error;
+      console.error('Supabase error fetching packages:', error);
+      throw new Error(`Failed to fetch packages: ${error.message}`);
     }
     
     if (!data || data.length === 0) {
-      console.warn('No subscription packages found in database');
+      console.log('No subscription packages found in database');
       return [];
     }
     
-    const mappedPackages = data.map(mapToPackage);
-    console.log(`Successfully fetched ${mappedPackages.length} packages`);
+    const mappedPackages = data.map(mapDbRowToPackage);
+    console.log(`Successfully fetched ${mappedPackages.length} packages:`, mappedPackages);
     return mappedPackages;
   } catch (error) {
     console.error('Error in getAllPackages:', error);
-    throw new Error(`Failed to fetch packages: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
   }
 };
 
-// Get packages by type
+/**
+ * Get packages by type (Business or Influencer)
+ */
 const getPackagesByType = async (type: string): Promise<ISubscriptionPackage[]> => {
   try {
+    console.log(`Fetching packages of type '${type}' from Supabase`);
     const { data, error } = await supabase
       .from('subscription_packages')
       .select('*')
@@ -113,20 +47,25 @@ const getPackagesByType = async (type: string): Promise<ISubscriptionPackage[]> 
       .order('price', { ascending: true });
     
     if (error) {
-      console.error(`Error fetching ${type} packages:`, error);
-      throw error;
+      console.error(`Supabase error fetching ${type} packages:`, error);
+      throw new Error(`Failed to fetch ${type} packages: ${error.message}`);
     }
     
-    return data.map(mapToPackage);
+    const mappedPackages = data ? data.map(mapDbRowToPackage) : [];
+    console.log(`Successfully fetched ${mappedPackages.length} ${type} packages`);
+    return mappedPackages;
   } catch (error) {
     console.error(`Error in getPackagesByType:`, error);
-    throw new Error(`Failed to fetch ${type} packages: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
   }
 };
 
-// Get package by ID
+/**
+ * Get a single package by ID
+ */
 const getPackageById = async (id: string): Promise<ISubscriptionPackage | null> => {
   try {
+    console.log(`Fetching package with ID '${id}' from Supabase`);
     const { data, error } = await supabase
       .from('subscription_packages')
       .select('*')
@@ -134,60 +73,83 @@ const getPackageById = async (id: string): Promise<ISubscriptionPackage | null> 
       .maybeSingle();
     
     if (error) {
-      console.error(`Error fetching package by ID ${id}:`, error);
-      throw error;
+      console.error(`Supabase error fetching package with ID ${id}:`, error);
+      throw new Error(`Failed to fetch package: ${error.message}`);
     }
     
-    if (!data) return null;
+    if (!data) {
+      console.log(`Package with ID ${id} not found`);
+      return null;
+    }
     
-    return mapToPackage(data);
+    const mappedPackage = mapDbRowToPackage(data);
+    console.log(`Successfully fetched package: ${mappedPackage.title}`);
+    return mappedPackage;
   } catch (error) {
     console.error(`Error in getPackageById:`, error);
-    throw new Error(`Failed to fetch package ${id}: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
   }
 };
 
-// Simple direct approach to save a package
+/**
+ * Save (create or update) a package
+ */
 const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscriptionPackage> => {
-  console.log("Starting save package operation:", packageData);
-  
-  // Generate ID if missing
-  if (!packageData.id) {
-    packageData.id = `pkg_${Date.now()}`;
-    console.log("Generated new package ID:", packageData.id);
-  }
-  
-  // Validate required fields
-  if (!packageData.title) {
-    throw new Error('Package title is required');
-  }
-  
-  if (packageData.price === undefined) {
-    throw new Error('Package price is required');
-  }
-  
   try {
-    // Convert to Supabase format
-    const supabaseData = mapToSupabasePackage(packageData);
-    console.log("Prepared data for Supabase:", supabaseData);
+    // Validate required fields
+    if (!packageData.title) {
+      throw new Error('Package title is required');
+    }
     
-    // Direct upsert approach
+    if (packageData.price === undefined || packageData.price === null) {
+      throw new Error('Package price is required');
+    }
+    
+    // Generate an ID if one doesn't exist
+    const packageId = packageData.id || `pkg_${uuidv4().substring(0, 8)}`;
+    console.log(`Using package ID: ${packageId}`);
+    
+    // Prepare the data for Supabase (using explicit mapping to ensure all fields are properly formatted)
+    const supabaseData = {
+      id: packageId,
+      title: packageData.title,
+      price: packageData.price,
+      monthly_price: packageData.monthlyPrice || null,
+      setup_fee: packageData.setupFee || 0,
+      duration_months: packageData.durationMonths || 12,
+      short_description: packageData.shortDescription || '',
+      full_description: packageData.fullDescription || '',
+      features: Array.isArray(packageData.features) ? packageData.features : [],
+      popular: packageData.popular || false,
+      type: packageData.type || 'Business',
+      terms_and_conditions: packageData.termsAndConditions || '',
+      payment_type: packageData.paymentType || 'recurring',
+      billing_cycle: packageData.paymentType === 'one-time' ? null : packageData.billingCycle || 'yearly',
+      advance_payment_months: packageData.advancePaymentMonths || 0,
+      dashboard_sections: Array.isArray(packageData.dashboardSections) ? packageData.dashboardSections : []
+    };
+    
+    console.log("Saving package to Supabase with data:", supabaseData);
+    
+    // Use upsert with onConflict for reliable insert/update
     const { data, error } = await supabase
       .from('subscription_packages')
-      .upsert([supabaseData], { onConflict: 'id' })
-      .select();
+      .upsert([supabaseData], { 
+        onConflict: 'id',
+        returning: 'representation'  // Return the entire inserted/updated row
+      });
     
     if (error) {
-      console.error("Failed to save package:", error);
+      console.error("Supabase error saving package:", error);
       throw new Error(`Failed to save package: ${error.message}`);
     }
     
     if (!data || data.length === 0) {
       console.error("No data returned after save operation");
-      throw new Error("Failed to save package: No data returned");
+      throw new Error("Failed to save package: No data returned from database");
     }
     
-    const savedPackage = mapToPackage(data[0]);
+    const savedPackage = mapDbRowToPackage(data[0]);
     console.log("Package saved successfully:", savedPackage);
     
     return savedPackage;
@@ -197,18 +159,24 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
   }
 };
 
-// Delete package function - simplified for reliability
+/**
+ * Delete a package by ID
+ */
 const deletePackage = async (id: string): Promise<void> => {
-  console.log(`Attempting to delete package with ID: ${id}`);
-  
   try {
+    console.log(`Deleting package with ID: ${id}`);
+    
+    if (!id) {
+      throw new Error('Package ID is required');
+    }
+    
     const { error } = await supabase
       .from('subscription_packages')
       .delete()
       .eq('id', id);
     
     if (error) {
-      console.error(`Error deleting package with ID ${id}:`, error);
+      console.error(`Supabase error deleting package with ID ${id}:`, error);
       throw new Error(`Failed to delete package: ${error.message}`);
     }
     
@@ -217,6 +185,50 @@ const deletePackage = async (id: string): Promise<void> => {
     console.error(`Error in deletePackage:`, error);
     throw error;
   }
+};
+
+/**
+ * Map a Supabase row to an ISubscriptionPackage object
+ */
+const mapDbRowToPackage = (dbRow: any): ISubscriptionPackage => {
+  // Validate payment type
+  const paymentType: PaymentType = dbRow.payment_type?.toLowerCase() === 'one-time' ? 'one-time' : 'recurring';
+  
+  // Validate billing cycle
+  let billingCycle: BillingCycle | undefined;
+  if (dbRow.billing_cycle) {
+    if (dbRow.billing_cycle.toLowerCase() === 'monthly') {
+      billingCycle = 'monthly';
+    } else if (dbRow.billing_cycle.toLowerCase() === 'yearly') {
+      billingCycle = 'yearly';
+    }
+  }
+  
+  // Ensure features is always an array
+  const features = Array.isArray(dbRow.features) ? dbRow.features : [];
+  
+  // Ensure dashboard_sections is always an array
+  const dashboardSections = Array.isArray(dbRow.dashboard_sections) ? dbRow.dashboard_sections : [];
+  
+  return {
+    id: dbRow.id,
+    title: dbRow.title || '',
+    price: typeof dbRow.price === 'number' ? dbRow.price : 0,
+    monthlyPrice: typeof dbRow.monthly_price === 'number' ? dbRow.monthly_price : undefined,
+    setupFee: typeof dbRow.setup_fee === 'number' ? dbRow.setup_fee : 0,
+    durationMonths: typeof dbRow.duration_months === 'number' ? dbRow.duration_months : 12,
+    shortDescription: dbRow.short_description || '',
+    fullDescription: dbRow.full_description || '',
+    features: features,
+    popular: !!dbRow.popular,
+    type: dbRow.type === 'Influencer' ? 'Influencer' : 'Business',
+    termsAndConditions: dbRow.terms_and_conditions || '',
+    paymentType: paymentType,
+    billingCycle: billingCycle,
+    advancePaymentMonths: typeof dbRow.advance_payment_months === 'number' ? dbRow.advance_payment_months : 0,
+    dashboardSections: dashboardSections,
+    isActive: true
+  };
 };
 
 export { 

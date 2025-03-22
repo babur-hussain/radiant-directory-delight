@@ -18,11 +18,12 @@ export const useSubscriptionPackages = () => {
     queryKey: ['subscription-packages'],
     queryFn: async () => {
       try {
+        console.log("Fetching all subscription packages");
         const packages = await getAllPackages();
-        console.log("Fetched packages:", packages.length);
+        console.log("Successfully fetched packages:", packages.length);
         return packages;
       } catch (err) {
-        console.error('Error in useSubscriptionPackages hook:', err);
+        console.error('Error fetching subscription packages:', err);
         toast({
           title: "Error",
           description: `Failed to load subscription packages: ${err instanceof Error ? err.message : String(err)}`,
@@ -33,13 +34,18 @@ export const useSubscriptionPackages = () => {
     }
   });
   
-  // Simplified mutation for creating or updating packages
+  // Create or update mutation
   const createOrUpdateMutation = useMutation({
-    mutationFn: (packageData: ISubscriptionPackage) => {
-      console.log("Starting mutation with package data:", packageData);
-      return savePackage(packageData);
+    mutationFn: async (packageData: ISubscriptionPackage) => {
+      console.log("Starting save package mutation with data:", packageData);
+      if (!packageData.title) {
+        console.error("Package title is missing");
+        throw new Error("Package title is required");
+      }
+      
+      return await savePackage(packageData);
     },
-    onSuccess: (savedPackage) => {
+    onSuccess: (savedPackage, variables) => {
       console.log("Package saved successfully:", savedPackage);
       
       toast({
@@ -50,8 +56,10 @@ export const useSubscriptionPackages = () => {
       // Invalidate and refetch
       queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
     },
-    onError: (error: any) => {
-      console.error("Mutation error:", error);
+    onError: (error: any, variables) => {
+      console.error("Package save error:", error);
+      console.error("Failed package data:", variables);
+      
       toast({
         title: "Error",
         description: `Failed to save package: ${error instanceof Error ? error.message : String(error)}`,
@@ -60,11 +68,16 @@ export const useSubscriptionPackages = () => {
     }
   });
   
-  // Simplified mutation for deleting packages
+  // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: (packageId: string) => {
-      console.log("Delete mutation starting for package:", packageId);
-      return deletePackage(packageId);
+    mutationFn: async (packageId: string) => {
+      console.log("Starting delete package mutation for ID:", packageId);
+      if (!packageId) {
+        console.error("Package ID is missing");
+        throw new Error("Package ID is required");
+      }
+      
+      return await deletePackage(packageId);
     },
     onSuccess: (_, packageId) => {
       console.log("Package deleted successfully:", packageId);
@@ -78,7 +91,8 @@ export const useSubscriptionPackages = () => {
       queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
     },
     onError: (error: any) => {
-      console.error("Delete mutation error:", error);
+      console.error("Package delete error:", error);
+      
       toast({
         title: "Error",
         description: `Failed to delete package: ${error instanceof Error ? error.message : String(error)}`,
@@ -87,25 +101,25 @@ export const useSubscriptionPackages = () => {
     }
   });
   
-  // Helper method to create or update a package - simplified
+  // Direct function to create or update a package
   const createOrUpdate = async (packageData: ISubscriptionPackage) => {
     try {
-      console.log("createOrUpdate helper called with:", packageData);
+      console.log("createOrUpdate function called with data:", packageData);
       return await createOrUpdateMutation.mutateAsync(packageData);
     } catch (error) {
-      console.error('Error in createOrUpdate helper:', error);
+      console.error('Error in createOrUpdate function:', error);
       throw error;
     }
   };
   
-  // Helper method to delete a package - simplified
+  // Direct function to delete a package
   const remove = async (packageId: string) => {
     try {
-      console.log("remove helper called with ID:", packageId);
+      console.log("remove function called with ID:", packageId);
       await deleteMutation.mutateAsync(packageId);
       return true;
     } catch (error) {
-      console.error('Error in remove helper:', error);
+      console.error('Error in remove function:', error);
       throw error;
     }
   };
