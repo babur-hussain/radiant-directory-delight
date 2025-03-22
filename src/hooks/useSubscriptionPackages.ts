@@ -118,14 +118,27 @@ export const useSubscriptionPackages = () => {
   // Direct function to create or update a package
   const createOrUpdate = async (packageData: ISubscriptionPackage) => {
     console.log("createOrUpdate function called with data:", packageData);
-    return await createOrUpdateMutation.mutateAsync(packageData);
+    try {
+      const result = await createOrUpdateMutation.mutateAsync(packageData);
+      console.log("createOrUpdate completed successfully:", result);
+      return result;
+    } catch (error) {
+      console.error("createOrUpdate failed:", error);
+      throw error;
+    }
   };
   
   // Direct function to delete a package
   const remove = async (packageId: string) => {
     console.log("remove function called with ID:", packageId);
-    await deleteMutation.mutateAsync(packageId);
-    return true;
+    try {
+      await deleteMutation.mutateAsync(packageId);
+      console.log("remove completed successfully");
+      return true;
+    } catch (error) {
+      console.error("remove failed:", error);
+      throw error;
+    }
   };
 
   return {

@@ -140,41 +140,43 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
       .eq('id', packageId)
       .maybeSingle();
     
-    console.log("Check for existing record:", existingData);
+    console.log("Check for existing record:", existingData, "Error:", checkError);
     
     let result;
     
     if (existingData) {
       // Update existing record
       console.log("Updating existing record with ID:", packageId);
-      const { data, error } = await supabase
+      const { data: updateData, error: updateError } = await supabase
         .from('subscription_packages')
         .update(supabaseData)
         .eq('id', packageId)
-        .select()
+        .select('*')
         .single();
       
-      if (error) {
-        console.error("Error updating package:", error);
-        throw new Error(`Failed to update package: ${error.message}`);
+      if (updateError) {
+        console.error("Error updating package:", updateError);
+        throw new Error(`Failed to update package: ${updateError.message || JSON.stringify(updateError)}`);
       }
       
-      result = data;
+      console.log("Update result:", updateData);
+      result = updateData;
     } else {
       // Insert new record
       console.log("Inserting new record with ID:", packageId);
-      const { data, error } = await supabase
+      const { data: insertData, error: insertError } = await supabase
         .from('subscription_packages')
         .insert(supabaseData)
-        .select()
+        .select('*')
         .single();
       
-      if (error) {
-        console.error("Error inserting package:", error);
-        throw new Error(`Failed to insert package: ${error.message}`);
+      if (insertError) {
+        console.error("Error inserting package:", insertError);
+        throw new Error(`Failed to insert package: ${insertError.message || JSON.stringify(insertError)}`);
       }
       
-      result = data;
+      console.log("Insert result:", insertData);
+      result = insertData;
     }
     
     if (!result) {
