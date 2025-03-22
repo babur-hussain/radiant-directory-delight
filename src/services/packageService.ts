@@ -169,58 +169,47 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
   console.log("Transformed data for Supabase:", JSON.stringify(supabaseData, null, 2));
   
   try {
-    // First check if this package already exists
-    const { data: existingPackage, error: checkError } = await supabase
-      .from('subscription_packages')
-      .select('id')
-      .eq('id', supabaseData.id)
-      .maybeSingle();
-      
-    if (checkError) {
-      console.error("Error checking if package exists:", checkError);
-      throw new Error(`Database error: ${checkError.message}`);
-    }
-    
     let result;
     
-    if (existingPackage) {
-      console.log(`Package with ID ${supabaseData.id} exists, updating...`);
-      // Update existing package
-      const { data, error } = await supabase
-        .from('subscription_packages')
-        .update(supabaseData)
-        .eq('id', supabaseData.id)
-        .select()
-        .single();
-      
-      if (error) {
-        console.error("Error updating package:", error);
-        throw new Error(`Error updating package: ${error.message}`);
+    // First, try to insert the package (will work if it's new)
+    console.log(`Attempting to insert package with ID ${supabaseData.id}`);
+    
+    const { data: insertedData, error: insertError } = await supabase
+      .from('subscription_packages')
+      .insert([supabaseData])
+      .select()
+      .limit(1);
+    
+    if (insertError) {
+      // If insert fails with "duplicate key value" error, try update instead
+      if (insertError.code === '23505') {
+        console.log(`Package with ID ${supabaseData.id} already exists, updating instead...`);
+        
+        const { data: updatedData, error: updateError } = await supabase
+          .from('subscription_packages')
+          .update(supabaseData)
+          .eq('id', supabaseData.id)
+          .select()
+          .limit(1);
+        
+        if (updateError) {
+          console.error("Error updating package:", updateError);
+          throw new Error(`Error updating package: ${updateError.message}`);
+        }
+        
+        result = updatedData ? updatedData[0] : null;
+        console.log("Package updated successfully:", result);
+      } else {
+        console.error("Error inserting package:", insertError);
+        throw new Error(`Error inserting package: ${insertError.message}`);
       }
-      
-      result = data;
-      console.log("Package updated successfully:", result);
     } else {
-      console.log(`Package with ID ${supabaseData.id} is new, inserting...`);
-      // Insert new package
-      const { data, error } = await supabase
-        .from('subscription_packages')
-        .insert([supabaseData]) // Must be wrapped in array
-        .select()
-        .maybeSingle();
-      
-      if (error) {
-        console.error("Error inserting package:", error);
-        throw new Error(`Error inserting package: ${error.message}`);
-      }
-      
-      if (!data) {
-        console.error("No data returned after insert");
-        throw new Error("Failed to insert package: No data returned");
-      }
-      
-      result = data;
+      result = insertedData ? insertedData[0] : null;
       console.log("Package inserted successfully:", result);
+    }
+    
+    if (!result) {
+      throw new Error("No data returned after saving package");
     }
     
     // Map back to our model
