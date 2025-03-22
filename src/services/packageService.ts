@@ -127,7 +127,7 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
       payment_type: packageData.paymentType || 'recurring',
       billing_cycle: packageData.paymentType === 'one-time' ? null : packageData.billingCycle || 'yearly',
       advance_payment_months: packageData.advancePaymentMonths || 0,
-      dashboard_sections: JSON.stringify(Array.isArray(packageData.dashboardSections) ? packageData.dashboardSections : [])
+      dashboard_sections: Array.isArray(packageData.dashboardSections) ? packageData.dashboardSections : []
     };
     
     console.log("Prepared Supabase data:", supabaseData);

@@ -84,34 +84,19 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ userRole })
                   </div>
                   
                   <ul className="space-y-3">
-                    {pkg.features?.slice(0, 5).map((feature, index) => (
-                      <li key={index} className="flex items-start">
-                        <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                    
-                    {/* If no features are specified, show some defaults based on package type */}
-                    {(!pkg.features || pkg.features.length === 0) && (
+                    {pkg.features && pkg.features.length > 0 ? (
+                      pkg.features.slice(0, 5).map((feature, index) => (
+                        <li key={index} className="flex items-start">
+                          <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                          <span>{feature}</span>
+                        </li>
+                      ))
+                    ) : (
                       <>
                         <li className="flex items-start">
                           <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-                          <span>{pkg.title.includes('Premium') ? 'Premium' : 'Basic'} {pkg.type.toLowerCase()} listing</span>
+                          <span>No features specified</span>
                         </li>
-                        <li className="flex items-start">
-                          <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-                          <span>{pkg.title.includes('Premium') ? 'Priority' : 'Email'} support</span>
-                        </li>
-                        <li className="flex items-start">
-                          <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-                          <span>{pkg.title.includes('Premium') ? '5' : '1'} location{pkg.title.includes('Premium') ? 's' : ''}</span>
-                        </li>
-                        {pkg.title.includes('Premium') && (
-                          <li className="flex items-start">
-                            <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-                            <span>Featured in search</span>
-                          </li>
-                        )}
                       </>
                     )}
                   </ul>

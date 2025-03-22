@@ -185,14 +185,6 @@ export const createOrUpdatePackage = async (packageData: ISubscriptionPackage): 
       featuresString = JSON.stringify([]);
     }
     
-    // Process dashboard sections array
-    let dashboardSectionsString = '';
-    if (Array.isArray(packageData.dashboardSections)) {
-      dashboardSectionsString = JSON.stringify(packageData.dashboardSections);
-    } else {
-      dashboardSectionsString = JSON.stringify([]);
-    }
-    
     // Prepare the data for Supabase (snake_case)
     const supabaseData = {
       id: packageData.id,
@@ -210,7 +202,7 @@ export const createOrUpdatePackage = async (packageData: ISubscriptionPackage): 
       payment_type: packageData.paymentType || 'recurring',
       billing_cycle: packageData.billingCycle || undefined,
       advance_payment_months: packageData.advancePaymentMonths || 0,
-      dashboard_sections: dashboardSectionsString
+      dashboard_sections: packageData.dashboardSections || []
     };
     
     console.log("Supabase data to save:", JSON.stringify(supabaseData, null, 2));
