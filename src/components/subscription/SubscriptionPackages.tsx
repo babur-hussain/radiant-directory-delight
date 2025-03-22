@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, GemIcon, TrendingUp, ShieldCheck } from 'lucide-react';
+import { CheckCircle, GemIcon, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { UserRole } from '@/types/auth';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
@@ -63,6 +63,11 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ userRole })
             ? "from-blue-500 via-cyan-500 to-teal-500" 
             : "from-purple-500 via-violet-500 to-indigo-500";
             
+          // Determine price to display based on payment type
+          const displayMonthlyPrice = !isOneTime && pkg.monthlyPrice;
+          const displayPrice = isOneTime ? pkg.price : (displayMonthlyPrice ? pkg.monthlyPrice : pkg.price);
+          const priceLabel = isOneTime ? 'total' : (displayMonthlyPrice ? '/month' : '/year');
+            
           return (
             <Card 
               key={pkg.id} 
@@ -90,20 +95,16 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ userRole })
                 <CardTitle className="text-2xl font-bold flex flex-col">
                   <span>{pkg.title}</span>
                   <div className="flex flex-col mt-2">
-                    {pkg.monthlyPrice ? (
-                      <div className="flex items-baseline">
-                        <span className="text-3xl font-bold text-primary">₹{pkg.monthlyPrice}</span>
-                        <span className="text-sm font-normal text-muted-foreground ml-1">/month</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-baseline">
-                        <span className="text-3xl font-bold text-primary">₹{pkg.price}</span>
-                        {isOneTime ? (
-                          <span className="text-sm font-normal text-muted-foreground ml-1">total</span>
-                        ) : (
-                          <span className="text-sm font-normal text-muted-foreground ml-1">/year</span>
-                        )}
-                      </div>
+                    <div className="flex items-baseline">
+                      <span className="text-3xl font-bold text-primary">₹{displayPrice}</span>
+                      <span className="text-sm font-normal text-muted-foreground ml-1">{priceLabel}</span>
+                    </div>
+                    
+                    {/* Only show subscription details for recurring packages */}
+                    {!isOneTime && (
+                      <span className="text-sm text-muted-foreground mt-1">
+                        {pkg.billingCycle === 'monthly' ? 'Monthly billing' : 'Annual billing'}
+                      </span>
                     )}
                   </div>
                 </CardTitle>
@@ -115,7 +116,9 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ userRole })
                   <p className="text-sm text-muted-foreground">
                     {isOneTime 
                       ? `One-time payment valid for ${pkg.durationMonths || 12} months` 
-                      : `Annual billing`}
+                      : displayMonthlyPrice 
+                        ? `Monthly subscription` 
+                        : `Annual subscription`}
                   </p>
                 </div>
                 

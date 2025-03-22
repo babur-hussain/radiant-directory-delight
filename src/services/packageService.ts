@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
@@ -49,35 +48,36 @@ const mapToSupabasePackage = (pkg: ISubscriptionPackage) => {
   if (Array.isArray(pkg.features)) {
     features = pkg.features.filter(f => f.trim().length > 0);
   } else if (typeof pkg.features === 'string') {
-    // Fix: Cast features to string before using split
+    // Cast features to string before using split
     features = (pkg.features as string).split('\n').filter(f => f.trim().length > 0);
   }
+  
+  // Handle one-time packages appropriately
+  const isOneTime = pkg.paymentType === 'one-time';
   
   // Create the Supabase object with all fields properly mapped
   return {
     id: packageId,
     title: pkg.title,
     price: pkg.price,
-    monthly_price: pkg.monthlyPrice || 0,
+    monthly_price: isOneTime ? null : (pkg.monthlyPrice || null),
     duration_months: pkg.durationMonths || 12,
     short_description: pkg.shortDescription || '',
-    // Ensure we're handling long text properly
     full_description: pkg.fullDescription || '',
     features: features,
     popular: pkg.popular || false,
-    setup_fee: pkg.setupFee || 0,
+    setup_fee: isOneTime ? 0 : (pkg.setupFee || 0),
     type: pkg.type || 'Business',
-    payment_type: pkg.paymentType || 'recurring',
-    billing_cycle: pkg.billingCycle || 'yearly',
+    payment_type: isOneTime ? 'one-time' : 'recurring',
+    billing_cycle: isOneTime ? null : (pkg.billingCycle || 'yearly'),
     dashboard_sections: Array.isArray(pkg.dashboardSections) ? pkg.dashboardSections : [],
-    // Ensure we're handling long text properly
     terms_and_conditions: pkg.termsAndConditions || '',
-    advance_payment_months: pkg.advancePaymentMonths || 0
+    advance_payment_months: isOneTime ? 0 : (pkg.advancePaymentMonths || 0)
   };
 };
 
 // Get all subscription packages
-export const getAllPackages = async (): Promise<ISubscriptionPackage[]> => {
+const getAllPackages = async (): Promise<ISubscriptionPackage[]> => {
   try {
     const { data, error } = await supabase
       .from('subscription_packages')
@@ -102,7 +102,7 @@ export const getAllPackages = async (): Promise<ISubscriptionPackage[]> => {
 };
 
 // Get packages by type
-export const getPackagesByType = async (type: string): Promise<ISubscriptionPackage[]> => {
+const getPackagesByType = async (type: string): Promise<ISubscriptionPackage[]> => {
   try {
     const { data, error } = await supabase
       .from('subscription_packages')
@@ -123,7 +123,7 @@ export const getPackagesByType = async (type: string): Promise<ISubscriptionPack
 };
 
 // Get package by ID
-export const getPackageById = async (id: string): Promise<ISubscriptionPackage | null> => {
+const getPackageById = async (id: string): Promise<ISubscriptionPackage | null> => {
   try {
     const { data, error } = await supabase
       .from('subscription_packages')
@@ -146,7 +146,7 @@ export const getPackageById = async (id: string): Promise<ISubscriptionPackage |
 };
 
 // Create or update package
-export const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscriptionPackage> => {
+const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscriptionPackage> => {
   // Validate required fields
   if (!packageData.title) {
     throw new Error('Package title is required');
@@ -167,7 +167,6 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
     features = packageData.features.filter(f => f && typeof f === 'string' && f.trim().length > 0);
     packageData.features = features;
   } else if (typeof packageData.features === 'string') {
-    // Fix: Cast features to string before using split
     features = (packageData.features as string)
       .split('\n')
       .map(f => f.trim())
@@ -175,6 +174,14 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
     packageData.features = features;
   } else {
     packageData.features = [];
+  }
+
+  // Clean up one-time package data
+  if (packageData.paymentType === 'one-time') {
+    packageData.billingCycle = undefined;
+    packageData.setupFee = 0;
+    packageData.monthlyPrice = 0;
+    packageData.advancePaymentMonths = 0;
   }
 
   // Ensure text fields are properly handled without truncation
@@ -237,7 +244,7 @@ export const savePackage = async (packageData: ISubscriptionPackage): Promise<IS
 };
 
 // Delete package
-export const deletePackage = async (id: string): Promise<void> => {
+const deletePackage = async (id: string): Promise<void> => {
   try {
     const { error } = await supabase
       .from('subscription_packages')
@@ -262,4 +269,12 @@ export const deletePackage = async (id: string): Promise<void> => {
     });
     throw new Error(`Failed to delete package: ${error instanceof Error ? error.message : String(error)}`);
   }
+};
+
+export { 
+  getAllPackages, 
+  getPackagesByType, 
+  getPackageById, 
+  savePackage, 
+  deletePackage 
 };
