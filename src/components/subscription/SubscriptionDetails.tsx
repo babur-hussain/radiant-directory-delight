@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, ShieldCheck, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, ShieldCheck, Loader2, CreditCard, Clock, Calendar } from "lucide-react";
 import InfoCircle from "@/components/ui/InfoCircle";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -33,14 +33,12 @@ const SubscriptionDetails = () => {
       setError(null);
       
       try {
-        // Try to fetch packages from Firebase first
         const allPackages = await fetchSubscriptionPackages();
         const foundPackage = allPackages.find(pkg => pkg.id === packageId);
         
         if (foundPackage) {
           setSelectedPackage(foundPackage);
         } else {
-          // Fallback to default packages if not found in Firebase
           const defaultPackage = getPackageById(packageId);
           
           if (defaultPackage) {
@@ -52,7 +50,6 @@ const SubscriptionDetails = () => {
       } catch (err) {
         console.error("Error fetching package:", err);
         
-        // Fallback to default packages
         const defaultPackage = getPackageById(packageId);
         
         if (defaultPackage) {
@@ -92,7 +89,6 @@ const SubscriptionDetails = () => {
     console.log("Payment successful:", paymentResponse);
     
     if (selectedPackage) {
-      // Now initiate the subscription with payment details
       await purchaseSubscription(selectedPackage as any);
     }
     
@@ -108,6 +104,15 @@ const SubscriptionDetails = () => {
       description: "We couldn't process your payment. Please try again later.",
       variant: "destructive",
     });
+  };
+
+  const formatCurrency = (amount?: number) => {
+    if (amount === undefined) return "₹0";
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(amount);
   };
 
   if (isLoading) {
@@ -182,6 +187,7 @@ const SubscriptionDetails = () => {
   }
 
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
+  const isMonthly = selectedPackage.billingCycle === "monthly";
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-4xl">
@@ -197,25 +203,28 @@ const SubscriptionDetails = () => {
         <CardHeader>
           <div className="flex items-center gap-2">
             <CardTitle className="text-xl">{selectedPackage.title}</CardTitle>
-            {isOneTimePackage && (
-              <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2 py-1 rounded">
-                One-time payment
-              </span>
-            )}
+            <Badge 
+              className={`${isOneTimePackage ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'} 
+              text-xs font-medium px-2 py-1 rounded`}
+            >
+              {isOneTimePackage ? 'One-time payment' : selectedPackage.billingCycle === 'monthly' ? 'Monthly billing' : 'Annual billing'}
+            </Badge>
           </div>
           <CardDescription>{selectedPackage.shortDescription}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-medium mb-2">About this Plan</h3>
-              <p className="text-gray-700">{selectedPackage.fullDescription}</p>
-            </div>
+            {selectedPackage.fullDescription && (
+              <div>
+                <h3 className="text-lg font-medium mb-2">About this Plan</h3>
+                <p className="text-gray-700">{selectedPackage.fullDescription}</p>
+              </div>
+            )}
             
             <div>
               <h3 className="text-lg font-medium mb-2">Features</h3>
               <ul className="space-y-2">
-                {selectedPackage.features.map((feature, index) => (
+                {selectedPackage.features?.map((feature, index) => (
                   <li key={index} className="flex items-start">
                     <Check className="h-4 w-4 text-primary mr-2 mt-1" />
                     <span>{feature}</span>
@@ -226,32 +235,66 @@ const SubscriptionDetails = () => {
             
             <div>
               <h3 className="text-lg font-medium mb-2">Pricing</h3>
-              <div className="space-y-2 text-sm">
-                {isOneTimePackage ? (
-                  <div className="border-t pt-2 flex justify-between font-medium">
-                    <span>One-time payment</span>
-                    <span>₹{selectedPackage.price}</span>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex justify-between">
-                      <span>One-time setup fee</span>
-                      <span>₹{selectedPackage.setupFee}</span>
+              <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
+                <div className="flex items-baseline">
+                  <span className="text-2xl font-bold text-primary">
+                    {isOneTimePackage 
+                      ? formatCurrency(selectedPackage.price)
+                      : isMonthly && selectedPackage.monthlyPrice 
+                        ? formatCurrency(selectedPackage.monthlyPrice) 
+                        : formatCurrency(selectedPackage.price)}
+                  </span>
+                  <span className="text-sm text-muted-foreground ml-2">
+                    {isOneTimePackage ? 'one-time' : (isMonthly ? '/month' : '/year')}
+                  </span>
+                </div>
+                
+                <div className="space-y-2 text-sm border-t pt-3 mt-2">
+                  {!isOneTimePackage && (
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span>Duration</span>
+                      </div>
+                      <span>{selectedPackage.durationMonths || 12} months</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Annual subscription</span>
-                      <span>₹{selectedPackage.price}</span>
+                  )}
+                  
+                  {selectedPackage.setupFee > 0 && (
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <CreditCard className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span>Setup fee</span>
+                      </div>
+                      <span>{formatCurrency(selectedPackage.setupFee)}</span>
                     </div>
-                    <div className="border-t pt-2 flex justify-between font-medium">
+                  )}
+                  
+                  {!isOneTimePackage && selectedPackage.advancePaymentMonths > 0 && (
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span>Advance payment</span>
+                      </div>
+                      <span>{selectedPackage.advancePaymentMonths} months</span>
+                    </div>
+                  )}
+                  
+                  <div className="border-t pt-2 mt-2 font-medium">
+                    <div className="flex justify-between items-center">
                       <span>Initial payment</span>
-                      <span>₹{selectedPackage.setupFee}</span>
+                      <span>{formatCurrency(
+                        (isOneTimePackage ? selectedPackage.price : 0) +
+                        (selectedPackage.setupFee || 0) + 
+                        (!isOneTimePackage && isMonthly && selectedPackage.monthlyPrice 
+                          ? selectedPackage.monthlyPrice * (selectedPackage.advancePaymentMonths || 1)
+                          : !isOneTimePackage && !isMonthly
+                            ? selectedPackage.price
+                            : 0)
+                      )}</span>
                     </div>
-                    <div className="flex justify-between font-medium">
-                      <span>Annual recurring payment</span>
-                      <span>₹{selectedPackage.price}</span>
-                    </div>
-                  </>
-                )}
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -262,8 +305,23 @@ const SubscriptionDetails = () => {
                   <div>
                     <h4 className="font-medium text-amber-800">One-time Purchase</h4>
                     <p className="text-sm text-amber-700">
-                      This is a one-time purchase valid for {selectedPackage.durationMonths} months. 
+                      This is a one-time purchase valid for {selectedPackage.durationMonths || 12} months. 
                       You will not be automatically charged again after purchase.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {!isOneTimePackage && (
+              <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                <div className="flex items-start gap-2">
+                  <InfoCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-blue-800">Recurring Subscription</h4>
+                    <p className="text-sm text-blue-700">
+                      This is a {selectedPackage.billingCycle} subscription that will automatically renew. 
+                      You can cancel anytime from your account dashboard.
                     </p>
                   </div>
                 </div>
@@ -299,7 +357,7 @@ const SubscriptionDetails = () => {
             disabled={isProcessing || !termsAccepted}
           >
             <ShieldCheck className="h-4 w-4 mr-2" />
-            {isOneTimePackage ? "Proceed to Payment" : "Proceed to Payment"}
+            {isOneTimePackage ? "Proceed to Payment" : "Subscribe Now"}
           </Button>
           <p className="text-xs text-center text-muted-foreground">
             All payments are processed securely via Razorpay
