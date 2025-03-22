@@ -1,6 +1,5 @@
 
 import React from 'react';
-import Footer from '@/components/Footer';
 import HeroSection from '@/components/HeroSection';
 import CategorySection from '@/components/CategorySection';
 import FeaturedBusinesses from '@/components/FeaturedBusinesses';
@@ -24,7 +23,6 @@ const Index = () => {
       <FeaturedBusinesses />
       <TestimonialSection />
       <CallToAction />
-      <Footer />
     </div>
   );
 };
