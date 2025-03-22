@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
@@ -110,20 +111,20 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
     const packageId = packageData.id || `pkg_${uuidv4().substring(0, 8)}`;
     console.log(`Using package ID: ${packageId}`);
     
-    // Prepare the data for Supabase
+    // Prepare the data for Supabase - handle text fields explicitly
     const supabaseData = {
       id: packageId,
-      title: packageData.title,
+      title: String(packageData.title || '').trim(),
       price: packageData.price,
       monthly_price: packageData.monthlyPrice || null,
       setup_fee: packageData.setupFee || 0,
       duration_months: packageData.durationMonths || 12,
-      short_description: packageData.shortDescription || '',
-      full_description: packageData.fullDescription || '',
+      short_description: String(packageData.shortDescription || ''),
+      full_description: String(packageData.fullDescription || ''),
       features: Array.isArray(packageData.features) ? packageData.features : [],
       popular: packageData.popular || false,
       type: packageData.type || 'Business',
-      terms_and_conditions: packageData.termsAndConditions || '',
+      terms_and_conditions: String(packageData.termsAndConditions || ''),
       payment_type: packageData.paymentType || 'recurring',
       billing_cycle: packageData.paymentType === 'one-time' ? null : packageData.billingCycle || 'yearly',
       advance_payment_months: packageData.advancePaymentMonths || 0,
@@ -131,49 +132,59 @@ const savePackage = async (packageData: ISubscriptionPackage): Promise<ISubscrip
     };
     
     console.log("Prepared Supabase data:", supabaseData);
-    
-    // Simple direct insert approach
-    console.log("Attempting direct insert for package with ID:", packageId);
-    const { data, error } = await supabase
+
+    // First, check if the package exists
+    const { data: existingPackage, error: checkError } = await supabase
       .from('subscription_packages')
-      .insert(supabaseData)
-      .select('*')
-      .single();
-      
-    if (error) {
-      // If insert fails because the record already exists, try an update
-      if (error.code === '23505') { // Unique violation
-        console.log("Package already exists, attempting update:", packageId);
-        const { data: updateData, error: updateError } = await supabase
-          .from('subscription_packages')
-          .update(supabaseData)
-          .eq('id', packageId)
-          .select('*')
-          .single();
-          
-        if (updateError) {
-          console.error("Update error:", updateError);
-          throw new Error(`Failed to update package: ${updateError.message}`);
-        }
+      .select('id')
+      .eq('id', packageId)
+      .maybeSingle();
+    
+    if (checkError) {
+      console.error("Error checking if package exists:", checkError);
+    }
+    
+    let result;
+    
+    if (existingPackage) {
+      // Package exists, update it
+      console.log("Package exists, updating:", packageId);
+      const { data, error } = await supabase
+        .from('subscription_packages')
+        .update(supabaseData)
+        .eq('id', packageId)
+        .select('*')
+        .single();
         
-        if (!updateData) {
-          throw new Error("Failed to update package: No data returned");
-        }
-        
-        console.log("Package updated successfully:", updateData);
-        return mapDbRowToPackage(updateData);
-      } else {
-        console.error("Insert error:", error);
-        throw new Error(`Failed to save package: ${error.message}`);
+      if (error) {
+        console.error("Update error:", error);
+        throw new Error(`Failed to update package: ${error.message}`);
       }
+      
+      result = data;
+    } else {
+      // Package doesn't exist, insert it
+      console.log("Package doesn't exist, inserting:", packageId);
+      const { data, error } = await supabase
+        .from('subscription_packages')
+        .insert(supabaseData)
+        .select('*')
+        .single();
+        
+      if (error) {
+        console.error("Insert error:", error);
+        throw new Error(`Failed to insert package: ${error.message}`);
+      }
+      
+      result = data;
     }
     
-    if (!data) {
-      throw new Error("Failed to save package: No data returned from insert");
+    if (!result) {
+      throw new Error("Failed to save package: No data returned");
     }
     
-    console.log("Package saved successfully:", data);
-    return mapDbRowToPackage(data);
+    console.log("Package saved successfully:", result);
+    return mapDbRowToPackage(result);
   } catch (error) {
     console.error("Error in savePackage:", error);
     throw error;

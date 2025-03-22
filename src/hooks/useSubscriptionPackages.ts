@@ -34,7 +34,7 @@ export const useSubscriptionPackages = () => {
     }
   });
   
-  // Create or update mutation with simplified error handling
+  // Create or update mutation with proper text handling
   const createOrUpdateMutation = useMutation({
     mutationFn: async (packageData: ISubscriptionPackage) => {
       console.log("Starting save package mutation with data:", packageData);
@@ -44,9 +44,17 @@ export const useSubscriptionPackages = () => {
         throw new Error("Package title is required");
       }
       
+      // Ensure text fields are properly handled
+      const processedData: ISubscriptionPackage = {
+        ...packageData,
+        fullDescription: String(packageData.fullDescription || ''),
+        termsAndConditions: String(packageData.termsAndConditions || ''),
+        shortDescription: String(packageData.shortDescription || '')
+      };
+      
       try {
         console.log("Calling savePackage service function");
-        return await savePackage(packageData);
+        return await savePackage(processedData);
       } catch (error) {
         console.error("Error in save package mutation:", error);
         throw error;
