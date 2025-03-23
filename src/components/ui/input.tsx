@@ -13,6 +13,8 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className
         )}
         ref={ref}
+        // Ensure the input is not read-only unless explicitly specified
+        readOnly={props.readOnly}
         {...props}
       />
     )

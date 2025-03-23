@@ -48,6 +48,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
       password: "",
       employeeCode: "",
     },
+    mode: "onChange", // Change to "onChange" to validate as user types
   });
 
   const onSubmit = async (data: LoginFormData) => {
