@@ -13,7 +13,6 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className
         )}
         ref={ref}
-        // Make sure no readOnly attribute is set by default
         {...props}
       />
     )

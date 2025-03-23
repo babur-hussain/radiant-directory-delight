@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { FileUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,6 +29,7 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
     defaultValues: {
       file: undefined,
     },
+    mode: "onChange",
   });
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -58,7 +58,6 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
     onUploadStart();
     
     try {
-      // Read the file
       const reader = new FileReader();
       
       reader.onload = async (event) => {

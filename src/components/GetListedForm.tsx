@@ -39,6 +39,7 @@ const GetListedForm = ({ isOpen, setIsOpen }: GetListedFormProps) => {
       address: "",
       phone: "",
     },
+    mode: "onChange", // Set to onChange to validate and accept input immediately
   });
 
   const onSubmit = async (data: FormValues) => {

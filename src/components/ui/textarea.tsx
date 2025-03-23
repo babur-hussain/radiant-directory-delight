@@ -15,7 +15,6 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           className
         )}
         ref={ref}
-        // Remove any default readOnly property
         {...props}
       />
     )
