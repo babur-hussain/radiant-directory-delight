@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,6 @@ import { businessesData } from '@/data/businessesData';
 import SearchResults, { BusinessResult } from '../SearchResults';
 import { useToast } from '@/hooks/use-toast';
 
-// Define Indian states for dropdown
 const locations = [
   'Madhya Pradesh',
   'Andhra Pradesh',

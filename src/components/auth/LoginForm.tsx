@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -48,7 +47,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
       password: "",
       employeeCode: "",
     },
-    mode: "onChange", // Change to "onChange" to validate as user types
+    mode: "onChange", // Always use onChange to validate immediately
   });
 
   const onSubmit = async (data: LoginFormData) => {
