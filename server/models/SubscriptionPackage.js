@@ -1,4 +1,3 @@
-
 import mongoose from 'mongoose';
 
 const SubscriptionPackageSchema = new mongoose.Schema({
@@ -38,9 +37,10 @@ SubscriptionPackageSchema.pre('save', function() {
       console.log('One-time package price set to:', this.price);
     }
     
+    // Keep setupFee as is - no longer setting it to 0 for one-time packages
+    
     // Remove recurring-specific fields
     this.billingCycle = undefined;
-    this.setupFee = 0;
     this.monthlyPrice = undefined;
     this.advancePaymentMonths = 0;
   } else {

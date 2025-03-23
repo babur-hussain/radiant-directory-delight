@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -106,10 +107,11 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
   }, [initialPackage.features]);
   
   const calculateInitialPayment = () => {
+    const setup = setupFee || 0;
+    
     if (paymentType === 'one-time') {
-      return price;
+      return price + setup; // Include setup fee for one-time packages as well
     } else {
-      const setup = setupFee || 0;
       const advance = advancePaymentMonths || 0;
       
       if (billingCycle === 'monthly') {
@@ -342,24 +344,44 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
             )}
             
             {paymentType === 'one-time' ? (
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price (₹)*</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                        placeholder="Package price"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <>
+                <FormField
+                  control={form.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Price (₹)*</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          placeholder="Package price"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="setupFee"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Setup Fee (₹)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          placeholder="One-time setup fee"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
             ) : (
               <>
                 <FormField
@@ -469,10 +491,25 @@ const SubscriptionPackageForm: React.FC<SubscriptionPackageFormProps> = ({
               </CardHeader>
               <CardContent className="space-y-1.5 text-sm">
                 {paymentType === 'one-time' ? (
-                  <div className="flex justify-between items-center">
-                    <span>One-time payment:</span>
-                    <span className="font-semibold">{formatCurrency(price)}</span>
-                  </div>
+                  <>
+                    {setupFee > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span>Setup fee:</span>
+                        <span>{formatCurrency(setupFee)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <span>Package price:</span>
+                      <span>{formatCurrency(price)}</span>
+                    </div>
+                    {setupFee > 0 && (
+                      <Separator className="my-1.5" />
+                    )}
+                    <div className="flex justify-between items-center font-semibold">
+                      <span>Total one-time payment:</span>
+                      <span className="font-semibold">{formatCurrency(price + setupFee)}</span>
+                    </div>
+                  </>
                 ) : (
                   <>
                     {setupFee > 0 && (

@@ -144,7 +144,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   const advanceMonths = selectedPackage.advancePaymentMonths || 0;
   
   const initialPayment = isOneTimePackage 
-    ? selectedPackage.price || 0 
+    ? (selectedPackage.price || 0) + setupFee
     : setupFee + (selectedPackage.billingCycle === 'monthly' 
         ? (selectedPackage.monthlyPrice || 0) * advanceMonths 
         : recurringAmount);
@@ -190,15 +190,35 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                     
                     <Separator className="my-2" />
                     
-                    <div className="flex justify-between mb-2 font-medium">
-                      <span>Price</span>
-                      <span>
-                        {formatPrice(selectedPackage.billingCycle === 'monthly' && selectedPackage.monthlyPrice
-                          ? selectedPackage.monthlyPrice
-                          : selectedPackage.price)} 
-                        {isOneTimePackage ? '' : `/${selectedPackage.billingCycle || 'year'}`}
-                      </span>
-                    </div>
+                    {isOneTimePackage ? (
+                      <>
+                        {setupFee > 0 && (
+                          <div className="flex justify-between mb-2">
+                            <span>Setup Fee</span>
+                            <span>{formatPrice(setupFee)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between mb-2">
+                          <span>Package Price</span>
+                          <span>{formatPrice(selectedPackage.price)}</span>
+                        </div>
+                        <Separator className="my-2" />
+                        <div className="flex justify-between font-medium">
+                          <span>Total Payment</span>
+                          <span>{formatPrice(initialPayment)}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex justify-between mb-2 font-medium">
+                        <span>Price</span>
+                        <span>
+                          {formatPrice(selectedPackage.billingCycle === 'monthly' && selectedPackage.monthlyPrice
+                            ? selectedPackage.monthlyPrice
+                            : selectedPackage.price)} 
+                          {isOneTimePackage ? '' : `/${selectedPackage.billingCycle || 'year'}`}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
