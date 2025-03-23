@@ -189,6 +189,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
   const form = useForm<FormData>({
     resolver: zodResolver(getSchemaForRole(userType)),
     defaultValues: getDefaultValuesForRole(userType),
+    mode: "onChange" // Changed from default to allow immediate validation
   });
 
   // Function to reset the form when the role changes
