@@ -13,11 +13,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const DashboardHeader = () => {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const navigate = useNavigate();
   
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
@@ -43,6 +45,25 @@ const DashboardHeader = () => {
       description: "Live chat support will be available soon!",
       variant: "info",
     });
+  };
+  
+  // Add explicit logout handler
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out",
+      });
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout failed",
+        description: "Failed to log out. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
   
   return (
@@ -94,13 +115,13 @@ const DashboardHeader = () => {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => window.location.href = "/profile"}>
+              <DropdownMenuItem onClick={() => navigate("/profile")}>
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => window.location.href = "/subscription"}>
+              <DropdownMenuItem onClick={() => navigate("/subscription")}>
                 Subscription
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => logout()}>
+              <DropdownMenuItem onClick={handleLogout}>
                 Logout
               </DropdownMenuItem>
             </DropdownMenuContent>

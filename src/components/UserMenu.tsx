@@ -54,6 +54,17 @@ const UserMenu = () => {
     navigate("/subscription/details");
   };
 
+  // Add logout handler to properly call the logout function and redirect
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // Redirect to home page after logout
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
   // Don't render until auth is initialized and we have a user
   if (!initialized || !userData) {
     return null;
@@ -98,7 +109,7 @@ const UserMenu = () => {
           <span>Settings</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={logout}>
+        <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>

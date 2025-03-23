@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const AdminLoginPage = () => {
-  const { login, user, isAuthenticated } = useAuth();
+  const { login, user, isAuthenticated, logout } = useAuth();
   const [email, setEmail] = useState("admin@example.com");
   const [password, setPassword] = useState("");
   const [employeeCode, setEmployeeCode] = useState("");
@@ -48,6 +48,9 @@ const AdminLoginPage = () => {
           description: "You don't have admin privileges.",
           variant: "destructive",
         });
+        
+        // If not admin, log them out immediately
+        await logout();
       }
     } catch (error) {
       console.error("Login error:", error);

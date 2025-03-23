@@ -52,6 +52,17 @@ const Header = () => {
     setIsAuthModalOpen(true);
   };
 
+  // Add explicit logout handler
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setIsMobileMenuOpen(false);
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
   const shouldShowDashboard = () => {
     if (!isAuthenticated || !currentUser) return false;
     return true;
@@ -166,10 +177,7 @@ const Header = () => {
               <Button 
                 variant="default" 
                 className="w-full justify-start mt-2" 
-                onClick={() => {
-                  logout();
-                  setIsMobileMenuOpen(false);
-                }}
+                onClick={handleLogout}
               >
                 <LogIn className="h-4 w-4 mr-2" />
                 Logout
