@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,20 +35,16 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const paymentComponentRef = useRef<HTMLDivElement>(null);
   
-  // Determine if this package supports recurring payments
   const supportsRecurring = selectedPackage.paymentType === 'recurring';
   const isOneTimePackage = !supportsRecurring;
   
-  // Get package duration
   const packageDuration = selectedPackage.durationMonths || 12;
   
-  // Calculate payment details
   const setupFee = selectedPackage.setupFee || 0;
   const monthlyAmount = selectedPackage.monthlyPrice || 0;
   const yearlyAmount = selectedPackage.price || 0;
   const advanceMonths = selectedPackage.advancePaymentMonths || 0;
   
-  // Calculate the next billing date after advance months
   const getNextBillingDate = () => {
     const today = new Date();
     const nextDate = new Date(today);
@@ -57,7 +52,6 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     return formatSubscriptionDate(nextDate);
   };
   
-  // Calculate the final package end date
   const getPackageEndDate = () => {
     const today = new Date();
     const endDate = new Date(today);
@@ -65,7 +59,6 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     return formatSubscriptionDate(endDate);
   };
   
-  // Calculate totals based on package type
   let initialPayment = 0;
   let recurringAmount = 0;
   let totalPackageValue = 0;
@@ -73,23 +66,19 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   let recurringPaymentCount = 0;
   
   if (isOneTimePackage) {
-    // One-time payment
-    initialPayment = yearlyAmount;
-    totalPackageValue = yearlyAmount;
+    initialPayment = yearlyAmount + setupFee;
+    totalPackageValue = yearlyAmount + setupFee;
     recurringAmount = 0;
     remainingAmount = 0;
     recurringPaymentCount = 0;
   } else {
-    // Calculate total package value first
     if (selectedPackage.billingCycle === 'monthly') {
       totalPackageValue = setupFee + (monthlyAmount * packageDuration);
     } else {
-      // For yearly billing
       const totalYears = Math.ceil(packageDuration / 12);
       totalPackageValue = setupFee + (yearlyAmount * totalYears);
     }
     
-    // Calculate initial payment (setup fee + advance months)
     initialPayment = setupFee;
     if (advanceMonths > 0) {
       if (selectedPackage.billingCycle === 'monthly') {
@@ -99,32 +88,24 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       }
     }
     
-    // Calculate remaining amount for autopay
     remainingAmount = Math.max(0, totalPackageValue - initialPayment);
     
-    // Calculate recurring payment amount based on billing cycle
     recurringAmount = selectedPackage.billingCycle === 'monthly' ? monthlyAmount : yearlyAmount;
     
-    // Calculate number of recurring payments needed
     if (advanceMonths >= packageDuration) {
-      // No recurring payments needed if advance covers entire duration
       recurringPaymentCount = 0;
     } else {
-      // Calculate remaining payments needed
       const remainingMonths = packageDuration - advanceMonths;
       if (selectedPackage.billingCycle === 'monthly') {
         recurringPaymentCount = remainingMonths;
       } else {
-        // For yearly billing, calculate years (rounded up)
         recurringPaymentCount = Math.ceil(remainingMonths / 12);
       }
     }
   }
   
-  // Total amount to be collected now
   const totalPaymentAmount = initialPayment;
   
-  // Load Razorpay script on component mount
   useEffect(() => {
     const loadScript = async () => {
       try {
@@ -143,12 +124,9 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     
     loadScript();
     
-    // Cleanup function to remove any existing Razorpay instances
     return () => {
-      // Access window.Razorpay if it exists and try to close any open modals
       if (typeof (window as any).Razorpay !== 'undefined') {
         try {
-          // Attempt to access any potential razorpay instance
           const razorpayInstances = (window as any)._rzp_instances;
           if (razorpayInstances && razorpayInstances.length) {
             razorpayInstances.forEach((instance: any) => {
@@ -168,7 +146,6 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     };
   }, []);
   
-  // Handle payment processing
   const handlePayment = async () => {
     if (isProcessing) return;
     
@@ -182,7 +159,6 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         throw new Error("You must be logged in to make a payment.");
       }
       
-      // Double-check script loading
       if (!scriptLoaded) {
         const loaded = await ensureRazorpayAvailable();
         if (!loaded) {
@@ -190,12 +166,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         }
       }
       
-      // Validate package data
       if (!selectedPackage.id || !selectedPackage.price) {
         throw new Error("Invalid package data. Please refresh and try again.");
       }
       
-      // Create subscription and open Razorpay checkout
       const result = await createSubscription(
         selectedPackage, 
         enableAutoPay
@@ -231,15 +205,12 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         }
       });
     } catch (error) {
-      console.error('Payment error:', error);
-      
       let errorMessage = error instanceof Error ? error.message : 'Payment failed';
       
       if (typeof error === 'object' && error !== null && 'description' in error) {
         errorMessage = (error as any).description || errorMessage;
       }
       
-      // Don't show user cancelled errors as errors
       if (errorMessage.includes('cancelled by user')) {
         console.log("User cancelled payment");
       } else {
@@ -260,14 +231,11 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     }
   };
   
-  // Handle retry logic
   const handleRetry = () => {
     setError(null);
     setReady(false);
     setRetryCount(0);
     
-    // Reload the Razorpay script
-    // This ensures we get a fresh instance of Razorpay on retry
     const existingScript = document.querySelector('script[src*="checkout.razorpay.com"]');
     if (existingScript) {
       existingScript.remove();
@@ -288,14 +256,12 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     }, 1000);
   };
   
-  // Sync error state from hook
   useEffect(() => {
     if (paymentError) {
       setError(paymentError);
     }
   }, [paymentError]);
   
-  // Initial load effect
   useEffect(() => {
     const timer = setTimeout(() => {
       setReady(true);
@@ -304,7 +270,6 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     return () => clearTimeout(timer);
   }, []);
 
-  // Loading state
   if (!ready) {
     return (
       <div className="flex flex-col items-center justify-center py-8">
@@ -314,7 +279,6 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     );
   }
   
-  // Error state
   if (error) {
     return <PaymentErrorFallback 
       error={error} 
@@ -323,7 +287,6 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     />;
   }
   
-  // Normal payment UI
   return (
     <div ref={paymentComponentRef}>
       <Card className="border-none shadow-none">

@@ -143,6 +143,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   const recurringAmount = isOneTimePackage ? 0 : selectedPackage.price || 0;
   const advanceMonths = selectedPackage.advancePaymentMonths || 0;
   
+  // Update initial payment calculation to include setup fee for one-time packages
   const initialPayment = isOneTimePackage 
     ? (selectedPackage.price || 0) + setupFee
     : setupFee + (selectedPackage.billingCycle === 'monthly' 

@@ -32,9 +32,9 @@ function getCurrentTimestamp(): number {
 function calculateInitialPayment(packageData: any, enableAutoPay: boolean): number {
   if (!packageData) return 0;
   
-  // One-time payment case
+  // One-time payment case - FIXED: Include setup fee for one-time packages
   if (packageData.paymentType === 'one-time') {
-    return packageData.price || 0;
+    return (packageData.price || 0) + (packageData.setupFee || 0);
   }
   
   // Recurring payment case
@@ -58,9 +58,9 @@ function calculateInitialPayment(packageData: any, enableAutoPay: boolean): numb
 function calculateTotalPackagePrice(packageData: any): number {
   if (!packageData) return 0;
   
-  // One-time payment case
+  // One-time payment case - FIXED: Include setup fee in total package price
   if (packageData.paymentType === 'one-time') {
-    return packageData.price || 0;
+    return (packageData.price || 0) + (packageData.setupFee || 0);
   }
   
   // For recurring packages
