@@ -82,21 +82,21 @@ export const createOrUpdateUser = async (userData: Partial<User> & { uid: string
       role: userData.role,
       is_admin: userData.isAdmin,
       photo_url: userData.photoURL,
-      employee_code: userData.employeeCode,
+      employee_code: userData.employee_code,
       phone: userData.phone,
-      instagram_handle: userData.instagramHandle,
-      facebook_handle: userData.facebookHandle,
+      instagram_handle: userData.instagram_handle,
+      facebook_handle: userData.facebook_handle,
       verified: userData.verified,
       city: userData.city,
       country: userData.country,
       niche: userData.niche,
-      followers_count: userData.followersCount,
+      followers_count: userData.followers_count,
       bio: userData.bio,
-      business_name: userData.businessName,
-      owner_name: userData.ownerName,
-      business_category: userData.businessCategory,
+      business_name: userData.business_name,
+      owner_name: userData.owner_name,
+      business_category: userData.business_category,
       website: userData.website,
-      gst_number: userData.gstNumber,
+      gst_number: userData.gst_number,
     };
     
     // Handle subscription data - ensure it's a string for Supabase
@@ -109,10 +109,10 @@ export const createOrUpdateUser = async (userData: Partial<User> & { uid: string
     }
     
     // Add other subscription-related fields
-    supabaseData.subscription_id = userData.subscriptionId;
-    supabaseData.subscription_status = userData.subscriptionStatus;
-    supabaseData.subscription_package = userData.subscriptionPackage;
-    supabaseData.custom_dashboard_sections = userData.customDashboardSections;
+    supabaseData.subscription_id = userData.subscription_id;
+    supabaseData.subscription_status = userData.subscription_status;
+    supabaseData.subscription_package = userData.subscription_package;
+    supabaseData.custom_dashboard_sections = userData.custom_dashboard_sections;
     
     // Add timestamp
     supabaseData.updated_at = new Date().toISOString();

@@ -15,7 +15,7 @@ export interface Business {
   rating: number;
   reviews: number;
   featured?: boolean;
-  tags: string[];
+  tags: string[] | string;
   latitude?: number;
   longitude?: number;
   created_at?: string;
@@ -58,11 +58,11 @@ export const formatBusiness = (data: any): Business => {
     email: data.email || '',
     website: data.website || '',
     image: data.image || '',
-    hours: parseHours(data.hours),
+    hours: data.hours,
     rating: Number(data.rating) || 0,
     reviews: Number(data.reviews) || 0,
     featured: Boolean(data.featured),
-    tags: ensureTagsArray(data.tags),
+    tags: data.tags || [],
     latitude: data.latitude || 0,
     longitude: data.longitude || 0,
     created_at: data.created_at,

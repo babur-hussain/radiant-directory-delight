@@ -58,7 +58,7 @@ const SupabaseDashboardSections = () => {
   useEffect(() => {
     if (users && users.length > 0 && !selectedUserId) {
       setSelectedUserId(users[0].uid);
-      setUserSections(users[0].customDashboardSections || []);
+      setUserSections(users[0].custom_dashboard_sections || []);
     }
   }, [users, selectedUserId]);
   
@@ -76,7 +76,7 @@ const SupabaseDashboardSections = () => {
     setSelectedUserId(userId);
     const selectedUser = users.find(u => u.uid === userId);
     if (selectedUser) {
-      setUserSections(selectedUser.customDashboardSections || []);
+      setUserSections(selectedUser.custom_dashboard_sections || []);
     } else {
       setUserSections([]);
     }
@@ -164,6 +164,8 @@ const SupabaseDashboardSections = () => {
   
   const selectedPackage = packages.find(p => p.id === selectedPackageId);
   const selectedUser = users.find(u => u.uid === selectedUserId);
+  
+  const handleRefresh = () => refetch();
   
   const handleRefetchPackages = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();

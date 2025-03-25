@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -48,9 +47,7 @@ const SupabaseUsersPanel: React.FC = () => {
   const itemsPerPage = 10;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
   
-  // Apply search filter and pagination
   useEffect(() => {
-    // First apply search filter
     let result = users;
     
     if (searchTerm) {
@@ -68,7 +65,7 @@ const SupabaseUsersPanel: React.FC = () => {
   
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset to first page when searching
+    setCurrentPage(1);
   };
   
   const handlePageChange = (page: number) => {
@@ -121,7 +118,6 @@ const SupabaseUsersPanel: React.FC = () => {
     
     setIsSubmitting(true);
     try {
-      // Remove unnecessary properties to prevent errors
       const { id, name, email, role, is_admin, phone, business_name, business_category, 
               subscription_id, subscription_status, subscription_package } = editingUser;
       
@@ -163,7 +159,6 @@ const SupabaseUsersPanel: React.FC = () => {
     }
   };
   
-  // Calculate pagination info
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, filteredUsers.length);
   const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
@@ -253,10 +248,10 @@ const SupabaseUsersPanel: React.FC = () => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={user.is_admin ? "default" : "outline"} className="capitalize">
+                            <Badge variant={user.is_admin || user.isAdmin ? "default" : "outline"} className="capitalize">
                               {user.role || 'User'}
                             </Badge>
-                            {user.is_admin && (
+                            {user.is_admin || user.isAdmin && (
                               <div className="flex items-center mt-1 text-xs">
                                 <ShieldCheck className="h-3 w-3 mr-1 text-primary" />
                                 Admin
@@ -298,7 +293,6 @@ const SupabaseUsersPanel: React.FC = () => {
                 </Table>
               </div>
               
-              {/* Pagination */}
               {totalPages > 1 && (
                 <Pagination className="mt-4">
                   <PaginationContent>
@@ -319,7 +313,7 @@ const SupabaseUsersPanel: React.FC = () => {
                     
                     {currentPage > 3 && (
                       <PaginationItem>
-                        <PaginationLink disabled>...</PaginationLink>
+                        <PaginationLink className={currentPage === 3 ? "opacity-50 cursor-not-allowed" : ""}>...</PaginationLink>
                       </PaginationItem>
                     )}
                     
@@ -345,7 +339,7 @@ const SupabaseUsersPanel: React.FC = () => {
                     
                     {currentPage < totalPages - 2 && (
                       <PaginationItem>
-                        <PaginationLink disabled>...</PaginationLink>
+                        <PaginationLink className={currentPage === totalPages - 2 ? "opacity-50 cursor-not-allowed" : ""}>...</PaginationLink>
                       </PaginationItem>
                     )}
                     
@@ -371,18 +365,15 @@ const SupabaseUsersPanel: React.FC = () => {
         </CardContent>
       </Card>
       
-      {/* Edit User Sheet */}
       <Sheet open={isEditing} onOpenChange={(open) => !open && setIsEditing(false)}>
         <SheetContent className="sm:max-w-md">
           <SheetHeader>
             <SheetTitle>Edit User</SheetTitle>
           </SheetHeader>
           
-          {/* User edit form would go here */}
           <div className="py-4 space-y-4">
             {editingUser && (
               <div>
-                {/* Form fields for editing user */}
                 <Button
                   className="w-full mt-4"
                   onClick={handleUpdateUser}
@@ -403,7 +394,6 @@ const SupabaseUsersPanel: React.FC = () => {
         </SheetContent>
       </Sheet>
       
-      {/* Delete Confirmation */}
       {confirmDelete && userToDelete && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md mx-4">

@@ -1,298 +1,237 @@
-
-import Papa from 'papaparse';
 import { supabase } from '@/integrations/supabase/client';
-import { IBusiness } from '@/models/Business';
-import { generateId } from '@/utils/id-generator';
-import { Business, ensureTagsArray, formatBusiness } from '@/types/business';
-import { Json } from '@/types/supabase';
+import type { Business } from '@/types/business';
+import { ensureTagsArray, parseHours } from '@/types/business';
+import Papa from 'papaparse';
+import { toast } from '@/hooks/use-toast';
 
-let businessesCache: Business[] = [];
-const dataChangeListeners: Function[] = [];
+export { Business };  // Export Business for other modules to use
 
-// Function to initialize data from Supabase
-export const initializeData = async (): Promise<void> => {
+// CSV columns to headers mapping
+const CSV_HEADERS = {
+  name: 'Name',
+  category: 'Category',
+  description: 'Description',
+  address: 'Address',
+  phone: 'Phone',
+  email: 'Email',
+  website: 'Website',
+  image: 'Image URL',
+  hours: 'Opening Hours',
+  rating: 'Rating',
+  reviews: 'Reviews',
+  featured: 'Featured',
+  tags: 'Tags',
+  latitude: 'Latitude',
+  longitude: 'Longitude'
+};
+
+// Helper to convert CSV row to business object
+export const csvRowToBusiness = (row: Record<string, string>): Business => {
+  // Convert string 'true'/'false' to boolean
+  const featured = row[CSV_HEADERS.featured]?.toLowerCase() === 'true';
+  
+  // Convert rating and reviews to numbers
+  const rating = parseFloat(row[CSV_HEADERS.rating]) || 0;
+  const reviews = parseInt(row[CSV_HEADERS.reviews]) || 0;
+  
+  // Handle tags - split by comma if it's a string
+  const tags = row[CSV_HEADERS.tags] ? row[CSV_HEADERS.tags].split(',').map(tag => tag.trim()) : [];
+  
+  // Parse coordinates if provided
+  const latitude = row[CSV_HEADERS.latitude] ? parseFloat(row[CSV_HEADERS.latitude]) : undefined;
+  const longitude = row[CSV_HEADERS.longitude] ? parseFloat(row[CSV_HEADERS.longitude]) : undefined;
+  
+  // hours can be JSON string or object, we'll keep it as string for now
+  return {
+    id: 0, // Will be assigned by the database
+    name: row[CSV_HEADERS.name] || '',
+    category: row[CSV_HEADERS.category] || '',
+    description: row[CSV_HEADERS.description] || '',
+    address: row[CSV_HEADERS.address] || '',
+    phone: row[CSV_HEADERS.phone] || '',
+    email: row[CSV_HEADERS.email] || '',
+    website: row[CSV_HEADERS.website] || '',
+    image: row[CSV_HEADERS.image] || '',
+    hours: row[CSV_HEADERS.hours] || null,
+    rating,
+    reviews,
+    featured,
+    tags,
+    latitude,
+    longitude,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+};
+
+// Helper to prepare a business object for Supabase insert/update
+const prepareBusinessForDb = (business: Business) => {
+  const preparedBusiness: any = { ...business };
+  
+  // Ensure tags is always an array in the database
+  if (typeof preparedBusiness.tags === 'string') {
+    preparedBusiness.tags = ensureTagsArray(preparedBusiness.tags);
+  }
+  
+  // Convert hours to a string if it's an object
+  if (preparedBusiness.hours && typeof preparedBusiness.hours === 'object') {
+    preparedBusiness.hours = JSON.stringify(preparedBusiness.hours);
+  }
+  
+  return preparedBusiness;
+};
+
+// Parse CSV file and convert to Business objects
+export const parseBusinessesCSV = (file: File): Promise<Business[]> => {
+  return new Promise((resolve, reject) => {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        try {
+          const businesses: Business[] = results.data
+            .filter((row: any) => row[CSV_HEADERS.name]) // Skip rows without a name
+            .map((row: any) => csvRowToBusiness(row));
+          resolve(businesses);
+        } catch (error) {
+          reject(error);
+        }
+      },
+      error: (error) => {
+        reject(error);
+      }
+    });
+  });
+};
+
+// Generate CSV template with headers
+export const generateCSVTemplate = (): string => {
+  const headers = Object.values(CSV_HEADERS);
+  return Papa.unparse([headers.reduce((obj, header, i) => ({ ...obj, [header]: '' }), {})]);
+};
+
+// Upload businesses to Supabase
+export const uploadBusinessesCSV = async (businesses: Business[]): Promise<Business[]> => {
   try {
-    console.log("Initializing business data from Supabase...");
-    const { data, error } = await supabase.from('businesses').select('*');
+    const insertedBusinesses: Business[] = [];
     
-    if (error) {
-      throw error;
+    // Process in small batches to avoid API limits
+    const batchSize = 10;
+    for (let i = 0; i < businesses.length; i += batchSize) {
+      const batch = businesses.slice(i, i + batchSize);
+      
+      // Prepare each business for database insertion
+      const preparedBatch = batch.map(business => prepareBusinessForDb(business));
+      
+      const { data, error } = await supabase
+        .from('businesses')
+        .insert(preparedBatch)
+        .select();
+        
+      if (error) {
+        console.error('Error inserting businesses batch:', error);
+        throw error;
+      }
+      
+      if (data) {
+        insertedBusinesses.push(...data as Business[]);
+      }
     }
     
-    businessesCache = data ? data.map(formatBusiness) : [];
-    console.log(`Loaded ${businessesCache.length} businesses from Supabase`);
-    notifyDataChangeListeners();
+    return insertedBusinesses;
   } catch (error) {
-    console.error("Error initializing data from Supabase:", error);
-    businessesCache = [];
+    console.error('Error uploading businesses CSV:', error);
+    throw error;
   }
 };
 
-// Generate a business ID within PostgreSQL integer range (smaller values)
-const generateBusinessId = (): number => {
-  // Generate a random number between 1000 and 999999
-  // This ensures the ID is within the safe range for PostgreSQL integer
-  return Math.floor(Math.random() * 998999) + 1000;
-};
-
-// Process CSV data and upload to Supabase
-export const processCsvData = async (csvContent: string): Promise<{ success: boolean, businesses: Business[], message: string }> => {
+// Update existing businesses from CSV
+export const updateBusinessesFromCSV = async (businesses: Business[]): Promise<Business[]> => {
   try {
-    console.log("Processing CSV data...");
+    const updatedBusinesses: Business[] = [];
     
-    const results = Papa.parse(csvContent, {
-      header: true,
-      skipEmptyLines: true,
-      transformHeader: (header) => {
-        // Normalize headers - convert "Business Name" to "name", etc.
-        const headerMap: { [key: string]: string } = {
-          "Business Name": "name",
-          "Category": "category",
-          "Address": "address",
-          "Mobile Number": "phone",
-          "Review": "rating",
-          "Description": "description",
-          "Email": "email",
-          "Website": "website",
-          "Reviews": "reviews",
-          "Image": "image",
-          "Tags": "tags"
-        };
-        
-        return headerMap[header] || header.toLowerCase();
-      }
-    });
-    
-    if (results.errors.length > 0) {
-      console.error("CSV parsing errors:", results.errors);
-      return { 
-        success: false, 
-        businesses: [], 
-        message: `CSV parsing error: ${results.errors[0].message}` 
-      };
-    }
-    
-    console.log("CSV parsing result:", results);
-    
-    const businesses: Business[] = [];
-    const failed: string[] = [];
-    
-    for (const row of results.data as any[]) {
-      try {
-        // Validate required fields - using normalized column names
-        if (!row.name || row.name.trim() === '') {
-          console.warn("Skipping row without business name:", row);
+    // Process in small batches
+    const batchSize = 10;
+    for (let i = 0; i < businesses.length; i += batchSize) {
+      const batch = businesses.slice(i, i + batchSize);
+      
+      for (const business of batch) {
+        // Skip items without ID
+        if (!business.id) {
+          console.warn('Skipping update for business without ID:', business.name);
           continue;
         }
         
-        // Parse rating value from string to number
-        let rating = 0;
-        if (row.rating) {
-          // Handle rating that might be a string with stars or just a number
-          const ratingValue = row.rating.toString().replace(/[^0-9.]/g, '');
-          rating = parseFloat(ratingValue) || 0;
-          // Limit rating to 5 stars max
-          rating = Math.min(rating, 5);
+        const preparedBusiness = prepareBusinessForDb(business);
+        
+        const { data, error } = await supabase
+          .from('businesses')
+          .update(preparedBusiness)
+          .eq('id', business.id)
+          .select();
+        
+        if (error) {
+          console.error(`Error updating business ${business.id}:`, error);
+          continue; // Skip to next business
         }
         
-        // Process tags to ensure they are an array
-        const tags = ensureTagsArray(row.tags);
-        
-        // Create business object with a smaller ID that fits within PostgreSQL integer limits
-        const business: Business = {
-          id: generateBusinessId(), // Use the safer ID generation method
-          name: row.name.trim(),
-          category: row.category || "",
-          description: row.description || `${row.name} is a business in the ${row.category || "various"} category.`,
-          address: row.address || "",
-          phone: row.phone || "",
-          email: row.email || "",
-          website: row.website || "",
-          rating: rating,
-          reviews: parseInt(row.reviews) || Math.floor(Math.random() * 100) + 5,
-          latitude: parseFloat(row.latitude) || 0,
-          longitude: parseFloat(row.longitude) || 0,
-          tags: tags,
-          featured: row.featured === "true" || row.featured === true,
-          image: row.image || `/placeholder-${Math.floor(Math.random() * 5) + 1}.jpg`
-        };
-        
-        console.log("Saving business to Supabase:", business.name);
-        
-        try {
-          // Add to Supabase
-          const { error } = await supabase.from('businesses').insert([business]);
-          
-          if (error) {
-            console.error("Error inserting business to Supabase:", error);
-            failed.push(business.name);
-            continue;
-          }
-          
-          businesses.push(business);
-        } catch (insertError) {
-          console.error("Error during Supabase insert:", insertError);
-          failed.push(business.name);
+        if (data && data.length > 0) {
+          updatedBusinesses.push(data[0] as Business);
         }
-      } catch (rowError) {
-        console.error("Error processing CSV row:", rowError);
       }
     }
     
-    // Update the cache after successfully saving to Supabase
-    if (businesses.length > 0) {
-      // Refresh the entire cache from Supabase
-      await initializeData();
-    }
-    
-    let message = `Successfully processed ${businesses.length} businesses`;
-    if (failed.length > 0) {
-      message += `. Failed to insert ${failed.length} businesses.`;
-    }
-    
-    return { 
-      success: true, 
-      businesses, 
-      message 
-    };
+    return updatedBusinesses;
   } catch (error) {
-    console.error("Error processing CSV data:", error);
-    return { 
-      success: false, 
-      businesses: [], 
-      message: `Error: ${error instanceof Error ? error.message : String(error)}` 
-    };
-  }
-};
-
-// Get all businesses from cache
-export const getAllBusinesses = (): Business[] => {
-  return [...businessesCache];
-};
-
-// Add a business
-export const addBusiness = async (businessData: Partial<Business>): Promise<Business> => {
-  try {
-    // Ensure ID exists and is within PostgreSQL integer range
-    const businessId = businessData.id || generateBusinessId();
-    
-    // Ensure tags is always an array
-    const tags = ensureTagsArray(businessData.tags);
-    
-    // Create complete business object
-    const business: Business = {
-      id: businessId,
-      name: businessData.name || "Unnamed Business",
-      description: businessData.description || `${businessData.name} is a business in the ${businessData.category || "various"} category.`,
-      category: businessData.category || "",
-      address: businessData.address || "",
-      phone: businessData.phone || "",
-      email: businessData.email || "",
-      website: businessData.website || "",
-      rating: businessData.rating || 0,
-      reviews: businessData.reviews || 0,
-      latitude: businessData.latitude || 0,
-      longitude: businessData.longitude || 0,
-      hours: businessData.hours || {},
-      tags: tags,
-      featured: businessData.featured || false,
-      image: businessData.image || `/placeholder-${Math.floor(Math.random() * 5) + 1}.jpg`
-    };
-    
-    // Save to Supabase
-    const { error } = await supabase.from('businesses').insert([business]);
-    
-    if (error) {
-      throw error;
-    }
-    
-    // Update cache
-    businessesCache.push(business);
-    notifyDataChangeListeners();
-    
-    return business;
-  } catch (error) {
-    console.error("Error adding business:", error);
+    console.error('Error updating businesses from CSV:', error);
     throw error;
   }
 };
 
-// Update an existing business
-export const updateBusiness = async (businessData: Business): Promise<boolean> => {
-  try {
-    // Ensure tags is always an array
-    const tags = ensureTagsArray(businessData.tags);
-    
-    // Update business with properly formatted tags
-    const updatedBusiness = {
-      ...businessData,
-      tags
-    };
-    
-    // Save to Supabase
-    const { error } = await supabase
-      .from('businesses')
-      .update(updatedBusiness)
-      .eq('id', businessData.id);
-    
-    if (error) {
-      throw error;
-    }
-    
-    // Update cache
-    const index = businessesCache.findIndex(b => b.id === businessData.id);
-    if (index !== -1) {
-      businessesCache[index] = updatedBusiness;
-    } else {
-      businessesCache.push(updatedBusiness);
-    }
-    
-    notifyDataChangeListeners();
-    return true;
-  } catch (error) {
-    console.error("Error updating business:", error);
-    throw error;
-  }
+// Get all headers for CSV export
+export const getBusinessesCSVHeaders = (): string[] => {
+  return Object.values(CSV_HEADERS);
 };
 
-// Delete a business
-export const deleteBusiness = async (id: number): Promise<boolean> => {
-  try {
-    const { error } = await supabase
-      .from('businesses')
-      .delete()
-      .eq('id', id);
+// Convert businesses to CSV format
+export const convertBusinessesToCSV = (businesses: Business[]): string => {
+  const rows = businesses.map(business => {
+    const row: Record<string, any> = {};
     
-    if (error) {
-      throw error;
-    }
+    // Map each business field to its CSV header
+    Object.entries(CSV_HEADERS).forEach(([field, header]) => {
+      const key = field as keyof Business;
+      let value = business[key];
+      
+      // Special handling for arrays (tags)
+      if (field === 'tags' && Array.isArray(business.tags)) {
+        value = (business.tags as string[]).join(', ');
+      }
+      
+      // Special handling for objects (hours)
+      if (field === 'hours' && typeof business.hours === 'object' && business.hours !== null) {
+        value = JSON.stringify(business.hours);
+      }
+      
+      row[header] = value;
+    });
     
-    // Update cache
-    businessesCache = businessesCache.filter(b => b.id !== id);
-    notifyDataChangeListeners();
-    return true;
-  } catch (error) {
-    console.error("Error deleting business:", error);
-    return false;
-  }
+    return row;
+  });
+  
+  return Papa.unparse(rows);
 };
 
-// Add a data change listener
-export const addDataChangeListener = (listener: Function): void => {
-  dataChangeListeners.push(listener);
-};
-
-// Remove a data change listener
-export const removeDataChangeListener = (listener: Function): void => {
-  const index = dataChangeListeners.indexOf(listener);
-  if (index !== -1) {
-    dataChangeListeners.splice(index, 1);
-  }
-};
-
-// Notify all listeners about data changes
-const notifyDataChangeListeners = (): void => {
-  for (const listener of dataChangeListeners) {
-    listener();
-  }
+export const downloadCSV = (csvContent: string, filename = 'businesses.csv') => {
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };
