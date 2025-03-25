@@ -12,6 +12,8 @@ import { initializeData } from '@/lib/csv-utils';
 const AdminUploadPage = () => {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [lastUploadInfo, setLastUploadInfo] = useState<{
     timestamp: Date;
     success: boolean;
@@ -24,16 +26,26 @@ const AdminUploadPage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
+        setIsLoading(true);
         await initializeData();
+        setIsError(false);
       } catch (error) {
         console.error("Error initializing data:", error);
+        setIsError(true);
+        setErrorMessage(error instanceof Error ? error.message : String(error));
+        
+        toast({
+          title: "Error loading data",
+          description: "There was an error initializing the business data.",
+          variant: "destructive"
+        });
       } finally {
         setIsLoading(false);
       }
     };
     
     loadData();
-  }, []);
+  }, [toast]);
 
   const handleShowUploadDialog = () => {
     setShowUploadDialog(true);
@@ -64,23 +76,32 @@ const AdminUploadPage = () => {
   };
 
   const handleDownloadTemplate = () => {
-    // Create a sample CSV template
-    const csvHeader = "Business Name,Category,Address,Mobile Number,Review,Description,Email,Website,Tags\n";
-    const sampleRow1 = "Acme Coffee Shop,Cafe,123 Main St,555-123-4567,4.5,Best coffee in town,info@acmecoffee.com,https://acmecoffee.com,\"coffee, pastries\"\n";
-    const sampleRow2 = "Tech Solutions,Technology,456 Tech Blvd,555-987-6543,5,Professional IT services,contact@techsolutions.com,https://techsolutions.com,\"it, services, computer repair\"\n";
-    const csvContent = csvHeader + sampleRow1 + sampleRow2;
-    
-    // Create blob and trigger download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'business_template.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      // Create a sample CSV template
+      const csvHeader = "Business Name,Category,Address,Mobile Number,Review,Description,Email,Website,Tags\n";
+      const sampleRow1 = "Acme Coffee Shop,Cafe,123 Main St,555-123-4567,4.5,Best coffee in town,info@acmecoffee.com,https://acmecoffee.com,\"coffee, pastries\"\n";
+      const sampleRow2 = "Tech Solutions,Technology,456 Tech Blvd,555-987-6543,5,Professional IT services,contact@techsolutions.com,https://techsolutions.com,\"it, services, computer repair\"\n";
+      const csvContent = csvHeader + sampleRow1 + sampleRow2;
+      
+      // Create blob and trigger download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'business_template.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error downloading template:", error);
+      toast({
+        title: "Download Error",
+        description: "There was an error downloading the template.",
+        variant: "destructive"
+      });
+    }
   };
 
   if (isLoading) {
@@ -91,6 +112,44 @@ const AdminUploadPage = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-gray-500">Loading upload page...</p>
           </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <AdminLayout>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold">CSV Upload</h1>
+          </div>
+          
+          <Card className="border-red-200 bg-red-50">
+            <CardHeader>
+              <CardTitle className="flex items-center text-red-700">
+                <AlertCircle className="mr-2 h-5 w-5" />
+                Error Loading Data
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-red-700">
+                There was an error initializing the business data. Please try refreshing the page.
+              </p>
+              {errorMessage && (
+                <p className="mt-2 text-sm text-red-600 bg-red-100 p-2 rounded">
+                  {errorMessage}
+                </p>
+              )}
+              <Button 
+                variant="outline" 
+                className="mt-4" 
+                onClick={() => window.location.reload()}
+              >
+                Refresh Page
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </AdminLayout>
     );

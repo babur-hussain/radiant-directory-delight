@@ -25,6 +25,7 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -59,6 +60,7 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsProcessing(true);
+      setUploadProgress(10);
       onUploadStart();
       
       const reader = new FileReader();
@@ -67,15 +69,19 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
         if (event.target?.result) {
           const csvContent = event.target.result as string;
           
+          setUploadProgress(30);
+          
           try {
+            setUploadProgress(50);
             const { success, businesses, message } = await processCsvData(csvContent);
+            setUploadProgress(100);
             
             if (success) {
               toast({
                 title: "Upload Successful",
                 description: `${businesses.length} businesses processed successfully`,
               });
-              onUploadComplete(true, `Successfully added ${businesses.length} businesses to Supabase`, businesses.length);
+              onUploadComplete(true, message, businesses.length);
             } else {
               toast({
                 title: "Upload Failed",
@@ -115,7 +121,10 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
       });
       onUploadComplete(false, "An unexpected error occurred");
     } finally {
-      setIsProcessing(false);
+      setTimeout(() => {
+        setIsProcessing(false);
+        setUploadProgress(0);
+      }, 1000);
     }
   };
 
@@ -177,6 +186,15 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
               </FormItem>
             )}
           />
+
+          {isProcessing && (
+            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+              <div 
+                className="bg-primary h-2.5 rounded-full transition-all duration-300" 
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+          )}
 
           <div className="flex justify-end">
             <Button 

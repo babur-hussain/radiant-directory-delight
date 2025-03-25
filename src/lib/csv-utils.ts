@@ -92,6 +92,7 @@ export const processCsvData = async (csvContent: string): Promise<{ success: boo
     console.log("CSV parsing result:", results);
     
     const businesses: Business[] = [];
+    const failed: string[] = [];
     
     for (const row of results.data as any[]) {
       try {
@@ -138,12 +139,14 @@ export const processCsvData = async (csvContent: string): Promise<{ success: boo
           
           if (error) {
             console.error("Error inserting business to Supabase:", error);
+            failed.push(business.name);
             continue;
           }
           
           businesses.push(business);
         } catch (insertError) {
           console.error("Error during Supabase insert:", insertError);
+          failed.push(business.name);
         }
       } catch (rowError) {
         console.error("Error processing CSV row:", rowError);
@@ -156,10 +159,15 @@ export const processCsvData = async (csvContent: string): Promise<{ success: boo
       await initializeData();
     }
     
+    let message = `Successfully processed ${businesses.length} businesses`;
+    if (failed.length > 0) {
+      message += `. Failed to insert ${failed.length} businesses.`;
+    }
+    
     return { 
       success: true, 
       businesses, 
-      message: `Successfully processed ${businesses.length} businesses` 
+      message 
     };
   } catch (error) {
     console.error("Error processing CSV data:", error);
