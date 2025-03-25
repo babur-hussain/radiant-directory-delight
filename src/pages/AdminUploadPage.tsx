@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Upload, DownloadCloud, FileUp, Check, AlertCircle } from 'lucide-react';
@@ -7,9 +7,11 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import CSVUploader from '@/components/admin/CSVUploader';
 import CSVUploadDialog from '@/components/admin/CSVUploadDialog';
 import { useToast } from '@/hooks/use-toast';
+import { initializeData } from '@/lib/csv-utils';
 
 const AdminUploadPage = () => {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [lastUploadInfo, setLastUploadInfo] = useState<{
     timestamp: Date;
     success: boolean;
@@ -17,6 +19,21 @@ const AdminUploadPage = () => {
     message: string;
   } | null>(null);
   const { toast } = useToast();
+
+  // Initialize data on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        await initializeData();
+      } catch (error) {
+        console.error("Error initializing data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []);
 
   const handleShowUploadDialog = () => {
     setShowUploadDialog(true);
@@ -65,6 +82,19 @@ const AdminUploadPage = () => {
     link.click();
     document.body.removeChild(link);
   };
+
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-500">Loading upload page...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>

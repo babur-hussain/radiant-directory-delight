@@ -24,6 +24,7 @@ interface CSVUploaderProps {
 export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploadComplete }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -56,9 +57,10 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    onUploadStart();
-    
     try {
+      setIsProcessing(true);
+      onUploadStart();
+      
       const reader = new FileReader();
       
       reader.onload = async (event) => {
@@ -75,23 +77,45 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
               });
               onUploadComplete(true, `Successfully added ${businesses.length} businesses to Supabase`, businesses.length);
             } else {
+              toast({
+                title: "Upload Failed",
+                description: message,
+                variant: "destructive"
+              });
               onUploadComplete(false, message);
             }
           } catch (error) {
             console.error("Failed to process CSV data:", error);
+            toast({
+              title: "Processing Error",
+              description: "Failed to process CSV data: " + (error instanceof Error ? error.message : String(error)),
+              variant: "destructive"
+            });
             onUploadComplete(false, "Failed to process CSV data: " + (error instanceof Error ? error.message : String(error)));
           }
         }
       };
       
       reader.onerror = () => {
+        toast({
+          title: "File Error",
+          description: "Error reading the file",
+          variant: "destructive"
+        });
         onUploadComplete(false, "Error reading the file");
       };
       
       reader.readAsText(values.file);
     } catch (error) {
       console.error("An unexpected error occurred:", error);
+      toast({
+        title: "Unexpected Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
       onUploadComplete(false, "An unexpected error occurred");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -155,8 +179,20 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
           />
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={!form.formState.isValid}>
-              Upload and Process
+            <Button 
+              type="submit" 
+              disabled={!form.formState.isValid || isProcessing}
+              className="relative"
+            >
+              {isProcessing ? 'Processing...' : 'Upload and Process'}
+              {isProcessing && (
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </span>
+              )}
             </Button>
           </div>
         </form>

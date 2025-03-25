@@ -45,11 +45,11 @@ export const initializeData = async (): Promise<void> => {
   }
 };
 
-// Generate a business ID within PostgreSQL integer range
+// Generate a business ID within PostgreSQL integer range (smaller values)
 const generateBusinessId = (): number => {
-  // Generate a random number between 1000 and 1000000
+  // Generate a random number between 1000 and 999999
   // This ensures the ID is within the safe range for PostgreSQL integer
-  return Math.floor(Math.random() * 999000) + 1000;
+  return Math.floor(Math.random() * 998999) + 1000;
 };
 
 // Process CSV data and upload to Supabase
