@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -106,18 +105,21 @@ const SupabasePackagesPanel = () => {
     if (!editingPackage) return;
     
     try {
-      // Create or update package in Supabase
+      const featuresString = Array.isArray(editingPackage.features) 
+        ? JSON.stringify(editingPackage.features) 
+        : editingPackage.features;
+      
       if (isCreating || isCloning) {
         const { error } = await supabase
           .from('subscription_packages')
-          .insert([{
+          .insert({
             id: editingPackage.id,
             title: editingPackage.title,
             short_description: editingPackage.shortDescription,
             full_description: editingPackage.fullDescription,
             price: editingPackage.price,
             monthly_price: editingPackage.monthlyPrice,
-            features: editingPackage.features,
+            features: featuresString,
             popular: editingPackage.popular,
             type: editingPackage.type,
             payment_type: editingPackage.paymentType,
@@ -127,7 +129,7 @@ const SupabasePackagesPanel = () => {
             advance_payment_months: editingPackage.advancePaymentMonths,
             terms_and_conditions: editingPackage.termsAndConditions,
             dashboard_sections: editingPackage.dashboardSections
-          }]);
+          });
         
         if (error) throw error;
         
@@ -136,7 +138,6 @@ const SupabasePackagesPanel = () => {
           description: `${editingPackage.title} has been ${isCloning ? 'cloned' : 'created'}.`,
         });
       } else {
-        // Update existing package
         const { error } = await supabase
           .from('subscription_packages')
           .update({
@@ -145,7 +146,7 @@ const SupabasePackagesPanel = () => {
             full_description: editingPackage.fullDescription,
             price: editingPackage.price,
             monthly_price: editingPackage.monthlyPrice,
-            features: editingPackage.features,
+            features: featuresString,
             popular: editingPackage.popular,
             type: editingPackage.type,
             payment_type: editingPackage.paymentType,
@@ -574,3 +575,4 @@ const SupabasePackagesPanel = () => {
 };
 
 export default SupabasePackagesPanel;
+

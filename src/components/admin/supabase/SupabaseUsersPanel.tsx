@@ -1,19 +1,22 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, Plus, Search, Edit, Trash2, Check, X } from 'lucide-react';
-import useSupabaseUsers from '@/hooks/useSupabaseUsers';
-import { User } from '@/types/auth';
-import { useToast } from '@/hooks/use-toast';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetClose } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getInitials } from '@/utils/string-helpers';
+import { SubscriptionPackage, ISubscriptionPackage } from '@/models/SubscriptionPackage';
+import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 
 const SupabaseUsersPanel = () => {
   const { users, isLoading, error, totalCount, fetchUsers, setUsers } = useSupabaseUsers(true);
@@ -22,11 +25,12 @@ const SupabaseUsersPanel = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const { toast } = useToast();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const limitPerPage = 10;
+  const { toast } = useToast();
   
   const handleSearch = async () => {
     setIsSearching(true);
@@ -106,12 +110,41 @@ const SupabaseUsersPanel = () => {
     }
   };
   
+  const handleUpdateUser = async (userId: string, userData: any) => {
+    setIsUpdating(true);
+    try {
+      const { is_active, ...validUserData } = userData;
+      
+      const { error } = await supabase
+        .from('users')
+        .update(validUserData)
+        .eq('id', userId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "User Updated",
+        description: "User information has been updated successfully."
+      });
+      
+      fetchUsers();
+    } catch (error) {
+      console.error("Error updating user:", error);
+      toast({
+        title: "Update Failed",
+        description: String(error),
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+  
   const handleConfirmDelete = async () => {
     if (!userToDelete) return;
     
     setIsDeleting(true);
     try {
-      // For safety, we'll just update the user's status rather than actually deleting
       const { error } = await supabase
         .from('users')
         .update({ is_active: false })

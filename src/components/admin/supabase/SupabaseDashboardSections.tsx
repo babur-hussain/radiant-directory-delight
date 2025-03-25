@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,7 +48,6 @@ const SupabaseDashboardSections = () => {
   const { users, isLoading: usersLoading, fetchUsers } = useSupabaseUsers(true);
   const { toast } = useToast();
   
-  // Set selected package when packages load
   useEffect(() => {
     if (packages && packages.length > 0 && !selectedPackageId) {
       setSelectedPackageId(packages[0].id);
@@ -57,7 +55,6 @@ const SupabaseDashboardSections = () => {
     }
   }, [packages, selectedPackageId]);
   
-  // Set selected user when users load
   useEffect(() => {
     if (users && users.length > 0 && !selectedUserId) {
       setSelectedUserId(users[0].uid);
@@ -106,7 +103,6 @@ const SupabaseDashboardSections = () => {
     
     setIsSavingPackage(true);
     try {
-      // Update package with new dashboard sections
       const { error } = await supabase
         .from('subscription_packages')
         .update({ dashboard_sections: packageSections })
@@ -137,7 +133,6 @@ const SupabaseDashboardSections = () => {
     
     setIsSavingUser(true);
     try {
-      // Update user with new dashboard sections
       const { error } = await supabase
         .from('users')
         .update({ custom_dashboard_sections: userSections })
@@ -150,7 +145,6 @@ const SupabaseDashboardSections = () => {
         description: "Dashboard sections have been updated for this user.",
       });
       
-      // Refresh users list
       fetchUsers();
     } catch (error) {
       console.error("Error saving user sections:", error);
@@ -164,13 +158,22 @@ const SupabaseDashboardSections = () => {
     }
   };
   
-  // Get available sections based on package or user type
   const getAvailableSections = (type: 'Business' | 'Influencer' | null) => {
     return type === 'Influencer' ? INFLUENCER_SECTIONS : BUSINESS_SECTIONS;
   };
   
   const selectedPackage = packages.find(p => p.id === selectedPackageId);
   const selectedUser = users.find(u => u.uid === selectedUserId);
+  
+  const handleRefetchPackages = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    refetchPackages();
+  };
+  
+  const handleRefetchUsers = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    fetchUsers();
+  };
   
   return (
     <Card>
@@ -222,7 +225,7 @@ const SupabaseDashboardSections = () => {
                     </div>
                     <Button
                       variant="outline" 
-                      onClick={refetchPackages} 
+                      onClick={handleRefetchPackages} 
                       size="sm"
                     >
                       <RefreshCw className="h-4 w-4 mr-2" />
@@ -313,7 +316,7 @@ const SupabaseDashboardSections = () => {
                     </div>
                     <Button
                       variant="outline" 
-                      onClick={() => fetchUsers()} 
+                      onClick={handleRefetchUsers} 
                       size="sm"
                     >
                       <RefreshCw className="h-4 w-4 mr-2" />

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -63,7 +62,15 @@ const SupabaseBusinessesPanel = () => {
       
       if (error) throw error;
       
-      setBusinesses(data || []);
+      // Convert Supabase data to our Business type
+      const formattedData: Business[] = data?.map(item => ({
+        ...item,
+        tags: Array.isArray(item.tags) ? item.tags : (item.tags || []),
+        rating: Number(item.rating) || 0,
+        reviews: Number(item.reviews) || 0
+      })) || [];
+      
+      setBusinesses(formattedData);
       setTotalCount(count || 0);
       setCurrentPage(page);
     } catch (error) {
@@ -166,8 +173,9 @@ const SupabaseBusinessesPanel = () => {
     
     try {
       if (isCreating) {
-        // Generate random ID (we won't use this as the actual ID, the database will)
-        let tagsArray = [];
+        // Process tags to ensure it's an array
+        let tagsArray: string[] = [];
+        
         if (typeof editingBusiness.tags === 'string') {
           tagsArray = editingBusiness.tags.split(',').map(tag => tag.trim());
         } else if (Array.isArray(editingBusiness.tags)) {
@@ -199,8 +207,9 @@ const SupabaseBusinessesPanel = () => {
           description: `${editingBusiness.name} has been created.`,
         });
       } else {
-        // Update existing business
-        let tagsArray = [];
+        // Process tags for update
+        let tagsArray: string[] = [];
+        
         if (typeof editingBusiness.tags === 'string') {
           tagsArray = editingBusiness.tags.split(',').map(tag => tag.trim());
         } else if (Array.isArray(editingBusiness.tags)) {
@@ -448,7 +457,6 @@ const SupabaseBusinessesPanel = () => {
             </Table>
           </div>
           
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-muted-foreground">
@@ -477,14 +485,12 @@ const SupabaseBusinessesPanel = () => {
         </CardContent>
       </Card>
       
-      {/* CSV Upload Dialog */}
       <CSVUploadDialog
         show={showUploadDialog}
         onClose={() => setShowUploadDialog(false)}
         onUploadComplete={handleUploadComplete}
       />
       
-      {/* Business Edit/Create Sheet */}
       <Sheet 
         open={isEditing || isCreating} 
         onOpenChange={(open) => {
@@ -646,7 +652,6 @@ const SupabaseBusinessesPanel = () => {
         </SheetContent>
       </Sheet>
       
-      {/* Delete Confirmation */}
       {confirmDelete && businessToDelete && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md mx-4">

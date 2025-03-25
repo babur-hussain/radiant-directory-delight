@@ -1,4 +1,3 @@
-
 import Papa from 'papaparse';
 import { supabase } from '@/integrations/supabase/client';
 import { IBusiness } from '@/models/Business';
@@ -7,20 +6,22 @@ import { generateId } from '@/utils/id-generator';
 export interface Business {
   id: number;
   name: string;
-  description?: string;
   category?: string;
+  description?: string;
   address?: string;
   phone?: string;
   email?: string;
   website?: string;
+  image?: string;
+  hours?: Record<string, string> | string | null;
   rating: number;
-  reviews?: number;
+  reviews: number;
+  featured?: boolean;
+  tags: string[] | string;
   latitude?: number;
   longitude?: number;
-  hours?: Record<string, string>;
-  tags?: string[];
-  featured?: boolean;
-  image?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 let businessesCache: Business[] = [];
