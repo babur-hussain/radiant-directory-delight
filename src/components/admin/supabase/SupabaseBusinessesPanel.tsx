@@ -14,7 +14,8 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { getAllBusinesses } from '@/services/businessService';
-import { Business } from '@/lib/csv-utils';
+import { Business, ensureTagsArray, formatBusiness } from '@/types/business';
+import { Json } from '@/types/supabase';
 
 const SupabaseBusinessesPanel = () => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -63,12 +64,7 @@ const SupabaseBusinessesPanel = () => {
       if (error) throw error;
       
       // Convert Supabase data to our Business type
-      const formattedData: Business[] = data?.map(item => ({
-        ...item,
-        tags: Array.isArray(item.tags) ? item.tags : (item.tags || []),
-        rating: Number(item.rating) || 0,
-        reviews: Number(item.reviews) || 0
-      })) || [];
+      const formattedData: Business[] = data?.map(formatBusiness) || [];
       
       setBusinesses(formattedData);
       setTotalCount(count || 0);
@@ -174,13 +170,7 @@ const SupabaseBusinessesPanel = () => {
     try {
       if (isCreating) {
         // Process tags to ensure it's an array
-        let tagsArray: string[] = [];
-        
-        if (typeof editingBusiness.tags === 'string') {
-          tagsArray = editingBusiness.tags.split(',').map(tag => tag.trim());
-        } else if (Array.isArray(editingBusiness.tags)) {
-          tagsArray = editingBusiness.tags;
-        }
+        const tagsArray = ensureTagsArray(editingBusiness.tags);
         
         // Create new business
         const { error } = await supabase
@@ -208,13 +198,7 @@ const SupabaseBusinessesPanel = () => {
         });
       } else {
         // Process tags for update
-        let tagsArray: string[] = [];
-        
-        if (typeof editingBusiness.tags === 'string') {
-          tagsArray = editingBusiness.tags.split(',').map(tag => tag.trim());
-        } else if (Array.isArray(editingBusiness.tags)) {
-          tagsArray = editingBusiness.tags;
-        }
+        const tagsArray = ensureTagsArray(editingBusiness.tags);
         
         const { error } = await supabase
           .from('businesses')

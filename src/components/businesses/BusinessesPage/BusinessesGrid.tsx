@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Star, MapPin, Phone, ChevronDown, ChevronUp } from "lucide-react";
-import { Business } from "@/lib/csv-utils";
+import { Business, ensureTagsArray } from "@/types/business";
 import BusinessImage from "@/components/BusinessImage";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { createGoogleSearchUrl } from "@/lib/utils";
@@ -46,7 +46,7 @@ const BusinessesGrid: React.FC<BusinessesGridProps> = ({ businesses, clearAllFil
               </span>
             )}
             <div className="absolute top-3 right-3 flex flex-wrap gap-1 max-w-[70%] justify-end">
-              {business.tags.slice(0, 2).map((tag, i) => (
+              {ensureTagsArray(business.tags).slice(0, 2).map((tag, i) => (
                 <span key={i} className="bg-white/90 text-gray-700 text-xs px-2 py-1 rounded">
                   {tag}
                 </span>
@@ -80,8 +80,8 @@ const BusinessesGrid: React.FC<BusinessesGridProps> = ({ businesses, clearAllFil
             </div>
             
             {/* Collapsible Tags Section */}
-            {business.tags.length > 0 && (
-              <CollapsibleTagsSection tags={business.tags} />
+            {ensureTagsArray(business.tags).length > 0 && (
+              <CollapsibleTagsSection tags={ensureTagsArray(business.tags)} />
             )}
           </CardContent>
           

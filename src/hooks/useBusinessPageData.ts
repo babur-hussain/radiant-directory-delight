@@ -1,250 +1,184 @@
-import { useState, useEffect, useMemo } from "react";
-import { 
-  getAllBusinesses,
-  addDataChangeListener,
-  removeDataChangeListener,
-  initializeData,
-  Business
-} from "@/lib/csv-utils";
-import { businessesData } from "@/data/businessesData";
 
-// Extended business type that includes location field
-export interface ExtendedBusiness extends Business {
-  location: string;
+import { useState, useEffect, useMemo } from 'react';
+import { Business } from '@/types/business';
+import { supabase } from '@/integrations/supabase/client';
+import { ensureTagsArray } from '@/types/business';
+
+interface UseBusinessPageDataProps {
+  initialBusinesses?: Business[];
+  defaultCategory?: string;
+  defaultSearch?: string;
+  defaultFeaturedOnly?: boolean;
+  defaultRatingFilter?: number;
 }
 
-type LocationFilter = string | null;
-type SortOption = "relevance" | "rating" | "reviews";
+interface BusinessPageData {
+  businesses: Business[];
+  filteredBusinesses: Business[];
+  categories: string[];
+  tags: string[];
+  isLoading: boolean;
+  error: string | null;
+  category: string;
+  search: string;
+  featuredOnly: boolean;
+  ratingFilter: number;
+  setCategory: (category: string) => void;
+  setSearch: (search: string) => void;
+  setFeaturedOnly: (featured: boolean) => void;
+  setRatingFilter: (rating: number) => void;
+  clearAllFilters: () => void;
+  refreshData: () => Promise<void>;
+}
 
-// Helper functions defined before they're used
-const getCustomCategories = (): string[] => {
-  const storedCategories = localStorage.getItem("businessCategories");
-  if (storedCategories) {
-    const categories = JSON.parse(storedCategories);
-    return categories.map((cat: { name: string }) => cat.name);
-  }
-  return [];
-};
-
-const getCustomLocations = (): string[] => {
-  const storedLocations = localStorage.getItem("businessLocations");
-  if (storedLocations) {
-    const locations = JSON.parse(storedLocations);
-    return locations.map((loc: { name: string }) => loc.name);
-  }
-  return [];
-};
-
-export const useBusinessPageData = (initialQuery: string = '') => {
-  const [loading, setLoading] = useState(true);
-  const [businesses, setBusinesses] = useState<ExtendedBusiness[]>(businessesData as ExtendedBusiness[]);
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedRating, setSelectedRating] = useState<string>("");
-  const [selectedLocation, setSelectedLocation] = useState<LocationFilter>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [featuredOnly, setFeaturedOnly] = useState(false);
-  const [sortBy, setSortBy] = useState<SortOption>("relevance");
-  const [activeTags, setActiveTags] = useState<string[]>([]);
+const useBusinessPageData = ({
+  initialBusinesses = [],
+  defaultCategory = '',
+  defaultSearch = '',
+  defaultFeaturedOnly = false,
+  defaultRatingFilter = 0
+}: UseBusinessPageDataProps = {}): BusinessPageData => {
+  const [businesses, setBusinesses] = useState<Business[]>(initialBusinesses);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  const [customCategories, setCustomCategories] = useState<string[]>(getCustomCategories());
-  const [customLocations, setCustomLocations] = useState<string[]>(getCustomLocations());
+  // Filter state
+  const [category, setCategory] = useState(defaultCategory);
+  const [search, setSearch] = useState(defaultSearch);
+  const [featuredOnly, setFeaturedOnly] = useState(defaultFeaturedOnly);
+  const [ratingFilter, setRatingFilter] = useState(defaultRatingFilter);
   
-  const itemsPerPage = 40;
+  // Fetch businesses from Supabase
+  const fetchBusinesses = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      
+      // Convert data to Business type with proper tag handling
+      const formattedData = data?.map(business => ({
+        ...business,
+        tags: ensureTagsArray(business.tags),
+        rating: Number(business.rating) || 0,
+        reviews: Number(business.reviews) || 0
+      })) || [];
+      
+      setBusinesses(formattedData);
+    } catch (err) {
+      console.error('Error fetching businesses:', err);
+      setError('Failed to load businesses. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
+  // Initial fetch
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        await initializeData();
-        const fetchedBusinesses = getAllBusinesses();
-        const extendedBusinesses = fetchedBusinesses.map(business => {
-          const addressParts = business.address?.split(',') || [];
-          const extractedLocation = addressParts.length > 1 
-            ? addressParts[addressParts.length - 1].trim()
-            : 'Unknown';
-          return { ...business, location: extractedLocation };
-        });
-        setBusinesses(extendedBusinesses);
-      } catch (error) {
-        console.error("Error loading businesses:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadData();
-    
-    const handleDataChanged = () => {
-      const fetchedBusinesses = getAllBusinesses();
-      const extendedBusinesses = fetchedBusinesses.map(business => {
-        const addressParts = business.address?.split(',') || [];
-        const extractedLocation = addressParts.length > 1 
-          ? addressParts[addressParts.length - 1].trim()
-          : 'Unknown';
-        return { ...business, location: extractedLocation };
-      });
-      setBusinesses(extendedBusinesses);
-    };
-    
-    addDataChangeListener(handleDataChanged);
-    
-    const handleCategoriesChanged = () => {
-      setCustomCategories(getCustomCategories());
-    };
-    
-    const handleLocationsChanged = () => {
-      setCustomLocations(getCustomLocations());
-    };
-    
-    window.addEventListener("categoriesChanged", handleCategoriesChanged);
-    window.addEventListener("locationsChanged", handleLocationsChanged);
-    
-    return () => {
-      removeDataChangeListener(handleDataChanged);
-      window.removeEventListener("categoriesChanged", handleCategoriesChanged);
-      window.removeEventListener("locationsChanged", handleLocationsChanged);
-    };
+    if (initialBusinesses.length === 0) {
+      fetchBusinesses();
+    } else {
+      setIsLoading(false);
+    }
   }, []);
   
+  // Extract all unique categories
   const categories = useMemo(() => {
-    const businessCategories = Array.from(new Set(businesses.map(b => b.category)));
-    const allCategories = [...new Set([...customCategories, ...businessCategories])].filter(Boolean);
-    return allCategories;
-  }, [businesses, customCategories]);
-  
-  const locations = useMemo(() => {
-    const extractedLocations = businesses.map(b => {
-      if (b.location) return b.location;
-      
-      const parts = b.address?.split(',') || [];
-      return parts.length > 1 ? parts[parts.length - 1].trim() : parts[0]?.trim() || 'Unknown';
-    });
-    
-    const businessLocations = Array.from(new Set(extractedLocations));
-    const allLocations = [...new Set([...customLocations, ...businessLocations])].filter(Boolean);
-    return allLocations;
-  }, [businesses, customLocations]);
-
-  const allTags = useMemo(() => {
-    const tags = new Set<string>();
-    businesses.forEach(business => {
-      business.tags.forEach(tag => tags.add(tag));
-    });
-    return Array.from(tags);
+    const allCategories = businesses.map(business => business.category || 'Uncategorized');
+    return ['All', ...Array.from(new Set(allCategories))];
   }, [businesses]);
   
-  const toggleTag = (tag: string) => {
-    setActiveTags(prev => 
-      prev.includes(tag) 
-        ? prev.filter(t => t !== tag) 
-        : [...prev, tag]
-    );
-    setCurrentPage(1);
-  };
-  
-  const filteredBusinesses = useMemo(() => {
-    let results = businesses.filter(business => {
-      const matchesSearch = searchQuery === "" || 
-        business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        business.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        business.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-      const matchesCategory = selectedCategory === "" || business.category === selectedCategory;
-      
-      const matchesRating = selectedRating === "" || 
-        (selectedRating === "4+" && business.rating >= 4) ||
-        (selectedRating === "3+" && business.rating >= 3) ||
-        (selectedRating === "2+" && business.rating >= 2);
-        
-      const matchesFeatured = !featuredOnly || business.featured;
-      
-      const matchesLocation = !selectedLocation || 
-        (business.location && business.location.includes(selectedLocation)) || 
-        business.address.includes(selectedLocation);
-      
-      const matchesTags = activeTags.length === 0 || 
-        activeTags.some(tag => business.tags.includes(tag));
-      
-      return matchesSearch && matchesCategory && matchesRating && 
-             matchesFeatured && matchesLocation && matchesTags;
+  // Extract all unique tags
+  const tags = useMemo(() => {
+    const allTags: string[] = [];
+    
+    businesses.forEach(business => {
+      const businessTags = ensureTagsArray(business.tags);
+      businessTags.forEach(tag => {
+        if (!allTags.includes(tag)) {
+          allTags.push(tag);
+        }
+      });
     });
     
-    return results.sort((a, b) => {
-      if (sortBy === "rating") {
-        return b.rating - a.rating;
-      } else if (sortBy === "reviews") {
-        return b.reviews - a.reviews;
+    return allTags.sort();
+  }, [businesses]);
+  
+  // Apply filters
+  const filteredBusinesses = useMemo(() => {
+    return businesses.filter(business => {
+      // Filter by category
+      if (category && category !== 'All' && business.category !== category) {
+        return false;
       }
-      return b.featured ? 1 : -1;
+      
+      // Filter by rating
+      if (ratingFilter > 0 && business.rating < ratingFilter) {
+        return false;
+      }
+      
+      // Filter by featured
+      if (featuredOnly && !business.featured) {
+        return false;
+      }
+      
+      // Filter by search term
+      if (search) {
+        const searchLower = search.toLowerCase();
+        const nameMatch = business.name.toLowerCase().includes(searchLower);
+        const descriptionMatch = (business.description || '').toLowerCase().includes(searchLower);
+        const categoryMatch = (business.category || '').toLowerCase().includes(searchLower);
+        
+        // Check if search term is in tags
+        const tagsMatch = ensureTagsArray(business.tags).some(tag => 
+          tag.toLowerCase().includes(searchLower)
+        );
+        
+        if (!nameMatch && !descriptionMatch && !categoryMatch && !tagsMatch) {
+          return false;
+        }
+      }
+      
+      return true;
     });
-  }, [
-    businesses,
-    searchQuery, 
-    selectedCategory, 
-    selectedRating, 
-    featuredOnly, 
-    selectedLocation, 
-    activeTags, 
-    sortBy
-  ]);
+  }, [businesses, category, search, featuredOnly, ratingFilter]);
   
-  const totalPages = Math.ceil(filteredBusinesses.length / itemsPerPage);
-  const currentBusinesses = filteredBusinesses.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-  
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, selectedCategory, selectedRating, featuredOnly, selectedLocation, activeTags, sortBy]);
-  
+  // Clear all filters
   const clearAllFilters = () => {
-    setSelectedCategory("");
-    setSelectedRating("");
+    setCategory('');
+    setSearch('');
     setFeaturedOnly(false);
-    setSearchQuery("");
-    setSelectedLocation(null);
-    setActiveTags([]);
-    setSortBy("relevance");
+    setRatingFilter(0);
   };
-
-  const activeFilterCount = useMemo(() => {
-    let count = 0;
-    if (selectedCategory) count++;
-    if (selectedRating) count++;
-    if (featuredOnly) count++;
-    if (selectedLocation) count++;
-    if (activeTags.length > 0) count++;
-    return count;
-  }, [selectedCategory, selectedRating, featuredOnly, selectedLocation, activeTags]);
-
+  
+  // Refresh data
+  const refreshData = async () => {
+    await fetchBusinesses();
+  };
+  
   return {
-    loading,
-    businesses: currentBusinesses as unknown as Business[],
+    businesses,
     filteredBusinesses,
-    searchQuery,
-    setSearchQuery,
-    selectedCategory,
-    setSelectedCategory,
-    selectedRating,
-    setSelectedRating,
-    selectedLocation,
-    setSelectedLocation,
-    currentPage,
-    setCurrentPage,
-    featuredOnly,
-    setFeaturedOnly,
-    sortBy,
-    setSortBy,
-    activeTags,
-    toggleTag,
     categories,
-    locations,
-    allTags,
+    tags,
+    isLoading,
+    error,
+    category,
+    search,
+    featuredOnly,
+    ratingFilter,
+    setCategory,
+    setSearch,
+    setFeaturedOnly,
+    setRatingFilter,
     clearAllFilters,
-    activeFilterCount,
-    totalPages,
-    itemsPerPage
+    refreshData
   };
 };
+
+export default useBusinessPageData;

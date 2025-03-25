@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -7,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Business } from "@/lib/csv-utils";
+import { Business, ensureTagsArray } from "@/types/business";
 import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 
@@ -70,22 +71,25 @@ const BusinessForm = ({
   // Update form values when currentBusiness changes
   useEffect(() => {
     if (currentBusiness) {
+      // Ensure tags are handled properly
+      const businessTags = ensureTagsArray(currentBusiness.tags);
+      
       form.reset({
         name: currentBusiness.name,
-        category: currentBusiness.category,
-        image: currentBusiness.image,
+        category: currentBusiness.category || "",
+        image: currentBusiness.image || "",
         rating: currentBusiness.rating,
         reviews: currentBusiness.reviews,
-        address: currentBusiness.address,
-        phone: currentBusiness.phone,
-        description: currentBusiness.description,
-        featured: currentBusiness.featured,
-        tags: currentBusiness.tags.join(", "),
+        address: currentBusiness.address || "",
+        phone: currentBusiness.phone || "",
+        description: currentBusiness.description || "",
+        featured: currentBusiness.featured || false,
+        tags: businessTags.join(", "),
         website: currentBusiness.website || "",
         email: currentBusiness.email || "",
       });
       
-      setFormTags(currentBusiness.tags);
+      setFormTags(businessTags);
     } else {
       form.reset({
         name: "",

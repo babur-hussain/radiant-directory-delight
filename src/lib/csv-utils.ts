@@ -1,28 +1,10 @@
+
 import Papa from 'papaparse';
 import { supabase } from '@/integrations/supabase/client';
 import { IBusiness } from '@/models/Business';
 import { generateId } from '@/utils/id-generator';
-
-export interface Business {
-  id: number;
-  name: string;
-  category?: string;
-  description?: string;
-  address?: string;
-  phone?: string;
-  email?: string;
-  website?: string;
-  image?: string;
-  hours?: Record<string, string> | string | null;
-  rating: number;
-  reviews: number;
-  featured?: boolean;
-  tags: string[] | string;
-  latitude?: number;
-  longitude?: number;
-  created_at?: string;
-  updated_at?: string;
-}
+import { Business, ensureTagsArray, formatBusiness } from '@/types/business';
+import { Json } from '@/types/supabase';
 
 let businessesCache: Business[] = [];
 const dataChangeListeners: Function[] = [];
@@ -37,7 +19,7 @@ export const initializeData = async (): Promise<void> => {
       throw error;
     }
     
-    businessesCache = data as Business[];
+    businessesCache = data ? data.map(formatBusiness) : [];
     console.log(`Loaded ${businessesCache.length} businesses from Supabase`);
     notifyDataChangeListeners();
   } catch (error) {
@@ -113,6 +95,9 @@ export const processCsvData = async (csvContent: string): Promise<{ success: boo
           rating = Math.min(rating, 5);
         }
         
+        // Process tags to ensure they are an array
+        const tags = ensureTagsArray(row.tags);
+        
         // Create business object with a smaller ID that fits within PostgreSQL integer limits
         const business: Business = {
           id: generateBusinessId(), // Use the safer ID generation method
@@ -127,7 +112,7 @@ export const processCsvData = async (csvContent: string): Promise<{ success: boo
           reviews: parseInt(row.reviews) || Math.floor(Math.random() * 100) + 5,
           latitude: parseFloat(row.latitude) || 0,
           longitude: parseFloat(row.longitude) || 0,
-          tags: row.tags ? row.tags.split(',').map((tag: string) => tag.trim()) : [row.category || ""],
+          tags: tags,
           featured: row.featured === "true" || row.featured === true,
           image: row.image || `/placeholder-${Math.floor(Math.random() * 5) + 1}.jpg`
         };
@@ -191,6 +176,9 @@ export const addBusiness = async (businessData: Partial<Business>): Promise<Busi
     // Ensure ID exists and is within PostgreSQL integer range
     const businessId = businessData.id || generateBusinessId();
     
+    // Ensure tags is always an array
+    const tags = ensureTagsArray(businessData.tags);
+    
     // Create complete business object
     const business: Business = {
       id: businessId,
@@ -206,7 +194,7 @@ export const addBusiness = async (businessData: Partial<Business>): Promise<Busi
       latitude: businessData.latitude || 0,
       longitude: businessData.longitude || 0,
       hours: businessData.hours || {},
-      tags: businessData.tags || [businessData.category || ""],
+      tags: tags,
       featured: businessData.featured || false,
       image: businessData.image || `/placeholder-${Math.floor(Math.random() * 5) + 1}.jpg`
     };
@@ -232,10 +220,19 @@ export const addBusiness = async (businessData: Partial<Business>): Promise<Busi
 // Update an existing business
 export const updateBusiness = async (businessData: Business): Promise<boolean> => {
   try {
+    // Ensure tags is always an array
+    const tags = ensureTagsArray(businessData.tags);
+    
+    // Update business with properly formatted tags
+    const updatedBusiness = {
+      ...businessData,
+      tags
+    };
+    
     // Save to Supabase
     const { error } = await supabase
       .from('businesses')
-      .update(businessData)
+      .update(updatedBusiness)
       .eq('id', businessData.id);
     
     if (error) {
@@ -245,9 +242,9 @@ export const updateBusiness = async (businessData: Business): Promise<boolean> =
     // Update cache
     const index = businessesCache.findIndex(b => b.id === businessData.id);
     if (index !== -1) {
-      businessesCache[index] = businessData;
+      businessesCache[index] = updatedBusiness;
     } else {
-      businessesCache.push(businessData);
+      businessesCache.push(updatedBusiness);
     }
     
     notifyDataChangeListeners();
