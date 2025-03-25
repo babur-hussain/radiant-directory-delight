@@ -45,6 +45,13 @@ export const initializeData = async (): Promise<void> => {
   }
 };
 
+// Generate a business ID within PostgreSQL integer range
+const generateBusinessId = (): number => {
+  // Generate a random number between 1000 and 1000000
+  // This ensures the ID is within the safe range for PostgreSQL integer
+  return Math.floor(Math.random() * 999000) + 1000;
+};
+
 // Process CSV data and upload to Supabase
 export const processCsvData = async (csvContent: string): Promise<{ success: boolean, businesses: Business[], message: string }> => {
   try {
@@ -85,7 +92,6 @@ export const processCsvData = async (csvContent: string): Promise<{ success: boo
     console.log("CSV parsing result:", results);
     
     const businesses: Business[] = [];
-    const insertPromises = [];
     
     for (const row of results.data as any[]) {
       try {
@@ -105,9 +111,9 @@ export const processCsvData = async (csvContent: string): Promise<{ success: boo
           rating = Math.min(rating, 5);
         }
         
-        // Create business object
+        // Create business object with a smaller ID that fits within PostgreSQL integer limits
         const business: Business = {
-          id: Date.now() + Math.floor(Math.random() * 10000), // Simple unique ID generation
+          id: generateBusinessId(), // Use the safer ID generation method
           name: row.name.trim(),
           category: row.category || "",
           description: row.description || `${row.name} is a business in the ${row.category || "various"} category.`,
@@ -126,15 +132,19 @@ export const processCsvData = async (csvContent: string): Promise<{ success: boo
         
         console.log("Saving business to Supabase:", business.name);
         
-        // Add to Supabase
-        const { error } = await supabase.from('businesses').insert([business]);
-        
-        if (error) {
-          console.error("Error inserting business to Supabase:", error);
-          continue;
+        try {
+          // Add to Supabase
+          const { error } = await supabase.from('businesses').insert([business]);
+          
+          if (error) {
+            console.error("Error inserting business to Supabase:", error);
+            continue;
+          }
+          
+          businesses.push(business);
+        } catch (insertError) {
+          console.error("Error during Supabase insert:", insertError);
         }
-        
-        businesses.push(business);
       } catch (rowError) {
         console.error("Error processing CSV row:", rowError);
       }
@@ -169,8 +179,8 @@ export const getAllBusinesses = (): Business[] => {
 // Add a business
 export const addBusiness = async (businessData: Partial<Business>): Promise<Business> => {
   try {
-    // Ensure ID exists
-    const businessId = businessData.id || (Date.now() + Math.floor(Math.random() * 10000));
+    // Ensure ID exists and is within PostgreSQL integer range
+    const businessId = businessData.id || generateBusinessId();
     
     // Create complete business object
     const business: Business = {
