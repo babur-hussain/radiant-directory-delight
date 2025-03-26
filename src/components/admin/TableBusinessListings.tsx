@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import BusinessFormDialog from './BusinessFormDialog';
 import BusinessTableLoading from './table/BusinessTableLoading';
-import { IBusiness } from '@/models/Business';
 import DeleteBusinessDialog from './table/DeleteBusinessDialog';
 import BusinessPermissionError from './table/BusinessPermissionError';
 import { 
@@ -16,9 +15,28 @@ import {
 } from '@/components/ui/table';
 import CSVUploadDialog from './CSVUploadDialog';
 import BusinessTableRow from './table/BusinessTableRow';
-import { Business } from '@/lib/csv-utils';
+import { Business, normalizeBusinessId } from '@/types/business';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+
+interface IBusiness {
+  id: number;
+  name: string;
+  category?: string;
+  description?: string;
+  address?: string;
+  phone?: string;
+  rating?: number;
+  reviews?: number;
+  featured?: boolean;
+  tags?: string[];
+  image?: string;
+  email?: string;
+  website?: string;
+  hours?: string | Record<string, string>;
+  latitude?: number;
+  longitude?: number;
+}
 
 interface TableBusinessListingsProps {
   onRefresh?: () => void;
@@ -28,7 +46,7 @@ interface TableBusinessListingsProps {
 
 const convertToIBusiness = (business: Business): IBusiness => {
   return {
-    id: typeof business.id === 'number' ? business.id : parseInt(business.id.toString(), 10),
+    id: typeof business.id === 'number' ? business.id : parseInt(normalizeBusinessId(business.id), 10),
     name: business.name,
     category: business.category,
     description: business.description,
@@ -44,6 +62,29 @@ const convertToIBusiness = (business: Business): IBusiness => {
     hours: business.hours,
     latitude: business.latitude,
     longitude: business.longitude
+  };
+};
+
+const convertToBusiness = (ibusiness: IBusiness): Business => {
+  return {
+    id: ibusiness.id,
+    name: ibusiness.name,
+    category: ibusiness.category,
+    description: ibusiness.description,
+    address: ibusiness.address,
+    phone: ibusiness.phone,
+    rating: ibusiness.rating,
+    reviews: ibusiness.reviews,
+    featured: ibusiness.featured,
+    tags: ibusiness.tags,
+    image: ibusiness.image,
+    email: ibusiness.email,
+    website: ibusiness.website,
+    hours: ibusiness.hours,
+    latitude: ibusiness.latitude,
+    longitude: ibusiness.longitude,
+    created_at: '', // Default values for compatibility
+    updated_at: '',
   };
 };
 

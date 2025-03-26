@@ -299,7 +299,8 @@ const SupabaseUsersPanel: React.FC = () => {
                     <PaginationItem>
                       <PaginationPrevious
                         onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                        disabled={currentPage === 1 || isLoading}
+                        aria-disabled={currentPage === 1}
+                        className={currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}
                       />
                     </PaginationItem>
                     
@@ -354,7 +355,8 @@ const SupabaseUsersPanel: React.FC = () => {
                     <PaginationItem>
                       <PaginationNext
                         onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                        disabled={currentPage === totalPages || isLoading}
+                        aria-disabled={currentPage === totalPages}
+                        className={currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""}
                       />
                     </PaginationItem>
                   </PaginationContent>

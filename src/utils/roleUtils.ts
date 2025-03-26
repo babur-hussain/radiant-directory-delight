@@ -1,49 +1,79 @@
 
-import { UserRole } from '@/types/auth';
-import { convertCapitalizedRole, normalizeRole } from '@/types/auth';
+import { UserRole, ExtendedUserRole, normalizeRole, convertCapitalizedRole } from '@/types/auth';
 
 /**
- * Checks if a user has admin role
+ * Converts legacy role formats (Admin, Business) to proper UserRole format (admin, business)
  */
-export const isAdmin = (role: string | undefined | null): boolean => {
+export const convertLegacyRole = (role: string | null | undefined): UserRole => {
+  if (!role) return 'user';
+  return normalizeRole(role);
+};
+
+/**
+ * Safely compares roles regardless of case or format
+ */
+export const compareRolesSafely = (role1: string | null | undefined, role2: string | null | undefined): boolean => {
+  return normalizeRole(role1) === normalizeRole(role2);
+};
+
+/**
+ * Checks if a user has admin role (case insensitive)
+ */
+export const isAdmin = (role: string | null | undefined): boolean => {
   if (!role) return false;
   return normalizeRole(role) === 'admin';
 };
 
 /**
- * Checks if a user has business role
+ * Checks if a user has business role (case insensitive)
  */
-export const isBusiness = (role: string | undefined | null): boolean => {
+export const isBusiness = (role: string | null | undefined): boolean => {
   if (!role) return false;
   return normalizeRole(role) === 'business';
 };
 
 /**
- * Checks if a user has influencer role
+ * Checks if a user has influencer role (case insensitive)
  */
-export const isInfluencer = (role: string | undefined | null): boolean => {
+export const isInfluencer = (role: string | null | undefined): boolean => {
   if (!role) return false;
   return normalizeRole(role) === 'influencer';
 };
 
 /**
- * Checks if a user has staff role
+ * Checks if a user has staff role (case insensitive)
  */
-export const isStaff = (role: string | undefined | null): boolean => {
+export const isStaff = (role: string | null | undefined): boolean => {
   if (!role) return false;
   return normalizeRole(role) === 'staff';
 };
 
 /**
- * Convert capitalized role formats (Admin, Business) to lowercase (admin, business)
+ * Checks if a user has user role (case insensitive)
  */
-export const convertRoleFormat = (role: string | undefined): UserRole => {
-  return convertCapitalizedRole(role);
+export const isUser = (role: string | null | undefined): boolean => {
+  if (!role) return true; // Default is user
+  return normalizeRole(role) === 'user';
 };
 
 /**
- * Gets a normalized role from any role string format
+ * Converts role string to normalized format
+ * Use this when setting roles to ensure consistency
  */
-export const getNormalizedRole = (role: string | undefined): UserRole => {
+export const getNormalizedRole = (role: string | null | undefined): UserRole => {
   return normalizeRole(role);
+};
+
+/**
+ * Safely compares a role against a specific user role
+ */
+export const roleEquals = (role: string | null | undefined, expectedRole: UserRole): boolean => {
+  return normalizeRole(role) === expectedRole;
+};
+
+/**
+ * Convert legacy capitalized role to proper format
+ */
+export const convertRoleFormat = (role: string | null | undefined): UserRole => {
+  return convertCapitalizedRole(role || '');
 };

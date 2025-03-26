@@ -1,5 +1,7 @@
 export type UserRole = 'admin' | 'user' | 'business' | 'influencer' | 'staff';
 
+export type ExtendedUserRole = UserRole | 'Admin' | 'User' | 'Business' | 'Influencer' | 'Staff';
+
 export const isSameRoleIgnoreCase = (role1: string | undefined, role2: string | undefined): boolean => {
   if (!role1 || !role2) return false;
   return role1.toLowerCase() === role2.toLowerCase();
@@ -25,11 +27,9 @@ export const normalizeRole = (role: string | undefined): UserRole => {
   }
 };
 
-// Convert capitalized role formats to lowercase
 export const convertCapitalizedRole = (role: string | undefined): UserRole => {
   if (!role) return 'user';
   
-  // Convert capitalized roles to lowercase format
   switch (role) {
     case 'Admin':
       return 'admin';
@@ -42,19 +42,32 @@ export const convertCapitalizedRole = (role: string | undefined): UserRole => {
     case 'User':
       return 'user';
     default:
-      // If it's already in lowercase or unknown, use normalizeRole
       return normalizeRole(role);
   }
 };
 
-// Function to check if a role matches a specific role (case insensitive)
 export const roleMatches = (role: string | undefined, matchRole: UserRole): boolean => {
   return normalizeRole(role) === matchRole;
 };
 
-// Helper function for comparing roles that handles both capitalized and lowercase formats
 export const compareRoles = (role1: string | undefined, role2: string | undefined): boolean => {
   return normalizeRole(role1) === normalizeRole(role2);
+};
+
+export const normalizeLegacyRole = (role: string | undefined | null): UserRole => {
+  if (!role) return 'user';
+  
+  const roleToConvert = role.toString();
+  return convertCapitalizedRole(roleToConvert);
+};
+
+export const isRoleEqual = (role1: string | undefined | null, role2: string | undefined | null): boolean => {
+  return normalizeLegacyRole(role1) === normalizeLegacyRole(role2);
+};
+
+export const isUserRole = (role: string | undefined | null, targetRole: string): boolean => {
+  if (!role || !targetRole) return false;
+  return role.toLowerCase() === targetRole.toLowerCase();
 };
 
 export interface User {

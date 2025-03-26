@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { Business } from '@/lib/csv-utils';
+import { Business, ensureTagsArray } from '@/types/business';
 import CategoryFilter from './businesses/CategoryFilter';
 import AdvancedFilters from './businesses/AdvancedFilters';
 import ActiveFilters from './businesses/ActiveFilters';
@@ -91,14 +90,14 @@ const FeaturedBusinesses = () => {
   
   const categories = Array.from(new Set(businesses.map(b => b.category)));
   
-  // Extract locations from addresses
+  // Extract locations from addresses - Fixed to handle undefined address
   const locations = Array.from(new Set(businesses.map(b => {
-    if (typeof b.address === 'string') {
+    if (typeof b.address === 'string' && b.address) {
       const parts = b.address.split(',');
       return parts.length > 1 ? parts[1].trim() : parts[0]?.trim() || '';
     }
     return '';
-  })));
+  }).filter(Boolean)));
   
   const filteredBusinesses = businesses.filter(business => {
     if (visibleCategory && business.category !== visibleCategory) {
