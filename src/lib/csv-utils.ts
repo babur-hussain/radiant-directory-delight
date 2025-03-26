@@ -1,4 +1,3 @@
-
 import Papa from 'papaparse';
 import { supabase } from '@/integrations/supabase/client';
 import { csvHeaderMapping, getInverseHeaderMapping } from '@/models/Business';
@@ -359,8 +358,14 @@ const saveBatchToSupabase = async (businesses: Business[]): Promise<{
         }
         
         // Convert hours to string if it's an object
-        if (businessToSave.hours && typeof businessToSave.hours === 'object') {
-          businessToSave.hours = JSON.stringify(businessToSave.hours);
+        if (businessToSave.hours) {
+          if (typeof businessToSave.hours === 'object') {
+            businessToSave.hours = JSON.stringify(businessToSave.hours);
+          }
+          // If hours is already a string, leave it as is
+        } else {
+          // Set to empty object if undefined
+          businessToSave.hours = JSON.stringify({});
         }
         
         // Always remove timestamp fields - let the database handle these
