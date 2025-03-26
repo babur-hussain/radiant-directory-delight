@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -72,15 +71,61 @@
     @apply border-border;
   }
 
+  html, body {
+    @apply overflow-x-hidden;
+    width: 100%;
+    position: relative;
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-    scroll-behavior: smooth;
+    max-width: 100vw;
   }
   
   /* Prevent content jumping when modals open */
   body.overflow-hidden {
     padding-right: var(--scrollbar-width, 0px);
+  }
+
+  /* Ensure all content containers have proper width constraints */
+  .container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      max-width: 640px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .container {
+      max-width: 768px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      max-width: 1024px;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .container {
+      max-width: 1280px;
+    }
+  }
+
+  /* Fix common mobile issues */
+  img {
+    max-width: 100%;
+    height: auto;
   }
 }
 
@@ -252,4 +297,65 @@ html {
 .register-form-scroll-viewport {
   height: 100% !important;
   width: 100% !important;
+}
+
+/* Enhanced Mobile Responsiveness */
+@media (max-width: 640px) {
+  /* Better spacing on mobile */
+  section {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  /* Fix input sizing issues */
+  input, 
+  select, 
+  textarea {
+    font-size: 16px !important; /* Prevents iOS zoom on focus */
+  }
+
+  /* Better tap targets for interactive elements */
+  button, 
+  a, 
+  [role="button"] {
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Better card display on small screens */
+  .business-card-image {
+    height: 150px !important;
+  }
+
+  /* Adjust font sizes for better readability */
+  h1 {
+    font-size: 1.75rem !important;
+  }
+
+  h2 {
+    font-size: 1.5rem !important;
+  }
+
+  p {
+    font-size: 0.875rem !important;
+  }
+}
+
+/* Additional responsive fixes */
+@media (max-width: 768px) {
+  /* Fix dialog positioning */
+  [data-radix-popper-content-wrapper] {
+    max-width: calc(100vw - 16px) !important;
+  }
+  
+  .radix-dialog-content {
+    width: calc(100vw - 32px) !important;
+    margin: 0 16px !important;
+  }
+
+  /* Prevent overflow issues on main content */
+  main {
+    overflow-x: hidden;
+    width: 100%;
+  }
 }

@@ -4,8 +4,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Partner {
   name: string;
-  logo: string;
+  logoUrl: string;
   alt: string;
+  width: number;
+  height: number;
 }
 
 interface PartnerLogosProps {
@@ -25,9 +27,13 @@ const PartnerLogos: React.FC<PartnerLogosProps> = ({ partners, className = '' })
         >
           <div className="h-16 md:h-20 flex items-center justify-center mb-2 md:mb-4 w-full">
             <img
-              src={partner.logo}
+              src={partner.logoUrl}
               alt={partner.alt}
               className="h-8 md:h-12 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300"
+              style={{ 
+                aspectRatio: `${partner.width}/${partner.height}`,
+                maxWidth: isMobile ? '80px' : '120px'
+              }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = "https://via.placeholder.com/150x50/e2e8f0/475569?text=" + partner.name;
