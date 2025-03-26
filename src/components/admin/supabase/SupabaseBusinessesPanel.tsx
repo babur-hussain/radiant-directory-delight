@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Business, ensureTagsArray } from '@/types/business';
@@ -57,7 +56,7 @@ import {
   X,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Button as NavigationButton } from '@/components/ui/pagination';
+import { PaginationLink } from '@/components/ui/pagination';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
 interface SupabaseBusinessesPanelProps {
@@ -81,7 +80,6 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  // Load businesses from Supabase
   const loadBusinesses = useCallback(async () => {
     setLoading(true);
     try {
@@ -89,28 +87,23 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
         .from('businesses')
         .select('*', { count: 'exact' });
 
-      // Apply category filter if not 'all'
       if (selectedCategory !== 'all') {
         query = query.eq('category', selectedCategory);
       }
 
-      // Apply search filter if there's a query
       if (searchQuery) {
         query = query.or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
       }
 
-      // Calculate pagination
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
 
-      // Apply pagination
       const { data, error, count } = await query
         .order('name')
         .range(from, to);
 
       if (error) throw error;
 
-      // Process the data
       const processedData: Business[] = data.map(item => ({
         id: item.id,
         name: item.name || '',
@@ -146,7 +139,6 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
     }
   }, [currentPage, pageSize, searchQuery, selectedCategory, toast]);
 
-  // Load categories
   const loadCategories = useCallback(async () => {
     try {
       const { data, error } = await supabase.from('businesses').select('category');
@@ -169,7 +161,6 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
     loadCategories();
   }, [loadCategories]);
 
-  // Handle form input changes
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -177,19 +168,16 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handle checkbox changes
   const handleCheckboxChange = (name: string, checked: boolean) => {
     setFormData(prev => ({ ...prev, [name]: checked }));
   };
 
-  // Create or update business
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
       if (businessToEdit) {
-        // Update existing business
         const { error } = await supabase
           .from('businesses')
           .update({
@@ -211,7 +199,6 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
           description: 'Business updated successfully!',
         });
       } else {
-        // Create new business
         const randomReviews = Math.floor(Math.random() * 500) + 50;
         const { error } = await supabase.from('businesses').insert([{
           name: formData.name,
@@ -236,7 +223,6 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
         });
       }
 
-      // Reset and reload
       setFormData({});
       setShowEditDialog(false);
       setBusinessToEdit(null);
@@ -253,7 +239,6 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
     }
   };
 
-  // Delete business
   const handleDelete = async () => {
     if (!businessToDelete) return;
 
@@ -286,7 +271,6 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
     }
   };
 
-  // Open edit dialog with business data
   const openEditDialog = (business: Business) => {
     setBusinessToEdit(business);
     setFormData({
@@ -304,13 +288,11 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
     setShowEditDialog(true);
   };
 
-  // Open delete confirmation dialog
   const openDeleteDialog = (business: Business) => {
     setBusinessToDelete(business);
     setShowDeleteDialog(true);
   };
 
-  // Render pagination controls
   const renderPagination = () => {
     return (
       <div className="flex items-center justify-between px-2">
@@ -318,7 +300,7 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
           Showing {businesses.length} of {totalPages * pageSize} businesses
         </div>
         <div className="flex items-center space-x-2">
-          <NavigationButton
+          <Button
             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
             variant="outline"
@@ -326,7 +308,7 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
           >
             <ChevronLeft className="h-4 w-4" />
             <span className="sr-only">Previous</span>
-          </NavigationButton>
+          </Button>
           <Select
             value={String(pageSize)}
             onValueChange={(value) => {
@@ -345,7 +327,7 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
               ))}
             </SelectContent>
           </Select>
-          <NavigationButton
+          <Button
             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
             disabled={currentPage === totalPages}
             variant="outline"
@@ -353,7 +335,7 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
           >
             <ChevronRight className="h-4 w-4" />
             <span className="sr-only">Next</span>
-          </NavigationButton>
+          </Button>
         </div>
       </div>
     );
@@ -479,7 +461,6 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
         </>
       )}
 
-      {/* Edit/Create Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -603,7 +584,6 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
