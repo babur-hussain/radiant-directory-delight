@@ -4,20 +4,20 @@ import { Database } from '@/integrations/supabase/types';
 export interface IBusiness {
   id: number;
   name: string;
-  description: string;
-  category: string;
-  address: string;
-  phone: string;
-  email: string;
-  website: string;
-  rating: number;
-  reviews: number;
-  latitude: number;
-  longitude: number;
-  hours: Record<string, any>;
-  tags: string[];
-  featured: boolean;
-  image: string;
+  description?: string;
+  category?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  rating?: number;
+  reviews?: number;
+  latitude?: number;
+  longitude?: number;
+  hours?: Record<string, any>;
+  tags?: string[];
+  featured?: boolean;
+  image?: string;
 }
 
 // Define an adapter function to convert Supabase business data to our application model

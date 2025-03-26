@@ -15,7 +15,6 @@ import {
 } from '@/features/auth/authService';
 import { toast } from '@/hooks/use-toast';
 
-// Create the auth context
 export const AuthContext = createContext<AuthContextType>({
   currentUser: null,
   user: null,
@@ -32,22 +31,19 @@ export const AuthContext = createContext<AuthContextType>({
   updateUserProfile: async () => null,
 });
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const [session, setSession] = useState<SessionData | null>(null);
 
-  // Effect to handle auth state changes and initialization
   useEffect(() => {
-    // Track if component is mounted to prevent state updates after unmount
     let isMounted = true;
 
     const initializeAuth = async () => {
       try {
         console.log("Initializing auth state...");
         
-        // IMPORTANT: First get current session to set initial state
         const { data: sessionData } = await supabase.auth.getSession();
         
         if (sessionData.session && isMounted) {
@@ -67,13 +63,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           });
           
-          // Get additional user data
           try {
             const userData = await getCurrentUser();
             
             console.log("Fetched current user data:", userData?.id);
             
-            // Special case for default admin
             if (sessionData.session.user?.email?.toLowerCase() === 'baburhussain660@gmail.com' && userData) {
               userData.isAdmin = true;
               userData.role = 'Admin';
@@ -90,7 +84,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
         
-        // THEN set up auth state change listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, _session) => {
             console.log("Auth state changed:", event, _session?.user?.id);
@@ -113,11 +106,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
               });
               
-              // Get additional user data
               try {
                 const userData = await getCurrentUser();
                 
-                // Special case for default admin
                 if (_session.user?.email?.toLowerCase() === 'baburhussain660@gmail.com' && userData) {
                   userData.isAdmin = true;
                   userData.role = 'Admin';
@@ -150,7 +141,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setInitialized(true);
         }
         
-        // Cleanup function
         return () => {
           subscription.unsubscribe();
         };
@@ -170,7 +160,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Login function
   const login = async (email: string, password: string, employeeCode?: string): Promise<User | null> => {
     try {
       setLoading(true);
@@ -180,9 +169,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error("Login error:", error);
       
-      // Handle email not confirmed error
       if (error instanceof Error && error.message.includes("Email not confirmed")) {
-        // Rethrow to let form handle UI
         throw error;
       }
       
@@ -197,32 +184,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Signup function
-  const signup = async (
-    email: string,
-    password: string,
-    name: string,
-    role: UserRole,
-    additionalData?: any
-  ): Promise<User | null> => {
+  const signup = async (email: string, password: string, userData?: Partial<User>): Promise<User | null> => {
     try {
       setLoading(true);
       
-      // Check if this is the admin email
       const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
       if (isDefaultAdmin) {
         console.log("Registering default admin account");
-        role = 'Admin';
-        additionalData = {
-          ...additionalData,
+        userData = {
+          ...userData,
           isAdmin: true
         };
       }
       
-      const userData = await signupWithEmail(email, password, name, role, additionalData);
+      const userData = await signupWithEmail(email, password, userData);
       
-      // Don't set the user here as we want to make the user confirm their email
-      // unless we're in development mode and bypassing email confirmation
       if (process.env.NODE_ENV === 'development' || isDefaultAdmin) {
         setUser(userData);
       }
@@ -241,8 +217,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Logout function
-  const logoutUser = async (): Promise<void> => {
+  const logout = async (): Promise<void> => {
     try {
       setLoading(true);
       await authLogout();
@@ -265,12 +240,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Google login function
   const handleGoogleLogin = async (): Promise<void> => {
     try {
       setLoading(true);
       await loginWithGoogle();
-      // Auth state handler will update user state
     } catch (error) {
       console.error("Google login error:", error);
       toast({
@@ -284,12 +257,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Refresh user data function
   const refreshUserData = async (): Promise<User | null> => {
     try {
       const userData = await getCurrentUser();
       
-      // Special case for default admin
       if (userData?.email?.toLowerCase() === 'baburhussain660@gmail.com') {
         userData.isAdmin = true;
         userData.role = 'Admin';
@@ -303,7 +274,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Reset password function
   const resetPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -321,7 +291,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Context value
   const authContextValue: AuthContextType = {
     currentUser: user,
     user,
@@ -331,12 +300,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     loginWithGoogle: handleGoogleLogin,
     signup,
-    logout: logoutUser,
+    logout,
     refreshUserData,
     error: null,
     resetPassword,
     updateUserProfile: async (data) => {
-      // Placeholder for updating user profile
       console.log("Update user profile with data:", data);
       return null;
     },

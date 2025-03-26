@@ -1,313 +1,203 @@
-
-import { supabase } from '@/integrations/supabase/client';
+import { AuthChangeEvent, Session, SupabaseClient, User as SupabaseUser } from '@supabase/supabase-js';
+import { Database } from '@/integrations/supabase/types';
 import { User, UserRole } from '@/types/auth';
+import { supabase } from '@/integrations/supabase/client';
 import { fetchUserByUid } from '@/lib/supabase/userUtils';
-import { updateUserRole } from './roleManagement';
-import { toast } from '@/hooks/use-toast';
+import { normalizeRole } from '@/types/auth';
 
-// Signup with email and password
-export const signupWithEmail = async (
-  email: string,
-  password: string,
-  name: string,
-  role: UserRole = 'User',
-  additionalData: any = {}
-): Promise<User> => {
-  try {
-    // Check for default admin email
-    const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
-    const finalRole = isDefaultAdmin ? 'Admin' : role;
-    
-    // Format user metadata to ensure all fields are captured
-    const userMetadata = {
-      name,
-      role: finalRole,
-      is_admin: isDefaultAdmin,
-      phone: additionalData.phone || null,
-      instagram_handle: additionalData.instagramHandle || null,
-      facebook_handle: additionalData.facebookHandle || null,
-      business_name: additionalData.businessName || null,
-      business_category: additionalData.businessCategory || null,
-      website: additionalData.website || null,
-      niche: additionalData.niche || null,
-      followers_count: additionalData.followersCount || null,
-      bio: additionalData.bio || null,
-      city: additionalData.city || null,
-      country: additionalData.country || null,
-      owner_name: additionalData.ownerName || null,
-      gst_number: additionalData.gstNumber || null,
-      first_name: additionalData.firstName || additionalData.fullName?.split(' ')[0] || null,
-      last_name: additionalData.lastName || 
-        (additionalData.fullName?.includes(' ') ? 
-          additionalData.fullName.split(' ').slice(1).join(' ') : null),
-      username: additionalData.username || null,
-      // Include any other fields that might be in additionalData
-      ...additionalData
-    };
-    
-    console.log("User metadata for signup:", userMetadata);
-    
-    // Register the user with Supabase
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: userMetadata
-      }
-    });
+// Fix role capitalizations throughout the file
+export const determineDefaultRole = (userData?: Record<string, any>): UserRole => {
+  if (!userData) return 'user';
 
-    if (error) {
-      console.error("Signup error:", error);
-      throw error;
-    }
-
-    if (!data.user) {
-      throw new Error("No user returned from signup");
-    }
-
-    // For default admin or when email confirmation is not required,
-    // try to login immediately after signup
-    if (isDefaultAdmin || process.env.NODE_ENV === 'development') {
-      try {
-        await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-      } catch (loginError) {
-        console.warn("Auto login after signup failed:", loginError);
-        // Continue with signup flow even if auto-login fails
-      }
-    }
-
-    // Create a user object from the signup data
-    const newUser: User = {
-      uid: data.user.id,
-      id: data.user.id,
-      email: email,
-      displayName: name,
-      name: name,
-      photoURL: null,
-      role: finalRole,
-      isAdmin: isDefaultAdmin,
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString(),
-      // Include formatted additional data
-      phone: userMetadata.phone,
-      instagramHandle: userMetadata.instagram_handle,
-      facebookHandle: userMetadata.facebook_handle,
-      businessName: userMetadata.business_name,
-      businessCategory: userMetadata.business_category,
-      website: userMetadata.website,
-      niche: userMetadata.niche,
-      followersCount: userMetadata.followers_count,
-      bio: userMetadata.bio,
-      city: userMetadata.city,
-      country: userMetadata.country,
-      ownerName: userMetadata.owner_name,
-      gstNumber: userMetadata.gst_number,
-      // Include any other additional data
-      ...additionalData
-    };
-
-    // Set user role (this also updates the database)
-    await updateUserRole(newUser);
-
-    return newUser;
-  } catch (error) {
-    console.error("Error in signupWithEmail:", error);
-    throw error;
+  // Check if this is a business account
+  if (userData.businessName || userData.business_name) {
+    return 'business';
   }
+
+  // Check if this is an influencer account
+  if (userData.followersCount || userData.followers_count || userData.niche) {
+    return 'influencer';
+  }
+
+  // Default to regular user
+  return 'user';
 };
 
-// Login with email and password
-export const loginWithEmail = async (
-  email: string,
-  password: string,
-  employeeCode?: string
-): Promise<User> => {
-  try {
-    // Check for email confirmation bypass for development or default admin
-    const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
-    
-    // Sign in with Supabase
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+export const mapSupabaseUserToUser = (supabaseUser: SupabaseUser, initialRole?: UserRole): User => {
+  const defaultRole = initialRole || 'user';
 
-    if (error) {
-      if (error.message.includes('Email not confirmed') && isDefaultAdmin) {
-        // Special handling for default admin - try to auto-confirm
-        console.log("Attempting to bypass email confirmation for default admin");
-        toast({
-          title: "Admin login",
-          description: "Attempting special login for admin account",
-        });
-        
-        // You can add special handling here if needed
-        // For now, we'll just show a clearer error
-        throw new Error("Admin account needs email confirmation. Please check Supabase dashboard.");
-      }
-      console.error("Login error:", error);
-      throw error;
-    }
-
-    if (!data.user) {
-      throw new Error("No user returned from login");
-    }
-
-    // Fetch user profile data
-    let userData = await fetchUserByUid(data.user.id);
-    
-    // Handle case where user exists in auth but not in public.users table
-    if (!userData) {
-      // Default user data
-      userData = {
-        uid: data.user.id,
-        id: data.user.id,
-        email: data.user.email || '',
-        displayName: data.user.user_metadata.name || '',
-        name: data.user.user_metadata.name || '',
-        role: (data.user.user_metadata.role as UserRole) || 'User',
-        isAdmin: isDefaultAdmin || (data.user.user_metadata.is_admin === true),
-        photoURL: null,
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-      };
-    }
-
-    // Check for employee code if provided
-    if (employeeCode && userData.employeeCode !== employeeCode) {
-      // Only enforce employee code check for staff or admin roles
-      if (['Staff', 'Admin'].includes(userData.role || '')) {
-        throw new Error("Invalid employee code");
-      }
-    }
-
-    // Special case for default admin email
-    if (isDefaultAdmin && !userData.isAdmin) {
-      userData.isAdmin = true;
-      userData.role = 'Admin';
-      
-      // Update role in database
-      await updateUserRole(userData);
-    }
-
-    // Update last login timestamp
-    await supabase
-      .from('users')
-      .update({ last_login: new Date().toISOString() })
-      .eq('id', data.user.id);
-
-    return userData;
-  } catch (error) {
-    console.error("Error in loginWithEmail:", error);
-    throw error;
-  }
+  return {
+    id: supabaseUser.id,
+    uid: supabaseUser.id,
+    email: supabaseUser.email || '',
+    displayName: supabaseUser.user_metadata?.name || supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || '',
+    name: supabaseUser.user_metadata?.name || supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || '',
+    photoURL: supabaseUser.user_metadata?.avatar_url || supabaseUser.user_metadata?.picture || '',
+    role: defaultRole,
+    isAdmin: false,
+    createdAt: new Date(supabaseUser.created_at).toISOString(),
+    lastLogin: new Date(supabaseUser.last_sign_in_at || supabaseUser.created_at).toISOString(),
+    userMetadata: supabaseUser.user_metadata,
+    appMetadata: supabaseUser.app_metadata,
+    verified: supabaseUser.email_confirmed_at !== null,
+  };
 };
 
-// Login with Google
-export const loginWithGoogle = async (): Promise<void> => {
+export const syncSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User | null> => {
   try {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      }
-    });
-
-    if (error) {
-      console.error("Google login error:", error);
-      throw error;
-    }
-  } catch (error) {
-    console.error("Error in loginWithGoogle:", error);
-    throw error;
-  }
-};
-
-// Logout
-export const logout = async (): Promise<void> => {
-  try {
-    const { error } = await supabase.auth.signOut();
-
-    if (error) {
-      console.error("Logout error:", error);
-      throw error;
-    }
-  } catch (error) {
-    console.error("Error in logout:", error);
-    throw error;
-  }
-};
-
-// Get current session
-export const getCurrentSession = async () => {
-  try {
-    const { data, error } = await supabase.auth.getSession();
-    
-    if (error) {
-      console.error("Get session error:", error);
-      throw error;
-    }
-    
-    return data.session;
-  } catch (error) {
-    console.error("Error in getCurrentSession:", error);
-    return null;
-  }
-};
-
-// Get current user
-export const getCurrentUser = async () => {
-  try {
-    console.log("Getting current user...");
-    const { data, error } = await supabase.auth.getUser();
-    
-    if (error) {
-      console.error("Get user error:", error);
-      throw error;
-    }
-    
-    if (!data.user) {
-      console.log("No authenticated user found");
+    if (!supabaseUser) {
+      console.warn("No Supabase user to sync");
       return null;
     }
-    
-    console.log("Found authenticated user:", data.user.id);
-    
-    // Fetch user profile data
-    const userData = await fetchUserByUid(data.user.id);
-    
-    if (!userData) {
-      console.log("User exists in auth but not in profiles, creating basic profile");
-      // Basic user data if no profile exists
-      const basicUserData: User = {
-        uid: data.user.id,
-        id: data.user.id,
-        email: data.user.email || '',
-        displayName: data.user.user_metadata?.name || '',
-        name: data.user.user_metadata?.name || '',
-        role: (data.user.user_metadata?.role as UserRole) || 'User',
-        isAdmin: data.user.email?.toLowerCase() === 'baburhussain660@gmail.com' || false,
-        photoURL: null,
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
+
+    let user = await fetchUserByUid(supabaseUser.id);
+
+    if (!user) {
+      console.warn(`No user found in database with uid ${supabaseUser.id}, creating...`);
+      const initialRole = determineDefaultRole(supabaseUser.user_metadata);
+      user = mapSupabaseUserToUser(supabaseUser, initialRole);
+    } else {
+      // Update existing user with latest data from Supabase
+      user = {
+        ...user,
+        email: supabaseUser.email || user.email,
+        displayName: supabaseUser.user_metadata?.name || supabaseUser.user_metadata?.full_name || user.displayName,
+        name: supabaseUser.user_metadata?.name || supabaseUser.user_metadata?.full_name || user.name,
+        photoURL: supabaseUser.user_metadata?.avatar_url || supabaseUser.user_metadata?.picture || user.photoURL,
+        lastLogin: new Date(supabaseUser.last_sign_in_at || new Date().toISOString()).toISOString(),
+        userMetadata: supabaseUser.user_metadata,
+        appMetadata: supabaseUser.app_metadata,
+        verified: supabaseUser.email_confirmed_at !== null,
       };
-      
-      return basicUserData;
     }
-    
-    // Special case for default admin
-    if (data.user.email?.toLowerCase() === 'baburhussain660@gmail.com' && userData) {
-      userData.isAdmin = true;
-      userData.role = 'Admin';
-    }
-    
-    console.log("Returning user data:", userData.id, userData.role);
-    return userData;
+
+    return user;
   } catch (error) {
-    console.error("Error in getCurrentUser:", error);
+    console.error("Error syncing Supabase user:", error);
     return null;
+  }
+};
+
+export const handleAuthStateChange = async (
+  event: AuthChangeEvent,
+  session: Session | null,
+  supabaseClient: SupabaseClient
+): Promise<User | null> => {
+  try {
+    if (event === 'SIGNED_IN') {
+      if (session?.user) {
+        const user = await syncSupabaseUser(session.user);
+        return user;
+      } else {
+        console.warn("SIGNED_IN event but no user in session");
+        return null;
+      }
+    } else if (event === 'INITIAL_SESSION') {
+      if (session?.user) {
+        const user = await syncSupabaseUser(session.user);
+        return user;
+      } else {
+        console.warn("INITIAL_SESSION event but no user in session");
+        return null;
+      }
+    } else if (event === 'USER_UPDATED') {
+      if (session?.user) {
+        const user = await syncSupabaseUser(session.user);
+        return user;
+      } else {
+        console.warn("USER_UPDATED event but no user in session");
+        return null;
+      }
+    } else if (event === 'SIGNED_OUT') {
+      console.log("SIGNED_OUT event");
+      return null;
+    } else if (event === 'PASSWORD_RECOVERY') {
+      console.log("PASSWORD_RECOVERY event");
+      return null;
+    } else if (event === 'MFA_CHALLENGE') {
+      console.log("MFA_CHALLENGE event");
+      return null;
+    } else {
+      console.warn("Unhandled AuthChangeEvent:", event);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error handling auth state change:", error);
+    return null;
+  }
+};
+
+export const updateUserRole = async (userId: string, role: UserRole): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ role: role })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('Error updating user role:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    return false;
+  }
+};
+
+export const updateUserAdminStatus = async (userId: string, isAdmin: boolean): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ is_admin: isAdmin })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('Error updating user admin status:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error updating user admin status:', error);
+    return false;
+  }
+};
+
+export const fetchAllUsers = async (): Promise<User[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*');
+
+    if (error) {
+      console.error('Error fetching all users:', error);
+      return [];
+    }
+
+    if (!data) {
+      console.warn('No users found in the database.');
+      return [];
+    }
+
+    return data.map(user => ({
+      id: user.id,
+      uid: user.id,
+      email: user.email || '',
+      displayName: user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || '',
+      name: user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || '',
+      photoURL: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
+      role: normalizeRole(user.role),
+      isAdmin: user.is_admin || false,
+      createdAt: new Date(user.created_at).toISOString(),
+      lastLogin: new Date(user.last_sign_in_at || user.created_at).toISOString(),
+      userMetadata: user.user_metadata,
+      appMetadata: user.app_metadata,
+      verified: user.email_confirmed_at !== null,
+    }));
+  } catch (error) {
+    console.error('Error fetching all users:', error);
+    return [];
   }
 };

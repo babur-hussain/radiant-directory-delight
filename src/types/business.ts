@@ -1,4 +1,3 @@
-
 export interface Business {
   id: number | string;
   name: string;
@@ -120,49 +119,11 @@ export const convertToBusinessType = (business: any): Business => {
 };
 
 // Create a CSV-utils compatible Business type that makes all fields optional except id and name
-export type CsvUtilsBusiness = {
-  id: number;
-  name: string;
-  category: string;
-  description: string;
-  address: string;
-  phone?: string;
-  email?: string;
-  website?: string;
-  image?: string;
-  hours?: string | Record<string, string> | any;
-  rating?: number;
-  reviews?: number;
-  featured?: boolean;
-  tags?: string[];
-  latitude?: number;
-  longitude?: number;
-  created_at?: string;
-  updated_at?: string;
-};
+export type CsvUtilsBusiness = Business;
 
 // Convert from our Business type to csv-utils Business type
 export const convertToCsvBusiness = (business: Business): CsvUtilsBusiness => {
-  return {
-    id: typeof business.id === 'string' ? parseInt(business.id) : (business.id as number),
-    name: business.name || '',
-    category: business.category || '',
-    description: business.description || '',
-    address: business.address || '',
-    phone: business.phone || '',
-    email: business.email || '',
-    website: business.website || '',
-    image: business.image || '',
-    hours: business.hours,
-    rating: business.rating || 0,
-    reviews: business.reviews || 0,
-    featured: business.featured || false,
-    tags: ensureTagsArray(business.tags),
-    latitude: business.latitude || 0,
-    longitude: business.longitude || 0,
-    created_at: business.created_at || '',
-    updated_at: business.updated_at || ''
-  };
+  return business;
 };
 
 // Helper for type checking in arguments

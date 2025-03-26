@@ -1,4 +1,3 @@
-
 import { User, UserRole } from "@/types/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { nanoid } from 'nanoid';
@@ -141,5 +140,28 @@ export const createTestUser = async (userData: {
   } catch (error) {
     console.error('Error creating test user:', error);
     throw new Error('Failed to create test user');
+  }
+};
+
+// Helper function to normalize role string to lowercase
+const normalizeRole = (role?: string): string => {
+  return role ? role.toLowerCase() : '';
+};
+
+// Helper function to get role color based on normalized role
+export const getUserRoleColor = (role?: string): string => {
+  const normalizedRole = normalizeRole(role);
+  
+  switch (normalizedRole) {
+    case 'admin':
+      return '#4f46e5'; // Indigo
+    case 'business':
+      return '#0891b2'; // Cyan
+    case 'influencer':
+      return '#db2777'; // Pink
+    case 'user':
+      return '#6b7280'; // Gray
+    default:
+      return '#6b7280'; // Default gray
   }
 };

@@ -3,6 +3,7 @@ import { User, UserRole } from "@/types/auth";
 import { getRoleKey, getAdminKey, syncUserData } from "./authStorage";
 import { connectToMongoDB } from '@/config/mongodb';
 import { createOrUpdateUser } from '@/api/services/userAPI';
+import { normalizeRole } from '@/types/auth';
 
 /**
  * Updates a user's role in the system
@@ -20,7 +21,7 @@ export const updateUserRole = async (user: User) => {
     // Special handling for default admin
     if (user.email === 'baburhussain660@gmail.com') {
       user.isAdmin = true;
-      roleToAssign = 'Admin';
+      roleToAssign = 'admin';
     }
     
     // Save to localStorage for fallback
@@ -35,7 +36,7 @@ export const updateUserRole = async (user: User) => {
         await createOrUpdateUser({
           uid: user.uid,
           role: roleToAssign,
-          isAdmin: roleToAssign === 'Admin' || user.isAdmin,
+          isAdmin: roleToAssign === 'admin' || user.isAdmin,
           // Include other fields to ensure they don't get lost
           name: user.name || user.displayName,
           email: user.email
@@ -44,12 +45,12 @@ export const updateUserRole = async (user: User) => {
         console.log(`User role updated to ${roleToAssign} for uid ${user.uid}`);
         
         // Sync user data to ensure consistency
-        await syncUserData(user.uid, { role: roleToAssign, isAdmin: roleToAssign === 'Admin' || user.isAdmin });
+        await syncUserData(user.uid, { role: roleToAssign, isAdmin: roleToAssign === 'admin' || user.isAdmin });
         
         return {
           ...user,
           role: roleToAssign,
-          isAdmin: roleToAssign === 'Admin' || user.isAdmin
+          isAdmin: roleToAssign === 'admin' || user.isAdmin
         };
       } catch (mongoError) {
         console.error("Error updating user role in MongoDB:", mongoError);
@@ -65,14 +66,14 @@ export const updateUserRole = async (user: User) => {
     
     if (userIndex >= 0) {
       allUsers[userIndex].role = roleToAssign;
-      allUsers[userIndex].isAdmin = roleToAssign === 'Admin' || user.isAdmin;
+      allUsers[userIndex].isAdmin = roleToAssign === 'admin' || user.isAdmin;
       localStorage.setItem('all_users_data', JSON.stringify(allUsers));
     }
     
     return {
       ...user,
       role: roleToAssign,
-      isAdmin: roleToAssign === 'Admin' || user.isAdmin
+      isAdmin: roleToAssign === 'admin' || user.isAdmin
     };
   } catch (error) {
     console.error("Error updating user role:", error);
@@ -83,7 +84,7 @@ export const updateUserRole = async (user: User) => {
     return {
       ...user,
       role: roleToAssign,
-      isAdmin: roleToAssign === 'Admin' || user.isAdmin
+      isAdmin: roleToAssign === 'admin' || user.isAdmin
     };
   }
 };

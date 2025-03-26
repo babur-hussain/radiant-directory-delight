@@ -77,7 +77,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           </TabsList>
           <TabsContent value="login" className="mt-4">
             <LoginForm 
-              onLogin={async (email, password, employeeCode) => {
+              handleSubmit={async (email, password, employeeCode) => {
                 try {
                   await loginWithGoogle();
                   handleLoginSuccess();
@@ -85,12 +85,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   console.error("Login error:", error);
                 }
               }}
-              onClose={handleLoginSuccess}
+              isSubmitting={false}
+              error=""
+              onResetPassword={() => setActiveTab('reset-password')}
             />
           </TabsContent>
           <TabsContent value="register" className="mt-4">
             <RegisterForm 
-              onSignup={async (email, password, name, role, additionalData) => {
+              handleSubmit={async (email, password, name, role, additionalData) => {
                 try {
                   // Add signup logic here
                   handleRegisterSuccess();
@@ -98,13 +100,18 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   console.error("Registration error:", error);
                 }
               }}
-              onClose={handleRegisterSuccess}
+              isSubmitting={false}
+              error=""
             />
           </TabsContent>
           <TabsContent value="reset-password" className="mt-4">
             <ResetPasswordForm 
-              onSuccess={handleResetSuccess}
-              onBackToLoginClick={() => setActiveTab('login')} 
+              handleSubmit={handleResetSuccess}
+              isSubmitting={false}
+              error=""
+              emailSent={false}
+              email=""
+              onBackToLogin={() => setActiveTab('login')}
             />
           </TabsContent>
         </Tabs>
