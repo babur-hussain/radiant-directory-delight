@@ -7,7 +7,7 @@ import Papa from 'papaparse';
 export interface Business {
   id: number | string; // Allow both number and string IDs
   name: string;
-  category?: string;
+  category: string; // Changed from optional to required to match the other Business type
   description?: string;
   address?: string;
   phone?: string;
