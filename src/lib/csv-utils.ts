@@ -1,4 +1,3 @@
-
 import { Json } from "@/integrations/supabase/types";
 import { supabase } from '@/integrations/supabase/client';
 import Papa from 'papaparse';
@@ -91,6 +90,12 @@ export const parseBusinessesCSV = async (file: File): Promise<Business[]> => {
   });
 };
 
+// Cache for businesses to avoid repeated fetches
+let businessesCache: Business[] | null = null;
+let featuredBusinessesCache: Business[] | null = null;
+let lastFetchTimestamp = 0;
+const CACHE_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes
+
 // Helper functions for formatting business data
 export const parseHours = (hours: string | Record<string, string> | Json | null): Record<string, string> => {
   if (!hours) return {};
@@ -165,9 +170,18 @@ export const formatBusiness = (business: any): Business => {
   };
 };
 
-// Function to get all businesses
+// Function to get all businesses with caching
 export const getAllBusinesses = async (): Promise<Business[]> => {
+  const now = Date.now();
+  
+  // Return cached data if it's still valid
+  if (businessesCache && (now - lastFetchTimestamp < CACHE_VALIDITY_MS)) {
+    console.log('Using cached businesses data');
+    return businessesCache;
+  }
+  
   try {
+    console.log('Fetching businesses from Supabase');
     const { data, error } = await supabase
       .from('businesses')
       .select('*')
@@ -175,19 +189,32 @@ export const getAllBusinesses = async (): Promise<Business[]> => {
     
     if (error) {
       console.error('Error fetching businesses:', error);
-      return [];
+      return businessesCache || []; // Return cached data if available, otherwise empty array
     }
     
-    return (data || []).map(formatBusiness);
+    // Update cache
+    businessesCache = (data || []).map(formatBusiness);
+    lastFetchTimestamp = now;
+    
+    return businessesCache;
   } catch (error) {
     console.error('Error in getAllBusinesses:', error);
-    return [];
+    return businessesCache || []; // Return cached data if available, otherwise empty array
   }
 };
 
-// Function to get featured businesses
+// Function to get featured businesses with caching
 export const getFeaturedBusinesses = async (limit: number = 6): Promise<Business[]> => {
+  const now = Date.now();
+  
+  // Return cached data if it's still valid
+  if (featuredBusinessesCache && (now - lastFetchTimestamp < CACHE_VALIDITY_MS)) {
+    console.log('Using cached featured businesses data');
+    return featuredBusinessesCache;
+  }
+  
   try {
+    console.log('Fetching featured businesses from Supabase');
     const { data, error } = await supabase
       .from('businesses')
       .select('*')
@@ -197,13 +224,17 @@ export const getFeaturedBusinesses = async (limit: number = 6): Promise<Business
     
     if (error) {
       console.error('Error fetching featured businesses:', error);
-      return [];
+      return featuredBusinessesCache || []; // Return cached data if available, otherwise empty array
     }
     
-    return (data || []).map(formatBusiness);
+    // Update cache
+    featuredBusinessesCache = (data || []).map(formatBusiness);
+    lastFetchTimestamp = now;
+    
+    return featuredBusinessesCache;
   } catch (error) {
     console.error('Error in getFeaturedBusinesses:', error);
-    return [];
+    return featuredBusinessesCache || []; // Return cached data if available, otherwise empty array
   }
 };
 
@@ -250,6 +281,17 @@ const notifyDataChange = () => {
 // Function to initialize data
 export const initializeData = async (): Promise<void> => {
   console.log("Initializing business data...");
+  
+  // Pre-fetch data for caching
+  if (!businessesCache) {
+    try {
+      await getAllBusinesses();
+      console.log("Businesses data initialized and cached");
+    } catch (err) {
+      console.error("Error initializing business data:", err);
+    }
+  }
+  
   notifyDataChange();
   return Promise.resolve();
 };
@@ -263,6 +305,10 @@ export const deleteBusiness = async (id: number): Promise<boolean> => {
       .eq('id', id);
     
     if (error) throw error;
+    
+    // Invalidate cache to force refresh
+    businessesCache = null;
+    featuredBusinessesCache = null;
     
     notifyDataChange();
     return true;

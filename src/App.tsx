@@ -5,14 +5,16 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/hooks/useAuth';
 import AppRoutes from '@/routes';
 import { useEffect } from 'react';
+import { initializeData } from '@/lib/csv-utils';
 
-// Initialize QueryClient for React Query
+// Initialize QueryClient for React Query with improved caching
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
       refetchOnWindowFocus: false,
       retry: 1,
+      cacheTime: 1000 * 60 * 10, // 10 minutes
     },
   },
 });
@@ -23,9 +25,18 @@ function App() {
   
   useEffect(() => {
     console.log("App initializing with path:", currentPath);
-    console.log("Full URL:", window.location.href);
-    console.log("Origin:", window.location.origin);
-    console.log("Host:", window.location.host);
+    
+    // Initialize data immediately
+    const initData = async () => {
+      try {
+        await initializeData();
+        console.log("Data initialization complete");
+      } catch (err) {
+        console.error("Error during data initialization:", err);
+      }
+    };
+    
+    initData();
     
     // Force a one-time check of the routing system
     const routeCheck = setTimeout(() => {
