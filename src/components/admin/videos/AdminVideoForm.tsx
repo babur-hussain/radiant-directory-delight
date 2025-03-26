@@ -1,239 +1,168 @@
 
-import React, { useRef } from 'react';
-import { z } from 'zod';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from '@/components/ui/form';
+import * as z from 'zod';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Instagram, Youtube, Upload, Check, Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Video, VideoType } from '@/types/video';
+import { supabase } from '@/integrations/supabase/client';
 
-const videoFormSchema = z.object({
+const formSchema = z.object({
   title: z.string().min(3, { message: 'Title must be at least 3 characters' }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters' }),
-  videoType: z.enum(['instagram', 'youtube', 'upload'], { 
-    required_error: 'Please select a video type' 
-  }),
-  videoUrl: z.string().min(1, { message: 'Please enter a valid URL or upload a file' }),
-  thumbnailUrl: z.string().optional(),
-  status: z.enum(['approved', 'pending'], { 
-    required_error: 'Please select a status' 
-  }),
+  video_type: z.enum(['instagram', 'youtube', 'upload']),
+  video_url: z.string().url({ message: 'Please enter a valid URL' }),
+  thumbnail_url: z.string().url({ message: 'Please enter a valid thumbnail URL' }).optional().or(z.literal('')),
+  status: z.enum(['pending', 'approved', 'rejected']).default('pending'),
 });
 
-type VideoFormValues = z.infer<typeof videoFormSchema>;
+type FormValues = z.infer<typeof formSchema>;
 
 interface AdminVideoFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editVideo?: any; // The video to edit
+  video?: Video;
+  onSuccess?: () => void;
 }
 
-const AdminVideoForm: React.FC<AdminVideoFormProps> = ({ 
-  open, 
+const AdminVideoForm: React.FC<AdminVideoFormProps> = ({
+  open,
   onOpenChange,
-  editVideo
+  video,
+  onSuccess
 }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const [isUploading, setIsUploading] = React.useState(false);
-  const [uploadProgress, setUploadProgress] = React.useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const thumbnailInputRef = useRef<HTMLInputElement>(null);
-  
-  const form = useForm<VideoFormValues>({
-    resolver: zodResolver(videoFormSchema),
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      title: editVideo?.title || '',
-      description: editVideo?.description || '',
-      videoType: editVideo?.video_type || 'youtube',
-      videoUrl: editVideo?.video_url || '',
-      thumbnailUrl: editVideo?.thumbnail_url || '',
-      status: editVideo?.status || 'approved',
-    },
+      title: '',
+      description: '',
+      video_type: 'youtube' as VideoType,
+      video_url: '',
+      thumbnail_url: '',
+      status: 'pending',
+    }
   });
-  
-  const videoType = form.watch('videoType');
-  
-  const saveVideoMutation = useMutation({
-    mutationFn: async (values: VideoFormValues) => {
-      if (editVideo) {
+
+  useEffect(() => {
+    if (video) {
+      form.reset({
+        title: video.title,
+        description: video.description,
+        video_type: video.video_type,
+        video_url: video.video_url,
+        thumbnail_url: video.thumbnail_url || '',
+        status: video.status,
+      });
+    } else {
+      form.reset({
+        title: '',
+        description: '',
+        video_type: 'youtube',
+        video_url: '',
+        thumbnail_url: '',
+        status: 'pending',
+      });
+    }
+  }, [video, form]);
+
+  const onSubmit = async (values: FormValues) => {
+    setIsSubmitting(true);
+    try {
+      if (video) {
         // Update existing video
         const { error } = await supabase
           .from('videos')
           .update({
             title: values.title,
             description: values.description,
-            video_type: values.videoType,
-            video_url: values.videoUrl,
-            thumbnail_url: values.thumbnailUrl || null,
+            video_type: values.video_type,
+            video_url: values.video_url,
+            thumbnail_url: values.thumbnail_url || null,
             status: values.status,
+            updated_at: new Date().toISOString(),
           })
-          .eq('id', editVideo.id);
-        
+          .eq('id', video.id);
+
         if (error) throw error;
-        return { ...values, id: editVideo.id };
+        toast({
+          title: 'Video updated',
+          description: 'The video has been successfully updated.',
+        });
       } else {
         // Create new video
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('videos')
-          .insert({
-            title: values.title,
-            description: values.description,
-            video_type: values.videoType,
-            video_url: values.videoUrl,
-            thumbnail_url: values.thumbnailUrl || null,
-            status: values.status,
-            user_id: user?.id || null,
-          })
-          .select();
-        
+          .insert([
+            {
+              title: values.title,
+              description: values.description,
+              video_type: values.video_type,
+              video_url: values.video_url,
+              thumbnail_url: values.thumbnail_url || null,
+              status: values.status,
+            }
+          ]);
+
         if (error) throw error;
-        return data[0];
+        toast({
+          title: 'Video added',
+          description: 'The video has been successfully added.',
+        });
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-videos'] });
-      queryClient.invalidateQueries({ queryKey: ['videos'] });
-      
-      toast({
-        title: editVideo ? "Video updated" : "Video created",
-        description: editVideo 
-          ? "The video has been successfully updated." 
-          : "The video has been successfully created.",
-      });
-      
+
+      // Reset form and close dialog
       form.reset();
       onOpenChange(false);
-    },
-    onError: (error) => {
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (error) {
       console.error('Error saving video:', error);
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: `Failed to ${editVideo ? 'update' : 'create'} the video. Please try again.`,
+        title: 'Error',
+        description: 'There was an error saving the video. Please try again.',
+        variant: 'destructive',
       });
-    },
-  });
-  
-  const handleFileUpload = async (file: File, isVideo: boolean) => {
-    if (!file) return;
-    
-    setIsUploading(true);
-    setUploadProgress(0);
-    
-    try {
-      // Generate a unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = isVideo ? `videos/${fileName}` : `thumbnails/${fileName}`;
-      
-      // Simulate upload progress
-      const interval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 95) {
-            clearInterval(interval);
-            return 95;
-          }
-          return prev + 5;
-        });
-      }, 100);
-      
-      // Upload file to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from('videos')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-      
-      clearInterval(interval);
-      
-      if (error) throw error;
-      
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('videos')
-        .getPublicUrl(filePath);
-      
-      if (isVideo) {
-        form.setValue('videoUrl', publicUrl);
-      } else {
-        form.setValue('thumbnailUrl', publicUrl);
-      }
-      
-      setUploadProgress(100);
-      
-      setTimeout(() => {
-        setIsUploading(false);
-        setUploadProgress(0);
-      }, 500);
-      
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      toast({
-        variant: "destructive",
-        title: "Upload failed",
-        description: `There was a problem uploading your ${isVideo ? 'video' : 'thumbnail'}. Please try again.`
-      });
-      setIsUploading(false);
-      setUploadProgress(0);
+    } finally {
+      setIsSubmitting(false);
     }
   };
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">
-            {editVideo ? "Edit Video" : "Add New Video"}
-          </DialogTitle>
+          <DialogTitle>{video ? 'Edit Video' : 'Add New Video'}</DialogTitle>
+          <DialogDescription>
+            {video ? 'Update the video details below.' : 'Enter the details for the new video.'}
+          </DialogDescription>
         </DialogHeader>
-        
+
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(values => saveVideoMutation.mutate(values))} className="space-y-4 pt-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Video Title</FormLabel>
+                  <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter a title for the video" {...field} />
+                    <Input placeholder="Enter video title" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="description"
@@ -241,207 +170,103 @@ const AdminVideoForm: React.FC<AdminVideoFormProps> = ({
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Describe the video content" 
-                      className="min-h-[100px]"
-                      {...field} 
-                    />
+                    <Textarea placeholder="Enter video description" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
-            <FormField
-              control={form.control}
-              name="videoType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Video Source</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      className="flex items-center space-x-4"
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="instagram" id="instagram-admin" />
-                        <Label htmlFor="instagram-admin" className="flex items-center gap-1">
-                          <Instagram className="h-4 w-4" /> Instagram
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="youtube" id="youtube-admin" />
-                        <Label htmlFor="youtube-admin" className="flex items-center gap-1">
-                          <Youtube className="h-4 w-4" /> YouTube
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="upload" id="upload-admin" />
-                        <Label htmlFor="upload-admin" className="flex items-center gap-1">
-                          <Upload className="h-4 w-4" /> Upload
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="videoUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    {videoType === 'instagram' ? 'Instagram Post URL' : 
-                    videoType === 'youtube' ? 'YouTube Video URL' : 'Upload Video'}
-                  </FormLabel>
-                  <FormControl>
-                    {videoType === 'upload' ? (
-                      <div className="space-y-2">
-                        <Input
-                          id="file-upload-admin"
-                          type="file"
-                          accept="video/*"
-                          ref={fileInputRef}
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              handleFileUpload(e.target.files[0], true);
-                            }
-                          }}
-                        />
-                        <div className="flex items-center gap-2">
-                          <Input
-                            {...field}
-                            readOnly
-                            placeholder="No file chosen"
-                            className="flex-1"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isUploading}
-                          >
-                            Browse
-                          </Button>
-                        </div>
-                        {isUploading && (
-                          <div className="w-full bg-gray-200 rounded-full h-2.5">
-                            <div
-                              className="bg-primary h-2.5 rounded-full transition-all duration-300"
-                              style={{ width: `${uploadProgress}%` }}
-                            ></div>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Uploading: {uploadProgress}%
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <Input {...field} placeholder={`Enter the ${videoType} URL`} />
-                    )}
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            {videoType === 'upload' && (
+
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="thumbnailUrl"
+                name="video_type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Thumbnail Image (Optional)</FormLabel>
-                    <FormControl>
-                      <div className="space-y-2">
-                        <Input
-                          id="thumbnail-upload"
-                          type="file"
-                          accept="image/*"
-                          ref={thumbnailInputRef}
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              handleFileUpload(e.target.files[0], false);
-                            }
-                          }}
-                        />
-                        <div className="flex items-center gap-2">
-                          <Input
-                            {...field}
-                            readOnly
-                            placeholder="No thumbnail chosen"
-                            className="flex-1"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => thumbnailInputRef.current?.click()}
-                            disabled={isUploading}
-                          >
-                            Browse
-                          </Button>
-                        </div>
-                      </div>
-                    </FormControl>
+                    <FormLabel>Video Type</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="youtube">YouTube</SelectItem>
+                        <SelectItem value="instagram">Instagram</SelectItem>
+                        <SelectItem value="upload">Upload</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            )}
-            
+
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
-              name="status"
+              name="video_url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="approved">Approved (Published)</SelectItem>
-                      <SelectItem value="pending">Pending (Draft)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Video URL</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter video URL" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
-            <div className="pt-2 flex justify-end space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
+
+            <FormField
+              control={form.control}
+              name="thumbnail_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Thumbnail URL (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter thumbnail URL" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
-                disabled={isUploading || saveVideoMutation.isPending}
-              >
-                {saveVideoMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {editVideo ? "Updating..." : "Saving..."}
-                  </>
-                ) : (
-                  <>
-                    <Check className="mr-2 h-4 w-4" />
-                    {editVideo ? "Update" : "Save"}
-                  </>
-                )}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : video ? 'Update Video' : 'Add Video'}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>

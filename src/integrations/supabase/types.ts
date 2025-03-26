@@ -380,6 +380,90 @@ export type Database = {
         }
         Relationships: []
       }
+      video_submissions: {
+        Row: {
+          business_name: string | null
+          contact_number: string | null
+          created_at: string
+          description: string
+          email: string
+          id: string
+          name: string
+          status: string
+          title: string
+          user_id: string | null
+          video_type: string
+          video_url: string
+        }
+        Insert: {
+          business_name?: string | null
+          contact_number?: string | null
+          created_at?: string
+          description: string
+          email: string
+          id?: string
+          name: string
+          status?: string
+          title: string
+          user_id?: string | null
+          video_type: string
+          video_url: string
+        }
+        Update: {
+          business_name?: string | null
+          contact_number?: string | null
+          created_at?: string
+          description?: string
+          email?: string
+          id?: string
+          name?: string
+          status?: string
+          title?: string
+          user_id?: string | null
+          video_type?: string
+          video_url?: string
+        }
+        Relationships: []
+      }
+      videos: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          status: string
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          user_id: string | null
+          video_type: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          status?: string
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          user_id?: string | null
+          video_type: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          status?: string
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+          video_type?: string
+          video_url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

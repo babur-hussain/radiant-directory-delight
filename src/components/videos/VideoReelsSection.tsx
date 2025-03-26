@@ -5,9 +5,10 @@ import VideoSubmissionForm from './VideoSubmissionForm';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { Video } from '@/types/video';
 
 // Fetch videos from Supabase
-const fetchVideos = async (): Promise<VideoSource[]> => {
+const fetchVideos = async (): Promise<Video[]> => {
   const { data, error } = await supabase
     .from('videos')
     .select('*')
@@ -19,14 +20,7 @@ const fetchVideos = async (): Promise<VideoSource[]> => {
     throw new Error('Failed to fetch videos');
   }
   
-  // Transform to VideoSource format
-  return (data || []).map(video => ({
-    id: video.id,
-    type: video.video_type as 'instagram' | 'youtube' | 'upload',
-    url: video.video_url,
-    thumbnail: video.thumbnail_url,
-    title: video.title,
-  }));
+  return data || [];
 };
 
 // Fallback demo videos
@@ -74,8 +68,17 @@ const VideoReelsSection: React.FC = () => {
     retry: 1,
   });
   
+  // Convert to VideoSource format
+  const videoSources: VideoSource[] = videos ? videos.map(video => ({
+    id: video.id,
+    type: video.video_type,
+    url: video.video_url,
+    thumbnail: video.thumbnail_url,
+    title: video.title,
+  })) : demoVideos;
+  
   // Use demo videos if loading or error
-  const displayVideos = videos || demoVideos;
+  const displayVideos = (videos && videos.length > 0) ? videoSources : demoVideos;
 
   return (
     <section className="py-16 bg-gradient-to-b from-background to-muted/30">

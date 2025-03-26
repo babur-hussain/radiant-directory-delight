@@ -1,92 +1,21 @@
 
-export type UserRole = "User" | "Business" | "Influencer" | "Staff" | "Admin" | null;
-
-export interface User {
-  id: string;
-  uid: string;
-  email: string;
-  displayName?: string;
-  name?: string | null;
-  photoURL?: string | null;
-  isAdmin?: boolean;
-  role?: UserRole;
-  createdAt?: string;
-  lastLogin?: string;
-  employeeCode?: string | null;
-  
-  // Shared fields
-  phone?: string | null;
-  instagramHandle?: string | null;
-  facebookHandle?: string | null;
-  facebookProfile?: string | null;
-  verified?: boolean;
-  city?: string | null;
-  country?: string | null;
-  location?: string | null;
-  
-  // User specific fields
-  interests?: string | null;
-  preferredLanguage?: string | null;
-  
-  // Influencer specific fields
-  niche?: string | null;
-  category?: string | null;
-  followersCount?: string | null;
-  engagementRate?: string | null;
-  bio?: string | null;
-  
-  // Business specific fields
-  businessName?: string | null;
-  ownerName?: string | null;
-  businessCategory?: string | null;
-  websiteURL?: string | null;
-  socialMediaLinks?: string | null;
-  GSTIN?: string | null;
-  website?: string | null;
-  address?: {
-    street?: string | null;
-    city?: string | null;
-    state?: string | null;
-    country?: string | null;
-    zipCode?: string | null;
-  } | string;
-  businessAddress?: string | null;
-  gstNumber?: string | null;
-  
-  // Staff specific fields
-  staffRole?: string | null;
-  assignedBusinessID?: string | null;
-  
-  // Subscription related
-  subscription?: string | Record<string, any> | null;
-  subscriptionId?: string | null;
-  subscriptionStatus?: string | null;
-  subscriptionPackage?: string | null;
-  customDashboardSections?: string[] | null;
-}
+import { User } from 'firebase/auth';
 
 export interface AuthContextType {
   user: User | null;
-  loading: boolean;
+  isAdmin: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string, employeeCode?: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
-  signup: (
-    email: string, 
-    password: string, 
-    displayName: string, 
-    role: UserRole, 
-    additionalData?: Record<string, any>
-  ) => Promise<void>;
+  isLoading: boolean;
+  error: string | null;
+  login: (email: string, password: string) => Promise<any>;
+  loginWithGoogle: () => Promise<any>;
   logout: () => Promise<void>;
-  updateUserData: (data: Partial<User>) => Promise<void>;
+  register: (email: string, password: string, userData: any) => Promise<any>;
+  resetPassword: (email: string) => Promise<void>;
+  updateUserProfile: (data: any) => Promise<void>;
 }
 
-export interface UserSubscription {
-  id: string;
-  name: string;
-  status: string;
-  startDate: string;
-  endDate: string;
-  price: number;
+export interface ProtectedRouteProps {
+  children: React.ReactNode;
+  requireAdmin?: boolean;
 }
