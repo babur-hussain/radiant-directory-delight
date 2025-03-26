@@ -138,7 +138,7 @@ const AdminBusinessListingsPage = () => {
             tags,
             updated_at: new Date().toISOString()
           })
-          .eq('id', currentBusinessToEdit.id);
+          .eq('id', toNumberId(currentBusinessToEdit.id)); // Use toNumberId here to ensure numeric ID
         
         if (error) throw error;
         
