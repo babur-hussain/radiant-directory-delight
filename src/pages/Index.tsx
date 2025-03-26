@@ -8,6 +8,7 @@ import TestimonialSection from '@/components/TestimonialSection';
 import CallToAction from '@/components/CallToAction';
 import CtaSection from '@/components/CtaSection';
 import VideoReelsSection from '@/components/videos/VideoReelsSection';
+import PartnersSection from '@/components/PartnersSection';
 
 const Index = () => {
   return (
@@ -25,6 +26,7 @@ const Index = () => {
         <CategorySection />
         <VideoReelsSection />
         <FeaturedBusinesses />
+        <PartnersSection />
         <TestimonialSection />
         <CallToAction />
       </div>
