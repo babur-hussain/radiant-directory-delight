@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Business } from '@/lib/csv-utils';
 import CategoryFilter from './businesses/CategoryFilter';
@@ -90,9 +91,13 @@ const FeaturedBusinesses = () => {
   
   const categories = Array.from(new Set(businesses.map(b => b.category)));
   
+  // Fix for the never type issue - ensure the address is a string before splitting
   const locations = Array.from(new Set(businesses.map(b => {
-    const parts = b.address?.split(',') || [];
-    return parts.length > 1 ? parts[1].trim() : parts[0]?.trim() || '';
+    if (typeof b.address === 'string') {
+      const parts = b.address.split(',') || [];
+      return parts.length > 1 ? parts[1].trim() : parts[0]?.trim() || '';
+    }
+    return '';
   })));
   
   const filteredBusinesses = businesses.filter(business => {
@@ -107,8 +112,8 @@ const FeaturedBusinesses = () => {
       }
     }
     
-    if (selectedLocation) {
-      const businessLocation = business.address?.split(',') || [];
+    if (selectedLocation && typeof business.address === 'string') {
+      const businessLocation = business.address.split(',') || [];
       const cityPart = businessLocation.length > 1 ? businessLocation[1].trim() : businessLocation[0]?.trim() || '';
       if (cityPart !== selectedLocation) {
         return false;

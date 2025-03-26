@@ -14,7 +14,7 @@ export const isValidRole = (role: string | undefined): boolean => {
   return ['admin', 'user', 'business', 'influencer', 'staff'].includes(normalized);
 };
 
-// Convert capitalized role formats to UserRole type
+// Convert role to capitalized format for display
 export const capitalizeRole = (role: UserRole): string => {
   if (!role) return '';
   return role.charAt(0).toUpperCase() + role.slice(1);
@@ -27,21 +27,21 @@ export const toUserRole = (role: string | undefined): UserRole => {
 
 // Utility function to check role types
 export const isAdmin = (role: string | undefined): boolean => {
-  return isSameRole(role, 'admin');
+  return normalizeRole(role) === 'admin';
 };
 
 export const isBusiness = (role: string | undefined): boolean => {
-  return isSameRole(role, 'business');
+  return normalizeRole(role) === 'business';
 };
 
 export const isInfluencer = (role: string | undefined): boolean => {
-  return isSameRole(role, 'influencer');
+  return normalizeRole(role) === 'influencer';
 };
 
 export const isUser = (role: string | undefined): boolean => {
-  return isSameRole(role, 'user');
+  return normalizeRole(role) === 'user';
 };
 
 export const isStaff = (role: string | undefined): boolean => {
-  return isSameRole(role, 'staff');
+  return normalizeRole(role) === 'staff';
 };

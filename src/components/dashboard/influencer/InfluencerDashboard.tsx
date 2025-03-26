@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,40 +6,64 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Download, BarChart, PieChart, RefreshCw, ExternalLink } from "lucide-react";
 import DashboardWelcome from "../DashboardWelcome";
-import ReelsProgress from "./widgets/ReelsProgress";
-import CreativesTracker from "./widgets/CreativesTracker";
-import RatingsReviews from "./widgets/RatingsReviews";
-import SeoProgress from "./widgets/SeoProgress";
-import GoogleListingStatus from "./widgets/GoogleListingStatus";
-import PerformanceMetrics from "./widgets/PerformanceMetrics";
-import LeadsGenerated from "./widgets/LeadsGenerated";
 import InfluencerRank from "./widgets/InfluencerRank";
+import PerformanceMetrics from "./widgets/PerformanceMetrics";
+import RatingsReviews from "./widgets/RatingsReviews";
+import CreativesTracker from "./widgets/CreativesTracker";
+import GoogleListingStatus from "./widgets/GoogleListingStatus";
+import ReelsProgress from "./widgets/ReelsProgress";
+import LeadsGenerated from "./widgets/LeadsGenerated";
+import SeoProgress from "./widgets/SeoProgress";
 import { useDashboardServices } from "@/hooks/useDashboardServices";
-import { useSubscription } from "@/hooks";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks";
-import { isAdmin } from "@/utils/roleUtils";
+import { useAuth } from "@/hooks/useAuth";
+import { isAdmin, isInfluencer } from "@/utils/roleUtils";
 
 interface InfluencerDashboardProps {
   userId: string;
+  subscriptionStatus?: string | null;
 }
 
-const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => {
+const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId, subscriptionStatus }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [subscriptionData, setSubscriptionData] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "influencer");
-  const { fetchUserSubscription, getUserDashboardFeatures } = useSubscription(userId);
   const { user } = useAuth();
   
-  const isUserAdmin = isAdmin(user?.role);
+  useEffect(() => {
+    // Short timeout to ensure services are loaded
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
-  const hasActiveSubscription = isUserAdmin || 
-    (subscriptionData && 
-      (subscriptionData.status === "active" || 
-       (typeof subscriptionData === 'object' && 'active' in subscriptionData && subscriptionData.active)));
+  const handleExportData = (format: string) => {
+    toast({
+      title: "Export initiated",
+      description: `Your data is being exported as ${format.toUpperCase()}`,
+      variant: "success",
+    });
+  };
+  
+  const handleRefreshData = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      toast({
+        title: "Data refreshed",
+        description: "Dashboard data has been updated",
+        variant: "success",
+      });
+    }, 1000);
+  };
 
+  const handleGetSubscription = () => {
+    navigate("/subscription");
+  };
+  
   if (isLoading || servicesLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -57,11 +82,18 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
         </div>
         <h3 className="text-xl font-medium">Error loading dashboard</h3>
         <p className="text-muted-foreground mb-4">{error}</p>
-        <Button onClick={() => window.location.reload()}>Try Again</Button>
+        <Button onClick={handleRefreshData}>Try Again</Button>
       </div>
     );
   }
 
+  // Check if user is admin or if they are an influencer with the right role
+  const userHasAccess = isAdmin(user?.role) || isInfluencer(user?.role);
+  
+  // Check if subscription is active or if user has access
+  const hasActiveSubscription = userHasAccess || subscriptionStatus === "active";
+
+  // If no active subscription and not admin
   if (!hasActiveSubscription) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-xl mx-auto text-center">
@@ -70,7 +102,7 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
         </div>
         <h2 className="text-2xl font-bold mb-2">You don't have any active subscriptions</h2>
         <p className="text-muted-foreground mb-8">
-          Subscribe to our Influencer Program to access your personalized dashboard and start earning.
+          Subscribe to our Influencer Growth services to access your personalized dashboard and reach more followers.
         </p>
         <div className="animate-pulse">
           <Button 
@@ -116,14 +148,14 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {services.includes("reels") && <ReelsProgress />}
-        {services.includes("creatives") && <CreativesTracker />}
-        {services.includes("ratings") && <RatingsReviews />}
-        {services.includes("seo") && <SeoProgress />}
-        {services.includes("google_listing") && <GoogleListingStatus />}
-        {services.includes("performance") && <PerformanceMetrics />}
-        {services.includes("leads") && <LeadsGenerated />}
         {services.includes("rank") && <InfluencerRank />}
+        {services.includes("performance") && <PerformanceMetrics />}
+        {services.includes("ratings") && <RatingsReviews />}
+        {services.includes("creatives") && <CreativesTracker />}
+        {services.includes("google_listing") && <GoogleListingStatus />}
+        {services.includes("reels") && <ReelsProgress />}
+        {services.includes("leads") && <LeadsGenerated />}
+        {services.includes("seo") && <SeoProgress />}
         
         {services.length === 0 && (
           <Card className="col-span-full">

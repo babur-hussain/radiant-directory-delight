@@ -1,4 +1,5 @@
-export type UserRole = "User" | "Business" | "Influencer" | "Staff" | "Admin" | null;
+
+export type UserRole = "admin" | "user" | "business" | "influencer" | "staff" | null;
 
 export interface User {
   id: string;
@@ -62,6 +63,9 @@ export interface User {
   subscriptionStatus?: string | null;
   subscriptionPackage?: string | null;
   customDashboardSections?: string[] | null;
+  
+  // Metadata
+  userMetadata?: Record<string, any>;
 }
 
 export interface AuthContextType {
@@ -71,9 +75,9 @@ export interface AuthContextType {
   loading: boolean;
   initialized: boolean;
   error: Error | null;
-  login: (email: string, password: string, employeeCode?: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
-  signup: (email: string, password: string, userData?: Partial<User>) => Promise<void>;
+  login: (email: string, password: string, employeeCode?: string) => Promise<User | null>;
+  loginWithGoogle: () => Promise<User | null>;
+  signup: (email: string, password: string, userData?: Partial<User>) => Promise<User | null>;
   logout: () => Promise<void>;
   refreshUserData: () => Promise<void>;
   resetPassword: (email: string) => Promise<boolean>;
@@ -87,4 +91,5 @@ export interface UserSubscription {
   startDate: string;
   endDate: string;
   price: number;
+  paymentMethod?: string;
 }

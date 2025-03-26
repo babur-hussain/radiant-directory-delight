@@ -1,3 +1,4 @@
+
 export type UserRole = 'admin' | 'user' | 'business' | 'influencer' | 'staff';
 
 export const isSameRoleIgnoreCase = (role1: string | undefined, role2: string | undefined): boolean => {
@@ -23,6 +24,33 @@ export const normalizeRole = (role: string | undefined): UserRole => {
     default:
       return 'user';
   }
+};
+
+// Convert capitalized role formats to lowercase
+export const convertCapitalizedRole = (role: string | undefined): UserRole => {
+  if (!role) return 'user';
+  
+  // Convert capitalized roles to lowercase format
+  switch (role) {
+    case 'Admin':
+      return 'admin';
+    case 'Business':
+      return 'business';
+    case 'Influencer':
+      return 'influencer';
+    case 'Staff':
+      return 'staff';
+    case 'User':
+      return 'user';
+    default:
+      // If it's already in lowercase or unknown, use normalizeRole
+      return normalizeRole(role);
+  }
+};
+
+// Function to check if a role matches a specific role (case insensitive)
+export const roleMatches = (role: string | undefined, matchRole: UserRole): boolean => {
+  return normalizeRole(role) === matchRole;
 };
 
 export interface User {
@@ -88,6 +116,7 @@ export interface User {
   customDashboardSections?: string[];
   
   fullName?: string;
+  userMetadata?: Record<string, any>;
 }
 
 export interface AuthContextType {
@@ -98,12 +127,12 @@ export interface AuthContextType {
   loading?: boolean;
   initialized?: boolean;
   error: Error | null;
-  login: (email: string, password: string, employeeCode?: string) => Promise<void>;
-  loginWithGoogle?: () => Promise<void>;
-  signup: (email: string, password: string, userData?: Partial<User>) => Promise<void>;
+  login: (email: string, password: string, employeeCode?: string) => Promise<User | null>;
+  loginWithGoogle?: () => Promise<User | null>;
+  signup: (email: string, password: string, userData?: Partial<User>) => Promise<User | null>;
   logout: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
-  updateUserProfile: (data: Partial<User>) => Promise<void>;
+  resetPassword: (email: string) => Promise<boolean>;
+  updateUserProfile: (data: Partial<User>) => Promise<User | null>;
   refreshUserData?: () => Promise<void>;
 }
 
@@ -118,6 +147,7 @@ export interface UserSubscription {
   price?: number;
   amount?: number;
   paymentType?: string;
+  paymentMethod?: string;
   cancelledAt?: string;
   cancelReason?: string;
 }
@@ -136,4 +166,8 @@ export function isUserSubscription(obj: any): obj is UserSubscription {
 export interface SessionData {
   user: User | null;
   isAuthenticated: boolean;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: string;
+  providerToken?: string | null;
 }
