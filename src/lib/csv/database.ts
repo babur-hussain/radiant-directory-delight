@@ -82,7 +82,7 @@ const prepareBusinessForSupabase = (business: Business): SupabaseReadyBusiness =
     delete businessCopy.id;
   }
   
-  // Process hours - convert to JSON string if it's an object
+  // Process hours - ensure it's a proper object
   let hoursForDB = {};
   if (businessCopy.hours) {
     if (typeof businessCopy.hours === 'object') {
@@ -102,15 +102,11 @@ const prepareBusinessForSupabase = (business: Business): SupabaseReadyBusiness =
   let tagsArray: string[] = [];
   
   if (businessCopy.tags) {
-    // Check that tags is actually an array or a string before processing
     if (Array.isArray(businessCopy.tags)) {
       tagsArray = businessCopy.tags;
     } else if (typeof businessCopy.tags === 'string') {
-      // We need to explicitly cast to string to satisfy TypeScript
-      const tagsString = businessCopy.tags as string;
-      tagsArray = tagsString.split(',').map(tag => tag.trim());
+      tagsArray = businessCopy.tags.split(',').map(tag => tag.trim());
     } else {
-      // Handle other cases, just use empty array
       console.warn('Unknown tags type encountered:', typeof businessCopy.tags);
     }
   }
@@ -146,9 +142,28 @@ export const saveBatchToSupabase = async (businesses: Business[]): Promise<Batch
         const preparedBusiness = prepareBusinessForSupabase(business);
         console.log("Prepared business for Supabase:", preparedBusiness);
         
+        // Create a clean object with only the fields that Supabase business table expects
+        const supabaseBusinessData = {
+          name: preparedBusiness.name,
+          category: preparedBusiness.category,
+          address: preparedBusiness.address,
+          phone: preparedBusiness.phone,
+          email: preparedBusiness.email,
+          website: preparedBusiness.website,
+          description: preparedBusiness.description,
+          image: preparedBusiness.image,
+          rating: preparedBusiness.rating || 0,
+          reviews: preparedBusiness.reviews || 0,
+          featured: preparedBusiness.featured || false,
+          tags: preparedBusiness.tags,
+          hours: preparedBusiness.hours
+        };
+        
+        console.log("Cleaned business data for Supabase:", supabaseBusinessData);
+        
         const { data, error } = await supabase
           .from('businesses')
-          .insert(preparedBusiness)
+          .insert(supabaseBusinessData)
           .select();
         
         if (error) {

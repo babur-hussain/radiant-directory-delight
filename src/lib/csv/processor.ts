@@ -8,6 +8,7 @@ import { saveBatchToSupabase } from './database';
 // Helper function to process CSV data
 export const processCsvData = async (csvContent: string): Promise<CsvProcessingResult> => {
   try {
+    console.log("Processing CSV content...");
     // Parse CSV data
     const results = Papa.parse(csvContent, {
       header: true,
@@ -194,9 +195,20 @@ export const processSingleBusiness = async (
     mappedBusiness.reviews = isNaN(reviews) ? 0 : reviews;
   }
   
+  // Clean up "Mobile Number" to map to phone
+  if (row["Mobile Number"] && !mappedBusiness.phone) {
+    mappedBusiness.phone = row["Mobile Number"];
+  }
+  
+  // Clean up "Review" to map to rating
+  if (row["Review"] && !mappedBusiness.rating) {
+    const rating = parseFloat(row["Review"]);
+    mappedBusiness.rating = isNaN(rating) ? 0 : Math.min(5, Math.max(0, rating));
+  }
+  
   // Default image if not provided
   if (!mappedBusiness.image && mappedBusiness.category) {
-    mappedBusiness.image = `https://source.unsplash.com/random/500x350/?${mappedBusiness.category.toLowerCase().replace(/\s+/g, ",")}`;
+    mappedBusiness.image = `https://source.unsplash.com/random/500x350/?${mappedBusiness.category.toLowerCase().replace(/\s+/g, ",").replace(/·/g, "")}`;
   }
 
   // Create business object

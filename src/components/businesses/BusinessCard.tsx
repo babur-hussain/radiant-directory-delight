@@ -13,7 +13,12 @@ interface BusinessCardProps {
 const BusinessCard = ({ business }: BusinessCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const maxVisibleTags = 2;
-  const hasMoreTags = business.tags && business.tags.length > maxVisibleTags;
+  
+  // Handle potentially missing or malformed tags
+  const tags = Array.isArray(business.tags) ? business.tags : 
+    (typeof business.tags === 'string' ? business.tags.split(',').map(t => t.trim()) : []);
+  
+  const hasMoreTags = tags.length > maxVisibleTags;
 
   return (
     <div className="group bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-smooth">
@@ -30,7 +35,7 @@ const BusinessCard = ({ business }: BusinessCardProps) => {
           </span>
         )}
         <div className="absolute top-3 right-3 flex gap-1">
-          {business.tags && business.tags.slice(0, 2).map((tag, index) => (
+          {tags.length > 0 && tags.slice(0, 2).map((tag, index) => (
             <span 
               key={index} 
               className="bg-white/90 backdrop-blur-sm text-gray-700 text-xs px-2 py-1 rounded-md"
@@ -71,11 +76,11 @@ const BusinessCard = ({ business }: BusinessCardProps) => {
         )}
         
         {/* Collapsible Tags Section */}
-        {business.tags && business.tags.length > 0 && (
+        {tags.length > 0 && (
           <div className="mt-3">
             <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-2">
               <div className="flex flex-wrap gap-1">
-                {business.tags.slice(0, maxVisibleTags).map((tag, index) => (
+                {tags.slice(0, maxVisibleTags).map((tag, index) => (
                   <span key={index} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
                     {tag}
                   </span>
@@ -87,7 +92,7 @@ const BusinessCard = ({ business }: BusinessCardProps) => {
                       {isOpen ? (
                         <>Show Less <ChevronUp className="h-3 w-3" /></>
                       ) : (
-                        <>Show All ({business.tags.length}) <ChevronDown className="h-3 w-3" /></>
+                        <>Show All ({tags.length}) <ChevronDown className="h-3 w-3" /></>
                       )}
                     </button>
                   </CollapsibleTrigger>
@@ -96,7 +101,7 @@ const BusinessCard = ({ business }: BusinessCardProps) => {
               
               <CollapsibleContent>
                 <div className="flex flex-wrap gap-1 pt-1">
-                  {business.tags.slice(maxVisibleTags).map((tag, index) => (
+                  {tags.slice(maxVisibleTags).map((tag, index) => (
                     <span key={index} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
                       {tag}
                     </span>
