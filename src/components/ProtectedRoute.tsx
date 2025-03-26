@@ -1,44 +1,33 @@
 
-import { useEffect } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import React from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2 } from 'lucide-react';
-import { ProtectedRouteProps } from '@/types/auth';
+import Loading from '@/components/ui/loading';
 
-const ProtectedRoute = ({ 
-  children, 
-  requireAdmin = false,
-  adminOnly = false
-}: ProtectedRouteProps) => {
-  const { isAuthenticated, user, loading, initialized } = useAuth();
-  const location = useLocation();
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  requireAdmin?: boolean;
+}
 
-  // Redirect anonymous users to login page
-  if (initialized && !loading && !isAuthenticated) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
-  }
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin = false }) => {
+  const { user, loading, isAdmin } = useAuth();
 
-  // Check for required role
-  if (initialized && !loading && isAuthenticated && requireAdmin && user?.role !== 'Admin') {
-    return <Navigate to="/" state={{ from: location }} replace />;
-  }
-
-  // Check for admin requirement
-  if (initialized && !loading && isAuthenticated && (adminOnly || requireAdmin) && !user?.isAdmin) {
-    return <Navigate to="/" state={{ from: location }} replace />;
-  }
-
-  // Show loading indicator while auth is initializing
-  if (loading || !initialized) {
+  if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="mt-4 text-lg">Loading...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <Loading size="lg" message="Checking authentication..." />
       </div>
     );
   }
 
-  // If everything is good, render the children
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (requireAdmin && !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
   return <>{children}</>;
 };
 

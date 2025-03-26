@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -183,7 +182,7 @@ const AllCategories = ({ searchTerm }: AllCategoriesProps) => {
                 {subcategories[expandedCategory as keyof typeof subcategories].map((subcat) => (
                   <Link 
                     key={subcat} 
-                    to={`/category/${expandedCategory.toLowerCase()}/${subcat.toLowerCase().replace(/\s+/g, '-')}`}
+                    to={`/category/${expandedCategory.toLowerCase()}`}
                     className="px-3 py-2 text-sm hover:bg-white rounded-lg hover:shadow-sm transition-all duration-200 text-gray-700 hover:text-primary"
                   >
                     {subcat}

@@ -30,6 +30,7 @@ import AuthCallbackPage from '@/pages/AuthCallbackPage';
 import BusinessDashboardPage from '@/pages/BusinessDashboardPage';
 import InfluencerDashboardPage from '@/pages/InfluencerDashboardPage';
 import AdminVideosPage from '@/components/admin/videos/AdminVideosPage';
+import CategoryDetailsPage from '@/pages/CategoryDetailsPage';
 
 const AppRoutes = () => {
   return (
@@ -41,6 +42,7 @@ const AppRoutes = () => {
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/categories" element={<CategoriesPage />} />
       <Route path="/businesses" element={<BusinessesPage />} />
+      <Route path="/category/:categoryName" element={<CategoryDetailsPage />} />
       
       {/* Protected routes for logged in users */}
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
