@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { UserSubscription } from '@/types/auth';
 import { generateId } from '@/lib/utils';
 
@@ -19,6 +19,7 @@ const useSubscriptionAssignment = ({ userId }: UseSubscriptionAssignmentProps) =
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCancelSubmitting, setIsCancelSubmitting] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchCurrentSubscription = async () => {
@@ -39,12 +40,14 @@ const useSubscriptionAssignment = ({ userId }: UseSubscriptionAssignmentProps) =
 
         if (data && data.length > 0) {
           const subscription = data[0];
+          const status: SubscriptionStatus = (subscription.status as SubscriptionStatus) || 'active';
+          
           setUserCurrentSubscription({
             id: subscription.id || '',
             userId: subscription.user_id,
             packageId: subscription.package_id,
             packageName: subscription.package_name,
-            status: subscription.status as SubscriptionStatus, // Use type assertion
+            status: status,
             startDate: subscription.start_date,
             endDate: subscription.end_date,
             price: subscription.amount,
@@ -67,8 +70,7 @@ const useSubscriptionAssignment = ({ userId }: UseSubscriptionAssignmentProps) =
     fetchCurrentSubscription();
   }, [userId]);
 
-  // Fix the type issue by using the correct types for status
-  const handleAssignPackage = async (userId: string, months: number = 1) => {
+  const handleAssignPackage = async (userId: string, months: number = 1): Promise<boolean> => {
     try {
       setIsSubmitting(true);
       
@@ -93,7 +95,7 @@ const useSubscriptionAssignment = ({ userId }: UseSubscriptionAssignmentProps) =
         amount: selectedPackage.price,
         start_date: startDate.toISOString(),
         end_date: endDate.toISOString(),
-        status: 'active' as SubscriptionStatus, // Use type assertion
+        status: 'active' as SubscriptionStatus,
         payment_type: "recurring",
         created_at: new Date().toISOString()
       };
@@ -128,7 +130,7 @@ const useSubscriptionAssignment = ({ userId }: UseSubscriptionAssignmentProps) =
         userId: newSubscription.user_id,
         packageId: newSubscription.package_id,
         packageName: newSubscription.package_name,
-        status: newSubscription.status,
+        status: 'active',
         startDate: newSubscription.start_date,
         endDate: newSubscription.end_date,
         price: newSubscription.amount,
@@ -152,7 +154,7 @@ const useSubscriptionAssignment = ({ userId }: UseSubscriptionAssignmentProps) =
     }
   };
 
-  const handleCancelSubscription = async (userId: string, reason?: string) => {
+  const handleCancelSubscription = async (userId: string, reason?: string): Promise<boolean> => {
     try {
       setIsCancelSubmitting(true);
 
@@ -165,10 +167,12 @@ const useSubscriptionAssignment = ({ userId }: UseSubscriptionAssignmentProps) =
         return false;
       }
 
+      const cancelledStatus: SubscriptionStatus = 'cancelled';
+      
       const { data, error } = await supabase
         .from('user_subscriptions')
         .update({
-          status: 'cancelled' as SubscriptionStatus,
+          status: cancelledStatus,
           cancelled_at: new Date().toISOString(),
           cancel_reason: reason || 'Cancelled by admin'
         })
@@ -189,7 +193,7 @@ const useSubscriptionAssignment = ({ userId }: UseSubscriptionAssignmentProps) =
       if (userCurrentSubscription) {
         setUserCurrentSubscription({
           ...userCurrentSubscription,
-          status: 'cancelled' as SubscriptionStatus, // Use type assertion
+          status: cancelledStatus,
           cancelReason: reason || 'Cancelled by admin',
           cancelledAt: new Date().toISOString()
         });

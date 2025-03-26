@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -114,7 +113,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 try {
                   // Implement password reset functionality
                   handleResetSuccess();
-                  return Promise.resolve(true);
+                  return Promise.resolve();
                 } catch (error) {
                   return Promise.reject(error);
                 }

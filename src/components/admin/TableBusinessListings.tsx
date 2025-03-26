@@ -71,20 +71,20 @@ const convertToBusiness = (ibusiness: IBusiness): Business => {
     name: ibusiness.name,
     category: ibusiness.category,
     description: ibusiness.description,
-    address: ibusiness.address,
-    phone: ibusiness.phone,
-    rating: ibusiness.rating,
-    reviews: ibusiness.reviews,
-    featured: ibusiness.featured,
-    tags: ibusiness.tags,
-    image: ibusiness.image,
-    email: ibusiness.email,
-    website: ibusiness.website,
-    hours: ibusiness.hours,
-    latitude: ibusiness.latitude,
-    longitude: ibusiness.longitude,
+    address: ibusiness.address || '',
+    phone: ibusiness.phone || '',
+    rating: ibusiness.rating || 0,
+    reviews: ibusiness.reviews || 0,
+    featured: ibusiness.featured || false,
+    tags: ibusiness.tags || [],
+    image: ibusiness.image || '',
+    email: ibusiness.email || '',
+    website: ibusiness.website || '',
+    hours: ibusiness.hours || {},
+    latitude: ibusiness.latitude || 0,
+    longitude: ibusiness.longitude || 0,
     created_at: '', // Default values for compatibility
-    updated_at: '',
+    updated_at: ''
   };
 };
 
@@ -194,13 +194,17 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
         : values.tags;
       
       if (selectedBusiness) {
+        const businessToUpdate: Business = {
+          ...convertToBusiness(selectedBusiness),
+          ...values,
+          tags,
+          created_at: '', // Ensure created_at is present
+          updated_at: ''  // Ensure updated_at is present
+        };
+        
         const { error } = await supabase
           .from('businesses')
-          .update({
-            ...selectedBusiness,
-            ...values,
-            tags
-          })
+          .update(businessToUpdate)
           .eq('id', selectedBusiness.id);
         
         if (error) throw error;

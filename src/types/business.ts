@@ -2,13 +2,13 @@
 export interface Business {
   id: number | string;
   name: string;
-  category: string;
-  description: string;
-  address: string; // Now required
-  phone: string;   // Now required
-  email: string;   // Now required
-  website: string; // Now required
-  image: string;   // Now required
+  category: string;    // Now required
+  description: string; // Now required
+  address: string;     // Now required
+  phone: string;       // Now required
+  email: string;       // Now required
+  website: string;     // Now required
+  image: string;       // Now required
   hours: string | Record<string, string> | Record<string, any> | any;
   rating: number;
   reviews: number;

@@ -81,7 +81,6 @@ const SupabaseBusinessesPanel = () => {
   const handleDeleteBusiness = async (id: string | number) => {
     setIsDeleting(true);
     try {
-      // Convert to number id for Supabase
       const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
       
       const { error } = await supabase
@@ -111,7 +110,6 @@ const SupabaseBusinessesPanel = () => {
   const handleFeatureToggle = async (id: string | number, featured: boolean) => {
     setIsUpdating(true);
     try {
-      // Convert to number id for Supabase
       const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
       
       const { error } = await supabase
@@ -194,13 +192,15 @@ const SupabaseBusinessesPanel = () => {
         : values.tags;
       
       if (selectedBusiness) {
+        const businessToUpdate = {
+          ...selectedBusiness,
+          ...values,
+          tags
+        };
+        
         const { error } = await supabase
           .from('businesses')
-          .update({
-            ...selectedBusiness,
-            ...values,
-            tags
-          })
+          .update(businessToUpdate)
           .eq('id', selectedBusiness.id);
         
         if (error) throw error;

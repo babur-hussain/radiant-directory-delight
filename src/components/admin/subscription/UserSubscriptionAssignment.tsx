@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -13,9 +14,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-// Fix import to use default import
 import useSubscriptionAssignment from "@/hooks/useSubscriptionAssignment";
-import { UserSubscription } from "@/types/auth";
+import { UserSubscription, User } from "@/types/auth";
 import { supabase } from "@/integrations/supabase/client";
 
 interface UserSubscriptionAssignmentProps {

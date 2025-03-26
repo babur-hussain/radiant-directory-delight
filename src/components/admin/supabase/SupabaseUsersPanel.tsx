@@ -189,7 +189,10 @@ const SupabaseUsersPanel: React.FC = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          <UserSubscriptionAssignment user={user} />
+                          <UserSubscriptionAssignment 
+                            userId={user.id || user.uid || ''} 
+                            userName={user.name || user.displayName || ''}
+                          />
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           {user.isAdmin ? (

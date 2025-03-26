@@ -1,11 +1,7 @@
-
 import { User, UserRole } from '@/types/auth';
-// Remove the conflicting import
-// import { normalizeRole } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { v4 as uuidv4 } from 'uuid'; // Add uuid for nanoid replacement
+import { v4 as uuidv4 } from 'uuid';
 
-// Fix role case issues - use lowercase role values
 export const getUsersByRole = (users: User[], role: UserRole): User[] => {
   const normalizedRole = normalizeRole(role);
   return users.filter(user => normalizeRole(user.role) === normalizedRole);
@@ -31,29 +27,23 @@ export const getRoleDisplayName = (role: UserRole): string => {
 export const determineUserRole = (userData: any): UserRole => {
   if (!userData) return 'user';
 
-  // Check for role directly
   if (userData.role) {
     return normalizeRole(userData.role);
   }
 
-  // Check if this is a business account
   if (userData.businessName || userData.business_name) {
     return 'business';
   }
 
-  // Check if this is an influencer account
   if (userData.followersCount || userData.followers_count || userData.niche) {
     return 'influencer';
   }
 
-  // Default to regular user
   return 'user';
 };
 
-// Constants for default user data
 const DEFAULT_PHOTO_URL = 'https://example.com/default-avatar.png';
 
-// Test user data
 const testUsers: TestUserData[] = [
   { email: 'admin@example.com', name: 'Admin User', role: 'admin', password: 'password123' },
   { email: 'business@example.com', name: 'Business User', role: 'business', password: 'password123' },
@@ -61,7 +51,6 @@ const testUsers: TestUserData[] = [
   { email: 'user@example.com', name: 'Regular User', role: 'user', password: 'password123' },
 ];
 
-// Fix TestUserData interface
 interface TestUserData {
   email: string;
   name: string;
@@ -69,11 +58,9 @@ interface TestUserData {
   password: string;
 }
 
-// Helper function to convert role string to UserRole type
 export function transformRole(role: string | null): UserRole {
   if (!role) return 'user';
   
-  // Match with expected UserRole values
   switch (role.toLowerCase()) {
     case 'admin':
       return 'admin';
@@ -86,11 +73,10 @@ export function transformRole(role: string | null): UserRole {
     case 'staff':
       return 'staff';
     default:
-      return 'user'; // Default to User if unknown
+      return 'user';
   }
 }
 
-// Get user by ID
 export const getUserById = async (userId: string): Promise<User | null> => {
   try {
     const { data, error } = await supabase
@@ -106,7 +92,7 @@ export const getUserById = async (userId: string): Promise<User | null> => {
     
     return {
       uid: data.id,
-      id: data.id, // Add id property
+      id: data.id,
       email: data.email || '',
       displayName: data.name || '',
       name: data.name || '',
@@ -137,10 +123,8 @@ export const getUserById = async (userId: string): Promise<User | null> => {
   }
 };
 
-// Export the getAllUsers function from userDataAccess
 export { getAllUsers } from './userDataAccess';
 
-// Create a test user for development environments
 export const createTestUser = async (userData: {
   email: string;
   name: string;
@@ -149,10 +133,8 @@ export const createTestUser = async (userData: {
   employeeCode?: string;
 }): Promise<User> => {
   try {
-    // Generate a unique ID using UUID instead of nanoid
     const userId = uuidv4();
     
-    // Create user data object with defaults
     const newUser: User = {
       uid: userId,
       id: userId,
@@ -181,7 +163,6 @@ export const createTestUser = async (userData: {
       gstNumber: ''
     };
     
-    // For a real application, you would store this user in a database
     console.log('Test user created:', newUser);
     
     return newUser;
@@ -191,25 +172,39 @@ export const createTestUser = async (userData: {
   }
 };
 
-// Helper function to normalize role string to lowercase
-const normalizeRole = (role?: string): string => {
-  return role ? role.toLowerCase() : '';
+const normalizeRole = (role?: string | null): UserRole => {
+  if (!role) return 'user';
+  
+  const normalizedRoleString = role.toLowerCase();
+  
+  switch (normalizedRoleString) {
+    case 'admin':
+      return 'admin';
+    case 'business':
+      return 'business';
+    case 'influencer':
+      return 'influencer';
+    case 'staff':
+      return 'staff';
+    case 'user':
+    default:
+      return 'user';
+  }
 };
 
-// Helper function to get role color based on normalized role
 export const getUserRoleColor = (role?: string): string => {
   const normalizedRole = normalizeRole(role);
   
   switch (normalizedRole) {
     case 'admin':
-      return '#4f46e5'; // Indigo
+      return '#4f46e5';
     case 'business':
-      return '#0891b2'; // Cyan
+      return '#0891b2';
     case 'influencer':
-      return '#db2777'; // Pink
+      return '#db2777';
     case 'user':
-      return '#6b7280'; // Gray
+      return '#6b7280';
     default:
-      return '#6b7280'; // Default gray
+      return '#6b7280';
   }
 };
