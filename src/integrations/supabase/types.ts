@@ -126,6 +126,7 @@ export type Database = {
           features: string | null
           full_description: string | null
           id: string
+          is_active: boolean | null
           monthly_price: number | null
           payment_type: string | null
           popular: boolean | null
@@ -146,6 +147,7 @@ export type Database = {
           features?: string | null
           full_description?: string | null
           id: string
+          is_active?: boolean | null
           monthly_price?: number | null
           payment_type?: string | null
           popular?: boolean | null
@@ -166,6 +168,7 @@ export type Database = {
           features?: string | null
           full_description?: string | null
           id?: string
+          is_active?: boolean | null
           monthly_price?: number | null
           payment_type?: string | null
           popular?: boolean | null
