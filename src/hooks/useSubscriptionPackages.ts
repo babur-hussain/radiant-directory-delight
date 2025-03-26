@@ -1,7 +1,26 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
+
+export interface ISubscriptionPackage {
+  id: string;
+  title: string;
+  price: number;
+  monthlyPrice?: number;
+  shortDescription: string;
+  fullDescription?: string;
+  features: string[];
+  setupFee?: number;
+  popular?: boolean;
+  type: 'Business' | 'Influencer';
+  durationMonths?: number;
+  advancePaymentMonths?: number;
+  paymentType?: 'recurring' | 'one-time';
+  billingCycle?: 'monthly' | 'yearly';
+  termsAndConditions?: string;
+  dashboardSections?: string[];
+  isActive?: boolean;
+}
 
 export const useSubscriptionPackages = () => {
   const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);

@@ -31,6 +31,7 @@ export const useDashboardServices = (userId: string, userRole: string) => {
         
         if (!subscription) {
           setServices([]);
+          setIsLoading(false);
           return;
         }
         

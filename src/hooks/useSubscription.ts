@@ -1,133 +1,161 @@
 
 import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { nanoid } from 'nanoid';
-import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
+import { ISubscriptionPackage } from '@/hooks/useSubscriptionPackages';
+import { toast } from './use-toast';
 
 export const useSubscription = (userId?: string) => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [subscription, setSubscription] = useState<any>(null);
-  const { toast } = useToast();
-  const { user } = useAuth();
-  
-  // Get the user ID either from the prop or from the auth context
-  const currentUserId = userId || user?.id;
-  
-  const purchaseSubscription = async (packageData: ISubscriptionPackage) => {
-    if (!currentUserId) {
-      toast({
-        title: "Authentication Required",
-        description: "Please login to purchase a subscription",
-        variant: "destructive",
-      });
-      return null;
-    }
-    
-    setIsProcessing(true);
-    
-    try {
-      // Create a subscription record in the database
-      const subscription = {
-        id: nanoid(),
-        user_id: currentUserId,
-        package_id: packageData.id,
-        package_name: packageData.title,
-        amount: packageData.price + (packageData.setupFee || 0),
-        start_date: new Date().toISOString(),
-        end_date: getEndDate(packageData),
-        status: 'active',
-        payment_method: 'razorpay',
-        payment_type: packageData.paymentType,
-        billing_cycle: packageData.billingCycle,
-        signup_fee: packageData.setupFee,
-        recurring_amount: packageData.price,
-        is_paused: false,
-        is_pausable: true,
-        is_user_cancellable: true,
-        assigned_by: 'system',
-      };
 
-      // Call the subscription service to create the subscription
-      const { data, error } = await supabase
-        .from('user_subscriptions')
-        .insert([subscription])
-        .select();
-      
-      if (error) {
-        console.error('Error creating subscription:', error);
-        throw new Error('Failed to create subscription');
-      }
-
-      // Update user record with subscription info
-      await supabase
-        .from('users')
-        .update({
-          subscription_id: subscription.id,
-          subscription_status: 'active',
-          subscription_package: subscription.package_id
-        })
-        .eq('id', currentUserId);
-      
-      toast({
-        title: "Subscription Activated",
-        description: "Your subscription has been activated successfully",
-      });
-      
-      return data?.[0] || null;
-    } catch (error) {
-      console.error('Error in purchaseSubscription:', error);
-      toast({
-        title: "Subscription Failed",
-        description: "There was an error activating your subscription",
-        variant: "destructive",
-      });
-      return null;
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-  
   const fetchUserSubscription = async (userId: string) => {
     try {
-      setLoading(true);
+      if (!userId) {
+        console.log('No user ID provided to fetchUserSubscription');
+        return { success: false, data: null };
+      }
+
+      console.log(`Fetching subscription for user ${userId}`);
+      
+      // First check active subscriptions in the user_subscriptions table
       const { data, error } = await supabase
         .from('user_subscriptions')
         .select('*')
         .eq('user_id', userId)
-        .eq('status', 'active')
+        .order('created_at', { ascending: false })
         .maybeSingle();
       
       if (error) {
         console.error('Error fetching user subscription:', error);
-        setError(error.message);
-        return { success: false, error: error.message };
+        return { success: false, data: null, error: error.message };
       }
       
       if (data) {
-        setSubscription(data);
+        console.log('Found subscription:', data);
+        return { success: true, data };
       }
       
-      return { success: true, data };
-    } catch (error) {
-      console.error('Error in fetchUserSubscription:', error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch subscription');
-      return { success: false, error: 'Failed to fetch subscription' };
-    } finally {
-      setLoading(false);
+      // If no subscription found in dedicated table, check the users table for legacy data
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('subscription, subscription_id, subscription_status, subscription_package')
+        .eq('id', userId)
+        .single();
+      
+      if (userError) {
+        console.error('Error fetching user for subscription info:', userError);
+        return { success: false, data: null, error: userError.message };
+      }
+      
+      if (userData && userData.subscription_id) {
+        const legacySubscription = {
+          id: userData.subscription_id,
+          user_id: userId,
+          package_id: userData.subscription_package,
+          status: userData.subscription_status,
+          // Add other required fields with default values
+          start_date: new Date().toISOString(),
+          end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+          amount: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        console.log('Found legacy subscription in user data:', legacySubscription);
+        return { success: true, data: legacySubscription };
+      }
+      
+      console.log('No subscription found for user');
+      return { success: false, data: null };
+    } catch (err) {
+      console.error('Error in fetchUserSubscription:', err);
+      return { 
+        success: false, 
+        data: null, 
+        error: err instanceof Error ? err.message : 'An unknown error occurred' 
+      };
     }
   };
-  
+
+  const purchaseSubscription = async (packageData: ISubscriptionPackage) => {
+    setIsProcessing(true);
+    try {
+      if (!userId) {
+        throw new Error('User ID is required to purchase a subscription');
+      }
+
+      console.log(`Purchasing subscription for user ${userId}`);
+      
+      // Generate a subscription ID
+      const subscriptionId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+      
+      // Calculate start and end dates
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + (packageData.durationMonths || 12));
+      
+      // Create subscription data
+      const subscriptionData = {
+        id: subscriptionId,
+        user_id: userId,
+        package_id: packageData.id,
+        package_name: packageData.title,
+        amount: packageData.price,
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
+        status: 'active',
+        payment_type: packageData.paymentType || 'recurring',
+        billing_cycle: packageData.billingCycle,
+        setup_fee: packageData.setupFee || 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        advance_payment_months: packageData.advancePaymentMonths || 0,
+        actual_start_date: startDate.toISOString(),
+      };
+      
+      // Save to Supabase
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .insert([subscriptionData])
+        .select()
+        .single();
+      
+      if (error) {
+        throw new Error(`Failed to create subscription: ${error.message}`);
+      }
+      
+      // Update user record
+      const { error: userError } = await supabase
+        .from('users')
+        .update({
+          subscription: subscriptionId,
+          subscription_id: subscriptionId,
+          subscription_status: 'active',
+          subscription_package: packageData.id
+        })
+        .eq('id', userId);
+      
+      if (userError) {
+        console.warn(`Warning: Failed to update user record: ${userError.message}`);
+      }
+      
+      console.log('Subscription created successfully:', data);
+      
+      return data;
+    } catch (err) {
+      console.error('Error in purchaseSubscription:', err);
+      throw err;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const getUserDashboardFeatures = async (userId: string, role: string) => {
     try {
-      // First get the user's active subscription
-      const { data: subscription } = await fetchUserSubscription(userId);
+      // First get the user's subscription
+      const { success, data: subscription } = await fetchUserSubscription(userId);
       
-      if (!subscription) {
-        return { success: false, services: [] };
+      if (!success || !subscription || !subscription.package_id) {
+        return { success: false, features: [] };
       }
       
       // Get the subscription package
@@ -138,103 +166,78 @@ export const useSubscription = (userId?: string) => {
         .single();
       
       if (packageError) {
-        console.error('Error fetching package data:', packageError);
-        return { success: false, services: [] };
+        console.error('Error fetching package details:', packageError);
+        return { success: false, features: [] };
       }
       
-      return { 
-        success: true, 
-        services: packageData.dashboard_sections || [] 
-      };
-    } catch (error) {
-      console.error('Error in getUserDashboardFeatures:', error);
-      return { success: false, services: [] };
+      if (packageData && packageData.dashboard_sections) {
+        return { success: true, features: packageData.dashboard_sections };
+      }
+      
+      return { success: false, features: [] };
+    } catch (err) {
+      console.error('Error in getUserDashboardFeatures:', err);
+      return { success: false, features: [] };
     }
   };
-  
-  const cancelSubscription = async () => {
-    if (!currentUserId) {
-      toast({
-        title: "Authentication Required",
-        description: "Please login to cancel a subscription",
-        variant: "destructive",
-      });
-      return false;
-    }
-    
+
+  const cancelSubscription = async (subscriptionId: string, reason: string = 'user_cancelled') => {
     try {
-      setIsProcessing(true);
-      
-      // Get the current active subscription
-      const { data: subscription } = await fetchUserSubscription(currentUserId);
-      
-      if (!subscription) {
-        toast({
-          title: "No Active Subscription",
-          description: "You don't have an active subscription to cancel",
-          variant: "destructive",
-        });
-        return false;
+      if (!subscriptionId) {
+        throw new Error('Subscription ID is required to cancel a subscription');
       }
       
-      // Update the subscription status to cancelled
-      const { error } = await supabase
+      console.log(`Cancelling subscription ${subscriptionId}`);
+      
+      // Update subscription status
+      const { data, error } = await supabase
         .from('user_subscriptions')
         .update({
           status: 'cancelled',
-          cancelled_at: new Date().toISOString()
+          cancelled_at: new Date().toISOString(),
+          cancel_reason: reason,
+          updated_at: new Date().toISOString()
         })
-        .eq('id', subscription.id);
+        .eq('id', subscriptionId)
+        .select()
+        .single();
       
-      if (error) throw error;
+      if (error) {
+        throw new Error(`Failed to cancel subscription: ${error.message}`);
+      }
       
-      // Update the user's subscription status
-      await supabase
-        .from('users')
-        .update({
-          subscription_status: 'cancelled'
-        })
-        .eq('id', currentUserId);
+      // Update user record
+      if (userId) {
+        const { error: userError } = await supabase
+          .from('users')
+          .update({
+            subscription_status: 'cancelled'
+          })
+          .eq('id', userId);
+        
+        if (userError) {
+          console.warn(`Warning: Failed to update user record: ${userError.message}`);
+        }
+      }
       
-      toast({
-        title: "Subscription Cancelled",
-        description: "Your subscription has been cancelled successfully",
-      });
+      console.log('Subscription cancelled successfully:', data);
       
-      return true;
-    } catch (error) {
-      console.error('Error cancelling subscription:', error);
-      toast({
-        title: "Cancellation Failed",
-        description: "There was an error cancelling your subscription",
-        variant: "destructive",
-      });
-      return false;
-    } finally {
-      setIsProcessing(false);
+      return { success: true, data };
+    } catch (err) {
+      console.error('Error in cancelSubscription:', err);
+      return { 
+        success: false, 
+        error: err instanceof Error ? err.message : 'An unknown error occurred' 
+      };
     }
   };
-  
-  // Helper function to calculate end date based on package details
-  const getEndDate = (packageData: ISubscriptionPackage): string => {
-    const startDate = new Date();
-    const monthsToAdd = packageData.durationMonths || 12;
-    
-    const endDate = new Date(startDate);
-    endDate.setMonth(endDate.getMonth() + monthsToAdd);
-    
-    return endDate.toISOString();
-  };
-  
+
   return {
     isProcessing,
     purchaseSubscription,
     fetchUserSubscription,
     getUserDashboardFeatures,
-    cancelSubscription,
-    subscription,
-    loading,
-    error
+    cancelSubscription
   };
 };
 
