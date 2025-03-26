@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Video, VideoType } from '@/types/video';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 const formSchema = z.object({
   title: z.string().min(3, { message: 'Title must be at least 3 characters' }),
@@ -39,6 +39,7 @@ const AdminVideoForm: React.FC<AdminVideoFormProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -76,10 +77,12 @@ const AdminVideoForm: React.FC<AdminVideoFormProps> = ({
 
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
+    console.log('Submitting admin video form with values:', values);
+    
     try {
       if (video) {
         // Update existing video
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('videos')
           .update({
             title: values.title,
@@ -90,16 +93,22 @@ const AdminVideoForm: React.FC<AdminVideoFormProps> = ({
             status: values.status,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', video.id);
+          .eq('id', video.id)
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating video:', error);
+          throw error;
+        }
+
+        console.log('Successfully updated video:', data);
         toast({
           title: 'Video updated',
           description: 'The video has been successfully updated.',
         });
       } else {
         // Create new video
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('videos')
           .insert([
             {
@@ -109,10 +118,17 @@ const AdminVideoForm: React.FC<AdminVideoFormProps> = ({
               video_url: values.video_url,
               thumbnail_url: values.thumbnail_url || null,
               status: values.status,
+              user_id: user?.uid || null,
             }
-          ]);
+          ])
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error adding video:', error);
+          throw error;
+        }
+
+        console.log('Successfully added new video:', data);
         toast({
           title: 'Video added',
           description: 'The video has been successfully added.',

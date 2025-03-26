@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,10 +42,10 @@ const VideoSubmissionForm: React.FC<VideoSubmissionFormProps> = ({
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: user?.displayName || '',
+      name: user?.displayName || user?.name || '',
       email: user?.email || '',
-      business_name: '',
-      contact_number: '',
+      business_name: user?.businessName || '',
+      contact_number: user?.phone || '',
       title: '',
       description: '',
       video_type: 'youtube' as VideoType,
@@ -56,8 +55,11 @@ const VideoSubmissionForm: React.FC<VideoSubmissionFormProps> = ({
 
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
+    console.log('Submitting video form with values:', values);
+    
     try {
-      const { error } = await supabase
+      // Insert into video_submissions table
+      const { data, error } = await supabase
         .from('video_submissions')
         .insert([{
           name: values.name,
@@ -69,10 +71,17 @@ const VideoSubmissionForm: React.FC<VideoSubmissionFormProps> = ({
           video_type: values.video_type,
           video_url: values.video_url,
           user_id: user?.uid || null,
-        }]);
+          status: 'pending'
+        }])
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error submitting video:', error);
+        throw error;
+      }
 
+      console.log('Successfully submitted video:', data);
+      
       toast({
         title: 'Submission Received',
         description: 'Thank you for sharing your story! We will review your submission shortly.',
