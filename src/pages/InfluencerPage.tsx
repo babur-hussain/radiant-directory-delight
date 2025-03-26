@@ -58,6 +58,7 @@ const InfluencerPage = () => {
   };
 
   const handleSelectPackage = (pkg: ISubscriptionPackage) => {
+    console.log("Package selected on Influencer page:", pkg.title);
     setSelectedPackage(pkg);
     setShowDialog(true);
   };
@@ -166,6 +167,7 @@ const InfluencerPage = () => {
         </main>
       </div>
       
+      {/* Add the subscription dialog */}
       <SubscriptionDialog 
         isOpen={showDialog}
         setIsOpen={setShowDialog}

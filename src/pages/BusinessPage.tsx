@@ -58,6 +58,7 @@ const BusinessPage = () => {
   };
 
   const handleSelectPackage = (pkg: ISubscriptionPackage) => {
+    console.log("Package selected on Business page:", pkg.title);
     setSelectedPackage(pkg);
     setShowDialog(true);
   };
@@ -166,6 +167,7 @@ const BusinessPage = () => {
         </main>
       </div>
       
+      {/* Add the subscription dialog */}
       <SubscriptionDialog 
         isOpen={showDialog}
         setIsOpen={setShowDialog}

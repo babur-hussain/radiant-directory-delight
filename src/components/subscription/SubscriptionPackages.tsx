@@ -22,6 +22,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   const filteredPackages = packages?.filter(pkg => pkg.type === userRole) || [];
 
   const handleSelectPackage = (pkg: ISubscriptionPackage) => {
+    console.log("Package selected:", pkg.title);
     if (onSelectPackage) {
       onSelectPackage(pkg);
     }
