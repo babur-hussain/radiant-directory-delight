@@ -47,7 +47,7 @@ const SupabaseDashboardSections = () => {
   const [isSavingUser, setIsSavingUser] = useState(false);
   
   const { packages, isLoading: packagesLoading, refetch: refetchPackages } = useSubscriptionPackages();
-  const { users, isLoading: usersLoading, fetchUsers } = useSupabaseUsers(true);
+  const { users, isLoading: usersLoading, fetchUsers } = useSupabaseUsers();
   const { toast } = useToast();
   
   useEffect(() => {
