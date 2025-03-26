@@ -57,6 +57,18 @@ const BusinessesHeader: React.FC<BusinessesHeaderProps> = ({
   selectedRating,
   setSelectedRating
 }) => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+  
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      // The search is already being applied as the user types,
+      // so we don't need to do anything special on Enter
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-md p-6 mb-12">
       <div className="flex flex-col md:flex-row gap-4">
@@ -65,8 +77,10 @@ const BusinessesHeader: React.FC<BusinessesHeaderProps> = ({
           <Input
             placeholder="Search businesses by name, description or tags..."
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
+            onKeyDown={handleKeyDown}
             className="pl-10 text-gray-900"
+            aria-label="Search businesses"
           />
         </div>
         

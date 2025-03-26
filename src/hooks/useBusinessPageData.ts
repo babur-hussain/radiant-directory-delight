@@ -7,6 +7,7 @@ import {
   Business
 } from "@/lib/csv-utils";
 import { businessesData } from "@/data/businessesData";
+import { useBusinessSearchFilter } from "./useBusinessSearchFilter";
 
 // Extended business type that includes location field
 export interface ExtendedBusiness extends Business {
@@ -143,34 +144,17 @@ export const useBusinessPageData = (initialQuery: string = '') => {
     setCurrentPage(1);
   };
   
-  const filteredBusinesses = useMemo(() => {
-    let results = businesses.filter(business => {
-      const matchesSearch = searchQuery === "" || 
-        business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        business.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        business.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-      const matchesCategory = selectedCategory === "" || business.category === selectedCategory;
-      
-      const matchesRating = selectedRating === "" || 
-        (selectedRating === "4+" && business.rating >= 4) ||
-        (selectedRating === "3+" && business.rating >= 3) ||
-        (selectedRating === "2+" && business.rating >= 2);
-        
-      const matchesFeatured = !featuredOnly || business.featured;
-      
-      const matchesLocation = !selectedLocation || 
-        (business.location && business.location.includes(selectedLocation)) || 
-        business.address.includes(selectedLocation);
-      
-      const matchesTags = activeTags.length === 0 || 
-        activeTags.some(tag => business.tags.includes(tag));
-      
-      return matchesSearch && matchesCategory && matchesRating && 
-             matchesFeatured && matchesLocation && matchesTags;
-    });
-    
-    return results.sort((a, b) => {
+  const { filteredBusinesses } = useBusinessSearchFilter(businesses, {
+    searchQuery,
+    selectedCategory,
+    selectedRating,
+    featuredOnly,
+    selectedLocation,
+    activeTags
+  });
+  
+  const sortedBusinesses = useMemo(() => {
+    return [...filteredBusinesses].sort((a, b) => {
       if (sortBy === "rating") {
         return b.rating - a.rating;
       } else if (sortBy === "reviews") {
@@ -178,19 +162,10 @@ export const useBusinessPageData = (initialQuery: string = '') => {
       }
       return b.featured ? 1 : -1;
     });
-  }, [
-    businesses,
-    searchQuery, 
-    selectedCategory, 
-    selectedRating, 
-    featuredOnly, 
-    selectedLocation, 
-    activeTags, 
-    sortBy
-  ]);
+  }, [filteredBusinesses, sortBy]);
   
-  const totalPages = Math.ceil(filteredBusinesses.length / itemsPerPage);
-  const currentBusinesses = filteredBusinesses.slice(
+  const totalPages = Math.ceil(sortedBusinesses.length / itemsPerPage);
+  const currentBusinesses = sortedBusinesses.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -222,7 +197,7 @@ export const useBusinessPageData = (initialQuery: string = '') => {
   return {
     loading,
     businesses: currentBusinesses as unknown as Business[],
-    filteredBusinesses,
+    filteredBusinesses: sortedBusinesses,
     searchQuery,
     setSearchQuery,
     selectedCategory,

@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import TablePagination from "@/components/admin/table/TablePagination";
 import BusinessesHeader from "@/components/businesses/BusinessesPage/BusinessesHeader";
 import ActiveFiltersDisplay from "@/components/businesses/BusinessesPage/ActiveFiltersDisplay";
@@ -7,9 +8,21 @@ import BusinessesSorting from "@/components/businesses/BusinessesPage/Businesses
 import BusinessesGrid from "@/components/businesses/BusinessesPage/BusinessesGrid";
 import { useBusinessPageData } from "@/hooks/useBusinessPageData";
 import { BusinessPageLoading } from "@/components/businesses/BusinessPageLoading";
+import { useBusinessSearchFilter } from "@/hooks/useBusinessSearchFilter";
 
 const BusinessesPage = () => {
   const [openFilters, setOpenFilters] = useState(false);
+  const location = useLocation();
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Get search param from URL if present
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const searchFromUrl = searchParams.get('search');
+    if (searchFromUrl) {
+      setSearchQuery(searchFromUrl);
+    }
+  }, [location.search]);
 
   const {
     loading,
@@ -37,6 +50,18 @@ const BusinessesPage = () => {
     activeFilterCount,
     totalPages
   } = useBusinessPageData();
+  
+  // Handle search state
+  useEffect(() => {
+    if (searchQuery) {
+      setIsSearching(true);
+      const timer = setTimeout(() => {
+        setIsSearching(false);
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [searchQuery]);
   
   if (loading) {
     return <BusinessPageLoading />;
@@ -97,6 +122,7 @@ const BusinessesPage = () => {
       <BusinessesGrid 
         businesses={currentBusinesses}
         clearAllFilters={clearAllFilters}
+        isSearching={isSearching}
       />
       
       {totalPages > 1 && (
