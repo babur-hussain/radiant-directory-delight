@@ -259,10 +259,12 @@ export const getAllBusinesses = async (): Promise<Business[]> => {
 
     // Ensure the data conforms to our Business type
     const businesses: Business[] = data.map(item => {
-      let hours: string | Record<string, string> | null = item.hours as string | Record<string, string> | null;
+      let hours: string | Record<string, string> | null = null;
       try {
         if (typeof item.hours === 'string') {
           hours = JSON.parse(item.hours);
+        } else if (item.hours && typeof item.hours === 'object') {
+          hours = item.hours;
         }
       } catch (e) {
         console.warn('Could not parse hours:', e);
@@ -390,3 +392,4 @@ export const downloadCSV = (csvContent: string, filename = 'businesses.csv') => 
   link.click();
   document.body.removeChild(link);
 };
+
