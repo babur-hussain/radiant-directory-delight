@@ -42,10 +42,18 @@ export const initializeData = async () => {
       throw error;
     }
     
+    // Convert the data to match our Business interface
     businessesData = data.map(business => ({
       ...business,
+      // Ensure hours is converted from JSON string or Json type to Record<string, any>
+      hours: business.hours ? 
+        (typeof business.hours === 'string' ? 
+          JSON.parse(business.hours) : 
+          (typeof business.hours === 'object' ? business.hours : {})
+        ) : {},
+      // Ensure tags is an array
       tags: business.tags || []
-    }));
+    })) as Business[];
     
     initialized = true;
     
@@ -297,6 +305,12 @@ const processSingleBusiness = async (
     reviews: mappedBusiness.reviews || 0,
     tags: mappedBusiness.tags || [],
     featured: mappedBusiness.featured === 'true' || mappedBusiness.featured === true || false,
+    // Ensure hours is a proper object
+    hours: mappedBusiness.hours ? 
+      (typeof mappedBusiness.hours === 'string' ? 
+        JSON.parse(mappedBusiness.hours) : 
+        mappedBusiness.hours
+      ) : {}
   };
 
   return {
@@ -326,9 +340,19 @@ const saveBatchToSupabase = async (businesses: Business[]): Promise<{
         // Remove the temporary ID before saving
         const { id, ...businessWithoutId } = business;
         
+        // Convert hours to string if it's an object
+        const businessToSave = {
+          ...businessWithoutId,
+          hours: businessWithoutId.hours ? 
+            (typeof businessWithoutId.hours === 'string' ? 
+              businessWithoutId.hours : 
+              JSON.stringify(businessWithoutId.hours)
+            ) : null
+        };
+        
         const { data, error } = await supabase
           .from('businesses')
-          .insert(businessWithoutId)
+          .insert(businessToSave)
           .select();
         
         if (error) {
