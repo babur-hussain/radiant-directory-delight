@@ -1,13 +1,12 @@
 
-// Define the ISubscriptionPackage type to properly reflect the structure needed
 export interface ISubscriptionPackage {
   id: string;
   title: string;
   price: number;
   monthlyPrice?: number;
   shortDescription?: string;
-  fullDescription?: string;  // Can now store long text paragraphs
-  features: string[];        // Array of feature strings
+  fullDescription?: string;
+  features: string[];
   setupFee?: number;
   popular?: boolean;
   type: 'Business' | 'Influencer';
@@ -15,7 +14,7 @@ export interface ISubscriptionPackage {
   advancePaymentMonths?: number;
   paymentType: 'recurring' | 'one-time';
   billingCycle?: 'monthly' | 'yearly';
-  termsAndConditions?: string;  // Can now store long text paragraphs
+  termsAndConditions?: string;
   dashboardSections?: string[];
   isActive?: boolean;
 }

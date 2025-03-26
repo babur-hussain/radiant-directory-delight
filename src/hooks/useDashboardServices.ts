@@ -1,11 +1,13 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useSubscription } from '@/hooks/useSubscription';
 
 export const useDashboardServices = (userId: string, userRole: string) => {
   const [services, setServices] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { fetchUserSubscription } = useSubscription(userId);
   
   useEffect(() => {
     const fetchServices = async () => {
@@ -18,18 +20,9 @@ export const useDashboardServices = (userId: string, userRole: string) => {
       
       try {
         // First get the user's active subscription
-        const { data: subscription, error: subError } = await supabase
-          .from('user_subscriptions')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('status', 'active')
-          .maybeSingle();
+        const subscriptionResult = await fetchUserSubscription(userId);
         
-        if (subError) {
-          throw new Error(subError.message);
-        }
-        
-        if (!subscription) {
+        if (!subscriptionResult.success || !subscriptionResult.data) {
           setServices([]);
           setIsLoading(false);
           return;
@@ -39,7 +32,7 @@ export const useDashboardServices = (userId: string, userRole: string) => {
         const { data: packageData, error: packageError } = await supabase
           .from('subscription_packages')
           .select('dashboard_sections')
-          .eq('id', subscription.package_id)
+          .eq('id', subscriptionResult.data.package_id)
           .single();
         
         if (packageError) {
@@ -64,7 +57,7 @@ export const useDashboardServices = (userId: string, userRole: string) => {
     };
     
     fetchServices();
-  }, [userId, userRole]);
+  }, [userId, userRole, fetchUserSubscription]);
   
   return { services, isLoading, error };
 };

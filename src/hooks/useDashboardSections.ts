@@ -20,9 +20,9 @@ export const useDashboardSections = (userId: string) => {
       
       try {
         // First get the user's active subscription
-        const userSubscription = await fetchUserSubscription(userId);
+        const subscriptionResult = await fetchUserSubscription(userId);
         
-        if (!userSubscription || userSubscription.status !== 'active') {
+        if (!subscriptionResult.success || !subscriptionResult.data || subscriptionResult.data.status !== 'active') {
           setDashboardSections([]);
           setIsLoading(false);
           return;
@@ -32,7 +32,7 @@ export const useDashboardSections = (userId: string) => {
         const { data: packageData, error: packageError } = await supabase
           .from('subscription_packages')
           .select('dashboard_sections')
-          .eq('id', userSubscription.package_id)
+          .eq('id', subscriptionResult.data.package_id)
           .single();
         
         if (packageError) {

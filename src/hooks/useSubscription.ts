@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
@@ -29,6 +29,12 @@ export interface IUserSubscription {
   signup_fee: number;
   billing_cycle: string;
   transaction_id: string;
+}
+
+// Define the return type for fetchUserSubscription
+interface SubscriptionResult {
+  success: boolean;
+  data: IUserSubscription | null;
 }
 
 /**
@@ -117,7 +123,7 @@ export const useSubscription = (userId?: string) => {
   /**
    * Fetch a user's subscription
    */
-  const fetchUserSubscription = async (uid: string) => {
+  const fetchUserSubscription = async (uid: string): Promise<SubscriptionResult> => {
     setLoading(true);
     setError(null);
     try {
@@ -131,18 +137,19 @@ export const useSubscription = (userId?: string) => {
       if (subError) {
         console.error('Error fetching user subscription:', subError);
         setError(subError.message);
-        return null;
+        setLoading(false);
+        return { success: false, data: null };
       }
       
       setUserSubscription(data);
-      return data;
+      setLoading(false);
+      return { success: true, data };
     } catch (err) {
       console.error('Error in fetchUserSubscription:', err);
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
-      return null;
-    } finally {
       setLoading(false);
+      return { success: false, data: null };
     }
   };
 
