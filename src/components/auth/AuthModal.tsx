@@ -77,16 +77,28 @@ const AuthModal: React.FC<AuthModalProps> = ({
           </TabsList>
           <TabsContent value="login" className="mt-4">
             <LoginForm 
-              onSuccess={handleLoginSuccess} 
-              onRegisterClick={() => setActiveTab('register')}
-              onForgotPasswordClick={() => setActiveTab('reset-password')}
-              callbackUrl={callbackUrl}
+              onLogin={async (email, password, employeeCode) => {
+                try {
+                  await loginWithGoogle();
+                  handleLoginSuccess();
+                } catch (error) {
+                  console.error("Login error:", error);
+                }
+              }}
+              onClose={handleLoginSuccess}
             />
           </TabsContent>
           <TabsContent value="register" className="mt-4">
             <RegisterForm 
-              onSuccess={handleRegisterSuccess} 
-              onLoginClick={() => setActiveTab('login')}
+              onSignup={async (email, password, name, role, additionalData) => {
+                try {
+                  // Add signup logic here
+                  handleRegisterSuccess();
+                } catch (error) {
+                  console.error("Registration error:", error);
+                }
+              }}
+              onClose={handleRegisterSuccess}
             />
           </TabsContent>
           <TabsContent value="reset-password" className="mt-4">

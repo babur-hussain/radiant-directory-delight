@@ -1,4 +1,3 @@
-
 import { createContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -28,9 +27,12 @@ export const AuthContext = createContext<AuthContextType>({
   signup: async () => null,
   logout: async () => {},
   refreshUserData: async () => null,
+  error: null,
+  resetPassword: async () => null,
+  updateUserProfile: async () => null,
 });
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
@@ -301,8 +303,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Reset password function
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Reset password error:", error);
+      throw error;
+    }
+  };
+
   // Context value
-  const value: AuthContextType = {
+  const authContextValue: AuthContextType = {
     currentUser: user,
     user,
     isAuthenticated: !!user,
@@ -313,7 +333,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signup,
     logout: logoutUser,
     refreshUserData,
+    error: null,
+    resetPassword,
+    updateUserProfile: async (data) => {
+      // Placeholder for updating user profile
+      console.log("Update user profile with data:", data);
+      return null;
+    },
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={authContextValue}>{children}</AuthContext.Provider>;
 };

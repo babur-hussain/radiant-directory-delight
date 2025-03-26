@@ -1,4 +1,3 @@
-
 export type UserRole = "User" | "Business" | "Influencer" | "Staff" | "Admin" | null;
 
 export interface User {
@@ -66,20 +65,19 @@ export interface User {
 }
 
 export interface AuthContextType {
+  currentUser: User | null;
   user: User | null;
-  loading: boolean;
   isAuthenticated: boolean;
+  loading: boolean;
+  initialized: boolean;
+  error: Error | null;
   login: (email: string, password: string, employeeCode?: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
-  signup: (
-    email: string, 
-    password: string, 
-    displayName: string, 
-    role: UserRole, 
-    additionalData?: Record<string, any>
-  ) => Promise<void>;
+  signup: (email: string, password: string, userData?: Partial<User>) => Promise<void>;
   logout: () => Promise<void>;
-  updateUserData: (data: Partial<User>) => Promise<void>;
+  refreshUserData: () => Promise<void>;
+  resetPassword: (email: string) => Promise<boolean>;
+  updateUserProfile: (data: Partial<User>) => Promise<User | null>;
 }
 
 export interface UserSubscription {
