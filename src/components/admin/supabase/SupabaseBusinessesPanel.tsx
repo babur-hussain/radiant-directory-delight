@@ -486,16 +486,20 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
               <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
                 <Select
-                  value={formData.category || ''}
+                  value={formData.category || 'Other'}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
                 >
                   <SelectTrigger id="category">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map(category => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
-                    ))}
+                    {categories.length > 0 ? (
+                      categories.filter(cat => cat.trim() !== '').map(category => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="Other">Other</SelectItem>
+                    )}
                     <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>

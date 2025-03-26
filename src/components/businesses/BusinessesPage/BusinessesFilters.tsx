@@ -56,6 +56,9 @@ const BusinessesFilters: React.FC<BusinessesFiltersProps> = ({
       <ChevronUp className="ml-1 h-4 w-4" />;
   };
 
+  // Ensure categories array doesn't have empty strings
+  const filteredCategories = categories.filter(category => category.trim() !== '');
+
   return (
     <div className="mb-8 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -63,15 +66,15 @@ const BusinessesFilters: React.FC<BusinessesFiltersProps> = ({
           <span className="text-sm font-medium">Filter by:</span>
           
           <Select
-            value={selectedCategory || ""}
-            onValueChange={(value) => onCategorySelect(value || null)}
+            value={selectedCategory || "all"}
+            onValueChange={(value) => onCategorySelect(value === "all" ? null : value)}
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Categories</SelectItem>
-              {categories.map((category) => (
+              <SelectItem value="all">All Categories</SelectItem>
+              {filteredCategories.map((category) => (
                 <SelectItem key={category} value={category}>
                   {category}
                 </SelectItem>
@@ -108,7 +111,7 @@ const BusinessesFilters: React.FC<BusinessesFiltersProps> = ({
         <div className="pt-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium">Tags:</span>
-            {tags.map((tag) => (
+            {tags.filter(tag => tag.trim() !== '').map((tag) => (
               <Badge 
                 key={tag}
                 variant={selectedTags.includes(tag) ? "default" : "outline"}
