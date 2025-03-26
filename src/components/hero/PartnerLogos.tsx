@@ -29,10 +29,11 @@ const PartnerLogos: React.FC<PartnerLogosProps> = ({ partners, className = '' })
             <img
               src={partner.logoUrl}
               alt={partner.alt}
-              className="h-8 md:h-12 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300"
+              className="h-8 md:h-12 w-auto object-contain hover:scale-110 transition-all duration-300"
               style={{ 
                 aspectRatio: `${partner.width}/${partner.height}`,
-                maxWidth: isMobile ? '80px' : '120px'
+                maxWidth: isMobile ? '80px' : '120px',
+                filter: 'none' // Removing grayscale to show colorful logos
               }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -40,7 +41,7 @@ const PartnerLogos: React.FC<PartnerLogosProps> = ({ partners, className = '' })
               }}
             />
           </div>
-          <p className="text-xs md:text-sm text-gray-500">We have worked with</p>
+          <p className="text-xs md:text-sm text-gray-500 text-center">We have worked with</p>
           <p className="text-sm md:text-lg font-semibold text-gray-800">{partner.name}</p>
         </div>
       ))}
