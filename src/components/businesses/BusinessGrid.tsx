@@ -2,7 +2,7 @@
 import { Button } from '@/components/ui/button';
 import BusinessCard from './BusinessCard';
 import { Link } from 'react-router-dom';
-import { Business } from '@/lib/csv-utils';
+import { Business } from '@/lib/csv/types';
 import Loading from '@/components/ui/loading';
 
 interface BusinessGridProps {

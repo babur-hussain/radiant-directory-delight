@@ -1,7 +1,8 @@
+
 import { useState } from 'react';
 import { Star, MapPin, Phone, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import BusinessImage from '@/components/BusinessImage';
-import { Business } from '@/lib/csv-utils';
+import { Business } from '@/lib/csv/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { createGoogleSearchUrl } from '@/lib/utils';
 
@@ -12,7 +13,7 @@ interface BusinessCardProps {
 const BusinessCard = ({ business }: BusinessCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const maxVisibleTags = 2;
-  const hasMoreTags = business.tags.length > maxVisibleTags;
+  const hasMoreTags = business.tags && business.tags.length > maxVisibleTags;
 
   return (
     <div className="group bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-smooth">
@@ -29,7 +30,7 @@ const BusinessCard = ({ business }: BusinessCardProps) => {
           </span>
         )}
         <div className="absolute top-3 right-3 flex gap-1">
-          {business.tags.slice(0, 2).map((tag, index) => (
+          {business.tags && business.tags.slice(0, 2).map((tag, index) => (
             <span 
               key={index} 
               className="bg-white/90 backdrop-blur-sm text-gray-700 text-xs px-2 py-1 rounded-md"
@@ -55,18 +56,22 @@ const BusinessCard = ({ business }: BusinessCardProps) => {
         
         <p className="text-sm text-gray-500 mb-3 line-clamp-2">{business.description}</p>
         
-        <div className="flex items-center text-sm text-gray-500 mb-2">
-          <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
-          <span className="truncate">{business.address}</span>
-        </div>
+        {business.address && (
+          <div className="flex items-center text-sm text-gray-500 mb-2">
+            <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
+            <span className="truncate">{business.address}</span>
+          </div>
+        )}
         
-        <div className="flex items-center text-sm text-gray-500">
-          <Phone className="h-4 w-4 mr-1 flex-shrink-0" />
-          <span>{business.phone}</span>
-        </div>
+        {business.phone && (
+          <div className="flex items-center text-sm text-gray-500">
+            <Phone className="h-4 w-4 mr-1 flex-shrink-0" />
+            <span>{business.phone}</span>
+          </div>
+        )}
         
         {/* Collapsible Tags Section */}
-        {business.tags.length > 0 && (
+        {business.tags && business.tags.length > 0 && (
           <div className="mt-3">
             <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-2">
               <div className="flex flex-wrap gap-1">
@@ -107,7 +112,7 @@ const BusinessCard = ({ business }: BusinessCardProps) => {
       <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
         <span className="text-xs font-medium text-gray-500">{business.category}</span>
         <a 
-          href={createGoogleSearchUrl(business.name, business.address)}
+          href={createGoogleSearchUrl(business.name, business.address || '')}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center text-xs font-medium text-primary hover:text-primary/90 transition-smooth"

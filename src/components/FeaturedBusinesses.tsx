@@ -1,38 +1,61 @@
 
 import { useState, useEffect } from 'react';
-import { getAllBusinesses } from '@/lib/csv-utils';
+import { supabase } from '@/integrations/supabase/client';
 import CategoryFilter from './businesses/CategoryFilter';
 import AdvancedFilters from './businesses/AdvancedFilters';
 import ActiveFilters from './businesses/ActiveFilters';
 import BusinessGrid from './businesses/BusinessGrid';
 import Loading from './ui/loading';
 import { toast } from '@/components/ui/use-toast';
+import { Business } from '@/lib/csv/types';
 
 const FeaturedBusinesses = () => {
-  const [businesses, setBusinesses] = useState([]);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
   const [visibleCategory, setVisibleCategory] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedRating, setSelectedRating] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Load businesses data
+  // Load businesses data directly from Supabase
   useEffect(() => {
-    const loadBusinesses = async () => {
+    const fetchFeaturedBusinesses = async () => {
       setLoading(true);
       try {
-        // Simulate network delay for loading state demonstration
-        setTimeout(() => {
-          // Get businesses from the utility function that combines original and uploaded businesses
-          // getAllBusinesses now returns businesses sorted by priority
-          const allBusinesses = getAllBusinesses();
-          
-          // Filter to featured businesses and take the first 6
-          // Priority sorting is already applied by getAllBusinesses
-          const featuredBusinesses = allBusinesses.filter(b => b.featured).slice(0, 6);
-          setBusinesses(featuredBusinesses);
-          setLoading(false);
-        }, 800);
+        // Fetch featured businesses from Supabase
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('*')
+          .eq('featured', true)
+          .order('name', { ascending: true })
+          .limit(6);
+        
+        if (error) {
+          throw error;
+        }
+        
+        // Format the businesses to match our Business type
+        const formattedBusinesses = data.map(business => ({
+          ...business,
+          // Ensure proper typing
+          id: business.id,
+          name: business.name,
+          category: business.category || '',
+          address: business.address || '',
+          phone: business.phone || '',
+          description: business.description || '',
+          email: business.email || '',
+          website: business.website || '',
+          rating: business.rating || 0,
+          reviews: business.reviews || 0,
+          image: business.image || '',
+          featured: business.featured || false,
+          tags: business.tags || [],
+          // Ensure hours is properly handled as an object
+          hours: business.hours || {}
+        })) as Business[];
+        
+        setBusinesses(formattedBusinesses);
       } catch (error) {
         console.error("Error loading businesses:", error);
         toast({
@@ -40,20 +63,23 @@ const FeaturedBusinesses = () => {
           description: "There was an issue loading the featured businesses. Please try refreshing the page.",
           variant: "destructive"
         });
+      } finally {
         setLoading(false);
       }
     };
     
-    loadBusinesses();
+    fetchFeaturedBusinesses();
   }, []);
   
+  // Extract unique categories from businesses
   const categories = Array.from(new Set(businesses.map(b => b.category)));
   
   // Extract unique locations (cities) from business addresses
   const locations = Array.from(new Set(businesses.map(b => {
+    if (!b.address) return '';
     const parts = b.address.split(',');
     return parts.length > 1 ? parts[1].trim() : parts[0].trim();
-  })));
+  }))).filter(Boolean); // Filter out empty strings
   
   // Filter businesses based on all selected filters
   const filteredBusinesses = businesses.filter(business => {
@@ -71,7 +97,7 @@ const FeaturedBusinesses = () => {
     }
     
     // Location filter
-    if (selectedLocation) {
+    if (selectedLocation && business.address) {
       const businessLocation = business.address.split(',');
       const cityPart = businessLocation.length > 1 ? businessLocation[1].trim() : businessLocation[0].trim();
       if (cityPart !== selectedLocation) {
@@ -170,6 +196,15 @@ const FeaturedBusinesses = () => {
               resetFilters={resetFilters} 
               loading={false} 
             />
+
+            {/* Show a message when no featured businesses are found */}
+            {businesses.length === 0 && !loading && (
+              <div className="text-center py-10">
+                <p className="text-lg text-gray-600">
+                  No featured businesses found. Try marking some businesses as featured.
+                </p>
+              </div>
+            )}
           </>
         )}
       </div>
