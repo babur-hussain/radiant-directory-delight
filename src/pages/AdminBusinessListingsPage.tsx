@@ -89,14 +89,34 @@ const AdminBusinessListingsPage = () => {
     }
   };
   
-  const handleDeleteBusiness = (businessId: string | number) => {
+  const handleDeleteBusiness = async (businessId: string | number) => {
     // Use type guard for numeric ids
     if (isNumberId(businessId)) {
       const numericId = toNumberId(businessId);
-      // Rest of deletion logic with numericId
+      try {
+        const { error } = await supabase
+          .from('businesses')
+          .delete()
+          .eq('id', numericId);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Business Deleted",
+          description: "The business has been removed successfully."
+        });
+      } catch (error) {
+        console.error("Error deleting business:", error);
+        toast({
+          title: "Delete Failed",
+          description: "Could not delete the business",
+          variant: "destructive"
+        });
+      }
     }
+    
     setBusinesses(businesses.filter(business => business.id !== businessId));
-    fetchBusinesses();
+    await fetchBusinesses();
   }
   
   const handleBusinessFormSubmit = async (values: BusinessFormValues) => {
