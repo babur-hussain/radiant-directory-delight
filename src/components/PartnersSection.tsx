@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import PartnerLogos from './hero/PartnerLogos';
 
 const partnerLogos = [
   {
@@ -49,52 +50,32 @@ const itemVariants = {
 const PartnersSection: React.FC = () => {
   return (
     <section className="py-16 bg-gradient-to-r from-gray-50 to-gray-100">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Our Partners</h2>
-          <div className="w-20 h-1 bg-primary mx-auto mb-6"></div>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Our Partners</h2>
+          <div className="w-16 md:w-20 h-1 bg-primary mx-auto mb-4 md:mb-6"></div>
+          <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto">
             Trusted by leading companies across the globe
           </p>
         </div>
 
-        <motion.div 
-          className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-        >
-          {partnerLogos.map((partner) => (
-            <motion.div
-              key={partner.name}
-              className="flex flex-col items-center justify-center p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
-              variants={itemVariants}
-            >
-              <div className="h-20 flex items-center justify-center mb-4">
-                <img
-                  src={partner.logo}
-                  alt={partner.alt}
-                  className="h-12 object-contain"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = "https://via.placeholder.com/150x50/e2e8f0/475569?text=" + partner.name;
-                  }}
-                />
-              </div>
-              <p className="text-sm text-gray-500">We have worked with</p>
-              <p className="text-xl font-semibold text-gray-800">{partner.name}</p>
-            </motion.div>
-          ))}
-        </motion.div>
+        <div className="max-w-6xl mx-auto">
+          <PartnerLogos partners={partnerLogos} className="mb-12" />
+        </div>
 
-        <div className="bg-primary/10 rounded-xl p-8 text-center">
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">Trusted By Businesses</h3>
-          <p className="text-4xl font-bold text-primary mb-2">25,000+</p>
-          <p className="text-lg text-gray-600">
+        <motion.div 
+          className="bg-primary/10 rounded-lg md:rounded-xl p-6 md:p-8 text-center max-w-4xl mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6 }}
+        >
+          <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">Trusted By Businesses</h3>
+          <p className="text-3xl md:text-4xl font-bold text-primary mb-2">25,000+</p>
+          <p className="text-base md:text-lg text-gray-600">
             Businesses have partnered with us to grow their presence and reach new customers
           </p>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
