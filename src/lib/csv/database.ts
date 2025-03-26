@@ -103,14 +103,17 @@ const prepareBusinessForSupabase = (business: Business): SupabaseReadyBusiness =
     }
   }
   
-  // Ensure tags is an array - FIX: properly handle the tags property type
+  // Ensure tags is properly handled as an array
   let tagsArray: string[] = [];
   
   if (businessCopy.tags) {
     if (Array.isArray(businessCopy.tags)) {
       tagsArray = businessCopy.tags;
     } else if (typeof businessCopy.tags === 'string') {
-      tagsArray = businessCopy.tags.split(',').map(t => t.trim());
+      tagsArray = businessCopy.tags.split(',').map(tag => tag.trim());
+    } else {
+      // Handle other cases, just use empty array
+      console.warn('Unknown tags type encountered:', typeof businessCopy.tags);
     }
   }
   
