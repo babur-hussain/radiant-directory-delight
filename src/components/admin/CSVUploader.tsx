@@ -10,6 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { processCsvData } from '@/lib/csv-utils';
 import { toast } from '@/hooks/use-toast';
 
+// Schema validation for file upload
 const formSchema = z.object({
   file: z.instanceof(File, { message: 'Please select a CSV file' })
     .refine(file => file.name.endsWith('.csv'), { message: 'Only CSV files are allowed' })
@@ -90,11 +91,11 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
                 description: "No businesses were imported. Check if your CSV format is correct.",
                 variant: "destructive"
               });
-              setCsvError("No businesses were imported. Check if your CSV has the required 'Business Name' column.");
+              setCsvError("No businesses were imported. Make sure your CSV has the required 'Business Name' column.");
               onUploadComplete(false, "No businesses were imported");
             } else {
               toast({
-                title: "Upload Failed",
+                title: "Upload Issues",
                 description: message,
                 variant: "destructive"
               });

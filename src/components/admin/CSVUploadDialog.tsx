@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { DownloadCloud, AlertCircle } from 'lucide-react';
+import { DownloadCloud, AlertCircle, Info } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import CSVUploader from './CSVUploader';
 
 interface CSVUploadDialogProps {
@@ -31,7 +32,7 @@ const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ show, onClose, onUplo
 
   const handleDownloadTemplate = () => {
     // Create a sample CSV template
-    const csvHeader = "Business Name,Category,Address,Mobile Number,Review,Description,Email,Website,Tags\n";
+    const csvHeader = "Business Name,Category,Address,Mobile Number,Rating,Description,Email,Website,Tags\n";
     const sampleRow1 = "Acme Coffee Shop,Cafe,123 Main St,555-123-4567,4.5,Best coffee in town,info@acmecoffee.com,https://acmecoffee.com,\"coffee, pastries\"\n";
     const sampleRow2 = "Tech Solutions,Technology,456 Tech Blvd,555-987-6543,5,Professional IT services,contact@techsolutions.com,https://techsolutions.com,\"it, services, computer repair\"\n";
     const csvContent = csvHeader + sampleRow1 + sampleRow2;
@@ -70,20 +71,19 @@ const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ show, onClose, onUplo
           <DialogDescription>
             <p>Upload a CSV file to import multiple businesses. Only <strong>Business Name</strong> is required, all other fields are optional.</p>
             
-            <div className="mt-2 p-4 bg-amber-50 border border-amber-200 rounded-md text-amber-700 text-sm">
-              <div className="flex items-start">
-                <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium">Important Instructions:</p>
-                  <ul className="list-disc pl-5 mt-1 space-y-1">
-                    <li>Business Name is the only required field</li>
-                    <li>For the best results, include Category, Address, and Phone</li>
-                    <li>Use a comma to separate multiple tags</li>
-                    <li>Ratings should be values between 0-5</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
+            <Alert className="mt-2 bg-amber-50 border-amber-200">
+              <Info className="h-4 w-4 text-amber-700" />
+              <AlertDescription className="text-amber-700">
+                <div className="font-medium mb-1">Important Tips:</div>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Business Name is the only required field</li>
+                  <li>The system automatically generates IDs - don't include them</li>
+                  <li>Use commas to separate multiple tags</li>
+                  <li>Rating should be a number between 0-5</li>
+                  <li>Common headers are recognized automatically</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
           </DialogDescription>
         </DialogHeader>
         
@@ -103,7 +103,7 @@ const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ show, onClose, onUplo
         
         {uploadError && (
           <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
-            <strong>Upload Failed:</strong> {uploadError}
+            <strong>Upload Issue:</strong> {uploadError}
           </div>
         )}
       </DialogContent>

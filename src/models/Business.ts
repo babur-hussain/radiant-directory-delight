@@ -1,4 +1,3 @@
-
 import { Database } from '@/integrations/supabase/types';
 
 export interface IBusiness {
@@ -43,21 +42,66 @@ export const fromSupabase = (data: Database['public']['Tables']['businesses']['R
 };
 
 // Map CSV column headers to database fields for import
+// Enhanced to support more variations of column names
 export const csvHeaderMapping = {
+  // Name variations
   "Business Name": "name",
   "BusinessName": "name",
   "Name": "name",
+  "business name": "name",
+  "business_name": "name",
+  "businessname": "name",
+  "name": "name",
+  
+  // Category variations
   "Category": "category",
+  "category": "category",
+  "Business Category": "category",
+  "BusinessCategory": "category",
+  "business_category": "category",
+  
+  // Address variations
   "Address": "address",
+  "address": "address",
+  "Location": "address",
+  "location": "address",
+  
+  // Phone variations
   "Mobile Number": "phone",
   "Phone": "phone",
   "Mobile": "phone",
+  "Contact": "phone",
+  "Phone Number": "phone",
+  "mobile": "phone",
+  "mobile number": "phone",
+  "phone": "phone",
+  "contact": "phone",
+  
+  // Rating/Review variations
   "Review": "rating",
   "Rating": "rating",
-  "Description": "description",
-  "Email": "email",
-  "Website": "website",
-  "Tags": "tags",
+  "Stars": "rating",
+  "review": "rating",
+  "rating": "rating",
+  
+  // Reviews count variations
   "Reviews": "reviews",
-  "Image": "image"
+  "reviews": "reviews",
+  "Review Count": "reviews",
+  "ReviewCount": "reviews",
+  "review count": "reviews",
+  
+  // Other fields
+  "Description": "description",
+  "description": "description",
+  "Email": "email",
+  "email": "email",
+  "Website": "website",
+  "website": "website",
+  "Tags": "tags",
+  "tags": "tags",
+  "Image": "image",
+  "image": "image",
+  "Featured": "featured",
+  "featured": "featured"
 };

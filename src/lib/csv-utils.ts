@@ -1,318 +1,96 @@
 
 import Papa from 'papaparse';
 import { supabase } from '@/integrations/supabase/client';
-import { IBusiness } from '@/models/Business';
+import { csvHeaderMapping } from '@/models/Business';
+import { toast } from '@/hooks/use-toast';
 
 export interface Business {
   id: number;
   name: string;
-  description?: string;
   category?: string;
   address?: string;
   phone?: string;
+  rating?: number;
+  reviews?: number;
+  description?: string;
   email?: string;
   website?: string;
-  rating: number;
-  reviews?: number;
-  latitude?: number;
-  longitude?: number;
-  hours?: Record<string, string>;
+  image?: string;
   tags?: string[];
   featured?: boolean;
-  image?: string;
+  latitude?: number;
+  longitude?: number;
+  hours?: Record<string, any>;
 }
 
-let businessesCache: Business[] = [];
-const dataChangeListeners: Function[] = [];
+// Mock data for when we can't access the real database
+let businessesData: Business[] = [];
+let initialized = false;
 
-// Function to initialize data from Supabase
-export const initializeData = async (): Promise<void> => {
+// Initialize with default data
+export const initializeData = async () => {
+  if (initialized) return;
+  
   try {
-    console.log("Initializing business data from Supabase...");
-    const { data, error } = await supabase.from('businesses').select('*');
-    
-    if (error) {
-      throw error;
-    }
-    
-    businessesCache = data as Business[];
-    console.log(`Loaded ${businessesCache.length} businesses from Supabase`);
-    notifyDataChangeListeners();
-  } catch (error) {
-    console.error("Error initializing data from Supabase:", error);
-    businessesCache = [];
-  }
-};
-
-// Generate a proper business ID within PostgreSQL integer range
-// The ID should be between 1001 and 999999 to stay within safe integer range
-const generateBusinessId = (): number => {
-  // Generate a random number between 1001 and 99999
-  return Math.floor(Math.random() * 98999) + 1001;
-};
-
-// Process CSV data and upload to Supabase
-export const processCsvData = async (csvContent: string): Promise<{ success: boolean, businesses: Business[], message: string }> => {
-  try {
-    console.log("Processing CSV data...");
-    
-    const results = Papa.parse(csvContent, {
-      header: true,
-      skipEmptyLines: true,
-      transformHeader: (header) => {
-        // Normalize headers - map from common CSV headers to our database column names
-        const headerMap: { [key: string]: string } = {
-          "Business Name": "name",
-          "BusinessName": "name",
-          "Name": "name",
-          "business_name": "name",
-          "Category": "category",
-          "category": "category",
-          "Address": "address",
-          "address": "address",
-          "Mobile Number": "phone",
-          "MobileNumber": "phone",
-          "Phone": "phone",
-          "phone": "phone",
-          "Mobile": "phone",
-          "Review": "rating",
-          "Rating": "rating",
-          "rating": "rating",
-          "Description": "description",
-          "description": "description",
-          "Email": "email",
-          "email": "email",
-          "Website": "website",
-          "website": "website",
-          "Reviews": "reviews",
-          "reviews": "reviews",
-          "Image": "image",
-          "image": "image",
-          "Tags": "tags",
-          "tags": "tags"
-        };
-        
-        return headerMap[header] || header.toLowerCase();
-      }
-    });
-    
-    if (results.errors.length > 0) {
-      console.error("CSV parsing errors:", results.errors);
-      return { 
-        success: false, 
-        businesses: [], 
-        message: `CSV parsing error: ${results.errors[0].message}` 
-      };
-    }
-    
-    console.log("CSV parsing result:", results);
-    
-    const businesses: Business[] = [];
-    const failed: string[] = [];
-    
-    // Process in batches of 10 to avoid overwhelming the database
-    const batchSize = 10;
-    const totalRows = results.data.length;
-    
-    for (let i = 0; i < totalRows; i += batchSize) {
-      const batch = results.data.slice(i, i + batchSize);
-      const batchBusinesses = [];
-      
-      for (const row of batch as any[]) {
-        try {
-          // Validate the only required field - name
-          if (!row.name || row.name.trim() === '') {
-            console.warn("Skipping row without business name:", row);
-            continue;
-          }
-          
-          // Parse rating value from string to number
-          let rating = 0;
-          if (row.rating) {
-            // Handle rating that might be a string with stars or just a number
-            const ratingValue = row.rating.toString().replace(/[^0-9.]/g, '');
-            rating = parseFloat(ratingValue) || 0;
-            // Limit rating to 5 stars max
-            rating = Math.min(rating, 5);
-          }
-          
-          // Generate a safe integer ID
-          const safeId = generateBusinessId();
-          
-          // Process tags
-          let tags = row.tags || [];
-          if (typeof tags === 'string') {
-            tags = tags.split(',').map((tag: string) => tag.trim());
-          } else if (!Array.isArray(tags)) {
-            tags = row.category ? [row.category] : [];
-          }
-          
-          // Create business object with a smaller ID that fits within PostgreSQL integer limits
-          const business: Business = {
-            id: safeId,
-            name: row.name.trim(),
-            category: row.category || "",
-            description: row.description || `${row.name} is a business in the ${row.category || "various"} category.`,
-            address: row.address || "",
-            phone: row.phone || "",
-            email: row.email || "",
-            website: row.website || "",
-            rating: rating,
-            reviews: parseInt(row.reviews) || Math.floor(Math.random() * 100) + 5,
-            latitude: parseFloat(row.latitude) || 0,
-            longitude: parseFloat(row.longitude) || 0,
-            tags: tags,
-            featured: row.featured === "true" || row.featured === true,
-            image: row.image || `/placeholder-${Math.floor(Math.random() * 5) + 1}.jpg`
-          };
-          
-          batchBusinesses.push(business);
-        } catch (rowError) {
-          console.error("Error processing CSV row:", rowError);
-        }
-      }
-      
-      if (batchBusinesses.length > 0) {
-        try {
-          // Insert the batch into Supabase
-          const { data, error } = await supabase.from('businesses').insert(batchBusinesses);
-          
-          if (error) {
-            console.error("Error inserting batch to Supabase:", error);
-            // If the batch fails, try to insert businesses one by one
-            for (const business of batchBusinesses) {
-              try {
-                console.log("Saving business to Supabase:", business.name);
-                const { error: singleError } = await supabase.from('businesses').insert([business]);
-                
-                if (singleError) {
-                  console.error("Error inserting business to Supabase:", singleError);
-                  failed.push(business.name);
-                } else {
-                  businesses.push(business);
-                }
-              } catch (singleInsertError) {
-                console.error("Error during single business insert:", singleInsertError);
-                failed.push(business.name);
-              }
-            }
-          } else {
-            // Add all businesses in the batch to our successful list
-            businesses.push(...batchBusinesses);
-          }
-        } catch (batchError) {
-          console.error("Error inserting batch to Supabase:", batchError);
-          // Mark all businesses in this batch as failed
-          failed.push(...batchBusinesses.map(b => b.name));
-        }
-      }
-    }
-    
-    // Update the cache after successfully saving to Supabase
-    if (businesses.length > 0) {
-      // Refresh the entire cache from Supabase
-      await initializeData();
-    }
-    
-    let message = `Successfully processed ${businesses.length} businesses`;
-    if (failed.length > 0) {
-      message += `. Failed to insert ${failed.length} businesses.`;
-    }
-    
-    return { 
-      success: true, 
-      businesses, 
-      message 
-    };
-  } catch (error) {
-    console.error("Error processing CSV data:", error);
-    return { 
-      success: false, 
-      businesses: [], 
-      message: `Error: ${error instanceof Error ? error.message : String(error)}` 
-    };
-  }
-};
-
-// Get all businesses from cache
-export const getAllBusinesses = (): Business[] => {
-  return [...businessesCache];
-};
-
-// Add a business
-export const addBusiness = async (businessData: Partial<Business>): Promise<Business> => {
-  try {
-    // Generate a safe integer ID
-    const businessId = businessData.id || generateBusinessId();
-    
-    // Create complete business object
-    const business: Business = {
-      id: businessId,
-      name: businessData.name || "Unnamed Business",
-      description: businessData.description || `${businessData.name} is a business in the ${businessData.category || "various"} category.`,
-      category: businessData.category || "",
-      address: businessData.address || "",
-      phone: businessData.phone || "",
-      email: businessData.email || "",
-      website: businessData.website || "",
-      rating: businessData.rating || 0,
-      reviews: businessData.reviews || 0,
-      latitude: businessData.latitude || 0,
-      longitude: businessData.longitude || 0,
-      hours: businessData.hours || {},
-      tags: businessData.tags || [businessData.category || ""],
-      featured: businessData.featured || false,
-      image: businessData.image || `/placeholder-${Math.floor(Math.random() * 5) + 1}.jpg`
-    };
-    
-    // Save to Supabase
-    const { error } = await supabase.from('businesses').insert([business]);
-    
-    if (error) {
-      throw error;
-    }
-    
-    // Update cache
-    businessesCache.push(business);
-    notifyDataChangeListeners();
-    
-    return business;
-  } catch (error) {
-    console.error("Error adding business:", error);
-    throw error;
-  }
-};
-
-// Update an existing business
-export const updateBusiness = async (businessData: Business): Promise<boolean> => {
-  try {
-    // Save to Supabase
-    const { error } = await supabase
+    // Try to fetch from Supabase
+    const { data, error } = await supabase
       .from('businesses')
-      .update(businessData)
-      .eq('id', businessData.id);
+      .select('*')
+      .order('id', { ascending: true });
     
     if (error) {
       throw error;
     }
     
-    // Update cache
-    const index = businessesCache.findIndex(b => b.id === businessData.id);
-    if (index !== -1) {
-      businessesCache[index] = businessData;
-    } else {
-      businessesCache.push(businessData);
+    businessesData = data.map(business => ({
+      ...business,
+      tags: business.tags || []
+    }));
+    
+    initialized = true;
+    
+  } catch (error) {
+    console.error("Error initializing data:", error);
+    
+    // Dispatch permission error if relevant
+    if (error instanceof Error && error.message.includes('permission')) {
+      const permissionErrorEvent = new CustomEvent('businessPermissionError', {
+        detail: { message: error.message }
+      });
+      window.dispatchEvent(permissionErrorEvent);
     }
     
-    notifyDataChangeListeners();
-    return true;
-  } catch (error) {
-    console.error("Error updating business:", error);
+    // Init with empty data as fallback
+    businessesData = [];
+    initialized = true;
     throw error;
   }
 };
 
-// Delete a business
+// Event management
+const dataChangeListeners: Array<() => void> = [];
+
+export const addDataChangeListener = (listener: () => void) => {
+  dataChangeListeners.push(listener);
+};
+
+export const removeDataChangeListener = (listener: () => void) => {
+  const index = dataChangeListeners.indexOf(listener);
+  if (index !== -1) {
+    dataChangeListeners.splice(index, 1);
+  }
+};
+
+const notifyDataChanged = () => {
+  dataChangeListeners.forEach(listener => listener());
+};
+
+// Get all businesses
+export const getAllBusinesses = (): Business[] => {
+  return [...businessesData];
+};
+
+// Delete business by ID
 export const deleteBusiness = async (id: number): Promise<boolean> => {
   try {
     const { error } = await supabase
@@ -324,9 +102,8 @@ export const deleteBusiness = async (id: number): Promise<boolean> => {
       throw error;
     }
     
-    // Update cache
-    businessesCache = businessesCache.filter(b => b.id !== id);
-    notifyDataChangeListeners();
+    businessesData = businessesData.filter(business => business.id !== id);
+    notifyDataChanged();
     return true;
   } catch (error) {
     console.error("Error deleting business:", error);
@@ -334,22 +111,247 @@ export const deleteBusiness = async (id: number): Promise<boolean> => {
   }
 };
 
-// Add a data change listener
-export const addDataChangeListener = (listener: Function): void => {
-  dataChangeListeners.push(listener);
-};
+// Helper function to process CSV data
+export const processCsvData = async (csvContent: string): Promise<{
+  success: boolean;
+  businesses: Business[];
+  message: string;
+}> => {
+  try {
+    // Parse CSV data
+    const results = Papa.parse(csvContent, {
+      header: true,
+      skipEmptyLines: true,
+    });
 
-// Remove a data change listener
-export const removeDataChangeListener = (listener: Function): void => {
-  const index = dataChangeListeners.indexOf(listener);
-  if (index !== -1) {
-    dataChangeListeners.splice(index, 1);
+    if (results.errors.length > 0) {
+      console.error("CSV parsing errors:", results.errors);
+      return {
+        success: false,
+        businesses: [],
+        message: `CSV parsing failed: ${results.errors[0].message}`
+      };
+    }
+
+    const parsedData = results.data as Record<string, any>[];
+    if (parsedData.length === 0) {
+      return {
+        success: false,
+        businesses: [],
+        message: "No data found in CSV file."
+      };
+    }
+    
+    console.log("Parsed CSV headers:", results.meta.fields);
+    console.log("First row of CSV data:", parsedData[0]);
+
+    // Process the data to match our business structure
+    const processedBusinesses: Business[] = [];
+    const processingErrors: string[] = [];
+    let successCount = 0;
+
+    // Process in batches for better performance
+    const BATCH_SIZE = 50;
+    let currentBatch: any[] = [];
+    
+    for (let i = 0; i < parsedData.length; i++) {
+      const row = parsedData[i];
+      const processedBusiness = await processSingleBusiness(row, i);
+      
+      if (processedBusiness.success) {
+        currentBatch.push(processedBusiness.business);
+        processedBusinesses.push(processedBusiness.business);
+        
+        // Process a batch when it reaches the batch size or it's the last item
+        if (currentBatch.length >= BATCH_SIZE || i === parsedData.length - 1) {
+          const { success, errorMessage, successCount: batchSuccessCount } = 
+            await saveBatchToSupabase(currentBatch);
+          
+          successCount += batchSuccessCount;
+          
+          if (!success && errorMessage) {
+            processingErrors.push(errorMessage);
+          }
+          
+          // Reset batch
+          currentBatch = [];
+        }
+      } else if (processedBusiness.errorMessage) {
+        processingErrors.push(processedBusiness.errorMessage);
+      }
+    }
+
+    // Save to our local data
+    businessesData = [...businessesData, ...processedBusinesses];
+    notifyDataChanged();
+
+    // Return results with appropriate message
+    if (processingErrors.length > 0) {
+      if (successCount === 0) {
+        return {
+          success: false,
+          businesses: [],
+          message: `Import failed: ${processingErrors.slice(0, 3).join(", ")}${processingErrors.length > 3 ? ` and ${processingErrors.length - 3} more errors` : ''}`
+        };
+      } else {
+        return {
+          success: true,
+          businesses: processedBusinesses,
+          message: `Imported ${successCount} businesses with ${processingErrors.length} errors`
+        };
+      }
+    }
+
+    return {
+      success: true,
+      businesses: processedBusinesses,
+      message: `Successfully imported ${successCount} businesses`
+    };
+  } catch (error) {
+    console.error("Error processing CSV data:", error);
+    return {
+      success: false,
+      businesses: [],
+      message: `Error processing CSV: ${error instanceof Error ? error.message : String(error)}`
+    };
   }
 };
 
-// Notify all listeners about data changes
-const notifyDataChangeListeners = (): void => {
-  for (const listener of dataChangeListeners) {
-    listener();
+// Process a single business row from CSV
+const processSingleBusiness = async (
+  row: Record<string, any>, 
+  index: number
+): Promise<{
+  success: boolean;
+  business?: Business;
+  errorMessage?: string;
+}> => {
+  // Map CSV headers to our business fields
+  const mappedBusiness: Record<string, any> = {};
+  
+  // Check for at least one recognized header
+  let hasRecognizedHeader = false;
+  
+  for (const csvHeader in row) {
+    const dbField = csvHeaderMapping[csvHeader];
+    if (dbField && row[csvHeader] !== undefined && row[csvHeader] !== null && row[csvHeader] !== '') {
+      mappedBusiness[dbField] = row[csvHeader];
+      hasRecognizedHeader = true;
+    }
+  }
+  
+  if (!hasRecognizedHeader) {
+    return {
+      success: false,
+      errorMessage: `Row ${index + 1}: No recognized headers found`
+    };
+  }
+  
+  // Validate required field "name"
+  if (!mappedBusiness.name) {
+    return {
+      success: false,
+      errorMessage: `Row ${index + 1}: Missing required "Business Name" field`
+    };
+  }
+
+  // Handle tags field (convert from CSV string to array)
+  if (mappedBusiness.tags && typeof mappedBusiness.tags === 'string') {
+    mappedBusiness.tags = mappedBusiness.tags
+      .split(',')
+      .map((tag: string) => tag.trim())
+      .filter((tag: string) => tag !== '');
+  } else {
+    mappedBusiness.tags = [];
+  }
+
+  // Convert rating to a number
+  if (mappedBusiness.rating) {
+    const rating = parseFloat(mappedBusiness.rating);
+    mappedBusiness.rating = isNaN(rating) ? 0 : Math.min(5, Math.max(0, rating));
+  }
+
+  // Convert reviews to a number
+  if (mappedBusiness.reviews) {
+    const reviews = parseInt(mappedBusiness.reviews, 10);
+    mappedBusiness.reviews = isNaN(reviews) ? 0 : reviews;
+  }
+  
+  // Don't specify an ID - let the database generate one
+  if (mappedBusiness.id) {
+    delete mappedBusiness.id;
+  }
+  
+  // Default image if not provided
+  if (!mappedBusiness.image && mappedBusiness.category) {
+    mappedBusiness.image = `https://source.unsplash.com/random/500x350/?${mappedBusiness.category.toLowerCase().replace(/\s+/g, ",")}`;
+  }
+
+  // Create business object
+  const business: Business = {
+    ...mappedBusiness,
+    id: 0, // Temporary ID, will be replaced by database
+    name: mappedBusiness.name,
+    category: mappedBusiness.category || '',
+    rating: mappedBusiness.rating || 0,
+    reviews: mappedBusiness.reviews || 0,
+    tags: mappedBusiness.tags || [],
+    featured: mappedBusiness.featured === 'true' || mappedBusiness.featured === true || false,
+  };
+
+  return {
+    success: true,
+    business
+  };
+};
+
+// Save a batch of businesses to Supabase
+const saveBatchToSupabase = async (businesses: Business[]): Promise<{
+  success: boolean;
+  errorMessage?: string;
+  successCount: number;
+}> => {
+  if (businesses.length === 0) {
+    return { success: true, successCount: 0 };
+  }
+
+  try {
+    let successCount = 0;
+    
+    // Process businesses individually to handle errors gracefully
+    for (const business of businesses) {
+      try {
+        console.log("Saving business to Supabase:", business.name);
+        
+        // Remove the temporary ID before saving
+        const { id, ...businessWithoutId } = business;
+        
+        const { data, error } = await supabase
+          .from('businesses')
+          .insert(businessWithoutId)
+          .select();
+        
+        if (error) {
+          console.error("Error inserting business to Supabase:", error);
+        } else {
+          successCount++;
+        }
+      } catch (err) {
+        console.error("Error saving individual business:", business.name, err);
+      }
+    }
+    
+    return { 
+      success: successCount > 0, 
+      successCount,
+      errorMessage: successCount === 0 ? "Failed to save any businesses" : undefined
+    };
+  } catch (error) {
+    console.error("Error saving batch to Supabase:", error);
+    return { 
+      success: false, 
+      errorMessage: `Error saving to database: ${error instanceof Error ? error.message : String(error)}`,
+      successCount: 0
+    };
   }
 };
