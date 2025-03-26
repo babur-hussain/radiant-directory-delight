@@ -23,6 +23,7 @@ import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { PaginationLink } from '@/components/ui/pagination';
 import {
   AlertCircle,
   ArrowUpDown,
@@ -56,7 +57,6 @@ import {
   X,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { PaginationLink } from '@/components/ui/pagination';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
 interface SupabaseBusinessesPanelProps {
@@ -182,7 +182,7 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
           .from('businesses')
           .update({
             name: formData.name,
-            category: formData.category,
+            category: formData.category || 'Other',
             description: formData.description,
             address: formData.address,
             phone: formData.phone,
@@ -202,7 +202,7 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
         const randomReviews = Math.floor(Math.random() * 500) + 50;
         const { error } = await supabase.from('businesses').insert([{
           name: formData.name,
-          category: formData.category,
+          category: formData.category || 'Other',
           description: formData.description,
           address: formData.address,
           phone: formData.phone,
@@ -212,7 +212,7 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
           rating: formData.rating || 4.5,
           reviews: randomReviews,
           tags: formData.tags || [],
-          image: formData.image || `https://source.unsplash.com/random/500x350/?${formData.category?.toLowerCase().replace(/\s+/g, ",")}`
+          image: formData.image || `https://source.unsplash.com/random/500x350/?${formData.category?.toLowerCase().replace(/\s+/g, ",") || 'business'}`
         }]);
 
         if (error) throw error;
@@ -275,7 +275,7 @@ const SupabaseBusinessesPanel: React.FC<SupabaseBusinessesPanelProps> = ({ onAct
     setBusinessToEdit(business);
     setFormData({
       name: business.name,
-      category: business.category,
+      category: business.category || 'Other',
       description: business.description,
       address: business.address,
       phone: business.phone,
