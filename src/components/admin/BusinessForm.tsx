@@ -1,256 +1,196 @@
-import React, { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
+
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { toast } from "@/components/ui/use-toast";
+import { Business } from '@/types/business';
 
-const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "Business name must be at least 2 characters.",
-  }),
-  description: z.string().min(10, {
-    message: "Description must be at least 10 characters.",
-  }),
-  category: z.string().min(2, {
-    message: "Category must be at least 2 characters.",
-  }),
-  address: z.string().min(5, {
-    message: "Address must be at least 5 characters.",
-  }),
-  phone: z.string().min(10, {
-    message: "Phone number must be at least 10 characters.",
-  }),
-  rating: z.number().min(0).max(5),
-  featured: z.boolean().default(false),
-  tags: z.string().optional(),
-  image: z.string().optional(),
-});
+export interface BusinessFormValues {
+  name?: string;
+  category?: string;
+  address?: string;
+  phone?: string;
+  rating?: number;
+  description?: string;
+  featured?: boolean;
+  tags?: string | string[];
+  image?: string;
+}
 
-export type BusinessFormValues = z.infer<typeof formSchema>;
-
-interface BusinessFormProps {
-  defaultValues?: Partial<BusinessFormValues>;
+export interface BusinessFormProps {
+  initialData?: Business | null;
   onSubmit: (values: BusinessFormValues) => Promise<void>;
   isSubmitting: boolean;
 }
 
-const BusinessForm = ({ defaultValues, onSubmit, isSubmitting }: BusinessFormProps) => {
-  const form = useForm<BusinessFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: defaultValues?.name || "",
-      description: defaultValues?.description || "",
-      category: defaultValues?.category || "Other",
-      address: defaultValues?.address || "",
-      phone: defaultValues?.phone || "",
-      rating: defaultValues?.rating || 0,
-      featured: defaultValues?.featured || false,
-      tags: defaultValues?.tags || "",
-      image: defaultValues?.image || "",
-    },
-    mode: "onChange",
+const BusinessForm: React.FC<BusinessFormProps> = ({
+  initialData,
+  onSubmit,
+  isSubmitting
+}) => {
+  const [formValues, setFormValues] = useState<BusinessFormValues>({
+    name: '',
+    category: '',
+    address: '',
+    phone: '',
+    rating: 0,
+    description: '',
+    featured: false,
+    tags: '',
+    image: ''
   });
 
-  const businessCategories = React.useMemo(() => {
-    try {
-      const categoriesString = localStorage.getItem("businessCategories");
-      if (categoriesString) {
-        const parsedCategories = JSON.parse(categoriesString);
-        // Filter out any empty categories
-        return Array.isArray(parsedCategories) 
-          ? parsedCategories
-              .filter(cat => cat && cat.name && cat.name.trim() !== "")
-              .map(cat => cat.name) 
-          : ["Retail", "Restaurant", "Service", "Technology", "Healthcare", "Education", "Other"];
-      }
-    } catch (e) {
-      console.error("Error parsing business categories:", e);
+  // Initialize form with data if editing
+  useEffect(() => {
+    if (initialData) {
+      const tagsString = Array.isArray(initialData.tags) 
+        ? initialData.tags.join(', ') 
+        : (typeof initialData.tags === 'string' ? initialData.tags : '');
+      
+      setFormValues({
+        name: initialData.name || '',
+        category: initialData.category || '',
+        address: initialData.address || '',
+        phone: initialData.phone || '',
+        rating: initialData.rating || 0,
+        description: initialData.description || '',
+        featured: initialData.featured || false,
+        tags: tagsString,
+        image: initialData.image || ''
+      });
     }
-    return ["Retail", "Restaurant", "Service", "Technology", "Healthcare", "Education", "Other"];
-  }, []);
+  }, [initialData]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormValues((prev) => ({
+      ...prev,
+      [name]: name === 'rating' ? parseFloat(value) : value
+    }));
+  };
+
+  const handleSwitchChange = (checked: boolean) => {
+    setFormValues((prev) => ({
+      ...prev,
+      featured: checked
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await onSubmit(formValues);
+  };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="space-y-4">
-          <FormField
-            control={form.control}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Business Name*</Label>
+          <Input
+            id="name"
             name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Business Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Business Name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Describe your business"
-                    className="resize-none"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="address"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Address</FormLabel>
-                <FormControl>
-                  <Input placeholder="Address" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone Number</FormLabel>
-                <FormControl>
-                  <Input placeholder="Phone Number" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="rating"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Rating (0-5)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="Rating"
-                    {...field}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      if (!isNaN(value) && value >= 0 && value <= 5) {
-                        field.onChange(value);
-                      } else {
-                        field.onChange(0);
-                      }
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="featured"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-left">Featured</FormLabel>
-                </div>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="tags"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tags (comma separated)</FormLabel>
-                <FormControl>
-                  <Input placeholder="Tags" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="image"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Image URL</FormLabel>
-                <FormControl>
-                  <Input placeholder="Image URL" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            value={formValues.name}
+            onChange={handleInputChange}
+            required
           />
         </div>
 
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value || "Other"}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {businessCategories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                  {!businessCategories.includes("Other") && (
-                    <SelectItem value="Other">Other</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="space-y-2">
+          <Label htmlFor="category">Category*</Label>
+          <Input
+            id="category"
+            name="category"
+            value={formValues.category}
+            onChange={handleInputChange}
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="address">Address</Label>
+          <Input
+            id="address"
+            name="address"
+            value={formValues.address}
+            onChange={handleInputChange}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="phone">Phone</Label>
+          <Input
+            id="phone"
+            name="phone"
+            value={formValues.phone}
+            onChange={handleInputChange}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="rating">Rating (0-5)</Label>
+          <Input
+            id="rating"
+            name="rating"
+            type="number"
+            min="0"
+            max="5"
+            step="0.1"
+            value={formValues.rating}
+            onChange={handleInputChange}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            name="description"
+            value={formValues.description}
+            onChange={handleInputChange}
+            rows={4}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="tags">Tags (comma separated)</Label>
+          <Input
+            id="tags"
+            name="tags"
+            value={formValues.tags}
+            onChange={handleInputChange}
+            placeholder="restaurant, food, italian"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="image">Image URL</Label>
+          <Input
+            id="image"
+            name="image"
+            value={formValues.image}
+            onChange={handleInputChange}
+            placeholder="https://example.com/image.jpg"
+          />
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="featured"
+            checked={formValues.featured}
+            onCheckedChange={handleSwitchChange}
+          />
+          <Label htmlFor="featured">Featured Business</Label>
+        </div>
+      </div>
+
+      <div className="flex justify-end space-x-2">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Submitting..." : "Submit"}
+          {isSubmitting ? 'Saving...' : (initialData ? 'Update' : 'Create')}
         </Button>
-      </form>
-    </Form>
+      </div>
+    </form>
   );
 };
 

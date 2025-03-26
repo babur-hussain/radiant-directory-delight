@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
 import { updateUser, getUserById } from '@/services/userService';
-import { User, UserRole } from '@/types/auth';
+import { User, UserRole, normalizeRole } from '@/types/auth';
 import { toast } from './use-toast';
 
 export const useUserProfile = (userId?: string) => {
@@ -39,7 +39,7 @@ export const useUserProfile = (userId?: string) => {
   // Special handler for role changes to ensure it's a UserRole type
   const handleRoleChange = (value: string) => {
     // Ensure role is a valid UserRole
-    const role: UserRole = (value as UserRole) || 'User';
+    const role: UserRole = normalizeRole(value);
     setFormData(prev => ({ ...prev, role }));
   };
   
@@ -50,8 +50,7 @@ export const useUserProfile = (userId?: string) => {
       
       // Validate role is a UserRole type
       if (data.role && typeof data.role === 'string') {
-        const validRoles: UserRole[] = ['Admin', 'Business', 'Influencer', 'User', 'Staff'];
-        data.role = validRoles.includes(data.role as UserRole) ? (data.role as UserRole) : 'User';
+        data.role = normalizeRole(data.role);
       }
       
       return updateUser(targetUserId, data);
@@ -100,8 +99,7 @@ export const useUserProfile = (userId?: string) => {
   const saveProfile = async () => {
     // Validate role is a UserRole type if it exists
     if (formData.role && typeof formData.role === 'string') {
-      const validRoles: UserRole[] = ['Admin', 'Business', 'Influencer', 'User', 'Staff'];
-      formData.role = validRoles.includes(formData.role as UserRole) ? (formData.role as UserRole) : 'User';
+      formData.role = normalizeRole(formData.role);
     }
     
     updateUserMutation.mutate(formData);

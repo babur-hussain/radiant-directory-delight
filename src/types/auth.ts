@@ -1,3 +1,4 @@
+
 export type UserRole = 'admin' | 'user' | 'business' | 'influencer' | 'staff';
 
 export type ExtendedUserRole = UserRole | 'Admin' | 'User' | 'Business' | 'Influencer' | 'Staff';
@@ -7,7 +8,7 @@ export const isSameRoleIgnoreCase = (role1: string | undefined, role2: string | 
   return role1.toLowerCase() === role2.toLowerCase();
 };
 
-export const normalizeRole = (role: string | undefined): UserRole => {
+export const normalizeRole = (role: string | null | undefined): UserRole => {
   if (!role) return 'user';
   
   const normalizedRole = role.toLowerCase();
@@ -27,7 +28,7 @@ export const normalizeRole = (role: string | undefined): UserRole => {
   }
 };
 
-export const convertCapitalizedRole = (role: string | undefined): UserRole => {
+export const convertCapitalizedRole = (role: string | null | undefined): UserRole => {
   if (!role) return 'user';
   
   switch (role) {

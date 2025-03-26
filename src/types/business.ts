@@ -23,10 +23,10 @@ export interface Business {
 // Helper to ensure tags are always in array format
 export const ensureTagsArray = (tags: string[] | string | undefined | null): string[] => {
   if (!tags) return [];
-  if (Array.isArray(tags)) return tags;
+  if (Array.isArray(tags)) return tags.filter(Boolean);
   if (typeof tags === 'string') {
     if (tags.trim() === '') return [];
-    return tags.split(',').map(tag => tag.trim());
+    return tags.split(',').map(tag => tag.trim()).filter(Boolean);
   }
   return [];
 };
@@ -56,6 +56,43 @@ export const parseBusinessHours = (hours: any): Record<string, string> | string 
   }
   
   return '';
+};
+
+// Utility function to convert from Supabase format to our app's Business type
+export const mapSupabaseToBusiness = (data: any): Business => {
+  let tags: string[] = [];
+  
+  if (Array.isArray(data.tags)) {
+    tags = data.tags.filter(Boolean);
+  } else if (typeof data.tags === 'string' && data.tags) {
+    try {
+      const parsedTags = JSON.parse(data.tags);
+      tags = Array.isArray(parsedTags) ? parsedTags.filter(Boolean) : [];
+    } catch (e) {
+      tags = data.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean);
+    }
+  }
+  
+  return {
+    id: data.id,
+    name: data.name || '',
+    category: data.category || '',
+    description: data.description || '',
+    address: data.address || '',
+    phone: data.phone || '',
+    email: data.email || '',
+    website: data.website || '',
+    image: data.image || '',
+    hours: parseBusinessHours(data.hours),
+    rating: Number(data.rating) || 0,
+    reviews: Number(data.reviews) || 0,
+    featured: Boolean(data.featured),
+    tags,
+    latitude: Number(data.latitude) || 0,
+    longitude: Number(data.longitude) || 0,
+    created_at: data.created_at || '',
+    updated_at: data.updated_at || ''
+  };
 };
 
 // Convert IBusiness to Business type

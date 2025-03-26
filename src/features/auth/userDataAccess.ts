@@ -1,7 +1,7 @@
 
 import { User, UserRole } from "@/types/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { transformRole } from "@/hooks/useSupabaseUsers";
+import { normalizeRole } from "@/types/auth";
 
 // Get all users with pagination
 export const getAllUsers = async (
@@ -41,7 +41,7 @@ export const getAllUsers = async (
       email: userData.email || "",
       displayName: userData.name || "",
       name: userData.name || "",
-      role: transformRole(userData.role),
+      role: normalizeRole(userData.role),
       isAdmin: userData.is_admin || false,
       photoURL: userData.photo_url || "",
       employeeCode: userData.employee_code || "",
@@ -97,7 +97,7 @@ export const getUserById = async (userId: string): Promise<User | null> => {
       email: data.email || "",
       displayName: data.name || "",
       name: data.name || "",
-      role: transformRole(data.role),
+      role: normalizeRole(data.role),
       isAdmin: data.is_admin || false,
       photoURL: data.photo_url || "",
       employeeCode: data.employee_code || "",

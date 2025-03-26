@@ -42,10 +42,12 @@ const UserDashboardCustomizer: React.FC = () => {
       // Extract user data safely using our utility function
       const userResults = extractQueryData<IUser>(userQuery);
       
-      setUsers(userResults);
+      // Make sure we filter out any users with empty UIDs
+      const validUsers = userResults.filter(user => user.uid);
+      setUsers(validUsers);
       
-      if (userResults.length > 0 && !selectedUserId) {
-        setSelectedUserId(userResults[0].uid);
+      if (validUsers.length > 0 && !selectedUserId) {
+        setSelectedUserId(validUsers[0].uid);
       }
     } catch (err) {
       console.error("Error loading users:", err);
@@ -74,6 +76,9 @@ const UserDashboardCustomizer: React.FC = () => {
     );
   }
 
+  // Ensure we don't have any empty user IDs that would cause Select.Item value errors
+  const validUsers = users.filter(user => user.uid);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -85,14 +90,14 @@ const UserDashboardCustomizer: React.FC = () => {
         </CardHeader>
         <CardContent>
           <Select 
-            value={selectedUserId} 
-            onValueChange={setSelectedUserId}
+            value={selectedUserId || undefined} 
+            onValueChange={(value) => setSelectedUserId(value || "")}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a user" />
             </SelectTrigger>
             <SelectContent>
-              {users.map((user) => (
+              {validUsers.map((user) => (
                 <SelectItem key={user.uid} value={user.uid || "unknown-user"}>
                   {user.name || user.email || user.uid || "Unnamed User"} 
                   {user.role && ` (${user.role})`}

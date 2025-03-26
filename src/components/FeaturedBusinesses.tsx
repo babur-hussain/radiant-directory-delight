@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Business, ensureTagsArray } from '@/types/business';
 import CategoryFilter from './businesses/CategoryFilter';
@@ -7,6 +8,7 @@ import BusinessGrid from './businesses/BusinessGrid';
 import Loading from './ui/loading';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { mapSupabaseToBusiness } from '@/types/business';
 
 const FeaturedBusinesses = () => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -31,46 +33,7 @@ const FeaturedBusinesses = () => {
           throw error;
         }
         
-        const featuredBusinesses: Business[] = data.map(item => {
-          let hours: string | Record<string, string> | null = null;
-          try {
-            if (typeof item.hours === 'string') {
-              hours = JSON.parse(item.hours);
-            } else if (item.hours && typeof item.hours === 'object') {
-              hours = item.hours as Record<string, string>;
-            }
-          } catch (e) {
-            console.warn('Could not parse hours:', e);
-          }
-          
-          let tags: string[] = [];
-          if (Array.isArray(item.tags)) {
-            tags = item.tags;
-          } else if (typeof item.tags === 'string') {
-            tags = item.tags.split(',').map(tag => tag.trim());
-          }
-          
-          return {
-            id: item.id,
-            name: item.name || '',
-            category: item.category || '',
-            description: item.description || '',
-            address: item.address || '',
-            phone: item.phone || '',
-            email: item.email || '',
-            website: item.website || '',
-            image: item.image || '',
-            hours,
-            rating: Number(item.rating) || 0,
-            reviews: Number(item.reviews) || 0,
-            featured: Boolean(item.featured),
-            tags,
-            latitude: item.latitude || 0,
-            longitude: item.longitude || 0,
-            created_at: item.created_at || '',
-            updated_at: item.updated_at || ''
-          };
-        });
+        const featuredBusinesses: Business[] = data.map(item => mapSupabaseToBusiness(item));
         
         setBusinesses(featuredBusinesses);
         setLoading(false);
@@ -88,7 +51,7 @@ const FeaturedBusinesses = () => {
     loadBusinesses();
   }, []);
   
-  const categories = Array.from(new Set(businesses.map(b => b.category)));
+  const categories = Array.from(new Set(businesses.map(b => b.category).filter(Boolean)));
   
   // Extract locations from addresses - Fixed to handle undefined address
   const locations = Array.from(new Set(businesses.map(b => {
