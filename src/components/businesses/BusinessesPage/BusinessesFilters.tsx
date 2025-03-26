@@ -57,7 +57,9 @@ const BusinessesFilters: React.FC<BusinessesFiltersProps> = ({
   };
 
   // Ensure categories array doesn't have empty strings
-  const filteredCategories = categories.filter(category => category.trim() !== '');
+  const filteredCategories = categories.filter(category => category && category.trim() !== '');
+  // Ensure tags array doesn't have empty strings
+  const filteredTags = tags.filter(tag => tag && tag.trim() !== '');
 
   return (
     <div className="mb-8 space-y-4">
@@ -107,11 +109,11 @@ const BusinessesFilters: React.FC<BusinessesFiltersProps> = ({
         </div>
       </div>
 
-      {tags.length > 0 && (
+      {filteredTags.length > 0 && (
         <div className="pt-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium">Tags:</span>
-            {tags.filter(tag => tag.trim() !== '').map((tag) => (
+            {filteredTags.map((tag) => (
               <Badge 
                 key={tag}
                 variant={selectedTags.includes(tag) ? "default" : "outline"}

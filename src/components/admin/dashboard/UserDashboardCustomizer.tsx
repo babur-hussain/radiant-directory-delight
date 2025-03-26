@@ -93,8 +93,8 @@ const UserDashboardCustomizer: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               {users.map((user) => (
-                <SelectItem key={user.uid} value={user.uid}>
-                  {user.name || user.email || user.uid} 
+                <SelectItem key={user.uid} value={user.uid || "unknown-user"}>
+                  {user.name || user.email || user.uid || "Unnamed User"} 
                   {user.role && ` (${user.role})`}
                 </SelectItem>
               ))}
