@@ -7,7 +7,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import CSVUploader from '@/components/admin/CSVUploader';
 import CSVUploadDialog from '@/components/admin/CSVUploadDialog';
 import { useToast } from '@/hooks/use-toast';
-import { initializeData } from '@/lib/csv-utils';
+import { initializeData, generateCSVTemplate } from '@/lib/csv-utils';
 
 const AdminUploadPage = () => {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -77,11 +77,8 @@ const AdminUploadPage = () => {
 
   const handleDownloadTemplate = () => {
     try {
-      // Create a sample CSV template
-      const csvHeader = "Business Name,Category,Address,Mobile Number,Review,Description,Email,Website,Tags\n";
-      const sampleRow1 = "Acme Coffee Shop,Cafe,123 Main St,555-123-4567,4.5,Best coffee in town,info@acmecoffee.com,https://acmecoffee.com,\"coffee, pastries\"\n";
-      const sampleRow2 = "Tech Solutions,Technology,456 Tech Blvd,555-987-6543,5,Professional IT services,contact@techsolutions.com,https://techsolutions.com,\"it, services, computer repair\"\n";
-      const csvContent = csvHeader + sampleRow1 + sampleRow2;
+      // Get CSV template content
+      const csvContent = generateCSVTemplate();
       
       // Create blob and trigger download
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

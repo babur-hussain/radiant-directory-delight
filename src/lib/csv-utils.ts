@@ -1,3 +1,4 @@
+
 import Papa from 'papaparse';
 import { supabase } from '@/integrations/supabase/client';
 import { csvHeaderMapping } from '@/models/Business';
@@ -160,7 +161,7 @@ export const processCsvData = async (csvContent: string): Promise<{
     let successCount = 0;
 
     // Process in batches for better performance
-    const BATCH_SIZE = 50;
+    const BATCH_SIZE = 25;
     let currentBatch: any[] = [];
     
     for (let i = 0; i < parsedData.length; i++) {
@@ -173,13 +174,15 @@ export const processCsvData = async (csvContent: string): Promise<{
         
         // Process a batch when it reaches the batch size or it's the last item
         if (currentBatch.length >= BATCH_SIZE || i === parsedData.length - 1) {
-          const { success, errorMessage, successCount: batchSuccessCount } = 
-            await saveBatchToSupabase(currentBatch);
-          
-          successCount += batchSuccessCount;
-          
-          if (!success && errorMessage) {
-            processingErrors.push(errorMessage);
+          if (currentBatch.length > 0) {
+            const { success, errorMessage, successCount: batchSuccessCount } = 
+              await saveBatchToSupabase(currentBatch);
+            
+            successCount += batchSuccessCount;
+            
+            if (!success && errorMessage) {
+              processingErrors.push(errorMessage);
+            }
           }
           
           // Reset batch
@@ -191,8 +194,10 @@ export const processCsvData = async (csvContent: string): Promise<{
     }
 
     // Save to our local data
-    businessesData = [...businessesData, ...processedBusinesses];
-    notifyDataChanged();
+    if (processedBusinesses.length > 0) {
+      businessesData = [...businessesData, ...processedBusinesses];
+      notifyDataChanged();
+    }
 
     // Return results with appropriate message
     if (processingErrors.length > 0) {
@@ -298,11 +303,6 @@ const processSingleBusiness = async (
     mappedBusiness.reviews = isNaN(reviews) ? 0 : reviews;
   }
   
-  // Remove any timestamp values that look like they might be causing the integer overflow
-  if (mappedBusiness.id && typeof mappedBusiness.id === 'string' && mappedBusiness.id.length > 10) {
-    delete mappedBusiness.id;
-  }
-  
   // Default image if not provided
   if (!mappedBusiness.image && mappedBusiness.category) {
     mappedBusiness.image = `https://source.unsplash.com/random/500x350/?${mappedBusiness.category.toLowerCase().replace(/\s+/g, ",")}`;
@@ -350,21 +350,22 @@ const saveBatchToSupabase = async (businesses: Business[]): Promise<{
       try {
         console.log("Saving business to Supabase:", business.name);
         
-        // Remove the temporary ID before saving
-        const { id, ...businessWithoutId } = business;
+        // Clone the business and prepare it for saving
+        const businessToSave = { ...business };
+        
+        // Remove the temporary ID before saving to let the database set it
+        if ('id' in businessToSave && (businessToSave.id === 0 || businessToSave.id === null)) {
+          delete businessToSave.id;
+        }
         
         // Convert hours to string if it's an object
-        const businessToSave = {
-          ...businessWithoutId,
-          hours: businessWithoutId.hours ? 
-            (typeof businessWithoutId.hours === 'string' ? 
-              businessWithoutId.hours : 
-              JSON.stringify(businessWithoutId.hours)
-            ) : null
-        };
+        if (businessToSave.hours) {
+          businessToSave.hours = typeof businessToSave.hours === 'string' 
+            ? businessToSave.hours 
+            : JSON.stringify(businessToSave.hours);
+        }
         
-        // Remove any timestamp fields that might be causing issues
-        // These are safe to remove as they will be set by defaults in the database
+        // Always remove timestamp fields - let the database handle these
         if ('created_at' in businessToSave) {
           delete businessToSave.created_at;
         }
@@ -380,6 +381,7 @@ const saveBatchToSupabase = async (businesses: Business[]): Promise<{
         
         if (error) {
           console.error("Error inserting business to Supabase:", error);
+          throw error;
         } else {
           successCount++;
         }
@@ -401,4 +403,54 @@ const saveBatchToSupabase = async (businesses: Business[]): Promise<{
       successCount: 0
     };
   }
+};
+
+// Generate a CSV template for download
+export const generateCSVTemplate = (): string => {
+  // Headers in the format that Supabase will recognize
+  const headers = ["name", "category", "address", "phone", "rating", "reviews", "description", "email", "website", "tags", "featured", "image"];
+  
+  // Create a user-friendly header row using the inverse mapping
+  const inverseMapping = getInverseHeaderMapping();
+  const userFriendlyHeaders = headers.map(dbField => inverseMapping[dbField] || dbField);
+  
+  // Sample data
+  const rows = [
+    [
+      "Acme Coffee Shop", 
+      "Cafe", 
+      "123 Main St", 
+      "555-123-4567", 
+      "4.5", 
+      "120", 
+      "Best coffee in town", 
+      "info@acmecoffee.com", 
+      "https://acmecoffee.com", 
+      "coffee, pastries", 
+      "true", 
+      "https://example.com/coffee.jpg"
+    ],
+    [
+      "Tech Solutions", 
+      "Technology", 
+      "456 Tech Blvd", 
+      "555-987-6543", 
+      "5", 
+      "87", 
+      "Professional IT services", 
+      "contact@techsolutions.com", 
+      "https://techsolutions.com", 
+      "it, services, computer repair", 
+      "false", 
+      ""
+    ]
+  ];
+  
+  // Combine headers and data
+  const csvContent = [
+    userFriendlyHeaders.join(","),
+    ...rows.map(row => row.join(","))
+  ].join("\n");
+  
+  return csvContent;
 };

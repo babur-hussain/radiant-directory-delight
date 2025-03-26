@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { DownloadCloud, AlertCircle, Info } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import CSVUploader from './CSVUploader';
+import { generateCSVTemplate } from '@/lib/csv-utils';
 
 interface CSVUploadDialogProps {
   show: boolean;
@@ -31,23 +32,25 @@ const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ show, onClose, onUplo
   };
 
   const handleDownloadTemplate = () => {
-    // Create a sample CSV template
-    const csvHeader = "Business Name,Category,Address,Mobile Number,Rating,Description,Email,Website,Tags\n";
-    const sampleRow1 = "Acme Coffee Shop,Cafe,123 Main St,555-123-4567,4.5,Best coffee in town,info@acmecoffee.com,https://acmecoffee.com,\"coffee, pastries\"\n";
-    const sampleRow2 = "Tech Solutions,Technology,456 Tech Blvd,555-987-6543,5,Professional IT services,contact@techsolutions.com,https://techsolutions.com,\"it, services, computer repair\"\n";
-    const csvContent = csvHeader + sampleRow1 + sampleRow2;
-    
-    // Create blob and trigger download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'business_template.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      // Get CSV template content
+      const csvContent = generateCSVTemplate();
+      
+      // Create blob and trigger download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'business_template.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error downloading template:", error);
+      setUploadError("Failed to download template");
+    }
   };
 
   return (

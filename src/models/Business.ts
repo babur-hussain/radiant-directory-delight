@@ -110,3 +110,22 @@ export const csvHeaderMapping = {
   "Featured": "featured",
   "featured": "featured"
 };
+
+// Generate inverse mapping for Supabase CSV import
+export const getInverseHeaderMapping = (): Record<string, string> => {
+  // Create standard mapping from DB column to CSV header
+  return {
+    "name": "Business Name",
+    "category": "Category",
+    "address": "Address",
+    "phone": "Phone",
+    "rating": "Rating",
+    "reviews": "Reviews",
+    "description": "Description",
+    "email": "Email",
+    "website": "Website",
+    "tags": "Tags",
+    "image": "Image",
+    "featured": "Featured"
+  };
+};
