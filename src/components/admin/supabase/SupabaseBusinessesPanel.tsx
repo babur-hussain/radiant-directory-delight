@@ -1088,3 +1088,5 @@ export function SupabaseBusinessesPanel({
     </Card>
   )
 }
+
+export default SupabaseBusinessesPanel;

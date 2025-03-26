@@ -389,4 +389,5 @@ const SupabaseDashboardSections = () => {
   );
 };
 
+// Add explicit default export
 export default SupabaseDashboardSections;
