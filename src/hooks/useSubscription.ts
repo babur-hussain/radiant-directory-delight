@@ -6,33 +6,33 @@ import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 
 export interface IUserSubscription {
   id: string;
-  user_id: string;
-  package_id: string;
-  package_name: string;
+  userId: string;
+  packageId: string;
+  packageName: string;
   amount: number;
-  start_date: string;
-  end_date: string;
+  startDate: string;
+  endDate: string;
   status: string;
-  created_at: string;
-  updated_at: string;
-  cancelled_at: string;
-  cancel_reason: string;
-  assigned_by: string;
-  assigned_at: string;
-  advance_payment_months: number;
-  is_paused: boolean;
-  is_pausable: boolean;
-  is_user_cancellable: boolean;
-  payment_type: string;
-  invoice_ids: string[];
-  actual_start_date: string;
-  signup_fee: number;
-  billing_cycle: string;
-  transaction_id: string;
+  createdAt: string;
+  updatedAt: string;
+  cancelledAt?: string;
+  cancelReason?: string;
+  assignedBy?: string;
+  assignedAt?: string;
+  advancePaymentMonths?: number;
+  isPaused?: boolean;
+  isPausable?: boolean;
+  isUserCancellable?: boolean;
+  paymentType?: string;
+  invoiceIds?: string[];
+  actualStartDate?: string;
+  signupFee?: number;
+  billingCycle?: string;
+  transactionId?: string;
 }
 
 // Define the return type for fetchUserSubscription
-interface SubscriptionResult {
+export interface SubscriptionResult {
   success: boolean;
   data: IUserSubscription | null;
 }
@@ -123,14 +123,14 @@ export const useSubscription = (userId?: string) => {
   /**
    * Fetch a user's subscription
    */
-  const fetchUserSubscription = async (uid: string): Promise<SubscriptionResult> => {
+  const fetchUserSubscription = async (): Promise<SubscriptionResult> => {
     setLoading(true);
     setError(null);
     try {
       const { data, error: subError } = await supabase
         .from('user_subscriptions')
         .select('*')
-        .eq('user_id', uid)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .maybeSingle();
       
@@ -141,9 +141,43 @@ export const useSubscription = (userId?: string) => {
         return { success: false, data: null };
       }
       
-      setUserSubscription(data);
+      if (!data) {
+        setUserSubscription(null);
+        setLoading(false);
+        return { success: true, data: null };
+      }
+      
+      // Convert from snake_case DB format to camelCase for frontend
+      const subscriptionData: IUserSubscription = {
+        id: data.id,
+        userId: data.user_id,
+        packageId: data.package_id,
+        packageName: data.package_name,
+        amount: data.amount,
+        startDate: data.start_date,
+        endDate: data.end_date,
+        status: data.status,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        cancelledAt: data.cancelled_at,
+        cancelReason: data.cancel_reason,
+        assignedBy: data.assigned_by,
+        assignedAt: data.assigned_at,
+        advancePaymentMonths: data.advance_payment_months,
+        isPaused: data.is_paused,
+        isPausable: data.is_pausable,
+        isUserCancellable: data.is_user_cancellable,
+        paymentType: data.payment_type,
+        invoiceIds: data.invoice_ids,
+        actualStartDate: data.actual_start_date,
+        signupFee: data.signup_fee,
+        billingCycle: data.billing_cycle,
+        transactionId: data.transaction_id
+      };
+      
+      setUserSubscription(subscriptionData);
       setLoading(false);
-      return { success: true, data };
+      return { success: true, data: subscriptionData };
     } catch (err) {
       console.error('Error in fetchUserSubscription:', err);
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -156,9 +190,13 @@ export const useSubscription = (userId?: string) => {
   /**
    * Cancel a user's subscription
    */
-  const cancelSubscription = async (subscriptionId: string, reason: string = 'user_cancelled') => {
+  const cancelSubscription = async (reason: string = 'user_cancelled') => {
     setIsProcessing(true);
     try {
+      if (!userSubscription?.id) {
+        throw new Error('No active subscription to cancel');
+      }
+      
       const now = new Date().toISOString();
       
       const { data, error } = await supabase
@@ -169,7 +207,7 @@ export const useSubscription = (userId?: string) => {
           cancel_reason: reason,
           updated_at: now
         })
-        .eq('id', subscriptionId)
+        .eq('id', userSubscription.id)
         .select();
       
       if (error) throw new Error(error.message);
@@ -209,13 +247,15 @@ export const useSubscription = (userId?: string) => {
   /**
    * Get user's dashboard features based on their subscription
    */
-  const getUserDashboardFeatures = async (uid: string, role: string) => {
+  const getUserDashboardFeatures = async () => {
     try {
+      if (!userId) return [];
+      
       // First get user's active subscription
       const { data: subscription } = await supabase
         .from('user_subscriptions')
         .select('package_id')
-        .eq('user_id', uid)
+        .eq('user_id', userId)
         .eq('status', 'active')
         .maybeSingle();
       

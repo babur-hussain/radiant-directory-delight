@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -34,7 +35,43 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ userRole = 
         }
         
         if (data) {
-          setPackages(data as ISubscriptionPackage[]);
+          // Transform the data to match our ISubscriptionPackage type
+          const transformedData: ISubscriptionPackage[] = data.map(pkg => {
+            // Parse features if it's a string
+            let features: string[] = [];
+            try {
+              if (typeof pkg.features === 'string') {
+                features = JSON.parse(pkg.features);
+              } else if (Array.isArray(pkg.features)) {
+                features = pkg.features;
+              }
+            } catch (e) {
+              console.warn('Error parsing features:', e);
+              features = [];
+            }
+            
+            return {
+              id: pkg.id,
+              title: pkg.title || '',
+              price: pkg.price || 0,
+              monthlyPrice: pkg.monthly_price,
+              shortDescription: pkg.short_description || '',
+              fullDescription: pkg.full_description || '',
+              features: features,
+              setupFee: pkg.setup_fee || 0,
+              popular: pkg.popular || false,
+              type: (pkg.type || 'Business') as 'Business' | 'Influencer',
+              durationMonths: pkg.duration_months || 12,
+              advancePaymentMonths: pkg.advance_payment_months || 0,
+              paymentType: (pkg.payment_type || 'recurring') as 'recurring' | 'one-time',
+              billingCycle: pkg.billing_cycle as 'monthly' | 'yearly' | undefined,
+              termsAndConditions: pkg.terms_and_conditions || '',
+              dashboardSections: pkg.dashboard_sections || [],
+              isActive: pkg.is_active !== false
+            };
+          });
+          
+          setPackages(transformedData);
         }
       } finally {
         setIsLoading(false);

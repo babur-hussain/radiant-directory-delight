@@ -19,7 +19,7 @@ const SubscriptionDetailsPage: React.FC = () => {
   const [packageDetails, setPackageDetails] = useState<any>(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const { user } = useAuth();
-  const { fetchUserSubscription, cancelSubscription } = useSubscription(user?.uid);
+  const { fetchUserSubscription, cancelSubscription } = useSubscription();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -28,16 +28,16 @@ const SubscriptionDetailsPage: React.FC = () => {
       if (!user?.uid) return;
       
       try {
-        const subscription = await fetchUserSubscription(user.uid);
-        setUserSubscription(subscription);
+        const subscription = await fetchUserSubscription();
+        setUserSubscription(subscription.data);
         
-        if (subscription?.package_id) {
+        if (subscription.data) {
           // Fetch package details from API
           // For now using a placeholder
           setPackageDetails({
-            id: subscription.package_id,
-            title: subscription.package_name || 'Subscription Package',
-            price: subscription.amount || 0
+            id: subscription.data.packageId,
+            title: subscription.data.packageName || 'Subscription Package',
+            price: subscription.data.amount || 0
           });
         }
       } catch (err) {
@@ -55,15 +55,15 @@ const SubscriptionDetailsPage: React.FC = () => {
     if (!userSubscription) return;
     
     try {
-      await cancelSubscription(userSubscription.id);
+      await cancelSubscription();
       toast({
         title: 'Subscription Cancelled',
         description: 'Your subscription has been cancelled successfully.',
       });
       
       // Reload subscription details
-      const updatedSubscription = await fetchUserSubscription(user!.uid);
-      setUserSubscription(updatedSubscription);
+      const updatedSubscription = await fetchUserSubscription();
+      setUserSubscription(updatedSubscription.data);
       setCancelDialogOpen(false);
     } catch (err) {
       console.error('Error cancelling subscription:', err);
@@ -160,15 +160,15 @@ const SubscriptionDetailsPage: React.FC = () => {
                 <div className="space-y-3">
                   <div>
                     <p className="text-sm text-muted-foreground">Package</p>
-                    <p className="font-medium">{packageDetails?.title || userSubscription.package_name}</p>
+                    <p className="font-medium">{packageDetails?.title || userSubscription.packageName}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Amount</p>
-                    <p className="font-medium">₹{userSubscription.amount.toLocaleString()}</p>
+                    <p className="font-medium">₹{userSubscription.amount?.toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Payment Type</p>
-                    <p className="font-medium capitalize">{userSubscription.payment_type || 'One-time'}</p>
+                    <p className="font-medium capitalize">{userSubscription.paymentType || 'One-time'}</p>
                   </div>
                 </div>
               </div>
@@ -179,20 +179,20 @@ const SubscriptionDetailsPage: React.FC = () => {
                   <div>
                     <p className="text-sm text-muted-foreground">Start Date</p>
                     <p className="font-medium">
-                      {userSubscription.start_date ? format(new Date(userSubscription.start_date), 'PPP') : 'N/A'}
+                      {userSubscription.startDate ? format(new Date(userSubscription.startDate), 'PPP') : 'N/A'}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">End Date</p>
                     <p className="font-medium">
-                      {userSubscription.end_date ? format(new Date(userSubscription.end_date), 'PPP') : 'N/A'}
+                      {userSubscription.endDate ? format(new Date(userSubscription.endDate), 'PPP') : 'N/A'}
                     </p>
                   </div>
-                  {userSubscription.cancelled_at && (
+                  {userSubscription.cancelledAt && (
                     <div>
                       <p className="text-sm text-muted-foreground">Cancelled On</p>
                       <p className="font-medium">
-                        {format(new Date(userSubscription.cancelled_at), 'PPP')}
+                        {format(new Date(userSubscription.cancelledAt), 'PPP')}
                       </p>
                     </div>
                   )}
@@ -218,7 +218,7 @@ const SubscriptionDetailsPage: React.FC = () => {
               <DownloadCloud className="h-4 w-4" /> Download Invoice
             </Button>
             
-            {userSubscription.status === 'active' && userSubscription.is_user_cancellable !== false && (
+            {userSubscription.status === 'active' && userSubscription.isUserCancellable !== false && (
               <Button 
                 variant="destructive" 
                 size="sm"
@@ -260,8 +260,8 @@ const SubscriptionDetailsPage: React.FC = () => {
                 <AlertTitle>Cancelled Subscription</AlertTitle>
                 <AlertDescription>
                   Your subscription has been cancelled. 
-                  {userSubscription.end_date && new Date(userSubscription.end_date) > new Date() ? 
-                    ` You still have access until ${format(new Date(userSubscription.end_date), 'PPP')}.` : 
+                  {userSubscription.endDate && new Date(userSubscription.endDate) > new Date() ? 
+                    ` You still have access until ${format(new Date(userSubscription.endDate), 'PPP')}.` : 
                     ' Your access has been revoked.'
                   }
                 </AlertDescription>
