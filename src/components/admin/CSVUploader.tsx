@@ -7,8 +7,9 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Business, parseBusinessesCSV } from '@/lib/csv-utils'; // Fix import
+import { Business, parseBusinessesCSV } from '@/lib/csv-utils';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const formSchema = z.object({
   file: z.instanceof(File, { message: 'Please select a CSV file' })
@@ -83,8 +84,32 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
           return;
         }
         
-        // Simulate server processing time
-        await new Promise(resolve => setTimeout(resolve, 800));
+        // Upload to Supabase
+        const businessData = businesses.map(business => ({
+          name: business.name,
+          category: business.category,
+          description: business.description,
+          address: business.address,
+          phone: business.phone,
+          email: business.email,
+          website: business.website,
+          image: business.image,
+          hours: business.hours,
+          rating: business.rating,
+          reviews: business.reviews,
+          featured: business.featured,
+          tags: business.tags,
+          latitude: business.latitude,
+          longitude: business.longitude,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }));
+        
+        const { error } = await supabase
+          .from('businesses')
+          .insert(businessData);
+          
+        if (error) throw error;
         
         setUploadProgress(100);
         

@@ -1,6 +1,6 @@
-
 import { Json } from "@/integrations/supabase/types";
 import { supabase } from '@/integrations/supabase/client';
+import Papa from 'papaparse';
 
 // Define Business interface
 export interface Business {
@@ -23,6 +23,63 @@ export interface Business {
   created_at: string;
   updated_at: string;
 }
+
+// Function to parse CSV file and convert it to Business objects
+export const parseBusinessesCSV = async (file: File): Promise<Business[]> => {
+  return new Promise((resolve, reject) => {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        try {
+          const businesses: Business[] = results.data.map((row: any, index: number) => {
+            // Generate a unique ID for each business (negative to avoid conflicts with DB IDs)
+            const id = -(index + 1);
+            
+            // Parse tags from comma-separated string
+            const tags = row.Tags ? 
+              row.Tags.split(',').map((tag: string) => tag.trim()) : 
+              [];
+            
+            // Generate a default image URL if none provided
+            const image = row.Image || `https://source.unsplash.com/random/500x350/?${row.Category?.toLowerCase().replace(/\s+/g, ",")}`;
+            
+            // Parse rating as a number
+            const rating = parseFloat(row.Review || row.Rating || "0");
+            
+            return {
+              id,
+              name: row["Business Name"] || "",
+              category: row.Category || "",
+              description: row.Description || "",
+              address: row.Address || "",
+              phone: row["Mobile Number"] || row.Phone || "",
+              email: row.Email || "",
+              website: row.Website || "",
+              image,
+              hours: row.Hours || "",
+              rating: isNaN(rating) ? 0 : rating,
+              reviews: parseInt(row.Reviews || "0", 10) || 0,
+              featured: row.Featured === "true" || row.Featured === true || false,
+              tags,
+              latitude: parseFloat(row.Latitude || "0") || 0,
+              longitude: parseFloat(row.Longitude || "0") || 0,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+          });
+          
+          resolve(businesses);
+        } catch (error) {
+          reject(error);
+        }
+      },
+      error: (error) => {
+        reject(error);
+      }
+    });
+  });
+};
 
 // Helper functions for formatting business data
 export const parseHours = (hours: string | Record<string, string> | Json | null): Record<string, string> => {
@@ -158,5 +215,49 @@ export const getBusinessesByCategory = async (category: string): Promise<Busines
   } catch (error) {
     console.error('Error in getBusinessesByCategory:', error);
     return [];
+  }
+};
+
+// Add listeners for data changes
+const dataChangeListeners: Array<() => void> = [];
+
+export const addDataChangeListener = (listener: () => void) => {
+  dataChangeListeners.push(listener);
+};
+
+export const removeDataChangeListener = (listener: () => void) => {
+  const index = dataChangeListeners.indexOf(listener);
+  if (index !== -1) {
+    dataChangeListeners.splice(index, 1);
+  }
+};
+
+// Notify listeners about data changes
+const notifyDataChange = () => {
+  dataChangeListeners.forEach(listener => listener());
+};
+
+// Function to initialize data
+export const initializeData = async (): Promise<void> => {
+  console.log("Initializing business data...");
+  notifyDataChange();
+  return Promise.resolve();
+};
+
+// Function to delete a business
+export const deleteBusiness = async (id: number): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('businesses')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+    
+    notifyDataChange();
+    return true;
+  } catch (error) {
+    console.error('Error deleting business:', error);
+    return false;
   }
 };
