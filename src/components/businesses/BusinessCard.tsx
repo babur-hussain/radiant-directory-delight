@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { Business, ensureTagsArray } from '@/types/business';
 import { Star } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 interface BusinessCardProps {
   business: Business;
@@ -11,7 +12,10 @@ const BusinessCard: React.FC<BusinessCardProps> = ({ business }) => {
   const tags = ensureTagsArray(business.tags);
   
   return (
-    <Link href={`/business/${business.id}`} className="block bg-white rounded-lg shadow-md overflow-hidden transition-transform transform hover:scale-105">
+    <Link 
+      to={`/business/${business.id}`} 
+      className="block bg-white rounded-lg shadow-md overflow-hidden transition-transform transform hover:scale-105"
+    >
       <div className="relative">
         <img
           className="w-full h-48 object-cover"
