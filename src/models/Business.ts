@@ -2,7 +2,7 @@
 import { Database } from '@/integrations/supabase/types';
 
 export interface IBusiness {
-  id: number;
+  id: number | string;
   name: string;
   description?: string;
   category?: string;
@@ -14,7 +14,7 @@ export interface IBusiness {
   reviews?: number;
   latitude?: number;
   longitude?: number;
-  hours?: Record<string, any>;
+  hours?: Record<string, any> | string;
   tags?: string[];
   featured?: boolean;
   image?: string;

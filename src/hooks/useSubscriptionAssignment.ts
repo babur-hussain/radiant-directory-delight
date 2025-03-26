@@ -1,255 +1,260 @@
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
-import { User, UserSubscription } from '@/types/auth';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { User, UserSubscription, SubscriptionStatus } from '@/types/auth';
 
 interface Package {
   id: string;
   title: string;
   price: number;
-  description?: string;
+  shortDescription?: string;
+  fullDescription?: string;
+  features?: string[];
+  duration?: number;
+  durationMonths?: number;
+  paymentType?: string;
+  billingCycle?: string;
+  setupFee?: number;
+  popular?: boolean;
 }
 
-interface UseSubscriptionAssignmentReturn {
-  subscription: UserSubscription | null;
-  setSubscription: (subscription: UserSubscription) => void;
-  assignSubscription: (transactionId: string) => void;
+export interface UseSubscriptionAssignmentReturn {
   isLoading: boolean;
-  error: string | null;
+  error: Error | null;
   packages: Package[];
-  selectedPackage: string;
-  setSelectedPackage: (packageId: string) => void;
+  selectedPackage: Package | null;
+  setSelectedPackage: (pkg: Package | null) => void;
   userCurrentSubscription: UserSubscription | null;
-  handleAssignPackage: () => Promise<void>;
-  handleCancelSubscription: () => Promise<void>;
+  handleAssignPackage: (userId: string, months?: number) => Promise<boolean>;
+  handleCancelSubscription: (userId: string, reason?: string) => Promise<boolean>;
+  generateAdvancePaymentOptions: (pkg: Package) => { value: number; label: string }[];
 }
 
-export const useSubscriptionAssignment = (
-  user?: User,
-  onAssigned?: (packageId: string) => void
-): UseSubscriptionAssignmentReturn => {
-  const { user: authUser } = useAuth();
-  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+export const useSubscriptionAssignment = (user?: User | null): UseSubscriptionAssignmentReturn => {
   const [packages, setPackages] = useState<Package[]>([]);
-  const [selectedPackage, setSelectedPackage] = useState<string>('');
+  const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [userCurrentSubscription, setUserCurrentSubscription] = useState<UserSubscription | null>(null);
-  
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const { toast } = useToast();
 
-  // Fetch available packages
+  // Fetch all available packages
   useEffect(() => {
     const fetchPackages = async () => {
+      setIsLoading(true);
+      setError(null);
+      
       try {
         const { data, error } = await supabase
           .from('subscription_packages')
-          .select('id, title, price, description')
+          .select('*')
           .order('price', { ascending: true });
           
-        if (error) throw error;
-        setPackages(data || []);
+        if (error) throw new Error(error.message);
+        
+        if (data) {
+          const transformedPackages: Package[] = data.map(pkg => ({
+            id: pkg.id,
+            title: pkg.title,
+            price: pkg.price || 0,
+            shortDescription: pkg.short_description,
+            fullDescription: pkg.full_description,
+            features: pkg.features ? pkg.features.split('\n') : [],
+            durationMonths: pkg.duration_months || 12,
+            paymentType: pkg.payment_type || 'recurring',
+            billingCycle: pkg.billing_cycle,
+            setupFee: pkg.setup_fee || 0,
+            popular: pkg.popular || false,
+          }));
+          
+          setPackages(transformedPackages);
+        }
       } catch (err) {
-        console.error("Error fetching packages:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch subscription packages");
+        console.error('Error fetching packages:', err);
+        setError(err instanceof Error ? err : new Error('Failed to fetch packages'));
+      } finally {
+        setIsLoading(false);
       }
     };
     
     fetchPackages();
   }, []);
   
-  // Fetch user's current subscription
+  // Fetch user's current subscription if user is provided
   useEffect(() => {
     const fetchUserSubscription = async () => {
-      if (!user && !authUser) return;
-      
-      const userId = user?.id || authUser?.id;
-      if (!userId) return;
+      if (!user?.id) return;
       
       setIsLoading(true);
+      setError(null);
+      
       try {
         const { data, error } = await supabase
           .from('user_subscriptions')
           .select('*')
-          .eq('user_id', userId)
+          .eq('user_id', user.id)
+          .eq('status', 'active')
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
           
-        if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned" error
-          throw error;
+        if (error && error.code !== 'PGRST116') { // No rows returned is not an error for us
+          throw new Error(error.message);
         }
         
         if (data) {
-          setUserCurrentSubscription({
+          const subscription: UserSubscription = {
             id: data.id,
             userId: data.user_id,
             packageId: data.package_id,
             packageName: data.package_name,
-            status: data.status,
+            status: data.status as SubscriptionStatus,
             startDate: data.start_date,
             endDate: data.end_date,
             price: data.amount,
-            paymentMethod: data.payment_method,
-            paymentType: data.payment_type
-          });
+            paymentMethod: data.payment_method
+          };
+          
+          setUserCurrentSubscription(subscription);
+        } else {
+          setUserCurrentSubscription(null);
         }
       } catch (err) {
-        console.error("Error fetching user subscription:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch user subscription");
+        console.error('Error fetching user subscription:', err);
+        setError(err instanceof Error ? err : new Error('Failed to fetch user subscription'));
       } finally {
         setIsLoading(false);
       }
     };
     
     fetchUserSubscription();
-  }, [user, authUser]);
-
-  const assignSubscription = (transactionId: string) => {
-    if (!user && !authUser) {
-      toast({
-        title: "Not authenticated",
-        description: "You must be logged in to assign a subscription.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setSubscription(prev => {
-      if (!prev) return prev;
-      
-      // Create a new object that includes all properties from prev
-      // and adds/updates the transaction_id property
-      return {
-        ...prev,
-        status: 'active',
-        transactionId: transactionId
-      };
-    });
-
-    toast({
-      title: "Subscription Assigned",
-      description: `Subscription assigned successfully with transaction ID: ${transactionId}`,
-    });
-  };
+  }, [user]);
   
-  const handleAssignPackage = async () => {
+  // Assign a package to a user
+  const handleAssignPackage = useCallback(async (userId: string, months: number = 0): Promise<boolean> => {
     if (!selectedPackage) {
-      setError("Please select a package");
-      return;
-    }
-    
-    const userId = user?.id || authUser?.id;
-    if (!userId) {
-      setError("User ID not found");
-      return;
-    }
-    
-    setIsLoading(true);
-    try {
-      const selectedPkg = packages.find(p => p.id === selectedPackage);
-      if (!selectedPkg) throw new Error("Selected package not found");
-      
-      const now = new Date();
-      const end = new Date();
-      end.setMonth(end.getMonth() + 12); // Default 12 months subscription
-      
-      const { data, error } = await supabase
-        .from('user_subscriptions')
-        .insert({
-          user_id: userId,
-          package_id: selectedPkg.id,
-          package_name: selectedPkg.title,
-          amount: selectedPkg.price,
-          start_date: now.toISOString(),
-          end_date: end.toISOString(),
-          status: 'active',
-          payment_type: 'one-time',
-          created_at: now.toISOString()
-        })
-        .select()
-        .single();
-        
-      if (error) throw error;
-      
-      toast({
-        title: "Subscription Assigned",
-        description: `${selectedPkg.title} package has been assigned to the user.`
-      });
-      
-      if (onAssigned) onAssigned(selectedPkg.id);
-      
-      setUserCurrentSubscription({
-        id: data.id,
-        userId: data.user_id,
-        packageId: data.package_id,
-        packageName: data.package_name,
-        status: data.status,
-        startDate: data.start_date,
-        endDate: data.end_date,
-        price: data.amount,
-        paymentMethod: data.payment_method,
-        paymentType: data.payment_type
-      });
-    } catch (err) {
-      console.error("Error assigning package:", err);
-      setError(err instanceof Error ? err.message : "Failed to assign subscription package");
       toast({
         title: "Error",
-        description: "Failed to assign subscription. Please try again.",
-        variant: "destructive",
+        description: "No package selected",
+        variant: "destructive"
       });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const handleCancelSubscription = async () => {
-    if (!userCurrentSubscription) {
-      setError("No active subscription found");
-      return;
+      return false;
     }
     
     setIsLoading(true);
+    setError(null);
+    
     try {
-      const now = new Date();
+      // Calculate start and end dates
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + (months || selectedPackage.durationMonths || 12));
+      
+      const subscriptionId = `sub_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      
+      // Generate subscription data
+      const subscriptionData = {
+        id: subscriptionId,
+        user_id: userId,
+        package_id: selectedPackage.id,
+        package_name: selectedPackage.title,
+        amount: selectedPackage.price,
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
+        status: 'active' as SubscriptionStatus,
+        payment_type: selectedPackage.paymentType || 'recurring',
+        created_at: new Date().toISOString()
+      };
       
       const { error } = await supabase
         .from('user_subscriptions')
-        .update({
-          status: 'cancelled',
-          cancelled_at: now.toISOString(),
-          updated_at: now.toISOString()
-        })
-        .eq('id', userCurrentSubscription.id);
+        .insert(subscriptionData);
         
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       
       toast({
-        title: "Subscription Cancelled",
-        description: "The subscription has been cancelled."
+        title: "Success",
+        description: `Successfully assigned ${selectedPackage.title} package to user`,
       });
       
-      setUserCurrentSubscription(prev => prev ? {...prev, status: 'cancelled'} : null);
+      return true;
     } catch (err) {
-      console.error("Error cancelling subscription:", err);
-      setError(err instanceof Error ? err.message : "Failed to cancel subscription");
+      console.error('Error assigning package:', err);
+      setError(err instanceof Error ? err : new Error('Failed to assign package'));
+      
       toast({
         title: "Error",
-        description: "Failed to cancel subscription. Please try again.",
-        variant: "destructive",
+        description: err instanceof Error ? err.message : 'Failed to assign package',
+        variant: "destructive"
       });
+      
+      return false;
     } finally {
       setIsLoading(false);
     }
-  };
-
-  return { 
-    subscription, 
-    setSubscription, 
-    assignSubscription,
+  }, [selectedPackage, toast]);
+  
+  // Cancel a user's subscription
+  const handleCancelSubscription = useCallback(async (userId: string, reason?: string): Promise<boolean> => {
+    if (!userCurrentSubscription) {
+      toast({
+        title: "Error",
+        description: "No active subscription found",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .update({
+          status: 'cancelled' as SubscriptionStatus,
+          cancelled_at: new Date().toISOString(),
+          cancel_reason: reason || 'Cancelled by admin'
+        })
+        .eq('id', userCurrentSubscription.id);
+        
+      if (error) throw new Error(error.message);
+      
+      toast({
+        title: "Success",
+        description: "Subscription cancelled successfully",
+      });
+      
+      return true;
+    } catch (err) {
+      console.error('Error cancelling subscription:', err);
+      setError(err instanceof Error ? err : new Error('Failed to cancel subscription'));
+      
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : 'Failed to cancel subscription',
+        variant: "destructive"
+      });
+      
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userCurrentSubscription, toast]);
+  
+  // Generate advance payment options
+  const generateAdvancePaymentOptions = useCallback((pkg: Package) => {
+    const options = [
+      { value: 3, label: '3 months' },
+      { value: 6, label: '6 months' },
+      { value: 12, label: '1 year' }
+    ];
+    
+    return options;
+  }, []);
+  
+  return {
     isLoading,
     error,
     packages,
@@ -257,6 +262,7 @@ export const useSubscriptionAssignment = (
     setSelectedPackage,
     userCurrentSubscription,
     handleAssignPackage,
-    handleCancelSubscription
+    handleCancelSubscription,
+    generateAdvancePaymentOptions
   };
 };

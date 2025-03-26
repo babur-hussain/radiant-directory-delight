@@ -77,9 +77,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
           </TabsList>
           <TabsContent value="login" className="mt-4">
             <LoginForm 
-              handleSubmit={async (email, password, employeeCode) => {
+              handleSubmit={(data) => {
                 try {
-                  await loginWithGoogle();
+                  loginWithGoogle();
                   handleLoginSuccess();
                 } catch (error) {
                   console.error("Login error:", error);
@@ -92,7 +92,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           </TabsContent>
           <TabsContent value="register" className="mt-4">
             <RegisterForm 
-              handleSubmit={async (email, password, name, role, additionalData) => {
+              handleSubmit={(data) => {
                 try {
                   // Add signup logic here
                   handleRegisterSuccess();
@@ -106,7 +106,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
           </TabsContent>
           <TabsContent value="reset-password" className="mt-4">
             <ResetPasswordForm 
-              handleSubmit={handleResetSuccess}
+              handleSubmit={(email) => {
+                return new Promise<void>((resolve) => {
+                  handleResetSuccess();
+                  resolve();
+                });
+              }}
               isSubmitting={false}
               error=""
               emailSent={false}

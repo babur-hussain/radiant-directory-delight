@@ -1,3 +1,4 @@
+
 export interface Business {
   id: number | string;
   name: string;

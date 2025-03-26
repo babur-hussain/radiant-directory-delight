@@ -5,7 +5,7 @@ import Papa from 'papaparse';
 
 // Define Business interface
 export interface Business {
-  id: number;
+  id: number | string;
   name: string;
   category: string;
   description: string;
@@ -14,7 +14,7 @@ export interface Business {
   email: string;
   website: string;
   image: string;
-  hours: string | Record<string, string>;
+  hours: string | Record<string, string> | Record<string, any>;
   rating: number;
   reviews: number;
   featured: boolean;

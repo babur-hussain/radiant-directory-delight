@@ -11,7 +11,7 @@ import useSupabaseUsers from '@/hooks/useSupabaseUsers';
 import { useToast } from '@/hooks/use-toast';
 
 const UsersTabContent: React.FC = () => {
-  const { users, isLoading, error, fetchUsers } = useSupabaseUsers();
+  const { users, isLoading, error, totalCount, fetchUsers } = useSupabaseUsers();
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
   
@@ -86,7 +86,7 @@ const UsersTabContent: React.FC = () => {
 
           {error ? (
             <div className="bg-destructive/10 text-destructive p-4 rounded-md">
-              {error}
+              {error.message}
             </div>
           ) : isLoading ? (
             <div className="flex justify-center items-center py-8">
