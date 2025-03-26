@@ -54,5 +54,5 @@ export interface SupabaseReadyBusiness {
   featured?: boolean;
   latitude?: number;
   longitude?: number;
-  hours?: string; // For Supabase, hours must be a string (JSON)
+  hours?: Record<string, any>; // Changed to use Record directly for jsonb
 }

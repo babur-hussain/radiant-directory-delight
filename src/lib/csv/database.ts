@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Business, BatchSaveResult, SupabaseReadyBusiness } from './types';
 import { notifyDataChanged, getBusinessesData, setBusinessesData } from './store';
@@ -22,12 +23,8 @@ export const initializeData = async () => {
     // Convert the data to match our Business interface
     const businesses = data.map(business => ({
       ...business,
-      // Ensure hours is converted from JSON string or Json type to Record<string, any>
-      hours: business.hours ? 
-        (typeof business.hours === 'string' ? 
-          JSON.parse(business.hours) : 
-          (typeof business.hours === 'object' ? business.hours : {})
-        ) : {},
+      // Ensure hours is properly converted from jsonb
+      hours: business.hours || {},
       // Ensure tags is an array
       tags: business.tags || []
     })) as Business[];
@@ -85,19 +82,18 @@ const prepareBusinessForSupabase = (business: Business): SupabaseReadyBusiness =
     delete businessCopy.id;
   }
   
-  // Convert hours to a JSON string if it exists and is an object
-  let hoursForDB: string = '{}';
+  // Process hours - convert to JSON string if it's an object
+  let hoursForDB = {};
   if (businessCopy.hours) {
     if (typeof businessCopy.hours === 'object') {
-      hoursForDB = JSON.stringify(businessCopy.hours);
+      hoursForDB = businessCopy.hours;
     } else if (typeof businessCopy.hours === 'string') {
       // If it's already a string, validate it as JSON
       try {
-        JSON.parse(businessCopy.hours);
-        hoursForDB = businessCopy.hours;
+        hoursForDB = JSON.parse(businessCopy.hours);
       } catch (e) {
         // If parsing fails, use empty object
-        hoursForDB = '{}';
+        hoursForDB = {};
       }
     }
   }
