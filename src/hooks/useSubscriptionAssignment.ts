@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -26,10 +27,13 @@ export const useSubscriptionAssignment = (): UseSubscriptionAssignmentReturn => 
 
     setSubscription(prev => {
       if (!prev) return prev;
+      
+      // Create a new object that includes all properties from prev
+      // and adds/updates the transaction_id property
       return {
         ...prev,
         status: 'active',
-        transaction_id: transactionId // Use the correct property name
+        transaction_id: transactionId
       };
     });
 

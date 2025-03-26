@@ -1,10 +1,10 @@
 
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { User, normalizeRole } from '@/types/auth';
+import { User, normalizeRole, UserRole } from '@/types/auth';
 
 interface DashboardWelcomeProps {
-  role?: string;
+  role?: UserRole;
 }
 
 const DashboardWelcome: React.FC<DashboardWelcomeProps> = ({ role }) => {
