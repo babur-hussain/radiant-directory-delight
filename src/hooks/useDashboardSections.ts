@@ -19,7 +19,7 @@ export const useDashboardSections = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const { subscription, loading: subscriptionLoading } = useSubscription();
+  const { userSubscription, loading: subscriptionLoading } = useSubscription();
 
   useEffect(() => {
     const fetchDashboardSections = async () => {
@@ -30,13 +30,13 @@ export const useDashboardSections = () => {
           return;
         }
         
-        if (!subscription) {
+        if (!userSubscription) {
           setSections([]);
           return;
         }
         
         // Get allowed sections from user's subscription package
-        if (subscription.packageId) {
+        if (userSubscription.packageId) {
           // Here you would normally fetch the sections from the API
           // For now we're just returning a hardcoded list
           const availableSections: DashboardSection[] = [
@@ -65,7 +65,7 @@ export const useDashboardSections = () => {
     };
     
     fetchDashboardSections();
-  }, [user, subscription, subscriptionLoading]);
+  }, [user, userSubscription, subscriptionLoading]);
 
   return { sections, loading, error };
 };

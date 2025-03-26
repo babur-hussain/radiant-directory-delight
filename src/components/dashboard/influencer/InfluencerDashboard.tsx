@@ -21,7 +21,7 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
   const [showWidgets, setShowWidgets] = useState<boolean>(false);
   const { sections, loading: sectionsLoading } = useDashboardSections();
   const { services, loading: servicesLoading } = useDashboardServices();
-  const { subscription, loading: subscriptionLoading, error } = useSubscription();
+  const { userSubscription, loading: subscriptionLoading, error } = useSubscription();
 
   useEffect(() => {
     // Check if user has access to dashboard based on subscription
@@ -29,7 +29,7 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
       // Wait for subscription data to be loaded
       if (subscriptionLoading) return;
       
-      if (subscription) {
+      if (userSubscription) {
         // User has an active subscription
         setShowWidgets(true);
       } else {
@@ -38,7 +38,7 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
     };
     
     checkAccess();
-  }, [subscription, subscriptionLoading]);
+  }, [userSubscription, subscriptionLoading]);
 
   if (subscriptionLoading || sectionsLoading || servicesLoading) {
     return <div className="p-6">Loading dashboard data...</div>;

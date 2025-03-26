@@ -15,7 +15,7 @@ import GrowthAnalytics from "./widgets/GrowthAnalytics";
 import LeadsAndInquiries from "./widgets/LeadsAndInquiries";
 import ReachAndVisibility from "./widgets/ReachAndVisibility";
 import MarketingCampaigns from "./widgets/MarketingCampaigns";
-import { useDashboardServices } from "@/hooks/useDashboardServices";
+import { useDashboardServices, DashboardService } from "@/hooks/useDashboardServices";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -28,7 +28,7 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ userId, subscript
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "Business");
+  const { services, loading: servicesLoading, error } = useDashboardServices();
   const { user } = useAuth();
   
   useEffect(() => {
@@ -62,6 +62,11 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ userId, subscript
 
   const handleGetSubscription = () => {
     navigate("/subscription");
+  };
+
+  // Function to check if a service is available
+  const hasService = (serviceId: string): boolean => {
+    return services.some(service => service.id === serviceId);
   };
   
   if (isLoading || servicesLoading) {
@@ -148,15 +153,15 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ userId, subscript
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {services.includes("marketing") && <MarketingCampaigns />}
-        {services.includes("reels") && <ReelsAndAds />}
-        {services.includes("creatives") && <CreativeDesigns />}
-        {services.includes("ratings") && <BusinessRatings />}
-        {services.includes("seo") && <SeoOptimization />}
-        {services.includes("google_listing") && <GoogleBusinessListing />}
-        {services.includes("growth") && <GrowthAnalytics />}
-        {services.includes("leads") && <LeadsAndInquiries />}
-        {services.includes("reach") && <ReachAndVisibility />}
+        {hasService("marketing") && <MarketingCampaigns />}
+        {hasService("reels") && <ReelsAndAds />}
+        {hasService("creatives") && <CreativeDesigns />}
+        {hasService("ratings") && <BusinessRatings />}
+        {hasService("seo") && <SeoOptimization />}
+        {hasService("google_listing") && <GoogleBusinessListing />}
+        {hasService("growth") && <GrowthAnalytics />}
+        {hasService("leads") && <LeadsAndInquiries />}
+        {hasService("reach") && <ReachAndVisibility />}
         
         {services.length === 0 && (
           <Card className="col-span-full">

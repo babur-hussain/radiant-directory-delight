@@ -18,8 +18,8 @@ interface DashboardSectionsManagerProps {
 }
 
 const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ userId, isAdmin, selectedUser }) => {
-  const { loading: subscriptionLoading, error: subscriptionError, fetchUserSubscription } = useSubscription(userId);
-  const { dashboardSections, isLoading: sectionsLoading, error: sectionsError } = useDashboardSections(userId);
+  const { loading: subscriptionLoading, error: subscriptionError, fetchUserSubscription } = useSubscription();
+  const { sections, loading: sectionsLoading, error: sectionsError } = useDashboardSections();
   const { packages, isLoading: packagesLoading, isError } = useSubscriptionPackages();
   
   const [selectedPackage, setSelectedPackage] = useState<string>("");
