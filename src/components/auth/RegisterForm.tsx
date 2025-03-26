@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -111,13 +112,15 @@ const userSchema = z.object({
 });
 
 // Function to select the appropriate schema based on user role
-const getSchemaForRole = (role: UserRole) => {
-  switch (role) {
-    case "Influencer":
+const getSchemaForRole = (role: UserRole | ExtendedUserRole) => {
+  const lowerRole = typeof role === 'string' ? role.toLowerCase() : '';
+  
+  switch (lowerRole) {
+    case "influencer":
       return influencerSchema;
-    case "Business":
+    case "business":
       return businessSchema;
-    case "Staff":
+    case "staff":
       return staffSchema;
     default:
       return userSchema;
@@ -135,7 +138,7 @@ interface RegisterFormProps {
     additionalData?: any
   ) => Promise<void>;
   onClose: () => void;
-  registerType?: UserRole;
+  registerType?: UserRole | ExtendedUserRole;
   onBack?: () => void;
 }
 
@@ -147,7 +150,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Use ExtendedUserRole to support both capitalized and lowercase roles
-  const [userType, setUserType] = useState<ExtendedUserRole | null>(registerType || "user");
+  const [userType, setUserType] = useState<ExtendedUserRole | null | UserRole>(registerType || "user");
   const { toast } = useToast();
 
   // Define available categories for influencers
@@ -199,7 +202,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
   };
 
   // Function to get default values based on the selected role
-  function getDefaultValuesForRole(role: ExtendedUserRole | null) {
+  function getDefaultValuesForRole(role: ExtendedUserRole | null | UserRole) {
     const baseValues = {
       email: "",
       password: "",
@@ -208,8 +211,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
       employeeCode: "",
     };
 
+    const lowerRole = typeof role === 'string' ? role.toLowerCase() : '';
+    
     // Use string comparison instead of type comparison
-    if (role?.toLowerCase() === "influencer") {
+    if (lowerRole === "influencer") {
       return {
         ...baseValues,
         fullName: "",
@@ -222,7 +227,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
         city: "",
         country: "",
       };
-    } else if (role?.toLowerCase() === "business") {
+    } else if (lowerRole === "business") {
       return {
         ...baseValues,
         businessName: "",
@@ -240,7 +245,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
         gstin: "",
         ownerName: "",
       };
-    } else if (role?.toLowerCase() === "staff") {
+    } else if (lowerRole === "staff") {
       return {
         ...baseValues,
         fullName: "",
@@ -271,7 +276,9 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
       
       let displayName = "";
       
-      if (userType?.toLowerCase() === "influencer") {
+      const lowerRole = typeof userType === 'string' ? userType.toLowerCase() : '';
+      
+      if (lowerRole === "influencer") {
         const influencerData = data as z.infer<typeof influencerSchema>;
         displayName = influencerData.fullName;
         
@@ -296,7 +303,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           // Username can be derived from email or name
           username: influencerData.email.split('@')[0] || influencerData.fullName.replace(/\s+/g, '_').toLowerCase()
         };
-      } else if (userType?.toLowerCase() === "business") {
+      } else if (lowerRole === "business") {
         const businessData = data as z.infer<typeof businessSchema>;
         displayName = businessData.businessName;
         
@@ -329,7 +336,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           username: businessData.businessName.replace(/\s+/g, '_').toLowerCase() || 
             businessData.email.split('@')[0]
         };
-      } else if (userType?.toLowerCase() === "staff") {
+      } else if (lowerRole === "staff") {
         const staffData = data as z.infer<typeof staffSchema>;
         displayName = staffData.fullName;
         
@@ -400,8 +407,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
 
   // Render appropriate fields based on the selected user role
   const renderRoleSpecificFields = () => {
+    const lowerRole = typeof userType === 'string' ? userType.toLowerCase() : '';
+    
     // Use string comparison instead of type comparison
-    if (userType?.toLowerCase() === "influencer") {
+    if (lowerRole === "influencer") {
       return (
         <>
           <FormField
@@ -606,7 +615,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             />
           </>
         );
-    } else if (userType?.toLowerCase() === "business") {
+    } else if (lowerRole === "business") {
       return (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -836,7 +845,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           </div>
         </>
       );
-    } else if (userType?.toLowerCase() === "staff") {
+    } else if (lowerRole === "staff") {
       return (
         <>
           <FormField
@@ -1039,3 +1048,95 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
               Back to type selection
             </Button>
           )}
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email*</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input 
+                          placeholder="Enter your email" 
+                          type="email" 
+                          autoComplete="email"
+                          {...field} 
+                        />
+                        <MailCheck className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password*</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Create a password" 
+                          type="password"
+                          autoComplete="new-password" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirm Password*</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Confirm your password" 
+                          type="password"
+                          autoComplete="new-password" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <Separator />
+
+              {renderRoleSpecificFields()}
+
+              <Button 
+                type="submit" 
+                className="w-full mt-6" 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating Account...
+                  </>
+                ) : (
+                  "Create Account"
+                )}
+              </Button>
+            </form>
+          </Form>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default RegisterForm;
