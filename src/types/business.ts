@@ -1,4 +1,3 @@
-
 export interface Business {
   id: number | string;
   name: string;
@@ -173,5 +172,5 @@ export const isNumberId = (id: string | number): boolean => {
 };
 
 export const toNumberId = (id: string | number): number => {
-  return typeof id === 'number' ? id : parseInt(id);
+  return typeof id === 'number' ? id : parseInt(id as string);
 };

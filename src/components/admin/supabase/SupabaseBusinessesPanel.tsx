@@ -8,7 +8,7 @@ import { AlertCircle, CheckCircle, Edit, Trash2, Eye, Plus } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Business, IBusiness, convertIBusinessToBusiness } from "@/types/business";
+import { Business, IBusiness, convertIBusinessToBusiness, toNumberId, isNumberId } from "@/types/business";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -112,13 +112,15 @@ const SupabaseBusinessesPanel = () => {
     if (!selectedBusiness) return;
     
     try {
-      const { error } = await supabase
-        .from('businesses')
-        .delete()
-        .eq('id', selectedBusiness.id);
-      
-      if (error) {
-        throw error;
+      if (isNumberId(selectedBusiness.id)) {
+        const { error } = await supabase
+          .from('businesses')
+          .delete()
+          .eq('id', toNumberId(selectedBusiness.id));
+        
+        if (error) {
+          throw error;
+        }
       }
       
       toast({

@@ -10,6 +10,7 @@ import BusinessListingsHeader from "@/components/admin/BusinessListingsHeader";
 import BusinessFormDialog from "@/components/admin/BusinessFormDialog";
 import BusinessPermissionError from "@/components/admin/table/BusinessPermissionError";
 import { supabase } from "@/integrations/supabase/client";
+import { Business } from "@/types/business";
 
 const AdminBusinessListingsPage = () => {
   const { user, isAuthenticated } = useAuth();
@@ -17,32 +18,40 @@ const AdminBusinessListingsPage = () => {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showBusinessFormDialog, setShowBusinessFormDialog] = useState(false);
   const [businessCount, setBusinessCount] = useState(0);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [currentBusinessToEdit, setCurrentBusinessToEdit] = useState(null);
+  const [currentBusinessToEdit, setCurrentBusinessToEdit] = useState<Business | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [permissionError, setPermissionError] = useState(null);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   
-  // Fetch business count from Supabase
-  const fetchBusinessCount = async () => {
+  // Fetch business count and data from Supabase
+  const fetchBusinesses = async () => {
+    setIsRefreshing(true);
+    setLoading(true);
     try {
-      const { count, error } = await supabase
+      const { data, count, error } = await supabase
         .from('businesses')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact' });
       
       if (error) throw error;
       setBusinessCount(count || 0);
+      setBusinesses(data || []);
     } catch (error) {
-      console.error("Error fetching business count:", error);
+      console.error("Error fetching businesses:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch business count",
+        description: "Failed to fetch business data",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
     }
   };
   
   useEffect(() => {
-    fetchBusinessCount();
+    fetchBusinesses();
   }, []);
   
   if (!isAuthenticated) {
@@ -51,7 +60,7 @@ const AdminBusinessListingsPage = () => {
   
   const handleUploadComplete = async (success: boolean, message: string, count?: number) => {
     if (success) {
-      await fetchBusinessCount();
+      await fetchBusinesses();
       toast({
         title: "Upload Successful",
         description: `${count} businesses have been imported successfully.`,
@@ -66,22 +75,24 @@ const AdminBusinessListingsPage = () => {
     }
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchBusinessCount();
-    setIsRefreshing(false);
-  };
-  
   const handleAddBusiness = () => {
     console.log("Add business button clicked");
     setCurrentBusinessToEdit(null);
     setShowBusinessFormDialog(true);
   };
   
-  const handleEditBusiness = (business) => {
-    setCurrentBusinessToEdit(business);
-    setShowBusinessFormDialog(true);
+  const handleEditBusiness = (businessId: string | number) => {
+    const business = businesses.find(b => b.id === businessId);
+    if (business) {
+      setCurrentBusinessToEdit(business);
+      setShowBusinessFormDialog(true);
+    }
   };
+  
+  const handleDeleteBusiness = (businessId: string | number) => {
+    setBusinesses(businesses.filter(business => business.id !== businessId));
+    fetchBusinesses();
+  }
   
   const handleBusinessFormSubmit = async (values: BusinessFormValues) => {
     setIsSubmitting(true);
@@ -170,7 +181,7 @@ const AdminBusinessListingsPage = () => {
       <BusinessListingsHeader 
         showUploadDialog={showUploadDialog}
         setShowUploadDialog={setShowUploadDialog}
-        handleRefresh={handleRefresh}
+        handleRefresh={fetchBusinesses}
         handleAddBusiness={handleAddBusiness}
         isRefreshing={isRefreshing}
         handleUploadComplete={handleUploadComplete}
@@ -189,9 +200,12 @@ const AdminBusinessListingsPage = () => {
         </CardHeader>
         <CardContent>
           <TableBusinessListings 
-            onRefresh={handleRefresh} 
-            onAddBusiness={handleAddBusiness}
-            onEditBusiness={handleEditBusiness}
+            businesses={businesses}
+            onRefresh={fetchBusinesses}
+            onAdd={handleAddBusiness}
+            onEdit={handleEditBusiness}
+            onDelete={handleDeleteBusiness}
+            loading={loading}
           />
         </CardContent>
       </Card>

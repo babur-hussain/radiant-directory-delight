@@ -8,13 +8,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Business, IBusiness, convertIBusinessToBusiness } from "@/types/business";
+import { Business, IBusiness, convertIBusinessToBusiness, toNumberId, isNumberId } from "@/types/business";
 
 interface TableBusinessListingsProps {
   businesses: Business[];
   onAdd?: () => void;
   onEdit?: (id: string | number) => void;
   onDelete?: (id: string | number) => void;
+  onRefresh?: () => Promise<void> | void;
   handleSearch?: (query: string) => void;
   loading?: boolean;
 }
@@ -24,6 +25,7 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
   onAdd,
   onEdit,
   onDelete,
+  onRefresh,
   handleSearch,
   loading = false,
 }) => {
@@ -56,14 +58,16 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
 
     setIsDeleteLoading(true);
     try {
-      // Delete from Supabase
-      const { error } = await supabase
-        .from("businesses")
-        .delete()
-        .eq("id", selectedBusiness.id);
+      // For numeric IDs, delete from Supabase
+      if (isNumberId(selectedBusiness.id)) {
+        const { error } = await supabase
+          .from("businesses")
+          .delete()
+          .eq("id", toNumberId(selectedBusiness.id));
 
-      if (error) {
-        throw error;
+        if (error) {
+          throw error;
+        }
       }
 
       // If onDelete callback is provided, call it
@@ -77,6 +81,11 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
       });
 
       setIsDeleteModalOpen(false);
+      
+      // Refresh the list if onRefresh is provided
+      if (onRefresh) {
+        await onRefresh();
+      }
     } catch (error) {
       console.error("Error deleting business:", error);
       toast({
@@ -117,14 +126,21 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
     if (selectedIds.length === 0) return;
 
     try {
-      // Delete from Supabase
-      const { error } = await supabase
-        .from("businesses")
-        .delete()
-        .in("id", selectedIds);
+      // Filter to only numeric IDs for Supabase deletion
+      const numericIds = selectedIds
+        .filter(id => isNumberId(id))
+        .map(id => toNumberId(id));
 
-      if (error) {
-        throw error;
+      if (numericIds.length > 0) {
+        // Delete from Supabase
+        const { error } = await supabase
+          .from("businesses")
+          .delete()
+          .in("id", numericIds);
+
+        if (error) {
+          throw error;
+        }
       }
 
       // Call onDelete for each deleted business
@@ -138,6 +154,11 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
       });
 
       setSelectedIds([]);
+      
+      // Refresh the list if onRefresh is provided
+      if (onRefresh) {
+        await onRefresh();
+      }
     } catch (error) {
       console.error("Error deleting businesses:", error);
       toast({

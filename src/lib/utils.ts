@@ -1,77 +1,36 @@
 
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
-/**
- * Creates a Google search URL for a business
- * @param businessName The name of the business
- * @param businessAddress The address of the business
- * @returns A formatted Google search URL
- */
-export function createGoogleSearchUrl(businessName: string, businessAddress: string): string {
-  // Format the search query to include business name and address
-  const searchQuery = `${businessName} ${businessAddress}`;
-  // Encode the search query for URL
-  const encodedQuery = encodeURIComponent(searchQuery);
-  // Create the Google search URL
-  return `https://www.google.com/search?q=${encodedQuery}`;
-}
-
-// Add the generateId function
-export const generateId = (): string => {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+// Format date to a readable string
+export const formatDate = (date: string | Date | null | undefined): string => {
+  if (!date) return "N/A";
+  
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  return dateObj.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 };
 
-/**
- * Formats a date string to a more readable format
- * @param dateString - The date string to format
- * @returns A formatted date string
- */
-export const formatDate = (dateString: string): string => {
-  if (!dateString) return 'N/A';
+// Format currency value
+export const formatCurrency = (amount: number | null | undefined, currency: string = "INR"): string => {
+  if (amount === null || amount === undefined) return "N/A";
   
-  try {
-    const date = new Date(dateString);
-    
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-      return 'Invalid date';
-    }
-    
-    // Format: "Jan 1, 2023"
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  } catch (error) {
-    console.error('Error formatting date:', error);
-    return dateString;
-  }
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
 };
 
-/**
- * Formats a currency value
- * @param amount - The amount to format
- * @param currency - The currency code (default: USD)
- * @returns A formatted currency string
- */
-export const formatCurrency = (amount?: number | null, currency: string = 'USD'): string => {
-  if (amount === undefined || amount === null) return 'N/A';
-  
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  } catch (error) {
-    console.error('Error formatting currency:', error);
-    return `${amount}`;
-  }
+// Generate a unique ID
+export const generateId = (prefix: string = ""): string => {
+  return `${prefix}${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 };
