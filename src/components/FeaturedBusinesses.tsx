@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { Business, ensureTagsArray, convertToCsvBusiness } from '@/types/business';
+import { Business, ensureTagsArray, convertToCsvBusiness, convertToBusinessType } from '@/types/business';
 import CategoryFilter from './businesses/CategoryFilter';
 import AdvancedFilters from './businesses/AdvancedFilters';
 import ActiveFilters from './businesses/ActiveFilters';
@@ -118,7 +117,14 @@ const FeaturedBusinesses = () => {
   }, [visibleCategory, selectedRating, selectedLocation]);
 
   // Convert businesses to csv-utils format for BusinessGrid
-  const csvBusinesses = filteredBusinesses.map(business => convertToCsvBusiness(business));
+  const csvBusinesses = filteredBusinesses.map(business => {
+    // Ensure all required fields are present, particularly description
+    return {
+      ...business,
+      description: business.description || '',  // Make sure description is never undefined
+      category: business.category || ''         // Make sure category is never undefined
+    };
+  });
 
   return (
     <section className="py-20 bg-gray-50">

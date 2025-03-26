@@ -1,9 +1,8 @@
-
 export interface Business {
   id: number | string;
   name: string;
-  category: string; // Make required to match csv-utils Business type
-  description?: string;
+  category: string;
+  description: string;
   address?: string;
   phone?: string;
   email?: string;
@@ -20,7 +19,6 @@ export interface Business {
   updated_at?: string;
 }
 
-// Helper to ensure tags are always in array format
 export const ensureTagsArray = (tags: string[] | string | undefined | null): string[] => {
   if (!tags) return [];
   if (Array.isArray(tags)) return tags.filter(Boolean);
@@ -31,13 +29,11 @@ export const ensureTagsArray = (tags: string[] | string | undefined | null): str
   return [];
 };
 
-// Helper to convert different ID types to string
 export const normalizeBusinessId = (id: string | number | undefined): string => {
   if (id === undefined) return '';
   return id.toString();
 };
 
-// Helper to safely parse hours data
 export const parseBusinessHours = (hours: any): Record<string, string> | string | any => {
   if (!hours) return '';
   
@@ -58,7 +54,6 @@ export const parseBusinessHours = (hours: any): Record<string, string> | string 
   return '';
 };
 
-// Utility function to convert from Supabase format to our app's Business type
 export const mapSupabaseToBusiness = (data: any): Business => {
   let tags: string[] = [];
   
@@ -76,7 +71,7 @@ export const mapSupabaseToBusiness = (data: any): Business => {
   return {
     id: data.id,
     name: data.name || '',
-    category: data.category || '', // Ensure category is never undefined
+    category: data.category || '',
     description: data.description || '',
     address: data.address || '',
     phone: data.phone || '',
@@ -95,7 +90,6 @@ export const mapSupabaseToBusiness = (data: any): Business => {
   };
 };
 
-// Convert IBusiness to Business type
 export const convertToBusinessType = (business: any): Business => {
   return {
     id: business.id,
@@ -119,20 +113,19 @@ export const convertToBusinessType = (business: any): Business => {
   };
 };
 
-// Create a CSV-utils compatible Business type that makes all fields optional except id and name
 export type CsvUtilsBusiness = Business;
 
-// Convert from our Business type to csv-utils Business type
 export const convertToCsvBusiness = (business: Business): CsvUtilsBusiness => {
-  return business;
+  return {
+    ...business,
+    description: business.description || ''
+  };
 };
 
-// Helper for type checking in arguments
 export const isNumberId = (id: string | number): boolean => {
   return typeof id === 'number' || !isNaN(parseInt(id as string));
 };
 
-// Convert string/number id to number for components expecting number ids
 export const toNumberId = (id: string | number): number => {
   return typeof id === 'number' ? id : parseInt(id);
 };

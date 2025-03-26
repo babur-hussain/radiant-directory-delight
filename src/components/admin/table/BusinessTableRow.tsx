@@ -1,30 +1,31 @@
 
 import React from 'react';
 import { TableRow, TableCell } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import { Badge } from '@/components/ui/badge';
-import { Star, Eye, Pencil } from 'lucide-react';
+import { Star, Eye, Pencil, Trash } from 'lucide-react';
 import { Business } from '@/lib/csv-utils';
 
 interface BusinessTableRowProps {
   business: Business;
   onViewDetails?: (business: Business) => void;
   onEditBusiness: (business: Business) => void;
-  index: number;
+  onDeleteBusiness?: (business: Business) => void; // Add this prop
+  index?: number;
 }
 
 const BusinessTableRow: React.FC<BusinessTableRowProps> = ({
   business,
   onViewDetails,
   onEditBusiness,
+  onDeleteBusiness,
   index
 }) => {
   // Convert id to number for comparison, handling string ids
   const businessId = typeof business.id === 'string' ? 
     parseInt(business.id, 10) : business.id;
   
-  const isNewBusiness = businessId < 0 || 
-    (typeof business.id === 'number' && business.id <= 0);
+  const isNewBusiness = isNaN(businessId) || businessId <= 0;
 
   return (
     <TableRow>
@@ -60,6 +61,11 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({
           <Button variant="ghost" size="icon" onClick={() => onEditBusiness(business)}>
             <Pencil className="h-4 w-4" />
           </Button>
+          {onDeleteBusiness && (
+            <Button variant="ghost" size="icon" onClick={() => onDeleteBusiness(business)}>
+              <Trash className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </TableCell>
     </TableRow>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -81,8 +80,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 try {
                   await loginWithGoogle();
                   handleLoginSuccess();
+                  return Promise.resolve();
                 } catch (error) {
                   console.error("Login error:", error);
+                  return Promise.reject(error);
                 }
               }}
               isSubmitting={false}
@@ -109,9 +110,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
           <TabsContent value="reset-password" className="mt-4">
             <ResetPasswordForm 
               handleSubmit={async (email) => {
-                // Implement password reset functionality
-                handleResetSuccess();
-                return Promise.resolve();
+                try {
+                  // Implement password reset functionality
+                  handleResetSuccess();
+                  return Promise.resolve();
+                } catch (error) {
+                  return Promise.reject(error);
+                }
               }}
               isSubmitting={false}
               error=""

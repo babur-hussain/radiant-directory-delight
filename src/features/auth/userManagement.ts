@@ -1,7 +1,50 @@
+import { User, UserRole } from '@/types/auth';
+import { normalizeRole } from '@/types/auth';
 
-import { User, UserRole, normalizeRole } from "@/types/auth";
-import { supabase } from "@/integrations/supabase/client";
-import { nanoid } from 'nanoid';
+// Fix role case issues - use lowercase role values
+export const getUsersByRole = (users: User[], role: UserRole): User[] => {
+  const normalizedRole = normalizeRole(role);
+  return users.filter(user => normalizeRole(user.role) === normalizedRole);
+};
+
+export const getRoleDisplayName = (role: UserRole): string => {
+  switch (normalizeRole(role)) {
+    case 'admin':
+      return 'Admin';
+    case 'business':
+      return 'Business Owner';
+    case 'influencer':
+      return 'Influencer';
+    case 'user':
+      return 'User';
+    case 'staff':
+      return 'Staff';
+    default:
+      return 'User';
+  }
+};
+
+export const determineUserRole = (userData: any): UserRole => {
+  if (!userData) return 'user';
+
+  // Check for role directly
+  if (userData.role) {
+    return normalizeRole(userData.role);
+  }
+
+  // Check if this is a business account
+  if (userData.businessName || userData.business_name) {
+    return 'business';
+  }
+
+  // Check if this is an influencer account
+  if (userData.followersCount || userData.followers_count || userData.niche) {
+    return 'influencer';
+  }
+
+  // Default to regular user
+  return 'user';
+};
 
 // Constants for default user data
 const DEFAULT_PHOTO_URL = 'https://example.com/default-avatar.png';
