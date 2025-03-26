@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Star, MapPin, Phone, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import BusinessImage from '@/components/BusinessImage';
@@ -14,8 +15,13 @@ const BusinessCard = ({ business }: BusinessCardProps) => {
   const maxVisibleTags = 2;
   
   // Handle potentially missing or malformed tags with improved type checking
-  const tags = Array.isArray(business.tags) ? business.tags : 
-    (typeof business.tags === 'string' && business.tags ? business.tags.split(',').map(t => t.trim()) : []);
+  let tags: string[] = [];
+  
+  if (Array.isArray(business.tags)) {
+    tags = business.tags;
+  } else if (typeof business.tags === 'string' && business.tags.trim() !== '') {
+    tags = business.tags.split(',').map(t => t.trim());
+  }
   
   const hasMoreTags = tags.length > maxVisibleTags;
 

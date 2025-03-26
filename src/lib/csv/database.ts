@@ -104,7 +104,7 @@ const prepareBusinessForSupabase = (business: Business): SupabaseReadyBusiness =
   if (businessCopy.tags) {
     if (Array.isArray(businessCopy.tags)) {
       tagsArray = businessCopy.tags;
-    } else if (typeof businessCopy.tags === 'string' && businessCopy.tags) {
+    } else if (typeof businessCopy.tags === 'string' && businessCopy.tags.trim() !== '') {
       tagsArray = businessCopy.tags.split(',').map(tag => tag.trim());
     } else {
       console.warn('Unknown tags type encountered:', typeof businessCopy.tags);
