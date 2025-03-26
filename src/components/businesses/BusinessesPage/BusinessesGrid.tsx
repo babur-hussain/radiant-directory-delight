@@ -3,8 +3,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Star, MapPin, Phone, ChevronDown, ChevronUp } from "lucide-react";
-import { Business, ensureTagsArray } from "@/types/business";
-import BusinessImage from "@/components/BusinessImage";
+import { Business, ensureTagsArray } from "@/lib/csv-utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { createGoogleSearchUrl } from "@/lib/utils";
 
@@ -35,10 +34,13 @@ const BusinessesGrid: React.FC<BusinessesGridProps> = ({ businesses, clearAllFil
       {businesses.map(business => (
         <Card key={business.id} className="group overflow-hidden hover:shadow-lg transition-shadow duration-300">
           <div className="relative h-48 overflow-hidden">
-            <BusinessImage 
-              src={business.image} 
+            <img 
+              src={business.image || "/placeholder.svg"} 
               alt={business.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/placeholder.svg";
+              }}
             />
             {business.featured && (
               <span className="absolute top-3 left-3 bg-primary text-white text-xs px-2 py-1 rounded">

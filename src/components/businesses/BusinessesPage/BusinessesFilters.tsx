@@ -7,47 +7,71 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Check, ChevronDown, ChevronUp } from "lucide-react";
 
 interface BusinessesFiltersProps {
   categories: string[];
-  locations: string[];
-  selectedCategory: string;
-  setSelectedCategory: (category: string) => void;
-  selectedLocation: string | null;
-  setSelectedLocation: (location: string | null) => void;
-  selectedRating: string;
-  setSelectedRating: (rating: string) => void;
-  featuredOnly: boolean;
-  setFeaturedOnly: (featured: boolean) => void;
+  tags: string[];
+  selectedCategory: string | null;
+  selectedTags: string[];
+  onCategorySelect: (category: string | null) => void;
+  onTagsSelect: (tags: string[]) => void;
+  sortBy: string;
+  sortDirection: "asc" | "desc";
+  onSort: (field: string) => void;
 }
 
 const BusinessesFilters: React.FC<BusinessesFiltersProps> = ({
   categories,
-  locations,
+  tags,
   selectedCategory,
-  setSelectedCategory,
-  selectedLocation,
-  setSelectedLocation,
-  selectedRating,
-  setSelectedRating,
-  featuredOnly,
-  setFeaturedOnly
+  selectedTags,
+  onCategorySelect,
+  onTagsSelect,
+  sortBy,
+  sortDirection,
+  onSort
 }) => {
+  const handleTagToggle = (tag: string) => {
+    if (selectedTags.includes(tag)) {
+      onTagsSelect(selectedTags.filter(t => t !== tag));
+    } else {
+      onTagsSelect([...selectedTags, tag]);
+    }
+  };
+
+  const clearFilters = () => {
+    onCategorySelect(null);
+    onTagsSelect([]);
+  };
+
+  const hasActiveFilters = selectedCategory || selectedTags.length > 0;
+
+  const getSortIcon = (field: string) => {
+    if (sortBy !== field) return null;
+    return sortDirection === "desc" ? 
+      <ChevronDown className="ml-1 h-4 w-4" /> : 
+      <ChevronUp className="ml-1 h-4 w-4" />;
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-      <h3 className="font-medium text-lg mb-4">Filters</h3>
-      
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Category</label>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger>
+    <div className="mb-8 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm font-medium">Filter by:</span>
+          
+          <Select
+            value={selectedCategory || ""}
+            onValueChange={(value) => onCategorySelect(value || null)}
+          >
+            <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">All Categories</SelectItem>
-              {categories.map(category => (
+              {categories.map((category) => (
                 <SelectItem key={category} value={category}>
                   {category}
                 </SelectItem>
@@ -55,58 +79,61 @@ const BusinessesFilters: React.FC<BusinessesFiltersProps> = ({
             </SelectContent>
           </Select>
         </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-1">Location</label>
-          <Select 
-            value={selectedLocation || ""} 
-            onValueChange={val => setSelectedLocation(val || null)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Any Location" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Any Location</SelectItem>
-              {locations.map(location => (
-                <SelectItem key={location} value={location}>
-                  {location}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-1">Rating</label>
-          <Select value={selectedRating} onValueChange={setSelectedRating}>
-            <SelectTrigger>
-              <SelectValue placeholder="Any Rating" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Any Rating</SelectItem>
-              <SelectItem value="4+">4+ Stars</SelectItem>
-              <SelectItem value="3+">3+ Stars</SelectItem>
-              <SelectItem value="2+">2+ Stars</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Checkbox 
-            id="featured-filter" 
-            checked={featuredOnly}
-            onCheckedChange={(checked) => 
-              setFeaturedOnly(checked === true)
-            }
-          />
-          <label 
-            htmlFor="featured-filter"
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-          >
-            Featured Only
-          </label>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm font-medium">Sort by:</span>
+          
+          <div className="flex gap-2">
+            <Button 
+              variant={sortBy === "name" ? "default" : "outline"} 
+              size="sm"
+              onClick={() => onSort("name")}
+              className="flex items-center"
+            >
+              Name {getSortIcon("name")}
+            </Button>
+            <Button 
+              variant={sortBy === "rating" ? "default" : "outline"} 
+              size="sm"
+              onClick={() => onSort("rating")}
+              className="flex items-center"
+            >
+              Rating {getSortIcon("rating")}
+            </Button>
+          </div>
         </div>
       </div>
+
+      {tags.length > 0 && (
+        <div className="pt-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium">Tags:</span>
+            {tags.map((tag) => (
+              <Badge 
+                key={tag}
+                variant={selectedTags.includes(tag) ? "default" : "outline"}
+                className="cursor-pointer"
+                onClick={() => handleTagToggle(tag)}
+              >
+                {tag}
+                {selectedTags.includes(tag) && <Check className="ml-1 h-3 w-3" />}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {hasActiveFilters && (
+        <div className="flex justify-end">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={clearFilters}
+          >
+            Clear Filters
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

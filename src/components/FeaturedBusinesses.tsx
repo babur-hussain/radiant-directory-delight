@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { Business } from '@/lib/csv-utils'; // Updated import 
+import { Business } from '@/lib/csv-utils';
 import CategoryFilter from './businesses/CategoryFilter';
 import AdvancedFilters from './businesses/AdvancedFilters';
 import ActiveFilters from './businesses/ActiveFilters';
@@ -17,12 +16,10 @@ const FeaturedBusinesses = () => {
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Load businesses data
   useEffect(() => {
     const loadBusinesses = async () => {
       setLoading(true);
       try {
-        // Fetch featured businesses from Supabase
         const { data, error } = await supabase
           .from('businesses')
           .select('*')
@@ -34,27 +31,46 @@ const FeaturedBusinesses = () => {
           throw error;
         }
         
-        // Convert to our Business type
-        const featuredBusinesses: Business[] = data.map(item => ({
-          id: item.id,
-          name: item.name || '',
-          category: item.category || '',
-          description: item.description || '',
-          address: item.address || '',
-          phone: item.phone || '',
-          email: item.email || '',
-          website: item.website || '',
-          image: item.image || '',
-          hours: item.hours,
-          rating: Number(item.rating) || 0,
-          reviews: Number(item.reviews) || 0,
-          featured: Boolean(item.featured),
-          tags: item.tags || [],
-          latitude: item.latitude || 0,
-          longitude: item.longitude || 0,
-          created_at: item.created_at || '',
-          updated_at: item.updated_at || ''
-        }));
+        const featuredBusinesses: Business[] = data.map(item => {
+          let hours: string | Record<string, string> | null = null;
+          try {
+            if (typeof item.hours === 'string') {
+              hours = JSON.parse(item.hours);
+            } else if (item.hours && typeof item.hours === 'object') {
+              hours = item.hours as Record<string, string>;
+            }
+          } catch (e) {
+            console.warn('Could not parse hours:', e);
+          }
+          
+          let tags: string[] = [];
+          if (Array.isArray(item.tags)) {
+            tags = item.tags;
+          } else if (typeof item.tags === 'string') {
+            tags = item.tags.split(',').map(tag => tag.trim());
+          }
+          
+          return {
+            id: item.id,
+            name: item.name || '',
+            category: item.category || '',
+            description: item.description || '',
+            address: item.address || '',
+            phone: item.phone || '',
+            email: item.email || '',
+            website: item.website || '',
+            image: item.image || '',
+            hours,
+            rating: Number(item.rating) || 0,
+            reviews: Number(item.reviews) || 0,
+            featured: Boolean(item.featured),
+            tags,
+            latitude: item.latitude || 0,
+            longitude: item.longitude || 0,
+            created_at: item.created_at || '',
+            updated_at: item.updated_at || ''
+          };
+        });
         
         setBusinesses(featuredBusinesses);
         setLoading(false);
@@ -74,20 +90,16 @@ const FeaturedBusinesses = () => {
   
   const categories = Array.from(new Set(businesses.map(b => b.category)));
   
-  // Extract unique locations (cities) from business addresses
   const locations = Array.from(new Set(businesses.map(b => {
     const parts = b.address?.split(',') || [];
     return parts.length > 1 ? parts[1].trim() : parts[0]?.trim() || '';
   })));
   
-  // Filter businesses based on all selected filters
   const filteredBusinesses = businesses.filter(business => {
-    // Category filter
     if (visibleCategory && business.category !== visibleCategory) {
       return false;
     }
     
-    // Rating filter
     if (selectedRating) {
       const minRating = parseInt(selectedRating.replace('+', ''));
       if (business.rating < minRating) {
@@ -95,7 +107,6 @@ const FeaturedBusinesses = () => {
       }
     }
     
-    // Location filter
     if (selectedLocation) {
       const businessLocation = business.address?.split(',') || [];
       const cityPart = businessLocation.length > 1 ? businessLocation[1].trim() : businessLocation[0]?.trim() || '';
@@ -107,14 +118,12 @@ const FeaturedBusinesses = () => {
     return true;
   });
 
-  // Reset filters
   const resetFilters = () => {
     setVisibleCategory(null);
     setSelectedRating(null);
     setSelectedLocation(null);
   };
 
-  // Update URL with filters when they change
   useEffect(() => {
     const searchParams = new URLSearchParams();
     
@@ -130,7 +139,6 @@ const FeaturedBusinesses = () => {
       searchParams.set('location', selectedLocation);
     }
     
-    // Only update if there are filters
     if (searchParams.toString()) {
       window.history.replaceState(
         {},
@@ -152,21 +160,18 @@ const FeaturedBusinesses = () => {
           </p>
         </div>
         
-        {/* Show loading state or content */}
         {loading ? (
           <div className="py-16">
             <Loading size="xl" message="Loading featured businesses..." />
           </div>
         ) : (
           <>
-            {/* Category Filters */}
             <CategoryFilter 
               categories={categories} 
               visibleCategory={visibleCategory} 
               setVisibleCategory={setVisibleCategory} 
             />
             
-            {/* Advanced Filters */}
             <div className="flex justify-center mb-6">
               <AdvancedFilters 
                 showFilters={showFilters}
@@ -180,7 +185,6 @@ const FeaturedBusinesses = () => {
               />
             </div>
             
-            {/* Active Filters Display */}
             <ActiveFilters 
               selectedRating={selectedRating}
               selectedLocation={selectedLocation}
@@ -189,7 +193,6 @@ const FeaturedBusinesses = () => {
               resetFilters={resetFilters}
             />
             
-            {/* Businesses Grid */}
             <BusinessGrid 
               businesses={filteredBusinesses} 
               resetFilters={resetFilters} 

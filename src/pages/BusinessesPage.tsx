@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { Metadata } from '@/components/shared/Metadata';
-import useBusinessPageData from '@/hooks/useBusinessPageData'; // Fix import
+import useBusinessPageData from '@/hooks/useBusinessPageData';
 import BusinessesHero from '@/components/businesses/BusinessesPage/BusinessesHero';
 import BusinessesFilters from '@/components/businesses/BusinessesPage/BusinessesFilters';
 import BusinessesGrid from '@/components/businesses/BusinessesPage/BusinessesGrid';
@@ -47,6 +47,11 @@ const BusinessesPage = () => {
     const newDirection = sortBy === field && sortDirection === 'desc' ? 'asc' : 'desc';
     sortBusinesses(field, newDirection);
   };
+
+  const clearAllFilters = () => {
+    filterByCategory(null);
+    filterByTags([]);
+  };
   
   return (
     <>
@@ -80,7 +85,10 @@ const BusinessesPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <BusinessesGrid businesses={paginatedBusinesses} />
+            <BusinessesGrid 
+              businesses={paginatedBusinesses} 
+              clearAllFilters={clearAllFilters}
+            />
             
             {totalPages > 1 && (
               <BusinessesPagination 

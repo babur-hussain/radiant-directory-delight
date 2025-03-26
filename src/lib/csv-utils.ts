@@ -264,7 +264,7 @@ export const getAllBusinesses = async (): Promise<Business[]> => {
         if (typeof item.hours === 'string') {
           hours = JSON.parse(item.hours);
         } else if (item.hours && typeof item.hours === 'object') {
-          hours = item.hours;
+          hours = item.hours as Record<string, string>;
         }
       } catch (e) {
         console.warn('Could not parse hours:', e);
@@ -392,4 +392,3 @@ export const downloadCSV = (csvContent: string, filename = 'businesses.csv') => 
   link.click();
   document.body.removeChild(link);
 };
-
