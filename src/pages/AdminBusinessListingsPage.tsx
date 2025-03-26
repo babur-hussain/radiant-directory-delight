@@ -10,7 +10,7 @@ import BusinessListingsHeader from "@/components/admin/BusinessListingsHeader";
 import BusinessFormDialog from "@/components/admin/BusinessFormDialog";
 import BusinessPermissionError from "@/components/admin/table/BusinessPermissionError";
 import { supabase } from "@/integrations/supabase/client";
-import { Business } from "@/types/business";
+import { Business, toNumberId, isNumberId } from "@/types/business";
 
 const AdminBusinessListingsPage = () => {
   const { user, isAuthenticated } = useAuth();
@@ -90,6 +90,11 @@ const AdminBusinessListingsPage = () => {
   };
   
   const handleDeleteBusiness = (businessId: string | number) => {
+    // Use type guard for numeric ids
+    if (isNumberId(businessId)) {
+      const numericId = toNumberId(businessId);
+      // Rest of deletion logic with numericId
+    }
     setBusinesses(businesses.filter(business => business.id !== businessId));
     fetchBusinesses();
   }
@@ -153,7 +158,7 @@ const AdminBusinessListingsPage = () => {
       
       setShowBusinessFormDialog(false);
       setCurrentBusinessToEdit(null);
-      handleRefresh();
+      fetchBusinesses();
     } catch (error) {
       console.error("Error saving business:", error);
       

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -109,37 +108,37 @@ const SupabaseBusinessesPanel = () => {
   };
 
   const confirmDelete = async () => {
-    if (!selectedBusiness) return;
-    
-    try {
-      if (isNumberId(selectedBusiness.id)) {
-        const { error } = await supabase
-          .from('businesses')
-          .delete()
-          .eq('id', toNumberId(selectedBusiness.id));
-        
-        if (error) {
-          throw error;
-        }
+  if (!selectedBusiness) return;
+  
+  try {
+    if (isNumberId(selectedBusiness.id)) {
+      const { error } = await supabase
+        .from('businesses')
+        .delete()
+        .eq('id', toNumberId(selectedBusiness.id));
+      
+      if (error) {
+        throw error;
       }
-      
-      toast({
-        title: "Business Deleted",
-        description: `${selectedBusiness.name} has been removed from the database.`
-      });
-      
-      // Remove from local state
-      setBusinesses(businesses.filter(b => b.id !== selectedBusiness.id));
-      setIsDeleteModalOpen(false);
-    } catch (err) {
-      console.error('Error deleting business:', err);
-      toast({
-        title: "Error",
-        description: "Failed to delete business. Please try again.",
-        variant: "destructive"
-      });
     }
-  };
+    
+    toast({
+      title: "Business Deleted",
+      description: `${selectedBusiness.name} has been removed from the database.`
+    });
+    
+    // Remove from local state
+    setBusinesses(businesses.filter(b => b.id !== selectedBusiness.id));
+    setIsDeleteModalOpen(false);
+  } catch (err) {
+    console.error('Error deleting business:', err);
+    toast({
+      title: "Error",
+      description: "Failed to delete business. Please try again.",
+      variant: "destructive"
+    });
+  }
+};
 
   const handleAddBusiness = () => {
     // For now just a placeholder function

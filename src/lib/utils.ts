@@ -34,3 +34,15 @@ export const formatCurrency = (amount: number | null | undefined, currency: stri
 export const generateId = (prefix: string = ""): string => {
   return `${prefix}${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 };
+
+// Create a Google search URL for a business
+export const createGoogleSearchUrl = (
+  businessName: string, 
+  address?: string
+): string => {
+  const searchQuery = address 
+    ? `${businessName} ${address}` 
+    : businessName;
+  
+  return `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
+};
