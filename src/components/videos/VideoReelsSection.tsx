@@ -1,9 +1,35 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import VideoSlider, { VideoSource } from './VideoSlider';
+import VideoSubmissionForm from './VideoSubmissionForm';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
-// Sample video data - in a real application, this would come from an API or CMS
+// Fetch videos from Supabase
+const fetchVideos = async (): Promise<VideoSource[]> => {
+  const { data, error } = await supabase
+    .from('videos')
+    .select('*')
+    .eq('status', 'approved')
+    .order('created_at', { ascending: false });
+  
+  if (error) {
+    console.error('Error fetching videos:', error);
+    throw new Error('Failed to fetch videos');
+  }
+  
+  // Transform to VideoSource format
+  return (data || []).map(video => ({
+    id: video.id,
+    type: video.video_type as 'instagram' | 'youtube' | 'upload',
+    url: video.video_url,
+    thumbnail: video.thumbnail_url,
+    title: video.title,
+  }));
+};
+
+// Fallback demo videos
 const demoVideos: VideoSource[] = [
   {
     id: '1',
@@ -39,6 +65,18 @@ const demoVideos: VideoSource[] = [
 ];
 
 const VideoReelsSection: React.FC = () => {
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  
+  // Fetch videos with react-query
+  const { data: videos, isLoading, error } = useQuery({
+    queryKey: ['videos'],
+    queryFn: fetchVideos,
+    retry: 1,
+  });
+  
+  // Use demo videos if loading or error
+  const displayVideos = videos || demoVideos;
+
   return (
     <section className="py-16 bg-gradient-to-b from-background to-muted/30">
       <div className="container px-4 mx-auto">
@@ -56,14 +94,14 @@ const VideoReelsSection: React.FC = () => {
           </p>
         </div>
         
-        <VideoSlider videos={demoVideos} />
+        <VideoSlider videos={displayVideos} />
         
         <div className="mt-10 text-center">
           <p className="text-sm text-gray-500 mb-2">
             Have an inspiring business story to share?
           </p>
-          <a 
-            href="#" 
+          <button 
+            onClick={() => setIsFormOpen(true)}
             className={cn(
               "inline-flex items-center text-primary hover:underline",
               "text-sm font-medium"
@@ -73,9 +111,14 @@ const VideoReelsSection: React.FC = () => {
             <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
             </svg>
-          </a>
+          </button>
         </div>
       </div>
+      
+      <VideoSubmissionForm 
+        open={isFormOpen} 
+        onOpenChange={setIsFormOpen} 
+      />
     </section>
   );
 };

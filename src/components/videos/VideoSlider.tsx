@@ -84,7 +84,7 @@ const VideoSlider: React.FC<VideoSliderProps> = ({ videos }) => {
               key={video.id} 
               className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 pl-4"
             >
-              <div className="relative rounded-lg overflow-hidden bg-black aspect-[9/16] sm:aspect-video shadow-lg">
+              <div className="relative rounded-lg overflow-hidden bg-black aspect-[9/16] shadow-lg">
                 {video.type === 'upload' ? (
                   <div className="relative w-full h-full flex items-center justify-center">
                     <video
