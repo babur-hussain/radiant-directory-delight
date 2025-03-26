@@ -1,100 +1,65 @@
 
-import { useState, useEffect } from "react";
-import { UserRole } from "@/types/auth";
-import { getUserDashboardSections } from "@/utils/dashboardSections";
-import { listenToUserSubscription } from "@/lib/subscription";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
-// Default mock sections (fallback if database fetch fails)
-const mockInfluencerPlans: Record<string, string[]> = {
-  "default": ["reels", "creatives", "ratings", "seo", "google_listing", "performance", "leads", "rank"],
-  "basic": ["reels", "creatives", "ratings"],
-  "standard": ["reels", "creatives", "ratings", "seo", "google_listing"],
-  "premium": ["reels", "creatives", "ratings", "seo", "google_listing", "performance", "leads", "rank"],
-};
-
-const mockBusinessPlans: Record<string, string[]> = {
-  "default": ["marketing", "reels", "creatives", "ratings", "seo", "google_listing", "growth", "leads", "reach"],
-  "basic": ["marketing", "reels", "ratings"],
-  "standard": ["marketing", "reels", "creatives", "ratings", "seo"],
-  "premium": ["marketing", "reels", "creatives", "ratings", "seo", "google_listing", "growth", "leads", "reach"],
-};
-
-export const useDashboardServices = (userId: string, role: UserRole) => {
+export const useDashboardServices = (userId: string, userRole: string) => {
   const [services, setServices] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [subscriptionUpdated, setSubscriptionUpdated] = useState(false);
-
+  
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-    
-    const fetchUserServices = async () => {
+    const fetchServices = async () => {
+      if (!userId) {
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
-      setError(null);
       
       try {
-        if (!userId) {
-          throw new Error("User ID is required");
+        // First get the user's active subscription
+        const { data: subscription, error: subError } = await supabase
+          .from('user_subscriptions')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .maybeSingle();
+        
+        if (subError) {
+          throw new Error(subError.message);
         }
         
-        // Try to fetch sections from the database first
-        const userSections = await getUserDashboardSections(userId, role);
-        
-        if (userSections && userSections.length > 0) {
-          console.log(`Found ${userSections.length} dashboard sections for user ${userId}`);
-          setServices(userSections);
-          setIsLoading(false);
-        } else {
-          // Fallback to mock data if no sections found in the database
-          console.log("No dashboard sections found in database, using mock data");
-          const lastChar = userId.slice(-1);
-          let planType = "default";
-          
-          if ("123".includes(lastChar)) {
-            planType = "basic";
-          } else if ("456".includes(lastChar)) {
-            planType = "standard";
-          } else if ("789".includes(lastChar)) {
-            planType = "premium";
-          }
-          
-          if (role === "Influencer") {
-            setServices(mockInfluencerPlans[planType] || mockInfluencerPlans.default);
-          } else {
-            setServices(mockBusinessPlans[planType] || mockBusinessPlans.default);
-          }
-          setIsLoading(false);
+        if (!subscription) {
+          setServices([]);
+          return;
         }
         
-        // Set up subscription listener to detect changes
-        unsubscribe = listenToUserSubscription(userId, () => {
-          // When subscription changes, trigger a re-fetch of services
-          console.log("Subscription changed, refreshing dashboard services");
-          setSubscriptionUpdated(prev => !prev);
-        });
+        // Get the subscription package
+        const { data: packageData, error: packageError } = await supabase
+          .from('subscription_packages')
+          .select('dashboardSections')
+          .eq('id', subscription.package_id)
+          .single();
         
+        if (packageError) {
+          throw new Error(packageError.message);
+        }
+        
+        // Set the services based on the package's dashboard sections
+        setServices(packageData.dashboardSections || []);
       } catch (err) {
-        console.error("Error fetching dashboard services:", err);
-        setError("Failed to load your dashboard services. Please try again later.");
-        
-        // Fallback to default sections based on role
-        if (role === "Influencer") {
-          setServices(mockInfluencerPlans.default);
-        } else {
-          setServices(mockBusinessPlans.default);
-        }
+        console.error('Error fetching dashboard services:', err);
+        setError('Failed to load services. Please try again later.');
+        setServices([]);
+      } finally {
         setIsLoading(false);
       }
     };
-
-    if (userId && role) {
-      fetchUserServices();
-    }
     
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, [userId, role, subscriptionUpdated]);
-
+    fetchServices();
+  }, [userId, userRole]);
+  
   return { services, isLoading, error };
 };
+
+export default useDashboardServices;

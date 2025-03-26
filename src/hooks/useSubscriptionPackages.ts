@@ -1,163 +1,67 @@
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import { getAllPackages, savePackage, deletePackage } from '@/services/packageService';
-import { toast } from '@/hooks/use-toast';
 
 export const useSubscriptionPackages = () => {
-  const queryClient = useQueryClient();
+  const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
   
-  // Query to fetch all packages
-  const {
-    data: packages,
-    isLoading,
-    isError,
-    error,
-    refetch
-  } = useQuery({
-    queryKey: ['subscription-packages'],
-    queryFn: async () => {
+  useEffect(() => {
+    const fetchPackages = async () => {
+      setIsLoading(true);
       try {
-        console.log("Fetching all subscription packages");
-        const packages = await getAllPackages();
-        console.log("Successfully fetched packages:", packages?.length);
-        return packages;
-      } catch (err) {
-        console.error('Error fetching subscription packages:', err);
-        toast({
-          title: "Error",
-          description: `Failed to load subscription packages: ${err instanceof Error ? err.message : String(err)}`,
-          variant: "destructive"
-        });
-        throw err;
-      }
-    }
-  });
-  
-  // Create or update mutation with proper text handling
-  const createOrUpdateMutation = useMutation({
-    mutationFn: async (packageData: ISubscriptionPackage) => {
-      console.log("Starting save package mutation with data:", packageData);
-      
-      if (!packageData.title) {
-        console.error("Package title is missing");
-        throw new Error("Package title is required");
-      }
-      
-      // Ensure text fields are properly handled
-      const processedData: ISubscriptionPackage = {
-        ...packageData,
-        fullDescription: String(packageData.fullDescription || ''),
-        termsAndConditions: String(packageData.termsAndConditions || ''),
-        shortDescription: String(packageData.shortDescription || '')
-      };
-      
-      try {
-        console.log("Calling savePackage service function");
-        return await savePackage(processedData);
+        // Fetch packages from Supabase
+        const { data, error } = await supabase
+          .from('subscription_packages')
+          .select('*')
+          .eq('isActive', true)
+          .order('price', { ascending: true });
+        
+        if (error) {
+          throw error;
+        }
+        
+        // Process the data to ensure it matches our type
+        const processedData = data.map(pkg => ({
+          id: pkg.id,
+          title: pkg.title,
+          price: pkg.price,
+          monthlyPrice: pkg.monthlyPrice,
+          shortDescription: pkg.shortDescription,
+          fullDescription: pkg.fullDescription,
+          features: Array.isArray(pkg.features) ? pkg.features : [],
+          setupFee: pkg.setupFee || 0,
+          popular: pkg.popular || false,
+          type: pkg.type as 'Business' | 'Influencer',
+          durationMonths: pkg.durationMonths || 12,
+          advancePaymentMonths: pkg.advancePaymentMonths || 0,
+          paymentType: pkg.paymentType as 'recurring' | 'one-time',
+          billingCycle: pkg.billingCycle,
+          termsAndConditions: pkg.termsAndConditions,
+          dashboardSections: Array.isArray(pkg.dashboardSections) ? pkg.dashboardSections : [],
+          isActive: pkg.isActive
+        }));
+        
+        setPackages(processedData);
+        setIsError(false);
       } catch (error) {
-        console.error("Error in save package mutation:", error);
-        throw error;
+        console.error('Error fetching subscription packages:', error);
+        setIsError(true);
+      } finally {
+        setIsLoading(false);
       }
-    },
-    onSuccess: (savedPackage) => {
-      console.log("Package saved successfully:", savedPackage);
-      
-      toast({
-        title: "Success",
-        description: `Package "${savedPackage.title}" saved successfully`,
-      });
-      
-      // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
-    },
-    onError: (error: any) => {
-      console.error("Package save error:", error);
-      
-      toast({
-        title: "Error",
-        description: `Failed to save package: ${error instanceof Error ? error.message : String(error)}`,
-        variant: "destructive"
-      });
-    }
-  });
+    };
+    
+    fetchPackages();
+  }, []);
   
-  // Delete mutation with improved error handling
-  const deleteMutation = useMutation({
-    mutationFn: async (packageId: string) => {
-      console.log("Starting delete package mutation for ID:", packageId);
-      if (!packageId) {
-        console.error("Package ID is missing");
-        throw new Error("Package ID is required");
-      }
-      
-      try {
-        await deletePackage(packageId);
-        return packageId;
-      } catch (error) {
-        console.error("Error in delete package mutation:", error);
-        throw error;
-      }
-    },
-    onSuccess: (packageId) => {
-      console.log("Package deleted successfully:", packageId);
-      
-      toast({
-        title: "Success",
-        description: "Package deleted successfully",
-      });
-      
-      // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
-    },
-    onError: (error: any) => {
-      console.error("Package delete error:", error);
-      
-      toast({
-        title: "Error",
-        description: `Failed to delete package: ${error instanceof Error ? error.message : String(error)}`,
-        variant: "destructive"
-      });
-    }
-  });
-  
-  // Direct function to create or update a package with better error handling
-  const createOrUpdate = async (packageData: ISubscriptionPackage) => {
-    console.log("createOrUpdate function called with data:", packageData);
-    try {
-      // This will trigger the mutation and all its callbacks
-      return await createOrUpdateMutation.mutateAsync(packageData);
-    } catch (error) {
-      console.error("createOrUpdate failed:", error);
-      // Re-throw to allow callers to handle the error if needed
-      throw error;
-    }
-  };
-  
-  // Direct function to delete a package with better error handling
-  const remove = async (packageId: string) => {
-    console.log("remove function called with ID:", packageId);
-    try {
-      await deleteMutation.mutateAsync(packageId);
-      console.log("remove completed successfully");
-      return true;
-    } catch (error) {
-      console.error("remove failed:", error);
-      throw error;
-    }
-  };
-
   return {
-    packages: packages || [],
+    packages,
     isLoading,
-    isError,
-    error,
-    refetch,
-    createOrUpdate,
-    remove,
-    isCreating: createOrUpdateMutation.isPending,
-    isDeleting: deleteMutation.isPending
+    isError
   };
 };
 
-export type { ISubscriptionPackage } from '@/models/SubscriptionPackage';
+export default useSubscriptionPackages;

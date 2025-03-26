@@ -1,211 +1,180 @@
-import { useState, useEffect } from 'react';
-import { nanoid } from 'nanoid';
+
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Subscription, PaymentType, BillingCycle, SubscriptionStatus, ISubscriptionPackage } from '@/models/Subscription';
-import { 
-  createSubscription, 
-  getActiveUserSubscription, 
-  getUserSubscriptions, 
-  updateSubscription, 
-  cancelSubscription 
-} from '@/services/subscriptionService';
+import { nanoid } from 'nanoid';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 
-export interface SubscriptionResponse {
-  success: boolean;
-  data?: Subscription | null;
-  error?: string;
-}
-
-export const useSubscription = (userId?: string | null) => {
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+export const useSubscription = (userId?: string) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
   
-  const fetchUserSubscription = async (id?: string): Promise<SubscriptionResponse> => {
-    const userIdToUse = id || userId;
-    if (!userIdToUse) {
-      setSubscription(null);
-      setLoading(false);
-      return { success: false, error: "No user ID provided" };
+  // Get the user ID either from the prop or from the auth context
+  const currentUserId = userId || user?.id;
+  
+  const purchaseSubscription = async (packageData: ISubscriptionPackage) => {
+    if (!currentUserId) {
+      toast({
+        title: "Authentication Required",
+        description: "Please login to purchase a subscription",
+        variant: "destructive",
+      });
+      return null;
     }
     
-    try {
-      setLoading(true);
-      const userSubscription = await getActiveUserSubscription(userIdToUse);
-      setSubscription(userSubscription);
-      setError(null);
-      return { success: true, data: userSubscription };
-    } catch (e) {
-      console.error('Error fetching subscription:', e);
-      const errorMessage = e instanceof Error ? e.message : 'Failed to fetch subscription';
-      setError(e instanceof Error ? e : new Error(errorMessage));
-      return { success: false, error: errorMessage };
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  useEffect(() => {
-    if (userId) {
-      fetchUserSubscription(userId);
-    }
-  }, [userId]);
-  
-  const purchaseSubscription = async (packageData: ISubscriptionPackage): Promise<Subscription | null> => {
-    if (!userId) return null;
+    setIsProcessing(true);
     
     try {
-      setIsProcessing(true);
-      const now = new Date();
-      const endDate = new Date(now);
-      endDate.setMonth(now.getMonth() + (packageData.durationMonths || 12));
-      
-      const subscriptionData: Partial<Subscription> = {
+      // Create a subscription record in the database
+      const subscription = {
         id: nanoid(),
-        userId: userId,
+        userId: currentUserId,
         packageId: packageData.id,
         packageName: packageData.title,
-        amount: packageData.price,
-        startDate: now.toISOString(),
-        endDate: endDate.toISOString(),
-        status: 'active' as SubscriptionStatus,
-        paymentType: packageData.paymentType as PaymentType || 'recurring',
-        billingCycle: packageData.billingCycle as BillingCycle,
-        signupFee: packageData.setupFee || 0,
-        advancePaymentMonths: packageData.advancePaymentMonths || 0,
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString()
-      };
-      
-      const newSubscription = await createSubscription(subscriptionData);
-      setSubscription(newSubscription);
-      return newSubscription;
-    } catch (e) {
-      console.error('Error purchasing subscription:', e);
-      setError(e instanceof Error ? e : new Error('Failed to purchase subscription'));
-      return null;
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-  
-  const initiateSubscription = async (packageId: string, paymentData?: any): Promise<SubscriptionResponse> => {
-    try {
-      setIsProcessing(true);
-      console.log('Initiating subscription for package:', packageId, 'with payment data:', paymentData);
-      
-      // Fake successful subscription for now
-      return { 
-        success: true, 
-        data: {
-          id: nanoid(),
-          userId: userId || '',
-          packageId,
-          packageName: 'Subscription Package',
-          status: 'active' as SubscriptionStatus,
-          startDate: new Date().toISOString(),
-          endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-          amount: 0,
-          paymentType: 'recurring'
-        }
-      };
-    } catch (e) {
-      console.error('Error initiating subscription:', e);
-      const errorMessage = e instanceof Error ? e.message : 'Failed to initiate subscription';
-      return { success: false, error: errorMessage };
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-  
-  const renewSubscription = async (months: number = 12): Promise<Subscription | null> => {
-    if (!subscription || !userId) return null;
-    
-    try {
-      setIsProcessing(true);
-      const now = new Date();
-      const startDate = new Date(subscription.endDate) < now 
-        ? now 
-        : new Date(subscription.endDate);
-      
-      const endDate = new Date(startDate);
-      endDate.setMonth(startDate.getMonth() + months);
-      
-      const updatedSubscription = await updateSubscription(subscription.id, {
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
+        amount: packageData.price + (packageData.setupFee || 0),
+        startDate: new Date().toISOString(),
+        endDate: getEndDate(packageData),
         status: 'active',
-        updatedAt: now.toISOString()
+        paymentMethod: 'razorpay',
+        paymentType: packageData.paymentType,
+        billingCycle: packageData.billingCycle,
+        signupFee: packageData.setupFee,
+        recurringAmount: packageData.price,
+        isPaused: false,
+        isPausable: true,
+        isUserCancellable: true,
+        assignedBy: 'system',
+      };
+
+      // Call the subscription service to create the subscription
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .insert([{
+          id: subscription.id,
+          user_id: subscription.userId,
+          package_id: subscription.packageId,
+          package_name: subscription.packageName,
+          amount: subscription.amount,
+          start_date: subscription.startDate,
+          end_date: subscription.endDate,
+          status: subscription.status,
+          payment_method: subscription.paymentMethod,
+          payment_type: subscription.paymentType,
+          billing_cycle: subscription.billingCycle,
+          signup_fee: subscription.signupFee,
+          recurring_amount: subscription.recurringAmount,
+          is_paused: subscription.isPaused,
+          is_pausable: subscription.isPausable,
+          is_user_cancellable: subscription.isUserCancellable,
+          assigned_by: subscription.assignedBy,
+          created_at: new Date().toISOString()
+        }])
+        .select();
+      
+      if (error) {
+        console.error('Error creating subscription:', error);
+        throw new Error('Failed to create subscription');
+      }
+
+      // Update user record with subscription info
+      await supabase
+        .from('users')
+        .update({
+          subscription_id: subscription.id,
+          subscription_status: 'active',
+          subscription_package: subscription.packageId
+        })
+        .eq('id', currentUserId);
+      
+      toast({
+        title: "Subscription Activated",
+        description: "Your subscription has been activated successfully",
       });
       
-      setSubscription(updatedSubscription);
-      return updatedSubscription;
-    } catch (e) {
-      console.error('Error renewing subscription:', e);
-      setError(e instanceof Error ? e : new Error('Failed to renew subscription'));
+      return data?.[0] || null;
+    } catch (error) {
+      console.error('Error in purchaseSubscription:', error);
+      toast({
+        title: "Subscription Failed",
+        description: "There was an error activating your subscription",
+        variant: "destructive",
+      });
       return null;
     } finally {
       setIsProcessing(false);
     }
   };
   
-  const cancelUserSubscription = async (reason?: string): Promise<boolean> => {
-    if (!subscription) return false;
-    
+  const fetchUserSubscription = async (userId: string) => {
     try {
-      setIsProcessing(true);
-      const now = new Date().toISOString();
-      const updatedData: Partial<Subscription> = {
-        status: 'cancelled',
-        cancelledAt: now,
-        cancelReason: reason || 'User cancelled',
-        updatedAt: now
-      };
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .maybeSingle();
       
-      const success = await cancelSubscription(subscription.id, reason);
-      
-      if (success) {
-        setSubscription(prev => prev ? {...prev, ...updatedData} : null);
-        return true;
+      if (error) {
+        console.error('Error fetching user subscription:', error);
+        return { success: false, error: error.message };
       }
-      return false;
-    } catch (e) {
-      console.error('Error cancelling subscription:', e);
-      setError(e instanceof Error ? e : new Error('Failed to cancel subscription'));
-      return false;
-    } finally {
-      setIsProcessing(false);
+      
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error in fetchUserSubscription:', error);
+      return { success: false, error: 'Failed to fetch subscription' };
     }
   };
   
-  const getUserDashboardFeatures = async (userId?: string): Promise<string[]> => {
+  const getUserDashboardFeatures = async (userId: string, role: string) => {
     try {
-      const userIdToUse = userId || userId;
-      if (!userIdToUse) return [];
+      // First get the user's active subscription
+      const { data: subscription } = await fetchUserSubscription(userId);
       
-      const userSubscription = await getActiveUserSubscription(userIdToUse);
+      if (!subscription) {
+        return { success: false, services: [] };
+      }
       
-      if (!userSubscription) return [];
+      // Get the subscription package
+      const { data: packageData, error: packageError } = await supabase
+        .from('subscription_packages')
+        .select('dashboardSections')
+        .eq('id', subscription.package_id)
+        .single();
       
-      return userSubscription.dashboardFeatures || [];
+      if (packageError) {
+        console.error('Error fetching package data:', packageError);
+        return { success: false, services: [] };
+      }
+      
+      return { 
+        success: true, 
+        services: packageData.dashboardSections || [] 
+      };
     } catch (error) {
-      console.error('Error fetching dashboard features:', error);
-      return [];
+      console.error('Error in getUserDashboardFeatures:', error);
+      return { success: false, services: [] };
     }
+  };
+  
+  // Helper function to calculate end date based on package details
+  const getEndDate = (packageData: ISubscriptionPackage): string => {
+    const startDate = new Date();
+    const monthsToAdd = packageData.durationMonths || 12;
+    
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + monthsToAdd);
+    
+    return endDate.toISOString();
   };
   
   return {
-    subscription,
-    loading,
-    error,
     isProcessing,
-    fetchUserSubscription,
     purchaseSubscription,
-    initiateSubscription,
-    renewSubscription,
-    cancelSubscription: cancelUserSubscription,
-    getUserDashboardFeatures
+    fetchUserSubscription,
+    getUserDashboardFeatures,
   };
 };
 
