@@ -2,7 +2,7 @@
 export interface Business {
   id: number | string;
   name: string;
-  category?: string;
+  category: string; // Make required to match csv-utils Business type
   description?: string;
   address?: string;
   phone?: string;
@@ -76,7 +76,7 @@ export const mapSupabaseToBusiness = (data: any): Business => {
   return {
     id: data.id,
     name: data.name || '',
-    category: data.category || '',
+    category: data.category || '', // Ensure category is never undefined
     description: data.description || '',
     address: data.address || '',
     phone: data.phone || '',

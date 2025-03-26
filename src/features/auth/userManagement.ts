@@ -1,4 +1,5 @@
-import { User, UserRole } from "@/types/auth";
+
+import { User, UserRole, normalizeRole } from "@/types/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { nanoid } from 'nanoid';
 
@@ -7,10 +8,10 @@ const DEFAULT_PHOTO_URL = 'https://example.com/default-avatar.png';
 
 // Test user data
 const testUsers: TestUserData[] = [
-  { email: 'admin@example.com', name: 'Admin User', role: 'Admin', password: 'password123' },
-  { email: 'business@example.com', name: 'Business User', role: 'Business', password: 'password123' },
-  { email: 'influencer@example.com', name: 'Influencer User', role: 'Influencer', password: 'password123' },
-  { email: 'user@example.com', name: 'Regular User', role: 'User', password: 'password123' },
+  { email: 'admin@example.com', name: 'Admin User', role: 'admin', password: 'password123' },
+  { email: 'business@example.com', name: 'Business User', role: 'business', password: 'password123' },
+  { email: 'influencer@example.com', name: 'Influencer User', role: 'influencer', password: 'password123' },
+  { email: 'user@example.com', name: 'Regular User', role: 'user', password: 'password123' },
 ];
 
 // Fix TestUserData interface
@@ -28,17 +29,17 @@ export function transformRole(role: string | null): UserRole {
   // Match with expected UserRole values
   switch (role.toLowerCase()) {
     case 'admin':
-      return 'Admin';
+      return 'admin';
     case 'business':
-      return 'Business';
+      return 'business';
     case 'influencer':
-      return 'Influencer';
+      return 'influencer';
     case 'user':
-      return 'User';
+      return 'user';
     case 'staff':
-      return 'Staff';
+      return 'staff';
     default:
-      return 'User'; // Default to User if unknown
+      return 'user'; // Default to User if unknown
   }
 }
 
@@ -111,7 +112,7 @@ export const createTestUser = async (userData: {
       email: userData.email,
       displayName: userData.name,
       name: userData.name,
-      role: userData.role || 'User',
+      role: userData.role || 'user',
       isAdmin: userData.isAdmin || false,
       photoURL: DEFAULT_PHOTO_URL,
       employeeCode: userData.employeeCode || '',

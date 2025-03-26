@@ -37,15 +37,12 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
     isLoading,
     error,
     packages,
-    selectedPackage,
-    setSelectedPackage,
+    selectedPackageId,
+    setSelectedPackageId,
     userCurrentSubscription,
     handleAssignPackage,
     handleCancelSubscription
-  } = useSubscriptionAssignment(user, (packageId) => {
-    if (onAssigned) onAssigned(packageId);
-    setExpanded(false);
-  });
+  } = useSubscriptionAssignment(user, onAssigned);
   
   // Color based on subscription status
   const getStatusColor = (status: string) => {
@@ -80,7 +77,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
   }
 
   if (error) {
-    return <div className="text-red-500 text-sm">{error}</div>;
+    return <div className="text-red-500 text-sm">{error.message}</div>;
   }
 
   return (
@@ -138,7 +135,7 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
                     variant="destructive" 
                     size="sm" 
                     className="h-7 text-xs"
-                    onClick={handleCancelSubscription}
+                    onClick={() => handleCancelSubscription()}
                     disabled={disabled || userCurrentSubscription.paymentType === "one-time"}
                   >
                     Cancel
@@ -168,8 +165,8 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
           </div>
           
           <Select
-            value={selectedPackage}
-            onValueChange={setSelectedPackage}
+            value={selectedPackageId}
+            onValueChange={setSelectedPackageId}
             disabled={disabled || packages.length === 0}
           >
             <SelectTrigger className="w-full">
@@ -188,9 +185,9 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
             <Button
               variant="default"
               size="sm"
-              onClick={handleAssignPackage}
+              onClick={() => handleAssignPackage()}
               className="flex-1 h-8"
-              disabled={disabled || !selectedPackage || isLoading}
+              disabled={disabled || !selectedPackageId || isLoading}
             >
               {isLoading ? (
                 <>

@@ -1,3 +1,4 @@
+
 import { createContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -6,14 +7,12 @@ import {
   AuthContextType,
   SessionData
 } from '@/types/auth';
-import {
-  signupWithEmail,
-  loginWithEmail,
-  loginWithGoogle,
-  logout as authLogout,
-  getCurrentUser
-} from '@/features/auth/authService';
 import { toast } from '@/hooks/use-toast';
+
+// Define AuthProviderProps
+interface AuthProviderProps {
+  children: ReactNode;
+}
 
 export const AuthContext = createContext<AuthContextType>({
   currentUser: null,
@@ -37,6 +36,116 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [initialized, setInitialized] = useState(false);
   const [session, setSession] = useState<SessionData | null>(null);
 
+  // Function to get current user data
+  const getCurrentUser = async (): Promise<User | null> => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+      
+      // Fetch user from users table
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+      
+      if (error || !data) return null;
+      
+      return {
+        uid: data.id,
+        id: data.id,
+        email: data.email || '',
+        displayName: data.name || '',
+        name: data.name || '',
+        role: data.role as UserRole || 'user',
+        isAdmin: data.is_admin || false,
+        photoURL: data.photo_url || '',
+        employeeCode: data.employee_code || '',
+        createdAt: data.created_at || '',
+        lastLogin: data.last_login || '',
+        phone: data.phone || '',
+        instagramHandle: data.instagram_handle || '',
+        facebookHandle: data.facebook_handle || '',
+        verified: data.verified || false,
+        city: data.city || '',
+        country: data.country || '',
+        niche: data.niche || '',
+        followersCount: data.followers_count || '',
+        bio: data.bio || '',
+        businessName: data.business_name || '',
+        ownerName: data.owner_name || '',
+        businessCategory: data.business_category || '',
+        website: data.website || '',
+        gstNumber: data.gst_number || ''
+      };
+    } catch (error) {
+      console.error("Error getting current user:", error);
+      return null;
+    }
+  };
+
+  // Mock functions needed by the context
+  const loginWithEmail = async (email: string, password: string): Promise<User | null> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) throw error;
+      
+      const userData = await getCurrentUser();
+      return userData;
+    } catch (error) {
+      console.error("Login error:", error);
+      return null;
+    }
+  };
+  
+  const signupWithEmail = async (email: string, password: string, userData?: Partial<User>): Promise<User | null> => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: userData?.name,
+            role: userData?.role || 'user'
+          }
+        }
+      });
+      
+      if (error) throw error;
+      
+      return await getCurrentUser();
+    } catch (error) {
+      console.error("Signup error:", error);
+      return null;
+    }
+  };
+  
+  const loginWithGoogle = async (): Promise<void> => {
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+    } catch (error) {
+      console.error("Google login error:", error);
+    }
+  };
+  
+  const logout = async (): Promise<void> => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -58,23 +167,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               email: sessionData.session.user.email || '',
               phone: sessionData.session.user.phone || '',
               userMetadata: sessionData.session.user.user_metadata || {},
-              appMetadata: sessionData.session.user.app_metadata || {},
-              aud: sessionData.session.user.aud || ''
+              appMetadata: sessionData.session.user.app_metadata || {}
             }
           });
           
           try {
-            const userData = await getCurrentUser();
+            const currentUserData = await getCurrentUser();
             
-            console.log("Fetched current user data:", userData?.id);
+            console.log("Fetched current user data:", currentUserData?.id);
             
-            if (sessionData.session.user?.email?.toLowerCase() === 'baburhussain660@gmail.com' && userData) {
-              userData.isAdmin = true;
-              userData.role = 'Admin';
-            }
-            
-            if (isMounted) {
-              setUser(userData);
+            if (sessionData.session.user?.email?.toLowerCase() === 'baburhussain660@gmail.com' && currentUserData) {
+              const updatedUserData = {
+                ...currentUserData,
+                isAdmin: true,
+                role: 'admin' as UserRole
+              };
+              
+              if (isMounted) {
+                setUser(updatedUserData);
+              }
+            } else if (currentUserData && isMounted) {
+              setUser(currentUserData);
             }
           } catch (error) {
             console.error("Error fetching user data:", error);
@@ -101,21 +214,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                   email: _session.user.email || '',
                   phone: _session.user.phone || '',
                   userMetadata: _session.user.user_metadata || {},
-                  appMetadata: _session.user.app_metadata || {},
-                  aud: _session.user.aud || ''
+                  appMetadata: _session.user.app_metadata || {}
                 }
               });
               
               try {
-                const userData = await getCurrentUser();
+                const currentUserData = await getCurrentUser();
                 
-                if (_session.user?.email?.toLowerCase() === 'baburhussain660@gmail.com' && userData) {
-                  userData.isAdmin = true;
-                  userData.role = 'Admin';
-                }
-                
-                if (isMounted) {
-                  setUser(userData);
+                if (_session.user?.email?.toLowerCase() === 'baburhussain660@gmail.com' && currentUserData) {
+                  const updatedUserData = {
+                    ...currentUserData,
+                    isAdmin: true,
+                    role: 'admin' as UserRole
+                  };
+                  
+                  if (isMounted) {
+                    setUser(updatedUserData);
+                  }
+                } else if (currentUserData && isMounted) {
+                  setUser(currentUserData);
                 }
               } catch (error) {
                 console.error("Error fetching user data:", error);
@@ -160,113 +277,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  const login = async (email: string, password: string, employeeCode?: string): Promise<User | null> => {
-    try {
-      setLoading(true);
-      const userData = await loginWithEmail(email, password, employeeCode);
-      setUser(userData);
-      return userData;
-    } catch (error) {
-      console.error("Login error:", error);
-      
-      if (error instanceof Error && error.message.includes("Email not confirmed")) {
-        throw error;
-      }
-      
-      toast({
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "Invalid credentials",
-        variant: "destructive",
-      });
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const signup = async (email: string, password: string, userData?: Partial<User>): Promise<User | null> => {
-    try {
-      setLoading(true);
-      
-      const isDefaultAdmin = email.toLowerCase() === 'baburhussain660@gmail.com';
-      if (isDefaultAdmin) {
-        console.log("Registering default admin account");
-        userData = {
-          ...userData,
-          isAdmin: true
-        };
-      }
-      
-      const userData = await signupWithEmail(email, password, userData);
-      
-      if (process.env.NODE_ENV === 'development' || isDefaultAdmin) {
-        setUser(userData);
-      }
-      
-      return userData;
-    } catch (error) {
-      console.error("Signup error:", error);
-      toast({
-        title: "Signup failed",
-        description: error instanceof Error ? error.message : "Failed to create account",
-        variant: "destructive",
-      });
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const logout = async (): Promise<void> => {
-    try {
-      setLoading(true);
-      await authLogout();
-      setUser(null);
-      setSession(null);
-      
-      toast({
-        title: "Logged out",
-        description: "You have been successfully logged out.",
-      });
-    } catch (error) {
-      console.error("Logout error:", error);
-      toast({
-        title: "Logout failed",
-        description: error instanceof Error ? error.message : "Failed to log out",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async (): Promise<void> => {
-    try {
-      setLoading(true);
-      await loginWithGoogle();
-    } catch (error) {
-      console.error("Google login error:", error);
-      toast({
-        title: "Google login failed",
-        description: error instanceof Error ? error.message : "Failed to authenticate with Google",
-        variant: "destructive",
-      });
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const refreshUserData = async (): Promise<User | null> => {
     try {
       const userData = await getCurrentUser();
-      
-      if (userData?.email?.toLowerCase() === 'baburhussain660@gmail.com') {
-        userData.isAdmin = true;
-        userData.role = 'Admin';
+      if (userData) {
+        setUser(userData);
       }
-      
-      setUser(userData);
       return userData;
     } catch (error) {
       console.error("Error refreshing user data:", error);
@@ -274,41 +290,66 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const resetPassword = async (email: string) => {
+  const resetPassword = async (email: string): Promise<void> => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/reset-password`
       });
-      
-      if (error) {
-        throw error;
-      }
-      
-      return true;
+      if (error) throw error;
     } catch (error) {
-      console.error("Reset password error:", error);
+      console.error("Password reset error:", error);
       throw error;
     }
   };
 
-  const authContextValue: AuthContextType = {
-    currentUser: user,
-    user,
-    isAuthenticated: !!user,
-    loading,
-    initialized,
-    login,
-    loginWithGoogle: handleGoogleLogin,
-    signup,
-    logout,
-    refreshUserData,
-    error: null,
-    resetPassword,
-    updateUserProfile: async (data) => {
-      console.log("Update user profile with data:", data);
+  const updateUserProfile = async (profile: Partial<User>): Promise<User | null> => {
+    try {
+      if (!user) throw new Error("No user logged in");
+      
+      // Update Supabase user data
+      const { error } = await supabase
+        .from('users')
+        .update({
+          name: profile.name,
+          photo_url: profile.photoURL,
+          phone: profile.phone,
+          business_name: profile.businessName,
+          business_category: profile.businessCategory,
+          email: profile.email,
+          // Add other fields as needed
+        })
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      
+      return refreshUserData();
+    } catch (error) {
+      console.error("Error updating user profile:", error);
       return null;
-    },
+    }
   };
 
-  return <AuthContext.Provider value={authContextValue}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        currentUser: user,
+        isAuthenticated: !!user,
+        loading,
+        initialized,
+        login: loginWithEmail,
+        loginWithGoogle,
+        signup: signupWithEmail,
+        logout,
+        refreshUserData,
+        error: null,
+        resetPassword,
+        updateUserProfile
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
+
+export default AuthProvider;

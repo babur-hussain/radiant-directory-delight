@@ -5,7 +5,7 @@ export interface IBusiness {
   id: number | string;
   name: string;
   description?: string;
-  category?: string;
+  category: string; // Make required to match other Business types
   address?: string;
   phone?: string;
   email?: string;
@@ -26,7 +26,7 @@ export const fromSupabase = (data: Database['public']['Tables']['businesses']['R
     id: data.id,
     name: data.name || '',
     description: data.description || '',
-    category: data.category || '',
+    category: data.category || '', // Ensure category is never undefined
     address: data.address || '',
     phone: data.phone || '',
     email: data.email || '',

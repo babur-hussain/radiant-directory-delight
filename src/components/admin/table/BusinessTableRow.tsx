@@ -1,64 +1,64 @@
 
 import React from 'react';
-import { TableCell, TableRow } from '@/components/ui/table';
+import { TableRow, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Info, Pencil, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Star, Eye, Pencil } from 'lucide-react';
 import { Business } from '@/lib/csv-utils';
 
 interface BusinessTableRowProps {
   business: Business;
-  onViewDetails: () => void;
-  onEditBusiness: () => void;
-  onDeleteBusiness: () => void;
+  onViewDetails?: (business: Business) => void;
+  onEditBusiness: (business: Business) => void;
+  index: number;
 }
 
 const BusinessTableRow: React.FC<BusinessTableRowProps> = ({
   business,
   onViewDetails,
   onEditBusiness,
-  onDeleteBusiness
+  index
 }) => {
-  // Determine if this is an original business (can't be edited or deleted)
-  // Original businesses have IDs 1-20 in this demo
-  const isOriginal = business.id <= 20;
+  // Convert id to number for comparison, handling string ids
+  const businessId = typeof business.id === 'string' ? 
+    parseInt(business.id, 10) : business.id;
+  
+  const isNewBusiness = businessId < 0 || 
+    (typeof business.id === 'number' && business.id <= 0);
 
   return (
     <TableRow>
-      <TableCell className="font-medium">{business.id}</TableCell>
-      <TableCell>{business.name}</TableCell>
-      <TableCell>{business.category}</TableCell>
-      <TableCell className="hidden md:table-cell max-w-[200px] truncate">
-        {business.address}
+      <TableCell className="font-medium">{business.name}</TableCell>
+      <TableCell>
+        {business.category && (
+          <Badge variant="outline" className="capitalize">
+            {business.category}
+          </Badge>
+        )}
       </TableCell>
-      <TableCell>{business.rating} ⭐</TableCell>
-      <TableCell className="hidden md:table-cell">{business.phone}</TableCell>
-      <TableCell className="text-right">
-        <div className="flex justify-end items-center space-x-1">
-          <Button variant="ghost" size="icon" onClick={onViewDetails}>
-            <Info className="h-4 w-4" />
-            <span className="sr-only">View details</span>
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="icon"
-            disabled={isOriginal}
-            onClick={onEditBusiness}
-            className={isOriginal ? "opacity-30 cursor-not-allowed" : ""}
-          >
+      <TableCell>
+        <div className="flex items-center">
+          <Star className="h-4 w-4 text-yellow-400 fill-yellow-400 mr-1" />
+          <span>{business.rating}</span>
+          <span className="text-gray-500 text-xs ml-1">({business.reviews})</span>
+        </div>
+      </TableCell>
+      <TableCell>
+        {business.featured ? (
+          <Badge className="bg-primary hover:bg-primary">Featured</Badge>
+        ) : (
+          <Badge variant="outline">Standard</Badge>
+        )}
+      </TableCell>
+      <TableCell>
+        <div className="flex justify-end space-x-2">
+          {onViewDetails && (
+            <Button variant="ghost" size="icon" onClick={() => onViewDetails(business)}>
+              <Eye className="h-4 w-4" />
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" onClick={() => onEditBusiness(business)}>
             <Pencil className="h-4 w-4" />
-            <span className="sr-only">Edit</span>
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            disabled={isOriginal}
-            className={isOriginal ? "opacity-30 cursor-not-allowed" : "text-destructive hover:text-destructive/90 hover:bg-destructive/10"}
-            onClick={onDeleteBusiness}
-          >
-            <Trash2 className="h-4 w-4" />
-            <span className="sr-only">Delete</span>
           </Button>
         </div>
       </TableCell>

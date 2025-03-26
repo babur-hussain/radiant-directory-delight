@@ -5,7 +5,7 @@ import Papa from 'papaparse';
 
 // Define Business interface
 export interface Business {
-  id: number | string;
+  id: number | string; // Allow both number and string IDs
   name: string;
   category: string;
   description: string;
@@ -137,7 +137,7 @@ export const formatBusiness = (business: any): Business => {
   return {
     id: business.id || 0,
     name: business.name || '',
-    category: business.category || '',
+    category: business.category || '', // Ensure category is never undefined
     description: business.description || '',
     address: business.address || '',
     phone: business.phone || '',
