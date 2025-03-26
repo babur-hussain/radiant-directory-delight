@@ -1,30 +1,30 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { UserRole } from '@/types/auth';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
-import SubscriptionDialog from './SubscriptionDialog';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 
 export interface SubscriptionPackagesProps {
   userRole: UserRole | string;
+  onSelectPackage?: (pkg: ISubscriptionPackage) => void;
 }
 
-const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ userRole }) => {
-  const navigate = useNavigate();
+const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ 
+  userRole,
+  onSelectPackage
+}) => {
   const { packages, isLoading, isError } = useSubscriptionPackages();
-  const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
-  const [showDialog, setShowDialog] = useState(false);
   
   const filteredPackages = packages?.filter(pkg => pkg.type === userRole) || [];
 
   const handleSelectPackage = (pkg: ISubscriptionPackage) => {
-    setSelectedPackage(pkg);
-    setShowDialog(true);
+    if (onSelectPackage) {
+      onSelectPackage(pkg);
+    }
   };
 
   if (isLoading) {
@@ -118,12 +118,6 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ userRole })
           );
         })}
       </div>
-      
-      <SubscriptionDialog 
-        isOpen={showDialog}
-        setIsOpen={setShowDialog}
-        selectedPackage={selectedPackage}
-      />
     </div>
   );
 };
