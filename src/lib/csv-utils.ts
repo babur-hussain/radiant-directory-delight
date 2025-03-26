@@ -245,25 +245,59 @@ export const processCsvData = async (csvContent: string): Promise<{
   }
 };
 
-export const getAllBusinesses = (): Business[] => {
+export const getAllBusinesses = async (): Promise<Business[]> => {
   try {
-    const mockBusinesses: Business[] = [
-      {
-        id: 1,
-        name: "Example Business",
-        category: "Retail",
-        description: "An example business for testing",
-        address: "123 Main St, City, Country",
-        phone: "123-456-7890",
-        email: "example@business.com",
-        rating: 4.5,
-        reviews: 12,
-        featured: true,
-        tags: ["retail", "example"],
-      },
-    ];
-    
-    return mockBusinesses;
+    const { data, error } = await supabase
+      .from('businesses')
+      .select('*')
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching businesses:', error);
+      return [];
+    }
+
+    // Ensure the data conforms to our Business type
+    const businesses: Business[] = data.map(item => {
+      let hours: string | Record<string, string> | null = item.hours as string | Record<string, string> | null;
+      try {
+        if (typeof item.hours === 'string') {
+          hours = JSON.parse(item.hours);
+        }
+      } catch (e) {
+        console.warn('Could not parse hours:', e);
+      }
+
+      let tags: string[] = [];
+      if (Array.isArray(item.tags)) {
+        tags = item.tags;
+      } else if (typeof item.tags === 'string') {
+        tags = item.tags.split(',').map(tag => tag.trim());
+      }
+
+      return {
+        id: item.id,
+        name: item.name || '',
+        category: item.category || '',
+        description: item.description || '',
+        address: item.address || '',
+        phone: item.phone || '',
+        email: item.email || '',
+        website: item.website || '',
+        image: item.image || '',
+        hours,
+        rating: Number(item.rating) || 0,
+        reviews: Number(item.reviews) || 0,
+        featured: Boolean(item.featured),
+        tags,
+        latitude: Number(item.latitude) || 0,
+        longitude: Number(item.longitude) || 0,
+        created_at: item.created_at || '',
+        updated_at: item.updated_at || ''
+      };
+    });
+
+    return businesses;
   } catch (error) {
     console.error("Error getting businesses:", error);
     return [];
