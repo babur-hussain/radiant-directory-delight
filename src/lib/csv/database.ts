@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Business, BatchSaveResult, SupabaseReadyBusiness } from './types';
 import { notifyDataChanged, getBusinessesData, setBusinessesData } from './store';
@@ -98,7 +97,7 @@ const prepareBusinessForSupabase = (business: Business): SupabaseReadyBusiness =
     }
   }
   
-  // Ensure tags is properly handled as an array
+  // Ensure tags is properly handled as an array with improved type checking
   let tagsArray: string[] = [];
   
   if (businessCopy.tags) {

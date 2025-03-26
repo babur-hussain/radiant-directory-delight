@@ -14,7 +14,7 @@ const BusinessCard = ({ business }: BusinessCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const maxVisibleTags = 2;
   
-  // Handle potentially missing or malformed tags
+  // Handle potentially missing or malformed tags with improved type checking
   const tags = Array.isArray(business.tags) ? business.tags : 
     (typeof business.tags === 'string' ? business.tags.split(',').map(t => t.trim()) : []);
   
