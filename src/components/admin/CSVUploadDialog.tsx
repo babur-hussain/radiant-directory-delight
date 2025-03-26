@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { DownloadCloud } from 'lucide-react';
+import { DownloadCloud, AlertCircle } from 'lucide-react';
 import CSVUploader from './CSVUploader';
 
 interface CSVUploadDialogProps {
@@ -13,15 +13,19 @@ interface CSVUploadDialogProps {
 
 const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ show, onClose, onUploadComplete }) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleUploadStart = () => {
     setIsUploading(true);
+    setUploadError(null);
   };
 
   const handleUploadComplete = (success: boolean, message: string, count?: number) => {
     setIsUploading(false);
     if (success) {
       onUploadComplete(success, message, count);
+    } else {
+      setUploadError(message);
     }
   };
 
@@ -64,7 +68,22 @@ const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ show, onClose, onUplo
             </Button>
           </div>
           <DialogDescription>
-            Upload a CSV file to import multiple businesses at once. The file should contain columns for Business Name, Category, Address, Mobile Number, and Review rating.
+            <p>Upload a CSV file to import multiple businesses. Only <strong>Business Name</strong> is required, all other fields are optional.</p>
+            
+            <div className="mt-2 p-4 bg-amber-50 border border-amber-200 rounded-md text-amber-700 text-sm">
+              <div className="flex items-start">
+                <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium">Important Instructions:</p>
+                  <ul className="list-disc pl-5 mt-1 space-y-1">
+                    <li>Business Name is the only required field</li>
+                    <li>For the best results, include Category, Address, and Phone</li>
+                    <li>Use a comma to separate multiple tags</li>
+                    <li>Ratings should be values between 0-5</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </DialogDescription>
         </DialogHeader>
         
@@ -79,6 +98,12 @@ const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ show, onClose, onUplo
           <div className="flex justify-center items-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             <span className="ml-3">Processing CSV data...</span>
+          </div>
+        )}
+        
+        {uploadError && (
+          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+            <strong>Upload Failed:</strong> {uploadError}
           </div>
         )}
       </DialogContent>

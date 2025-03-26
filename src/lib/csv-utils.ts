@@ -2,7 +2,6 @@
 import Papa from 'papaparse';
 import { supabase } from '@/integrations/supabase/client';
 import { IBusiness } from '@/models/Business';
-import { generateId } from '@/utils/id-generator';
 
 export interface Business {
   id: number;
@@ -45,11 +44,11 @@ export const initializeData = async (): Promise<void> => {
   }
 };
 
-// Generate a business ID within PostgreSQL integer range (smaller values)
+// Generate a proper business ID within PostgreSQL integer range
+// The ID should be between 1001 and 999999 to stay within safe integer range
 const generateBusinessId = (): number => {
-  // Generate a random number between 1000 and 999999
-  // This ensures the ID is within the safe range for PostgreSQL integer
-  return Math.floor(Math.random() * 998999) + 1000;
+  // Generate a random number between 1001 and 99999
+  return Math.floor(Math.random() * 98999) + 1001;
 };
 
 // Process CSV data and upload to Supabase
@@ -61,19 +60,36 @@ export const processCsvData = async (csvContent: string): Promise<{ success: boo
       header: true,
       skipEmptyLines: true,
       transformHeader: (header) => {
-        // Normalize headers - convert "Business Name" to "name", etc.
+        // Normalize headers - map from common CSV headers to our database column names
         const headerMap: { [key: string]: string } = {
           "Business Name": "name",
+          "BusinessName": "name",
+          "Name": "name",
+          "business_name": "name",
           "Category": "category",
+          "category": "category",
           "Address": "address",
+          "address": "address",
           "Mobile Number": "phone",
+          "MobileNumber": "phone",
+          "Phone": "phone",
+          "phone": "phone",
+          "Mobile": "phone",
           "Review": "rating",
+          "Rating": "rating",
+          "rating": "rating",
           "Description": "description",
+          "description": "description",
           "Email": "email",
+          "email": "email",
           "Website": "website",
+          "website": "website",
           "Reviews": "reviews",
+          "reviews": "reviews",
           "Image": "image",
-          "Tags": "tags"
+          "image": "image",
+          "Tags": "tags",
+          "tags": "tags"
         };
         
         return headerMap[header] || header.toLowerCase();
@@ -94,62 +110,101 @@ export const processCsvData = async (csvContent: string): Promise<{ success: boo
     const businesses: Business[] = [];
     const failed: string[] = [];
     
-    for (const row of results.data as any[]) {
-      try {
-        // Validate required fields - using normalized column names
-        if (!row.name || row.name.trim() === '') {
-          console.warn("Skipping row without business name:", row);
-          continue;
-        }
-        
-        // Parse rating value from string to number
-        let rating = 0;
-        if (row.rating) {
-          // Handle rating that might be a string with stars or just a number
-          const ratingValue = row.rating.toString().replace(/[^0-9.]/g, '');
-          rating = parseFloat(ratingValue) || 0;
-          // Limit rating to 5 stars max
-          rating = Math.min(rating, 5);
-        }
-        
-        // Create business object with a smaller ID that fits within PostgreSQL integer limits
-        const business: Business = {
-          id: generateBusinessId(), // Use the safer ID generation method
-          name: row.name.trim(),
-          category: row.category || "",
-          description: row.description || `${row.name} is a business in the ${row.category || "various"} category.`,
-          address: row.address || "",
-          phone: row.phone || "",
-          email: row.email || "",
-          website: row.website || "",
-          rating: rating,
-          reviews: parseInt(row.reviews) || Math.floor(Math.random() * 100) + 5,
-          latitude: parseFloat(row.latitude) || 0,
-          longitude: parseFloat(row.longitude) || 0,
-          tags: row.tags ? row.tags.split(',').map((tag: string) => tag.trim()) : [row.category || ""],
-          featured: row.featured === "true" || row.featured === true,
-          image: row.image || `/placeholder-${Math.floor(Math.random() * 5) + 1}.jpg`
-        };
-        
-        console.log("Saving business to Supabase:", business.name);
-        
+    // Process in batches of 10 to avoid overwhelming the database
+    const batchSize = 10;
+    const totalRows = results.data.length;
+    
+    for (let i = 0; i < totalRows; i += batchSize) {
+      const batch = results.data.slice(i, i + batchSize);
+      const batchBusinesses = [];
+      
+      for (const row of batch as any[]) {
         try {
-          // Add to Supabase
-          const { error } = await supabase.from('businesses').insert([business]);
-          
-          if (error) {
-            console.error("Error inserting business to Supabase:", error);
-            failed.push(business.name);
+          // Validate the only required field - name
+          if (!row.name || row.name.trim() === '') {
+            console.warn("Skipping row without business name:", row);
             continue;
           }
           
-          businesses.push(business);
-        } catch (insertError) {
-          console.error("Error during Supabase insert:", insertError);
-          failed.push(business.name);
+          // Parse rating value from string to number
+          let rating = 0;
+          if (row.rating) {
+            // Handle rating that might be a string with stars or just a number
+            const ratingValue = row.rating.toString().replace(/[^0-9.]/g, '');
+            rating = parseFloat(ratingValue) || 0;
+            // Limit rating to 5 stars max
+            rating = Math.min(rating, 5);
+          }
+          
+          // Generate a safe integer ID
+          const safeId = generateBusinessId();
+          
+          // Process tags
+          let tags = row.tags || [];
+          if (typeof tags === 'string') {
+            tags = tags.split(',').map((tag: string) => tag.trim());
+          } else if (!Array.isArray(tags)) {
+            tags = row.category ? [row.category] : [];
+          }
+          
+          // Create business object with a smaller ID that fits within PostgreSQL integer limits
+          const business: Business = {
+            id: safeId,
+            name: row.name.trim(),
+            category: row.category || "",
+            description: row.description || `${row.name} is a business in the ${row.category || "various"} category.`,
+            address: row.address || "",
+            phone: row.phone || "",
+            email: row.email || "",
+            website: row.website || "",
+            rating: rating,
+            reviews: parseInt(row.reviews) || Math.floor(Math.random() * 100) + 5,
+            latitude: parseFloat(row.latitude) || 0,
+            longitude: parseFloat(row.longitude) || 0,
+            tags: tags,
+            featured: row.featured === "true" || row.featured === true,
+            image: row.image || `/placeholder-${Math.floor(Math.random() * 5) + 1}.jpg`
+          };
+          
+          batchBusinesses.push(business);
+        } catch (rowError) {
+          console.error("Error processing CSV row:", rowError);
         }
-      } catch (rowError) {
-        console.error("Error processing CSV row:", rowError);
+      }
+      
+      if (batchBusinesses.length > 0) {
+        try {
+          // Insert the batch into Supabase
+          const { data, error } = await supabase.from('businesses').insert(batchBusinesses);
+          
+          if (error) {
+            console.error("Error inserting batch to Supabase:", error);
+            // If the batch fails, try to insert businesses one by one
+            for (const business of batchBusinesses) {
+              try {
+                console.log("Saving business to Supabase:", business.name);
+                const { error: singleError } = await supabase.from('businesses').insert([business]);
+                
+                if (singleError) {
+                  console.error("Error inserting business to Supabase:", singleError);
+                  failed.push(business.name);
+                } else {
+                  businesses.push(business);
+                }
+              } catch (singleInsertError) {
+                console.error("Error during single business insert:", singleInsertError);
+                failed.push(business.name);
+              }
+            }
+          } else {
+            // Add all businesses in the batch to our successful list
+            businesses.push(...batchBusinesses);
+          }
+        } catch (batchError) {
+          console.error("Error inserting batch to Supabase:", batchError);
+          // Mark all businesses in this batch as failed
+          failed.push(...batchBusinesses.map(b => b.name));
+        }
       }
     }
     
@@ -187,7 +242,7 @@ export const getAllBusinesses = (): Business[] => {
 // Add a business
 export const addBusiness = async (businessData: Partial<Business>): Promise<Business> => {
   try {
-    // Ensure ID exists and is within PostgreSQL integer range
+    // Generate a safe integer ID
     const businessId = businessData.id || generateBusinessId();
     
     // Create complete business object

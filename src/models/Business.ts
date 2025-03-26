@@ -41,3 +41,23 @@ export const fromSupabase = (data: Database['public']['Tables']['businesses']['R
     image: data.image || ''
   };
 };
+
+// Map CSV column headers to database fields for import
+export const csvHeaderMapping = {
+  "Business Name": "name",
+  "BusinessName": "name",
+  "Name": "name",
+  "Category": "category",
+  "Address": "address",
+  "Mobile Number": "phone",
+  "Phone": "phone",
+  "Mobile": "phone",
+  "Review": "rating",
+  "Rating": "rating",
+  "Description": "description",
+  "Email": "email",
+  "Website": "website",
+  "Tags": "tags",
+  "Reviews": "reviews",
+  "Image": "image"
+};

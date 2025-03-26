@@ -26,6 +26,7 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
   const [dragActive, setDragActive] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [csvError, setCsvError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -60,6 +61,7 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsProcessing(true);
+      setCsvError(null);
       setUploadProgress(10);
       onUploadStart();
       
@@ -76,28 +78,39 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
             const { success, businesses, message } = await processCsvData(csvContent);
             setUploadProgress(100);
             
-            if (success) {
+            if (success && businesses.length > 0) {
               toast({
                 title: "Upload Successful",
                 description: `${businesses.length} businesses processed successfully`,
               });
               onUploadComplete(true, message, businesses.length);
+            } else if (success && businesses.length === 0) {
+              toast({
+                title: "Upload Completed",
+                description: "No businesses were imported. Check if your CSV format is correct.",
+                variant: "destructive"
+              });
+              setCsvError("No businesses were imported. Check if your CSV has the required 'Business Name' column.");
+              onUploadComplete(false, "No businesses were imported");
             } else {
               toast({
                 title: "Upload Failed",
                 description: message,
                 variant: "destructive"
               });
+              setCsvError(message);
               onUploadComplete(false, message);
             }
           } catch (error) {
             console.error("Failed to process CSV data:", error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
             toast({
               title: "Processing Error",
-              description: "Failed to process CSV data: " + (error instanceof Error ? error.message : String(error)),
+              description: "Failed to process CSV data: " + errorMessage,
               variant: "destructive"
             });
-            onUploadComplete(false, "Failed to process CSV data: " + (error instanceof Error ? error.message : String(error)));
+            setCsvError("Failed to process CSV data: " + errorMessage);
+            onUploadComplete(false, "Failed to process CSV data: " + errorMessage);
           }
         }
       };
@@ -108,17 +121,20 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
           description: "Error reading the file",
           variant: "destructive"
         });
+        setCsvError("Error reading the file");
         onUploadComplete(false, "Error reading the file");
       };
       
       reader.readAsText(values.file);
     } catch (error) {
       console.error("An unexpected error occurred:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       toast({
         title: "Unexpected Error",
-        description: "An unexpected error occurred",
+        description: "An unexpected error occurred: " + errorMessage,
         variant: "destructive"
       });
+      setCsvError("An unexpected error occurred: " + errorMessage);
       onUploadComplete(false, "An unexpected error occurred");
     } finally {
       setTimeout(() => {
@@ -179,10 +195,16 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
                   </div>
                 </FormControl>
                 <FormDescription>
-                  The CSV should include these columns: <strong>Business Name</strong>, <strong>Category</strong>, <strong>Address</strong>, <strong>Mobile Number</strong>, and <strong>Review</strong> (for ratings).
-                  Optional columns: Description, Email, Website, Reviews (count), Tags (comma-separated), and Image (URL).
+                  <strong>Required format:</strong> Your CSV must have at least a <strong>Business Name</strong> column. 
+                  Optional columns: Category, Address, Mobile Number, Review, Description, Email, Website, Tags.
                 </FormDescription>
                 <FormMessage />
+                
+                {csvError && (
+                  <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+                    <strong>Error:</strong> {csvError}
+                  </div>
+                )}
               </FormItem>
             )}
           />
