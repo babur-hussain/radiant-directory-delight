@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import useSupabaseUsers from '@/hooks/useSupabaseUsers';
 import { supabase } from '@/integrations/supabase/client';
+import { normalizeRole } from '@/types/auth';
 
 const BUSINESS_SECTIONS = [
   'seo_optimization',
@@ -165,7 +167,9 @@ const SupabaseDashboardSections = () => {
   const selectedPackage = packages.find(p => p.id === selectedPackageId);
   const selectedUser = users.find(u => u.uid === selectedUserId);
   
-  const handleRefresh = () => refetch();
+  const handleRefresh = () => {
+    refetchPackages();
+  };
   
   const handleRefetchPackages = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -334,7 +338,7 @@ const SupabaseDashboardSections = () => {
                             Dashboard Sections for {selectedUser.displayName || selectedUser.email}
                           </h3>
                           <p className="text-sm text-muted-foreground">
-                            <Badge variant={selectedUser.role === 'Business' ? 'default' : 'secondary'}>
+                            <Badge variant={normalizeRole(selectedUser.role) === 'business' ? 'default' : 'secondary'}>
                               {selectedUser.role || 'User'}
                             </Badge>
                           </p>
