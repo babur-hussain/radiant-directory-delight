@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Business, BatchSaveResult, SupabaseReadyBusiness } from './types';
 import { notifyDataChanged, getBusinessesData, setBusinessesData } from './store';
@@ -107,10 +106,13 @@ const prepareBusinessForSupabase = (business: Business): SupabaseReadyBusiness =
   let tagsArray: string[] = [];
   
   if (businessCopy.tags) {
+    // Check that tags is actually an array or a string before processing
     if (Array.isArray(businessCopy.tags)) {
-      tagsArray = businessCopy.tags;
+      tagsArray = businessCopy.tags as string[];
     } else if (typeof businessCopy.tags === 'string') {
-      tagsArray = businessCopy.tags.split(',').map(tag => tag.trim());
+      // We need to explicitly cast to string to satisfy TypeScript
+      const tagsString = businessCopy.tags as string;
+      tagsArray = tagsString.split(',').map(tag => tag.trim());
     } else {
       // Handle other cases, just use empty array
       console.warn('Unknown tags type encountered:', typeof businessCopy.tags);
