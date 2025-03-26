@@ -1,3 +1,4 @@
+
 import Papa from 'papaparse';
 import { supabase } from '@/integrations/supabase/client';
 import { csvHeaderMapping, getInverseHeaderMapping } from '@/models/Business';
@@ -357,29 +358,32 @@ const saveBatchToSupabase = async (businesses: Business[]): Promise<{
           delete businessToSave.id;
         }
         
-        // Convert hours to string if it's an object
-        if (businessToSave.hours) {
-          if (typeof businessToSave.hours === 'object') {
-            businessToSave.hours = JSON.stringify(businessToSave.hours);
-          }
-          // If hours is already a string, leave it as is
-        } else {
-          // Set to empty object if undefined
-          businessToSave.hours = JSON.stringify({});
-        }
+        // Handle the hours field properly for database storage
+        // Convert hours to a JSON string for database storage
+        const hoursForDB = businessToSave.hours 
+          ? (typeof businessToSave.hours === 'object' 
+              ? JSON.stringify(businessToSave.hours) 
+              : businessToSave.hours) 
+          : JSON.stringify({});
+          
+        // Create a clean object for Supabase
+        const preparedBusiness = {
+          ...businessToSave,
+          hours: hoursForDB
+        };
         
         // Always remove timestamp fields - let the database handle these
-        if ('created_at' in businessToSave) {
-          delete businessToSave.created_at;
+        if ('created_at' in preparedBusiness) {
+          delete preparedBusiness.created_at;
         }
         
-        if ('updated_at' in businessToSave) {
-          delete businessToSave.updated_at;
+        if ('updated_at' in preparedBusiness) {
+          delete preparedBusiness.updated_at;
         }
         
         const { data, error } = await supabase
           .from('businesses')
-          .insert(businessToSave)
+          .insert(preparedBusiness)
           .select();
         
         if (error) {
