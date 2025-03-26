@@ -42,7 +42,7 @@ export const processCsvData = async (csvContent: string): Promise<CsvProcessingR
 
     // Process in batches for better performance
     const BATCH_SIZE = 25;
-    let currentBatch: any[] = [];
+    let currentBatch: Business[] = [];
     
     for (let i = 0; i < parsedData.length; i++) {
       const row = parsedData[i];
@@ -56,6 +56,7 @@ export const processCsvData = async (csvContent: string): Promise<CsvProcessingR
         if (currentBatch.length >= BATCH_SIZE || i === parsedData.length - 1) {
           if (currentBatch.length > 0) {
             try {
+              console.log(`Sending batch of ${currentBatch.length} businesses to Supabase...`);
               const { success, errorMessage, successCount: batchSuccessCount } = 
                 await saveBatchToSupabase(currentBatch);
               

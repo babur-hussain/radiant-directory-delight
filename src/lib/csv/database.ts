@@ -104,7 +104,7 @@ const prepareBusinessForSupabase = (business: Business): SupabaseReadyBusiness =
   if (businessCopy.tags) {
     // Check that tags is actually an array or a string before processing
     if (Array.isArray(businessCopy.tags)) {
-      tagsArray = businessCopy.tags as string[];
+      tagsArray = businessCopy.tags;
     } else if (typeof businessCopy.tags === 'string') {
       // We need to explicitly cast to string to satisfy TypeScript
       const tagsString = businessCopy.tags as string;
@@ -144,6 +144,7 @@ export const saveBatchToSupabase = async (businesses: Business[]): Promise<Batch
         
         // Prepare the business for Supabase
         const preparedBusiness = prepareBusinessForSupabase(business);
+        console.log("Prepared business for Supabase:", preparedBusiness);
         
         const { data, error } = await supabase
           .from('businesses')
@@ -162,6 +163,7 @@ export const saveBatchToSupabase = async (businesses: Business[]): Promise<Batch
           }
         } else {
           successCount++;
+          console.log("Successfully saved business to Supabase:", data);
         }
       } catch (err) {
         console.error("Error saving individual business:", business.name, err);
