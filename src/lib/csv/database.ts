@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Business, BatchSaveResult, SupabaseReadyBusiness } from './types';
 import { notifyDataChanged, getBusinessesData, setBusinessesData } from './store';
@@ -103,7 +104,7 @@ const prepareBusinessForSupabase = (business: Business): SupabaseReadyBusiness =
   if (businessCopy.tags) {
     if (Array.isArray(businessCopy.tags)) {
       tagsArray = businessCopy.tags;
-    } else if (typeof businessCopy.tags === 'string') {
+    } else if (typeof businessCopy.tags === 'string' && businessCopy.tags) {
       tagsArray = businessCopy.tags.split(',').map(tag => tag.trim());
     } else {
       console.warn('Unknown tags type encountered:', typeof businessCopy.tags);
