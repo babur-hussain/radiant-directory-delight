@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useDashboardSections } from "@/hooks/useDashboardSections";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -18,9 +17,9 @@ interface DashboardSectionsManagerProps {
 }
 
 const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ userId, isAdmin, selectedUser }) => {
-  const { subscription, loading: subscriptionLoading, error: subscriptionError } = useSubscription(userId);
+  const { fetchUserSubscription, loading: subscriptionLoading, error: subscriptionError } = useSubscription(userId);
   const { dashboardSections, isLoading: sectionsLoading, error: sectionsError } = useDashboardSections(userId);
-  const { packages, isLoading: packagesLoading, error: packagesError, refetch } = useSubscriptionPackages();
+  const { packages, isLoading: packagesLoading, isError, error: packagesError, refetch } = useSubscriptionPackages();
   
   const [selectedPackage, setSelectedPackage] = useState<string>("");
   const [currentPackageSections, setCurrentPackageSections] = useState<string[]>([]);
@@ -28,7 +27,6 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
   const [permissionError, setPermissionError] = useState<string>("");
   const [isSaving, setIsSaving] = useState<boolean>(false);
   
-  // Populate available dashboard sections
   useEffect(() => {
     const allSections = [
       'seo_optimization',
@@ -53,14 +51,12 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
     setAvailableSections(allSections);
   }, []);
   
-  // Set selected package when packages are loaded
   useEffect(() => {
     if (packages && packages.length > 0 && !selectedPackage) {
       setSelectedPackage(packages[0].id);
     }
   }, [packages, selectedPackage]);
   
-  // Load package sections when selected package changes
   useEffect(() => {
     if (selectedPackage && packages) {
       const pkg = packages.find(p => p.id === selectedPackage);
@@ -105,16 +101,13 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
         return;
       }
       
-      // Log for debugging
       console.log("Saving package with sections:", currentPackageSections);
       
-      // Update package with new sections
       const updatedPackage: ISubscriptionPackage = {
         ...pkg,
         dashboardSections: currentPackageSections
       };
       
-      // Log the updatedPackage to see what we're sending
       console.log("Updating package:", JSON.stringify(updatedPackage, null, 2));
       
       const savedPackage = await savePackage(updatedPackage);
@@ -127,7 +120,6 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
         variant: "default"
       });
       
-      // Refresh packages
       await refetch();
     } catch (error) {
       console.error("Error saving package sections:", error);

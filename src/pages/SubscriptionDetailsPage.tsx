@@ -28,8 +28,8 @@ const SubscriptionDetailsPage = () => {
           if (result.success && result.data) {
             setSubscription(result.data);
             
-            if (result.data?.packageId) {
-              const pkgDetails = getPackageById(result.data.packageId);
+            if (result.data?.package_id) {
+              const pkgDetails = getPackageById(result.data.package_id);
               setPackageDetails(pkgDetails);
             }
           }

@@ -42,6 +42,13 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   
   if (!selectedPackage) return null;
   
+  // Make sure the package has required properties for the checkout component
+  const packageWithDefaults = {
+    ...selectedPackage,
+    shortDescription: selectedPackage.shortDescription || '',
+    features: selectedPackage.features || []
+  };
+  
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
@@ -126,7 +133,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
           </>
         ) : (
           <SubscriptionCheckout 
-            selectedPackage={selectedPackage} 
+            selectedPackage={packageWithDefaults} 
             onBack={() => setShowCheckout(false)} 
           />
         )}

@@ -37,7 +37,7 @@ export const useDashboardServices = (userId: string, userRole: string) => {
         // Get the subscription package
         const { data: packageData, error: packageError } = await supabase
           .from('subscription_packages')
-          .select('dashboardSections')
+          .select('dashboard_sections')
           .eq('id', subscription.package_id)
           .single();
         
@@ -46,7 +46,11 @@ export const useDashboardServices = (userId: string, userRole: string) => {
         }
         
         // Set the services based on the package's dashboard sections
-        setServices(packageData.dashboardSections || []);
+        if (packageData && packageData.dashboard_sections) {
+          setServices(packageData.dashboard_sections);
+        } else {
+          setServices([]);
+        }
       } catch (err) {
         console.error('Error fetching dashboard services:', err);
         setError('Failed to load services. Please try again later.');
