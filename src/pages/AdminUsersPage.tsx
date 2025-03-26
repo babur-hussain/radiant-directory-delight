@@ -15,7 +15,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { User, normalizeRole } from '@/types/auth';
-import { UserDetailsPopup } from '@/components/admin/UserDetailsPopup';
+import UserDetailsPopup from '@/components/admin/UserDetailsPopup';
 import useSupabaseUsers from '@/hooks/useSupabaseUsers';
 import { Loader2, UserPlus, Search, Filter } from 'lucide-react';
 
@@ -32,7 +32,7 @@ const AdminUsersPage: React.FC = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const { users, isLoading, error, fetchUsers, totalCount } = useSupabaseUsers();
+      const { users, isLoading, error, totalCount } = useSupabaseUsers();
       // Handle the response structure correctly
       setUsers(users);
       setTotalCount(users.length || 0);
@@ -151,7 +151,7 @@ const AdminUsersPage: React.FC = () => {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={user.verified ? "success" : "outline"}>
+                              <Badge variant={user.verified ? "outline" : "outline"}>
                                 {user.verified ? 'Verified' : 'Unverified'}
                               </Badge>
                             </TableCell>
@@ -175,7 +175,6 @@ const AdminUsersPage: React.FC = () => {
           user={selectedUser}
           open={showUserDetails}
           onOpenChange={(open) => setShowUserDetails(open)}
-          onClose={() => setSelectedUser(null)}
         />
       )}
     </div>

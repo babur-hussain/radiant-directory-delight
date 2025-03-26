@@ -34,13 +34,28 @@ const UserSubscriptionsTab: React.FC<UserSubscriptionsTabProps> = ({ userId }) =
       setError(null);
       try {
         const { data, error } = await supabase
-          .from('subscriptions')
+          .from('user_subscriptions')
           .select('*')
           .eq('user_id', userId)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        setSubscriptions(data || []);
+        
+        // Transform the data to match our Subscription interface
+        const formattedSubscriptions: Subscription[] = (data || []).map((sub: any) => ({
+          id: sub.id,
+          user_id: sub.user_id,
+          package_id: sub.package_id,
+          package_name: sub.package_name || 'Unknown Package',
+          status: sub.status,
+          start_date: sub.start_date,
+          end_date: sub.end_date,
+          transaction_id: sub.transaction_id,
+          amount: sub.amount,
+          created_at: sub.created_at
+        }));
+        
+        setSubscriptions(formattedSubscriptions);
       } catch (err) {
         console.error('Error fetching subscriptions:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch subscriptions');

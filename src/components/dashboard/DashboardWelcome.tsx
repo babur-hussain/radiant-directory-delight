@@ -4,14 +4,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { User, normalizeRole, UserRole } from '@/types/auth';
 
 interface DashboardWelcomeProps {
-  role?: UserRole;
+  role?: UserRole | string;
 }
 
 const DashboardWelcome: React.FC<DashboardWelcomeProps> = ({ role }) => {
   const { user } = useAuth();
 
   const getWelcomeMessage = (user: User) => {
-    const userRole = role || normalizeRole(user?.role);
+    const userRole = role ? normalizeRole(role) : normalizeRole(user?.role);
     
     if (userRole === 'admin') {
       return "Welcome to the Admin Dashboard";
