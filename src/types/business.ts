@@ -2,13 +2,13 @@
 export interface Business {
   id: number | string;
   name: string;
-  category: string;    // Now required
-  description: string; // Now required
-  address: string;     // Now required
-  phone: string;       // Now required
-  email: string;       // Now required
-  website: string;     // Now required
-  image: string;       // Now required
+  category: string;
+  description: string;
+  address: string;
+  phone: string;
+  email: string;
+  website: string;
+  image: string;
   hours: string | Record<string, string> | Record<string, any> | any;
   rating: number;
   reviews: number;
@@ -103,6 +103,51 @@ export const convertToBusinessType = (business: any): Business => {
     website: business.website || '',
     image: business.image || '',
     hours: parseBusinessHours(business.hours),
+    rating: business.rating || 0,
+    reviews: business.reviews || 0,
+    featured: business.featured || false,
+    tags: ensureTagsArray(business.tags),
+    latitude: business.latitude || 0,
+    longitude: business.longitude || 0,
+    created_at: business.created_at || '',
+    updated_at: business.updated_at || ''
+  };
+};
+
+export interface IBusiness {
+  id: number | string;
+  name: string;
+  category?: string;
+  description?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  image?: string;
+  hours?: any;
+  rating?: number;
+  reviews?: number;
+  featured?: boolean;
+  tags?: string[];
+  latitude?: number;
+  longitude?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Helper function to convert from IBusiness to Business
+export const convertIBusinessToBusiness = (business: IBusiness): Business => {
+  return {
+    id: business.id,
+    name: business.name,
+    category: business.category || '',
+    description: business.description || '',
+    address: business.address || '',
+    phone: business.phone || '',
+    email: business.email || '',
+    website: business.website || '',
+    image: business.image || '',
+    hours: business.hours || '',
     rating: business.rating || 0,
     reviews: business.reviews || 0,
     featured: business.featured || false,
