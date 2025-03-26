@@ -17,6 +17,10 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  // Detect if we're loading a direct URL
+  const currentPath = window.location.pathname;
+  console.log("App initializing with path:", currentPath);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Router>

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -32,6 +31,9 @@ import AuthCallbackPage from './pages/AuthCallbackPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const AppRoutes = () => {
+  // Log current pathname for debugging
+  console.log("AppRoutes rendering with path:", window.location.pathname);
+  
   return (
     <Routes>
       {/* Public routes */}
