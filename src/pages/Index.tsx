@@ -6,6 +6,7 @@ import FeaturedBusinesses from '@/components/FeaturedBusinesses';
 import TestimonialSection from '@/components/TestimonialSection';
 import CallToAction from '@/components/CallToAction';
 import CtaSection from '@/components/CtaSection';
+import VideoReelsSection from '@/components/videos/VideoReelsSection';
 
 const Index = () => {
   return (
@@ -20,6 +21,7 @@ const Index = () => {
       </div>
       <CtaSection />
       <CategorySection />
+      <VideoReelsSection />
       <FeaturedBusinesses />
       <TestimonialSection />
       <CallToAction />
