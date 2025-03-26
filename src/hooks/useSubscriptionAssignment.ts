@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -5,7 +6,7 @@ import { UserSubscription } from '@/types/auth';
 import { generateId } from '@/lib/utils';
 
 // Define the SubscriptionStatus type as a union of string literals
-type SubscriptionStatus = 'active' | 'expired' | 'cancelled' | 'pending';
+export type SubscriptionStatus = 'active' | 'expired' | 'cancelled' | 'pending';
 
 interface UseSubscriptionAssignmentProps {
   userId: string;
@@ -43,7 +44,7 @@ const useSubscriptionAssignment = ({ userId }: UseSubscriptionAssignmentProps) =
             userId: subscription.user_id,
             packageId: subscription.package_id,
             packageName: subscription.package_name,
-            status: subscription.status,
+            status: subscription.status as SubscriptionStatus, // Use type assertion
             startDate: subscription.start_date,
             endDate: subscription.end_date,
             price: subscription.amount,
@@ -167,7 +168,7 @@ const useSubscriptionAssignment = ({ userId }: UseSubscriptionAssignmentProps) =
       const { data, error } = await supabase
         .from('user_subscriptions')
         .update({
-          status: 'cancelled',
+          status: 'cancelled' as SubscriptionStatus,
           cancelled_at: new Date().toISOString(),
           cancel_reason: reason || 'Cancelled by admin'
         })

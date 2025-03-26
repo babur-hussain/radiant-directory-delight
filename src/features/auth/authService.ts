@@ -94,7 +94,7 @@ export const handleAuthStateChange = async (
         console.warn(`${event} event but no user in session`);
         return null;
       }
-    } else if (event === 'SIGNED_OUT' || event === 'PASSWORD_RECOVERY') {
+    } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || event === 'MFA_CHALLENGE_VERIFIED') {
       console.log(`${event} event`);
       return null;
     } else {

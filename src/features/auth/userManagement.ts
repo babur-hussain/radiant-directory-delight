@@ -1,5 +1,9 @@
+
 import { User, UserRole } from '@/types/auth';
-import { normalizeRole } from '@/types/auth';
+// Remove the conflicting import
+// import { normalizeRole } from '@/types/auth';
+import { supabase } from '@/integrations/supabase/client';
+import { v4 as uuidv4 } from 'uuid'; // Add uuid for nanoid replacement
 
 // Fix role case issues - use lowercase role values
 export const getUsersByRole = (users: User[], role: UserRole): User[] => {
@@ -67,7 +71,7 @@ interface TestUserData {
 
 // Helper function to convert role string to UserRole type
 export function transformRole(role: string | null): UserRole {
-  if (!role) return null;
+  if (!role) return 'user';
   
   // Match with expected UserRole values
   switch (role.toLowerCase()) {
@@ -145,8 +149,8 @@ export const createTestUser = async (userData: {
   employeeCode?: string;
 }): Promise<User> => {
   try {
-    // Generate a unique ID using nanoid
-    const userId = nanoid();
+    // Generate a unique ID using UUID instead of nanoid
+    const userId = uuidv4();
     
     // Create user data object with defaults
     const newUser: User = {

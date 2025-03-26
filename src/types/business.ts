@@ -1,22 +1,23 @@
+
 export interface Business {
   id: number | string;
   name: string;
   category: string;
   description: string;
-  address?: string;
-  phone?: string;
-  email?: string;
-  website?: string;
-  image?: string;
-  hours?: string | Record<string, string> | Record<string, any> | any;
-  rating?: number;
-  reviews?: number;
-  featured?: boolean;
-  tags?: string[];
-  latitude?: number;
-  longitude?: number;
-  created_at?: string;
-  updated_at?: string;
+  address: string; // Now required
+  phone: string;   // Now required
+  email: string;   // Now required
+  website: string; // Now required
+  image: string;   // Now required
+  hours: string | Record<string, string> | Record<string, any> | any;
+  rating: number;
+  reviews: number;
+  featured: boolean;
+  tags: string[];
+  latitude: number;
+  longitude: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export const ensureTagsArray = (tags: string[] | string | undefined | null): string[] => {

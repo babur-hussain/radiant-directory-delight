@@ -2,10 +2,9 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole, AuthContextType, SessionData } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { convertCapitalizedRole } from '@/types/auth';
 import { toast } from '@/hooks/use-toast';
 
-// Import auth functions instead of trying to use missing exports
+// Import auth functions properly
 import { handleAuthStateChange, syncSupabaseUser } from '@/features/auth/authService';
 
 // Create auth context
@@ -25,11 +24,11 @@ export const AuthContext = createContext<AuthContextType>({
   refreshUserData: async () => {},
 });
 
-interface AuthProviderComponentProps {
+interface AuthProviderProps {
   children: ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderComponentProps> = ({ children }) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [initialized, setInitialized] = useState<boolean>(false);
@@ -151,17 +150,8 @@ export const AuthProvider: React.FC<AuthProviderComponentProps> = ({ children })
       if (error) throw error;
       
       if (data.user) {
-        const userObj = {
-          id: data.user.id,
-          email: data.user.email || '',
-          displayName: userData?.name || email.split('@')[0],
-          name: userData?.name || email.split('@')[0],
-          role: userData?.role || 'user',
-          isAdmin: (userData?.role || 'user') === 'admin',
-          ...userData
-        };
-        
-        return userObj;
+        const userInfo = await syncSupabaseUser(data.user);
+        return userInfo;
       }
       
       return null;
@@ -175,8 +165,7 @@ export const AuthProvider: React.FC<AuthProviderComponentProps> = ({ children })
   // Handle login
   const login = async (
     email: string, 
-    password: string, 
-    employeeCode?: string
+    password: string
   ): Promise<User | null> => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -270,7 +259,7 @@ export const AuthProvider: React.FC<AuthProviderComponentProps> = ({ children })
         data: {
           name: data.name || user.name,
           role: data.role || user.role,
-          ...data
+          ...(data.subscription ? { subscription: typeof data.subscription === 'object' ? JSON.stringify(data.subscription) : data.subscription } : {})
         }
       });
       
@@ -282,7 +271,18 @@ export const AuthProvider: React.FC<AuthProviderComponentProps> = ({ children })
         .update({
           name: data.name || user.name,
           role: data.role || user.role,
-          ...data
+          ...(data.email ? { email: data.email } : {}),
+          ...(data.photo_url || data.photoURL ? { photo_url: data.photo_url || data.photoURL } : {}),
+          ...(data.phone ? { phone: data.phone } : {}),
+          ...(data.instagramHandle ? { instagram_handle: data.instagramHandle } : {}),
+          ...(data.facebookHandle ? { facebook_handle: data.facebookHandle } : {}),
+          ...(data.bio ? { bio: data.bio } : {}),
+          ...(data.businessName ? { business_name: data.businessName } : {}),
+          ...(data.businessCategory ? { business_category: data.businessCategory } : {}),
+          ...(data.website ? { website: data.website } : {}),
+          ...(data.city ? { city: data.city } : {}),
+          ...(data.country ? { country: data.country } : {}),
+          ...(data.subscription ? { subscription: typeof data.subscription === 'object' ? JSON.stringify(data.subscription) : data.subscription } : {})
         })
         .eq('id', user.id);
       

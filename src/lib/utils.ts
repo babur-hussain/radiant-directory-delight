@@ -1,4 +1,3 @@
-
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -20,3 +19,8 @@ export function createGoogleSearchUrl(businessName: string, businessAddress: str
   // Create the Google search URL
   return `https://www.google.com/search?q=${encodedQuery}`;
 }
+
+// Add the generateId function
+export const generateId = (): string => {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+};

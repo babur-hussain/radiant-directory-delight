@@ -10,7 +10,7 @@ interface BusinessTableRowProps {
   business: Business;
   onViewDetails?: (business: Business) => void;
   onEditBusiness: (business: Business) => void;
-  onDeleteBusiness?: (business: Business) => void; // Add this prop
+  onDeleteBusiness: (business: Business) => void; // Required prop
   index?: number;
 }
 
@@ -21,11 +21,12 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({
   onDeleteBusiness,
   index
 }) => {
-  // Convert id to number for comparison, handling string ids
+  // Convert id to number for comparison, safely handle string ids
   const businessId = typeof business.id === 'string' ? 
     parseInt(business.id, 10) : business.id;
   
-  const isNewBusiness = isNaN(businessId) || businessId <= 0;
+  // Only check if businessId is a valid number before comparing
+  const isNewBusiness = typeof businessId === 'number' && !isNaN(businessId) ? businessId <= 0 : false;
 
   return (
     <TableRow>
@@ -61,11 +62,9 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({
           <Button variant="ghost" size="icon" onClick={() => onEditBusiness(business)}>
             <Pencil className="h-4 w-4" />
           </Button>
-          {onDeleteBusiness && (
-            <Button variant="ghost" size="icon" onClick={() => onDeleteBusiness(business)}>
-              <Trash className="h-4 w-4" />
-            </Button>
-          )}
+          <Button variant="ghost" size="icon" onClick={() => onDeleteBusiness(business)}>
+            <Trash className="h-4 w-4" />
+          </Button>
         </div>
       </TableCell>
     </TableRow>
