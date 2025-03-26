@@ -48,7 +48,7 @@ export const processCsvData = async (csvContent: string): Promise<CsvProcessingR
       const row = parsedData[i];
       const processedBusiness = await processSingleBusiness(row, i);
       
-      if (processedBusiness.success) {
+      if (processedBusiness.success && processedBusiness.business) {
         currentBatch.push(processedBusiness.business);
         processedBusinesses.push(processedBusiness.business);
         

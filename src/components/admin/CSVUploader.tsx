@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { FileUp } from 'lucide-react';
+import { FileUp, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { processCsvData } from '@/lib/csv-utils';
 import { toast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // Schema validation for file upload
 const formSchema = z.object({
@@ -28,6 +29,7 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [csvError, setCsvError] = useState<string | null>(null);
+  const [permissionError, setPermissionError] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -63,6 +65,7 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
     try {
       setIsProcessing(true);
       setCsvError(null);
+      setPermissionError(false);
       setUploadProgress(10);
       onUploadStart();
       
@@ -78,6 +81,19 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
             setUploadProgress(50);
             const { success, businesses, message } = await processCsvData(csvContent);
             setUploadProgress(100);
+            
+            // Check if we had permission errors
+            if (message.includes('permission') || message.includes('security policy')) {
+              setPermissionError(true);
+              setCsvError("You don't have permission to add businesses. Please check your account permissions.");
+              toast({
+                title: "Permission Error",
+                description: "You don't have permission to add businesses to the database.",
+                variant: "destructive"
+              });
+              onUploadComplete(false, "Permission error: Cannot add businesses to the database");
+              return;
+            }
             
             if (success && businesses.length > 0) {
               toast({
@@ -105,12 +121,25 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
           } catch (error) {
             console.error("Failed to process CSV data:", error);
             const errorMessage = error instanceof Error ? error.message : String(error);
-            toast({
-              title: "Processing Error",
-              description: "Failed to process CSV data: " + errorMessage,
-              variant: "destructive"
-            });
-            setCsvError("Failed to process CSV data: " + errorMessage);
+            
+            // Check for permission errors
+            if (errorMessage.includes('permission') || errorMessage.includes('security policy')) {
+              setPermissionError(true);
+              setCsvError("You don't have permission to add businesses. Please check your account permissions.");
+              toast({
+                title: "Permission Error",
+                description: "You don't have permission to add businesses to the database.",
+                variant: "destructive"
+              });
+            } else {
+              toast({
+                title: "Processing Error",
+                description: "Failed to process CSV data: " + errorMessage,
+                variant: "destructive"
+              });
+              setCsvError("Failed to process CSV data: " + errorMessage);
+            }
+            
             onUploadComplete(false, "Failed to process CSV data: " + errorMessage);
           }
         }
@@ -147,6 +176,16 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
 
   return (
     <div className="w-full">
+      {permissionError && (
+        <Alert variant="destructive" className="mb-4">
+          <Shield className="h-4 w-4" />
+          <AlertTitle>Permission Denied</AlertTitle>
+          <AlertDescription>
+            You don't have permission to add businesses to the database. This usually means your account doesn't have the necessary privileges. Please contact an administrator for help.
+          </AlertDescription>
+        </Alert>
+      )}
+    
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField

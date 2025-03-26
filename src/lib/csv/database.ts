@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Business, BatchSaveResult } from './types';
+import { Business, BatchSaveResult, SupabaseReadyBusiness } from './types';
 import { notifyDataChanged, getBusinessesData, setBusinessesData } from './store';
 import { toast } from '@/hooks/use-toast';
 
@@ -76,6 +76,51 @@ export const deleteBusiness = async (id: number): Promise<boolean> => {
   }
 };
 
+// Convert a Business object to a format ready for Supabase
+const prepareBusinessForSupabase = (business: Business): SupabaseReadyBusiness => {
+  // Make a shallow copy of the business
+  const businessCopy = { ...business };
+  
+  // Remove temporary ID if it's 0 or null
+  if ('id' in businessCopy && (businessCopy.id === 0 || businessCopy.id === null)) {
+    delete businessCopy.id;
+  }
+  
+  // Convert hours to a JSON string if it exists and is an object
+  let hoursForDB: string = '{}';
+  if (businessCopy.hours) {
+    if (typeof businessCopy.hours === 'object') {
+      hoursForDB = JSON.stringify(businessCopy.hours);
+    } else if (typeof businessCopy.hours === 'string') {
+      // If it's already a string, validate it as JSON
+      try {
+        JSON.parse(businessCopy.hours);
+        hoursForDB = businessCopy.hours;
+      } catch (e) {
+        // If parsing fails, use empty object
+        hoursForDB = '{}';
+      }
+    }
+  }
+  
+  // Ensure tags is an array
+  const tags = Array.isArray(businessCopy.tags) ? businessCopy.tags : 
+               (typeof businessCopy.tags === 'string' ? 
+                 businessCopy.tags.split(',').map(t => t.trim()) : 
+                 []);
+  
+  // Remove timestamp fields - let the database handle these
+  delete businessCopy.created_at;
+  delete businessCopy.updated_at;
+  
+  // Return object formatted for Supabase
+  return {
+    ...businessCopy,
+    hours: hoursForDB,
+    tags
+  };
+};
+
 // Save a batch of businesses to Supabase
 export const saveBatchToSupabase = async (businesses: Business[]): Promise<BatchSaveResult> => {
   if (businesses.length === 0) {
@@ -91,43 +136,8 @@ export const saveBatchToSupabase = async (businesses: Business[]): Promise<Batch
       try {
         console.log("Saving business to Supabase:", business.name);
         
-        // Clone the business and prepare it for saving
-        const businessToSave = { ...business };
-        
-        // Remove the temporary ID before saving to let the database set it
-        if ('id' in businessToSave && (businessToSave.id === 0 || businessToSave.id === null)) {
-          delete businessToSave.id;
-        }
-        
-        // Handle the hours field properly for database storage
-        let hoursForDB: string;
-        if (businessToSave.hours) {
-          if (typeof businessToSave.hours === 'object') {
-            hoursForDB = JSON.stringify(businessToSave.hours);
-          } else if (typeof businessToSave.hours === 'string') {
-            // If it's already a string, use it as is
-            hoursForDB = businessToSave.hours;
-          } else {
-            hoursForDB = JSON.stringify({});
-          }
-        } else {
-          hoursForDB = JSON.stringify({});
-        }
-        
-        // Create a clean object for Supabase
-        const preparedBusiness = {
-          ...businessToSave,
-          hours: hoursForDB
-        };
-        
-        // Always remove timestamp fields - let the database handle these
-        if ('created_at' in preparedBusiness) {
-          delete preparedBusiness.created_at;
-        }
-        
-        if ('updated_at' in preparedBusiness) {
-          delete preparedBusiness.updated_at;
-        }
+        // Prepare the business for Supabase
+        const preparedBusiness = prepareBusinessForSupabase(business);
         
         const { data, error } = await supabase
           .from('businesses')

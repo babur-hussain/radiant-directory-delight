@@ -2,18 +2,20 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, DownloadCloud, FileUp, Check, AlertCircle } from 'lucide-react';
+import { Upload, DownloadCloud, FileUp, Check, AlertCircle, Shield } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import CSVUploader from '@/components/admin/CSVUploader';
 import CSVUploadDialog from '@/components/admin/CSVUploadDialog';
 import { useToast } from '@/hooks/use-toast';
 import { initializeData, generateCSVTemplate } from '@/lib/csv-utils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const AdminUploadPage = () => {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [permissionError, setPermissionError] = useState(false);
   const [lastUploadInfo, setLastUploadInfo] = useState<{
     timestamp: Date;
     success: boolean;
@@ -29,16 +31,28 @@ const AdminUploadPage = () => {
         setIsLoading(true);
         await initializeData();
         setIsError(false);
+        setPermissionError(false);
       } catch (error) {
         console.error("Error initializing data:", error);
         setIsError(true);
-        setErrorMessage(error instanceof Error ? error.message : String(error));
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        setErrorMessage(errorMessage);
         
-        toast({
-          title: "Error loading data",
-          description: "There was an error initializing the business data.",
-          variant: "destructive"
-        });
+        // Check if it's a permission error
+        if (errorMessage.includes('permission') || errorMessage.includes('security policy')) {
+          setPermissionError(true);
+          toast({
+            title: "Permission Error",
+            description: "You don't have permission to access business data.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error loading data",
+            description: "There was an error initializing the business data.",
+            variant: "destructive"
+          });
+        }
       } finally {
         setIsLoading(false);
       }
@@ -47,12 +61,34 @@ const AdminUploadPage = () => {
     loadData();
   }, [toast]);
 
+  // Listen for permission errors
+  useEffect(() => {
+    const handlePermissionError = (e: CustomEvent) => {
+      setPermissionError(true);
+      setErrorMessage(e.detail.message);
+      toast({
+        title: "Permission Error",
+        description: "You don't have permission to access business data.",
+        variant: "destructive"
+      });
+    };
+    
+    window.addEventListener('businessPermissionError', handlePermissionError as EventListener);
+    
+    return () => {
+      window.removeEventListener('businessPermissionError', handlePermissionError as EventListener);
+    };
+  }, [toast]);
+
   const handleShowUploadDialog = () => {
     setShowUploadDialog(true);
   };
 
   const handleUploadComplete = (success: boolean, message: string, count?: number) => {
     setShowUploadDialog(false);
+    
+    // Check if it's a permission error
+    const isPermissionError = message.includes('permission') || message.includes('security policy');
     
     setLastUploadInfo({
       timestamp: new Date(),
@@ -65,6 +101,13 @@ const AdminUploadPage = () => {
       toast({
         title: "Upload Successful",
         description: `Successfully imported ${count} businesses`,
+      });
+    } else if (isPermissionError) {
+      setPermissionError(true);
+      toast({
+        title: "Permission Error",
+        description: "You don't have permission to add businesses to the database.",
+        variant: "destructive",
       });
     } else {
       toast({
@@ -162,6 +205,17 @@ const AdminUploadPage = () => {
             Download Template
           </Button>
         </div>
+        
+        {permissionError && (
+          <Alert variant="destructive">
+            <Shield className="h-4 w-4" />
+            <AlertTitle>Permission Error</AlertTitle>
+            <AlertDescription>
+              You don't have permission to add or view businesses in the database. 
+              This feature requires administrative privileges.
+            </AlertDescription>
+          </Alert>
+        )}
         
         <Card>
           <CardHeader>

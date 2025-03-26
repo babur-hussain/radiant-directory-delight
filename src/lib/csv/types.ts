@@ -37,3 +37,22 @@ export interface BusinessProcessingResult {
   business?: Business;
   errorMessage?: string;
 }
+
+export interface SupabaseReadyBusiness {
+  id?: number;
+  name: string;
+  category?: string;
+  address?: string;
+  phone?: string;
+  rating?: number;
+  reviews?: number;
+  description?: string;
+  email?: string;
+  website?: string;
+  image?: string;
+  tags?: string[];
+  featured?: boolean;
+  latitude?: number;
+  longitude?: number;
+  hours?: string; // For Supabase, hours must be a string (JSON)
+}
