@@ -103,11 +103,16 @@ const prepareBusinessForSupabase = (business: Business): SupabaseReadyBusiness =
     }
   }
   
-  // Ensure tags is an array
-  const tags = Array.isArray(businessCopy.tags) ? businessCopy.tags : 
-               (typeof businessCopy.tags === 'string' ? 
-                 businessCopy.tags.split(',').map(t => t.trim()) : 
-                 []);
+  // Ensure tags is an array - FIX: properly handle the tags property type
+  let tagsArray: string[] = [];
+  
+  if (businessCopy.tags) {
+    if (Array.isArray(businessCopy.tags)) {
+      tagsArray = businessCopy.tags;
+    } else if (typeof businessCopy.tags === 'string') {
+      tagsArray = businessCopy.tags.split(',').map(t => t.trim());
+    }
+  }
   
   // Remove timestamp fields - let the database handle these
   delete businessCopy.created_at;
@@ -117,7 +122,7 @@ const prepareBusinessForSupabase = (business: Business): SupabaseReadyBusiness =
   return {
     ...businessCopy,
     hours: hoursForDB,
-    tags
+    tags: tagsArray
   };
 };
 
