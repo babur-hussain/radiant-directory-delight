@@ -56,7 +56,16 @@ const CategoryDetailsPage = () => {
         
         // Fetch businesses for this category
         const data = await fetchBusinessesByCategory(properCategoryName);
-        setBusinesses(data || []);
+        
+        // Convert the hours property from JSON to Record<string, any> if needed
+        const processedData = data?.map(business => ({
+          ...business,
+          hours: typeof business.hours === 'string' 
+            ? JSON.parse(business.hours) 
+            : (business.hours || {})
+        })) as Business[];
+        
+        setBusinesses(processedData || []);
       } catch (err) {
         console.error('Error fetching businesses:', err);
         setError('Failed to load businesses. Please try again later.');
