@@ -1,73 +1,45 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth } from './useAuth';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useSubscription } from './useSubscription';
 
-export interface DashboardSection {
-  id: string;
-  name: string;
-  description?: string;
-  icon?: string;
-  type?: string;
-  isVisible?: boolean;
-  order?: number;
-  component?: React.ComponentType<any>;
-}
-
-export const useDashboardSections = () => {
-  const [sections, setSections] = useState<DashboardSection[]>([]);
-  const [loading, setLoading] = useState(true);
+export const useDashboardSections = (userId?: string) => {
+  const { subscription } = useSubscription(userId);
+  const [dashboardSections, setDashboardSections] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
-  const { userSubscription, loading: subscriptionLoading } = useSubscription();
 
   useEffect(() => {
     const fetchDashboardSections = async () => {
+      setIsLoading(true);
       try {
-        setLoading(true);
-        
-        if (subscriptionLoading) {
-          return;
-        }
-        
-        if (!userSubscription) {
-          setSections([]);
-          return;
-        }
-        
-        // Get allowed sections from user's subscription package
-        if (userSubscription.packageId) {
-          // Here you would normally fetch the sections from the API
-          // For now we're just returning a hardcoded list
-          const availableSections: DashboardSection[] = [
-            { id: 'analytics', name: 'Analytics', icon: 'bar-chart' },
-            { id: 'performance', name: 'Performance', icon: 'activity' },
-            { id: 'seo', name: 'SEO', icon: 'search' },
-            { id: 'leads', name: 'Leads', icon: 'users' },
-            { id: 'campaigns', name: 'Campaigns', icon: 'megaphone' },
-            { id: 'reels', name: 'Reels', icon: 'video' },
-            { id: 'reviews', name: 'Reviews', icon: 'star' },
-            { id: 'google-listing', name: 'Google Listing', icon: 'map-pin' }
-          ];
-          
-          setSections(availableSections);
+        if (subscription?.packageId) {
+          // Fetch subscription package details to get dashboard sections
+          const packageDetails = await fetch(`/api/subscription/package/${subscription.packageId}`);
+
+          if (!packageDetails.ok) {
+            throw new Error(`Failed to fetch package details: ${packageDetails.status}`);
+          }
+
+          const packageData: ISubscriptionPackage = await packageDetails.json();
+
+          if (packageData && packageData.dashboardSections) {
+            setDashboardSections(packageData.dashboardSections);
+          } else {
+            setDashboardSections([]); // Default to empty array if no sections are found
+          }
         } else {
-          setSections([]);
+          setDashboardSections([]); // No subscription, no sections
         }
-        
-        setError(null);
+        setIsLoading(false);
       } catch (err) {
-        console.error("Error fetching dashboard sections:", err);
-        setError("Failed to load dashboard sections");
-      } finally {
-        setLoading(false);
+        setError(err instanceof Error ? err.message : 'Failed to load dashboard sections');
+        setIsLoading(false);
       }
     };
-    
+
     fetchDashboardSections();
-  }, [user, userSubscription, subscriptionLoading]);
+  }, [subscription?.packageId]);
 
-  return { sections, loading, error };
+  return { dashboardSections, isLoading, error };
 };
-
-export default useDashboardSections;

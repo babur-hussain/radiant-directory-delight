@@ -1,306 +1,284 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { AlertCircle, CheckCircle2, Clock, CreditCard, DownloadCloud, XCircle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { format } from 'date-fns';
-import { useSubscription } from '@/hooks/useSubscription';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { getPackageById } from "@/data/subscriptionData";
+import { ArrowLeft, Calendar, CheckCircle, Clock, CreditCard, XCircle, Loader2, AlertTriangle } from "lucide-react";
+import InfoCircle from "@/components/ui/InfoCircle";
+import { Link, useNavigate } from "react-router-dom";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import AdvancedSubscriptionDetails from "@/components/admin/subscription/AdvancedSubscriptionDetails";
 
-const SubscriptionDetailsPage: React.FC = () => {
-  const [userSubscription, setUserSubscription] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [packageDetails, setPackageDetails] = useState<any>(null);
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const { user } = useAuth();
-  const { fetchUserSubscription, cancelSubscription } = useSubscription();
-  const { toast } = useToast();
+const SubscriptionDetailsPage = () => {
+  const { user, isAuthenticated } = useAuth();
+  const { fetchUserSubscription, cancelSubscription } = useSubscription(user?.id);
   const navigate = useNavigate();
+  const [subscription, setSubscription] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [packageDetails, setPackageDetails] = useState<any>(null);
   
   useEffect(() => {
-    const loadSubscription = async () => {
-      if (!user?.uid) return;
-      
-      try {
-        const subscription = await fetchUserSubscription();
-        setUserSubscription(subscription.data);
-        
-        if (subscription.data) {
-          // Fetch package details from API
-          // For now using a placeholder
-          setPackageDetails({
-            id: subscription.data.packageId,
-            title: subscription.data.packageName || 'Subscription Package',
-            price: subscription.data.amount || 0
-          });
+    const fetchSubscription = async () => {
+      if (isAuthenticated && user?.id) {
+        try {
+          const result = await fetchUserSubscription(user.id);
+          if (result.success && result.data) {
+            setSubscription(result.data);
+            
+            if (result.data?.packageId) {
+              const pkgDetails = getPackageById(result.data.packageId);
+              setPackageDetails(pkgDetails);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching subscription:", error);
         }
-      } catch (err) {
-        console.error('Error loading subscription:', err);
-        setError('Failed to load subscription details');
-      } finally {
-        setIsLoading(false);
       }
+      setIsLoading(false);
     };
     
-    loadSubscription();
-  }, [user?.uid, fetchUserSubscription]);
-  
-  const handleCancelSubscription = async () => {
-    if (!userSubscription) return;
-    
-    try {
-      await cancelSubscription();
-      toast({
-        title: 'Subscription Cancelled',
-        description: 'Your subscription has been cancelled successfully.',
-      });
-      
-      // Reload subscription details
-      const updatedSubscription = await fetchUserSubscription();
-      setUserSubscription(updatedSubscription.data);
-      setCancelDialogOpen(false);
-    } catch (err) {
-      console.error('Error cancelling subscription:', err);
-      toast({
-        title: 'Cancellation Failed',
-        description: 'Failed to cancel your subscription. Please try again.',
-        variant: 'destructive'
-      });
-    }
-  };
-  
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <Badge className="bg-green-500">Active</Badge>;
-      case 'cancelled':
-        return <Badge variant="destructive">Cancelled</Badge>;
-      case 'pending':
-        return <Badge variant="outline" className="text-yellow-500 border-yellow-500">Pending</Badge>;
-      case 'expired':
-        return <Badge variant="secondary">Expired</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-  
+    fetchSubscription();
+  }, [isAuthenticated, user, fetchUserSubscription]);
+
   if (isLoading) {
     return (
-      <div className="container max-w-5xl py-8">
-        <Card>
-          <CardContent className="py-10">
-            <div className="flex flex-col items-center justify-center">
-              <Clock className="h-10 w-10 text-muted-foreground animate-pulse mb-4" />
-              <h3 className="text-lg font-medium">Loading subscription details...</h3>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="container mx-auto px-4 py-10 flex justify-center items-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
+        <span>Loading subscription details...</span>
       </div>
     );
   }
-  
-  if (error) {
+
+  if (!isAuthenticated) {
     return (
-      <div className="container max-w-5xl py-8">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-  
-  if (!userSubscription) {
-    return (
-      <div className="container max-w-5xl py-8">
-        <Card>
-          <CardContent className="py-8">
-            <div className="flex flex-col items-center justify-center">
-              <XCircle className="h-10 w-10 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No Active Subscription</h3>
-              <p className="text-muted-foreground text-center max-w-md mb-6">
-                You don't have any active subscriptions. Subscribe to a package to access premium features.
-              </p>
-              <Button onClick={() => navigate('/subscription')}>
-                View Subscription Plans
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-  
-  return (
-    <div className="container max-w-5xl py-8">
-      <div className="flex flex-col space-y-6">
+      <div className="container mx-auto px-4 py-10">
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Subscription Details</CardTitle>
-                <CardDescription>
-                  View and manage your current subscription
-                </CardDescription>
-              </div>
-              {getStatusBadge(userSubscription.status)}
-            </div>
+            <CardTitle>Subscription Details</CardTitle>
+            <CardDescription>
+              Please sign in to view your subscription details
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-lg font-medium mb-4">Package Information</h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Package</p>
-                    <p className="font-medium">{packageDetails?.title || userSubscription.packageName}</p>
+            <p>You need to be logged in to access subscription details.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!subscription) {
+    return (
+      <div className="container mx-auto px-4 py-10">
+        <div className="flex items-center mb-6">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="mr-2">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <h1 className="text-2xl font-bold">Subscription Details</h1>
+        </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>No Active Subscription</CardTitle>
+            <CardDescription>
+              You don't have an active subscription plan
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4">Subscribe to one of our plans to access premium features.</p>
+          </CardContent>
+          <CardFooter>
+            <Button asChild>
+              <Link to="/subscription">View Subscription Plans</Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const isOneTime = subscription.paymentType === "one-time";
+
+  return (
+    <div className="container mx-auto px-4 py-10">
+      <div className="flex items-center mb-6">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="mr-2">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        <h1 className="text-2xl font-bold">Subscription Details</h1>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-xl">{packageDetails?.title}</CardTitle>
+                    {isOneTime && (
+                      <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
+                        One-time purchase
+                      </Badge>
+                    )}
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Amount</p>
-                    <p className="font-medium">₹{userSubscription.amount?.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Payment Type</p>
-                    <p className="font-medium capitalize">{userSubscription.paymentType || 'One-time'}</p>
-                  </div>
+                  <CardDescription>{packageDetails?.shortDescription}</CardDescription>
                 </div>
+                <Badge variant={subscription.status === 'active' ? 'default' : 'destructive'}>
+                  {subscription.status === 'active' ? (
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                  ) : (
+                    <XCircle className="h-3 w-3 mr-1" />
+                  )}
+                  {subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1)}
+                </Badge>
               </div>
-              
-              <div>
-                <h3 className="text-lg font-medium mb-4">Subscription Timeline</h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Start Date</p>
-                    <p className="font-medium">
-                      {userSubscription.startDate ? format(new Date(userSubscription.startDate), 'PPP') : 'N/A'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">End Date</p>
-                    <p className="font-medium">
-                      {userSubscription.endDate ? format(new Date(userSubscription.endDate), 'PPP') : 'N/A'}
-                    </p>
-                  </div>
-                  {userSubscription.cancelledAt && (
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-medium mb-2">Package Details</h3>
+                  <p>{packageDetails?.fullDescription}</p>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex items-center">
+                    <CreditCard className="h-4 w-4 mr-2 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Cancelled On</p>
-                      <p className="font-medium">
-                        {format(new Date(userSubscription.cancelledAt), 'PPP')}
+                      <p className="text-sm text-muted-foreground">
+                        {isOneTime ? "Amount Paid" : "Subscription Amount"}
                       </p>
+                      <p className="font-medium">
+                        ₹{subscription.amount}
+                        {!isOneTime && "/year"}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Start Date</p>
+                      <p className="font-medium">{formatDate(subscription.startDate)}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        {isOneTime ? "Valid Until" : "Renewal Date"}
+                      </p>
+                      <p className="font-medium">{formatDate(subscription.endDate)}</p>
+                    </div>
+                  </div>
+                  
+                  {!isOneTime && (
+                    <div className="flex items-center">
+                      <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Billing Cycle</p>
+                        <p className="font-medium">Annual</p>
+                      </div>
                     </div>
                   )}
                 </div>
+                
+                {isOneTime && (
+                  <div className="bg-amber-50 p-3 rounded-md border border-amber-200 mt-4">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+                      <div>
+                        <h4 className="font-medium text-amber-800">One-time Purchase</h4>
+                        <p className="text-sm text-amber-700">
+                          This is a one-time purchase, not a recurring subscription. 
+                          You will not be charged again and your access will end on {formatDate(subscription.endDate)}.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <AdvancedSubscriptionDetails subscription={subscription} />
               </div>
-            </div>
-          </CardContent>
-          <CardFooter className="border-t pt-6 flex flex-wrap gap-4">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex gap-2"
-              onClick={() => navigate('/subscription')}
-            >
-              <CreditCard className="h-4 w-4" /> Change Plan
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex gap-2"
-            >
-              <DownloadCloud className="h-4 w-4" /> Download Invoice
-            </Button>
-            
-            {userSubscription.status === 'active' && userSubscription.isUserCancellable !== false && (
-              <Button 
-                variant="destructive" 
-                size="sm"
-                onClick={() => setCancelDialogOpen(true)}
-              >
-                Cancel Subscription
-              </Button>
-            )}
-          </CardFooter>
-        </Card>
-        
-        {userSubscription.status === 'active' && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Subscription Status</CardTitle>
-              <CardDescription>Your subscription is currently active</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Alert>
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <AlertTitle>Active Subscription</AlertTitle>
-                <AlertDescription>
-                  You have full access to all the features included in your {packageDetails?.title || 'subscription'} package.
-                </AlertDescription>
-              </Alert>
             </CardContent>
-          </Card>
-        )}
-        
-        {userSubscription.status === 'cancelled' && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Subscription Status</CardTitle>
-              <CardDescription>Your subscription has been cancelled</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Alert variant="destructive">
-                <XCircle className="h-4 w-4" />
-                <AlertTitle>Cancelled Subscription</AlertTitle>
-                <AlertDescription>
-                  Your subscription has been cancelled. 
-                  {userSubscription.endDate && new Date(userSubscription.endDate) > new Date() ? 
-                    ` You still have access until ${format(new Date(userSubscription.endDate), 'PPP')}.` : 
-                    ' Your access has been revoked.'
-                  }
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={() => navigate('/subscription')}>
-                View Subscription Plans
+            <CardFooter className="flex justify-between">
+              <Button variant="outline" asChild>
+                <Link to="/subscription">Change Plan</Link>
               </Button>
+              
+              {subscription.status === 'active' && !isOneTime && subscription.isUserCancellable !== false && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="destructive">Cancel Subscription</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Cancel Your Subscription</DialogTitle>
+                      <DialogDescription>
+                        Are you sure you want to cancel your subscription? You will lose access to premium features once your current period ends.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => {}}>Keep Subscription</Button>
+                      <Button 
+                        variant="destructive" 
+                        onClick={() => {
+                          cancelSubscription();
+                        }}
+                      >
+                        Cancel Subscription
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+              
+              {isOneTime && subscription.status === 'active' && (
+                <div className="flex items-center">
+                  <InfoCircle className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">One-time purchases cannot be cancelled</span>
+                </div>
+              )}
             </CardFooter>
           </Card>
-        )}
+        </div>
+        
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Included Features</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2">
+                {packageDetails?.features && packageDetails.features.length > 0 ? (
+                  packageDetails.features.map((feature: string, index: number) => (
+                    <li key={index} className="flex items-start">
+                      <CheckCircle className="h-4 w-4 text-primary mr-2 mt-0.5" />
+                      <span>{feature}</span>
+                    </li>
+                  ))
+                ) : (
+                  <li>No features listed for this package</li>
+                )}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-      
-      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Cancel Subscription</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to cancel your subscription? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Warning</AlertTitle>
-              <AlertDescription>
-                If you cancel, you'll still have access until the end of your current billing period. After that, you'll lose access to all premium features.
-              </AlertDescription>
-            </Alert>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>Keep Subscription</Button>
-            <Button variant="destructive" onClick={handleCancelSubscription}>
-              Yes, Cancel Subscription
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

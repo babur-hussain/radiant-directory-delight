@@ -1,36 +1,33 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { RefreshCw, AlertCircle, Download, FileText, Database } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
-import SubscriptionPackageManagement from '@/components/admin/subscription/SubscriptionManagement';
-import UserSubscriptionMapping from '@/components/admin/UserSubscriptionMapping';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import SubscriptionInsights from '@/components/admin/subscription/SubscriptionInsights';
-import SeedDataPanel from '@/components/admin/dashboard/SeedDataPanel';
+import React, { useState, useEffect } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, Plus, RefreshCw } from "lucide-react";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { useAuth } from '@/hooks/useAuth';
-import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
-import checkSupabaseConnection from '@/utils/setupSupabase';
+import checkSupabaseConnection from "@/utils/setupSupabase";
+import { Subscription, SubscriptionStatus, PaymentType, BillingCycle } from "@/models/Subscription";
+import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
+import Loading from "@/components/ui/loading";
+
+import SubscriptionPackagesTable from "@/components/admin/subscription/SubscriptionPackagesTable";
+import SubscriptionSettingsPanel from "@/components/admin/subscription/SubscriptionSettingsPanel";
+import DatabaseConnectionStatus from "@/components/admin/DatabaseConnectionStatus";
+import CentralizedSubscriptionManager from "@/components/admin/subscription/CentralizedSubscriptionManager";
+import { toast } from "@/hooks/use-toast";
+import { useSubscriptionPackages } from "@/hooks/useSubscriptionPackages";
 
 const AdminSubscriptionsPage = () => {
-  const [permissionError, setPermissionError] = useState<string>('');
-  const [dbInitialized, setDbInitialized] = useState<boolean>(true);
-  const [connectionStatus, setConnectionStatus] = useState<string>('checking');
-  const { toast } = useToast();
-  const navigate = useNavigate();
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("packages");
+  const [dbConnected, setDbConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [editingPackage, setEditingPackage] = useState<ISubscriptionPackage | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   
-  // Destructure needed properties from useSubscriptionPackages
+  // Use the custom hook for all subscription package operations
   const { 
     packages, 
     isLoading, 
@@ -41,169 +38,172 @@ const AdminSubscriptionsPage = () => {
     remove, 
     isCreating 
   } = useSubscriptionPackages();
-
+  
+  // Default empty package for new package creation
+  const emptyPackage: ISubscriptionPackage = {
+    id: '',
+    title: '',
+    price: 0,
+    features: [],
+    paymentType: 'recurring',
+    type: 'Business',
+    billingCycle: 'yearly',
+    durationMonths: 12
+  };
+  
   useEffect(() => {
     const checkConnection = async () => {
-      try {
-        const result = await checkSupabaseConnection();
-        
-        if (result.connected) {
-          setConnectionStatus('connected');
-        } else {
-          setConnectionStatus('error');
-          console.error('Connection error:', result.error);
-          toast({
-            title: 'Database Connection Error',
-            description: `Failed to connect to database: ${result.error}`,
-            variant: 'destructive',
-          });
-        }
-      } catch (err) {
-        setConnectionStatus('error');
-        if (err && typeof err === 'object' && 'message' in err) {
-          toast({
-            title: 'Error',
-            description: String(err.message),
-            variant: 'destructive',
-          });
-        }
-      }
+      const result = await checkSupabaseConnection();
+      setDbConnected(result.connected);
+      setConnectionError(result.error || null);
     };
     
     checkConnection();
-  }, [toast]);
-
-  const handlePermissionError = (error: any) => {
-    console.error('Permission error:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    setPermissionError(errorMessage);
-    toast({
-      title: 'Permission Error',
-      description: errorMessage,
-      variant: 'destructive',
-    });
-  };
-
-  const dismissError = () => {
-    setPermissionError('');
-  };
-
-  const handleRetryConnection = async () => {
-    setConnectionStatus('checking');
+  }, []);
+  
+  useEffect(() => {
+    if (dbConnected && !isLoading) {
+      console.log("Database connected, loaded packages:", packages?.length);
+    }
+  }, [dbConnected, packages, isLoading]);
+  
+  useEffect(() => {
+    if (isError && error) {
+      console.error("Error loading packages:", error);
+      setConnectionError(error instanceof Error ? error.message : String(error));
+    }
+  }, [isError, error]);
+  
+  const handleCreatePackage = async (data: ISubscriptionPackage) => {
     try {
-      const result = await checkSupabaseConnection();
-      if (result.connected) {
-        setConnectionStatus('connected');
-        toast({
-          title: 'Connection Restored',
-          description: 'Successfully connected to the database',
-        });
-      } else {
-        setConnectionStatus('error');
-        toast({
-          title: 'Connection Failed',
-          description: `Failed to connect: ${result.error}`,
-          variant: 'destructive',
-        });
-      }
-    } catch (err) {
-      setConnectionStatus('error');
-      if (err && typeof err === 'object' && 'message' in err) {
-        toast({
-          title: 'Connection Error',
-          description: String(err.message),
-          variant: 'destructive',
-        });
-      }
+      console.log("Creating/updating package:", data);
+      await createOrUpdate(data);
+      setIsDialogOpen(false);
+      setEditingPackage(null);
+    } catch (error) {
+      console.error('Error creating/updating package:', error);
+      toast({
+        title: "Error",
+        description: `Failed to save package: ${error instanceof Error ? error.message : String(error)}`,
+        variant: "destructive"
+      });
     }
   };
+  
+  const handleEditPackage = (pkg: ISubscriptionPackage) => {
+    setEditingPackage(pkg);
+    setIsDialogOpen(true);
+  };
+  
+  const handleDeletePackage = async (id: string) => {
+    try {
+      await remove(id);
+    } catch (error) {
+      console.error('Error deleting package:', error);
+      setConnectionError(error instanceof Error ? error.message : String(error));
+    }
+  };
+  
+  const handleOpenCreateDialog = () => {
+    setEditingPackage(null);
+    setIsDialogOpen(true);
+  };
+  
+  const handleCancelEdit = () => {
+    setEditingPackage(null);
+  };
 
-  // Don't allow non-admin users
+  const handleConfigureRazorpay = () => {
+    console.log("Configure Razorpay clicked");
+    // This is just a placeholder - implement actual configuration in a future task
+  };
+  
   if (user && !user.isAdmin) {
     return (
       <DashboardLayout>
-        <Card className="mx-auto max-w-xl">
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>You don't have permission to access this page</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Permission Error</AlertTitle>
-              <AlertDescription>
-                This page is restricted to administrators only. If you believe you should have access, please contact your administrator.
-              </AlertDescription>
-            </Alert>
-            <div className="mt-4">
-              <Button onClick={() => navigate('/')}>Return to Home</Button>
-            </div>
-          </CardContent>
-        </Card>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Access Denied</AlertTitle>
+          <AlertDescription>
+            You do not have admin privileges to access this page.
+          </AlertDescription>
+        </Alert>
       </DashboardLayout>
     );
   }
-
+  
   return (
     <DashboardLayout>
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Subscription Management</CardTitle>
-          <CardDescription>
-            Manage subscription packages, user subscriptions, and related settings
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {permissionError && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Permission Error</AlertTitle>
-              <AlertDescription>
-                {permissionError}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={dismissError}
-                >
-                  Dismiss
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <Tabs defaultValue="packages">
+      <div className="container mx-auto py-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Subscription Management</h1>
+          <div className="space-x-2">
+            <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button onClick={handleOpenCreateDialog}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Package
+            </Button>
+          </div>
+        </div>
+        
+        <DatabaseConnectionStatus 
+          connected={dbConnected} 
+          databaseName="Supabase"
+          error={connectionError || undefined}
+        />
+        
+        {dbConnected && (
+          <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList>
               <TabsTrigger value="packages">Packages</TabsTrigger>
-              <TabsTrigger value="users">User Subscriptions</TabsTrigger>
-              <TabsTrigger value="insights">Insights</TabsTrigger>
-              <TabsTrigger value="database">Database</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
-            <TabsContent value="packages" className="space-y-4 mt-4">
-              <SubscriptionPackageManagement
-                onPermissionError={handlePermissionError}
-                dbInitialized={dbInitialized}
-                connectionStatus={connectionStatus}
-                onRetryConnection={handleRetryConnection}
-              />
+            
+            <TabsContent value="packages" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Subscription Packages</CardTitle>
+                  <CardDescription>
+                    Manage your subscription packages and pricing
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoading ? (
+                    <Loading message="Loading subscription packages..." className="py-10" />
+                  ) : (
+                    <SubscriptionPackagesTable 
+                      packages={packages}
+                      onEdit={handleEditPackage}
+                      onDelete={handleDeletePackage}
+                    />
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
-            <TabsContent value="users" className="space-y-4 mt-4">
-              <UserSubscriptionMapping onPermissionError={handlePermissionError} />
-            </TabsContent>
-            <TabsContent value="insights" className="space-y-4 mt-4">
-              <SubscriptionInsights />
-            </TabsContent>
-            <TabsContent value="database" className="space-y-4 mt-4">
-              <SeedDataPanel
-                dbInitialized={dbInitialized}
-                connectionStatus={connectionStatus}
-                onPermissionError={handlePermissionError}
-                onRetryConnection={handleRetryConnection}
+            
+            <TabsContent value="settings">
+              <SubscriptionSettingsPanel 
+                onConfigureRazorpay={handleConfigureRazorpay}
               />
             </TabsContent>
           </Tabs>
-        </CardContent>
-      </Card>
+        )}
+        
+        {/* Package Editor Dialog */}
+        <CentralizedSubscriptionManager 
+          isDialogOpen={isDialogOpen}
+          setIsDialogOpen={setIsDialogOpen}
+          isEditing={!!editingPackage}
+          selectedPackage={editingPackage}
+          handleSave={handleCreatePackage}
+          handleCancelEdit={handleCancelEdit}
+          initialData={emptyPackage}
+          isSaving={isCreating}
+        />
+      </div>
     </DashboardLayout>
   );
 };

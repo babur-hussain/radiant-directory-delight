@@ -22,10 +22,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
-import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
+import { useSubscriptionPackages, ISubscriptionPackage } from '@/hooks/useSubscriptionPackages';
 import { CheckCircle2, AlertCircle, RefreshCw, Database, Activity } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import type { ISubscriptionPackage } from '@/hooks/useSubscriptionPackages';
 
 interface SubscriptionPackageManagementProps {
   onPermissionError?: (error: any) => void; 
@@ -110,7 +108,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
   }
 
   if (isError) {
-    return <p>Error: {error}</p>;
+    return <p>Error: {error?.message}</p>;
   }
 
   return (

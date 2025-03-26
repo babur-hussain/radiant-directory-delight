@@ -1,189 +1,163 @@
 
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-
-export interface ISubscriptionPackage {
-  id: string;
-  title: string;
-  price: number;
-  monthlyPrice?: number;
-  shortDescription: string;
-  fullDescription?: string;
-  features: string[];
-  setupFee?: number;
-  popular?: boolean;
-  type: 'Business' | 'Influencer';
-  durationMonths?: number;
-  advancePaymentMonths?: number;
-  paymentType?: 'recurring' | 'one-time';
-  billingCycle?: 'monthly' | 'yearly';
-  termsAndConditions?: string;
-  dashboardSections?: string[];
-  isActive?: boolean;
-}
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
+import { getAllPackages, savePackage, deletePackage } from '@/services/packageService';
+import { toast } from '@/hooks/use-toast';
 
 export const useSubscriptionPackages = () => {
-  const [packages, setPackages] = useState<ISubscriptionPackage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+  const queryClient = useQueryClient();
   
-  const fetchPackages = async () => {
-    setIsLoading(true);
-    try {
-      // Fetch packages from Supabase
-      const { data, error } = await supabase
-        .from('subscription_packages')
-        .select('*')
-        .order('price', { ascending: true });
+  // Query to fetch all packages
+  const {
+    data: packages,
+    isLoading,
+    isError,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: ['subscription-packages'],
+    queryFn: async () => {
+      try {
+        console.log("Fetching all subscription packages");
+        const packages = await getAllPackages();
+        console.log("Successfully fetched packages:", packages?.length);
+        return packages;
+      } catch (err) {
+        console.error('Error fetching subscription packages:', err);
+        toast({
+          title: "Error",
+          description: `Failed to load subscription packages: ${err instanceof Error ? err.message : String(err)}`,
+          variant: "destructive"
+        });
+        throw err;
+      }
+    }
+  });
+  
+  // Create or update mutation with proper text handling
+  const createOrUpdateMutation = useMutation({
+    mutationFn: async (packageData: ISubscriptionPackage) => {
+      console.log("Starting save package mutation with data:", packageData);
       
-      if (error) {
-        throw error;
+      if (!packageData.title) {
+        console.error("Package title is missing");
+        throw new Error("Package title is required");
       }
       
-      // Process the data to ensure it matches our type
-      const processedData = data.map(pkg => {
-        // Parse features array if it's a string
-        let featuresArray: string[] = [];
-        if (typeof pkg.features === 'string') {
-          try {
-            featuresArray = JSON.parse(pkg.features);
-          } catch (e) {
-            console.warn('Error parsing features JSON:', e);
-            featuresArray = [];
-          }
-        } else if (Array.isArray(pkg.features)) {
-          featuresArray = pkg.features;
-        }
-        
-        // Parse dashboard sections array if needed
-        let dashboardSectionsArray: string[] = [];
-        if (typeof pkg.dashboard_sections === 'string') {
-          try {
-            dashboardSectionsArray = JSON.parse(pkg.dashboard_sections);
-          } catch (e) {
-            console.warn('Error parsing dashboard sections JSON:', e);
-            dashboardSectionsArray = [];
-          }
-        } else if (Array.isArray(pkg.dashboard_sections)) {
-          dashboardSectionsArray = pkg.dashboard_sections;
-        }
-        
-        return {
-          id: pkg.id,
-          title: pkg.title,
-          price: pkg.price,
-          monthlyPrice: pkg.monthly_price || 0,
-          shortDescription: pkg.short_description || '',
-          fullDescription: pkg.full_description || '',
-          features: featuresArray,
-          setupFee: pkg.setup_fee || 0,
-          popular: pkg.popular || false,
-          type: (pkg.type || 'Business') as 'Business' | 'Influencer',
-          durationMonths: pkg.duration_months || 12,
-          advancePaymentMonths: pkg.advance_payment_months || 0,
-          paymentType: (pkg.payment_type || 'recurring') as 'recurring' | 'one-time',
-          billingCycle: pkg.billing_cycle as ('monthly' | 'yearly') | undefined,
-          termsAndConditions: pkg.terms_and_conditions || '',
-          dashboardSections: dashboardSectionsArray,
-          isActive: true // Default value since we don't have this field in the database yet
-        } as ISubscriptionPackage;
-      });
-      
-      setPackages(processedData);
-      setIsError(false);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching subscription packages:', err);
-      setIsError(true);
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  // Function to refetch packages
-  const refetch = async () => {
-    await fetchPackages();
-  };
-  
-  // Function to create or update a package
-  const createOrUpdate = async (packageData: ISubscriptionPackage): Promise<ISubscriptionPackage> => {
-    setIsCreating(true);
-    try {
-      // Convert the frontend model to the database model
-      const dbPackage = {
-        id: packageData.id,
-        title: packageData.title,
-        price: packageData.price,
-        monthly_price: packageData.monthlyPrice,
-        short_description: packageData.shortDescription,
-        full_description: packageData.fullDescription,
-        features: Array.isArray(packageData.features) ? JSON.stringify(packageData.features) : packageData.features,
-        setup_fee: packageData.setupFee,
-        popular: packageData.popular,
-        type: packageData.type,
-        duration_months: packageData.durationMonths,
-        advance_payment_months: packageData.advancePaymentMonths,
-        payment_type: packageData.paymentType,
-        billing_cycle: packageData.billingCycle,
-        terms_and_conditions: packageData.termsAndConditions,
-        dashboard_sections: packageData.dashboardSections
+      // Ensure text fields are properly handled
+      const processedData: ISubscriptionPackage = {
+        ...packageData,
+        fullDescription: String(packageData.fullDescription || ''),
+        termsAndConditions: String(packageData.termsAndConditions || ''),
+        shortDescription: String(packageData.shortDescription || '')
       };
       
-      const { data, error } = await supabase
-        .from('subscription_packages')
-        .upsert(dbPackage)
-        .select()
-        .single();
+      try {
+        console.log("Calling savePackage service function");
+        return await savePackage(processedData);
+      } catch (error) {
+        console.error("Error in save package mutation:", error);
+        throw error;
+      }
+    },
+    onSuccess: (savedPackage) => {
+      console.log("Package saved successfully:", savedPackage);
       
-      if (error) throw error;
+      toast({
+        title: "Success",
+        description: `Package "${savedPackage.title}" saved successfully`,
+      });
       
-      // Refetch packages to update the list
-      await fetchPackages();
+      // Invalidate and refetch
+      queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
+    },
+    onError: (error: any) => {
+      console.error("Package save error:", error);
       
-      return packageData;
-    } catch (err) {
-      console.error('Error creating/updating subscription package:', err);
-      throw err;
-    } finally {
-      setIsCreating(false);
+      toast({
+        title: "Error",
+        description: `Failed to save package: ${error instanceof Error ? error.message : String(error)}`,
+        variant: "destructive"
+      });
     }
-  };
+  });
   
-  // Function to delete a package
-  const remove = async (id: string): Promise<void> => {
+  // Delete mutation with improved error handling
+  const deleteMutation = useMutation({
+    mutationFn: async (packageId: string) => {
+      console.log("Starting delete package mutation for ID:", packageId);
+      if (!packageId) {
+        console.error("Package ID is missing");
+        throw new Error("Package ID is required");
+      }
+      
+      try {
+        await deletePackage(packageId);
+        return packageId;
+      } catch (error) {
+        console.error("Error in delete package mutation:", error);
+        throw error;
+      }
+    },
+    onSuccess: (packageId) => {
+      console.log("Package deleted successfully:", packageId);
+      
+      toast({
+        title: "Success",
+        description: "Package deleted successfully",
+      });
+      
+      // Invalidate and refetch
+      queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
+    },
+    onError: (error: any) => {
+      console.error("Package delete error:", error);
+      
+      toast({
+        title: "Error",
+        description: `Failed to delete package: ${error instanceof Error ? error.message : String(error)}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Direct function to create or update a package with better error handling
+  const createOrUpdate = async (packageData: ISubscriptionPackage) => {
+    console.log("createOrUpdate function called with data:", packageData);
     try {
-      const { error } = await supabase
-        .from('subscription_packages')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      
-      // Refetch packages to update the list
-      await fetchPackages();
-    } catch (err) {
-      console.error('Error deleting subscription package:', err);
-      throw err;
+      // This will trigger the mutation and all its callbacks
+      return await createOrUpdateMutation.mutateAsync(packageData);
+    } catch (error) {
+      console.error("createOrUpdate failed:", error);
+      // Re-throw to allow callers to handle the error if needed
+      throw error;
     }
   };
   
-  useEffect(() => {
-    fetchPackages();
-  }, []);
-  
+  // Direct function to delete a package with better error handling
+  const remove = async (packageId: string) => {
+    console.log("remove function called with ID:", packageId);
+    try {
+      await deleteMutation.mutateAsync(packageId);
+      console.log("remove completed successfully");
+      return true;
+    } catch (error) {
+      console.error("remove failed:", error);
+      throw error;
+    }
+  };
+
   return {
-    packages,
+    packages: packages || [],
     isLoading,
     isError,
     error,
     refetch,
     createOrUpdate,
     remove,
-    isCreating
+    isCreating: createOrUpdateMutation.isPending,
+    isDeleting: deleteMutation.isPending
   };
 };
 
-export default useSubscriptionPackages;
+export type { ISubscriptionPackage } from '@/models/SubscriptionPackage';

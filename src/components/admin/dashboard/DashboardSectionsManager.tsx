@@ -3,13 +3,13 @@ import React, { useState, useEffect } from "react";
 import { useDashboardSections } from "@/hooks/useDashboardSections";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Card, CardContent } from "@/components/ui/card";
+import { savePackage, getPackageById } from "@/services/packageService";
 import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
 import { useSubscriptionPackages } from "@/hooks/useSubscriptionPackages";
 import AdminPermissionError from "./AdminPermissionError";
 import PackageSectionsList from "./PackageSectionsList";
 import { toast } from "@/hooks/use-toast";
 import { IUser } from "@/models/User";
-import { savePackage } from "@/services/packageService";
 
 interface DashboardSectionsManagerProps {
   userId: string;
@@ -18,9 +18,9 @@ interface DashboardSectionsManagerProps {
 }
 
 const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ userId, isAdmin, selectedUser }) => {
-  const { loading: subscriptionLoading, error: subscriptionError, fetchUserSubscription } = useSubscription();
-  const { sections, loading: sectionsLoading, error: sectionsError } = useDashboardSections();
-  const { packages, isLoading: packagesLoading, isError } = useSubscriptionPackages();
+  const { subscription, loading: subscriptionLoading, error: subscriptionError } = useSubscription(userId);
+  const { dashboardSections, isLoading: sectionsLoading, error: sectionsError } = useDashboardSections(userId);
+  const { packages, isLoading: packagesLoading, error: packagesError, refetch } = useSubscriptionPackages();
   
   const [selectedPackage, setSelectedPackage] = useState<string>("");
   const [currentPackageSections, setCurrentPackageSections] = useState<string[]>([]);
@@ -28,6 +28,7 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
   const [permissionError, setPermissionError] = useState<string>("");
   const [isSaving, setIsSaving] = useState<boolean>(false);
   
+  // Populate available dashboard sections
   useEffect(() => {
     const allSections = [
       'seo_optimization',
@@ -52,12 +53,14 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
     setAvailableSections(allSections);
   }, []);
   
+  // Set selected package when packages are loaded
   useEffect(() => {
     if (packages && packages.length > 0 && !selectedPackage) {
       setSelectedPackage(packages[0].id);
     }
   }, [packages, selectedPackage]);
   
+  // Load package sections when selected package changes
   useEffect(() => {
     if (selectedPackage && packages) {
       const pkg = packages.find(p => p.id === selectedPackage);
@@ -102,15 +105,16 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
         return;
       }
       
+      // Log for debugging
       console.log("Saving package with sections:", currentPackageSections);
       
-      // Ensure we have required properties for ISubscriptionPackage
-      const updatedPackage = {
+      // Update package with new sections
+      const updatedPackage: ISubscriptionPackage = {
         ...pkg,
-        dashboardSections: currentPackageSections,
-        paymentType: pkg.paymentType || 'recurring' // Ensure paymentType is defined
-      } as ISubscriptionPackage;
+        dashboardSections: currentPackageSections
+      };
       
+      // Log the updatedPackage to see what we're sending
       console.log("Updating package:", JSON.stringify(updatedPackage, null, 2));
       
       const savedPackage = await savePackage(updatedPackage);
@@ -123,10 +127,8 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
         variant: "default"
       });
       
-      // Attempt to refetch if available
-      if (typeof (useSubscriptionPackages as any).refetch === 'function') {
-        await (useSubscriptionPackages as any).refetch();
-      }
+      // Refresh packages
+      await refetch();
     } catch (error) {
       console.error("Error saving package sections:", error);
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -160,14 +162,14 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
             <div className="py-8 text-center text-muted-foreground">Loading dashboard sections...</div>
           ) : (
             <PackageSectionsList
-              packages={packages as unknown as ISubscriptionPackage[]}
+              packages={packages}
               selectedPackage={selectedPackage}
               setSelectedPackage={handleSelectPackage}
               packageSections={currentPackageSections}
               availableSections={availableSections}
               togglePackageSection={togglePackageSection}
               savePackageSections={savePackageSections}
-              refreshData={() => {}}
+              refreshData={refetch}
             />
           )}
         </CardContent>
