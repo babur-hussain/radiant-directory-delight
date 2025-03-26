@@ -1,173 +1,44 @@
-import React, { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from 'next/navigation';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { getAllUsers } from "@/services/userService";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Copy, Edit, Trash, User as UserIcon } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { toast } from "@/components/ui/use-toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import {
-  User,
-  UserRole,
-  normalizeRole
-} from "@/types/auth";
-import { cn } from "@/lib/utils";
-import { updateUser } from "@/services/userService";
-import { Loader2 } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Changed from next/navigation
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { User, UserRole, normalizeRole } from '@/types/auth';
+import { getAllUsers } from '@/features/auth/userDataAccess';
+import { updateUserRole } from '@/features/auth/roleManagement';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FileText, MoreHorizontal, Search, Trash2, UserPlus } from 'lucide-react';
+import UserDetailsPopup from '@/components/admin/UserDetailsPopup';
+import { useToast } from '@/hooks/use-toast'; // Fixed import
 
-interface UserDetailsPopupProps {
-  open: boolean;
-  onClose: () => void;
-  user: User;
-}
-
-const UserDetailsPopup: React.FC<UserDetailsPopupProps> = ({ open, onClose, user }) => {
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>User Details</DialogTitle>
-          <DialogDescription>
-            View detailed information about the selected user.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Name
-            </Label>
-            <Input type="text" id="name" value={user.name || "N/A"} readOnly className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="email" className="text-right">
-              Email
-            </Label>
-            <Input type="email" id="email" value={user.email || "N/A"} readOnly className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="role" className="text-right">
-              Role
-            </Label>
-            <Input type="text" id="role" value={user.role || "N/A"} readOnly className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="isAdmin" className="text-right">
-              Is Admin
-            </Label>
-            <Input
-              type="text"
-              id="isAdmin"
-              value={user.isAdmin ? "Yes" : "No"}
-              readOnly
-              className="col-span-3"
-            />
-          </div>
-          {/* Add more user details here as needed */}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-const AdminUsersPage: React.FC = () => {
-  const { user, isAuthenticated } = useAuth();
-  const router = useRouter();
+const AdminUsersPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('user');
+  const [userDetails, setUserDetails] = useState<User | null>(null);
   const [isUserDetailsOpen, setIsUserDetailsOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<UserRole>(normalizeRole('user'));
-  const [isRoleUpdateLoading, setIsRoleUpdateLoading] = useState(false);
-  const [isRoleUpdateSuccess, setIsRoleUpdateSuccess] = useState(false);
-  const [isRoleUpdateError, setIsRoleUpdateError] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalUsers, setTotalUsers] = useState(0);
-  const usersPerPage = 10;
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [newUserData, setNewUserData] = useState<Partial<User>>({});
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!isAuthenticated && !loading) {
-      router.push('/auth');
-    }
-  }, [isAuthenticated, loading, router]);
-
-  useEffect(() => {
-    const fetchUsers = async () => {
+    const loadUsers = async () => {
       setLoading(true);
       try {
-        const response = await getAllUsers();
-        setUsers(response);
+        const allUsers = await getAllUsers();
+        setUsers(allUsers);
       } catch (error) {
-        console.error("Error fetching users:", error);
+        console.error("Error loading users:", error);
         toast({
           title: "Error",
-          description: "Failed to fetch users. Please try again.",
+          description: "Failed to load users. Please try again.",
           variant: "destructive",
         });
       } finally {
@@ -175,35 +46,31 @@ const AdminUsersPage: React.FC = () => {
       }
     };
 
-    fetchUsers();
-  }, [toast]);
+    loadUsers();
+  }, []);
 
-  const handleViewDetails = (user: User) => {
-    setSelectedUser(user);
-    setIsUserDetailsOpen(true);
-  };
-
-  const handleRoleChange = async (user: User, newRole: UserRole) => {
-    setIsRoleUpdateLoading(true);
-    setIsRoleUpdateSuccess(false);
-    setIsRoleUpdateError(false);
-
+  const handleRoleChange = async (userId: string, newRole: UserRole) => {
     try {
-      // Optimistically update the user's role in the local state
-      setUsers((prevUsers) =>
-        prevUsers.map((u) =>
-          u.id === user.id ? { ...u, role: newRole } : u
+      const userToUpdate = users.find(user => user.id === userId);
+      if (!userToUpdate) {
+        console.error("User not found");
+        return;
+      }
+
+      // Optimistically update the UI
+      setUsers(prevUsers =>
+        prevUsers.map(user =>
+          user.id === userId ? { ...user, role: newRole } : user
         )
       );
 
-      // Call the updateUser function to update the user's role in the database
-      await updateUser(user.id, { role: newRole });
+      // Update the user role
+      await updateUserRole({ ...userToUpdate, role: newRole });
 
       toast({
         title: "Success",
-        description: `User role updated to ${newRole}.`,
+        description: `User role updated to ${newRole}`,
       });
-      setIsRoleUpdateSuccess(true);
     } catch (error) {
       console.error("Error updating user role:", error);
       toast({
@@ -211,223 +78,156 @@ const AdminUsersPage: React.FC = () => {
         description: "Failed to update user role. Please try again.",
         variant: "destructive",
       });
-      setIsRoleUpdateError(true);
-
-      // Revert the optimistic update if the API call fails
-      setUsers((prevUsers) =>
-        prevUsers.map((u) => (u.id === user.id ? { ...u, role: user.role } : u))
-      );
-    } finally {
-      setIsRoleUpdateLoading(false);
     }
   };
 
-  const handleDeleteUser = async (user: User) => {
-    // Implement delete user logic here
-    console.log("Delete user:", user);
-  };
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const filteredUsers = users.filter((user) => {
-    const searchTermLower = searchTerm.toLowerCase();
-    return (
-      user.name?.toLowerCase().includes(searchTermLower) ||
-      user.email?.toLowerCase().includes(searchTermLower)
-    );
+  const filteredUsers = users.filter(user => {
+    const searchMatch =
+      user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase());
+    const roleMatch = selectedRole === 'all' || user.role === selectedRole;
+    return searchMatch && roleMatch;
   });
 
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * usersPerPage,
-    currentPage * usersPerPage
-  );
-
-  const handlePageChange = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
+  const openUserDetails = (user: User) => {
+    setUserDetails(user);
+    setIsUserDetailsOpen(true);
   };
 
-  const getRoleBadge = (role: UserRole | undefined) => {
-    if (normalizeRole(role) === 'admin') {
-      return <Badge variant="destructive">Admin</Badge>;
-    } else if (normalizeRole(role) === 'business') {
-      return <Badge variant="secondary">Business</Badge>;
-    } else if (normalizeRole(role) === 'influencer') {
-      return <Badge className="bg-sky-500 text-white">Influencer</Badge>;
-    } else if (normalizeRole(role) === 'staff') {
-      return <Badge className="bg-orange-500 text-white">Staff</Badge>;
-    } else {
-      return <Badge>User</Badge>;
-    }
+  const closeUserDetails = () => {
+    setIsUserDetailsOpen(false);
+    setUserDetails(null);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-6">
-        <Loader2 className="h-6 w-6 animate-spin mr-2" />
-        <p>Loading users...</p>
-      </div>
-    );
-  }
+  const handleCreateUser = async () => {
+    setIsCreatingUser(true);
+    // Implement your create user logic here
+    setIsCreatingUser(false);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNewUserData(prev => ({ ...prev, [name]: value }));
+  };
 
   return (
-    <Card className="container mx-auto max-w-7xl p-6">
-      <CardHeader>
-        <CardTitle>Users</CardTitle>
-        <CardDescription>
-          Manage users and their roles.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4">
-          <div className="flex-1">
+    <DashboardLayout>
+      <div className="container mx-auto py-10">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-3xl font-bold">Manage Users</h1>
+          <Button onClick={() => navigate('/admin/create-user')}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Create User
+          </Button>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              type="text"
               placeholder="Search users..."
-              value={searchTerm}
-              onChange={handleSearchChange}
+              className="pl-8"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Select
+              value={selectedRole}
+              onValueChange={(value) => setSelectedRole(value as UserRole)}
+            >
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Roles</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="business">Business</SelectItem>
+                <SelectItem value="influencer">Influencer</SelectItem>
+                <SelectItem value="staff">Staff</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[50px]">Avatar</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">
-                    <Avatar>
-                      <AvatarImage src={user.photoURL} />
-                      <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                  </TableCell>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    {getRoleBadge(user.role)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleViewDetails(user)}>
-                          <UserIcon className="mr-2 h-4 w-4" />
-                          <span>View Details</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Edit className="mr-2 h-4 w-4" />
-                          <span>Edit</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuLabel>Update Role</DropdownMenuLabel>
-                        <DropdownMenuItem
-                          onClick={() => handleRoleChange(user, 'admin')}
-                          disabled={isRoleUpdateLoading}
-                        >
-                          Admin
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleRoleChange(user, 'business')}
-                          disabled={isRoleUpdateLoading}
-                        >
-                          Business
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleRoleChange(user, 'influencer')}
-                          disabled={isRoleUpdateLoading}
-                        >
-                          Influencer
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleRoleChange(user, 'staff')}
-                          disabled={isRoleUpdateLoading}
-                        >
-                          Staff
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleRoleChange(user, 'user')}
-                          disabled={isRoleUpdateLoading}
-                        >
-                          User
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>
-                          <Copy className="mr-2 h-4 w-4" />
-                          <span>Copy Info</span>
-                        </DropdownMenuItem>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem>
-                              <Trash className="mr-2 h-4 w-4" />
-                              <span>Delete</span>
-                            </DropdownMenuItem>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete{" "}
-                                {user.name} and remove their data from our servers.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteUser(user)}>
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="flex items-center justify-between space-x-2 py-2">
-          <Button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            variant="outline"
-          >
-            Previous
-          </Button>
-          <span>Page {currentPage}</span>
-          <Button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={paginatedUsers.length < usersPerPage}
-            variant="outline"
-          >
-            Next
-          </Button>
-        </div>
-      </CardContent>
 
-      {selectedUser && (
-        <UserDetailsPopup 
-          open={isUserDetailsOpen} 
-          onClose={() => setIsUserDetailsOpen(false)} 
-          user={selectedUser} 
-        />
-      )}
-    </Card>
+        {loading ? (
+          <p>Loading users...</p>
+        ) : (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50px]">#</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.map((user, index) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{index + 1}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Avatar>
+                          <AvatarImage src={user.photoURL} />
+                          <AvatarFallback>{user.name?.slice(0, 2)}</AvatarFallback>
+                        </Avatar>
+                        <span>{user.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{user.role}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Open menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => openUserDetails(user)}>
+                            <FileText className="mr-2 h-4 w-4" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleRoleChange(
+                                user.id,
+                                user.role === 'admin' ? 'user' : 'admin'
+                              )
+                            }
+                          >
+                            {user.role === 'admin' ? 'Revoke Admin' : 'Make Admin'}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete User
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
+
+      <UserDetailsPopup
+        isOpen={isUserDetailsOpen}
+        onClose={closeUserDetails}
+        user={userDetails}
+      />
+    </DashboardLayout>
   );
 };
 

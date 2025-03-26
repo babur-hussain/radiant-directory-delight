@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -12,7 +13,8 @@ const InfluencerDashboardPage = () => {
     return <AccessDenied message="Please log in to access your dashboard" />;
   }
 
-  if (normalizeRole(user?.role) === 'influencer' || normalizeRole(user?.role) === 'admin') {
+  const userRole = normalizeRole(user?.role);
+  if (userRole === 'influencer' || userRole === 'admin') {
     return (
       <DashboardLayout>
         <InfluencerDashboard userId={user.id} />

@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Business, ensureTagsArray } from '@/types/business';
+import { Business, ensureTagsArray, convertToCsvBusiness } from '@/types/business';
 import CategoryFilter from './businesses/CategoryFilter';
 import AdvancedFilters from './businesses/AdvancedFilters';
 import ActiveFilters from './businesses/ActiveFilters';
@@ -69,7 +69,7 @@ const FeaturedBusinesses = () => {
     
     if (selectedRating) {
       const minRating = parseInt(selectedRating.replace('+', ''));
-      if (business.rating < minRating) {
+      if ((business.rating || 0) < minRating) {
         return false;
       }
     }
@@ -117,6 +117,9 @@ const FeaturedBusinesses = () => {
     }
   }, [visibleCategory, selectedRating, selectedLocation]);
 
+  // Convert businesses to csv-utils format for BusinessGrid
+  const csvBusinesses = filteredBusinesses.map(convertToCsvBusiness);
+
   return (
     <section className="py-20 bg-gray-50">
       <div className="container max-w-7xl mx-auto px-4 sm:px-6">
@@ -161,7 +164,7 @@ const FeaturedBusinesses = () => {
             />
             
             <BusinessGrid 
-              businesses={filteredBusinesses} 
+              businesses={csvBusinesses} 
               resetFilters={resetFilters} 
               loading={false} 
             />

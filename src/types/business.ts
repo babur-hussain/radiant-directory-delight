@@ -9,7 +9,7 @@ export interface Business {
   email?: string;
   website?: string;
   image?: string;
-  hours?: string | Record<string, string>;
+  hours?: string | Record<string, string> | Record<string, any> | any;
   rating?: number;
   reviews?: number;
   featured?: boolean;
@@ -38,7 +38,7 @@ export const normalizeBusinessId = (id: string | number | undefined): string => 
 };
 
 // Helper to safely parse hours data
-export const parseBusinessHours = (hours: any): Record<string, string> | string => {
+export const parseBusinessHours = (hours: any): Record<string, string> | string | any => {
   if (!hours) return '';
   
   if (typeof hours === 'string') {
@@ -117,4 +117,15 @@ export const convertToBusinessType = (business: any): Business => {
     created_at: business.created_at || '',
     updated_at: business.updated_at || ''
   };
+};
+
+// Create a CSV-utils compatible Business type
+export type CsvUtilsBusiness = Omit<Business, 'id'> & { id: number };
+
+// Convert from our Business type to csv-utils Business type
+export const convertToCsvBusiness = (business: Business): CsvUtilsBusiness => {
+  return {
+    ...business,
+    id: typeof business.id === 'string' ? parseInt(business.id) : business.id
+  } as CsvUtilsBusiness;
 };
