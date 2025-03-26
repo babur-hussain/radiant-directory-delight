@@ -19,7 +19,7 @@ const ProtectedRoute = ({
   }
 
   // Check for required role
-  if (initialized && !loading && isAuthenticated && requireAdmin && user?.role !== 'admin') {
+  if (initialized && !loading && isAuthenticated && requireAdmin && user?.role !== 'Admin') {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
