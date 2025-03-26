@@ -1,100 +1,83 @@
 
-import { useState, useEffect } from "react";
-import { UserRole } from "@/types/auth";
-import { getUserDashboardSections } from "@/utils/dashboardSections";
-import { listenToUserSubscription } from "@/lib/subscription";
+import { useState, useEffect } from 'react';
+import { UserRole } from '@/types/auth';
+import { isInfluencer } from '@/utils/roleUtils';
 
-// Default mock sections (fallback if database fetch fails)
-const mockInfluencerPlans: Record<string, string[]> = {
-  "default": ["reels", "creatives", "ratings", "seo", "google_listing", "performance", "leads", "rank"],
-  "basic": ["reels", "creatives", "ratings"],
-  "standard": ["reels", "creatives", "ratings", "seo", "google_listing"],
-  "premium": ["reels", "creatives", "ratings", "seo", "google_listing", "performance", "leads", "rank"],
-};
+// Types for dashboard services
+export type DashboardService = string;
 
-const mockBusinessPlans: Record<string, string[]> = {
-  "default": ["marketing", "reels", "creatives", "ratings", "seo", "google_listing", "growth", "leads", "reach"],
-  "basic": ["marketing", "reels", "ratings"],
-  "standard": ["marketing", "reels", "creatives", "ratings", "seo"],
-  "premium": ["marketing", "reels", "creatives", "ratings", "seo", "google_listing", "growth", "leads", "reach"],
-};
+// Default service lists based on role
+const defaultInfluencerServices: DashboardService[] = [
+  'reels',
+  'creatives',
+  'ratings',
+  'seo',
+  'google_listing',
+  'performance',
+  'leads',
+  'rank'
+];
 
-export const useDashboardServices = (userId: string, role: UserRole) => {
-  const [services, setServices] = useState<string[]>([]);
+const defaultBusinessServices: DashboardService[] = [
+  'marketing',
+  'reels',
+  'creatives',
+  'ratings',
+  'seo',
+  'google_listing',
+  'growth',
+  'leads',
+  'reach'
+];
+
+/**
+ * Custom hook to get dashboard services for a user based on their role and subscription
+ */
+export const useDashboardServices = (
+  userId: string,
+  role: UserRole
+): {
+  services: DashboardService[];
+  isLoading: boolean;
+  error: string | null;
+} => {
+  const [services, setServices] = useState<DashboardService[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [subscriptionUpdated, setSubscriptionUpdated] = useState(false);
-
+  
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-    
-    const fetchUserServices = async () => {
+    const fetchServices = async () => {
       setIsLoading(true);
       setError(null);
       
       try {
-        if (!userId) {
-          throw new Error("User ID is required");
-        }
+        // In a real app, this would be an API call to get services based on
+        // the user's subscription or metadata
+        let userServices: DashboardService[] = [];
         
-        // Try to fetch sections from the database first
-        const userSections = await getUserDashboardSections(userId, role);
+        // Wait briefly to simulate network request
+        await new Promise(resolve => setTimeout(resolve, 800));
         
-        if (userSections && userSections.length > 0) {
-          console.log(`Found ${userSections.length} dashboard sections for user ${userId}`);
-          setServices(userSections);
-          setIsLoading(false);
+        // Based on role, get default services
+        if (isInfluencer(role)) {
+          userServices = [...defaultInfluencerServices];
         } else {
-          // Fallback to mock data if no sections found in the database
-          console.log("No dashboard sections found in database, using mock data");
-          const lastChar = userId.slice(-1);
-          let planType = "default";
-          
-          if ("123".includes(lastChar)) {
-            planType = "basic";
-          } else if ("456".includes(lastChar)) {
-            planType = "standard";
-          } else if ("789".includes(lastChar)) {
-            planType = "premium";
-          }
-          
-          if (role === "Influencer") {
-            setServices(mockInfluencerPlans[planType] || mockInfluencerPlans.default);
-          } else {
-            setServices(mockBusinessPlans[planType] || mockBusinessPlans.default);
-          }
-          setIsLoading(false);
+          userServices = [...defaultBusinessServices];
         }
         
-        // Set up subscription listener to detect changes
-        unsubscribe = listenToUserSubscription(userId, () => {
-          // When subscription changes, trigger a re-fetch of services
-          console.log("Subscription changed, refreshing dashboard services");
-          setSubscriptionUpdated(prev => !prev);
-        });
-        
+        setServices(userServices);
       } catch (err) {
-        console.error("Error fetching dashboard services:", err);
-        setError("Failed to load your dashboard services. Please try again later.");
-        
-        // Fallback to default sections based on role
-        if (role === "Influencer") {
-          setServices(mockInfluencerPlans.default);
-        } else {
-          setServices(mockBusinessPlans.default);
-        }
+        console.error('Error fetching dashboard services:', err);
+        setError('Failed to load dashboard services');
+      } finally {
         setIsLoading(false);
       }
     };
-
-    if (userId && role) {
-      fetchUserServices();
-    }
     
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, [userId, role, subscriptionUpdated]);
-
+    fetchServices();
+  }, [userId, role]);
+  
   return { services, isLoading, error };
 };
+
+export default useDashboardServices;

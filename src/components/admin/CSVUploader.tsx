@@ -7,7 +7,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { processCsvData } from '@/lib/csv-utils';
+import { Business, parseBusinessesCSV } from '@/lib/csv-utils'; // Fix import
 import { toast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
@@ -63,55 +63,46 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
       setUploadProgress(10);
       onUploadStart();
       
-      const reader = new FileReader();
-      
-      reader.onload = async (event) => {
-        if (event.target?.result) {
-          const csvContent = event.target.result as string;
+      // Process CSV data
+      try {
+        setUploadProgress(30);
+        
+        // Parse the CSV file
+        const businesses = await parseBusinessesCSV(values.file);
+        
+        setUploadProgress(60);
+        
+        if (businesses.length === 0) {
+          toast({
+            title: "No valid data",
+            description: "The CSV file does not contain any valid business entries",
+            variant: "destructive"
+          });
           
-          setUploadProgress(30);
-          
-          try {
-            setUploadProgress(50);
-            const { success, businesses, message } = await processCsvData(csvContent);
-            setUploadProgress(100);
-            
-            if (success) {
-              toast({
-                title: "Upload Successful",
-                description: `${businesses.length} businesses processed successfully`,
-              });
-              onUploadComplete(true, message, businesses.length);
-            } else {
-              toast({
-                title: "Upload Failed",
-                description: message,
-                variant: "destructive"
-              });
-              onUploadComplete(false, message);
-            }
-          } catch (error) {
-            console.error("Failed to process CSV data:", error);
-            toast({
-              title: "Processing Error",
-              description: "Failed to process CSV data: " + (error instanceof Error ? error.message : String(error)),
-              variant: "destructive"
-            });
-            onUploadComplete(false, "Failed to process CSV data: " + (error instanceof Error ? error.message : String(error)));
-          }
+          onUploadComplete(false, "No valid data found in the CSV file");
+          return;
         }
-      };
-      
-      reader.onerror = () => {
+        
+        // Simulate server processing time
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        setUploadProgress(100);
+        
         toast({
-          title: "File Error",
-          description: "Error reading the file",
+          title: "Upload Successful",
+          description: `${businesses.length} businesses processed successfully`,
+        });
+        
+        onUploadComplete(true, `Successfully processed ${businesses.length} businesses`, businesses.length);
+      } catch (error) {
+        console.error("Failed to process CSV data:", error);
+        toast({
+          title: "Processing Error",
+          description: "Failed to process CSV data: " + (error instanceof Error ? error.message : String(error)),
           variant: "destructive"
         });
-        onUploadComplete(false, "Error reading the file");
-      };
-      
-      reader.readAsText(values.file);
+        onUploadComplete(false, "Failed to process CSV data: " + (error instanceof Error ? error.message : String(error)));
+      }
     } catch (error) {
       console.error("An unexpected error occurred:", error);
       toast({

@@ -1,5 +1,29 @@
-
 export type UserRole = 'admin' | 'user' | 'business' | 'influencer' | 'staff';
+
+export const isSameRoleIgnoreCase = (role1: string | undefined, role2: string | undefined): boolean => {
+  if (!role1 || !role2) return false;
+  return role1.toLowerCase() === role2.toLowerCase();
+};
+
+export const normalizeRole = (role: string | undefined): UserRole => {
+  if (!role) return 'user';
+  
+  const normalizedRole = role.toLowerCase();
+  
+  switch (normalizedRole) {
+    case 'admin':
+      return 'admin';
+    case 'business':
+      return 'business';
+    case 'influencer':
+      return 'influencer';
+    case 'staff':
+      return 'staff';
+    case 'user':
+    default:
+      return 'user';
+  }
+};
 
 export interface User {
   id: string;
@@ -19,7 +43,6 @@ export interface User {
   phone?: string;
   provider?: string;
   
-  // Additional fields for different user types
   employeeCode?: string;
   employee_code?: string;
   city?: string;
@@ -27,13 +50,11 @@ export interface User {
   verified?: boolean;
   website?: string;
   
-  // Social media
   instagramHandle?: string;
   instagram_handle?: string;
   facebookHandle?: string;
   facebook_handle?: string;
   
-  // Address
   address?: {
     street?: string;
     city?: string;
@@ -42,13 +63,11 @@ export interface User {
     zipCode?: string;
   } | string;
   
-  // Influencer fields
   niche?: string;
   followersCount?: string;
   followers_count?: string;
   bio?: string;
   
-  // Business fields
   businessName?: string;
   business_name?: string;
   ownerName?: string;
@@ -58,7 +77,6 @@ export interface User {
   gstNumber?: string;
   gst_number?: string;
   
-  // Subscription related
   subscription?: string | Record<string, any>;
   subscription_id?: string;
   subscriptionId?: string;
@@ -69,41 +87,43 @@ export interface User {
   custom_dashboard_sections?: string[];
   customDashboardSections?: string[];
   
-  // For Razorpay integration
   fullName?: string;
 }
 
 export interface AuthContextType {
   user: User | null;
-  currentUser?: User | null; // Added for compatibility
+  currentUser?: User | null;
   isAuthenticated: boolean;
   isLoading?: boolean;
-  loading?: boolean; // Added for compatibility
-  initialized?: boolean; // Added for compatibility
+  loading?: boolean;
+  initialized?: boolean;
   error: Error | null;
   login: (email: string, password: string, employeeCode?: string) => Promise<void>;
-  loginWithGoogle?: () => Promise<void>; // Added for compatibility
+  loginWithGoogle?: () => Promise<void>;
   signup: (email: string, password: string, userData?: Partial<User>) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateUserProfile: (data: Partial<User>) => Promise<void>;
+  refreshUserData?: () => Promise<void>;
 }
 
-// Additional types for subscriptions
 export interface UserSubscription {
   id: string;
-  name: string;
-  status: string;
+  userId?: string;
+  packageId?: string;
+  packageName?: string;
+  status: SubscriptionStatus;
   startDate: string;
   endDate: string;
-  price: number;
-  packageId?: string;
-  userId?: string;
+  price?: number;
+  amount?: number;
+  paymentType?: string;
+  cancelledAt?: string;
+  cancelReason?: string;
 }
 
 export type SubscriptionStatus = 'active' | 'expired' | 'cancelled' | 'pending';
 
-// Type guard for UserSubscription
 export function isUserSubscription(obj: any): obj is UserSubscription {
   return (
     obj &&
@@ -113,7 +133,6 @@ export function isUserSubscription(obj: any): obj is UserSubscription {
   );
 }
 
-// Type for session data
 export interface SessionData {
   user: User | null;
   isAuthenticated: boolean;

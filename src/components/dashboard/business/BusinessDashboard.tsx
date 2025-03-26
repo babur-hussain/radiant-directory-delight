@@ -18,6 +18,7 @@ import MarketingCampaigns from "./widgets/MarketingCampaigns";
 import { useDashboardServices } from "@/hooks/useDashboardServices";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { isAdmin } from "@/utils/roleUtils";
 
 interface BusinessDashboardProps {
   userId: string;
@@ -28,7 +29,7 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ userId, subscript
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "Business");
+  const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "business");
   const { user } = useAuth();
   
   useEffect(() => {
@@ -88,10 +89,10 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ userId, subscript
   }
 
   // Check if user is admin - if so, they always have access regardless of subscription
-  const isAdmin = user?.role === "Admin" || user?.isAdmin;
+  const isUserAdmin = isAdmin(user?.role);
   
   // Check if subscription is active or if user is admin
-  const hasActiveSubscription = isAdmin || subscriptionStatus === "active";
+  const hasActiveSubscription = isUserAdmin || subscriptionStatus === "active";
 
   // If no active subscription and not admin
   if (!hasActiveSubscription) {
@@ -120,7 +121,7 @@ const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ userId, subscript
   
   return (
     <div className="space-y-6">
-      <DashboardWelcome role="Business" />
+      <DashboardWelcome role="business" />
       
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <Tabs defaultValue="all" className="w-full sm:w-auto">

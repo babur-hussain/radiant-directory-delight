@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +17,7 @@ import { useDashboardServices } from "@/hooks/useDashboardServices";
 import { useSubscription } from "@/hooks";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks";
+import { isAdmin } from "@/utils/roleUtils";
 
 interface InfluencerDashboardProps {
   userId: string;
@@ -28,65 +28,17 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
   const [subscriptionData, setSubscriptionData] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "Influencer");
+  const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "influencer");
   const { fetchUserSubscription, getUserDashboardFeatures } = useSubscription(userId);
   const { user } = useAuth();
   
-  useEffect(() => {
-    const fetchSubscription = async () => {
-      if (!userId) {
-        setIsLoading(false);
-        return;
-      }
-      
-      setIsLoading(true);
-      
-      try {
-        console.log(`InfluencerDashboard: Fetching subscription for user ${userId}`);
-        const result = await fetchUserSubscription(userId);
-        
-        if (result.success && result.data) {
-          console.log("InfluencerDashboard: Got subscription:", result.data);
-          setSubscriptionData(result.data);
-        } else {
-          console.log("InfluencerDashboard: No subscription found");
-          setSubscriptionData(null);
-        }
-      } catch (error) {
-        console.error("InfluencerDashboard: Error fetching subscription:", error);
-        setSubscriptionData(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchSubscription();
-  }, [userId, fetchUserSubscription]);
+  const isUserAdmin = isAdmin(user?.role);
   
-  const handleExportData = (format: string) => {
-    toast({
-      title: "Export initiated",
-      description: `Your data is being exported as ${format.toUpperCase()}`,
-      variant: "success",
-    });
-  };
-  
-  const handleRefreshData = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Data refreshed",
-        description: "Dashboard data has been updated",
-        variant: "success",
-      });
-    }, 1000);
-  };
+  const hasActiveSubscription = isUserAdmin || 
+    (subscriptionData && 
+      (subscriptionData.status === "active" || 
+       (typeof subscriptionData === 'object' && 'active' in subscriptionData && subscriptionData.active)));
 
-  const handleGetSubscription = () => {
-    navigate("/subscription");
-  };
-  
   if (isLoading || servicesLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -109,13 +61,6 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
       </div>
     );
   }
-
-  const isAdmin = user?.isAdmin || user?.role === "Admin";
-  
-  const hasActiveSubscription = isAdmin || 
-    (subscriptionData && 
-      (subscriptionData.status === "active" || 
-       (typeof subscriptionData === 'object' && 'active' in subscriptionData && subscriptionData.active)));
 
   if (!hasActiveSubscription) {
     return (
@@ -143,7 +88,7 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => 
   
   return (
     <div className="space-y-6">
-      <DashboardWelcome role="Influencer" />
+      <DashboardWelcome role="influencer" />
       
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <Tabs defaultValue="all" className="w-full sm:w-auto">

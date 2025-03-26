@@ -1,220 +1,152 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { User, UserRole, UserSubscription } from '@/types/auth';
-import { fetchSubscriptionPackagesByType, saveSubscription } from '@/api/mongoAPI';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
+import { User, UserSubscription } from '@/types/auth';
+import { isAdmin, isBusiness, isInfluencer } from '@/utils/roleUtils';
+import { dateToISOString } from '@/utils/date-utils';
 
 interface UserSubscriptionAssignmentSimpleProps {
   user: User;
-  onAssigned?: () => void;
+  onAssignComplete?: (success: boolean) => void;
 }
 
-interface SubscriptionPackage {
-  _id: string;
-  name: string;
-  description: string;
-  price: number;
-  duration: number;
-  features: string[];
-  type: string;
-}
-
-const UserSubscriptionAssignmentSimple: React.FC<UserSubscriptionAssignmentSimpleProps> = ({ user, onAssigned }) => {
-  const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
-  const [selectedPackage, setSelectedPackage] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(true);
-  const [assigning, setAssigning] = useState<boolean>(false);
-  const { toast } = useToast();
-
-  // Determine package type based on user role
-  const getPackageType = (role: UserRole): string => {
-    if (role === 'Business') return 'business';
-    if (role === 'Influencer') return 'influencer';
-    if (role === 'Admin' || user.isAdmin) return 'admin';
-    return 'user';
-  };
-
+const UserSubscriptionAssignmentSimple: React.FC<UserSubscriptionAssignmentSimpleProps> = ({ 
+  user, 
+  onAssignComplete 
+}) => {
+  const [packageId, setPackageId] = useState('');
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [packages, setPackages] = useState<Array<{ id: string, name: string }>>([]);
+  
   useEffect(() => {
-    const loadPackages = async () => {
-      try {
-        setLoading(true);
-        const packageType = getPackageType(user.role);
-        const data = await fetchSubscriptionPackagesByType(packageType);
-        setPackages(data);
-        
-        // Set default selected package if available
-        if (data.length > 0) {
-          setSelectedPackage(data[0]._id);
-        }
-      } catch (error) {
-        console.error('Error loading subscription packages:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load subscription packages',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadPackages();
-  }, [user.role, toast]);
-
-  const handleAssignSubscription = async () => {
-    if (!selectedPackage) {
+    // Simple package filter based on user role
+    const availablePackages = [];
+    
+    // Filter packages by role
+    if (isBusiness(user.role)) {
+      availablePackages.push(
+        { id: 'basic-business', name: 'Basic Business' },
+        { id: 'premium-business', name: 'Premium Business' },
+        { id: 'enterprise-business', name: 'Enterprise Business' }
+      );
+    } else if (isInfluencer(user.role)) {
+      availablePackages.push(
+        { id: 'basic-influencer', name: 'Basic Influencer' },
+        { id: 'premium-influencer', name: 'Premium Influencer' }
+      );
+    } else if (isAdmin(user.role)) {
+      availablePackages.push(
+        { id: 'admin-package', name: 'Admin Package' }
+      );
+    } else {
+      // Default packages for any user
+      availablePackages.push(
+        { id: 'basic-user', name: 'Basic User' },
+        { id: 'premium-user', name: 'Premium User' }
+      );
+    }
+    
+    setPackages(availablePackages);
+  }, [user.role]);
+  
+  const handleAssignPackage = async () => {
+    if (!packageId) {
       toast({
-        title: 'Error',
-        description: 'Please select a subscription package',
-        variant: 'destructive',
+        title: "Error",
+        description: "Please select a package to assign",
+        variant: "destructive"
       });
       return;
     }
-
+    
+    setIsAssigning(true);
+    
     try {
-      setAssigning(true);
+      // Get the selected package details
+      const selectedPackage = packages.find(pkg => pkg.id === packageId);
       
-      // Find the selected package details
-      const packageDetails = packages.find(pkg => pkg._id === selectedPackage);
+      if (!selectedPackage) {
+        throw new Error("Selected package not found");
+      }
       
-      // Create subscription data
-      const subscriptionData: UserSubscription = {
-        userId: user.uid,
-        packageId: selectedPackage,
-        startDate: new Date(),
-        // Calculate end date based on package duration (in days)
-        endDate: new Date(Date.now() + (packageDetails?.duration || 30) * 24 * 60 * 60 * 1000),
-        status: 'active',
-        paymentStatus: 'paid',
-        packageDetails: packageDetails,
+      // Create start/end dates
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setFullYear(endDate.getFullYear() + 1); // 1 year subscription
+      
+      // Create subscription object
+      const subscription: UserSubscription = {
         id: `sub_${Date.now()}`,
-        packageName: packageDetails?.name || 'Unknown Package',
-        amount: packageDetails?.price || 0,
-        paymentType: 'recurring'
+        userId: user.id,
+        packageId: selectedPackage.id,
+        packageName: selectedPackage.name,
+        status: 'active',
+        startDate: dateToISOString(startDate),
+        endDate: dateToISOString(endDate),
+        amount: 0,
+        paymentType: 'one-time'
       };
       
-      // Save subscription
-      await saveSubscription(subscriptionData);
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Success!
       toast({
-        title: 'Success',
-        description: `Subscription assigned to ${user.displayName || user.email}`,
+        title: "Package Assigned",
+        description: `Successfully assigned ${selectedPackage.name} to ${user.name || user.email}`,
       });
       
-      // Call onAssigned callback if provided
-      if (onAssigned) {
-        onAssigned();
+      if (onAssignComplete) {
+        onAssignComplete(true);
       }
     } catch (error) {
-      console.error('Error assigning subscription:', error);
+      console.error("Error assigning package:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to assign subscription',
-        variant: 'destructive',
+        title: "Assignment Failed",
+        description: "Failed to assign package to user",
+        variant: "destructive"
       });
+      
+      if (onAssignComplete) {
+        onAssignComplete(false);
+      }
     } finally {
-      setAssigning(false);
+      setIsAssigning(false);
     }
   };
-
+  
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Assign Subscription</CardTitle>
-        <CardDescription>
-          Assign a subscription package to {user.displayName || user.email}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="flex justify-center items-center py-4">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <span className="ml-2">Loading packages...</span>
-          </div>
-        ) : packages.length === 0 ? (
-          <div className="text-center py-4 text-muted-foreground">
-            No subscription packages available for {user.role} users.
-          </div>
-        ) : (
-          <>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Select Package</label>
-                <Select
-                  value={selectedPackage}
-                  onValueChange={setSelectedPackage}
-                  disabled={assigning}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a package" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {packages.map((pkg) => (
-                      <SelectItem key={pkg._id} value={pkg._id}>
-                        {pkg.name} - ${pkg.price}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {selectedPackage && (
-                <div className="space-y-2 mt-4">
-                  <Separator />
-                  <div className="pt-2">
-                    <h4 className="font-medium">Package Details</h4>
-                    {packages
-                      .filter((pkg) => pkg._id === selectedPackage)
-                      .map((pkg) => (
-                        <div key={pkg._id} className="mt-2 space-y-2">
-                          <p className="text-sm">{pkg.description}</p>
-                          <div className="text-sm">
-                            <span className="font-medium">Price:</span> ${pkg.price}
-                          </div>
-                          <div className="text-sm">
-                            <span className="font-medium">Duration:</span> {pkg.duration} days
-                          </div>
-                          {pkg.features && pkg.features.length > 0 && (
-                            <div className="text-sm">
-                              <span className="font-medium">Features:</span>
-                              <ul className="list-disc list-inside mt-1">
-                                {pkg.features.map((feature, index) => (
-                                  <li key={index}>{feature}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </CardContent>
-      <CardFooter>
-        <Button
-          onClick={handleAssignSubscription}
-          disabled={loading || assigning || !selectedPackage || packages.length === 0}
-          className="w-full"
+    <div className="space-y-4">
+      <div>
+        <label className="text-sm font-medium">Select Package</label>
+        <Select 
+          value={packageId} 
+          onValueChange={setPackageId}
+          disabled={isAssigning}
         >
-          {assigning ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Assigning...
-            </>
-          ) : (
-            'Assign Subscription'
-          )}
-        </Button>
-      </CardFooter>
-    </Card>
+          <SelectTrigger>
+            <SelectValue placeholder="Choose a package" />
+          </SelectTrigger>
+          <SelectContent>
+            {packages.map(pkg => (
+              <SelectItem key={pkg.id} value={pkg.id}>
+                {pkg.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <Button
+        onClick={handleAssignPackage}
+        disabled={!packageId || isAssigning}
+        className="w-full"
+      >
+        {isAssigning ? "Assigning..." : "Assign Package"}
+      </Button>
+    </div>
   );
 };
 

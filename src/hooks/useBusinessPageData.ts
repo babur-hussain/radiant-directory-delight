@@ -1,183 +1,153 @@
 
-import { useState, useEffect, useMemo } from 'react';
-import { Business } from '@/types/business';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { ensureTagsArray } from '@/types/business';
+import { Business, ensureTagsArray, parseHours, formatBusiness } from '@/lib/csv-utils';
+import { toast } from '@/hooks/use-toast';
 
-interface UseBusinessPageDataProps {
-  initialBusinesses?: Business[];
-  defaultCategory?: string;
-  defaultSearch?: string;
-  defaultFeaturedOnly?: boolean;
-  defaultRatingFilter?: number;
-}
-
-interface BusinessPageData {
-  businesses: Business[];
-  filteredBusinesses: Business[];
-  categories: string[];
-  tags: string[];
-  isLoading: boolean;
-  error: string | null;
-  category: string;
-  search: string;
-  featuredOnly: boolean;
-  ratingFilter: number;
-  setCategory: (category: string) => void;
-  setSearch: (search: string) => void;
-  setFeaturedOnly: (featured: boolean) => void;
-  setRatingFilter: (rating: number) => void;
-  clearAllFilters: () => void;
-  refreshData: () => Promise<void>;
-}
-
-const useBusinessPageData = ({
-  initialBusinesses = [],
-  defaultCategory = '',
-  defaultSearch = '',
-  defaultFeaturedOnly = false,
-  defaultRatingFilter = 0
-}: UseBusinessPageDataProps = {}): BusinessPageData => {
-  const [businesses, setBusinesses] = useState<Business[]>(initialBusinesses);
-  const [isLoading, setIsLoading] = useState(true);
+const useBusinessPageData = () => {
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [visibleCategory, setVisibleCategory] = useState<string | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<string>('rating');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   
-  // Filter state
-  const [category, setCategory] = useState(defaultCategory);
-  const [search, setSearch] = useState(defaultSearch);
-  const [featuredOnly, setFeaturedOnly] = useState(defaultFeaturedOnly);
-  const [ratingFilter, setRatingFilter] = useState(defaultRatingFilter);
-  
-  // Fetch businesses from Supabase
-  const fetchBusinesses = async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const { data, error } = await supabase
-        .from('businesses')
-        .select('*')
-        .order('name');
-      
-      if (error) throw error;
-      
-      // Convert data to Business type with proper tag handling
-      const formattedData = data?.map(business => ({
-        ...business,
-        tags: ensureTagsArray(business.tags),
-        rating: Number(business.rating) || 0,
-        reviews: Number(business.reviews) || 0
-      })) || [];
-      
-      setBusinesses(formattedData);
-    } catch (err) {
-      console.error('Error fetching businesses:', err);
-      setError('Failed to load businesses. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+  // Helper to ensure tags is always an array for operations
+  const ensureTags = (tags: string | string[] | null | undefined): string[] => {
+    return ensureTagsArray(tags);
   };
   
-  // Initial fetch
   useEffect(() => {
-    if (initialBusinesses.length === 0) {
-      fetchBusinesses();
-    } else {
-      setIsLoading(false);
-    }
-  }, []);
-  
-  // Extract all unique categories
-  const categories = useMemo(() => {
-    const allCategories = businesses.map(business => business.category || 'Uncategorized');
-    return ['All', ...Array.from(new Set(allCategories))];
-  }, [businesses]);
-  
-  // Extract all unique tags
-  const tags = useMemo(() => {
-    const allTags: string[] = [];
-    
-    businesses.forEach(business => {
-      const businessTags = ensureTagsArray(business.tags);
-      businessTags.forEach(tag => {
-        if (!allTags.includes(tag)) {
-          allTags.push(tag);
-        }
-      });
-    });
-    
-    return allTags.sort();
-  }, [businesses]);
-  
-  // Apply filters
-  const filteredBusinesses = useMemo(() => {
-    return businesses.filter(business => {
-      // Filter by category
-      if (category && category !== 'All' && business.category !== category) {
-        return false;
-      }
+    const fetchBusinesses = async () => {
+      setLoading(true);
+      setError(null);
       
-      // Filter by rating
-      if (ratingFilter > 0 && business.rating < ratingFilter) {
-        return false;
-      }
-      
-      // Filter by featured
-      if (featuredOnly && !business.featured) {
-        return false;
-      }
-      
-      // Filter by search term
-      if (search) {
-        const searchLower = search.toLowerCase();
-        const nameMatch = business.name.toLowerCase().includes(searchLower);
-        const descriptionMatch = (business.description || '').toLowerCase().includes(searchLower);
-        const categoryMatch = (business.category || '').toLowerCase().includes(searchLower);
+      try {
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('*')
+          .order(sortBy, { ascending: sortDirection === 'asc' });
         
-        // Check if search term is in tags
-        const tagsMatch = ensureTagsArray(business.tags).some(tag => 
-          tag.toLowerCase().includes(searchLower)
-        );
-        
-        if (!nameMatch && !descriptionMatch && !categoryMatch && !tagsMatch) {
-          return false;
+        if (error) {
+          throw error;
         }
+        
+        if (data) {
+          // Process the data and convert to Business type with proper tag handling
+          const formattedBusinesses: Business[] = data.map(item => ({
+            id: item.id,
+            name: item.name || '',
+            category: item.category || '',
+            description: item.description || '',
+            address: item.address || '',
+            phone: item.phone || '',
+            email: item.email || '',
+            website: item.website || '',
+            image: item.image || '',
+            hours: item.hours, // Will be parsed when accessed
+            rating: Number(item.rating) || 0,
+            reviews: Number(item.reviews) || 0,
+            featured: Boolean(item.featured),
+            tags: ensureTags(item.tags),
+            latitude: item.latitude || 0,
+            longitude: item.longitude || 0,
+            created_at: item.created_at || '',
+            updated_at: item.updated_at || ''
+          }));
+          
+          setBusinesses(formattedBusinesses);
+          
+          // Extract unique categories
+          const uniqueCategories = Array.from(new Set(
+            formattedBusinesses
+              .map(b => b.category)
+              .filter(Boolean)
+          ));
+          setCategories(uniqueCategories as string[]);
+          
+          // Extract all tags
+          const allTags: string[] = [];
+          formattedBusinesses.forEach(business => {
+            const businessTags = ensureTags(business.tags);
+            if (Array.isArray(businessTags)) {
+              businessTags.forEach(tag => {
+                if (!allTags.includes(tag)) {
+                  allTags.push(tag);
+                }
+              });
+            }
+          });
+          setTags(allTags);
+        }
+      } catch (err) {
+        console.error('Error fetching businesses:', err);
+        setError('Failed to load businesses. Please try again later.');
+        toast({
+          title: 'Error',
+          description: 'Failed to load businesses',
+          variant: 'destructive'
+        });
+      } finally {
+        setLoading(false);
       }
-      
-      return true;
-    });
-  }, [businesses, category, search, featuredOnly, ratingFilter]);
+    };
+    
+    fetchBusinesses();
+  }, [sortBy, sortDirection]);
   
-  // Clear all filters
-  const clearAllFilters = () => {
-    setCategory('');
-    setSearch('');
-    setFeaturedOnly(false);
-    setRatingFilter(0);
+  // Function to filter businesses by category
+  const filterByCategory = (category: string | null) => {
+    setVisibleCategory(category);
   };
   
-  // Refresh data
-  const refreshData = async () => {
-    await fetchBusinesses();
+  // Function to filter businesses by tags
+  const filterByTags = (tags: string[]) => {
+    setSelectedTags(tags);
+  };
+  
+  // Get filtered businesses
+  const getFilteredBusinesses = (): Business[] => {
+    let filtered = [...businesses];
+    
+    // Filter by category if selected
+    if (visibleCategory) {
+      filtered = filtered.filter(business => business.category === visibleCategory);
+    }
+    
+    // Filter by selected tags if any
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter(business => {
+        const businessTags = ensureTags(business.tags);
+        return selectedTags.some(tag => businessTags.includes(tag));
+      });
+    }
+    
+    return filtered;
+  };
+  
+  // Function to sort businesses
+  const sortBusinesses = (field: string, direction: 'asc' | 'desc') => {
+    setSortBy(field);
+    setSortDirection(direction);
   };
   
   return {
     businesses,
-    filteredBusinesses,
     categories,
     tags,
-    isLoading,
+    loading,
     error,
-    category,
-    search,
-    featuredOnly,
-    ratingFilter,
-    setCategory,
-    setSearch,
-    setFeaturedOnly,
-    setRatingFilter,
-    clearAllFilters,
-    refreshData
+    visibleCategory,
+    selectedTags,
+    filterByCategory,
+    filterByTags,
+    getFilteredBusinesses,
+    sortBusinesses,
+    sortBy,
+    sortDirection
   };
 };
 

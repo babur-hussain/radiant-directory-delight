@@ -1,10 +1,10 @@
-
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { UserRole } from "@/types/auth";
+import { isInfluencer, isBusiness } from "@/utils/roleUtils";
 import { 
   LayoutDashboard, 
   BarChart3, 
@@ -32,7 +32,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ userRole, onItemCli
   
   // Define navigation items based on user role
   const getNavItems = () => {
-    if (userRole === "Influencer") {
+    if (isInfluencer(userRole)) {
       return [
         {
           title: "Dashboard",
@@ -80,7 +80,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ userRole, onItemCli
           icon: <Award className="h-5 w-5" />,
         },
       ];
-    } else if (userRole === "Business") {
+    } else if (isBusiness(userRole)) {
       return [
         {
           title: "Dashboard",

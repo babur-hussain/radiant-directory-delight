@@ -1,12 +1,74 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { Business } from '@/types/business';
-import { ensureTagsArray, parseHours } from '@/types/business';
 import Papa from 'papaparse';
 import { toast } from '@/hooks/use-toast';
+import { Json } from '@/types/supabase';
 
-export { Business };  // Export Business for other modules to use
+export interface Business {
+  id: number;
+  name: string;
+  category?: string;
+  description?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  image?: string;
+  hours?: Record<string, string> | string | null;
+  rating: number;
+  reviews: number;
+  featured?: boolean;
+  tags: string[] | string;
+  latitude?: number;
+  longitude?: number;
+  created_at?: string;
+  updated_at?: string;
+}
 
-// CSV columns to headers mapping
+export const ensureTagsArray = (tags: string | string[] | null | undefined): string[] => {
+  if (!tags) return [];
+  if (Array.isArray(tags)) return tags;
+  return tags.split(',').map(tag => tag.trim());
+};
+
+export const parseHours = (hours: Json | null): Record<string, string> | null => {
+  if (!hours) return null;
+  
+  try {
+    if (typeof hours === 'string') {
+      return JSON.parse(hours) as Record<string, string>;
+    } else if (typeof hours === 'object') {
+      return hours as Record<string, string>;
+    }
+  } catch (e) {
+    console.error('Error parsing hours:', e);
+  }
+  
+  return null;
+};
+
+export const formatBusiness = (data: any): Business => {
+  return {
+    id: data.id,
+    name: data.name || '',
+    category: data.category || '',
+    description: data.description || '',
+    address: data.address || '',
+    phone: data.phone || '',
+    email: data.email || '',
+    website: data.website || '',
+    image: data.image || '',
+    hours: data.hours,
+    rating: Number(data.rating) || 0,
+    reviews: Number(data.reviews) || 0,
+    featured: Boolean(data.featured),
+    tags: data.tags || [],
+    latitude: data.latitude || 0,
+    longitude: data.longitude || 0,
+    created_at: data.created_at,
+    updated_at: data.updated_at
+  };
+};
+
 const CSV_HEADERS = {
   name: 'Name',
   category: 'Category',
@@ -25,25 +87,19 @@ const CSV_HEADERS = {
   longitude: 'Longitude'
 };
 
-// Helper to convert CSV row to business object
 export const csvRowToBusiness = (row: Record<string, string>): Business => {
-  // Convert string 'true'/'false' to boolean
   const featured = row[CSV_HEADERS.featured]?.toLowerCase() === 'true';
   
-  // Convert rating and reviews to numbers
   const rating = parseFloat(row[CSV_HEADERS.rating]) || 0;
   const reviews = parseInt(row[CSV_HEADERS.reviews]) || 0;
   
-  // Handle tags - split by comma if it's a string
   const tags = row[CSV_HEADERS.tags] ? row[CSV_HEADERS.tags].split(',').map(tag => tag.trim()) : [];
   
-  // Parse coordinates if provided
   const latitude = row[CSV_HEADERS.latitude] ? parseFloat(row[CSV_HEADERS.latitude]) : undefined;
   const longitude = row[CSV_HEADERS.longitude] ? parseFloat(row[CSV_HEADERS.longitude]) : undefined;
   
-  // hours can be JSON string or object, we'll keep it as string for now
   return {
-    id: 0, // Will be assigned by the database
+    id: 0,
     name: row[CSV_HEADERS.name] || '',
     category: row[CSV_HEADERS.category] || '',
     description: row[CSV_HEADERS.description] || '',
@@ -64,16 +120,13 @@ export const csvRowToBusiness = (row: Record<string, string>): Business => {
   };
 };
 
-// Helper to prepare a business object for Supabase insert/update
 const prepareBusinessForDb = (business: Business) => {
   const preparedBusiness: any = { ...business };
   
-  // Ensure tags is always an array in the database
   if (typeof preparedBusiness.tags === 'string') {
     preparedBusiness.tags = ensureTagsArray(preparedBusiness.tags);
   }
   
-  // Convert hours to a string if it's an object
   if (preparedBusiness.hours && typeof preparedBusiness.hours === 'object') {
     preparedBusiness.hours = JSON.stringify(preparedBusiness.hours);
   }
@@ -81,7 +134,6 @@ const prepareBusinessForDb = (business: Business) => {
   return preparedBusiness;
 };
 
-// Parse CSV file and convert to Business objects
 export const parseBusinessesCSV = (file: File): Promise<Business[]> => {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
@@ -90,7 +142,7 @@ export const parseBusinessesCSV = (file: File): Promise<Business[]> => {
       complete: (results) => {
         try {
           const businesses: Business[] = results.data
-            .filter((row: any) => row[CSV_HEADERS.name]) // Skip rows without a name
+            .filter((row: any) => row[CSV_HEADERS.name])
             .map((row: any) => csvRowToBusiness(row));
           resolve(businesses);
         } catch (error) {
@@ -104,23 +156,19 @@ export const parseBusinessesCSV = (file: File): Promise<Business[]> => {
   });
 };
 
-// Generate CSV template with headers
 export const generateCSVTemplate = (): string => {
   const headers = Object.values(CSV_HEADERS);
   return Papa.unparse([headers.reduce((obj, header, i) => ({ ...obj, [header]: '' }), {})]);
 };
 
-// Upload businesses to Supabase
 export const uploadBusinessesCSV = async (businesses: Business[]): Promise<Business[]> => {
   try {
     const insertedBusinesses: Business[] = [];
     
-    // Process in small batches to avoid API limits
     const batchSize = 10;
     for (let i = 0; i < businesses.length; i += batchSize) {
       const batch = businesses.slice(i, i + batchSize);
       
-      // Prepare each business for database insertion
       const preparedBatch = batch.map(business => prepareBusinessForDb(business));
       
       const { data, error } = await supabase
@@ -145,18 +193,96 @@ export const uploadBusinessesCSV = async (businesses: Business[]): Promise<Busin
   }
 };
 
-// Update existing businesses from CSV
+export const processCsvData = async (csvContent: string): Promise<{
+  success: boolean;
+  businesses: Business[];
+  message: string;
+}> => {
+  try {
+    const businesses: Business[] = [];
+    
+    const results = Papa.parse(csvContent, {
+      header: true,
+      skipEmptyLines: true
+    });
+    
+    if (results.errors.length > 0) {
+      return {
+        success: false,
+        businesses: [],
+        message: `CSV parsing error: ${results.errors[0].message}`
+      };
+    }
+    
+    results.data.forEach((row: any) => {
+      if (row.name) {
+        businesses.push(csvRowToBusiness(row));
+      }
+    });
+    
+    if (businesses.length === 0) {
+      return {
+        success: false,
+        businesses: [],
+        message: 'No valid business entries found in the CSV file'
+      };
+    }
+    
+    const insertedBusinesses = await uploadBusinessesCSV(businesses);
+    
+    return {
+      success: true,
+      businesses: insertedBusinesses,
+      message: `Successfully processed ${insertedBusinesses.length} businesses`
+    };
+  } catch (error) {
+    console.error('Error processing CSV data:', error);
+    return {
+      success: false,
+      businesses: [],
+      message: `Error processing CSV data: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
+};
+
+export const getAllBusinesses = (): Business[] => {
+  try {
+    const mockBusinesses: Business[] = [
+      {
+        id: 1,
+        name: "Example Business",
+        category: "Retail",
+        description: "An example business for testing",
+        address: "123 Main St, City, Country",
+        phone: "123-456-7890",
+        email: "example@business.com",
+        rating: 4.5,
+        reviews: 12,
+        featured: true,
+        tags: ["retail", "example"],
+      },
+    ];
+    
+    return mockBusinesses;
+  } catch (error) {
+    console.error("Error getting businesses:", error);
+    return [];
+  }
+};
+
+export const initializeData = (): void => {
+  console.log("Initializing business data...");
+};
+
 export const updateBusinessesFromCSV = async (businesses: Business[]): Promise<Business[]> => {
   try {
     const updatedBusinesses: Business[] = [];
     
-    // Process in small batches
     const batchSize = 10;
     for (let i = 0; i < businesses.length; i += batchSize) {
       const batch = businesses.slice(i, i + batchSize);
       
       for (const business of batch) {
-        // Skip items without ID
         if (!business.id) {
           console.warn('Skipping update for business without ID:', business.name);
           continue;
@@ -172,7 +298,7 @@ export const updateBusinessesFromCSV = async (businesses: Business[]): Promise<B
         
         if (error) {
           console.error(`Error updating business ${business.id}:`, error);
-          continue; // Skip to next business
+          continue;
         }
         
         if (data && data.length > 0) {
@@ -188,27 +314,22 @@ export const updateBusinessesFromCSV = async (businesses: Business[]): Promise<B
   }
 };
 
-// Get all headers for CSV export
 export const getBusinessesCSVHeaders = (): string[] => {
   return Object.values(CSV_HEADERS);
 };
 
-// Convert businesses to CSV format
 export const convertBusinessesToCSV = (businesses: Business[]): string => {
   const rows = businesses.map(business => {
     const row: Record<string, any> = {};
     
-    // Map each business field to its CSV header
     Object.entries(CSV_HEADERS).forEach(([field, header]) => {
       const key = field as keyof Business;
       let value = business[key];
       
-      // Special handling for arrays (tags)
       if (field === 'tags' && Array.isArray(business.tags)) {
         value = (business.tags as string[]).join(', ');
       }
       
-      // Special handling for objects (hours)
       if (field === 'hours' && typeof business.hours === 'object' && business.hours !== null) {
         value = JSON.stringify(business.hours);
       }

@@ -1,15 +1,16 @@
 
 import { useState, useEffect } from 'react';
-import { getAllBusinesses } from '@/lib/csv-utils';
+import { Business } from '@/lib/csv-utils'; // Updated import 
 import CategoryFilter from './businesses/CategoryFilter';
 import AdvancedFilters from './businesses/AdvancedFilters';
 import ActiveFilters from './businesses/ActiveFilters';
 import BusinessGrid from './businesses/BusinessGrid';
 import Loading from './ui/loading';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const FeaturedBusinesses = () => {
-  const [businesses, setBusinesses] = useState([]);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
   const [visibleCategory, setVisibleCategory] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedRating, setSelectedRating] = useState<string | null>(null);
@@ -21,18 +22,42 @@ const FeaturedBusinesses = () => {
     const loadBusinesses = async () => {
       setLoading(true);
       try {
-        // Simulate network delay for loading state demonstration
-        setTimeout(() => {
-          // Get businesses from the utility function that combines original and uploaded businesses
-          // getAllBusinesses now returns businesses sorted by priority
-          const allBusinesses = getAllBusinesses();
+        // Fetch featured businesses from Supabase
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('*')
+          .eq('featured', true)
+          .order('rating', { ascending: false })
+          .limit(6);
           
-          // Filter to featured businesses and take the first 6
-          // Priority sorting is already applied by getAllBusinesses
-          const featuredBusinesses = allBusinesses.filter(b => b.featured).slice(0, 6);
-          setBusinesses(featuredBusinesses);
-          setLoading(false);
-        }, 800);
+        if (error) {
+          throw error;
+        }
+        
+        // Convert to our Business type
+        const featuredBusinesses: Business[] = data.map(item => ({
+          id: item.id,
+          name: item.name || '',
+          category: item.category || '',
+          description: item.description || '',
+          address: item.address || '',
+          phone: item.phone || '',
+          email: item.email || '',
+          website: item.website || '',
+          image: item.image || '',
+          hours: item.hours,
+          rating: Number(item.rating) || 0,
+          reviews: Number(item.reviews) || 0,
+          featured: Boolean(item.featured),
+          tags: item.tags || [],
+          latitude: item.latitude || 0,
+          longitude: item.longitude || 0,
+          created_at: item.created_at || '',
+          updated_at: item.updated_at || ''
+        }));
+        
+        setBusinesses(featuredBusinesses);
+        setLoading(false);
       } catch (error) {
         console.error("Error loading businesses:", error);
         toast({
@@ -51,8 +76,8 @@ const FeaturedBusinesses = () => {
   
   // Extract unique locations (cities) from business addresses
   const locations = Array.from(new Set(businesses.map(b => {
-    const parts = b.address.split(',');
-    return parts.length > 1 ? parts[1].trim() : parts[0].trim();
+    const parts = b.address?.split(',') || [];
+    return parts.length > 1 ? parts[1].trim() : parts[0]?.trim() || '';
   })));
   
   // Filter businesses based on all selected filters
@@ -72,8 +97,8 @@ const FeaturedBusinesses = () => {
     
     // Location filter
     if (selectedLocation) {
-      const businessLocation = business.address.split(',');
-      const cityPart = businessLocation.length > 1 ? businessLocation[1].trim() : businessLocation[0].trim();
+      const businessLocation = business.address?.split(',') || [];
+      const cityPart = businessLocation.length > 1 ? businessLocation[1].trim() : businessLocation[0]?.trim() || '';
       if (cityPart !== selectedLocation) {
         return false;
       }
