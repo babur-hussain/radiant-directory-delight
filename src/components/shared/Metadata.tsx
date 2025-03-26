@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { Helmet } from 'react-helmet';
 
 interface MetadataProps {
@@ -6,14 +7,13 @@ interface MetadataProps {
   description: string;
 }
 
-export const Metadata = ({ title, description }: MetadataProps) => {
+export const Metadata: React.FC<MetadataProps> = ({ title, description }) => {
   return (
     <Helmet>
       <title>{title}</title>
       <meta name="description" content={description} />
-      <meta property="og:title" content={title} />
-      <meta property="og:description" content={description} />
     </Helmet>
   );
 };
 
+export default Metadata;

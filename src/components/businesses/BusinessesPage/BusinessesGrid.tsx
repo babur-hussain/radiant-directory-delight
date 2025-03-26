@@ -1,15 +1,14 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Star, MapPin, Phone, ChevronDown, ChevronUp } from "lucide-react";
+import { Star, MapPin, Phone } from "lucide-react";
 import { Business, ensureTagsArray } from "@/lib/csv-utils";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { createGoogleSearchUrl } from "@/lib/utils";
 
 interface BusinessesGridProps {
   businesses: Business[];
-  clearAllFilters: () => void;
+  clearAllFilters?: () => void;
 }
 
 const BusinessesGrid: React.FC<BusinessesGridProps> = ({ businesses, clearAllFilters }) => {
@@ -18,13 +17,15 @@ const BusinessesGrid: React.FC<BusinessesGridProps> = ({ businesses, clearAllFil
       <div className="text-center py-12 bg-gray-50 rounded-lg mb-12">
         <h3 className="text-xl font-medium text-gray-900 mb-2">No businesses found</h3>
         <p className="text-gray-600">Try adjusting your search or filters to find what you're looking for.</p>
-        <Button 
-          variant="outline" 
-          className="mt-4"
-          onClick={clearAllFilters}
-        >
-          Clear All Filters
-        </Button>
+        {clearAllFilters && (
+          <Button 
+            variant="outline" 
+            className="mt-4"
+            onClick={clearAllFilters}
+          >
+            Clear All Filters
+          </Button>
+        )}
       </div>
     );
   }
@@ -80,11 +81,6 @@ const BusinessesGrid: React.FC<BusinessesGridProps> = ({ businesses, clearAllFil
               <Phone className="h-4 w-4 mr-1 shrink-0" />
               <span>{business.phone}</span>
             </div>
-            
-            {/* Collapsible Tags Section */}
-            {ensureTagsArray(business.tags).length > 0 && (
-              <CollapsibleTagsSection tags={ensureTagsArray(business.tags)} />
-            )}
           </CardContent>
           
           <CardFooter className="pt-2">
@@ -100,52 +96,6 @@ const BusinessesGrid: React.FC<BusinessesGridProps> = ({ businesses, clearAllFil
           </CardFooter>
         </Card>
       ))}
-    </div>
-  );
-};
-
-interface CollapsibleTagsSectionProps {
-  tags: string[];
-}
-
-const CollapsibleTagsSection: React.FC<CollapsibleTagsSectionProps> = ({ tags }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const maxVisibleTags = 3;
-  const hasMoreTags = tags.length > maxVisibleTags;
-
-  return (
-    <div className="mt-3">
-      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-2">
-        <div className="flex flex-wrap gap-1">
-          {tags.slice(0, maxVisibleTags).map((tag, index) => (
-            <span key={index} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-              {tag}
-            </span>
-          ))}
-          
-          {hasMoreTags && (
-            <CollapsibleTrigger asChild>
-              <button className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 underline">
-                {isOpen ? (
-                  <>Show Less <ChevronUp className="h-3 w-3" /></>
-                ) : (
-                  <>Show All ({tags.length}) <ChevronDown className="h-3 w-3" /></>
-                )}
-              </button>
-            </CollapsibleTrigger>
-          )}
-        </div>
-        
-        <CollapsibleContent>
-          <div className="flex flex-wrap gap-1 pt-1">
-            {tags.slice(maxVisibleTags).map((tag, index) => (
-              <span key={index} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                {tag}
-              </span>
-            ))}
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
     </div>
   );
 };
