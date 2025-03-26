@@ -1,5 +1,6 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import Index from './pages/Index';
 import BusinessesPage from './pages/BusinessesPage';
@@ -31,8 +32,19 @@ import AuthCallbackPage from './pages/AuthCallbackPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const AppRoutes = () => {
+  const location = useLocation();
+  
   // Log current pathname for debugging
-  console.log("AppRoutes rendering with path:", window.location.pathname);
+  useEffect(() => {
+    console.log("AppRoutes mounted with path:", location.pathname);
+    console.log("Search params:", location.search);
+    console.log("Hash:", location.hash);
+    
+    // Log when route changes
+    return () => {
+      console.log("Route changed from:", location.pathname);
+    };
+  }, [location.pathname, location.search, location.hash]);
   
   return (
     <Routes>
