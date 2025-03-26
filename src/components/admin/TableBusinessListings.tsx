@@ -15,15 +15,15 @@ import {
 } from '@/components/ui/table';
 import CSVUploadDialog from './CSVUploadDialog';
 import BusinessTableRow from './table/BusinessTableRow';
-import { Business, normalizeBusinessId } from '@/types/business';
+import { Business, convertToCsvBusiness, toNumberId } from '@/types/business';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface IBusiness {
   id: number;
   name: string;
-  category?: string;
-  description?: string;
+  category: string;
+  description: string;
   address?: string;
   phone?: string;
   rating?: number;
@@ -46,10 +46,10 @@ interface TableBusinessListingsProps {
 
 const convertToIBusiness = (business: Business): IBusiness => {
   return {
-    id: typeof business.id === 'number' ? business.id : parseInt(normalizeBusinessId(business.id), 10),
+    id: typeof business.id === 'number' ? business.id : parseInt(business.id as string, 10),
     name: business.name,
-    category: business.category,
-    description: business.description,
+    category: business.category || '',
+    description: business.description || '',
     address: business.address,
     phone: business.phone,
     rating: business.rating,
@@ -131,7 +131,7 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
     try {
       setIsSubmitting(true);
       
-      const id = typeof businessId === 'string' ? parseInt(businessId, 10) : businessId;
+      const id = toNumberId(businessId);
       
       const { error } = await supabase
         .from('businesses')

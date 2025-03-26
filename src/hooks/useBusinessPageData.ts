@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Business, ensureTagsArray, parseHours, formatBusiness } from '@/lib/csv-utils';
@@ -36,7 +35,7 @@ const useBusinessPageData = () => {
         }
         
         if (data) {
-          // Process the data and convert to Business type with proper tag handling
+          // Process the data and convert to Business type with proper hours handling
           const formattedBusinesses: Business[] = data.map(item => ({
             id: item.id,
             name: item.name || '',
@@ -47,11 +46,11 @@ const useBusinessPageData = () => {
             email: item.email || '',
             website: item.website || '',
             image: item.image || '',
-            hours: item.hours, // Will be parsed when accessed
+            hours: parseHours(item.hours), // Use the parseBusinessHours helper
             rating: Number(item.rating) || 0,
             reviews: Number(item.reviews) || 0,
             featured: Boolean(item.featured),
-            tags: ensureTags(item.tags),
+            tags: ensureTagsArray(item.tags),
             latitude: item.latitude || 0,
             longitude: item.longitude || 0,
             created_at: item.created_at || '',

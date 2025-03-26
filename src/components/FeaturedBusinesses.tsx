@@ -118,7 +118,7 @@ const FeaturedBusinesses = () => {
   }, [visibleCategory, selectedRating, selectedLocation]);
 
   // Convert businesses to csv-utils format for BusinessGrid
-  const csvBusinesses = filteredBusinesses.map(convertToCsvBusiness);
+  const csvBusinesses = filteredBusinesses.map(business => convertToCsvBusiness(business));
 
   return (
     <section className="py-20 bg-gray-50">
@@ -164,7 +164,7 @@ const FeaturedBusinesses = () => {
             />
             
             <BusinessGrid 
-              businesses={csvBusinesses} 
+              businesses={csvBusinesses}
               resetFilters={resetFilters} 
               loading={false} 
             />

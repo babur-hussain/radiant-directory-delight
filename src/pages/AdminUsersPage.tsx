@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Changed from next/navigation
+import { useNavigate } from 'react-router-dom'; // Changed from next/navigation to react-router-dom
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,13 +14,13 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, MoreHorizontal, Search, Trash2, UserPlus } from 'lucide-react';
 import UserDetailsPopup from '@/components/admin/UserDetailsPopup';
-import { useToast } from '@/hooks/use-toast'; // Fixed import
+import { useToast } from '@/components/ui/use-toast'; // Fixed import
 
 const AdminUsersPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('user');
+  const [selectedRole, setSelectedRole] = useState<UserRole | 'all'>('user');
   const [userDetails, setUserDetails] = useState<User | null>(null);
   const [isUserDetailsOpen, setIsUserDetailsOpen] = useState(false);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
@@ -85,7 +85,7 @@ const AdminUsersPage = () => {
     const searchMatch =
       user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchQuery.toLowerCase());
-    const roleMatch = selectedRole === 'all' || user.role === selectedRole;
+    const roleMatch = selectedRole === 'all' || normalizeRole(user.role) === selectedRole;
     return searchMatch && roleMatch;
   });
 
@@ -223,7 +223,7 @@ const AdminUsersPage = () => {
       </div>
 
       <UserDetailsPopup
-        isOpen={isUserDetailsOpen}
+        open={isUserDetailsOpen}
         onClose={closeUserDetails}
         user={userDetails}
       />

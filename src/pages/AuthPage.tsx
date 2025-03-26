@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -50,15 +51,13 @@ const AuthPage = () => {
         role: normalizeRole(data.role) // Normalize the role
       };
       
-      const user = await signup(
+      await signup(
         data.email,
         data.password,
         userData
       );
       
-      if (user) {
-        navigate(redirectPath || '/');
-      }
+      navigate(redirectPath || '/');
     } catch (error: any) {
       console.error("Signup failed:", error);
       setSignupError(error.message || 'Signup failed');
@@ -106,7 +105,7 @@ const AuthPage = () => {
               </TabsList>
               <TabsContent value="login">
                 <LoginForm
-                  onSubmit={handleLoginSubmit}
+                  handleSubmit={handleLoginSubmit}
                   isSubmitting={isSubmitting}
                   error={loginError}
                   onResetPassword={() => setShowResetPassword(true)}
@@ -114,7 +113,7 @@ const AuthPage = () => {
               </TabsContent>
               <TabsContent value="register">
                 <RegisterForm
-                  onSubmit={handleSignupSubmit}
+                  handleSubmit={handleSignupSubmit}
                   isSubmitting={isSubmitting}
                   error={signupError}
                 />
@@ -122,7 +121,7 @@ const AuthPage = () => {
             </Tabs>
           ) : (
             <ResetPasswordForm
-              onSubmit={handleResetPassword}
+              handleSubmit={handleResetPassword}
               isSubmitting={isSubmitting}
               error={resetError}
               emailSent={resetEmailSent}

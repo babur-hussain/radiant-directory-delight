@@ -1,4 +1,3 @@
-
 export interface Business {
   id: number | string;
   name: string;
@@ -119,13 +118,31 @@ export const convertToBusinessType = (business: any): Business => {
   };
 };
 
-// Create a CSV-utils compatible Business type
-export type CsvUtilsBusiness = Omit<Business, 'id'> & { id: number };
+// Create a CSV-utils compatible Business type that makes all fields optional except id and name
+export type CsvUtilsBusiness = Omit<Business, 'id'> & { 
+  id: number;
+  name: string;
+  category: string;
+  description: string;
+};
 
 // Convert from our Business type to csv-utils Business type
 export const convertToCsvBusiness = (business: Business): CsvUtilsBusiness => {
   return {
     ...business,
-    id: typeof business.id === 'string' ? parseInt(business.id) : business.id
+    id: typeof business.id === 'string' ? parseInt(business.id) : (business.id as number),
+    name: business.name || '',
+    category: business.category || '',
+    description: business.description || ''
   } as CsvUtilsBusiness;
+};
+
+// Helper for type checking in arguments
+export const isNumberId = (id: string | number): boolean => {
+  return typeof id === 'number' || !isNaN(parseInt(id as string));
+};
+
+// Convert string/number id to number for components expecting number ids
+export const toNumberId = (id: string | number): number => {
+  return typeof id === 'number' ? id : parseInt(id);
 };

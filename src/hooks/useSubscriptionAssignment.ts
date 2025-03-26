@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User, UserSubscription, SubscriptionStatus } from '@/types/auth';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
@@ -55,7 +54,7 @@ export const useSubscriptionAssignment = (
             endDate: data.end_date,
             status: data.status as SubscriptionStatus,
             paymentMethod: data.payment_method,
-            transactionId: data.transaction_id,
+            transaction_id: data.transaction_id,
             cancelledAt: data.cancelled_at,
             cancelReason: data.cancel_reason,
             paymentType: data.payment_type as PaymentType
