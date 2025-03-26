@@ -1,6 +1,7 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@/types/auth';
+import { User, normalizeRole } from '@/types/auth';
 
 interface UseSupabaseUsersReturn {
   users: User[];

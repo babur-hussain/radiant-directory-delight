@@ -1,5 +1,5 @@
 
-export type UserRole = 'admin' | 'user' | 'business' | 'influencer' | 'staff';
+export type UserRole = 'admin' | 'user' | 'business' | 'influencer' | 'staff' | null;
 
 export type ExtendedUserRole = UserRole | 'Admin' | 'User' | 'Business' | 'Influencer' | 'Staff';
 
@@ -71,6 +71,7 @@ export const isUserRole = (role: string | undefined | null, targetRole: string):
   return role.toLowerCase() === targetRole.toLowerCase();
 };
 
+// Add missing fields
 export interface User {
   id: string;
   uid?: string;
@@ -135,6 +136,7 @@ export interface User {
   
   fullName?: string;
   userMetadata?: Record<string, any>;
+  appMetadata?: Record<string, any>;
 }
 
 export interface AuthContextType {
@@ -168,6 +170,8 @@ export interface UserSubscription {
   paymentMethod?: string;
   cancelledAt?: string;
   cancelReason?: string;
+  transactionId?: string;
+  transaction_id?: string;
 }
 
 export type SubscriptionStatus = 'active' | 'expired' | 'cancelled' | 'pending';

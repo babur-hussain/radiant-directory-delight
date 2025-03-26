@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -9,12 +10,14 @@ import { useToast } from '@/components/ui/use-toast';
 import { UserRole, normalizeRole } from '@/types/auth';
 
 interface RegisterFormProps {
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit?: (data: any) => Promise<void>;
+  handleSubmit?: (data: any) => Promise<void>;
+  onSignup?: (email: string, password: string, name: string, role: UserRole, additionalData?: any) => Promise<void>;
   isSubmitting: boolean;
   error: string | null;
 }
 
-const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, isSubmitting, error }) => {
+const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, handleSubmit, onSignup, isSubmitting, error }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -22,23 +25,31 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, isSubmitting, err
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     
     // Use the normalizeRole function to ensure we use lowercase roles
     const normalizedRole = normalizeRole(selectedRole);
     
-    onSubmit({
+    const formData = {
       email,
       password,
       name,
       role: normalizedRole // Use normalized lowercase role
-    });
+    };
+
+    if (onSubmit) {
+      onSubmit(formData);
+    } else if (handleSubmit) {
+      handleSubmit(formData);
+    } else if (onSignup) {
+      onSignup(email, password, name, normalizedRole);
+    }
   };
 
   return (
     <CardContent className="grid gap-4">
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleFormSubmit}>
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
           <Input

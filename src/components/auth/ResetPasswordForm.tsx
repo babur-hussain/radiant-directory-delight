@@ -1,122 +1,94 @@
 
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Loader2, ArrowLeft, MailCheck } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-
-const resetPasswordSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-});
-
-type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 
 interface ResetPasswordFormProps {
-  onSuccess: () => void;
-  onBackToLoginClick: () => void;
+  onSubmit?: (email: string) => Promise<void>;
+  handleSubmit?: (email: string) => Promise<void>;
+  isSubmitting: boolean;
+  error: string | null;
+  emailSent: boolean;
+  email: string;
+  onBackToLogin: () => void;
 }
 
-const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ 
-  onSuccess, 
-  onBackToLoginClick 
+const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
+  onSubmit,
+  handleSubmit,
+  isSubmitting,
+  error,
+  emailSent,
+  email,
+  onBackToLogin
 }) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-  const { resetPassword } = useAuth();
+  const [inputEmail, setInputEmail] = useState(email || '');
 
-  const form = useForm<ResetPasswordFormData>({
-    resolver: zodResolver(resetPasswordSchema),
-    defaultValues: {
-      email: "",
-    },
-  });
-
-  const onSubmit = async (data: ResetPasswordFormData) => {
-    setIsSubmitting(true);
-    
-    try {
-      await resetPassword(data.email);
-      toast({
-        title: "Reset email sent",
-        description: "Please check your inbox for password reset instructions",
-      });
-      onSuccess();
-    } catch (error) {
-      console.error("Password reset error:", error);
-      toast({
-        title: "Failed to send reset email",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+  const handleResetSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onSubmit) {
+      onSubmit(inputEmail);
+    } else if (handleSubmit) {
+      handleSubmit(inputEmail);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <Button
-        type="button"
-        variant="ghost"
-        className="p-0 h-auto font-normal text-sm"
-        onClick={onBackToLoginClick}
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to login
-      </Button>
-
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <Input
-                      placeholder="Enter your email"
-                      type="email"
-                      {...field}
-                    />
-                    <MailCheck className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
+    <CardContent className="space-y-4">
+      {emailSent ? (
+        <div className="space-y-4">
+          <div className="bg-green-50 p-4 rounded-md text-green-800">
+            <h3 className="text-lg font-medium">Reset email sent!</h3>
+            <p className="mt-2">
+              We've sent a password reset link to <strong>{email}</strong>. 
+              Please check your inbox and follow the instructions to reset your password.
+            </p>
+          </div>
           <Button
-            type="submit"
-            className="w-full mt-6"
-            disabled={isSubmitting}
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={onBackToLogin}
           >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Sending...
-              </>
-            ) : (
-              "Send Reset Instructions"
-            )}
+            Back to login
           </Button>
+        </div>
+      ) : (
+        <form onSubmit={handleResetSubmit} className="space-y-4">
+          <div className="grid gap-2">
+            <Label htmlFor="reset-email">Email</Label>
+            <Input
+              id="reset-email"
+              type="email"
+              value={inputEmail}
+              onChange={(e) => setInputEmail(e.target.value)}
+              placeholder="Enter your email address"
+              required
+            />
+          </div>
+          {error && <p className="text-red-500">{error}</p>}
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={onBackToLogin}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="flex-1"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Sending..." : "Send reset link"}
+            </Button>
+          </div>
         </form>
-      </Form>
-    </div>
+      )}
+    </CardContent>
   );
 };
 
