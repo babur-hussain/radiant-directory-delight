@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, LogIn, LayoutDashboard } from 'lucide-react';
@@ -33,14 +32,16 @@ const Header = () => {
   }, [isAuthenticated, currentUser, user, loading, initialized]);
 
   const handleDashboardClick = () => {
-    if (!isAuthenticated || !currentUser) return;
+    if (!isAuthenticated) return;
+    
+    const userData = currentUser || user;
     
     // Navigate to the appropriate dashboard based on user role
-    if (currentUser.role === "Admin" || currentUser.isAdmin) {
-      navigate("/admin/dashboard");
-    } else if (currentUser.role === "Influencer") {
+    if (userData?.role === "Admin" || userData?.isAdmin) {
+      navigate("/admin");
+    } else if (userData?.role === "Influencer") {
       navigate("/dashboard/influencer");
-    } else if (currentUser.role === "Business") {
+    } else if (userData?.role === "Business") {
       navigate("/dashboard/business");
     } else {
       // Default fallback for users with unspecified roles
@@ -64,7 +65,7 @@ const Header = () => {
   };
 
   const shouldShowDashboard = () => {
-    if (!isAuthenticated || !currentUser) return false;
+    if (!isAuthenticated) return false;
     return true;
   };
 

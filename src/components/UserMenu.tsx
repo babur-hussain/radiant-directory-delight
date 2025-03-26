@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { LogOut, User, Settings, CreditCard } from "lucide-react";
+import { LogOut, User, Settings, CreditCard, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const UserMenu = () => {
@@ -49,9 +49,22 @@ const UserMenu = () => {
     navigate("/profile");
   };
 
+  // Handle dashboard click
+  const handleDashboardClick = () => {
+    if (userData?.role === "Admin" || userData?.isAdmin) {
+      navigate("/admin");
+    } else if (userData?.role === "Influencer") {
+      navigate("/dashboard/influencer");
+    } else if (userData?.role === "Business") {
+      navigate("/dashboard/business");
+    } else {
+      navigate("/profile");
+    }
+  };
+
   // Handle subscription details click
   const handleSubscriptionClick = () => {
-    navigate("/subscription/details");
+    navigate("/subscription");
   };
 
   // Add logout handler to properly call the logout function and redirect
@@ -96,6 +109,10 @@ const UserMenu = () => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleDashboardClick}>
+          <LayoutDashboard className="mr-2 h-4 w-4" />
+          <span>Dashboard</span>
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={handleProfileClick}>
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
