@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
@@ -5,7 +6,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -15,17 +16,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Pagination,
   PaginationContent,
@@ -33,7 +34,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination"
+} from "@/components/ui/pagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,9 +44,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { toast } from "@/hooks/use-toast"
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 import {
   Form,
   FormControl,
@@ -54,17 +54,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Switch } from "@/components/ui/switch"
-import { useForm } from "react-hook-form"
-import * as z from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table"
+} from "@/components/ui/form";
+import { Switch } from "@/components/ui/switch";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -72,299 +66,23 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
-import { Textarea } from "@/components/ui/textarea"
-import { Separator } from "@/components/ui/separator"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { cn } from "@/lib/utils"
-import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
-import { PopoverClose } from "@radix-ui/react-popover"
-import { DatePicker } from "@/components/ui/date-picker"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-  CommandShortcut,
-} from "@/components/ui/command"
-import { Check, ChevronsUpDown } from "lucide-react"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  AlertDialogPortal,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, Pencil, Trash2, RefreshCw } from "lucide-react";
 import {
   Dialog,
-  DialogClose,
+  DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-  FormPopover,
-  FormPopoverContent,
-  FormPopoverTrigger,
-} from "@/components/ui/form-popover"
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
-import {
-  AspectRatio,
-} from "@/components/ui/aspect-ratio"
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel"
-import {
-  Progress
-} from "@/components/ui/progress"
-import {
-  Skeleton
-} from "@/components/ui/skeleton"
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-  ResizableSeparator,
-} from "@/components/ui/resizable"
-import {
-  CommandMenu
-} from "@/components/ui/command-menu"
-import {
-  ContextMenu,
-  ContextMenuCheckboxItem,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuLabel,
-  ContextMenuRadioGroup,
-  ContextMenuRadioItem,
-  ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu"
-import {
-  DropdownMenuCheckboxItem
-} from "@/components/ui/dropdown-menu"
-import {
-  HoverCardPortal
-} from "@/components/ui/hover-card"
-import {
-  CommandDialog,
-} from "@/components/ui/command"
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  NavigationMenuViewport,
-} from "@/components/ui/navigation-menu"
-import {
-  ResizableHandleLine,
-} from "@/components/ui/resizable"
-import {
-  SelectScrollUp,
-  SelectScrollDown
-} from "@/components/ui/select"
-import {
-  SheetOverlay
-} from "@/components/ui/sheet"
-import {
-  NavigationMenuIndicator
-} from "@/components/ui/navigation-menu"
-import {
-  ResizablePanelResizeHandle
-} from "@/components/ui/resizable"
-import {
-  CommandListNavigation
-} from "@/components/ui/command-list-navigation"
-import {
-  CommandGroupCheck
-} from "@/components/ui/command-group-check"
-import {
-  CommandItemCheck
-} from "@/components/ui/command-item-check"
-import {
-  CommandListSearchEmpty
-} from "@/components/ui/command-list-search-empty"
-import {
-  CommandListSearchLoading
-} from "@/components/ui/command-list-search-loading"
-import {
-  CommandListSearchNoResults
-} from "@/components/ui/command-list-search-no-results"
-import {
-  CommandListSearchSeparator
-} from "@/components/ui/command-list-search-separator"
-import {
-  CommandListSearchSkeleton
-} from "@/components/ui/command-list-search-skeleton"
-import {
-  CommandListSkeleton
-} from "@/components/ui/command-list-skeleton"
-import {
-  CommandSeparatorNavigation
-} from "@/components/ui/command-separator-navigation"
-import {
-  CommandShortcutNavigation
-} from "@/components/ui/command-shortcut-navigation"
-import {
-  CommandShortcutSearch
-} from "@/components/ui/command-shortcut-search"
-import {
-  CommandShortcutSkeleton
-} from "@/components/ui/command-shortcut-skeleton"
-import {
-  CommandSkeleton
-} from "@/components/ui/command-skeleton"
-import {
-  ContextMenuRadioGroupIndicator
-} from "@/components/ui/context-menu"
-import {
-  DropdownMenuRadioGroupIndicator
-} from "@/components/ui/dropdown-menu"
-import {
-  NavigationMenuContentInset
-} from "@/components/ui/navigation-menu"
-import {
-  NavigationMenuContentPosition
-} from "@/components/ui/navigation-menu"
-import {
-  NavigationMenuLinkArrow
-} from "@/components/ui/navigation-menu"
-import {
-  NavigationMenuLinkCallout
-} from "@/components/ui/navigation-menu"
-import {
-  NavigationMenuLinkDescription
-} from "@/components/ui/navigation-menu"
-import {
-  NavigationMenuLinkHeading
-} from "@/components/ui/navigation-menu"
-import {
-  NavigationMenuLinkIcon
-} from "@/components/ui/navigation-menu"
-import {
-  NavigationMenuLinkTitle
-} from "@/components/ui/navigation-menu"
-import {
-  NavigationMenuSeparator
-} from "@/components/ui/navigation-menu"
-import {
-  NavigationMenuTriggerItem
-} from "@/components/ui/navigation-menu"
-import {
-  NavigationMenuTriggerStyle
-} from "@/components/ui/navigation-menu"
-import {
-  NavigationMenuViewportPosition
-} from "@/components/ui/navigation-menu"
-import {
-  ResizablePanelGroupRoot
-} from "@/components/ui/resizable"
-import {
-  ResizablePanelRoot
-} from "@/components/ui/resizable"
-import {
-  ResizableSeparatorRoot
-} from "@/components/ui/resizable"
-import {
-  SheetContentInset
-} from "@/components/ui/sheet"
-import {
-  SheetContentPosition
-} from "@/components/ui/sheet"
-import {
-  SheetOverlayInset
-} from "@/components/ui/sheet"
-import {
-  SheetOverlayPosition
-} from "@/components/ui/sheet"
-import {
-  TooltipArrow
-} from "@/components/ui/tooltip"
-import {
-  TooltipPortal
-} from "@/components/ui/tooltip"
-import {
-  TooltipProviderDelay
-} from "@/components/ui/tooltip"
-import {
-  TooltipProviderSide
-} from "@/components/ui/tooltip"
-import {
-  TooltipProviderSideOffset
-} from "@/components/ui/tooltip"
-import {
-  TooltipRoot
-} from "@/components/ui/tooltip"
-import {
-  TooltipTriggerStyle
-} from "@/components/ui/tooltip"
-import {
-  TooltipViewport
-} from "@/components/ui/tooltip"
-import { supabase } from "@/integrations/supabase/client"
-import { Business } from "@/types/business"
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
+import { Business } from "@/types/business";
 
 interface SupabaseBusinessesPanelProps {
-  onClose?: () => void
+  onClose?: () => void;
 }
 
 const formSchema = z.object({
@@ -385,23 +103,23 @@ const formSchema = z.object({
   tags: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
-})
+});
 
 export function SupabaseBusinessesPanel({
   onClose,
 }: SupabaseBusinessesPanelProps) {
-  const [businesses, setBusinesses] = useState<Business[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [isError, setIsError] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null)
-  const [showBusinessForm, setShowBusinessForm] = useState(false)
-  const [showDeleteAlert, setShowDeleteAlert] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(10)
-  const [totalItems, setTotalItems] = useState(0)
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
+  const [showBusinessForm, setShowBusinessForm] = useState(false);
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -422,273 +140,273 @@ export function SupabaseBusinessesPanel({
       latitude: 0,
       longitude: 0,
     },
-  })
+  });
 
-  const { data: session } = supabase.auth.getSession()
+  const { toast } = useToast();
 
   const fetchBusinesses = useCallback(async () => {
-    setIsLoading(true)
-    setIsError(false)
-    setIsSuccess(false)
+    setIsLoading(true);
+    setIsError(false);
+    setIsSuccess(false);
 
     try {
       const { data, error, count } = await supabase
         .from("businesses")
         .select("*", { count: "exact" })
         .ilike("name", `%${searchTerm}%`)
-        .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1)
+        .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
 
       if (error) {
-        console.error("Error fetching businesses:", error)
-        setIsError(true)
+        console.error("Error fetching businesses:", error);
+        setIsError(true);
         toast({
           title: "Error",
           description: "Failed to fetch businesses",
           variant: "destructive",
-        })
-        return
+        });
+        return;
       }
 
       if (data) {
-        setBusinesses(data as Business[])
-        setTotalItems(count || 0)
-        setIsSuccess(true)
+        setBusinesses(data as Business[]);
+        setTotalItems(count || 0);
+        setIsSuccess(true);
       }
     } catch (error) {
-      console.error("Error fetching businesses:", error)
-      setIsError(true)
+      console.error("Error fetching businesses:", error);
+      setIsError(true);
       toast({
         title: "Error",
         description: "Failed to fetch businesses",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [searchTerm, currentPage, itemsPerPage])
+  }, [searchTerm, currentPage, itemsPerPage, toast]);
 
   useEffect(() => {
-    fetchBusinesses()
-  }, [fetchBusinesses])
+    fetchBusinesses();
+  }, [fetchBusinesses]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setIsSubmitting(true)
-    setIsError(false)
-    setIsSuccess(false)
+    setIsSubmitting(true);
+    setIsError(false);
+    setIsSuccess(false);
 
     try {
       const tags = typeof values.tags === 'string' 
         ? values.tags.split(',').map(tag => tag.trim()) 
-        : Array.isArray(values.tags) ? values.tags : [];
+        : [];
 
-      const { error } = await supabase.from("businesses").insert([
-        {
-          ...values,
-          rating: Number(values.rating),
-          reviews: Number(values.reviews),
-          featured: values.featured || false,
-          tags: tags,
-          latitude: Number(values.latitude),
-          longitude: Number(values.longitude),
-        },
-      ])
+      const businessData = {
+        name: values.name,
+        category: values.category,
+        description: values.description,
+        address: values.address,
+        phone: values.phone,
+        email: values.email,
+        website: values.website,
+        image: values.image,
+        hours: values.hours,
+        rating: Number(values.rating),
+        reviews: Number(values.reviews),
+        featured: values.featured || false,
+        tags: tags,
+        latitude: Number(values.latitude),
+        longitude: Number(values.longitude),
+      };
+
+      const { error } = await supabase.from("businesses").insert(businessData);
 
       if (error) {
-        console.error("Error creating business:", error)
-        setIsError(true)
+        console.error("Error creating business:", error);
+        setIsError(true);
         toast({
           title: "Error",
           description: "Failed to create business",
           variant: "destructive",
-        })
-        return
+        });
+        return;
       }
 
       toast({
         title: "Success",
         description: "Business created successfully",
-      })
-      setIsSuccess(true)
-      setShowBusinessForm(false)
-      form.reset()
-      fetchBusinesses()
+      });
+      setIsSuccess(true);
+      setShowBusinessForm(false);
+      form.reset();
+      fetchBusinesses();
     } catch (error) {
-      console.error("Error creating business:", error)
-      setIsError(true)
+      console.error("Error creating business:", error);
+      setIsError(true);
       toast({
         title: "Error",
         description: "Failed to create business",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const onUpdate = async (values: z.infer<typeof formSchema>) => {
-    setIsSubmitting(true)
-    setIsError(false)
-    setIsSuccess(false)
-
-    if (!selectedBusiness) {
-      console.error("No business selected")
-      setIsError(true)
-      toast({
-        title: "Error",
-        description: "No business selected",
-        variant: "destructive",
-      })
-      return
-    }
+    if (!selectedBusiness) return;
+    
+    setIsSubmitting(true);
+    setIsError(false);
+    setIsSuccess(false);
 
     try {
       const tags = typeof values.tags === 'string' 
         ? values.tags.split(',').map(tag => tag.trim()) 
-        : Array.isArray(values.tags) ? values.tags : [];
+        : [];
+
+      const businessData = {
+        name: values.name,
+        category: values.category,
+        description: values.description,
+        address: values.address,
+        phone: values.phone,
+        email: values.email,
+        website: values.website,
+        image: values.image,
+        hours: values.hours,
+        rating: Number(values.rating),
+        reviews: Number(values.reviews),
+        featured: values.featured || false,
+        tags: tags,
+        latitude: Number(values.latitude),
+        longitude: Number(values.longitude),
+      };
 
       const { error } = await supabase
         .from("businesses")
-        .update({
-          ...values,
-          rating: Number(values.rating),
-          reviews: Number(values.reviews),
-          featured: values.featured || false,
-          tags: tags,
-          latitude: Number(values.latitude),
-          longitude: Number(values.longitude),
-        })
-        .eq("id", selectedBusiness.id)
+        .update(businessData)
+        .eq("id", selectedBusiness.id);
 
       if (error) {
-        console.error("Error updating business:", error)
-        setIsError(true)
+        console.error("Error updating business:", error);
+        setIsError(true);
         toast({
           title: "Error",
           description: "Failed to update business",
           variant: "destructive",
-        })
-        return
+        });
+        return;
       }
 
       toast({
         title: "Success",
         description: "Business updated successfully",
-      })
-      setIsSuccess(true)
-      setShowBusinessForm(false)
-      form.reset()
-      fetchBusinesses()
+      });
+      setIsSuccess(true);
+      setShowBusinessForm(false);
+      form.reset();
+      fetchBusinesses();
     } catch (error) {
-      console.error("Error updating business:", error)
-      setIsError(true)
+      console.error("Error updating business:", error);
+      setIsError(true);
       toast({
         title: "Error",
         description: "Failed to update business",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const onDelete = async () => {
-    setIsSubmitting(true)
-    setIsError(false)
-    setIsSuccess(false)
-
-    if (!selectedBusiness) {
-      console.error("No business selected")
-      setIsError(true)
-      toast({
-        title: "Error",
-        description: "No business selected",
-        variant: "destructive",
-      })
-      return
-    }
+    if (!selectedBusiness) return;
+    
+    setIsSubmitting(true);
+    setIsError(false);
+    setIsSuccess(false);
 
     try {
       const { error } = await supabase
         .from("businesses")
         .delete()
-        .eq("id", selectedBusiness.id)
+        .eq("id", selectedBusiness.id);
 
       if (error) {
-        console.error("Error deleting business:", error)
-        setIsError(true)
+        console.error("Error deleting business:", error);
+        setIsError(true);
         toast({
           title: "Error",
           description: "Failed to delete business",
           variant: "destructive",
-        })
-        return
+        });
+        return;
       }
 
       toast({
         title: "Success",
         description: "Business deleted successfully",
-      })
-      setIsSuccess(true)
-      setShowDeleteAlert(false)
-      form.reset()
-      fetchBusinesses()
+      });
+      setIsSuccess(true);
+      setShowDeleteAlert(false);
+      form.reset();
+      fetchBusinesses();
     } catch (error) {
-      console.error("Error deleting business:", error)
-      setIsError(true)
+      console.error("Error deleting business:", error);
+      setIsError(true);
       toast({
         title: "Error",
         description: "Failed to delete business",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value)
-    setCurrentPage(1)
-  }
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-  }
+    setCurrentPage(page);
+  };
 
-  const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setItemsPerPage(Number(e.target.value))
-    setCurrentPage(1)
-  }
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(Number(value));
+    setCurrentPage(1);
+  };
 
   const handleEditBusiness = (business: Business) => {
-    setSelectedBusiness(business)
-    setShowBusinessForm(true)
-    form.setValue("name", business.name)
-    form.setValue("category", business.category || "")
-    form.setValue("description", business.description || "")
-    form.setValue("address", business.address || "")
-    form.setValue("phone", business.phone || "")
-    form.setValue("email", business.email || "")
-    form.setValue("website", business.website || "")
-    form.setValue("image", business.image || "")
-    form.setValue("hours", business.hours || "")
-    form.setValue("rating", business.rating || 0)
-    form.setValue("reviews", business.reviews || 0)
-    form.setValue("featured", business.featured || false)
-    form.setValue("tags", business.tags ? business.tags.join(", ") : "")
-    form.setValue("latitude", business.latitude || 0)
-    form.setValue("longitude", business.longitude || 0)
-  }
+    setSelectedBusiness(business);
+    setShowBusinessForm(true);
+    form.setValue("name", business.name || "");
+    form.setValue("category", business.category || "");
+    form.setValue("description", business.description || "");
+    form.setValue("address", business.address || "");
+    form.setValue("phone", business.phone || "");
+    form.setValue("email", business.email || "");
+    form.setValue("website", business.website || "");
+    form.setValue("image", business.image || "");
+    form.setValue("hours", typeof business.hours === 'object' ? JSON.stringify(business.hours) : (business.hours || ""));
+    form.setValue("rating", business.rating || 0);
+    form.setValue("reviews", business.reviews || 0);
+    form.setValue("featured", business.featured || false);
+    form.setValue("tags", Array.isArray(business.tags) ? business.tags.join(", ") : (business.tags || ""));
+    form.setValue("latitude", business.latitude || 0);
+    form.setValue("longitude", business.longitude || 0);
+  };
 
   const handleCreateBusiness = () => {
-    setSelectedBusiness(null)
-    setShowBusinessForm(true)
-    form.reset()
-  }
+    setSelectedBusiness(null);
+    setShowBusinessForm(true);
+    form.reset();
+  };
 
   const handleDeleteBusiness = (business: Business) => {
-    setSelectedBusiness(business)
-    setShowDeleteAlert(true)
-  }
+    setSelectedBusiness(business);
+    setShowDeleteAlert(true);
+  };
 
   return (
     <Card>
@@ -705,15 +423,16 @@ export function SupabaseBusinessesPanel({
               placeholder="Search businesses..."
               value={searchTerm}
               onChange={handleSearch}
+              className="w-full max-w-sm"
             />
             <Button onClick={handleCreateBusiness}>Add Business</Button>
           </div>
           {isLoading ? (
-            <div className="flex items-center justify-center">
-              <Progress value={50} />
+            <div className="flex items-center justify-center p-8">
+              <Progress value={50} className="w-full" />
             </div>
           ) : isError ? (
-            <div className="text-red-500">Failed to load businesses.</div>
+            <div className="text-red-500 p-8 text-center">Failed to load businesses.</div>
           ) : (
             <div className="rounded-md border">
               <Table>
@@ -725,63 +444,78 @@ export function SupabaseBusinessesPanel({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {businesses.map((business) => (
-                    <TableRow key={business.id}>
-                      <TableCell className="font-medium">{business.name}</TableCell>
-                      <TableCell>{business.category}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEditBusiness(business)}>
-                              <Pencil className="mr-2 h-4 w-4" /> Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteBusiness(business)}>
-                              <Trash2 className="mr-2 h-4 w-4" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                  {businesses.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="h-24 text-center">
+                        No businesses found
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    businesses.map((business) => (
+                      <TableRow key={business.id}>
+                        <TableCell className="font-medium">{business.name}</TableCell>
+                        <TableCell>{business.category}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEditBusiness(business)}>
+                                <Pencil className="mr-2 h-4 w-4" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDeleteBusiness(business)}>
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
                 <TableFooter>
                   <TableRow>
                     <TableCell colSpan={3}>
                       <div className="flex items-center justify-between">
-                        <Select value={String(itemsPerPage)} onValueChange={handleItemsPerPageChange}>
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Items per page" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="10">10</SelectItem>
-                            <SelectItem value="20">20</SelectItem>
-                            <SelectItem value="50">50</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center space-x-2">
+                          <p className="text-sm text-muted-foreground">
+                            Rows per page
+                          </p>
+                          <Select
+                            value={String(itemsPerPage)}
+                            onValueChange={handleItemsPerPageChange}
+                          >
+                            <SelectTrigger className="h-8 w-[70px]">
+                              <SelectValue placeholder={itemsPerPage} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="10">10</SelectItem>
+                              <SelectItem value="20">20</SelectItem>
+                              <SelectItem value="50">50</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                         <Pagination>
                           <PaginationContent>
                             <PaginationPrevious
                               onClick={() => handlePageChange(currentPage - 1)}
-                              disabled={currentPage === 1}
+                              className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
                             />
                             <PaginationItem>
                               <PaginationLink
                                 onClick={() => handlePageChange(1)}
-                                disabled={currentPage === 1}
-                                className={currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}
+                                isActive={currentPage === 1}
                               >
                                 1
                               </PaginationLink>
                             </PaginationItem>
                             {currentPage > 3 && (
                               <PaginationItem>
-                                <PaginationLink className="cursor-default">...</PaginationLink>
+                                <span className="flex h-9 w-9 items-center justify-center">...</span>
                               </PaginationItem>
                             )}
                             {currentPage > 2 && (
@@ -791,14 +525,11 @@ export function SupabaseBusinessesPanel({
                                 </PaginationLink>
                               </PaginationItem>
                             )}
-                            <PaginationItem>
-                              <PaginationLink
-                                onClick={() => handlePageChange(currentPage)}
-                                className="font-semibold"
-                              >
-                                {currentPage}
-                              </PaginationLink>
-                            </PaginationItem>
+                            {currentPage !== 1 && currentPage !== Math.ceil(totalItems / itemsPerPage) && (
+                              <PaginationItem>
+                                <PaginationLink isActive>{currentPage}</PaginationLink>
+                              </PaginationItem>
+                            )}
                             {currentPage < Math.ceil(totalItems / itemsPerPage) - 1 && (
                               <PaginationItem>
                                 <PaginationLink onClick={() => handlePageChange(currentPage + 1)}>
@@ -808,17 +539,14 @@ export function SupabaseBusinessesPanel({
                             )}
                             {currentPage < Math.ceil(totalItems / itemsPerPage) - 2 && (
                               <PaginationItem>
-                                <PaginationLink className="cursor-default">...</PaginationLink>
+                                <span className="flex h-9 w-9 items-center justify-center">...</span>
                               </PaginationItem>
                             )}
                             {Math.ceil(totalItems / itemsPerPage) > 1 && (
                               <PaginationItem>
                                 <PaginationLink
-                                  onClick={() =>
-                                    handlePageChange(Math.ceil(totalItems / itemsPerPage))
-                                  }
-                                  disabled={currentPage === Math.ceil(totalItems / itemsPerPage)}
-                                  className={currentPage === Math.ceil(totalItems / itemsPerPage) ? "opacity-50 cursor-not-allowed" : ""}
+                                  onClick={() => handlePageChange(Math.ceil(totalItems / itemsPerPage))}
+                                  isActive={currentPage === Math.ceil(totalItems / itemsPerPage)}
                                 >
                                   {Math.ceil(totalItems / itemsPerPage)}
                                 </PaginationLink>
@@ -826,7 +554,7 @@ export function SupabaseBusinessesPanel({
                             )}
                             <PaginationNext
                               onClick={() => handlePageChange(currentPage + 1)}
-                              disabled={currentPage === Math.ceil(totalItems / itemsPerPage)}
+                              className={currentPage === Math.ceil(totalItems / itemsPerPage) ? "pointer-events-none opacity-50" : ""}
                             />
                           </PaginationContent>
                         </Pagination>
@@ -839,6 +567,8 @@ export function SupabaseBusinessesPanel({
           )}
         </div>
       </CardContent>
+
+      {/* Business Form Dialog */}
       <Dialog open={showBusinessForm} onOpenChange={setShowBusinessForm}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -905,32 +635,37 @@ export function SupabaseBusinessesPanel({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Phone" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              
+              {/* More form fields - email, phone, website, etc. */}
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Phone" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
               <FormField
                 control={form.control}
                 name="website"
@@ -944,6 +679,7 @@ export function SupabaseBusinessesPanel({
                   </FormItem>
                 )}
               />
+              
               <FormField
                 control={form.control}
                 name="image"
@@ -957,45 +693,46 @@ export function SupabaseBusinessesPanel({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="hours"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Hours</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Hours" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="rating"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rating</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="Rating" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="reviews"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Reviews</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="Reviews" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="rating"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Rating</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="Rating" 
+                          {...field} 
+                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="reviews"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Reviews</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="Reviews" 
+                          {...field} 
+                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
               <FormField
                 control={form.control}
                 name="featured"
@@ -1016,6 +753,7 @@ export function SupabaseBusinessesPanel({
                   </FormItem>
                 )}
               />
+              
               <FormField
                 control={form.control}
                 name="tags"
@@ -1023,38 +761,52 @@ export function SupabaseBusinessesPanel({
                   <FormItem>
                     <FormLabel>Tags</FormLabel>
                     <FormControl>
-                      <Input placeholder="Tags" {...field} />
+                      <Input placeholder="Tags (comma separated)" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="latitude"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Latitude</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="Latitude" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="longitude"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Longitude</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="Longitude" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="latitude"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Latitude</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="Latitude" 
+                          {...field} 
+                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="longitude"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Longitude</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="Longitude" 
+                          {...field} 
+                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
               <DialogFooter>
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting
@@ -1068,17 +820,19 @@ export function SupabaseBusinessesPanel({
           </Form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Alert Dialog */}
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the
-              business from our servers.
+              business from the database.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={onDelete} disabled={isSubmitting}>
               {isSubmitting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
@@ -1086,7 +840,7 @@ export function SupabaseBusinessesPanel({
         </AlertDialogContent>
       </AlertDialog>
     </Card>
-  )
+  );
 }
 
 export default SupabaseBusinessesPanel;

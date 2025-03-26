@@ -1,47 +1,49 @@
 
-import { UserRole, normalizeRole } from '@/types/auth';
+import { UserRole } from '@/types/auth';
+import { convertCapitalizedRole, normalizeRole } from '@/types/auth';
 
-// Helper function to compare roles safely
-export const isSameRole = (roleA: string | undefined, roleB: string | undefined): boolean => {
-  if (!roleA || !roleB) return false;
-  return roleA.toLowerCase() === roleB.toLowerCase();
-};
-
-// Check if a role is one of the valid roles
-export const isValidRole = (role: string | undefined): boolean => {
+/**
+ * Checks if a user has admin role
+ */
+export const isAdmin = (role: string | undefined | null): boolean => {
   if (!role) return false;
-  const normalized = role.toLowerCase();
-  return ['admin', 'user', 'business', 'influencer', 'staff'].includes(normalized);
-};
-
-// Convert role to capitalized format for display
-export const capitalizeRole = (role: UserRole): string => {
-  if (!role) return '';
-  return role.charAt(0).toUpperCase() + role.slice(1);
-};
-
-// Convert role string to UserRole type safely
-export const toUserRole = (role: string | undefined): UserRole => {
-  return normalizeRole(role);
-};
-
-// Utility function to check role types
-export const isAdmin = (role: string | undefined): boolean => {
   return normalizeRole(role) === 'admin';
 };
 
-export const isBusiness = (role: string | undefined): boolean => {
+/**
+ * Checks if a user has business role
+ */
+export const isBusiness = (role: string | undefined | null): boolean => {
+  if (!role) return false;
   return normalizeRole(role) === 'business';
 };
 
-export const isInfluencer = (role: string | undefined): boolean => {
+/**
+ * Checks if a user has influencer role
+ */
+export const isInfluencer = (role: string | undefined | null): boolean => {
+  if (!role) return false;
   return normalizeRole(role) === 'influencer';
 };
 
-export const isUser = (role: string | undefined): boolean => {
-  return normalizeRole(role) === 'user';
+/**
+ * Checks if a user has staff role
+ */
+export const isStaff = (role: string | undefined | null): boolean => {
+  if (!role) return false;
+  return normalizeRole(role) === 'staff';
 };
 
-export const isStaff = (role: string | undefined): boolean => {
-  return normalizeRole(role) === 'staff';
+/**
+ * Convert capitalized role formats (Admin, Business) to lowercase (admin, business)
+ */
+export const convertRoleFormat = (role: string | undefined): UserRole => {
+  return convertCapitalizedRole(role);
+};
+
+/**
+ * Gets a normalized role from any role string format
+ */
+export const getNormalizedRole = (role: string | undefined): UserRole => {
+  return normalizeRole(role);
 };

@@ -1,4 +1,3 @@
-
 export type UserRole = 'admin' | 'user' | 'business' | 'influencer' | 'staff';
 
 export const isSameRoleIgnoreCase = (role1: string | undefined, role2: string | undefined): boolean => {
@@ -51,6 +50,11 @@ export const convertCapitalizedRole = (role: string | undefined): UserRole => {
 // Function to check if a role matches a specific role (case insensitive)
 export const roleMatches = (role: string | undefined, matchRole: UserRole): boolean => {
   return normalizeRole(role) === matchRole;
+};
+
+// Helper function for comparing roles that handles both capitalized and lowercase formats
+export const compareRoles = (role1: string | undefined, role2: string | undefined): boolean => {
+  return normalizeRole(role1) === normalizeRole(role2);
 };
 
 export interface User {

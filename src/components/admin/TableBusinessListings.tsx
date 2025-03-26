@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -26,6 +25,27 @@ interface TableBusinessListingsProps {
   onAddBusiness?: () => void;
   onEditBusiness?: (business: Business) => void;
 }
+
+const convertToIBusiness = (business: Business): IBusiness => {
+  return {
+    id: typeof business.id === 'number' ? business.id : parseInt(business.id.toString(), 10),
+    name: business.name,
+    category: business.category,
+    description: business.description,
+    address: business.address,
+    phone: business.phone,
+    rating: business.rating,
+    reviews: business.reviews,
+    featured: business.featured,
+    tags: business.tags,
+    image: business.image,
+    email: business.email,
+    website: business.website,
+    hours: business.hours,
+    latitude: business.latitude,
+    longitude: business.longitude
+  };
+};
 
 const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({ 
   onRefresh, 
@@ -66,12 +86,10 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
     loadBusinesses();
   }, []);
   
-  // Function to handle business deletion
   const handleDeleteBusiness = async (businessId: string | number) => {
     try {
       setIsSubmitting(true);
       
-      // Convert businessId to a number if it's a string
       const id = typeof businessId === 'string' ? parseInt(businessId, 10) : businessId;
       
       const { error } = await supabase
@@ -105,9 +123,8 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
     }
   };
 
-  // Function to open delete dialog
   const openDeleteDialog = (business: Business) => {
-    setSelectedBusiness(business as unknown as IBusiness);
+    setSelectedBusiness(convertToIBusiness(business));
     setIsDeleteDialogOpen(true);
   };
 
@@ -123,7 +140,7 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
     if (onEditBusiness) {
       onEditBusiness(business);
     } else {
-      setSelectedBusiness(business as unknown as IBusiness);
+      setSelectedBusiness(convertToIBusiness(business));
       setIsFormOpen(true);
     }
   };
@@ -131,13 +148,11 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
   const handleFormSubmit = async (values: any) => {
     setIsSubmitting(true);
     try {
-      // Prepare tags as an array
       const tags = typeof values.tags === "string" 
         ? values.tags.split(',').map((tag: string) => tag.trim()) 
         : values.tags;
       
       if (selectedBusiness) {
-        // Update existing business
         const { error } = await supabase
           .from('businesses')
           .update({
@@ -149,7 +164,6 @@ const TableBusinessListings: React.FC<TableBusinessListingsProps> = ({
         
         if (error) throw error;
       } else {
-        // Create new business
         const randomReviews = Math.floor(Math.random() * 500) + 50;
         const newBusiness = {
           name: values.name,

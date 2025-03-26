@@ -91,10 +91,10 @@ const FeaturedBusinesses = () => {
   
   const categories = Array.from(new Set(businesses.map(b => b.category)));
   
-  // Fix for the never type issue - ensure the address is a string before splitting
+  // Extract locations from addresses
   const locations = Array.from(new Set(businesses.map(b => {
     if (typeof b.address === 'string') {
-      const parts = b.address.split(',') || [];
+      const parts = b.address.split(',');
       return parts.length > 1 ? parts[1].trim() : parts[0]?.trim() || '';
     }
     return '';
@@ -113,7 +113,7 @@ const FeaturedBusinesses = () => {
     }
     
     if (selectedLocation && typeof business.address === 'string') {
-      const businessLocation = business.address.split(',') || [];
+      const businessLocation = business.address.split(',');
       const cityPart = businessLocation.length > 1 ? businessLocation[1].trim() : businessLocation[0]?.trim() || '';
       if (cityPart !== selectedLocation) {
         return false;
