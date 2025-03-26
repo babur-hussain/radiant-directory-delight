@@ -1,65 +1,71 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useAuth } from './useAuth';
+import { useSubscription } from './useSubscription';
 
-export const useDashboardServices = (userId: string, userRole: string) => {
-  const [services, setServices] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export interface DashboardService {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  icon?: string;
+  status?: 'active' | 'pending' | 'inactive';
+  progress?: number;
+  details?: Record<string, any>;
+}
+
+export const useDashboardServices = () => {
+  const [services, setServices] = useState<DashboardService[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { fetchUserSubscription } = useSubscription(userId);
-  
+  const { user } = useAuth();
+  const { subscription, loading: subscriptionLoading } = useSubscription();
+
   useEffect(() => {
-    const fetchServices = async () => {
-      if (!userId) {
-        setIsLoading(false);
-        return;
-      }
-      
-      setIsLoading(true);
-      
+    const fetchDashboardServices = async () => {
       try {
-        // First get the user's active subscription
-        const subscriptionResult = await fetchUserSubscription(userId);
+        setLoading(true);
         
-        if (!subscriptionResult.success || !subscriptionResult.data) {
-          setServices([]);
-          setIsLoading(false);
+        if (subscriptionLoading) {
           return;
         }
         
-        // Get the subscription package
-        const { data: packageData, error: packageError } = await supabase
-          .from('subscription_packages')
-          .select('dashboard_sections')
-          .eq('id', subscriptionResult.data.package_id)
-          .single();
-        
-        if (packageError) {
-          throw new Error(packageError.message);
+        if (!subscription) {
+          setServices([]);
+          return;
         }
         
-        // Set the services based on the package's dashboard sections
-        if (packageData && packageData.dashboard_sections) {
-          setServices(Array.isArray(packageData.dashboard_sections) ? 
-            packageData.dashboard_sections : 
-            []);
+        // Get allowed services from user's subscription package
+        if (subscription.packageId) {
+          // Here you would normally fetch the services from the API
+          // For now we're just returning a hardcoded list
+          const availableServices: DashboardService[] = [
+            { id: 'seo', name: 'SEO Optimization', isActive: true, progress: 75, status: 'active' },
+            { id: 'social-media', name: 'Social Media Management', isActive: true, progress: 90, status: 'active' },
+            { id: 'content-creation', name: 'Content Creation', isActive: true, progress: 60, status: 'active' },
+            { id: 'google-business', name: 'Google Business Profile', isActive: true, progress: 80, status: 'active' },
+            { id: 'ad-campaigns', name: 'Ad Campaigns', isActive: true, progress: 30, status: 'pending' },
+            { id: 'analytics', name: 'Analytics & Reporting', isActive: true, progress: 100, status: 'active' }
+          ];
+          
+          setServices(availableServices);
         } else {
           setServices([]);
         }
+        
+        setError(null);
       } catch (err) {
-        console.error('Error fetching dashboard services:', err);
-        setError('Failed to load services. Please try again later.');
-        setServices([]);
+        console.error("Error fetching dashboard services:", err);
+        setError("Failed to load dashboard services");
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
     
-    fetchServices();
-  }, [userId, userRole, fetchUserSubscription]);
-  
-  return { services, isLoading, error };
+    fetchDashboardServices();
+  }, [user, subscription, subscriptionLoading]);
+
+  return { services, loading, error };
 };
 
 export default useDashboardServices;

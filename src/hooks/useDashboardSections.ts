@@ -1,63 +1,73 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useAuth } from './useAuth';
+import { useSubscription } from './useSubscription';
 
-export const useDashboardSections = (userId: string) => {
-  const [dashboardSections, setDashboardSections] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export interface DashboardSection {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  type?: string;
+  isVisible?: boolean;
+  order?: number;
+  component?: React.ComponentType<any>;
+}
+
+export const useDashboardSections = () => {
+  const [sections, setSections] = useState<DashboardSection[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { fetchUserSubscription } = useSubscription(userId);
-  
+  const { user } = useAuth();
+  const { subscription, loading: subscriptionLoading } = useSubscription();
+
   useEffect(() => {
-    const fetchSections = async () => {
-      if (!userId) {
-        setIsLoading(false);
-        return;
-      }
-      
-      setIsLoading(true);
-      
+    const fetchDashboardSections = async () => {
       try {
-        // First get the user's active subscription
-        const subscriptionResult = await fetchUserSubscription(userId);
+        setLoading(true);
         
-        if (!subscriptionResult.success || !subscriptionResult.data || subscriptionResult.data.status !== 'active') {
-          setDashboardSections([]);
-          setIsLoading(false);
+        if (subscriptionLoading) {
           return;
         }
         
-        // Get the subscription package details
-        const { data: packageData, error: packageError } = await supabase
-          .from('subscription_packages')
-          .select('dashboard_sections')
-          .eq('id', subscriptionResult.data.package_id)
-          .single();
-        
-        if (packageError) {
-          console.error("Error fetching package dashboard sections:", packageError);
-          setError(packageError.message);
-          setDashboardSections([]);
+        if (!subscription) {
+          setSections([]);
           return;
         }
         
-        if (packageData && packageData.dashboard_sections) {
-          setDashboardSections(packageData.dashboard_sections);
+        // Get allowed sections from user's subscription package
+        if (subscription.packageId) {
+          // Here you would normally fetch the sections from the API
+          // For now we're just returning a hardcoded list
+          const availableSections: DashboardSection[] = [
+            { id: 'analytics', name: 'Analytics', icon: 'bar-chart' },
+            { id: 'performance', name: 'Performance', icon: 'activity' },
+            { id: 'seo', name: 'SEO', icon: 'search' },
+            { id: 'leads', name: 'Leads', icon: 'users' },
+            { id: 'campaigns', name: 'Campaigns', icon: 'megaphone' },
+            { id: 'reels', name: 'Reels', icon: 'video' },
+            { id: 'reviews', name: 'Reviews', icon: 'star' },
+            { id: 'google-listing', name: 'Google Listing', icon: 'map-pin' }
+          ];
+          
+          setSections(availableSections);
         } else {
-          setDashboardSections([]);
+          setSections([]);
         }
+        
+        setError(null);
       } catch (err) {
-        console.error("Error in useDashboardSections:", err);
-        setError(err instanceof Error ? err.message : "An unknown error occurred");
-        setDashboardSections([]);
+        console.error("Error fetching dashboard sections:", err);
+        setError("Failed to load dashboard sections");
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
     
-    fetchSections();
-  }, [userId, fetchUserSubscription]);
-  
-  return { dashboardSections, isLoading, error };
+    fetchDashboardSections();
+  }, [user, subscription, subscriptionLoading]);
+
+  return { sections, loading, error };
 };
+
+export default useDashboardSections;
