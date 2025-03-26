@@ -1,61 +1,63 @@
 
 import { useState, useEffect } from 'react';
-import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import { useSubscription } from './useSubscription';
 import { supabase } from '@/integrations/supabase/client';
+import { useSubscription } from '@/hooks/useSubscription';
 
-export const useDashboardSections = (userId?: string) => {
-  const { fetchUserSubscription } = useSubscription(userId);
+export const useDashboardSections = (userId: string) => {
   const [dashboardSections, setDashboardSections] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const { fetchUserSubscription } = useSubscription(userId);
+  
   useEffect(() => {
-    const fetchDashboardSections = async () => {
+    const fetchSections = async () => {
+      if (!userId) {
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
+      
       try {
-        if (!userId) {
+        // First get the user's active subscription
+        const userSubscription = await fetchUserSubscription(userId);
+        
+        if (!userSubscription || userSubscription.status !== 'active') {
           setDashboardSections([]);
           setIsLoading(false);
           return;
         }
         
-        const { success, data: subscription } = await fetchUserSubscription(userId);
-        
-        if (!success || !subscription || !subscription.package_id) {
-          setDashboardSections([]);
-          setIsLoading(false);
-          return;
-        }
-
-        // Fetch subscription package details to get dashboard sections
+        // Get the subscription package details
         const { data: packageData, error: packageError } = await supabase
           .from('subscription_packages')
           .select('dashboard_sections')
-          .eq('id', subscription.package_id)
+          .eq('id', userSubscription.package_id)
           .single();
-
+        
         if (packageError) {
-          throw new Error(`Failed to fetch package details: ${packageError.message}`);
+          console.error("Error fetching package dashboard sections:", packageError);
+          setError(packageError.message);
+          setDashboardSections([]);
+          return;
         }
-
+        
         if (packageData && packageData.dashboard_sections) {
           setDashboardSections(packageData.dashboard_sections);
         } else {
-          setDashboardSections([]); // Default to empty array if no sections are found
+          setDashboardSections([]);
         }
-        
-        setIsLoading(false);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load dashboard sections');
+        console.error("Error in useDashboardSections:", err);
+        setError(err instanceof Error ? err.message : "An unknown error occurred");
+        setDashboardSections([]);
+      } finally {
         setIsLoading(false);
       }
     };
-
-    fetchDashboardSections();
+    
+    fetchSections();
   }, [userId, fetchUserSubscription]);
-
+  
   return { dashboardSections, isLoading, error };
 };
-
-export default useDashboardSections;

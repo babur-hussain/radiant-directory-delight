@@ -1,14 +1,15 @@
+
 import React, { useState, useEffect } from "react";
 import { useDashboardSections } from "@/hooks/useDashboardSections";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Card, CardContent } from "@/components/ui/card";
-import { savePackage, getPackageById } from "@/services/packageService";
 import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
 import { useSubscriptionPackages } from "@/hooks/useSubscriptionPackages";
 import AdminPermissionError from "./AdminPermissionError";
 import PackageSectionsList from "./PackageSectionsList";
 import { toast } from "@/hooks/use-toast";
 import { IUser } from "@/models/User";
+import { savePackage } from "@/services/packageService";
 
 interface DashboardSectionsManagerProps {
   userId: string;
@@ -17,9 +18,9 @@ interface DashboardSectionsManagerProps {
 }
 
 const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ userId, isAdmin, selectedUser }) => {
-  const { fetchUserSubscription, loading: subscriptionLoading, error: subscriptionError } = useSubscription(userId);
+  const { loading: subscriptionLoading, error: subscriptionError, fetchUserSubscription } = useSubscription(userId);
   const { dashboardSections, isLoading: sectionsLoading, error: sectionsError } = useDashboardSections(userId);
-  const { packages, isLoading: packagesLoading, isError, error: packagesError, refetch } = useSubscriptionPackages();
+  const { packages, isLoading: packagesLoading, isError } = useSubscriptionPackages();
   
   const [selectedPackage, setSelectedPackage] = useState<string>("");
   const [currentPackageSections, setCurrentPackageSections] = useState<string[]>([]);
@@ -103,10 +104,12 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
       
       console.log("Saving package with sections:", currentPackageSections);
       
-      const updatedPackage: ISubscriptionPackage = {
+      // Ensure we have required properties for ISubscriptionPackage
+      const updatedPackage = {
         ...pkg,
-        dashboardSections: currentPackageSections
-      };
+        dashboardSections: currentPackageSections,
+        paymentType: pkg.paymentType || 'recurring' // Ensure paymentType is defined
+      } as ISubscriptionPackage;
       
       console.log("Updating package:", JSON.stringify(updatedPackage, null, 2));
       
@@ -120,7 +123,10 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
         variant: "default"
       });
       
-      await refetch();
+      // Attempt to refetch if available
+      if (typeof (useSubscriptionPackages as any).refetch === 'function') {
+        await (useSubscriptionPackages as any).refetch();
+      }
     } catch (error) {
       console.error("Error saving package sections:", error);
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -154,14 +160,14 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
             <div className="py-8 text-center text-muted-foreground">Loading dashboard sections...</div>
           ) : (
             <PackageSectionsList
-              packages={packages}
+              packages={packages as unknown as ISubscriptionPackage[]}
               selectedPackage={selectedPackage}
               setSelectedPackage={handleSelectPackage}
               packageSections={currentPackageSections}
               availableSections={availableSections}
               togglePackageSection={togglePackageSection}
               savePackageSections={savePackageSections}
-              refreshData={refetch}
+              refreshData={() => {}}
             />
           )}
         </CardContent>

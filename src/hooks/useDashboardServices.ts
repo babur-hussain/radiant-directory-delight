@@ -48,7 +48,9 @@ export const useDashboardServices = (userId: string, userRole: string) => {
         
         // Set the services based on the package's dashboard sections
         if (packageData && packageData.dashboard_sections) {
-          setServices(packageData.dashboard_sections);
+          setServices(Array.isArray(packageData.dashboard_sections) ? 
+            packageData.dashboard_sections : 
+            []);
         } else {
           setServices([]);
         }
