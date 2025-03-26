@@ -19,8 +19,11 @@ const BusinessCard = ({ business }: BusinessCardProps) => {
   
   if (Array.isArray(business.tags)) {
     tags = business.tags;
-  } else if (typeof business.tags === 'string' && business.tags.trim() !== '') {
-    tags = business.tags.split(',').map(t => t.trim());
+  } else if (typeof business.tags === 'string') {
+    const tagsString = business.tags as string;
+    if (tagsString.trim() !== '') {
+      tags = tagsString.split(',').map(t => t.trim());
+    }
   }
   
   const hasMoreTags = tags.length > maxVisibleTags;
