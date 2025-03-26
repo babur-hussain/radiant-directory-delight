@@ -5,7 +5,7 @@ import VideoSubmissionForm from './VideoSubmissionForm';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { Video, VideoType } from '@/types/video';
+import { Video, VideoType, VideoStatus } from '@/types/video';
 
 // Fetch videos from Supabase
 const fetchVideos = async (): Promise<Video[]> => {
@@ -20,10 +20,11 @@ const fetchVideos = async (): Promise<Video[]> => {
     throw new Error('Failed to fetch videos');
   }
   
-  // Cast the video_type to VideoType to satisfy TypeScript
+  // Cast the video_type to VideoType and status to VideoStatus to satisfy TypeScript
   return (data || []).map(video => ({
     ...video,
-    video_type: video.video_type as VideoType
+    video_type: video.video_type as VideoType,
+    status: video.status as VideoStatus
   }));
 };
 
