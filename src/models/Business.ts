@@ -1,3 +1,4 @@
+
 import { Database } from '@/integrations/supabase/types';
 
 export interface IBusiness {
@@ -17,6 +18,8 @@ export interface IBusiness {
   tags: string[];
   featured: boolean;
   image: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Define an adapter function to convert Supabase business data to our application model
@@ -37,7 +40,9 @@ export const fromSupabase = (data: Database['public']['Tables']['businesses']['R
     hours: typeof data.hours === 'string' ? JSON.parse(data.hours) : (data.hours || {}),
     tags: data.tags || [],
     featured: data.featured || false,
-    image: data.image || ''
+    image: data.image || '',
+    created_at: data.created_at,
+    updated_at: data.updated_at
   };
 };
 

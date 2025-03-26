@@ -1,4 +1,3 @@
-
 import Papa from 'papaparse';
 import { supabase } from '@/integrations/supabase/client';
 import { csvHeaderMapping } from '@/models/Business';
@@ -21,6 +20,8 @@ export interface Business {
   latitude?: number;
   longitude?: number;
   hours?: Record<string, any>;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Mock data for when we can't access the real database
@@ -362,14 +363,13 @@ const saveBatchToSupabase = async (businesses: Business[]): Promise<{
             ) : null
         };
         
-        // Remove any timestamp-like values that might be causing overflows
-        if (businessToSave.created_at && typeof businessToSave.created_at === 'string' && 
-            businessToSave.created_at.length > 10 && !isNaN(Number(businessToSave.created_at))) {
+        // Remove any timestamp fields that might be causing issues
+        // These are safe to remove as they will be set by defaults in the database
+        if ('created_at' in businessToSave) {
           delete businessToSave.created_at;
         }
         
-        if (businessToSave.updated_at && typeof businessToSave.updated_at === 'string' && 
-            businessToSave.updated_at.length > 10 && !isNaN(Number(businessToSave.updated_at))) {
+        if ('updated_at' in businessToSave) {
           delete businessToSave.updated_at;
         }
         
