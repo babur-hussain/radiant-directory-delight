@@ -7,22 +7,22 @@ import Papa from 'papaparse';
 export interface Business {
   id: number | string; // Allow both number and string IDs
   name: string;
-  category: string;
-  description: string;
-  address: string;
-  phone: string;
-  email: string;
-  website: string;
-  image: string;
-  hours: string | Record<string, string> | Record<string, any>;
-  rating: number;
-  reviews: number;
-  featured: boolean;
-  tags: string[];
-  latitude: number;
-  longitude: number;
-  created_at: string;
-  updated_at: string;
+  category?: string;
+  description?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  image?: string;
+  hours?: string | Record<string, string> | Record<string, any>;
+  rating?: number;
+  reviews?: number;
+  featured?: boolean;
+  tags?: string[];
+  latitude?: number;
+  longitude?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Function to parse CSV file and convert it to Business objects
@@ -34,6 +34,11 @@ export const parseBusinessesCSV = async (file: File): Promise<Business[]> => {
       complete: (results) => {
         try {
           const businesses: Business[] = results.data.map((row: any, index: number) => {
+            // Skip rows without a business name (required field)
+            if (!row["Business Name"] && !row.name) {
+              return null;
+            }
+            
             // Generate a unique ID for each business (negative to avoid conflicts with DB IDs)
             const id = -(index + 1);
             
@@ -43,32 +48,36 @@ export const parseBusinessesCSV = async (file: File): Promise<Business[]> => {
               [];
             
             // Generate a default image URL if none provided
-            const image = row.Image || `https://source.unsplash.com/random/500x350/?${row.Category?.toLowerCase().replace(/\s+/g, ",")}`;
+            const categoryValue = row.Category || row.category || "";
+            const image = row.Image || row.image || `https://source.unsplash.com/random/500x350/?${categoryValue.toLowerCase().replace(/\s+/g, ",")}`;
             
-            // Parse rating as a number
-            const rating = parseFloat(row.Review || row.Rating || "0");
+            // Parse rating as a number (0 if invalid)
+            const rating = parseFloat(row.Review || row.Rating || row.rating || "0");
+            
+            // Current timestamp for created_at and updated_at
+            const timestamp = new Date().toISOString();
             
             return {
               id,
-              name: row["Business Name"] || "",
-              category: row.Category || "",
-              description: row.Description || "",
-              address: row.Address || "",
-              phone: row["Mobile Number"] || row.Phone || "",
-              email: row.Email || "",
-              website: row.Website || "",
+              name: row["Business Name"] || row.name || "",
+              category: row.Category || row.category || "",
+              description: row.Description || row.description || "",
+              address: row.Address || row.address || "",
+              phone: row["Mobile Number"] || row.Phone || row.phone || "",
+              email: row.Email || row.email || "",
+              website: row.Website || row.website || "",
               image,
-              hours: row.Hours || "",
+              hours: row.Hours || row.hours || {},
               rating: isNaN(rating) ? 0 : rating,
-              reviews: parseInt(row.Reviews || "0", 10) || 0,
+              reviews: parseInt(row.Reviews || row.reviews || "0", 10) || 0,
               featured: row.Featured === "true" || row.Featured === true || false,
               tags,
-              latitude: parseFloat(row.Latitude || "0") || 0,
-              longitude: parseFloat(row.Longitude || "0") || 0,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              latitude: parseFloat(row.Latitude || row.latitude || "0") || 0,
+              longitude: parseFloat(row.Longitude || row.longitude || "0") || 0,
+              created_at: timestamp,
+              updated_at: timestamp
             };
-          });
+          }).filter(Boolean); // Remove null entries (rows without business name)
           
           resolve(businesses);
         } catch (error) {
