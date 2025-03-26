@@ -2,15 +2,15 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import BusinessForm, { BusinessFormValues } from './BusinessForm';
-import { Business } from '@/types/business';
+import { Business } from '@/lib/csv-utils';
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export interface BusinessFormDialogProps {
   show: boolean;
-  isOpen?: boolean; // For backward compatibility
+  isOpen?: boolean; // Add this for backward compatibility
   onClose: () => void;
   business?: Business | null;
-  initialData?: Business | null; // For backward compatibility
+  initialData?: Business | null; // Add this for backward compatibility
   onSubmit: (values: BusinessFormValues) => Promise<void>;
   isSubmitting: boolean;
 }
@@ -41,7 +41,7 @@ const BusinessFormDialog: React.FC<BusinessFormDialogProps> = ({
         <ScrollArea className="max-h-[calc(90vh-100px)]">
           <div className="p-1">
             <BusinessForm 
-              initialData={businessData}
+              currentBusiness={businessData}
               onSubmit={onSubmit}
               isSubmitting={isSubmitting}
             />

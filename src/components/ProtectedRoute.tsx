@@ -18,35 +18,18 @@ const ProtectedRoute = ({
   const { isAuthenticated, user, loading, initialized } = useAuth();
   const location = useLocation();
 
-  useEffect(() => {
-    console.log("ProtectedRoute rendered:", {
-      path: location.pathname,
-      isAuthenticated,
-      userRole: user?.role,
-      isAdmin: user?.isAdmin,
-      loading,
-      initialized
-    });
-  }, [location.pathname, isAuthenticated, user, loading, initialized]);
-
   // Redirect anonymous users to login page
   if (initialized && !loading && !isAuthenticated) {
-    console.log("Redirecting to auth: Not authenticated", location.pathname);
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
   // Check for required role
   if (initialized && !loading && isAuthenticated && requiredRole && user?.role !== requiredRole) {
-    console.log("Redirecting to home: Required role not met", {
-      required: requiredRole,
-      actual: user?.role
-    });
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   // Check for admin requirement
   if (initialized && !loading && isAuthenticated && adminOnly && !user?.isAdmin) {
-    console.log("Redirecting to home: Admin required but user is not admin");
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
@@ -61,7 +44,6 @@ const ProtectedRoute = ({
   }
 
   // If everything is good, render the children
-  console.log("ProtectedRoute rendering children for", location.pathname);
   return <>{children}</>;
 };
 

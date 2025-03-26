@@ -1,79 +1,122 @@
 
 import { useState, useEffect, useCallback } from 'react';
+import { User, UserRole } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { User, normalizeRole } from '@/types/auth';
 
-const useSupabaseUsers = () => {
+// Helper function to transform role string to UserRole type
+export const transformRole = (role: string | null): UserRole => {
+  if (!role) return 'User';
+  
+  switch (role.toLowerCase()) {
+    case 'admin':
+      return 'Admin';
+    case 'business':
+      return 'Business';
+    case 'influencer':
+      return 'Influencer';
+    case 'staff':
+      return 'Staff';
+    case 'user':
+    default:
+      return 'User';
+  }
+};
+
+export const useSupabaseUsers = (initialFetch = true) => {
   const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
 
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = useCallback(async (page = 1, limit = 100, searchTerm?: string) => {
     setIsLoading(true);
     setError(null);
+    
     try {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('users')
         .select('*', { count: 'exact' });
-
-      if (error) {
-        throw new Error(error.message);
+      
+      // Apply search filter if provided
+      if (searchTerm) {
+        query = query.or(
+          `name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,business_name.ilike.%${searchTerm}%`
+        );
       }
-
-      if (count !== null) {
-        setTotalCount(count);
+      
+      // Apply pagination
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+      
+      const { data, error, count } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to);
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const mappedUsers: User[] = data.map(userData => ({
+          uid: userData.id,
+          id: userData.id,
+          email: userData.email || "",
+          displayName: userData.name || "",
+          name: userData.name || "",
+          role: transformRole(userData.role),
+          isAdmin: userData.is_admin || false,
+          photoURL: userData.photo_url || "",
+          employeeCode: userData.employee_code || "",
+          createdAt: userData.created_at || new Date().toISOString(),
+          lastLogin: userData.last_login || null,
+          phone: userData.phone || "",
+          instagramHandle: userData.instagram_handle || "",
+          facebookHandle: userData.facebook_handle || "",
+          verified: userData.verified || false,
+          city: userData.city || "",
+          country: userData.country || "",
+          niche: userData.niche || "",
+          followersCount: userData.followers_count || "",
+          bio: userData.bio || "",
+          businessName: userData.business_name || "",
+          ownerName: userData.owner_name || "",
+          businessCategory: userData.business_category || "",
+          website: userData.website || "",
+          gstNumber: userData.gst_number || "",
+          subscription: userData.subscription || null,
+          subscriptionId: userData.subscription_id || null,
+          subscriptionStatus: userData.subscription_status || null,
+          subscriptionPackage: userData.subscription_package || null,
+          customDashboardSections: userData.custom_dashboard_sections || null
+        }));
+        
+        setUsers(mappedUsers);
+        setTotalCount(count || 0);
+      } else {
+        setUsers([]);
+        setTotalCount(0);
       }
-
-      // Transform the data to match our User interface
-      const formattedUsers: User[] = (data || []).map((user: any) => ({
-        id: user.id,
-        uid: user.uid,
-        email: user.email,
-        name: user.name || user.displayName || 'Unnamed User',
-        photoURL: user.photoURL || user.photo_url || '',
-        isAdmin: user.isAdmin || user.is_admin || false,
-        role: normalizeRole(user.role),
-        createdAt: user.createdAt || user.created_at || '',
-        lastLogin: user.lastLogin || user.last_login || '',
-        phone: user.phone || '',
-        instagramHandle: user.instagramHandle || user.instagram_handle || '',
-        facebookHandle: user.facebookHandle || user.facebook_handle || '',
-        verified: user.verified || false,
-        city: user.city || '',
-        country: user.country || '',
-        website: user.website || '',
-        employeeCode: user.employeeCode || user.employee_code || '',
-        niche: user.niche || '',
-        followersCount: user.followersCount || user.followers_count || '',
-        bio: user.bio || '',
-        businessName: user.businessName || user.business_name || '',
-        ownerName: user.ownerName || user.owner_name || '',
-        businessCategory: user.businessCategory || user.business_category || '',
-        gstNumber: user.gstNumber || user.gst_number || '',
-        subscription: user.subscription || '',
-        subscriptionId: user.subscriptionId || user.subscription_id || '',
-        subscriptionStatus: user.subscriptionStatus || user.subscription_status || '',
-        subscriptionPackage: user.subscriptionPackage || user.subscription_package || '',
-        customDashboardSections: user.customDashboardSections || user.custom_dashboard_sections || [],
-        fullName: user.fullName || '',
-        userMetadata: user.userMetadata || {},
-        appMetadata: user.appMetadata || {}
-      }));
-
-      setUsers(formattedUsers);
-    } catch (err: any) {
-      setError(err instanceof Error ? err : new Error(err.message || 'Failed to fetch users'));
+    } catch (err) {
+      console.error('Error fetching users from Supabase:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch users');
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  // Fetch users on component mount if initialFetch is true
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    if (initialFetch) {
+      fetchUsers();
+    }
+  }, [fetchUsers, initialFetch]);
 
-  return { users, isLoading, error, totalCount, fetchUsers };
+  return {
+    users,
+    isLoading,
+    error,
+    totalCount,
+    fetchUsers,
+    setUsers
+  };
 };
 
 export default useSupabaseUsers;

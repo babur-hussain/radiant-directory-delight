@@ -6,39 +6,62 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Download, BarChart, PieChart, RefreshCw, ExternalLink } from "lucide-react";
 import DashboardWelcome from "../DashboardWelcome";
-import InfluencerRank from "./widgets/InfluencerRank";
-import PerformanceMetrics from "./widgets/PerformanceMetrics";
-import RatingsReviews from "./widgets/RatingsReviews";
-import CreativesTracker from "./widgets/CreativesTracker";
-import GoogleListingStatus from "./widgets/GoogleListingStatus";
 import ReelsProgress from "./widgets/ReelsProgress";
-import LeadsGenerated from "./widgets/LeadsGenerated";
+import CreativesTracker from "./widgets/CreativesTracker";
+import RatingsReviews from "./widgets/RatingsReviews";
 import SeoProgress from "./widgets/SeoProgress";
+import GoogleListingStatus from "./widgets/GoogleListingStatus";
+import PerformanceMetrics from "./widgets/PerformanceMetrics";
+import LeadsGenerated from "./widgets/LeadsGenerated";
+import InfluencerRank from "./widgets/InfluencerRank";
 import { useDashboardServices } from "@/hooks/useDashboardServices";
+import { useSubscription } from "@/hooks";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { isAdmin, isInfluencer } from "@/utils/roleUtils";
+import { useAuth } from "@/hooks";
 
 interface InfluencerDashboardProps {
   userId: string;
-  subscriptionStatus?: string | null;
 }
 
-const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId, subscriptionStatus }) => {
+const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [subscriptionData, setSubscriptionData] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "influencer");
+  const { services, isLoading: servicesLoading, error } = useDashboardServices(userId, "Influencer");
+  const { fetchUserSubscription, getUserDashboardFeatures } = useSubscription(userId);
   const { user } = useAuth();
   
   useEffect(() => {
-    // Short timeout to ensure services are loaded
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
+    const fetchSubscription = async () => {
+      if (!userId) {
+        setIsLoading(false);
+        return;
+      }
+      
+      setIsLoading(true);
+      
+      try {
+        console.log(`InfluencerDashboard: Fetching subscription for user ${userId}`);
+        const result = await fetchUserSubscription(userId);
+        
+        if (result.success && result.data) {
+          console.log("InfluencerDashboard: Got subscription:", result.data);
+          setSubscriptionData(result.data);
+        } else {
+          console.log("InfluencerDashboard: No subscription found");
+          setSubscriptionData(null);
+        }
+      } catch (error) {
+        console.error("InfluencerDashboard: Error fetching subscription:", error);
+        setSubscriptionData(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    return () => clearTimeout(timer);
-  }, []);
+    fetchSubscription();
+  }, [userId, fetchUserSubscription]);
   
   const handleExportData = (format: string) => {
     toast({
@@ -82,18 +105,18 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId, subsc
         </div>
         <h3 className="text-xl font-medium">Error loading dashboard</h3>
         <p className="text-muted-foreground mb-4">{error}</p>
-        <Button onClick={handleRefreshData}>Try Again</Button>
+        <Button onClick={() => window.location.reload()}>Try Again</Button>
       </div>
     );
   }
 
-  // Check if user is admin or if they are an influencer with the right role
-  const userHasAccess = isAdmin(user?.role) || isInfluencer(user?.role);
+  const isAdmin = user?.isAdmin || user?.role === "Admin";
   
-  // Check if subscription is active or if user has access
-  const hasActiveSubscription = userHasAccess || subscriptionStatus === "active";
+  const hasActiveSubscription = isAdmin || 
+    (subscriptionData && 
+      (subscriptionData.status === "active" || 
+       (typeof subscriptionData === 'object' && 'active' in subscriptionData && subscriptionData.active)));
 
-  // If no active subscription and not admin
   if (!hasActiveSubscription) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-xl mx-auto text-center">
@@ -102,7 +125,7 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId, subsc
         </div>
         <h2 className="text-2xl font-bold mb-2">You don't have any active subscriptions</h2>
         <p className="text-muted-foreground mb-8">
-          Subscribe to our Influencer Growth services to access your personalized dashboard and reach more followers.
+          Subscribe to our Influencer Program to access your personalized dashboard and start earning.
         </p>
         <div className="animate-pulse">
           <Button 
@@ -120,7 +143,7 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId, subsc
   
   return (
     <div className="space-y-6">
-      <DashboardWelcome role="influencer" />
+      <DashboardWelcome role="Influencer" />
       
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <Tabs defaultValue="all" className="w-full sm:w-auto">
@@ -148,14 +171,14 @@ const InfluencerDashboard: React.FC<InfluencerDashboardProps> = ({ userId, subsc
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {services.includes("rank") && <InfluencerRank />}
-        {services.includes("performance") && <PerformanceMetrics />}
-        {services.includes("ratings") && <RatingsReviews />}
-        {services.includes("creatives") && <CreativesTracker />}
-        {services.includes("google_listing") && <GoogleListingStatus />}
         {services.includes("reels") && <ReelsProgress />}
-        {services.includes("leads") && <LeadsGenerated />}
+        {services.includes("creatives") && <CreativesTracker />}
+        {services.includes("ratings") && <RatingsReviews />}
         {services.includes("seo") && <SeoProgress />}
+        {services.includes("google_listing") && <GoogleListingStatus />}
+        {services.includes("performance") && <PerformanceMetrics />}
+        {services.includes("leads") && <LeadsGenerated />}
+        {services.includes("rank") && <InfluencerRank />}
         
         {services.length === 0 && (
           <Card className="col-span-full">

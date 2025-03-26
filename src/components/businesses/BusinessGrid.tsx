@@ -2,18 +2,16 @@
 import { Button } from '@/components/ui/button';
 import BusinessCard from './BusinessCard';
 import { Link } from 'react-router-dom';
-import { Business as CsvBusiness } from '@/lib/csv-utils';
-import { Business } from '@/types/business';
+import { Business } from '@/lib/csv-utils';
 import Loading from '@/components/ui/loading';
 
-// Create a type that works with both Business types
-type BusinessProps = {
-  businesses: (Business | CsvBusiness)[];
+interface BusinessGridProps {
+  businesses: Business[];
   resetFilters: () => void;
   loading?: boolean;
 }
 
-const BusinessGrid = ({ businesses, resetFilters, loading = false }: BusinessProps) => {
+const BusinessGrid = ({ businesses, resetFilters, loading = false }: BusinessGridProps) => {
   if (loading) {
     return (
       <div className="flex flex-col justify-center items-center py-20">
@@ -27,7 +25,7 @@ const BusinessGrid = ({ businesses, resetFilters, loading = false }: BusinessPro
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
         {businesses.length > 0 ? (
           businesses.map(business => (
-            <BusinessCard key={business.id} business={business as Business} />
+            <BusinessCard key={business.id} business={business} />
           ))
         ) : (
           <div className="col-span-full text-center py-12">

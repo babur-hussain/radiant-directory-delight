@@ -1,230 +1,232 @@
 
 import { useState, useEffect } from 'react';
+import { User, UserSubscription, SubscriptionStatus } from '@/types/auth';
+import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import { supabase } from '@/integrations/supabase/client';
+import { nanoid } from 'nanoid';
 import { useToast } from '@/hooks/use-toast';
-import { UserSubscription } from '@/types/auth';
-import { generateId } from '@/lib/utils';
+import { PaymentType } from '@/models/Subscription';
 
-// Define the SubscriptionStatus type as a union of string literals
-export type SubscriptionStatus = 'active' | 'expired' | 'cancelled' | 'pending';
-
-interface UseSubscriptionAssignmentProps {
+interface SubscriptionAssignment {
   userId: string;
+  subscriptionId: string;
+  assignedBy: string;
+  assignedAt: string;
+  status: 'active' | 'inactive' | 'pending';
 }
 
-const useSubscriptionAssignment = ({ userId }: UseSubscriptionAssignmentProps) => {
-  const [selectedPackage, setSelectedPackage] = useState<{ id: string; title: string; price: number } | null>(null);
-  const [userCurrentSubscription, setUserCurrentSubscription] = useState<UserSubscription | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+export const useSubscriptionAssignment = (
+  user: User,
+  onSuccess?: (packageId: string) => void
+) => {
+  const [assignments, setAssignments] = useState<SubscriptionAssignment[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isCancelSubmitting, setIsCancelSubmitting] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<string>('');
+  const [userCurrentSubscription, setUserCurrentSubscription] = useState<UserSubscription | null>(null);
+  const { packages } = useSubscriptionPackages();
   const { toast } = useToast();
 
+  // Fetch current user's subscription
   useEffect(() => {
-    const fetchCurrentSubscription = async () => {
+    const fetchUserSubscription = async () => {
       setIsLoading(true);
       setError(null);
-
+      
       try {
+        // Get active subscription for this user
         const { data, error } = await supabase
           .from('user_subscriptions')
           .select('*')
-          .eq('user_id', userId)
+          .eq('user_id', user.uid)
           .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (error) {
-          throw error;
-        }
-
-        if (data && data.length > 0) {
-          const subscription = data[0];
-          const status: SubscriptionStatus = (subscription.status as SubscriptionStatus) || 'active';
-          
+          .maybeSingle();
+        
+        if (error) throw error;
+        
+        if (data) {
           setUserCurrentSubscription({
-            id: subscription.id || '',
-            userId: subscription.user_id,
-            packageId: subscription.package_id,
-            packageName: subscription.package_name,
-            status: status,
-            startDate: subscription.start_date,
-            endDate: subscription.end_date,
-            price: subscription.amount,
-            paymentType: subscription.payment_type || '',
-            cancelledAt: subscription.cancelled_at,
-            cancelReason: subscription.cancel_reason,
-            transactionId: subscription.transaction_id
+            id: data.id,
+            userId: data.user_id,
+            packageId: data.package_id,
+            packageName: data.package_name,
+            amount: data.amount,
+            startDate: data.start_date,
+            endDate: data.end_date,
+            status: data.status as SubscriptionStatus,
+            paymentMethod: data.payment_method,
+            transactionId: data.transaction_id,
+            cancelledAt: data.cancelled_at,
+            cancelReason: data.cancel_reason,
+            paymentType: data.payment_type as PaymentType
           });
-        } else {
-          setUserCurrentSubscription(null);
         }
       } catch (err) {
-        console.error("Error fetching current subscription:", err);
-        setError(err instanceof Error ? err.message : "Failed to load subscription");
+        console.error('Error fetching user subscription:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch subscription');
       } finally {
         setIsLoading(false);
       }
     };
+    
+    if (user?.uid) {
+      fetchUserSubscription();
+    }
+  }, [user]);
 
-    fetchCurrentSubscription();
-  }, [userId]);
+  const assignSubscription = (userId: string, subscriptionId: string, assignedBy: string) => {
+    const newAssignment: SubscriptionAssignment = {
+      userId,
+      subscriptionId,
+      assignedBy,
+      assignedAt: new Date().toISOString(),
+      status: 'active',
+    };
 
-  const handleAssignPackage = async (userId: string, months: number = 1): Promise<boolean> => {
+    setAssignments([...assignments, newAssignment]);
+  };
+
+  const updateAssignmentStatus = (userId: string, status: 'active' | 'inactive' | 'pending') => {
+    setAssignments(
+      assignments.map((assignment) =>
+        assignment.userId === userId ? { ...assignment, status } : assignment
+      )
+    );
+  };
+
+  // Handle package assignment
+  const handleAssignPackage = async () => {
+    if (!selectedPackage) {
+      setError('Please select a package to assign');
+      return;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      setIsSubmitting(true);
-      
-      if (!selectedPackage) {
-        toast({
-          title: "No Package Selected",
-          description: "Please select a subscription package",
-          variant: "destructive"
-        });
-        return false;
-      }
+      // Find the package details
+      const packageToAssign = packages.find(pkg => pkg.id === selectedPackage);
+      if (!packageToAssign) throw new Error('Selected package not found');
       
       const startDate = new Date();
       const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + months);
+      endDate.setMonth(endDate.getMonth() + (packageToAssign.durationMonths || 12));
       
-      const newSubscription = {
-        id: generateId(),
-        user_id: userId,
-        package_id: selectedPackage.id,
-        package_name: selectedPackage.title,
-        amount: selectedPackage.price,
+      const subscriptionData = {
+        id: nanoid(),
+        user_id: user.uid,
+        package_id: packageToAssign.id,
+        package_name: packageToAssign.title,
+        amount: packageToAssign.price,
         start_date: startDate.toISOString(),
         end_date: endDate.toISOString(),
         status: 'active' as SubscriptionStatus,
-        payment_type: "recurring",
-        created_at: new Date().toISOString()
+        payment_type: packageToAssign.paymentType as PaymentType || 'recurring',
+        assigned_at: startDate.toISOString(),
+        assigned_by: 'admin'
       };
       
-      const { data, error } = await supabase
+      const { data, error: insertError } = await supabase
         .from('user_subscriptions')
-        .insert([newSubscription])
+        .upsert(subscriptionData)
         .select();
-        
-      if (error) {
-        throw error;
-      }
       
-      // Optionally, fetch the newly inserted subscription to get all columns
-      const { data: insertedData, error: selectError } = await supabase
-        .from('user_subscriptions')
-        .select('*')
-        .eq('id', newSubscription.id)
-        .single();
+      if (insertError) throw insertError;
       
-      if (selectError) {
-        console.error("Error fetching inserted subscription:", selectError);
-      }
-      
-      toast({
-        title: "Package Assigned",
-        description: "The subscription package has been successfully assigned.",
-      });
-      
+      // Update local state
       setUserCurrentSubscription({
-        id: newSubscription.id || '',
-        userId: newSubscription.user_id,
-        packageId: newSubscription.package_id,
-        packageName: newSubscription.package_name,
-        status: 'active',
-        startDate: newSubscription.start_date,
-        endDate: newSubscription.end_date,
-        price: newSubscription.amount,
-        paymentType: newSubscription.payment_type || '',
-        cancelledAt: null,
-        cancelReason: null,
-        transactionId: null
+        id: subscriptionData.id,
+        userId: subscriptionData.user_id,
+        packageId: subscriptionData.package_id,
+        packageName: subscriptionData.package_name,
+        amount: subscriptionData.amount,
+        startDate: subscriptionData.start_date,
+        endDate: subscriptionData.end_date,
+        status: 'active' as SubscriptionStatus,
+        paymentType: subscriptionData.payment_type
       });
       
-      return true;
-    } catch (error) {
-      console.error("Error assigning package:", error);
+      // Assign locally as well
+      assignSubscription(user.uid, packageToAssign.id, 'admin');
+      
       toast({
-        title: "Error Assigning Package",
-        description: "Failed to assign the subscription package. Please try again.",
-        variant: "destructive"
+        title: 'Subscription Assigned',
+        description: `Successfully assigned ${packageToAssign.title} to ${user.name || user.email}`,
       });
-      return false;
+      
+      if (onSuccess) onSuccess(packageToAssign.id);
+    } catch (err) {
+      console.error('Error assigning subscription:', err);
+      setError(err instanceof Error ? err.message : 'Failed to assign subscription');
+      
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to assign subscription',
+        variant: 'destructive',
+      });
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
-
-  const handleCancelSubscription = async (userId: string, reason?: string): Promise<boolean> => {
+  
+  // Handle subscription cancellation
+  const handleCancelSubscription = async () => {
+    if (!userCurrentSubscription) {
+      setError('No active subscription to cancel');
+      return;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      setIsCancelSubmitting(true);
-
-      if (!userCurrentSubscription) {
-        toast({
-          title: "No Active Subscription",
-          description: "There is no active subscription to cancel.",
-          variant: "destructive"
-        });
-        return false;
-      }
-
-      const cancelledStatus: SubscriptionStatus = 'cancelled';
-      
-      const { data, error } = await supabase
+      const { error: updateError } = await supabase
         .from('user_subscriptions')
         .update({
-          status: cancelledStatus,
-          cancelled_at: new Date().toISOString(),
-          cancel_reason: reason || 'Cancelled by admin'
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString()
         })
-        .eq('user_id', userId)
-        .eq('id', userCurrentSubscription.id)
-        .select();
-
-      if (error) {
-        throw error;
-      }
-
-      toast({
-        title: "Subscription Cancelled",
-        description: "The subscription has been successfully cancelled.",
+        .eq('id', userCurrentSubscription.id);
+      
+      if (updateError) throw updateError;
+      
+      // Update local state
+      setUserCurrentSubscription({
+        ...userCurrentSubscription,
+        status: 'cancelled',
+        cancelledAt: new Date().toISOString()
       });
       
-      // Update the current subscription status
-      if (userCurrentSubscription) {
-        setUserCurrentSubscription({
-          ...userCurrentSubscription,
-          status: cancelledStatus,
-          cancelReason: reason || 'Cancelled by admin',
-          cancelledAt: new Date().toISOString()
-        });
-      }
-
-      return true;
-    } catch (error) {
-      console.error("Error cancelling subscription:", error);
       toast({
-        title: "Error Cancelling Subscription",
-        description: "Failed to cancel the subscription. Please try again.",
-        variant: "destructive"
+        title: 'Subscription Cancelled',
+        description: `Successfully cancelled subscription for ${user.name || user.email}`,
       });
-      return false;
+    } catch (err) {
+      console.error('Error cancelling subscription:', err);
+      setError(err instanceof Error ? err.message : 'Failed to cancel subscription');
+      
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to cancel subscription',
+        variant: 'destructive',
+      });
     } finally {
-      setIsCancelSubmitting(false);
+      setIsLoading(false);
     }
   };
 
   return {
+    assignments,
+    assignSubscription,
+    updateAssignmentStatus,
+    isLoading,
+    error,
+    packages,
     selectedPackage,
     setSelectedPackage,
     userCurrentSubscription,
-    setUserCurrentSubscription,
-    isSubmitting,
-    isLoading,
-    error,
     handleAssignPackage,
-    handleCancelSubscription,
-    isCancelSubmitting
+    handleCancelSubscription
   };
 };
-
-export default useSubscriptionAssignment;

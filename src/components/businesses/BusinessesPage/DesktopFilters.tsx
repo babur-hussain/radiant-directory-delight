@@ -27,21 +27,10 @@ const DesktopFilters: React.FC<DesktopFiltersProps> = ({
   const categories = React.useMemo(() => {
     const storedCategories = localStorage.getItem("businessCategories");
     if (storedCategories) {
-      try {
-        const parsedCategories = JSON.parse(storedCategories);
-        return Array.isArray(parsedCategories) 
-          ? parsedCategories.filter(cat => cat && cat.name && cat.name.trim() !== "").map(cat => cat.name)
-          : [];
-      } catch (e) {
-        console.error("Error parsing categories:", e);
-        return [];
-      }
+      return JSON.parse(storedCategories).map((cat: { name: string }) => cat.name);
     }
     return [];
   }, []);
-  
-  // Filter out empty locations
-  const filteredLocations = locations.filter(loc => loc && loc.trim() !== "");
   
   return (
     <>
@@ -70,7 +59,7 @@ const DesktopFilters: React.FC<DesktopFiltersProps> = ({
             className="w-full p-2 border rounded text-gray-900 bg-white"
           >
             <option value="">Any Location</option>
-            {filteredLocations.map(location => (
+            {locations.map(location => (
               <option key={location} value={location}>
                 {location}
               </option>

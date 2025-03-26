@@ -53,35 +53,12 @@ export const saveBusiness = async (businessData: Partial<IBusiness>): Promise<IB
     
     // Ensure hours is in the correct format
     const formattedData = {
-      name: businessData.name,
-      description: businessData.description || '',
-      category: businessData.category || '',
-      address: businessData.address || '',
-      phone: businessData.phone || '',
-      email: businessData.email || '',
-      website: businessData.website || '',
-      image: businessData.image || '',
+      ...businessData,
+      name: businessData.name, // Explicitly include name since it's required
       hours: businessData.hours ? 
         (typeof businessData.hours === 'string' ? businessData.hours : JSON.stringify(businessData.hours)) 
-        : null,
-      rating: businessData.rating || 0,
-      reviews: businessData.reviews || 0,
-      latitude: businessData.latitude || 0,
-      longitude: businessData.longitude || 0,
-      tags: businessData.tags || [],
-      featured: businessData.featured || false
+        : null
     };
-    
-    // Handle id differently if it's a string
-    if (businessData.id !== undefined) {
-      // If ID is a string that can be converted to a number, do so
-      if (typeof businessData.id === 'string' && !isNaN(Number(businessData.id))) {
-        formattedData['id'] = Number(businessData.id);
-      } else if (typeof businessData.id === 'number') {
-        formattedData['id'] = businessData.id;
-      }
-      // If id is a non-numeric string, we don't include it (let Supabase generate it)
-    }
     
     const { data, error } = await supabase
       .from('businesses')

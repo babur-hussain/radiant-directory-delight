@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardSectionsManager from "./DashboardSectionsManager";
 import UserDashboardCustomizer from "./UserDashboardCustomizer";
-import { isAdmin } from "@/utils/roleUtils";
 
 const AdminDashboardTabs = () => {
   const { user } = useAuth();
@@ -13,8 +12,8 @@ const AdminDashboardTabs = () => {
     return <div>Loading user data...</div>;
   }
   
-  // Check if user is admin using the helper function
-  const userIsAdmin = isAdmin(user.role) || user.isAdmin === true;
+  // Check if user is admin - don't destructure isAdmin directly
+  const userIsAdmin = user.isAdmin === true || user.role === 'Admin';
 
   return (
     <Tabs defaultValue="packages" className="w-full">

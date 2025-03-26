@@ -2,22 +2,22 @@
 import { Database } from '@/integrations/supabase/types';
 
 export interface IBusiness {
-  id: number | string;
+  id: number;
   name: string;
-  description?: string;
-  category: string; // Make required to match other Business types
-  address?: string;
-  phone?: string;
-  email?: string;
-  website?: string;
-  rating?: number;
-  reviews?: number;
-  latitude?: number;
-  longitude?: number;
-  hours?: Record<string, any> | string;
-  tags?: string[];
-  featured?: boolean;
-  image?: string;
+  description: string;
+  category: string;
+  address: string;
+  phone: string;
+  email: string;
+  website: string;
+  rating: number;
+  reviews: number;
+  latitude: number;
+  longitude: number;
+  hours: Record<string, any>;
+  tags: string[];
+  featured: boolean;
+  image: string;
 }
 
 // Define an adapter function to convert Supabase business data to our application model
@@ -26,7 +26,7 @@ export const fromSupabase = (data: Database['public']['Tables']['businesses']['R
     id: data.id,
     name: data.name || '',
     description: data.description || '',
-    category: data.category || '', // Ensure category is never undefined
+    category: data.category || '',
     address: data.address || '',
     phone: data.phone || '',
     email: data.email || '',

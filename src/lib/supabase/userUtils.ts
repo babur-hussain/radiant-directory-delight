@@ -1,6 +1,27 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User, UserRole, normalizeRole } from '@/types/auth';
+import { User, UserRole } from '@/types/auth';
+
+// Helper function to convert role string to UserRole type
+function transformRole(role: string | null): UserRole {
+  if (!role) return 'User';
+  
+  // Match with expected UserRole values
+  switch (role.toLowerCase()) {
+    case 'admin':
+      return 'Admin';
+    case 'business':
+      return 'Business';
+    case 'influencer':
+      return 'Influencer';
+    case 'user':
+      return 'User';
+    case 'staff':
+      return 'Staff';
+    default:
+      return 'User'; // Default to User if unknown
+  }
+}
 
 export const fetchUserByUid = async (uid: string): Promise<User | null> => {
   try {
@@ -23,7 +44,7 @@ export const fetchUserByUid = async (uid: string): Promise<User | null> => {
       email: data.email || '',
       displayName: data.name || '',
       name: data.name || '',
-      role: normalizeRole(data.role),
+      role: transformRole(data.role),
       isAdmin: data.is_admin || false,
       photoURL: data.photo_url || null,
       createdAt: data.created_at ? new Date(data.created_at).toISOString() : new Date().toISOString(),
@@ -89,7 +110,7 @@ export const getAllUsers = async (page = 1, limit = 10, searchTerm?: string): Pr
       email: userData.email || "",
       displayName: userData.name || "",
       name: userData.name || "",
-      role: normalizeRole(userData.role),
+      role: transformRole(userData.role),
       isAdmin: userData.is_admin || false,
       photoURL: userData.photo_url || "",
       employeeCode: userData.employee_code || "",
@@ -142,7 +163,7 @@ export const getUserById = async (userId: string): Promise<User | null> => {
       email: data.email || "",
       displayName: data.name || "",
       name: data.name || "",
-      role: normalizeRole(data.role),
+      role: transformRole(data.role),
       isAdmin: data.is_admin || false,
       photoURL: data.photo_url || null,
       employeeCode: data.employee_code || "",

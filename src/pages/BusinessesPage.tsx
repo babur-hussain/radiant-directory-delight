@@ -1,113 +1,114 @@
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
-import { Metadata } from '@/components/shared/Metadata';
-import useBusinessPageData from '@/hooks/useBusinessPageData';
-import BusinessesHero from '@/components/businesses/BusinessesPage/BusinessesHero';
-import BusinessesFilters from '@/components/businesses/BusinessesPage/BusinessesFilters';
-import BusinessesGrid from '@/components/businesses/BusinessesPage/BusinessesGrid';
-import BusinessesPagination from '@/components/businesses/BusinessesPage/BusinessesPagination';
+import { useState } from "react";
+import TablePagination from "@/components/admin/table/TablePagination";
+import BusinessesHeader from "@/components/businesses/BusinessesPage/BusinessesHeader";
+import ActiveFiltersDisplay from "@/components/businesses/BusinessesPage/ActiveFiltersDisplay";
+import BusinessesSorting from "@/components/businesses/BusinessesPage/BusinessesSorting";
+import BusinessesGrid from "@/components/businesses/BusinessesPage/BusinessesGrid";
+import { useBusinessPageData } from "@/hooks/useBusinessPageData";
+import { BusinessPageLoading } from "@/components/businesses/BusinessPageLoading";
 
 const BusinessesPage = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9;
-  
+  const [openFilters, setOpenFilters] = useState(false);
+
   const {
-    businesses,
-    categories,
-    tags,
     loading,
-    filterByCategory,
-    filterByTags,
-    getFilteredBusinesses,
-    visibleCategory,
-    selectedTags,
-    sortBusinesses,
+    businesses: currentBusinesses,
+    filteredBusinesses,
+    searchQuery,
+    setSearchQuery,
+    selectedCategory,
+    setSelectedCategory,
+    selectedRating,
+    setSelectedRating,
+    selectedLocation,
+    setSelectedLocation,
+    currentPage,
+    setCurrentPage,
+    featuredOnly,
+    setFeaturedOnly,
     sortBy,
-    sortDirection
+    setSortBy,
+    activeTags,
+    toggleTag,
+    locations,
+    allTags,
+    clearAllFilters,
+    activeFilterCount,
+    totalPages
   } = useBusinessPageData();
   
-  // Get filtered and paginated businesses
-  const filteredBusinesses = getFilteredBusinesses();
-  const totalPages = Math.ceil(filteredBusinesses.length / itemsPerPage);
-  
-  const paginatedBusinesses = filteredBusinesses.slice(
-    (currentPage - 1) * itemsPerPage, 
-    currentPage * itemsPerPage
-  );
-  
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    // Scroll to top on page change
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-  
-  const handleSort = (field: string) => {
-    const newDirection = sortBy === field && sortDirection === 'desc' ? 'asc' : 'desc';
-    sortBusinesses(field, newDirection);
-  };
-
-  const clearAllFilters = () => {
-    filterByCategory(null);
-    filterByTags([]);
-  };
+  if (loading) {
+    return <BusinessPageLoading />;
+  }
   
   return (
-    <>
-      <Metadata
-        title="Explore Local Businesses | Grow Bharat Vyapaar"
-        description="Discover the best local businesses in your area. Browse by category, read reviews, and find top-rated services."
+    <div className="container mx-auto px-4 py-12 max-w-7xl">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-bold mb-4">Discover Local Businesses</h1>
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          Find the best businesses in your area. Use the search and filters to narrow down your options.
+        </p>
+      </div>
+      
+      <BusinessesHeader 
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        activeFilterCount={activeFilterCount}
+        setOpenFilters={setOpenFilters}
+        openFilters={openFilters}
+        featuredOnly={featuredOnly}
+        setFeaturedOnly={setFeaturedOnly}
+        clearAllFilters={clearAllFilters}
+        allTags={allTags}
+        activeTags={activeTags}
+        toggleTag={toggleTag}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        selectedLocation={selectedLocation}
+        setSelectedLocation={setSelectedLocation}
+        locations={locations}
+        selectedRating={selectedRating}
+        setSelectedRating={setSelectedRating}
       />
       
-      <BusinessesHero />
+      <BusinessesSorting 
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        filteredCount={currentBusinesses.length}
+        totalCount={filteredBusinesses.length}
+      />
       
-      <section className="container mx-auto px-4 py-12">
-        <BusinessesFilters
-          categories={categories}
-          tags={tags}
-          selectedCategory={visibleCategory}
-          selectedTags={selectedTags}
-          onCategorySelect={filterByCategory}
-          onTagsSelect={filterByTags}
-          sortBy={sortBy}
-          sortDirection={sortDirection}
-          onSort={handleSort}
-        />
-        
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="w-12 h-12 animate-spin text-primary" />
-          </div>
-        ) : paginatedBusinesses.length > 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <BusinessesGrid 
-              businesses={paginatedBusinesses} 
-              clearAllFilters={clearAllFilters}
-            />
-            
-            {totalPages > 1 && (
-              <BusinessesPagination 
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-              />
-            )}
-          </motion.div>
-        ) : (
-          <div className="text-center py-20">
-            <h3 className="text-2xl font-semibold mb-4">No businesses found</h3>
-            <p className="text-gray-500 max-w-md mx-auto">
-              We couldn't find any businesses matching your filters. Try adjusting your search criteria or browse all businesses.
-            </p>
-          </div>
-        )}
-      </section>
-    </>
+      <ActiveFiltersDisplay 
+        selectedCategory={selectedCategory}
+        selectedLocation={selectedLocation}
+        selectedRating={selectedRating}
+        featuredOnly={featuredOnly}
+        activeTags={activeTags}
+        setSelectedCategory={setSelectedCategory}
+        setSelectedLocation={setSelectedLocation}
+        setSelectedRating={setSelectedRating}
+        setFeaturedOnly={setFeaturedOnly}
+        toggleTag={toggleTag}
+        clearAllFilters={clearAllFilters}
+        activeFilterCount={activeFilterCount}
+      />
+      
+      <BusinessesGrid 
+        businesses={currentBusinesses}
+        clearAllFilters={clearAllFilters}
+      />
+      
+      {totalPages > 1 && (
+        <div className="flex justify-center my-8">
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
+    </div>
   );
 };
 

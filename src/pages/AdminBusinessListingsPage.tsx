@@ -10,7 +10,6 @@ import BusinessListingsHeader from "@/components/admin/BusinessListingsHeader";
 import BusinessFormDialog from "@/components/admin/BusinessFormDialog";
 import BusinessPermissionError from "@/components/admin/table/BusinessPermissionError";
 import { supabase } from "@/integrations/supabase/client";
-import { Business, toNumberId, isNumberId } from "@/types/business";
 
 const AdminBusinessListingsPage = () => {
   const { user, isAuthenticated } = useAuth();
@@ -18,40 +17,32 @@ const AdminBusinessListingsPage = () => {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showBusinessFormDialog, setShowBusinessFormDialog] = useState(false);
   const [businessCount, setBusinessCount] = useState(0);
-  const [businesses, setBusinesses] = useState<Business[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [currentBusinessToEdit, setCurrentBusinessToEdit] = useState<Business | null>(null);
+  const [currentBusinessToEdit, setCurrentBusinessToEdit] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [permissionError, setPermissionError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [permissionError, setPermissionError] = useState(null);
   
-  // Fetch business count and data from Supabase
-  const fetchBusinesses = async () => {
-    setIsRefreshing(true);
-    setLoading(true);
+  // Fetch business count from Supabase
+  const fetchBusinessCount = async () => {
     try {
-      const { data, count, error } = await supabase
+      const { count, error } = await supabase
         .from('businesses')
-        .select('*', { count: 'exact' });
+        .select('*', { count: 'exact', head: true });
       
       if (error) throw error;
       setBusinessCount(count || 0);
-      setBusinesses(data || []);
     } catch (error) {
-      console.error("Error fetching businesses:", error);
+      console.error("Error fetching business count:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch business data",
+        description: "Failed to fetch business count",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
-      setIsRefreshing(false);
     }
   };
   
   useEffect(() => {
-    fetchBusinesses();
+    fetchBusinessCount();
   }, []);
   
   if (!isAuthenticated) {
@@ -60,7 +51,7 @@ const AdminBusinessListingsPage = () => {
   
   const handleUploadComplete = async (success: boolean, message: string, count?: number) => {
     if (success) {
-      await fetchBusinesses();
+      await fetchBusinessCount();
       toast({
         title: "Upload Successful",
         description: `${count} businesses have been imported successfully.`,
@@ -75,49 +66,22 @@ const AdminBusinessListingsPage = () => {
     }
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchBusinessCount();
+    setIsRefreshing(false);
+  };
+  
   const handleAddBusiness = () => {
     console.log("Add business button clicked");
     setCurrentBusinessToEdit(null);
     setShowBusinessFormDialog(true);
   };
   
-  const handleEditBusiness = (businessId: string | number) => {
-    const business = businesses.find(b => b.id === businessId);
-    if (business) {
-      setCurrentBusinessToEdit(business);
-      setShowBusinessFormDialog(true);
-    }
+  const handleEditBusiness = (business) => {
+    setCurrentBusinessToEdit(business);
+    setShowBusinessFormDialog(true);
   };
-  
-  const handleDeleteBusiness = async (businessId: string | number) => {
-    // Use type guard for numeric ids
-    if (isNumberId(businessId)) {
-      const numericId = toNumberId(businessId);
-      try {
-        const { error } = await supabase
-          .from('businesses')
-          .delete()
-          .eq('id', numericId);
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Business Deleted",
-          description: "The business has been removed successfully."
-        });
-      } catch (error) {
-        console.error("Error deleting business:", error);
-        toast({
-          title: "Delete Failed",
-          description: "Could not delete the business",
-          variant: "destructive"
-        });
-      }
-    }
-    
-    setBusinesses(businesses.filter(business => business.id !== businessId));
-    await fetchBusinesses();
-  }
   
   const handleBusinessFormSubmit = async (values: BusinessFormValues) => {
     setIsSubmitting(true);
@@ -138,7 +102,7 @@ const AdminBusinessListingsPage = () => {
             tags,
             updated_at: new Date().toISOString()
           })
-          .eq('id', toNumberId(currentBusinessToEdit.id)); // Use toNumberId here to ensure numeric ID
+          .eq('id', currentBusinessToEdit.id);
         
         if (error) throw error;
         
@@ -178,7 +142,7 @@ const AdminBusinessListingsPage = () => {
       
       setShowBusinessFormDialog(false);
       setCurrentBusinessToEdit(null);
-      fetchBusinesses();
+      handleRefresh();
     } catch (error) {
       console.error("Error saving business:", error);
       
@@ -206,7 +170,7 @@ const AdminBusinessListingsPage = () => {
       <BusinessListingsHeader 
         showUploadDialog={showUploadDialog}
         setShowUploadDialog={setShowUploadDialog}
-        handleRefresh={fetchBusinesses}
+        handleRefresh={handleRefresh}
         handleAddBusiness={handleAddBusiness}
         isRefreshing={isRefreshing}
         handleUploadComplete={handleUploadComplete}
@@ -225,12 +189,9 @@ const AdminBusinessListingsPage = () => {
         </CardHeader>
         <CardContent>
           <TableBusinessListings 
-            businesses={businesses}
-            onRefresh={fetchBusinesses}
-            onAdd={handleAddBusiness}
-            onEdit={handleEditBusiness}
-            onDelete={handleDeleteBusiness}
-            loading={loading}
+            onRefresh={handleRefresh} 
+            onAddBusiness={handleAddBusiness}
+            onEditBusiness={handleEditBusiness}
           />
         </CardContent>
       </Card>

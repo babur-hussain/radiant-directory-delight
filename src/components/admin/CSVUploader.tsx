@@ -7,8 +7,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { processCsvData } from '@/lib/csv-utils';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 const formSchema = z.object({
   file: z.instanceof(File, { message: 'Please select a CSV file' })
@@ -57,153 +57,69 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadStart, onUploa
     }
   };
 
-  const parseCSV = (csvText: string) => {
-    try {
-      const lines = csvText.split('\n');
-      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-      
-      // Map CSV headers to database columns
-      const columnMap: Record<string, string> = {
-        'Business Name': 'name',
-        'Category': 'category', 
-        'Address': 'address',
-        'Mobile Number': 'phone',
-        'Review': 'rating',
-        'Description': 'description',
-        'Email': 'email',
-        'Website': 'website',
-        'Tags': 'tags',
-        'Featured': 'featured',
-        'Image': 'image'
-      };
-      
-      // Process data rows
-      const businesses = [];
-      for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue; // Skip empty lines
-        
-        const values = lines[i].split(',').map(val => val.trim().replace(/"/g, ''));
-        if (values.length < headers.length) continue; // Skip incomplete rows
-        
-        const business: Record<string, any> = {};
-        let businessName = '';
-        
-        // Map CSV values to database columns
-        headers.forEach((header, index) => {
-          const dbColumn = columnMap[header] || header.toLowerCase().replace(/\s+/g, '_');
-          const value = values[index];
-          
-          if (header === 'Business Name') {
-            businessName = value;
-            business.name = value;
-          } else if (header === 'Tags') {
-            business.tags = value.split(';').map((tag: string) => tag.trim());
-          } else if (header === 'Review' || header === 'Rating') {
-            business.rating = parseFloat(value) || 0;
-          } else if (header === 'Featured') {
-            business.featured = value.toLowerCase() === 'true' || value === '1';
-          } else if (dbColumn in columnMap) {
-            business[dbColumn] = value;
-          }
-        });
-        
-        // Skip if no business name (only required field)
-        if (businessName) {
-          // Add timestamp fields with proper format
-          business.created_at = new Date().toISOString();
-          business.updated_at = new Date().toISOString();
-          
-          // Add defaults for missing fields
-          business.reviews = business.reviews || 0; 
-          business.rating = business.rating || 0;
-          business.category = business.category || 'Uncategorized';
-          business.featured = business.featured || false;
-          
-          businesses.push(business);
-        }
-      }
-      
-      return businesses;
-    } catch (error) {
-      console.error('Error parsing CSV:', error);
-      throw new Error('Failed to parse CSV file');
-    }
-  };
-
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsProcessing(true);
       setUploadProgress(10);
       onUploadStart();
       
-      // Read the file
-      const text = await values.file.text();
-      setUploadProgress(30);
+      const reader = new FileReader();
       
-      // Parse CSV data
-      const businesses = parseCSV(text);
+      reader.onload = async (event) => {
+        if (event.target?.result) {
+          const csvContent = event.target.result as string;
+          
+          setUploadProgress(30);
+          
+          try {
+            setUploadProgress(50);
+            const { success, businesses, message } = await processCsvData(csvContent);
+            setUploadProgress(100);
+            
+            if (success) {
+              toast({
+                title: "Upload Successful",
+                description: `${businesses.length} businesses processed successfully`,
+              });
+              onUploadComplete(true, message, businesses.length);
+            } else {
+              toast({
+                title: "Upload Failed",
+                description: message,
+                variant: "destructive"
+              });
+              onUploadComplete(false, message);
+            }
+          } catch (error) {
+            console.error("Failed to process CSV data:", error);
+            toast({
+              title: "Processing Error",
+              description: "Failed to process CSV data: " + (error instanceof Error ? error.message : String(error)),
+              variant: "destructive"
+            });
+            onUploadComplete(false, "Failed to process CSV data: " + (error instanceof Error ? error.message : String(error)));
+          }
+        }
+      };
       
-      if (businesses.length === 0) {
+      reader.onerror = () => {
         toast({
-          title: "No valid data",
-          description: "The CSV file does not contain any valid business entries",
+          title: "File Error",
+          description: "Error reading the file",
           variant: "destructive"
         });
-        
-        onUploadComplete(false, "No valid data found in the CSV file");
-        return;
-      }
+        onUploadComplete(false, "Error reading the file");
+      };
       
-      setUploadProgress(60);
-      console.log(`Parsed ${businesses.length} businesses from CSV`);
-      
-      // Process businesses in chunks to avoid large payloads
-      const chunkSize = 50;
-      let successCount = 0;
-      let errorCount = 0;
-      
-      for (let i = 0; i < businesses.length; i += chunkSize) {
-        const chunk = businesses.slice(i, i + chunkSize);
-        
-        try {
-          const { data, error } = await supabase
-            .from('businesses')
-            .insert(chunk)
-            .select();
-          
-          if (error) {
-            console.error('Chunk error:', error);
-            errorCount += chunk.length;
-          } else {
-            successCount += (data?.length || 0);
-          }
-        } catch (err) {
-          console.error('Error uploading chunk:', err);
-          errorCount += chunk.length;
-        }
-        
-        // Update progress
-        const progressValue = 60 + Math.round((i / businesses.length) * 40);
-        setUploadProgress(Math.min(progressValue, 99));
-      }
-      
-      setUploadProgress(100);
-      
-      toast({
-        title: "Upload Completed",
-        description: `${successCount} businesses processed successfully, ${errorCount} failed`,
-        variant: errorCount > 0 ? "default" : "default"
-      });
-      
-      onUploadComplete(true, `Successfully processed ${successCount} businesses`, successCount);
+      reader.readAsText(values.file);
     } catch (error) {
-      console.error("Failed to process CSV data:", error);
+      console.error("An unexpected error occurred:", error);
       toast({
-        title: "Processing Error",
-        description: "Failed to process CSV data: " + (error instanceof Error ? error.message : String(error)),
+        title: "Unexpected Error",
+        description: "An unexpected error occurred",
         variant: "destructive"
       });
-      onUploadComplete(false, "Failed to process CSV data: " + (error instanceof Error ? error.message : String(error)));
+      onUploadComplete(false, "An unexpected error occurred");
     } finally {
       setTimeout(() => {
         setIsProcessing(false);

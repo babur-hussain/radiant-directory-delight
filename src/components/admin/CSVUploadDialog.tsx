@@ -2,8 +2,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { DownloadCloud, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { DownloadCloud } from 'lucide-react';
 import CSVUploader from './CSVUploader';
 
 interface CSVUploadDialogProps {
@@ -14,18 +13,14 @@ interface CSVUploadDialogProps {
 
 const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ show, onClose, onUploadComplete }) => {
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleUploadStart = () => {
     setIsUploading(true);
-    setUploadError(null);
   };
 
   const handleUploadComplete = (success: boolean, message: string, count?: number) => {
     setIsUploading(false);
-    if (!success) {
-      setUploadError(message);
-    } else {
+    if (success) {
       onUploadComplete(success, message, count);
     }
   };
@@ -52,10 +47,7 @@ const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ show, onClose, onUplo
 
   return (
     <Dialog open={show} onOpenChange={(open) => {
-      if (!open && !isUploading) {
-        setUploadError(null);
-        onClose();
-      }
+      if (!open && !isUploading) onClose();
     }}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
@@ -72,16 +64,9 @@ const CSVUploadDialog: React.FC<CSVUploadDialogProps> = ({ show, onClose, onUplo
             </Button>
           </div>
           <DialogDescription>
-            Upload a CSV file to import multiple businesses at once. Only the Business Name field is required - all other fields are optional.
+            Upload a CSV file to import multiple businesses at once. The file should contain columns for Business Name, Category, Address, Mobile Number, and Review rating.
           </DialogDescription>
         </DialogHeader>
-        
-        {uploadError && (
-          <Alert variant="destructive" className="my-2">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{uploadError}</AlertDescription>
-          </Alert>
-        )}
         
         <div className="py-4">
           <CSVUploader 

@@ -1,6 +1,6 @@
 
 import { createOrUpdateUser } from "@/api/services/userAPI";
-import { UserRole, normalizeRole } from "@/types/auth";
+import { UserRole } from "@/types/auth";
 import { nanoid } from 'nanoid';
 
 // Function to create a test employee ID
@@ -9,9 +9,8 @@ export const createTestEmployeeId = () => {
 };
 
 // Create a function to generate test users
-export const generateTestUsers = async (count = 10, type: string = 'user') => {
-  const role = normalizeRole(type);
-  console.log(`Generating ${count} test ${role} users...`);
+export const generateTestUsers = async (count = 10, type: UserRole = 'User') => {
+  console.log(`Generating ${count} test ${type} users...`);
   
   const users = [];
   
@@ -22,10 +21,10 @@ export const generateTestUsers = async (count = 10, type: string = 'user') => {
     // Create a user with basic fields
     const userData = {
       uid: userId,
-      email: `test${role}${i}@example.com`,
-      name: `Test ${role} ${i}`,
-      role: role,
-      isAdmin: role === 'admin',
+      email: `test${type.toLowerCase()}${i}@example.com`,
+      name: `Test ${type} ${i}`,
+      role: type,
+      isAdmin: type === 'Admin',
       employeeCode: employeeCode,
       createdAt: new Date().toISOString(),
       lastLogin: new Date().toISOString()
@@ -35,7 +34,7 @@ export const generateTestUsers = async (count = 10, type: string = 'user') => {
       // Create the user in the database
       await createOrUpdateUser(userData);
       users.push(userData);
-      console.log(`Created test ${role} user: ${userData.email}`);
+      console.log(`Created test ${type} user: ${userData.email}`);
     } catch (error) {
       console.error(`Failed to create test user ${i}:`, error);
     }
@@ -57,9 +56,8 @@ export interface TestUserData {
 }
 
 // Create a single test user (used by other modules)
-export const createTestUser = async (role: string = 'user'): Promise<TestUserData | null> => {
-  const normalizedRole = normalizeRole(role);
-  const users = await generateTestUsers(1, normalizedRole);
+export const createTestUser = async (role: UserRole = 'User'): Promise<TestUserData | null> => {
+  const users = await generateTestUsers(1, role);
   return users[0] || null;
 };
 
@@ -73,7 +71,7 @@ export const generateAdminUser = async () => {
       uid: adminId,
       email: `admin@example.com`,
       name: 'Admin User',
-      role: 'admin' as UserRole,
+      role: 'Admin' as UserRole,
       isAdmin: true,
       employeeCode,
       createdAt: new Date().toISOString(),
@@ -97,9 +95,9 @@ export const generateAllTypesOfUsers = async (countPerType = 5) => {
   const admin = await generateAdminUser();
   
   // Create users of each type
-  const standardUsers = await generateTestUsers(countPerType, 'user');
-  const businessUsers = await generateTestUsers(countPerType, 'business');
-  const influencerUsers = await generateTestUsers(countPerType, 'influencer');
+  const standardUsers = await generateTestUsers(countPerType, 'User');
+  const businessUsers = await generateTestUsers(countPerType, 'Business');
+  const influencerUsers = await generateTestUsers(countPerType, 'Influencer');
   
   return {
     admin,
@@ -117,9 +115,9 @@ export const ensureTestUsers = async (count = 5): Promise<TestUserData[]> => {
   try {
     // Generate one of each type
     const admin = await generateAdminUser();
-    const standardUsers = await generateTestUsers(count, 'user');
-    const businessUsers = await generateTestUsers(count, 'business');
-    const influencerUsers = await generateTestUsers(count, 'influencer');
+    const standardUsers = await generateTestUsers(count, 'User');
+    const businessUsers = await generateTestUsers(count, 'Business');
+    const influencerUsers = await generateTestUsers(count, 'Influencer');
     
     return [admin, ...standardUsers, ...businessUsers, ...influencerUsers].filter(Boolean) as TestUserData[];
   } catch (error) {

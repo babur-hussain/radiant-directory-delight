@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, LogIn, LayoutDashboard } from 'lucide-react';
@@ -5,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from '@/hooks/useAuth';
 import UserMenu from './UserMenu';
 import AuthModal from './auth/AuthModal';
-import { isAdmin, isBusiness, isInfluencer } from '@/utils/roleUtils';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -36,11 +36,11 @@ const Header = () => {
     if (!isAuthenticated || !currentUser) return;
     
     // Navigate to the appropriate dashboard based on user role
-    if (isAdmin(currentUser.role)) {
+    if (currentUser.role === "Admin" || currentUser.isAdmin) {
       navigate("/admin/dashboard");
-    } else if (isInfluencer(currentUser.role)) {
+    } else if (currentUser.role === "Influencer") {
       navigate("/dashboard/influencer");
-    } else if (isBusiness(currentUser.role)) {
+    } else if (currentUser.role === "Business") {
       navigate("/dashboard/business");
     } else {
       // Default fallback for users with unspecified roles

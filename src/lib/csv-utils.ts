@@ -1,302 +1,263 @@
-import { Json } from "@/integrations/supabase/types";
-import { supabase } from '@/integrations/supabase/client';
-import Papa from 'papaparse';
 
-// Define Business interface
+import Papa from 'papaparse';
+import { supabase } from '@/integrations/supabase/client';
+import { IBusiness } from '@/models/Business';
+import { generateId } from '@/utils/id-generator';
+
 export interface Business {
-  id: number | string; // Allow both number and string IDs
+  id: number;
   name: string;
-  category: string; // Changed from optional to required to match the other Business type
   description?: string;
+  category?: string;
   address?: string;
   phone?: string;
   email?: string;
   website?: string;
-  image?: string;
-  hours?: string | Record<string, string> | Record<string, any>;
-  rating?: number;
+  rating: number;
   reviews?: number;
-  featured?: boolean;
-  tags?: string[];
   latitude?: number;
   longitude?: number;
-  created_at?: string;
-  updated_at?: string;
+  hours?: Record<string, string>;
+  tags?: string[];
+  featured?: boolean;
+  image?: string;
 }
 
-// Function to parse CSV file and convert it to Business objects
-export const parseBusinessesCSV = async (file: File): Promise<Business[]> => {
-  return new Promise((resolve, reject) => {
-    Papa.parse(file, {
+let businessesCache: Business[] = [];
+const dataChangeListeners: Function[] = [];
+
+// Function to initialize data from Supabase
+export const initializeData = async (): Promise<void> => {
+  try {
+    console.log("Initializing business data from Supabase...");
+    const { data, error } = await supabase.from('businesses').select('*');
+    
+    if (error) {
+      throw error;
+    }
+    
+    businessesCache = data as Business[];
+    console.log(`Loaded ${businessesCache.length} businesses from Supabase`);
+    notifyDataChangeListeners();
+  } catch (error) {
+    console.error("Error initializing data from Supabase:", error);
+    businessesCache = [];
+  }
+};
+
+// Generate a business ID within PostgreSQL integer range (smaller values)
+const generateBusinessId = (): number => {
+  // Generate a random number between 1000 and 999999
+  // This ensures the ID is within the safe range for PostgreSQL integer
+  return Math.floor(Math.random() * 998999) + 1000;
+};
+
+// Process CSV data and upload to Supabase
+export const processCsvData = async (csvContent: string): Promise<{ success: boolean, businesses: Business[], message: string }> => {
+  try {
+    console.log("Processing CSV data...");
+    
+    const results = Papa.parse(csvContent, {
       header: true,
       skipEmptyLines: true,
-      complete: (results) => {
-        try {
-          const businesses: Business[] = results.data.map((row: any, index: number) => {
-            // Skip rows without a business name (required field)
-            if (!row["Business Name"] && !row.name) {
-              return null;
-            }
-            
-            // Generate a unique ID for each business (negative to avoid conflicts with DB IDs)
-            const id = -(index + 1);
-            
-            // Parse tags from comma-separated string
-            const tags = row.Tags ? 
-              row.Tags.split(',').map((tag: string) => tag.trim()) : 
-              [];
-            
-            // Generate a default image URL if none provided
-            const categoryValue = row.Category || row.category || "";
-            const image = row.Image || row.image || `https://source.unsplash.com/random/500x350/?${categoryValue.toLowerCase().replace(/\s+/g, ",")}`;
-            
-            // Parse rating as a number (0 if invalid)
-            const rating = parseFloat(row.Review || row.Rating || row.rating || "0");
-            
-            // Current timestamp for created_at and updated_at
-            const timestamp = new Date().toISOString();
-            
-            return {
-              id,
-              name: row["Business Name"] || row.name || "",
-              category: row.Category || row.category || "",
-              description: row.Description || row.description || "",
-              address: row.Address || row.address || "",
-              phone: row["Mobile Number"] || row.Phone || row.phone || "",
-              email: row.Email || row.email || "",
-              website: row.Website || row.website || "",
-              image,
-              hours: row.Hours || row.hours || {},
-              rating: isNaN(rating) ? 0 : rating,
-              reviews: parseInt(row.Reviews || row.reviews || "0", 10) || 0,
-              featured: row.Featured === "true" || row.Featured === true || false,
-              tags,
-              latitude: parseFloat(row.Latitude || row.latitude || "0") || 0,
-              longitude: parseFloat(row.Longitude || row.longitude || "0") || 0,
-              created_at: timestamp,
-              updated_at: timestamp
-            };
-          }).filter(Boolean); // Remove null entries (rows without business name)
-          
-          resolve(businesses);
-        } catch (error) {
-          reject(error);
-        }
-      },
-      error: (error) => {
-        reject(error);
+      transformHeader: (header) => {
+        // Normalize headers - convert "Business Name" to "name", etc.
+        const headerMap: { [key: string]: string } = {
+          "Business Name": "name",
+          "Category": "category",
+          "Address": "address",
+          "Mobile Number": "phone",
+          "Review": "rating",
+          "Description": "description",
+          "Email": "email",
+          "Website": "website",
+          "Reviews": "reviews",
+          "Image": "image",
+          "Tags": "tags"
+        };
+        
+        return headerMap[header] || header.toLowerCase();
       }
     });
-  });
-};
-
-// Cache for businesses to avoid repeated fetches
-let businessesCache: Business[] | null = null;
-let featuredBusinessesCache: Business[] | null = null;
-let lastFetchTimestamp = 0;
-const CACHE_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes
-
-// Helper functions for formatting business data
-export const parseHours = (hours: string | Record<string, string> | Json | null): Record<string, string> => {
-  if (!hours) return {};
-  
-  if (typeof hours === 'string') {
-    try {
-      // Try to parse JSON string
-      return JSON.parse(hours);
-    } catch (error) {
-      // If not valid JSON, handle as comma-separated key-value string
-      const hoursRecord: Record<string, string> = {};
-      const pairs = hours.split(',');
-      
-      pairs.forEach(pair => {
-        const [key, value] = pair.split(':').map(item => item.trim());
-        if (key && value) {
-          hoursRecord[key] = value;
+    
+    if (results.errors.length > 0) {
+      console.error("CSV parsing errors:", results.errors);
+      return { 
+        success: false, 
+        businesses: [], 
+        message: `CSV parsing error: ${results.errors[0].message}` 
+      };
+    }
+    
+    console.log("CSV parsing result:", results);
+    
+    const businesses: Business[] = [];
+    const failed: string[] = [];
+    
+    for (const row of results.data as any[]) {
+      try {
+        // Validate required fields - using normalized column names
+        if (!row.name || row.name.trim() === '') {
+          console.warn("Skipping row without business name:", row);
+          continue;
         }
-      });
-      
-      return hoursRecord;
+        
+        // Parse rating value from string to number
+        let rating = 0;
+        if (row.rating) {
+          // Handle rating that might be a string with stars or just a number
+          const ratingValue = row.rating.toString().replace(/[^0-9.]/g, '');
+          rating = parseFloat(ratingValue) || 0;
+          // Limit rating to 5 stars max
+          rating = Math.min(rating, 5);
+        }
+        
+        // Create business object with a smaller ID that fits within PostgreSQL integer limits
+        const business: Business = {
+          id: generateBusinessId(), // Use the safer ID generation method
+          name: row.name.trim(),
+          category: row.category || "",
+          description: row.description || `${row.name} is a business in the ${row.category || "various"} category.`,
+          address: row.address || "",
+          phone: row.phone || "",
+          email: row.email || "",
+          website: row.website || "",
+          rating: rating,
+          reviews: parseInt(row.reviews) || Math.floor(Math.random() * 100) + 5,
+          latitude: parseFloat(row.latitude) || 0,
+          longitude: parseFloat(row.longitude) || 0,
+          tags: row.tags ? row.tags.split(',').map((tag: string) => tag.trim()) : [row.category || ""],
+          featured: row.featured === "true" || row.featured === true,
+          image: row.image || `/placeholder-${Math.floor(Math.random() * 5) + 1}.jpg`
+        };
+        
+        console.log("Saving business to Supabase:", business.name);
+        
+        try {
+          // Add to Supabase
+          const { error } = await supabase.from('businesses').insert([business]);
+          
+          if (error) {
+            console.error("Error inserting business to Supabase:", error);
+            failed.push(business.name);
+            continue;
+          }
+          
+          businesses.push(business);
+        } catch (insertError) {
+          console.error("Error during Supabase insert:", insertError);
+          failed.push(business.name);
+        }
+      } catch (rowError) {
+        console.error("Error processing CSV row:", rowError);
+      }
     }
-  }
-  
-  // Handle already parsed JSON or record
-  if (typeof hours === 'object') {
-    return hours as Record<string, string>;
-  }
-  
-  return {};
-};
-
-// Helper to ensure tags is always an array
-export const ensureTagsArray = (tags: string | string[] | null | undefined): string[] => {
-  if (!tags) return [];
-  
-  if (Array.isArray(tags)) {
-    return tags;
-  }
-  
-  if (typeof tags === 'string') {
-    if (tags.includes(',')) {
-      return tags.split(',').map(tag => tag.trim());
+    
+    // Update the cache after successfully saving to Supabase
+    if (businesses.length > 0) {
+      // Refresh the entire cache from Supabase
+      await initializeData();
     }
-    return [tags.trim()];
+    
+    let message = `Successfully processed ${businesses.length} businesses`;
+    if (failed.length > 0) {
+      message += `. Failed to insert ${failed.length} businesses.`;
+    }
+    
+    return { 
+      success: true, 
+      businesses, 
+      message 
+    };
+  } catch (error) {
+    console.error("Error processing CSV data:", error);
+    return { 
+      success: false, 
+      businesses: [], 
+      message: `Error: ${error instanceof Error ? error.message : String(error)}` 
+    };
   }
-  
-  return [];
 };
 
-// Format business data
-export const formatBusiness = (business: any): Business => {
-  return {
-    id: business.id || 0,
-    name: business.name || '',
-    category: business.category || '', // Ensure category is never undefined
-    description: business.description || '',
-    address: business.address || '',
-    phone: business.phone || '',
-    email: business.email || '',
-    website: business.website || '',
-    image: business.image || '',
-    hours: business.hours || '',
-    rating: Number(business.rating) || 0,
-    reviews: Number(business.reviews) || 0,
-    featured: Boolean(business.featured) || false,
-    tags: ensureTagsArray(business.tags),
-    latitude: Number(business.latitude) || 0,
-    longitude: Number(business.longitude) || 0,
-    created_at: business.created_at || '',
-    updated_at: business.updated_at || ''
-  };
+// Get all businesses from cache
+export const getAllBusinesses = (): Business[] => {
+  return [...businessesCache];
 };
 
-// Function to get all businesses with caching
-export const getAllBusinesses = async (): Promise<Business[]> => {
-  const now = Date.now();
-  
-  // Return cached data if it's still valid
-  if (businessesCache && (now - lastFetchTimestamp < CACHE_VALIDITY_MS)) {
-    console.log('Using cached businesses data');
-    return businessesCache;
-  }
-  
+// Add a business
+export const addBusiness = async (businessData: Partial<Business>): Promise<Business> => {
   try {
-    console.log('Fetching businesses from Supabase');
-    const { data, error } = await supabase
-      .from('businesses')
-      .select('*')
-      .order('name');
+    // Ensure ID exists and is within PostgreSQL integer range
+    const businessId = businessData.id || generateBusinessId();
+    
+    // Create complete business object
+    const business: Business = {
+      id: businessId,
+      name: businessData.name || "Unnamed Business",
+      description: businessData.description || `${businessData.name} is a business in the ${businessData.category || "various"} category.`,
+      category: businessData.category || "",
+      address: businessData.address || "",
+      phone: businessData.phone || "",
+      email: businessData.email || "",
+      website: businessData.website || "",
+      rating: businessData.rating || 0,
+      reviews: businessData.reviews || 0,
+      latitude: businessData.latitude || 0,
+      longitude: businessData.longitude || 0,
+      hours: businessData.hours || {},
+      tags: businessData.tags || [businessData.category || ""],
+      featured: businessData.featured || false,
+      image: businessData.image || `/placeholder-${Math.floor(Math.random() * 5) + 1}.jpg`
+    };
+    
+    // Save to Supabase
+    const { error } = await supabase.from('businesses').insert([business]);
     
     if (error) {
-      console.error('Error fetching businesses:', error);
-      return businessesCache || []; // Return cached data if available, otherwise empty array
+      throw error;
     }
     
     // Update cache
-    businessesCache = (data || []).map(formatBusiness);
-    lastFetchTimestamp = now;
+    businessesCache.push(business);
+    notifyDataChangeListeners();
     
-    return businessesCache;
+    return business;
   } catch (error) {
-    console.error('Error in getAllBusinesses:', error);
-    return businessesCache || []; // Return cached data if available, otherwise empty array
+    console.error("Error adding business:", error);
+    throw error;
   }
 };
 
-// Function to get featured businesses with caching
-export const getFeaturedBusinesses = async (limit: number = 6): Promise<Business[]> => {
-  const now = Date.now();
-  
-  // Return cached data if it's still valid
-  if (featuredBusinessesCache && (now - lastFetchTimestamp < CACHE_VALIDITY_MS)) {
-    console.log('Using cached featured businesses data');
-    return featuredBusinessesCache;
-  }
-  
+// Update an existing business
+export const updateBusiness = async (businessData: Business): Promise<boolean> => {
   try {
-    console.log('Fetching featured businesses from Supabase');
-    const { data, error } = await supabase
+    // Save to Supabase
+    const { error } = await supabase
       .from('businesses')
-      .select('*')
-      .eq('featured', true)
-      .order('rating', { ascending: false })
-      .limit(limit);
+      .update(businessData)
+      .eq('id', businessData.id);
     
     if (error) {
-      console.error('Error fetching featured businesses:', error);
-      return featuredBusinessesCache || []; // Return cached data if available, otherwise empty array
+      throw error;
     }
     
     // Update cache
-    featuredBusinessesCache = (data || []).map(formatBusiness);
-    lastFetchTimestamp = now;
-    
-    return featuredBusinessesCache;
-  } catch (error) {
-    console.error('Error in getFeaturedBusinesses:', error);
-    return featuredBusinessesCache || []; // Return cached data if available, otherwise empty array
-  }
-};
-
-// Function to get businesses by category
-export const getBusinessesByCategory = async (category: string): Promise<Business[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('businesses')
-      .select('*')
-      .eq('category', category)
-      .order('name');
-    
-    if (error) {
-      console.error('Error fetching businesses by category:', error);
-      return [];
+    const index = businessesCache.findIndex(b => b.id === businessData.id);
+    if (index !== -1) {
+      businessesCache[index] = businessData;
+    } else {
+      businessesCache.push(businessData);
     }
     
-    return (data || []).map(formatBusiness);
+    notifyDataChangeListeners();
+    return true;
   } catch (error) {
-    console.error('Error in getBusinessesByCategory:', error);
-    return [];
+    console.error("Error updating business:", error);
+    throw error;
   }
 };
 
-// Add listeners for data changes
-const dataChangeListeners: Array<() => void> = [];
-
-export const addDataChangeListener = (listener: () => void) => {
-  dataChangeListeners.push(listener);
-};
-
-export const removeDataChangeListener = (listener: () => void) => {
-  const index = dataChangeListeners.indexOf(listener);
-  if (index !== -1) {
-    dataChangeListeners.splice(index, 1);
-  }
-};
-
-// Notify listeners about data changes
-const notifyDataChange = () => {
-  dataChangeListeners.forEach(listener => listener());
-};
-
-// Function to initialize data
-export const initializeData = async (): Promise<void> => {
-  console.log("Initializing business data...");
-  
-  // Pre-fetch data for caching
-  if (!businessesCache) {
-    try {
-      await getAllBusinesses();
-      console.log("Businesses data initialized and cached");
-    } catch (err) {
-      console.error("Error initializing business data:", err);
-    }
-  }
-  
-  notifyDataChange();
-  return Promise.resolve();
-};
-
-// Function to delete a business
+// Delete a business
 export const deleteBusiness = async (id: number): Promise<boolean> => {
   try {
     const { error } = await supabase
@@ -304,16 +265,36 @@ export const deleteBusiness = async (id: number): Promise<boolean> => {
       .delete()
       .eq('id', id);
     
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     
-    // Invalidate cache to force refresh
-    businessesCache = null;
-    featuredBusinessesCache = null;
-    
-    notifyDataChange();
+    // Update cache
+    businessesCache = businessesCache.filter(b => b.id !== id);
+    notifyDataChangeListeners();
     return true;
   } catch (error) {
-    console.error('Error deleting business:', error);
+    console.error("Error deleting business:", error);
     return false;
+  }
+};
+
+// Add a data change listener
+export const addDataChangeListener = (listener: Function): void => {
+  dataChangeListeners.push(listener);
+};
+
+// Remove a data change listener
+export const removeDataChangeListener = (listener: Function): void => {
+  const index = dataChangeListeners.indexOf(listener);
+  if (index !== -1) {
+    dataChangeListeners.splice(index, 1);
+  }
+};
+
+// Notify all listeners about data changes
+const notifyDataChangeListeners = (): void => {
+  for (const listener of dataChangeListeners) {
+    listener();
   }
 };

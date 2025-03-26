@@ -13,17 +13,17 @@ function transformRole(role: string | null): UserRole {
   // Match with expected UserRole values
   switch (role.toLowerCase()) {
     case 'admin':
-      return 'admin';
+      return 'Admin';
     case 'business':
-      return 'business';
+      return 'Business';
     case 'influencer':
-      return 'influencer';
+      return 'Influencer';
     case 'user':
-      return 'user';
+      return 'User';
     case 'staff':
-      return 'staff';
+      return 'Staff';
     default:
-      return 'user'; // Default to User if unknown
+      return 'User'; // Default to User if unknown
   }
 }
 

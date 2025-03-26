@@ -1,302 +1,376 @@
-
-import React, { useState, useEffect } from 'react';
-import { User, UserSubscription, SubscriptionStatus } from '@/types/auth';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { BringToFront, UserCheck, UserX, Unlink, Link } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import { dateToISOString } from '@/utils/date-utils';
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Search, UserCheck, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
+import { SubscriptionPackage } from "@/data/subscriptionData";
+import { User, UserRole, SubscriptionStatus, UserSubscription } from "@/types/auth";
+import { useAuth } from "@/hooks/useAuth";
+import { getAllUsers } from "@/features/auth/userDataAccess";
 
 interface UserSubscriptionMappingProps {
-  users: User[];
-  onMappingComplete?: () => void;
+  onPermissionError?: (error: any) => void;
 }
 
-const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ 
-  users,
-  onMappingComplete
-}) => {
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
-  const [selectedPackageId, setSelectedPackageId] = useState<string>('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [userSubscriptions, setUserSubscriptions] = useState<Record<string, UserSubscription>>({});
-  const [packages, setPackages] = useState<Array<{ id: string, name: string, price: number }>>([]);
+const UserSubscriptionMapping: React.FC<UserSubscriptionMappingProps> = ({ onPermissionError }) => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { user: currentUser } = useAuth();
+  const { toast } = useToast();
   
-  // Initialize with mock data
-  useEffect(() => {
-    // Mock packages
-    setPackages([
-      { id: 'basic', name: 'Basic Plan', price: 999 },
-      { id: 'standard', name: 'Standard Plan', price: 1999 },
-      { id: 'premium', name: 'Premium Plan', price: 2999 },
-      { id: 'enterprise', name: 'Enterprise Plan', price: 4999 }
-    ]);
-    
-    // Mock existing subscriptions for some users
-    const mockSubscriptions: Record<string, UserSubscription> = {};
-    
-    // Assign random subscriptions to some users
-    users.forEach((user, index) => {
-      if (index % 3 === 0) { // Assign to every 3rd user
-        const packageId = packages[index % packages.length]?.id || 'basic';
-        const packageName = packages.find(p => p.id === packageId)?.name || 'Basic Plan';
-        
-        const now = new Date();
-        const endDate = new Date();
-        endDate.setMonth(now.getMonth() + 6); // 6 month subscription
-        
-        mockSubscriptions[user.id] = {
-          id: `sub_${Date.now() + index}`,
-          userId: user.id,
-          packageId,
-          packageName,
-          status: 'active',
-          startDate: now.toISOString(),
-          endDate: endDate.toISOString(),
-          amount: packages.find(p => p.id === packageId)?.price || 0,
-          paymentType: 'recurring'
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const result = await getAllUsers();
+      const firebaseUsers = result.users;
+      console.log("Fetched users for subscription mapping:", firebaseUsers.length);
+      
+      firebaseUsers.forEach((user, idx) => {
+        console.log(`Mapping user ${idx + 1}:`, user.id, user.email);
+      });
+      
+      const allPackages = await fetchSubscriptionPackages();
+      
+      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
+      
+      const usersWithSubscriptions = firebaseUsers.map((user: User) => {
+        const userWithSubscription: User = {
+          ...user,
+          subscription: userSubscriptions[user.id] || null
         };
+        return userWithSubscription;
+      });
+      
+      setUsers(usersWithSubscriptions);
+      setPackages(allPackages);
+      setError(null);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setError("Failed to load users or subscription packages.");
+      
+      if (onPermissionError) {
+        onPermissionError(error);
       }
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+  
+  useEffect(() => {
+    fetchData();
+  }, [onPermissionError]);
+  
+  const filteredUsers = users.filter(user => 
+    (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+  
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+  
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchData();
+    toast({
+      title: "Refreshed",
+      description: "User subscription data has been refreshed",
     });
-    
-    setUserSubscriptions(mockSubscriptions);
-  }, [users]);
-  
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR'
-    }).format(price);
   };
   
-  const handleAssignSubscription = async () => {
-    if (!selectedUserId || !selectedPackageId) {
-      toast({
-        title: "Missing Information",
-        description: "Please select both a user and a package",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setIsProcessing(true);
-    
+  const handleAssignPackage = (userId: string, packageId: string) => {
     try {
-      // Find selected package
-      const selectedPackage = packages.find(p => p.id === selectedPackageId);
+      if (!currentUser?.isAdmin) {
+        setError("You don't have permission to assign packages.");
+        return;
+      }
       
+      const selectedPackage = packages.find(pkg => pkg.id === packageId);
       if (!selectedPackage) {
-        throw new Error("Selected package not found");
+        toast({
+          title: "Error",
+          description: "Invalid package selected.",
+          variant: "destructive"
+        });
+        return;
       }
       
-      // Create start/end dates
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setFullYear(endDate.getFullYear() + 1); // 1 year subscription
-      
-      // Create subscription
-      const newSubscription: UserSubscription = {
+      const subscriptionData: UserSubscription = {
         id: `sub_${Date.now()}`,
-        userId: selectedUserId,
-        packageId: selectedPackageId,
-        packageName: selectedPackage.name,
-        status: 'active',
-        startDate: dateToISOString(startDate),
-        endDate: dateToISOString(endDate),
-        amount: selectedPackage.price
+        userId: userId,
+        packageId: selectedPackage.id,
+        packageName: selectedPackage.title,
+        amount: selectedPackage.price,
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + selectedPackage.durationMonths * 30 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'active' as SubscriptionStatus,
+        paymentType: 'one-time'
       };
       
-      // Update state (in a real app, this would be an API call)
-      setUserSubscriptions(prev => ({
-        ...prev,
-        [selectedUserId]: newSubscription
-      }));
+      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
+      userSubscriptions[userId] = subscriptionData;
+      localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      toast({
-        title: "Subscription Assigned",
-        description: `Successfully assigned ${selectedPackage.name} to the selected user`,
+      const updatedUsers = users.map(user => {
+        if (user.id === userId) {
+          return {
+            ...user,
+            subscription: subscriptionData
+          } as User;
+        }
+        return user;
       });
       
-      // Reset selection
-      setSelectedUserId('');
-      setSelectedPackageId('');
+      setUsers(updatedUsers);
       
-      if (onMappingComplete) {
-        onMappingComplete();
-      }
-    } catch (error) {
-      console.error("Error assigning subscription:", error);
       toast({
-        title: "Assignment Failed",
-        description: "Failed to assign subscription",
+        title: "Success",
+        description: "Subscription has been assigned successfully."
+      });
+    } catch (error) {
+      console.error("Error assigning package:", error);
+      toast({
+        title: "Error",
+        description: "Failed to assign subscription package.",
         variant: "destructive"
       });
-    } finally {
-      setIsProcessing(false);
     }
   };
   
-  const handleCancelSubscription = async (userId: string) => {
-    setIsProcessing(true);
-    
+  const handleRemoveSubscription = (userId: string) => {
     try {
-      const subscription = userSubscriptions[userId];
-      
-      if (!subscription) {
-        throw new Error("Subscription not found");
+      if (!currentUser?.isAdmin) {
+        setError("You don't have permission to remove subscriptions.");
+        return;
       }
       
-      // Update the subscription
-      const updatedSubscription: UserSubscription = {
-        ...subscription,
-        status: 'cancelled',
-        cancelledAt: new Date().toISOString(),
-        cancelReason: 'Manual cancellation'
-      };
+      const userSubscriptions = JSON.parse(localStorage.getItem("userSubscriptions") || "{}");
       
-      // Update state (in a real app, this would be an API call)
-      setUserSubscriptions(prev => ({
-        ...prev,
-        [userId]: updatedSubscription
-      }));
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      toast({
-        title: "Subscription Cancelled",
-        description: "Successfully cancelled the subscription",
-      });
+      if (userSubscriptions[userId]) {
+        userSubscriptions[userId].status = 'cancelled' as SubscriptionStatus;
+        localStorage.setItem("userSubscriptions", JSON.stringify(userSubscriptions));
+        
+        const updatedUsers = users.map(user => {
+          if (user.id === userId) {
+            if (user.subscription && typeof user.subscription !== 'string') {
+              return {
+                ...user,
+                subscription: {
+                  ...user.subscription,
+                  status: 'cancelled' as SubscriptionStatus
+                }
+              } as User;
+            }
+          }
+          return user;
+        });
+        
+        setUsers(updatedUsers);
+        
+        toast({
+          title: "Success",
+          description: "Subscription has been cancelled successfully."
+        });
+      }
     } catch (error) {
-      console.error("Error cancelling subscription:", error);
+      console.error("Error removing subscription:", error);
       toast({
-        title: "Cancellation Failed",
-        description: "Failed to cancel subscription",
+        title: "Error",
+        description: "Failed to cancel subscription.",
         variant: "destructive"
       });
-    } finally {
-      setIsProcessing(false);
     }
   };
+  
+  const formatDate = (date: Date | string) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+  
+  const getSubscriptionValue = (user: User, property: string): any => {
+    if (!user.subscription) return null;
+    if (typeof user.subscription === 'string') return null;
+    return (user.subscription as UserSubscription)[property as keyof UserSubscription];
+  };
+  
+  if (error && !isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>User Subscription Mapping</CardTitle>
+          <CardDescription>
+            Assign subscription packages to users
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-destructive/10 p-4 rounded-md">
+            <p className="text-destructive font-medium">{error}</p>
+            <p className="text-muted-foreground mt-2">Please check your permissions or try again later.</p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => setError(null)}
+            >
+              Dismiss
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
   
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Assign Subscription</CardTitle>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>User Subscription Mapping</CardTitle>
           <CardDescription>
-            Link users with subscription packages
+            Manage and assign subscription packages to users ({filteredUsers.length})
           </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Select User</label>
-              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a user" />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map(user => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name || user.email || user.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium mb-2 block">Select Package</label>
-              <Select value={selectedPackageId} onValueChange={setSelectedPackageId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a package" />
-                </SelectTrigger>
-                <SelectContent>
-                  {packages.map(pkg => (
-                    <SelectItem key={pkg.id} value={pkg.id}>
-                      {pkg.name} - {formatPrice(pkg.price)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <Button
-            className="w-full mt-4"
-            onClick={handleAssignSubscription}
-            disabled={!selectedUserId || !selectedPackageId || isProcessing}
-          >
-            <Link className="mr-2 h-4 w-4" />
-            Assign Subscription
-          </Button>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Active Subscriptions</CardTitle>
-          <CardDescription>
-            Current subscription assignments
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {Object.keys(userSubscriptions).length > 0 ? (
-            <div className="space-y-4">
-              {Object.values(userSubscriptions).map(subscription => {
-                const user = users.find(u => u.id === subscription.userId);
-                
-                if (!user) return null;
-                
-                return (
-                  <div key={subscription.id} className="flex items-center justify-between p-4 border rounded-md">
-                    <div>
-                      <div className="font-medium">
-                        {user.name || user.email || user.id}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge 
-                          variant={subscription.status === 'active' ? "default" : "secondary"}
-                          className={subscription.status === 'cancelled' ? "bg-gray-500" : ""}
-                        >
-                          {subscription.status}
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">
-                          {subscription.packageName}
-                        </span>
-                      </div>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <div className="mb-4 relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search users by name or email"
+            className="pl-8"
+            value={searchTerm}
+            onChange={handleSearch}
+          />
+        </div>
+        
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Current Subscription</TableHead>
+                <TableHead>Expires</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    <div className="flex justify-center items-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
-                    
-                    {subscription.status === 'active' && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleCancelSubscription(user.id)}
-                        disabled={isProcessing}
-                      >
-                        <Unlink className="h-4 w-4 mr-2" />
-                        Cancel
-                      </Button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <BringToFront className="h-12 w-12 mx-auto opacity-20 mb-2" />
-              <p>No active subscriptions found</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                  </TableCell>
+                </TableRow>
+              ) : filteredUsers.length > 0 ? (
+                filteredUsers.map(user => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{user.name}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {user.role || "User"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {user.subscription && typeof user.subscription !== 'string' ? (
+                        <p>{getSubscriptionValue(user, 'packageName')}</p>
+                      ) : (
+                        <p className="text-muted-foreground">No subscription</p>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {user.subscription && typeof user.subscription !== 'string' && getSubscriptionValue(user, 'endDate') ? (
+                        formatDate(getSubscriptionValue(user, 'endDate'))
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {user.subscription && typeof user.subscription !== 'string' ? (
+                        <Badge variant={getSubscriptionValue(user, 'status') === 'active' ? 'default' : 'destructive'}>
+                          {getSubscriptionValue(user, 'status') === 'active' ? (
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                          ) : (
+                            <XCircle className="h-3 w-3 mr-1" />
+                          )}
+                          {getSubscriptionValue(user, 'status')}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">No subscription</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Select
+                          onValueChange={(value) => handleAssignPackage(user.id as string, value)}
+                          disabled={!currentUser?.isAdmin}
+                        >
+                          <SelectTrigger className="w-[160px]">
+                            <SelectValue placeholder="Assign package" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {packages.map(pkg => (
+                              <SelectItem key={pkg.id} value={pkg.id}>
+                                {pkg.title}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        {user.subscription && 
+                         typeof user.subscription !== 'string' && 
+                         getSubscriptionValue(user, 'status') === 'active' && (
+                          <Button 
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleRemoveSubscription(user.id as string)}
+                            disabled={!currentUser?.isAdmin}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    <p className="text-muted-foreground">No users found</p>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

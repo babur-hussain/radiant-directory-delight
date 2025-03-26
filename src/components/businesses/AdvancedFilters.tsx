@@ -31,9 +31,6 @@ const AdvancedFilters = ({
   locations,
   hasActiveFilters
 }: AdvancedFiltersProps) => {
-  // Filter out any empty location strings
-  const filteredLocations = locations.filter(location => location && location.trim() !== '');
-  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -90,7 +87,7 @@ const AdvancedFilters = ({
             {!selectedLocation && <Check className="h-4 w-4" />}
           </DropdownMenuItem>
           
-          {filteredLocations.map(location => (
+          {locations.map(location => (
             <DropdownMenuItem
               key={location}
               className="flex items-center justify-between"
