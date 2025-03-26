@@ -3,16 +3,11 @@ import { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
-
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-  requiredRole?: string;
-  adminOnly?: boolean;
-}
+import { ProtectedRouteProps } from '@/types/auth';
 
 const ProtectedRoute = ({ 
   children, 
-  requiredRole,
+  requireAdmin = false,
   adminOnly = false
 }: ProtectedRouteProps) => {
   const { isAuthenticated, user, loading, initialized } = useAuth();
@@ -24,12 +19,12 @@ const ProtectedRoute = ({
   }
 
   // Check for required role
-  if (initialized && !loading && isAuthenticated && requiredRole && user?.role !== requiredRole) {
+  if (initialized && !loading && isAuthenticated && requireAdmin && user?.role !== 'admin') {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   // Check for admin requirement
-  if (initialized && !loading && isAuthenticated && adminOnly && !user?.isAdmin) {
+  if (initialized && !loading && isAuthenticated && (adminOnly || requireAdmin) && !user?.isAdmin) {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 

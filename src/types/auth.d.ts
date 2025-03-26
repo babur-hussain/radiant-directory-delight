@@ -18,4 +18,5 @@ export interface AuthContextType {
 export interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
+  adminOnly?: boolean;
 }
