@@ -175,13 +175,17 @@ export const processCsvData = async (csvContent: string): Promise<{
         // Process a batch when it reaches the batch size or it's the last item
         if (currentBatch.length >= BATCH_SIZE || i === parsedData.length - 1) {
           if (currentBatch.length > 0) {
-            const { success, errorMessage, successCount: batchSuccessCount } = 
-              await saveBatchToSupabase(currentBatch);
-            
-            successCount += batchSuccessCount;
-            
-            if (!success && errorMessage) {
-              processingErrors.push(errorMessage);
+            try {
+              const { success, errorMessage, successCount: batchSuccessCount } = 
+                await saveBatchToSupabase(currentBatch);
+              
+              successCount += batchSuccessCount;
+              
+              if (!success && errorMessage) {
+                processingErrors.push(errorMessage);
+              }
+            } catch (error) {
+              processingErrors.push(`Batch processing error: ${error instanceof Error ? error.message : String(error)}`);
             }
           }
           
@@ -214,6 +218,15 @@ export const processCsvData = async (csvContent: string): Promise<{
           message: `Imported ${successCount} businesses with ${processingErrors.length} errors`
         };
       }
+    }
+
+    // If no businesses were successfully processed, consider it a failure
+    if (processedBusinesses.length === 0) {
+      return {
+        success: false,
+        businesses: [],
+        message: "No businesses could be processed. Check your CSV format and permissions."
+      };
     }
 
     return {
@@ -344,6 +357,7 @@ const saveBatchToSupabase = async (businesses: Business[]): Promise<{
 
   try {
     let successCount = 0;
+    const errors: string[] = [];
     
     // Process businesses individually to handle errors gracefully
     for (const business of businesses) {
@@ -359,13 +373,20 @@ const saveBatchToSupabase = async (businesses: Business[]): Promise<{
         }
         
         // Handle the hours field properly for database storage
-        // Convert hours to a JSON string for database storage
-        const hoursForDB = businessToSave.hours 
-          ? (typeof businessToSave.hours === 'object' 
-              ? JSON.stringify(businessToSave.hours) 
-              : businessToSave.hours) 
-          : JSON.stringify({});
-          
+        let hoursForDB: string;
+        if (businessToSave.hours) {
+          if (typeof businessToSave.hours === 'object') {
+            hoursForDB = JSON.stringify(businessToSave.hours);
+          } else if (typeof businessToSave.hours === 'string') {
+            // If it's already a string, use it as is
+            hoursForDB = businessToSave.hours;
+          } else {
+            hoursForDB = JSON.stringify({});
+          }
+        } else {
+          hoursForDB = JSON.stringify({});
+        }
+        
         // Create a clean object for Supabase
         const preparedBusiness = {
           ...businessToSave,
@@ -388,19 +409,28 @@ const saveBatchToSupabase = async (businesses: Business[]): Promise<{
         
         if (error) {
           console.error("Error inserting business to Supabase:", error);
-          throw error;
+          
+          // Handle permission errors more gracefully
+          if (error.message && error.message.includes('permission')) {
+            // Instead of throwing, just add to errors and continue
+            errors.push(`Permission error for ${business.name}: ${error.message}`);
+          } else {
+            throw error;
+          }
         } else {
           successCount++;
         }
       } catch (err) {
         console.error("Error saving individual business:", business.name, err);
+        errors.push(`Failed to save ${business.name}: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
     
+    // Return success if at least one business was saved
     return { 
       success: successCount > 0, 
       successCount,
-      errorMessage: successCount === 0 ? "Failed to save any businesses" : undefined
+      errorMessage: errors.length > 0 ? errors.slice(0, 3).join(", ") + (errors.length > 3 ? ` and ${errors.length - 3} more errors` : '') : undefined
     };
   } catch (error) {
     console.error("Error saving batch to Supabase:", error);
@@ -414,12 +444,13 @@ const saveBatchToSupabase = async (businesses: Business[]): Promise<{
 
 // Generate a CSV template for download
 export const generateCSVTemplate = (): string => {
+  const headerMapping = getInverseHeaderMapping();
+  
   // Headers in the format that Supabase will recognize
   const headers = ["name", "category", "address", "phone", "rating", "reviews", "description", "email", "website", "tags", "featured", "image"];
   
   // Create a user-friendly header row using the inverse mapping
-  const inverseMapping = getInverseHeaderMapping();
-  const userFriendlyHeaders = headers.map(dbField => inverseMapping[dbField] || dbField);
+  const userFriendlyHeaders = headers.map(dbField => headerMapping[dbField] || dbField);
   
   // Sample data
   const rows = [

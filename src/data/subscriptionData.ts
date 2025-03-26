@@ -37,6 +37,28 @@ export const formatPrice = (price: number): string => {
 
 // Helper function to convert ISubscriptionPackage to SubscriptionPackage
 export const convertToSubscriptionPackage = (pkg: any): SubscriptionPackage => {
+  // Handle features parsing - it might be a string, JSON string with checkmarks, or already an array
+  let parsedFeatures: string[] = [];
+  
+  if (pkg.features) {
+    if (Array.isArray(pkg.features)) {
+      // Already an array, use as is
+      parsedFeatures = pkg.features;
+    } else if (typeof pkg.features === 'string') {
+      try {
+        // Try to parse as JSON
+        const parsed = JSON.parse(pkg.features);
+        parsedFeatures = Array.isArray(parsed) ? parsed : [pkg.features];
+      } catch (error) {
+        // If parsing fails, split by newlines or commas
+        parsedFeatures = pkg.features
+          .split(/[\n,]/)
+          .map((feature: string) => feature.trim())
+          .filter((feature: string) => feature.length > 0);
+      }
+    }
+  }
+  
   return {
     id: pkg.id || '',
     title: pkg.title || '',
@@ -44,7 +66,7 @@ export const convertToSubscriptionPackage = (pkg: any): SubscriptionPackage => {
     monthlyPrice: pkg.monthlyPrice,
     shortDescription: pkg.shortDescription || pkg.title || '',
     fullDescription: pkg.fullDescription || pkg.shortDescription || '',
-    features: Array.isArray(pkg.features) ? pkg.features : [],
+    features: parsedFeatures,
     popular: !!pkg.popular,
     setupFee: typeof pkg.setupFee === 'number' ? pkg.setupFee : 0,
     durationMonths: pkg.durationMonths || 12,
