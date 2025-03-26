@@ -237,32 +237,44 @@ const processSingleBusiness = async (
   // Map CSV headers to our business fields
   const mappedBusiness: Record<string, any> = {};
   
-  // Check for at least one recognized header
-  let hasRecognizedHeader = false;
+  // Check for business name first since it's required
+  let hasBusinessName = false;
   
-  for (const csvHeader in row) {
-    const dbField = csvHeaderMapping[csvHeader];
-    if (dbField && row[csvHeader] !== undefined && row[csvHeader] !== null && row[csvHeader] !== '') {
-      mappedBusiness[dbField] = row[csvHeader];
-      hasRecognizedHeader = true;
+  // Try all possible business name headers
+  for (const possibleHeader of ["Business Name", "BusinessName", "Name", "business name", "business_name", "businessname", "name"]) {
+    if (row[possibleHeader] && row[possibleHeader].trim() !== '') {
+      mappedBusiness.name = row[possibleHeader].trim();
+      hasBusinessName = true;
+      break;
     }
   }
   
-  if (!hasRecognizedHeader) {
-    return {
-      success: false,
-      errorMessage: `Row ${index + 1}: No recognized headers found`
-    };
-  }
-  
-  // Validate required field "name"
-  if (!mappedBusiness.name) {
+  // Skip if no business name found
+  if (!hasBusinessName) {
     return {
       success: false,
       errorMessage: `Row ${index + 1}: Missing required "Business Name" field`
     };
   }
-
+  
+  // Map the rest of the fields
+  for (const csvHeader in row) {
+    // Skip empty values
+    if (row[csvHeader] === undefined || row[csvHeader] === null || row[csvHeader] === '') {
+      continue;
+    }
+    
+    // Skip if we already processed the name
+    if (mappedBusiness.name && (csvHeader === "Business Name" || csvHeader === "Name")) {
+      continue;
+    }
+    
+    const dbField = csvHeaderMapping[csvHeader];
+    if (dbField) {
+      mappedBusiness[dbField] = row[csvHeader];
+    }
+  }
+  
   // Handle tags field (convert from CSV string to array)
   if (mappedBusiness.tags && typeof mappedBusiness.tags === 'string') {
     mappedBusiness.tags = mappedBusiness.tags
@@ -285,8 +297,8 @@ const processSingleBusiness = async (
     mappedBusiness.reviews = isNaN(reviews) ? 0 : reviews;
   }
   
-  // Don't specify an ID - let the database generate one
-  if (mappedBusiness.id) {
+  // Remove any timestamp values that look like they might be causing the integer overflow
+  if (mappedBusiness.id && typeof mappedBusiness.id === 'string' && mappedBusiness.id.length > 10) {
     delete mappedBusiness.id;
   }
   
@@ -349,6 +361,17 @@ const saveBatchToSupabase = async (businesses: Business[]): Promise<{
               JSON.stringify(businessWithoutId.hours)
             ) : null
         };
+        
+        // Remove any timestamp-like values that might be causing overflows
+        if (businessToSave.created_at && typeof businessToSave.created_at === 'string' && 
+            businessToSave.created_at.length > 10 && !isNaN(Number(businessToSave.created_at))) {
+          delete businessToSave.created_at;
+        }
+        
+        if (businessToSave.updated_at && typeof businessToSave.updated_at === 'string' && 
+            businessToSave.updated_at.length > 10 && !isNaN(Number(businessToSave.updated_at))) {
+          delete businessToSave.updated_at;
+        }
         
         const { data, error } = await supabase
           .from('businesses')
