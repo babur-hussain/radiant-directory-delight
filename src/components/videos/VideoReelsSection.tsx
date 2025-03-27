@@ -33,34 +33,15 @@ const demoVideos: VideoSource[] = [
   {
     id: '1',
     type: 'instagram',
-    url: 'https://www.instagram.com/p/C1P1uwOIXs7/',
-    title: 'Business Success Story',
+    url: 'https://www.instagram.com/reel/DHXjFcDtb5j/?igsh=bG9raDl5Ym9vejhq',
+    title: 'Jo dikhta hai vo bikta hai',
   },
   {
     id: '2',
-    type: 'youtube',
-    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    title: 'Entrepreneur Interview',
-  },
-  {
-    id: '3',
-    type: 'upload',
-    url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    thumbnail: 'https://storage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg',
-    title: 'Marketing Tips',
-  },
-  {
-    id: '4',
     type: 'instagram',
-    url: 'https://www.instagram.com/p/C1Gj9BEIPfw/',
-    title: 'Customer Testimonial',
+    url: 'https://www.instagram.com/reel/DHYONHGstYP/?igsh=MTVmeG5uYno2aWd4ZA==',
+    title: 'Vyaapari ho to ise dhyan se suno 😍 Abhi call kare apni google presence k liye',
   },
-  {
-    id: '5',
-    type: 'youtube',
-    url: 'https://www.youtube.com/watch?v=C0DPdy98e4c',
-    title: 'Product Showcase',
-  }
 ];
 
 const VideoReelsSection: React.FC = () => {
