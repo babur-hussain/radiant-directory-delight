@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -65,8 +66,8 @@ const BusinessPage = () => {
   };
 
   useEffect(() => {
-    console.log("Dialog visible:", showDialog);
-  }, [showDialog]);
+    console.log("Dialog visible:", showDialog, "Selected package:", selectedPackage?.title);
+  }, [showDialog, selectedPackage]);
 
   return (
     <Layout>
@@ -87,6 +88,7 @@ const BusinessPage = () => {
                   size="lg" 
                   className="bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 hover:from-teal-500 hover:via-cyan-500 hover:to-blue-500 text-white shadow-md hover:shadow-lg transition-all duration-300"
                   onClick={scrollToPackages}
+                  type="button"
                 >
                   Start Your Journey <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -138,7 +140,7 @@ const BusinessPage = () => {
               ) : isError ? (
                 <div className="text-center py-10">
                   <p className="text-red-500 mb-4">There was an error loading the subscription packages.</p>
-                  <Button onClick={() => window.location.reload()}>Try Again</Button>
+                  <Button onClick={() => window.location.reload()} type="button">Try Again</Button>
                 </div>
               ) : (
                 <SubscriptionPackages 
@@ -160,6 +162,7 @@ const BusinessPage = () => {
                 variant="outline" 
                 className="bg-white text-blue-600 hover:bg-white/90 border-white hover:shadow-lg transition-all duration-300"
                 onClick={scrollToPackages}
+                type="button"
               >
                 Join Now <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -168,11 +171,13 @@ const BusinessPage = () => {
         </main>
       </div>
       
-      <SubscriptionDialog 
-        isOpen={showDialog}
-        setIsOpen={setShowDialog}
-        selectedPackage={selectedPackage}
-      />
+      {showDialog && selectedPackage && (
+        <SubscriptionDialog 
+          isOpen={showDialog}
+          setIsOpen={setShowDialog}
+          selectedPackage={selectedPackage}
+        />
+      )}
     </Layout>
   );
 };

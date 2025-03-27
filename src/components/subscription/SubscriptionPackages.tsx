@@ -7,6 +7,7 @@ import { Check } from 'lucide-react';
 import { UserRole } from '@/types/auth';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
+import { toast } from 'sonner';
 
 export interface SubscriptionPackagesProps {
   userRole: UserRole | string;
@@ -25,6 +26,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
     console.log("Package selected:", pkg.title);
     if (onSelectPackage) {
       onSelectPackage(pkg);
+      toast.info(`Selected package: ${pkg.title}`);
     }
   };
 
@@ -46,7 +48,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   }
 
   return (
-    <div>
+    <div className="subscription-packages-container">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredPackages.map((pkg) => {
           const isPopular = pkg.popular;
@@ -104,7 +106,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
               
               <CardFooter className="p-6 pt-2">
                 <Button 
-                  className={`w-full h-12 text-base font-medium ${
+                  className={`w-full h-12 text-base font-medium z-10 relative ${
                     isPopular 
                       ? 'bg-blue-600 hover:bg-blue-700' 
                       : 'bg-white text-gray-800 border-2 border-gray-300 hover:bg-gray-50'
