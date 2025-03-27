@@ -33,14 +33,14 @@ const demoVideos: VideoSource[] = [
   {
     id: '1',
     type: 'instagram',
-    url: 'https://www.instagram.com/reel/DHXjFcDtb5j/?igsh=bG9raDl5Ym9vejhq',
-    title: 'Jo dikhta hai vo bikta hai',
+    url: 'https://www.instagram.com/p/C1P1uwOIXs7/',
+    title: 'Business Success Story',
   },
   {
     id: '2',
-    type: 'instagram',
-    url: 'https://www.instagram.com/reel/DHYONHGstYP/?igsh=MTVmeG5uYno2aWd4ZA==',
-    title: 'Vyaapari ho to ise dhyan se suno 😍 Abhi call kare apni google presence k liye',
+    type: 'youtube',
+    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    title: 'Entrepreneur Interview',
   },
 ];
 
