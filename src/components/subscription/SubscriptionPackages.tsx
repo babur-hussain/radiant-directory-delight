@@ -111,6 +111,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
                   }`}
                   variant={isPopular ? 'default' : 'outline'}
                   onClick={() => handleSelectPackage(pkg)}
+                  type="button"
                 >
                   Subscribe Now
                 </Button>
