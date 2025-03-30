@@ -1,4 +1,3 @@
-
 /**
  * Format a date for display in subscription context
  */
@@ -354,14 +353,17 @@ export const ensureNonRefundablePayment = (options: RazorpayOptions, isOneTime: 
     });
     
     // Create a new options object without recurring properties
+    // instead of trying to modify the read-only recurring property
     const cleanedOptions = { ...options };
     delete cleanedOptions.recurring;
     delete cleanedOptions.recurring_token;
     delete cleanedOptions.subscription_id;
     
-    // Copy properties back to original object
-    Object.keys(cleanedOptions).forEach(key => {
-      options[key] = cleanedOptions[key];
+    // Copy properties back to original object, avoiding read-only properties
+    Object.entries(cleanedOptions).forEach(([key, value]) => {
+      if (key !== 'recurring' && key !== 'recurring_token' && key !== 'subscription_id') {
+        options[key] = value;
+      }
     });
   } else {
     options.notes.paymentType = "recurring";
@@ -371,4 +373,3 @@ export const ensureNonRefundablePayment = (options: RazorpayOptions, isOneTime: 
   
   console.log("Payment configured as non-refundable with options:", options.notes);
 }
-
