@@ -1,4 +1,3 @@
-
 export interface RazorpayOptions {
   key: string;
   amount?: number;
