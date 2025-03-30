@@ -232,7 +232,8 @@ serve(async (req) => {
       totalRemainingAmount: remainingAmount
     };
     
-    // Critical: Ensure proper flags are set to prevent auto-refunds
+    // CRITICAL: Ensure proper flags are set to prevent auto-refunds
+    // These flags will be passed to Razorpay to control refund behavior
     const notes = {
       packageId: packageData.id.toString(),
       userId: userId,
@@ -248,9 +249,13 @@ serve(async (req) => {
       recurringPaymentAmount: recurringPaymentAmount.toString(),
       recurringPaymentCount: recurringPaymentCount.toString(),
       packageEndDate: packageEndDate,
-      // Add these parameters to prevent auto-refunds
+      // CRITICAL: Add these parameters to prevent auto-refunds
       autoRefund: "false",
-      isRefundable: "false"
+      isRefundable: "false",
+      isNonRefundable: "true",
+      refund_status: "no_refund_possible",
+      // For one-time payments, explicitly mark as non-cancellable
+      isCancellable: isOneTime ? "false" : "true"
     };
     
     // Key-only mode: Don't create an order or subscription ID
@@ -280,9 +285,10 @@ serve(async (req) => {
         recurringPaymentAmount: recurringPaymentAmount,
         recurringPaymentCount: recurringPaymentCount,
         autopayDetails: autopayDetails,
-        // Critical flags to prevent auto-refund
+        // CRITICAL: Add flags to prevent auto-refund
         autoRefund: false,
-        isRefundable: false
+        isRefundable: false,
+        isNonRefundable: true
       }),
       {
         status: 200,

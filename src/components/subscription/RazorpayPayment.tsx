@@ -32,12 +32,16 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         onSuccess: (response) => {
           console.log("Payment successful:", response);
           
-          // Add non-refundable flags to payment response
+          // Critical: Add non-refundable and non-cancellable flags for all payments
           const enhancedResponse = {
             ...response,
+            // All payments are non-refundable
             isRefundable: false,
-            // Set cancellable based on payment type
-            isCancellable: selectedPackage.paymentType !== 'one-time'
+            autoRefund: false,
+            // Only recurring payments can be cancelled, never one-time payments
+            isCancellable: selectedPackage.paymentType !== 'one-time',
+            // Ensure autopay is disabled for one-time payments
+            enableAutoPay: selectedPackage.paymentType !== 'one-time'
           };
           
           onSuccess(enhancedResponse);
@@ -91,6 +95,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       <div className="text-center text-sm text-gray-500">
         <p>You will be redirected to Razorpay's secure payment gateway.</p>
         <p className="mt-1">Payment is processed securely by Razorpay.</p>
+        <p className="mt-1 font-medium text-rose-600">Note: All payments are non-refundable.</p>
       </div>
     </div>
   );

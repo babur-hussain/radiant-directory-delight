@@ -121,6 +121,28 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   // Override with production key to ensure consistency
   options.key = RAZORPAY_KEY_ID;
   
+  // CRITICAL: Set non-refundable flags for ALL payment types
+  if (!options.notes) {
+    options.notes = {};
+  }
+  
+  // These flags are crucial to prevent automatic refunds
+  options.notes.autoRefund = "false";
+  options.notes.isRefundable = "false";
+  options.notes.isNonRefundable = "true";
+  
+  // For one-time payments, explicitly disable autopay
+  if (options.notes.paymentType === "one-time" || !options.recurring) {
+    options.notes.enableAutoPay = "false";
+    options.notes.isRecurring = "false";
+    options.notes.isCancellable = "false";
+    // Remove any recurring flags that might trigger autopay
+    options.recurring = false;
+    if (options.recurring_token) {
+      delete options.recurring_token;
+    }
+  }
+  
   // Set up for direct payment with key-only mode
   // In this mode, Razorpay will handle the payment directly
   if (!options.order_id && options.amount) {
@@ -146,6 +168,11 @@ export const formatNotesForRazorpay = (notes: Record<string, any>): Record<strin
         : String(value);
     }
   });
+  
+  // CRITICAL: Always add non-refundable flags
+  formattedNotes.autoRefund = "false";
+  formattedNotes.isRefundable = "false";
+  formattedNotes.isNonRefundable = "true";
   
   return formattedNotes;
 };
@@ -241,9 +268,14 @@ export const preparePaymentNotes = (
     amount: String(packageData.price || 0),
     paymentType: isOneTime ? "one-time" : "recurring",
     userId: userId,
-    // Critical - set these flags correctly to prevent auto-refunds
+    // CRITICAL - set these flags correctly to prevent auto-refunds
+    isRefundable: "false",
+    autoRefund: "false",
+    isNonRefundable: "true",
+    // Always set correct recurring/autopay flags
     isRecurring: isOneTime ? "false" : "true",
-    enableAutoPay: isOneTime ? "false" : "true"
+    enableAutoPay: isOneTime ? "false" : "true",
+    isCancellable: isOneTime ? "false" : "true"
   };
   
   // For one-time payments, explicitly disable autopay in notes
@@ -272,10 +304,59 @@ export const setNonRefundableParams = (options: RazorpayOptions): void => {
   // Set critical flags to prevent automatic refunds
   options.notes.autoRefund = "false";
   options.notes.isRefundable = "false";
+  options.notes.isNonRefundable = "true";
   
-  // For one-time payments
+  // For one-time payments, ensure autopay is disabled
   if (options.notes.paymentType === "one-time") {
     options.notes.enableAutoPay = "false";
     options.notes.isRecurring = "false";
+    options.notes.isCancellable = "false";
+    // Remove any recurring flags
+    options.recurring = false;
+    if (options.recurring_token) {
+      delete options.recurring_token;
+    }
   }
+}
+
+/**
+ * Helper to ensure payment is processed as non-refundable
+ * This adds multiple safety checks and flags
+ */
+export const ensureNonRefundablePayment = (options: RazorpayOptions, isOneTime: boolean): void => {
+  if (!options.notes) {
+    options.notes = {};
+  }
+  
+  // Set all required non-refundable flags
+  options.notes.autoRefund = "false";
+  options.notes.isRefundable = "false";
+  options.notes.isNonRefundable = "true";
+  options.notes.refund_status = "no_refund_possible";
+  
+  // Set appropriate flags based on payment type
+  if (isOneTime) {
+    options.notes.paymentType = "one-time";
+    options.notes.isRecurring = "false";
+    options.notes.enableAutoPay = "false";
+    options.notes.isCancellable = "false";
+    options.notes.autopayDetails = JSON.stringify({
+      enabled: false
+    });
+    
+    // Remove any recurring/subscription flags
+    options.recurring = false;
+    if (options.recurring_token) {
+      delete options.recurring_token;
+    }
+    if (options.subscription_id) {
+      delete options.subscription_id;
+    }
+  } else {
+    options.notes.paymentType = "recurring";
+    options.notes.isRecurring = "true";
+    options.notes.enableAutoPay = "true";
+  }
+  
+  console.log("Payment configured as non-refundable with options:", options.notes);
 }

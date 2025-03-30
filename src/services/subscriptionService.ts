@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
 import { Subscription, PaymentType, BillingCycle } from '@/models/Subscription';
@@ -74,6 +75,8 @@ export const createSubscription = async (subscription: Partial<Subscription>): P
     const now = new Date().toISOString();
     const isOneTime = subscription.paymentType === 'one-time';
     
+    // For one-time payments, explicitly mark as non-cancellable and non-pausable
+    // This prevents any possibility of refunds through subscription cancellation
     const subscriptionData = toSupabase({
       id,
       userId: subscription.userId,
@@ -92,6 +95,7 @@ export const createSubscription = async (subscription: Partial<Subscription>): P
       signupFee: subscription.signupFee,
       recurringAmount: subscription.recurringAmount,
       razorpaySubscriptionId: subscription.razorpaySubscriptionId,
+      // CRITICAL: For one-time payments, always set these to false to prevent cancellation/refunds
       isPaused: subscription.isPaused || false,
       isPausable: isOneTime ? false : (subscription.isPausable !== undefined ? subscription.isPausable : true),
       isUserCancellable: isOneTime ? false : (subscription.isUserCancellable !== undefined ? subscription.isUserCancellable : true),
@@ -166,6 +170,8 @@ export const getSubscriptions = async (): Promise<Subscription[]> => {
 
 export const updateSubscription = async (id: string, subscription: Partial<Subscription>): Promise<Subscription | null> => {
   try {
+    // CRITICAL: If payment type is one-time, force non-cancellable and non-pausable
+    // This ensures one-time subscriptions can never be cancelled or paused
     if (subscription.paymentType === 'one-time') {
       subscription.isUserCancellable = false;
       subscription.isPausable = false;
@@ -238,6 +244,7 @@ export const getActiveUserSubscription = async (userId: string): Promise<Subscri
 
 export const cancelSubscription = async (id: string, reason: string = 'user_cancelled'): Promise<boolean> => {
   try {
+    // CRITICAL: First check if this is a one-time subscription, which should never be cancellable
     const { data: subData, error: subError } = await supabase
       .from('user_subscriptions')
       .select('payment_type, is_user_cancellable')
@@ -246,6 +253,7 @@ export const cancelSubscription = async (id: string, reason: string = 'user_canc
     
     if (subError) throw subError;
     
+    // Block cancellation for one-time payments or if explicitly marked as not user-cancellable
     if (subData?.payment_type === 'one-time' || subData?.is_user_cancellable === false) {
       console.log("Cancellation prevented for subscription", id, "- one-time payment or not user-cancellable");
       throw new Error('This subscription cannot be cancelled.');
