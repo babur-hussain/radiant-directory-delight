@@ -69,7 +69,8 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
           transaction_id: response.razorpay_payment_id,
           payment_method: 'razorpay',
           amount: response.amount ? response.amount / 100 : selectedPackage.price,
-          is_autopay_enabled: response.enableAutoPay || false
+          is_autopay_enabled: selectedPackage.paymentType !== 'one-time',
+          is_user_cancellable: selectedPackage.paymentType !== 'one-time' // Disable cancellation for one-time payments
         };
         
         if (response.autopayDetails && response.autopayDetails.enabled) {

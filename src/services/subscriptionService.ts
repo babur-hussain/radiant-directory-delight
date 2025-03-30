@@ -1,9 +1,7 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
 import { Subscription, PaymentType, BillingCycle } from '@/models/Subscription';
 
-// Convert from Supabase to app model
 const fromSupabase = (data: any): Subscription => {
   return {
     id: data.id,
@@ -36,7 +34,6 @@ const fromSupabase = (data: any): Subscription => {
   };
 };
 
-// Convert from app model to Supabase
 const toSupabase = (data: Partial<Subscription>): any => {
   return {
     id: data.id,
@@ -67,18 +64,16 @@ const toSupabase = (data: Partial<Subscription>): any => {
   };
 };
 
-// Create subscription
 export const createSubscription = async (subscription: Partial<Subscription>): Promise<Subscription> => {
   try {
-    // Check for required fields
     if (!subscription.userId || !subscription.packageId) {
       throw new Error('userId and packageId are required');
     }
     
     const id = subscription.id || nanoid();
     const now = new Date().toISOString();
+    const isOneTime = subscription.paymentType === 'one-time';
     
-    // Prepare subscription data with defaults
     const subscriptionData = toSupabase({
       id,
       userId: subscription.userId,
@@ -98,8 +93,8 @@ export const createSubscription = async (subscription: Partial<Subscription>): P
       recurringAmount: subscription.recurringAmount,
       razorpaySubscriptionId: subscription.razorpaySubscriptionId,
       isPaused: subscription.isPaused || false,
-      isPausable: subscription.isPausable !== undefined ? subscription.isPausable : true,
-      isUserCancellable: subscription.isUserCancellable !== undefined ? subscription.isUserCancellable : true,
+      isPausable: isOneTime ? false : (subscription.isPausable !== undefined ? subscription.isPausable : true),
+      isUserCancellable: isOneTime ? false : (subscription.isUserCancellable !== undefined ? subscription.isUserCancellable : true),
       assignedBy: subscription.assignedBy || 'system',
       assignedAt: subscription.assignedAt || now,
       advancePaymentMonths: subscription.advancePaymentMonths || 0,
@@ -120,7 +115,6 @@ export const createSubscription = async (subscription: Partial<Subscription>): P
       throw new Error('Failed to create subscription');
     }
     
-    // Also update the user record with subscription info
     await supabase
       .from('users')
       .update({
@@ -138,7 +132,6 @@ export const createSubscription = async (subscription: Partial<Subscription>): P
   }
 };
 
-// Get subscription by ID
 export const getSubscription = async (id: string): Promise<Subscription | null> => {
   try {
     const { data, error } = await supabase
@@ -156,7 +149,6 @@ export const getSubscription = async (id: string): Promise<Subscription | null> 
   }
 };
 
-// Get all subscriptions
 export const getSubscriptions = async (): Promise<Subscription[]> => {
   try {
     const { data, error } = await supabase
@@ -172,9 +164,13 @@ export const getSubscriptions = async (): Promise<Subscription[]> => {
   }
 };
 
-// Update subscription
 export const updateSubscription = async (id: string, subscription: Partial<Subscription>): Promise<Subscription | null> => {
   try {
+    if (subscription.paymentType === 'one-time') {
+      subscription.isUserCancellable = false;
+      subscription.isPausable = false;
+    }
+    
     const data = toSupabase({
       ...subscription,
       updatedAt: new Date().toISOString()
@@ -189,7 +185,6 @@ export const updateSubscription = async (id: string, subscription: Partial<Subsc
     
     if (error) throw error;
     
-    // If status was updated, also update the user record
     if (subscription.status) {
       await supabase
         .from('users')
@@ -206,7 +201,6 @@ export const updateSubscription = async (id: string, subscription: Partial<Subsc
   }
 };
 
-// Get user subscriptions
 export const getUserSubscriptions = async (userId: string): Promise<Subscription[]> => {
   try {
     const { data, error } = await supabase
@@ -224,7 +218,6 @@ export const getUserSubscriptions = async (userId: string): Promise<Subscription
   }
 };
 
-// Get active user subscription
 export const getActiveUserSubscription = async (userId: string): Promise<Subscription | null> => {
   try {
     const { data, error } = await supabase
@@ -243,9 +236,21 @@ export const getActiveUserSubscription = async (userId: string): Promise<Subscri
   }
 };
 
-// Cancel subscription
 export const cancelSubscription = async (id: string, reason: string = 'user_cancelled'): Promise<boolean> => {
   try {
+    const { data: subData, error: subError } = await supabase
+      .from('user_subscriptions')
+      .select('payment_type, is_user_cancellable')
+      .eq('id', id)
+      .single();
+    
+    if (subError) throw subError;
+    
+    if (subData?.payment_type === 'one-time' || subData?.is_user_cancellable === false) {
+      console.log("Cancellation prevented for subscription", id, "- one-time payment or not user-cancellable");
+      throw new Error('This subscription cannot be cancelled.');
+    }
+    
     const { data, error } = await supabase
       .from('user_subscriptions')
       .update({
@@ -259,7 +264,6 @@ export const cancelSubscription = async (id: string, reason: string = 'user_canc
     
     if (error) throw error;
     
-    // Also update the user record
     if (data && data.length > 0) {
       await supabase
         .from('users')

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -15,7 +14,9 @@ import {
   calculateNextBillingDate,
   formatSubscriptionDate,
   createSubscriptionPlan,
-  createSubscription
+  createSubscription,
+  preparePaymentNotes,
+  setNonRefundableParams
 } from '@/utils/razorpay';
 import { generateOrderId } from '@/utils/id-generator';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
@@ -29,11 +30,6 @@ interface PaymentOptions {
 
 /**
  * Hook for handling Razorpay payments, including one-time and recurring subscriptions
- * 
- * IMPORTANT: This is a frontend implementation with mock plan/subscription creation.
- * In a production environment, the subscription plan creation and subscription creation
- * should be implemented on your backend server with proper authentication using
- * Razorpay's APIs.
  */
 export const useRazorpayPayment = () => {
   const { toast } = useToast();
@@ -81,6 +77,9 @@ export const useRazorpayPayment = () => {
       // Check if this is a one-time payment or subscription
       const isOneTimePackage = selectedPackage.paymentType === "one-time";
       
+      // For one-time packages, don't enable autopay
+      const enableAutoPay = !isOneTimePackage;
+      
       // Determine if this package is eligible for recurring payments (autopay)
       const canUseRecurring = !isOneTimePackage && isRecurringPaymentEligible(
         selectedPackage.paymentType,
@@ -88,12 +87,13 @@ export const useRazorpayPayment = () => {
       );
       
       // Calculate the total amount to be charged initially
-      let initialAmount = isOneTimePackage 
-        ? selectedPackage.price || 999 
-        : selectedPackage.setupFee || 0;
-        
+      let initialAmount = selectedPackage.price || 999;
+      if (!isOneTimePackage && selectedPackage.setupFee) {
+        initialAmount += selectedPackage.setupFee;
+      }
+      
       // For recurring packages, add advance payment if applicable
-      if (!isOneTimePackage) {
+      if (!isOneTimePackage && selectedPackage.advancePaymentMonths > 0) {
         const advanceMonths = selectedPackage.advancePaymentMonths || 0;
         const recurringAmount = selectedPackage.price || 0;
         const advanceAmount = advanceMonths * recurringAmount;
@@ -113,14 +113,8 @@ export const useRazorpayPayment = () => {
       
       console.log(`Setting up payment for ${selectedPackage.title} with amount ${initialAmount} (${amountInPaise} paise)`);
       
-      // Create basic notes object with strings only
-      const notes = {
-        packageId: selectedPackage.id,
-        packageName: selectedPackage.title,
-        amount: initialAmount.toString(),
-        receiptId: receiptId,
-        paymentType: isOneTimePackage ? "one-time" : "recurring"
-      };
+      // Prepare payment notes with correct flags
+      const notes = preparePaymentNotes(user.id, selectedPackage, isOneTimePackage);
       
       // Calculate next billing date for recurring payments
       let nextBillingDate = new Date();
@@ -139,21 +133,7 @@ export const useRazorpayPayment = () => {
         try {
           console.log("Setting up recurring payment plan for package:", selectedPackage.title);
           
-          /**
-           * PRODUCTION IMPLEMENTATION NOTE:
-           * 
-           * In a production environment, the following subscription plan creation
-           * and subscription creation should be implemented on your backend server 
-           * with proper authentication using Razorpay's APIs:
-           * 
-           * 1. Create Plan: POST https://api.razorpay.com/v1/plans
-           * 2. Create Subscription: POST https://api.razorpay.com/v1/subscriptions
-           * 
-           * These API calls require your Razorpay API key and secret, which should
-           * never be exposed in client-side code.
-           */
-          
-          // Step 1: Create a plan (in a real implementation, this would be done on your backend)
+          // Create a plan (in a real implementation, this would be done on your backend)
           const planId = await createSubscriptionPlan({
             packageId: selectedPackage.id,
             amount: selectedPackage.price,
@@ -164,7 +144,7 @@ export const useRazorpayPayment = () => {
             paymentType: selectedPackage.paymentType
           });
           
-          // Step 2: Create a subscription using the plan (also would be on backend)
+          // Create a subscription using the plan (also would be on backend)
           subscriptionId = await createSubscription(
             planId,
             selectedPackage,
@@ -218,7 +198,6 @@ export const useRazorpayPayment = () => {
         };
         
         // For subscription payments, add subscription_id only
-        // Important: Don't add amount, recurring, or other conflicting params for subscriptions
         if (canUseRecurring && subscriptionId) {
           console.log("Using subscription mode with subscription ID:", subscriptionId);
           options.subscription_id = subscriptionId;
@@ -228,6 +207,9 @@ export const useRazorpayPayment = () => {
           console.log("Using one-time payment mode with amount:", amountInPaise);
           options.amount = amountInPaise;
         }
+        
+        // Set non-refundable parameters to prevent automatic refunds
+        setNonRefundableParams(options);
 
         // Create and open Razorpay checkout
         const razorpay = createRazorpayCheckout(options);
@@ -255,7 +237,10 @@ export const useRazorpayPayment = () => {
               billingCycle: selectedPackage.billingCycle,
               nextBillingDate: canUseRecurring ? formatSubscriptionDate(nextBillingDate) : undefined,
               advanceMonths: selectedPackage.advancePaymentMonths || 0,
-              subscription_id: subscriptionId
+              subscription_id: subscriptionId,
+              // Add non-refundable flag to prevent automatic refunds
+              isRefundable: false,
+              enableAutoPay: !isOneTimePackage
             });
           } catch (callbackErr) {
             console.error("Error in onSuccess callback:", callbackErr);

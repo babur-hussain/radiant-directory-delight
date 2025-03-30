@@ -189,7 +189,9 @@ serve(async (req) => {
 
     // Determine payment type based on package data and user preference
     const isRecurring = packageData.paymentType === 'recurring' && enableAutoPay;
-    const isOneTime = useOneTimePreferred || !isRecurring;
+    
+    // For one-time packages, always use one-time payment regardless of enableAutoPay
+    const isOneTime = packageData.paymentType === 'one-time' || useOneTimePreferred || !isRecurring;
     
     console.log(`Processing payment type: ${isOneTime ? 'one-time' : 'recurring'} with autopay: ${enableAutoPay}`);
     
@@ -223,11 +225,32 @@ serve(async (req) => {
     
     // Create autopay details object for structured response
     const autopayDetails = {
-      enabled: enableAutoPay && isRecurring,
+      enabled: enableAutoPay && isRecurring && !isOneTime,
       nextBillingDate: nextBillingDate,
       recurringAmount: recurringPaymentAmount,
       remainingPayments: recurringPaymentCount,
       totalRemainingAmount: remainingAmount
+    };
+    
+    // Critical: Ensure proper flags are set to prevent auto-refunds
+    const notes = {
+      packageId: packageData.id.toString(),
+      userId: userId,
+      enableAutoPay: (enableAutoPay && !isOneTime) ? "true" : "false",
+      isRecurring: isRecurring && !isOneTime ? "true" : "false",
+      initialPayment: initialPaymentAmount.toString(),
+      setupFee: (packageData.setupFee || 0).toString(),
+      advanceMonths: (packageData.advancePaymentMonths || 0).toString(),
+      nextBillingDate: nextBillingDate,
+      totalPackageMonths: (packageData.durationMonths || 12).toString(),
+      totalAmount: totalPackagePrice.toString(),
+      remainingAmount: remainingAmount.toString(),
+      recurringPaymentAmount: recurringPaymentAmount.toString(),
+      recurringPaymentCount: recurringPaymentCount.toString(),
+      packageEndDate: packageEndDate,
+      // Add these parameters to prevent auto-refunds
+      autoRefund: "false",
+      isRefundable: "false"
     };
     
     // Key-only mode: Don't create an order or subscription ID
@@ -243,25 +266,10 @@ serve(async (req) => {
         name: "Grow Bharat Vyapaar",
         description: packageData.title || "Subscription payment",
         receipt: receiptId,
-        notes: {
-          packageId: packageData.id.toString(),
-          userId: userId,
-          enableAutoPay: enableAutoPay ? "true" : "false",
-          isRecurring: isRecurring ? "true" : "false",
-          initialPayment: initialPaymentAmount.toString(),
-          setupFee: (packageData.setupFee || 0).toString(),
-          advanceMonths: (packageData.advancePaymentMonths || 0).toString(),
-          nextBillingDate: nextBillingDate,
-          totalPackageMonths: (packageData.durationMonths || 12).toString(),
-          totalAmount: totalPackagePrice.toString(),
-          remainingAmount: remainingAmount.toString(),
-          recurringPaymentAmount: recurringPaymentAmount.toString(),
-          recurringPaymentCount: recurringPaymentCount.toString(),
-          packageEndDate: packageEndDate
-        },
+        notes: notes,
         isOneTime,
         isSubscription: !isOneTime,
-        enableAutoPay,
+        enableAutoPay: enableAutoPay && !isOneTime,
         setupFee: packageData.setupFee || 0,
         advanceMonths: packageData.advancePaymentMonths || 0,
         nextBillingDate: nextBillingDate,
@@ -271,7 +279,10 @@ serve(async (req) => {
         remainingAmount: remainingAmount,
         recurringPaymentAmount: recurringPaymentAmount,
         recurringPaymentCount: recurringPaymentCount,
-        autopayDetails: autopayDetails
+        autopayDetails: autopayDetails,
+        // Critical flags to prevent auto-refund
+        autoRefund: false,
+        isRefundable: false
       }),
       {
         status: 200,

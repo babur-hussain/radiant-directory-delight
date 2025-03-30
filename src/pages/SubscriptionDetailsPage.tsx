@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks";
@@ -250,7 +249,7 @@ const SubscriptionDetailsPage = () => {
               {isOneTime && subscription.status === 'active' && (
                 <div className="flex items-center">
                   <InfoCircle className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">One-time purchases cannot be cancelled</span>
+                  <span className="text-sm text-muted-foreground">One-time purchases cannot be cancelled or refunded</span>
                 </div>
               )}
             </CardFooter>

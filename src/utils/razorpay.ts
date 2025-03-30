@@ -157,6 +157,7 @@ export const isRecurringPaymentEligible = (
   paymentType: string | undefined,
   billingCycle: string | undefined
 ): boolean => {
+  // Only packages with 'recurring' payment type and valid billing cycle are eligible for recurring payments
   return paymentType === 'recurring' && 
     (billingCycle === 'monthly' || billingCycle === 'yearly');
 };
@@ -223,3 +224,58 @@ export const createSubscription = async (
   // Mock a subscription ID
   return `sub_${Date.now()}_${planId}`;
 };
+
+/**
+ * Prepare notes for Razorpay checkout
+ * This ensures the payment data is properly formatted
+ */
+export const preparePaymentNotes = (
+  userId: string,
+  packageData: any,
+  isOneTime: boolean
+): Record<string, string> => {
+  // Create basic notes object with strings only
+  const notes: Record<string, string> = {
+    packageId: packageData.id,
+    packageName: packageData.title,
+    amount: String(packageData.price || 0),
+    paymentType: isOneTime ? "one-time" : "recurring",
+    userId: userId,
+    // Critical - set these flags correctly to prevent auto-refunds
+    isRecurring: isOneTime ? "false" : "true",
+    enableAutoPay: isOneTime ? "false" : "true"
+  };
+  
+  // For one-time payments, explicitly disable autopay in notes
+  if (isOneTime) {
+    notes.autopayDetails = JSON.stringify({
+      enabled: false,
+      nextBillingDate: null,
+      recurringAmount: 0,
+      remainingPayments: 0,
+      totalRemainingAmount: 0
+    });
+  }
+  
+  return notes;
+};
+
+/**
+ * Helper function to explicitly set non-refundable parameters
+ */
+export const setNonRefundableParams = (options: RazorpayOptions): void => {
+  // Ensure the payment is not automatically refunded
+  if (!options.notes) {
+    options.notes = {};
+  }
+  
+  // Set critical flags to prevent automatic refunds
+  options.notes.autoRefund = "false";
+  options.notes.isRefundable = "false";
+  
+  // For one-time payments
+  if (options.notes.paymentType === "one-time") {
+    options.notes.enableAutoPay = "false";
+    options.notes.isRecurring = "false";
+  }
+}
