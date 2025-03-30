@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useRazorpayPayment } from '@/hooks/useRazorpayPayment';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
+import { useAuth } from '@/hooks/useAuth';
+import { createSubscription } from '@/services/subscriptionService';
+import { updateUserSubscription } from '@/lib/subscription/update-subscription';
+import { useToast } from '@/hooks/use-toast';
 
 interface RazorpayPaymentProps {
   selectedPackage: ISubscriptionPackage;
@@ -17,6 +21,8 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   onFailure 
 }) => {
   const { initiatePayment, isLoading, error } = useRazorpayPayment();
+  const { user } = useAuth();
+  const { toast } = useToast();
   
   useEffect(() => {
     // Initiate payment automatically when component mounts
@@ -29,7 +35,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     try {
       await initiatePayment({
         selectedPackage,
-        onSuccess: (response) => {
+        onSuccess: async (response) => {
           console.log("Payment successful:", response);
           
           // Critical: Add non-refundable and non-cancellable flags for all payments
@@ -47,6 +53,69 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
             isNonRefundable: true,
             refundBlocked: true
           };
+
+          // Check if user exists before trying to store subscription data
+          if (user && user.id) {
+            try {
+              // Calculate subscription start/end dates
+              const startDate = new Date().toISOString();
+              const endDate = new Date();
+              
+              // For one-time payments, set end date based on package duration
+              if (selectedPackage.paymentType === 'one-time' && selectedPackage.durationMonths) {
+                endDate.setMonth(endDate.getMonth() + selectedPackage.durationMonths);
+              } 
+              // For recurring payments with yearly billing
+              else if (selectedPackage.billingCycle === 'yearly') {
+                endDate.setFullYear(endDate.getFullYear() + 1);
+              } 
+              // Default to monthly for recurring
+              else {
+                endDate.setMonth(endDate.getMonth() + 1);
+              }
+
+              // Create subscription in Supabase
+              const subscriptionData = {
+                id: `sub_${Date.now()}`,
+                userId: user.id,
+                packageId: selectedPackage.id,
+                packageName: selectedPackage.title,
+                amount: selectedPackage.price,
+                startDate: startDate,
+                endDate: endDate.toISOString(),
+                status: 'active',
+                paymentMethod: 'razorpay',
+                transactionId: response.razorpay_payment_id || '',
+                paymentType: selectedPackage.paymentType,
+                billingCycle: selectedPackage.billingCycle,
+                signupFee: selectedPackage.setupFee || 0,
+                recurringAmount: selectedPackage.price,
+                razorpaySubscriptionId: response.subscription_id || '',
+                // For one-time payments, explicitly set as non-cancellable
+                isPausable: selectedPackage.paymentType !== 'one-time',
+                isUserCancellable: selectedPackage.paymentType !== 'one-time',
+                advancePaymentMonths: selectedPackage.advancePaymentMonths || 0,
+                actualStartDate: startDate
+              };
+
+              await createSubscription(subscriptionData);
+              
+              // Also update the user record with subscription details
+              await updateUserSubscription(user.id, subscriptionData);
+              
+              toast({
+                title: "Subscription Activated",
+                description: `Your ${selectedPackage.title} package has been activated successfully!`,
+              });
+            } catch (err) {
+              console.error("Failed to store subscription:", err);
+              toast({
+                title: "Warning",
+                description: "Payment successful, but we had trouble activating your subscription. Please contact support.",
+                variant: "destructive"
+              });
+            }
+          }
           
           onSuccess(enhancedResponse);
         },
