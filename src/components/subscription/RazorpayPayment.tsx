@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { createSubscription } from '@/services/subscriptionService';
 import { updateUserSubscription } from '@/lib/subscription/update-subscription';
 import { useToast } from '@/hooks/use-toast';
+import { SubscriptionStatus } from '@/models/Subscription';
 
 interface RazorpayPaymentProps {
   selectedPackage: ISubscriptionPackage;
@@ -83,7 +84,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
                 amount: selectedPackage.price,
                 startDate: startDate,
                 endDate: endDate.toISOString(),
-                status: 'active',
+                status: 'active' as SubscriptionStatus,
                 paymentMethod: 'razorpay',
                 transactionId: response.razorpay_payment_id || '',
                 paymentType: selectedPackage.paymentType,
