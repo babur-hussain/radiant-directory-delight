@@ -41,7 +41,11 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
             // Only recurring payments can be cancelled, never one-time payments
             isCancellable: selectedPackage.paymentType !== 'one-time',
             // Ensure autopay is disabled for one-time payments
-            enableAutoPay: selectedPackage.paymentType !== 'one-time'
+            enableAutoPay: selectedPackage.paymentType !== 'one-time',
+            // Add additional flags to ensure payments stick
+            paymentType: selectedPackage.paymentType,
+            isNonRefundable: true,
+            refundBlocked: true
           };
           
           onSuccess(enhancedResponse);

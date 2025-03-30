@@ -17,7 +17,7 @@ export interface RazorpayOptions {
     color?: string;
   };
   subscription_id?: string;
-  recurring?: boolean;
+  recurring?: boolean; // Changed from readonly to mutable
   remember_customer?: boolean;
   modal?: {
     escape?: boolean;

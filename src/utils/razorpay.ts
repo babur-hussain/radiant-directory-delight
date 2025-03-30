@@ -1,4 +1,3 @@
-
 /**
  * Format a date for display in subscription context
  */
@@ -136,11 +135,13 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
     options.notes.enableAutoPay = "false";
     options.notes.isRecurring = "false";
     options.notes.isCancellable = "false";
-    // Remove any recurring flags that might trigger autopay
-    options.recurring = false;
-    if (options.recurring_token) {
-      delete options.recurring_token;
-    }
+    
+    // Create a new options object without the recurring flag instead of directly modifying it
+    const newOptions = { ...options };
+    delete newOptions.recurring;
+    delete newOptions.recurring_token;
+    
+    return new (window as any).Razorpay(newOptions);
   }
   
   // Set up for direct payment with key-only mode
@@ -344,14 +345,18 @@ export const ensureNonRefundablePayment = (options: RazorpayOptions, isOneTime: 
       enabled: false
     });
     
-    // Remove any recurring/subscription flags
-    options.recurring = false;
-    if (options.recurring_token) {
-      delete options.recurring_token;
-    }
-    if (options.subscription_id) {
-      delete options.subscription_id;
-    }
+    // Create a new options object without recurring properties
+    const cleanedOptions = { ...options };
+    delete cleanedOptions.recurring;
+    delete cleanedOptions.recurring_token;
+    delete cleanedOptions.subscription_id;
+    
+    // Copy properties back to original object
+    Object.keys(options).forEach(key => {
+      if (key !== 'recurring' && key !== 'recurring_token' && key !== 'subscription_id') {
+        options[key] = cleanedOptions[key];
+      }
+    });
   } else {
     options.notes.paymentType = "recurring";
     options.notes.isRecurring = "true";
