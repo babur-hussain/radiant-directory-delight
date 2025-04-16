@@ -34,9 +34,9 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     console.log("Initiating payment for package:", selectedPackage);
     
     try {
-      await initiatePayment({
-        selectedPackage,
-        onSuccess: async (response) => {
+      // Fix: Pass the selectedPackage directly instead of wrapping it in an object
+      await initiatePayment(selectedPackage, true)
+        .then(async (response) => {
           console.log("Payment successful:", response);
           
           // Critical: Add non-refundable and non-cancellable flags for all payments
@@ -119,12 +119,11 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           }
           
           onSuccess(enhancedResponse);
-        },
-        onFailure: (err) => {
+        })
+        .catch((err) => {
           console.error("Payment failed:", err);
           onFailure(err);
-        }
-      });
+        });
     } catch (err) {
       console.error("Error initiating payment:", err);
       onFailure(err);

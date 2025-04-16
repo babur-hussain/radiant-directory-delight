@@ -79,12 +79,20 @@ export const useRazorpayPayment = () => {
           );
           
           // Build options and create checkout
+          // Fix the type issue by providing all required properties for SubscriptionResult
+          const subscriptionResult = {
+            amount: packageData.price * 100,
+            isOneTime: packageData.paymentType === 'one-time',
+            isSubscription: packageData.paymentType === 'recurring',
+            enableAutoPay: packageData.paymentType === 'recurring' && enableAutoPay
+          };
+          
           const options = buildRazorpayOptions(
             user!,
             packageData,
             customerData,
-            { amount: packageData.price * 100 },
-            true,
+            subscriptionResult,
+            packageData.paymentType === 'one-time',
             enableAutoPay,
             handleSuccess,
             handleDismiss
