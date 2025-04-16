@@ -37,29 +37,31 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Public routes with Layout */}
-      <Route element={<Layout />}>
-        <Route path="/" element={<Index />} />
-        <Route path="/influencer" element={<InfluencerPage />} />
-        <Route path="/business" element={<BusinessPage />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/auth/callback" element={<AuthCallbackPage />} />
-        <Route path="/categories" element={<CategoriesPage />} />
-        <Route path="/businesses" element={<BusinessesPage />} />
-        <Route path="/category/:categoryName" element={<CategoryDetailsPage />} />
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Index />} />
+        <Route path="influencer" element={<InfluencerPage />} />
+        <Route path="business" element={<BusinessPage />} />
+        <Route path="auth" element={<AuthPage />} />
+        <Route path="auth/callback" element={<AuthCallbackPage />} />
+        <Route path="categories" element={<CategoriesPage />} />
+        <Route path="businesses" element={<BusinessesPage />} />
+        <Route path="category/:categoryName" element={<CategoryDetailsPage />} />
+        <Route path="about" element={<div>About Page</div>} />
+        <Route path="influencers" element={<div>Influencers Page</div>} />
         
         {/* Protected routes that still use the main Layout */}
-        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-        <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
-        <Route path="/subscription/:packageId" element={<ProtectedRoute><SubscriptionDetailsPage /></ProtectedRoute>} />
+        <Route path="profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
+        <Route path="subscription/:packageId" element={<ProtectedRoute><SubscriptionDetailsPage /></ProtectedRoute>} />
       </Route>
       
       {/* Routes without the main Layout - they have their own layouts */}
-      {/* Note: No wrapping Layout for these routes */}
+      {/* Business Dashboard */}
       <Route path="/dashboard/business" element={<ProtectedRoute><BusinessDashboardPage /></ProtectedRoute>} />
       <Route path="/dashboard/influencer" element={<ProtectedRoute><InfluencerDashboardPage /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><BusinessDashboardPage /></ProtectedRoute>} />
       
-      {/* Admin routes - no Layout wrapper */}
+      {/* Admin routes */}
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminDashboardPage /></ProtectedRoute>} />
       <Route path="/admin/upload" element={<ProtectedRoute requireAdmin={true}><AdminUploadPage /></ProtectedRoute>} />

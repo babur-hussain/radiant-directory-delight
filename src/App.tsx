@@ -31,7 +31,6 @@ function AppContent() {
   
   return (
     <Router>
-      {/* No Layout wrapper here - each route has its own layout decision */}
       <AppRoutes />
       
       {/* Subscription Popup Ad */}
