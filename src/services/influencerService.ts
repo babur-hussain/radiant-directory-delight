@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types/auth';
 import { transformUserFromSupabase } from '@/lib/supabase/userUtils';
@@ -100,38 +99,33 @@ export const getInfluencerStats = async (userId: string): Promise<InfluencerStat
       return null;
     }
     
-    // Create a safe array for subscriptions
-    const subscriptions: Array<SimpleSubscription> = [];
+    // Initialize an empty array with the correct primitive type
+    const referralHistory: SimpleSubscription[] = [];
     
-    // Manually process each item one by one to completely avoid type recursion
+    // Process data safely with primitive values only
     if (data && Array.isArray(data)) {
-      const dataLength = data.length;
-      for (let i = 0; i < dataLength; i++) {
-        const rawItem = data[i];
-        if (!rawItem) continue;
-        
-        // Create a new primitive-only object by extracting values directly
-        const subscription: SimpleSubscription = {
-          amount: Number(rawItem.amount) || 0,
-          created_at: String(rawItem.created_at) || ''
-        };
-        
-        // Add the safely constructed object to our array
-        subscriptions.push(subscription);
+      for (const item of data) {
+        if (item) {
+          // Create a new object with primitive values only
+          referralHistory.push({
+            amount: typeof item.amount === 'number' ? item.amount : 0,
+            created_at: typeof item.created_at === 'string' ? item.created_at : ''
+          });
+        }
       }
     }
     
-    // Calculate metrics using our safely typed array
-    const totalReferrals = subscriptions.length;
-    const totalValue = subscriptions.reduce((sum, sub) => sum + sub.amount, 0);
+    // Calculate metrics with our safe primitive values
+    const totalReferrals = referralHistory.length;
+    const totalValue = referralHistory.reduce((sum, sub) => sum + sub.amount, 0);
     const earnings = totalValue * 0.2; // 20% of total value
     
-    // Construct the final result object with explicit types
+    // Return a new object with only primitive values or arrays of primitives
     const result: InfluencerStats = {
       totalReferrals,
       totalValue,
       earnings,
-      referralHistory: subscriptions
+      referralHistory
     };
     
     return result;
