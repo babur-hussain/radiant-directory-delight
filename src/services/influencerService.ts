@@ -23,6 +23,49 @@ const mockInfluencers = [
   { id: '3', name: 'Alex Johnson', categoryId: 'cat1', locationId: 'loc3' },
 ];
 
+// Mock data for users as influencers
+const mockUserInfluencers = [
+  { 
+    id: '1', 
+    name: 'John Doe', 
+    email: 'john@example.com', 
+    photoURL: null, 
+    bio: 'Marketing expert with 5 years of experience',
+    referralCount: 15,
+    referralEarnings: 15000,
+    followersCount: 5000,
+    niche: 'Digital Marketing',
+    instagramHandle: 'johndoe',
+    facebookHandle: 'johndoefb'
+  },
+  { 
+    id: '2', 
+    name: 'Jane Smith', 
+    email: 'jane@example.com', 
+    photoURL: null, 
+    bio: 'Content creator and social media specialist',
+    referralCount: 25,
+    referralEarnings: 22000,
+    followersCount: 8500,
+    niche: 'Content Creation',
+    instagramHandle: 'janesmith',
+    facebookHandle: null
+  },
+  { 
+    id: '3', 
+    name: 'Alex Johnson', 
+    email: 'alex@example.com', 
+    photoURL: null, 
+    bio: 'SEO expert and business consultant',
+    referralCount: 10,
+    referralEarnings: 9000,
+    followersCount: 3000,
+    niche: 'SEO & Analytics',
+    instagramHandle: null,
+    facebookHandle: 'alexjohnson'
+  }
+];
+
 export const getInfluencersByCategory = async (categoryId: string) => {
   try {
     // Using mock data instead of supabase query
@@ -60,6 +103,32 @@ export const getInfluencers = async () => {
   } catch (error) {
     console.error('Error fetching influencers:', error);
     return [];
+  }
+};
+
+export const getAllInfluencers = async () => {
+  try {
+    // Using mock user influencers data
+    return [...mockUserInfluencers];
+  } catch (error) {
+    console.error('Error fetching all influencers:', error);
+    return [];
+  }
+};
+
+export const setInfluencerStatus = async (userId: string, status: boolean): Promise<boolean> => {
+  try {
+    // In a real implementation, this would update the user's influencer status in the database
+    // For now, we'll just return success since it's a mock
+    console.log(`Setting influencer status for user ${userId} to ${status}`);
+    
+    // Simulate a database update delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return true;
+  } catch (error) {
+    console.error('Error updating influencer status:', error);
+    return false;
   }
 };
 
