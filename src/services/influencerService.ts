@@ -77,41 +77,37 @@ export const getAllInfluencers = async (): Promise<User[]> => {
  */
 export const getInfluencerStats = async (userId: string) => {
   try {
-    // Break the type chain at the data retrieval point
-    const subscriptionQuery = await supabase
+    // First, get the data without assigning typed variables
+    const result = await supabase
       .from('user_subscriptions')
       .select('amount, created_at')
       .eq('referrer_id', userId);
     
-    if (subscriptionQuery.error) {
-      console.error('Error fetching influencer stats:', subscriptionQuery.error);
+    if (result.error) {
+      console.error('Error fetching influencer stats:', result.error);
       return null;
     }
     
-    // Explicitly type and cast the subscription data to avoid infinite type instantiation
-    interface SubscriptionRecord {
-      amount: number | null;
-      created_at: string;
-    }
+    // Process the data directly as a plain JavaScript array
+    const subscriptions = result.data as any[] || [];
     
-    // Cast to unknown first to break the type chain
-    const rawData = subscriptionQuery.data as unknown;
-    // Then cast to array of our simple interface
-    const subscriptionData = rawData as SubscriptionRecord[];
-    
-    // Calculate total earnings, average subscription value, etc.
-    const totalReferrals = subscriptionData.length;
-    const totalValue = subscriptionData.reduce((sum, sub) => sum + (sub.amount || 0), 0);
+    // Calculate metrics using the plain array
+    const totalReferrals = subscriptions.length;
+    const totalValue = subscriptions.reduce((sum, sub) => {
+      const amount = typeof sub.amount === 'number' ? sub.amount : 0;
+      return sum + amount;
+    }, 0);
     const earnings = totalValue * 0.2; // 20% of total value
     
     return {
       totalReferrals,
       totalValue,
       earnings,
-      referralHistory: subscriptionData
+      referralHistory: subscriptions
     };
   } catch (error) {
     console.error('Error in getInfluencerStats:', error);
     return null;
   }
 };
+
