@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -126,8 +127,9 @@ export const useRazorpayPayment = () => {
         );
       }
       
-      // For recurring plans, create a subscription
+      // For recurring plans, try to create a subscription, but don't let it block the process
       let subscriptionId: string | undefined;
+      let useOneTimeMode = isOneTimePackage; // Default based on package type
       
       if (canUseRecurring) {
         try {
@@ -156,12 +158,19 @@ export const useRazorpayPayment = () => {
           );
           
           console.log(`Created subscription with ID: ${subscriptionId}`);
+          
+          // If we have a subscription ID, use subscription mode (default behavior)
+          useOneTimeMode = false;
         } catch (err) {
           console.error("Error creating subscription plan:", err);
           // Fall back to one-time payment if subscription creation fails
           console.log("Falling back to one-time payment method");
+          useOneTimeMode = true;
         }
       }
+      
+      // IMPORTANT CHANGE: Always use one-time payment mode for now to avoid 400 errors
+      useOneTimeMode = true;
       
       try {
         // Configure Razorpay options
@@ -197,8 +206,9 @@ export const useRazorpayPayment = () => {
           }
         };
         
+        // MODIFIED: Use one-time payment mode for all payments for now
         // For subscription payments, add subscription_id only
-        if (canUseRecurring && subscriptionId) {
+        if (!useOneTimeMode && subscriptionId) {
           console.log("Using subscription mode with subscription ID:", subscriptionId);
           options.subscription_id = subscriptionId;
           // Do NOT set recurring: true as it's not needed and can cause conflicts
@@ -233,14 +243,14 @@ export const useRazorpayPayment = () => {
               amount: initialAmount,
               paymentType: isOneTimePackage ? "one-time" : "recurring",
               receiptId,
-              isRecurring: canUseRecurring,
+              isRecurring: canUseRecurring && !useOneTimeMode,
               billingCycle: selectedPackage.billingCycle,
-              nextBillingDate: canUseRecurring ? formatSubscriptionDate(nextBillingDate) : undefined,
+              nextBillingDate: (canUseRecurring && !useOneTimeMode) ? formatSubscriptionDate(nextBillingDate) : undefined,
               advanceMonths: selectedPackage.advancePaymentMonths || 0,
               subscription_id: subscriptionId,
               // Add non-refundable flag to prevent automatic refunds
               isRefundable: false,
-              enableAutoPay: !isOneTimePackage
+              enableAutoPay: !isOneTimePackage && !useOneTimeMode
             });
           } catch (callbackErr) {
             console.error("Error in onSuccess callback:", callbackErr);
