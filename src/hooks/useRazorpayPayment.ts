@@ -67,6 +67,10 @@ export const useRazorpayPayment = () => {
       // Prepare customer data
       const customerData = validateCustomerData(user!);
       
+      // Calculate total amount including setup fee
+      const totalAmount = (packageData.price || 0) + (packageData.setupFee || 0);
+      console.log(`Calculated payment amount: Base price: ${packageData.price} + Setup fee: ${packageData.setupFee} = Total: ${totalAmount}`);
+      
       // Handle payment flow
       return new Promise((resolve, reject) => {
         try {
@@ -81,10 +85,11 @@ export const useRazorpayPayment = () => {
           // Build options and create checkout
           // Fix the type issue by providing all required properties for SubscriptionResult
           const subscriptionResult = {
-            amount: packageData.price * 100,
+            amount: totalAmount * 100, // Convert to paise and include setup fee
             isOneTime: packageData.paymentType === 'one-time',
             isSubscription: packageData.paymentType === 'recurring',
-            enableAutoPay: packageData.paymentType === 'recurring' && enableAutoPay
+            enableAutoPay: packageData.paymentType === 'recurring' && enableAutoPay,
+            setupFee: packageData.setupFee || 0
           };
           
           const options = buildRazorpayOptions(

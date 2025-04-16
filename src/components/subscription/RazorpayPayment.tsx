@@ -34,9 +34,19 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const handlePayNow = async () => {
     console.log("Initiating payment for package:", selectedPackage);
     
+    // Calculate total amount including setup fee
+    const totalAmount = (selectedPackage.price || 0) + (selectedPackage.setupFee || 0);
+    console.log(`Payment amount: ${selectedPackage.price} + Setup fee: ${selectedPackage.setupFee} = Total: ${totalAmount}`);
+    
+    // Make a copy of the package with the updated price that includes setup fee
+    const packageWithSetupFee = {
+      ...selectedPackage,
+      totalAmount: totalAmount // Add this for reference
+    };
+    
     try {
-      // Pass the selectedPackage directly instead of wrapping it in an object
-      await initiatePayment(selectedPackage, true)
+      // Pass the modified package that includes setup fee
+      await initiatePayment(packageWithSetupFee, true)
         .then(async (response: RazorpayResponse) => {
           console.log("Payment successful:", response);
           
@@ -82,7 +92,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
                 userId: user.id,
                 packageId: selectedPackage.id,
                 packageName: selectedPackage.title,
-                amount: selectedPackage.price,
+                amount: totalAmount, // Use the total amount including setup fee
                 startDate: startDate,
                 endDate: endDate.toISOString(),
                 status: 'active' as SubscriptionStatus,
