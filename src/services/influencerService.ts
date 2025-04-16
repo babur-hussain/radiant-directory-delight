@@ -100,19 +100,24 @@ export const getInfluencerStats = async (userId: string): Promise<InfluencerStat
       return null;
     }
     
-    // Process the data using explicit types to avoid recursion issues
+    // Create a properly typed array for subscriptions
     const subscriptions: SimpleSubscription[] = [];
     
+    // Manually process each item to avoid type recursion
     if (data && Array.isArray(data)) {
-      for (const item of data) {
-        // Explicitly check and convert each property
-        const amount = typeof item.amount === 'number' ? item.amount : 0;
-        const created_at = typeof item.created_at === 'string' ? item.created_at : '';
-        
-        subscriptions.push({
-          amount,
-          created_at
-        });
+      for (let i = 0; i < data.length; i++) {
+        const item = data[i];
+        if (item) {
+          // Extract primitive values directly
+          const amount = typeof item.amount === 'number' ? item.amount : 0;
+          const created_at = typeof item.created_at === 'string' ? item.created_at : '';
+          
+          // Add to array using primitive values
+          subscriptions.push({
+            amount,
+            created_at
+          });
+        }
       }
     }
     
