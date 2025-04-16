@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types/auth';
 import { transformUserFromSupabase } from '@/lib/supabase/userUtils';
@@ -67,13 +68,13 @@ export const getAllInfluencers = async (): Promise<User[]> => {
   }
 };
 
-// Define a simple type for the subscription data
+// Define a simple interface using only primitive types
 interface SimpleSubscription {
   amount: number;
   created_at: string;
 }
 
-// Define the return type for influencer stats
+// Define the return type with primitive types only
 interface InfluencerStats {
   totalReferrals: number;
   totalValue: number;
@@ -99,36 +100,36 @@ export const getInfluencerStats = async (userId: string): Promise<InfluencerStat
       return null;
     }
     
-    // Initialize an empty array with the correct primitive type
-    const referralHistory: SimpleSubscription[] = [];
+    // Use explicitly typed array to avoid recursive type issues
+    const safeReferralHistory: SimpleSubscription[] = [];
     
-    // Process data safely with primitive values only
+    // Process data with careful type checking and conversion
     if (data && Array.isArray(data)) {
-      for (const item of data) {
+      for (let i = 0; i < data.length; i++) {
+        const item = data[i];
         if (item) {
-          // Create a new object with primitive values only
-          referralHistory.push({
+          // Create a new object with validated primitive values only
+          const subscription: SimpleSubscription = {
             amount: typeof item.amount === 'number' ? item.amount : 0,
             created_at: typeof item.created_at === 'string' ? item.created_at : ''
-          });
+          };
+          safeReferralHistory.push(subscription);
         }
       }
     }
     
-    // Calculate metrics with our safe primitive values
-    const totalReferrals = referralHistory.length;
-    const totalValue = referralHistory.reduce((sum, sub) => sum + sub.amount, 0);
+    // Calculate metrics with our explicitly typed values
+    const totalReferrals = safeReferralHistory.length;
+    const totalValue = safeReferralHistory.reduce((sum, sub) => sum + sub.amount, 0);
     const earnings = totalValue * 0.2; // 20% of total value
     
-    // Return a new object with only primitive values or arrays of primitives
-    const result: InfluencerStats = {
+    // Return a new object with only primitive or explicitly typed values
+    return {
       totalReferrals,
       totalValue,
       earnings,
-      referralHistory
+      referralHistory: safeReferralHistory
     };
-    
-    return result;
   } catch (error) {
     console.error('Error in getInfluencerStats:', error);
     return null;
