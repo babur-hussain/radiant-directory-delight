@@ -77,7 +77,8 @@ export const getAllInfluencers = async (): Promise<User[]> => {
  */
 export const getInfluencerStats = async (userId: string) => {
   try {
-    const { data, error } = await supabase
+    // Use type-safe approach for fetching subscription data
+    const { data: subscriptionData, error } = await supabase
       .from('user_subscriptions')
       .select('amount, created_at')
       .eq('referrer_id', userId);
@@ -87,16 +88,25 @@ export const getInfluencerStats = async (userId: string) => {
       return null;
     }
     
+    // Explicitly type the data to avoid deep type instantiation
+    type SubscriptionRecord = {
+      amount: number | null;
+      created_at: string;
+    };
+    
+    // Cast the data to our explicit type
+    const typedData = subscriptionData as SubscriptionRecord[];
+    
     // Calculate total earnings, average subscription value, etc.
-    const totalReferrals = data.length;
-    const totalValue = data.reduce((sum, sub) => sum + (sub.amount || 0), 0);
+    const totalReferrals = typedData.length;
+    const totalValue = typedData.reduce((sum, sub) => sum + (sub.amount || 0), 0);
     const earnings = totalValue * 0.2; // 20% of total value
     
     return {
       totalReferrals,
       totalValue,
       earnings,
-      referralHistory: data
+      referralHistory: typedData
     };
   } catch (error) {
     console.error('Error in getInfluencerStats:', error);
