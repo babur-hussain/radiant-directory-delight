@@ -23,6 +23,55 @@ function transformRole(role: string | null): UserRole {
   }
 }
 
+// Transform Supabase user object to our User type
+export function transformUserFromSupabase(data: any): User {
+  return {
+    uid: data.id,
+    id: data.id, // Ensure id is set to match uid
+    email: data.email || '',
+    displayName: data.name || '',
+    name: data.name || '',
+    role: transformRole(data.role),
+    isAdmin: data.is_admin || false,
+    photoURL: data.photo_url || null,
+    createdAt: data.created_at ? new Date(data.created_at).toISOString() : new Date().toISOString(),
+    lastLogin: data.last_login ? new Date(data.last_login).toISOString() : new Date().toISOString(),
+    employeeCode: data.employee_code || null,
+    phone: data.phone || null,
+    
+    // Additional fields for different user types
+    instagramHandle: data.instagram_handle || null,
+    facebookHandle: data.facebook_handle || null,
+    verified: data.verified || false,
+    city: data.city || null,
+    country: data.country || null,
+    niche: data.niche || null,
+    followersCount: data.followers_count || null,
+    bio: data.bio || null,
+    
+    businessName: data.business_name || null,
+    ownerName: data.owner_name || null,
+    businessCategory: data.business_category || null,
+    website: data.website || null,
+    gstNumber: data.gst_number || null,
+    
+    subscription: data.subscription || null,
+    subscriptionId: data.subscription_id || null,
+    subscriptionStatus: data.subscription_status || null,
+    subscriptionPackage: data.subscription_package || null,
+    customDashboardSections: data.custom_dashboard_sections || null,
+    
+    // Referral fields
+    referralId: data.referral_id || null,
+    referredBy: data.referred_by || null,
+    referralEarnings: data.referral_earnings || 0,
+    referralCount: data.referral_count || 0,
+    
+    // Influencer flag
+    isInfluencer: data.is_influencer || false
+  };
+}
+
 export const fetchUserByUid = async (uid: string): Promise<User | null> => {
   try {
     const { data, error } = await supabase
@@ -38,42 +87,7 @@ export const fetchUserByUid = async (uid: string): Promise<User | null> => {
     
     if (!data) return null;
     
-    return {
-      uid: data.id,
-      id: data.id, // Ensure id is set to match uid
-      email: data.email || '',
-      displayName: data.name || '',
-      name: data.name || '',
-      role: transformRole(data.role),
-      isAdmin: data.is_admin || false,
-      photoURL: data.photo_url || null,
-      createdAt: data.created_at ? new Date(data.created_at).toISOString() : new Date().toISOString(),
-      lastLogin: data.last_login ? new Date(data.last_login).toISOString() : new Date().toISOString(),
-      employeeCode: data.employee_code || null,
-      phone: data.phone || null,
-      
-      // Additional fields for different user types
-      instagramHandle: data.instagram_handle || null,
-      facebookHandle: data.facebook_handle || null,
-      verified: data.verified || false,
-      city: data.city || null,
-      country: data.country || null,
-      niche: data.niche || null,
-      followersCount: data.followers_count || null,
-      bio: data.bio || null,
-      
-      businessName: data.business_name || null,
-      ownerName: data.owner_name || null,
-      businessCategory: data.business_category || null,
-      website: data.website || null,
-      gstNumber: data.gst_number || null,
-      
-      subscription: data.subscription || null,
-      subscriptionId: data.subscription_id || null,
-      subscriptionStatus: data.subscription_status || null,
-      subscriptionPackage: data.subscription_package || null,
-      customDashboardSections: data.custom_dashboard_sections || null
-    };
+    return transformUserFromSupabase(data);
   } catch (error) {
     console.error('Error in fetchUserByUid:', error);
     return null;
@@ -104,38 +118,7 @@ export const getAllUsers = async (page = 1, limit = 10, searchTerm?: string): Pr
       return { users: [], count: 0 };
     }
 
-    const users: User[] = data.map((userData) => ({
-      uid: userData.id,
-      id: userData.id,
-      email: userData.email || "",
-      displayName: userData.name || "",
-      name: userData.name || "",
-      role: transformRole(userData.role),
-      isAdmin: userData.is_admin || false,
-      photoURL: userData.photo_url || "",
-      employeeCode: userData.employee_code || "",
-      createdAt: userData.created_at || new Date().toISOString(),
-      lastLogin: userData.last_login || null,
-      phone: userData.phone || "",
-      instagramHandle: userData.instagram_handle || "",
-      facebookHandle: userData.facebook_handle || "",
-      verified: userData.verified || false,
-      city: userData.city || "",
-      country: userData.country || "",
-      niche: userData.niche || "",
-      followersCount: userData.followers_count || "",
-      bio: userData.bio || "",
-      businessName: userData.business_name || "",
-      ownerName: userData.owner_name || "",
-      businessCategory: userData.business_category || "",
-      website: userData.website || "",
-      gstNumber: userData.gst_number || "",
-      subscription: userData.subscription || null,
-      subscriptionId: userData.subscription_id || null,
-      subscriptionStatus: userData.subscription_status || null,
-      subscriptionPackage: userData.subscription_package || null,
-      customDashboardSections: userData.custom_dashboard_sections || null
-    }));
+    const users: User[] = data.map(userData => transformUserFromSupabase(userData));
 
     return { users, count: count || 0 };
   } catch (error) {
@@ -157,38 +140,7 @@ export const getUserById = async (userId: string): Promise<User | null> => {
       return null;
     }
 
-    return {
-      uid: data.id,
-      id: data.id,
-      email: data.email || "",
-      displayName: data.name || "",
-      name: data.name || "",
-      role: transformRole(data.role),
-      isAdmin: data.is_admin || false,
-      photoURL: data.photo_url || null,
-      employeeCode: data.employee_code || "",
-      createdAt: data.created_at || new Date().toISOString(),
-      lastLogin: data.last_login || null,
-      phone: data.phone || "",
-      instagramHandle: data.instagram_handle || "",
-      facebookHandle: data.facebook_handle || "",
-      verified: data.verified || false,
-      city: data.city || "",
-      country: data.country || "",
-      niche: data.niche || "",
-      followersCount: data.followers_count || "",
-      bio: data.bio || "",
-      businessName: data.business_name || "",
-      ownerName: data.owner_name || "",
-      businessCategory: data.business_category || "",
-      website: data.website || "",
-      gstNumber: data.gst_number || "",
-      subscription: data.subscription || null,
-      subscriptionId: data.subscription_id || null,
-      subscriptionStatus: data.subscription_status || null,
-      subscriptionPackage: data.subscription_package || null,
-      customDashboardSections: data.custom_dashboard_sections || null
-    };
+    return transformUserFromSupabase(data);
   } catch (error) {
     console.error("Error in getUserById:", error);
     return null;

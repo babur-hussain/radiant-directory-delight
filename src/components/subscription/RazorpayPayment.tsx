@@ -10,6 +10,8 @@ import { updateUserSubscription } from '@/lib/subscription/update-subscription';
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionStatus } from '@/models/Subscription';
 import { RazorpayResponse } from '@/types/razorpay';
+import { recordReferral } from '@/services/referralService';
+import { useSearchParams } from 'react-router-dom';
 
 interface RazorpayPaymentProps {
   selectedPackage: ISubscriptionPackage;
@@ -25,6 +27,8 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const { initiatePayment, isLoading, error } = useRazorpayPayment();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const referralId = searchParams.get('ref');
   
   useEffect(() => {
     // Initiate payment automatically when component mounts
@@ -107,13 +111,26 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
                 isPausable: selectedPackage.paymentType !== 'one-time',
                 isUserCancellable: selectedPackage.paymentType !== 'one-time',
                 advancePaymentMonths: selectedPackage.advancePaymentMonths || 0,
-                actualStartDate: startDate
+                actualStartDate: startDate,
+                // Add referral information if available
+                referrerId: referralId || null
               };
 
               await createSubscription(subscriptionData);
               
               // Also update the user record with subscription details
               await updateUserSubscription(user.id, subscriptionData);
+              
+              // Process referral if referralId is provided
+              if (referralId) {
+                const referralSuccess = await recordReferral(referralId, totalAmount);
+                if (referralSuccess) {
+                  toast({
+                    title: "Referral Applied",
+                    description: "Your referrer will be credited for this subscription.",
+                  });
+                }
+              }
               
               toast({
                 title: "Subscription Activated",

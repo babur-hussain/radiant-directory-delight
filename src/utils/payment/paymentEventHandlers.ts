@@ -1,55 +1,57 @@
 
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
+import { recordReferral } from '@/services/referralService';
 
 export const createPaymentHandlers = (
   packageData: ISubscriptionPackage,
-  toast: ReturnType<typeof useToast>['toast'],
+  toast: any,
   onSuccess: (response: any) => void,
-  onDismiss: () => void,
+  onCancel: () => void,
   onError: (error: any) => void
 ) => {
-  const handleSuccess = (response: any) => {
-    console.log("Payment success callback triggered with:", response);
-    
+  const handleSuccess = async (response: any) => {
+    console.log('Payment successful:', response);
     toast({
-      title: "Payment Successful",
-      description: `Your payment for ${packageData.title} was successful.`,
-      variant: "success"
+      title: 'Payment Successful',
+      description: `Thank you for subscribing to ${packageData.title}!`,
     });
+    
+    // Process any referral if present
+    if (response.referrerId) {
+      try {
+        await recordReferral(response.referrerId, packageData.price);
+      } catch (err) {
+        console.error('Error processing referral:', err);
+      }
+    }
     
     onSuccess(response);
   };
-  
+
   const handleDismiss = () => {
-    console.log("Payment modal dismissed by user");
-    
+    console.log('Payment dismissed by user');
     toast({
-      title: "Payment Cancelled",
-      description: "You cancelled the payment process.",
-      variant: "info"
+      title: 'Payment Cancelled',
+      description: 'You cancelled the payment process.',
+      variant: 'default',
     });
-    
-    onDismiss();
+    onCancel();
   };
-  
-  const handleError = (err: any) => {
-    console.error("Payment error:", err);
-    
-    const errorMessage = err?.error?.description || "There was a problem processing your payment.";
-    
+
+  const handleError = (error: any) => {
+    console.error('Payment error:', error);
     toast({
-      title: "Payment Failed",
-      description: errorMessage,
-      variant: "destructive"
+      title: 'Payment Failed',
+      description: error?.description || error?.message || 'An error occurred during payment.',
+      variant: 'destructive',
     });
-    
-    onError(err);
+    onError(error);
   };
-  
+
   return {
     handleSuccess,
     handleDismiss,
-    handleError
+    handleError,
   };
 };

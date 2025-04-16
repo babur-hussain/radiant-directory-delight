@@ -1,32 +1,86 @@
 
-import { BrowserRouter as Router } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider } from '@/hooks/useAuth';
-import AppRoutes from '@/routes';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import './App.css';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import HeroSection from './components/HeroSection';
+import FeaturedBusinesses from './components/FeaturedBusinesses';
+import CategorySection from './components/CategorySection';
+import AllCategories from './components/AllCategories';
+import TestimonialSection from './components/TestimonialSection';
+import CtaSection from './components/CtaSection';
+import GetListedForm from './components/GetListedForm';
+import SearchResults from './components/SearchResults';
+import PartnersSection from './components/PartnersSection';
+import AdminLayout from './components/admin/AdminLayout';
+import UnauthorizedView from './components/admin/UnauthorizedView';
+import ProtectedRoute from './components/ProtectedRoute';
+import { AuthProvider } from './hooks/useAuth';
+import ProfilePage from './pages/ProfilePage';
+import InfluencersPage from './pages/InfluencersPage';
+import SubscriptionPopupAd from './components/ads/SubscriptionPopupAd';
+import { PopupAdProvider, usePopupAd } from './providers/PopupAdProvider';
 
-// Initialize QueryClient for React Query
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 10, // 10 minutes (this replaces cacheTime in newer versions)
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-});
-
+// Root component with providers
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <AuthProvider>
-          <AppRoutes />
-          <Toaster />
-        </AuthProvider>
-      </Router>
-    </QueryClientProvider>
+    <AuthProvider>
+      <PopupAdProvider>
+        <AppContent />
+      </PopupAdProvider>
+    </AuthProvider>
+  );
+}
+
+// App content with access to contexts
+function AppContent() {
+  const { showSubscriptionPopup, setShowSubscriptionPopup } = usePopupAd();
+  
+  return (
+    <Router>
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-1">
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <>
+                  <HeroSection />
+                  <FeaturedBusinesses />
+                  <CategorySection />
+                  <TestimonialSection />
+                  <CtaSection />
+                  <PartnersSection />
+                </>
+              }
+            />
+            <Route path="/categories" element={<AllCategories />} />
+            <Route path="/get-listed" element={<GetListedForm />} />
+            <Route path="/search" element={<SearchResults />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/influencers" element={<InfluencersPage />} />
+            <Route
+              path="/admin/*"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/unauthorized" element={<UnauthorizedView />} />
+          </Routes>
+        </main>
+        <Footer />
+        
+        {/* Subscription Popup Ad */}
+        <SubscriptionPopupAd 
+          open={showSubscriptionPopup} 
+          onOpenChange={setShowSubscriptionPopup} 
+        />
+      </div>
+    </Router>
   );
 }
 

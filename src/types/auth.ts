@@ -1,3 +1,4 @@
+
 export type UserRole = "User" | "Business" | "Influencer" | "Staff" | "Admin";
 
 export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled' | 'pending' | 'paused' | 'expired' | 'trial';
@@ -50,6 +51,7 @@ export interface User {
   followersCount?: string | null;
   bio?: string | null;
   engagementRate?: string | null;
+  isInfluencer?: boolean;
   
   // Business-specific fields
   businessName?: string | null;
@@ -68,6 +70,12 @@ export interface User {
   // Staff-specific fields
   staffRole?: string | null;
   assignedBusinessId?: string | null;
+  
+  // Referral system fields
+  referralId?: string | null;
+  referredBy?: string | null;
+  referralEarnings?: number;
+  referralCount?: number;
   
   // Subscription-related fields
   subscription?: UserSubscription | string | null;
@@ -115,6 +123,9 @@ export interface UserSubscription {
   nextBillingDate?: string;
   recurringAmount?: number;
   billingCycle?: string;
+  
+  // Referral system fields
+  referrerId?: string | null;
 }
 
 export function isUserSubscription(value: any): value is UserSubscription {

@@ -11,12 +11,18 @@ import { useToast } from '@/hooks/use-toast';
 import { updateUser } from '@/services/userService';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import ReferralSection from '@/components/ReferralSection';
+import { ensureReferralId } from '@/services/referralService';
+import BecomeInfluencerSection from '@/components/profile/BecomeInfluencerSection';
+import { usePopupAd } from '@/providers/PopupAdProvider';
 
 const ProfilePage = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, refreshUserData } = useAuth();
   const { toast } = useToast();
+  const { triggerSubscriptionPopup } = usePopupAd();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isProfileFirstUpdate, setIsProfileFirstUpdate] = useState(true);
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
@@ -41,6 +47,24 @@ const ProfilePage = () => {
         photo: null,
         photoURL: user.photoURL || '',
       });
+      
+      // Check if this is the first profile setup
+      const hasCompletedProfile = localStorage.getItem('profile_completed');
+      if (!hasCompletedProfile && (user.bio || user.city || user.country)) {
+        localStorage.setItem('profile_completed', 'true');
+        setIsProfileFirstUpdate(false);
+      }
+      
+      // Ensure user has a referral ID
+      if (user.id && !user.referralId) {
+        ensureReferralId(user.id)
+          .then(() => {
+            refreshUserData();
+          })
+          .catch(error => {
+            console.error("Error ensuring referral ID:", error);
+          });
+      }
     }
   }, [user]);
 
@@ -112,6 +136,21 @@ const ProfilePage = () => {
         title: 'Profile updated',
         description: 'Your profile has been updated successfully.',
       });
+      
+      // Refresh user data to get updated info
+      await refreshUserData();
+      
+      // Check if this was the first significant profile update
+      if (isProfileFirstUpdate && (profileData.bio || profileData.city || profileData.country)) {
+        // Mark profile as completed
+        localStorage.setItem('profile_completed', 'true');
+        setIsProfileFirstUpdate(false);
+        
+        // Show subscription popup after a short delay
+        setTimeout(() => {
+          triggerSubscriptionPopup();
+        }, 1000);
+      }
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
@@ -254,6 +293,17 @@ const ProfilePage = () => {
             </CardFooter>
           </form>
         </Card>
+        
+        {/* Referral section */}
+        {user && <ReferralSection user={user} />}
+        
+        {/* Become Influencer section */}
+        {user && (
+          <BecomeInfluencerSection 
+            user={user} 
+            onUpdate={refreshUserData} 
+          />
+        )}
       </div>
     </div>
   );
