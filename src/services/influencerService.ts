@@ -49,16 +49,14 @@ export const getAllInfluencers = async (): Promise<User[]> => {
       return [];
     }
     
-    // Create a type-safe mapping approach
+    // Create an array to store the transformed users
     const influencers: User[] = [];
     
-    // Process each user data separately to avoid type recursion
-    if (data) {
+    // Process each user data separately
+    if (data && Array.isArray(data)) {
       for (const userData of data) {
-        // Use type assertion to unknown first to break the type chain
-        const userRecord = userData as unknown;
-        // Then safely cast to a simple Record type
-        const influencer = transformUserFromSupabase(userRecord as Record<string, any>);
+        // Transform user data safely
+        const influencer = transformUserFromSupabase(userData);
         influencers.push(influencer);
       }
     }
@@ -70,7 +68,7 @@ export const getAllInfluencers = async (): Promise<User[]> => {
   }
 };
 
-// Define a simple interface for subscription records to avoid deep type inference
+// Define a simple interface for subscription data
 interface SubscriptionData {
   amount: number;
   created_at: string;
@@ -93,7 +91,7 @@ export const getInfluencerStats = async (userId: string) => {
       return null;
     }
     
-    // Manually process the subscription data with explicit typing
+    // Process the subscription data safely
     const subscriptions: SubscriptionData[] = [];
     
     if (data && Array.isArray(data)) {
