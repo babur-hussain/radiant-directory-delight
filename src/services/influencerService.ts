@@ -68,12 +68,6 @@ export const getAllInfluencers = async (): Promise<User[]> => {
   }
 };
 
-// Define a simple interface for subscription data
-interface SubscriptionData {
-  amount: number;
-  created_at: string;
-}
-
 /**
  * Get detailed stats for a specific influencer
  * @param userId The influencer's user ID
@@ -92,8 +86,8 @@ export const getInfluencerStats = async (userId: string) => {
       return null;
     }
     
-    // Process the subscription data safely using explicit typing
-    const subscriptions: Array<{amount: number, created_at: string}> = [];
+    // Process the data manually to avoid type recursion issues
+    const subscriptions = [];
     
     if (data && Array.isArray(data)) {
       for (const item of data) {
