@@ -69,18 +69,18 @@ export const getAllInfluencers = async (): Promise<User[]> => {
 };
 
 // Define a simple type for the subscription data
-type SimpleSubscription = {
+interface SimpleSubscription {
   amount: number;
   created_at: string;
-};
+}
 
 // Define the return type for influencer stats
-type InfluencerStats = {
+interface InfluencerStats {
   totalReferrals: number;
   totalValue: number;
   earnings: number;
   referralHistory: SimpleSubscription[];
-};
+}
 
 /**
  * Get detailed stats for a specific influencer
@@ -100,38 +100,41 @@ export const getInfluencerStats = async (userId: string): Promise<InfluencerStat
       return null;
     }
     
-    // Create a properly typed array for subscriptions
-    const subscriptions: SimpleSubscription[] = [];
+    // Create a safe array for subscriptions
+    const subscriptions: Array<SimpleSubscription> = [];
     
-    // Manually process each item to avoid type recursion
+    // Manually process each item one by one to completely avoid type recursion
     if (data && Array.isArray(data)) {
-      for (let i = 0; i < data.length; i++) {
-        const item = data[i];
-        if (item) {
-          // Extract primitive values directly
-          const amount = typeof item.amount === 'number' ? item.amount : 0;
-          const created_at = typeof item.created_at === 'string' ? item.created_at : '';
-          
-          // Add to array using primitive values
-          subscriptions.push({
-            amount,
-            created_at
-          });
-        }
+      const dataLength = data.length;
+      for (let i = 0; i < dataLength; i++) {
+        const rawItem = data[i];
+        if (!rawItem) continue;
+        
+        // Create a new primitive-only object by extracting values directly
+        const subscription: SimpleSubscription = {
+          amount: Number(rawItem.amount) || 0,
+          created_at: String(rawItem.created_at) || ''
+        };
+        
+        // Add the safely constructed object to our array
+        subscriptions.push(subscription);
       }
     }
     
-    // Calculate metrics
+    // Calculate metrics using our safely typed array
     const totalReferrals = subscriptions.length;
     const totalValue = subscriptions.reduce((sum, sub) => sum + sub.amount, 0);
     const earnings = totalValue * 0.2; // 20% of total value
     
-    return {
+    // Construct the final result object with explicit types
+    const result: InfluencerStats = {
       totalReferrals,
       totalValue,
       earnings,
       referralHistory: subscriptions
     };
+    
+    return result;
   } catch (error) {
     console.error('Error in getInfluencerStats:', error);
     return null;
