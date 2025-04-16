@@ -30,12 +30,6 @@ const HeaderLinks = () => {
         About
       </Link>
       <Link
-        to="/dashboard"
-        className="text-sm font-medium text-gray-700 hover:text-primary transition-colors"
-      >
-        Dashboard
-      </Link>
-      <Link
         to="/influencers"
         className="text-sm font-medium text-gray-700 hover:text-primary transition-colors"
       >

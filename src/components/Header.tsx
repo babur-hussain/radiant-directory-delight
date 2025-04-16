@@ -4,9 +4,10 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import UserMenu from '@/components/UserMenu';
 import { useAuth } from '@/hooks/useAuth';
-import { Search } from 'lucide-react';
+import { Search, LayoutDashboard } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
+import HeaderLinks from './HeaderLinks';
 
 const Header = () => {
   const { isAuthenticated, user } = useAuth();
@@ -47,9 +48,6 @@ const Header = () => {
             <Link to="/about" className="text-sm font-medium text-gray-700 hover:text-primary transition-colors">
               About
             </Link>
-            <Link to="/dashboard" className="text-sm font-medium text-gray-700 hover:text-primary transition-colors">
-              Dashboard
-            </Link>
             <Link to="/influencers" className="text-sm font-medium text-gray-700 hover:text-primary transition-colors">
               Influencers
             </Link>
@@ -69,6 +67,14 @@ const Header = () => {
                 <Search className="h-4 w-4" />
               </Button>
             </form>
+            
+            {/* Dashboard Button */}
+            <Link to="/dashboard">
+              <Button variant="outline" size="sm" className="gap-1">
+                <LayoutDashboard className="h-4 w-4" />
+                Dashboard
+              </Button>
+            </Link>
             
             {/* Auth Buttons or User Menu */}
             {isAuthenticated ? (

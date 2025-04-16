@@ -83,31 +83,34 @@ interface SubscriptionData {
  */
 export const getInfluencerStats = async (userId: string) => {
   try {
-    // Use any to completely break the type chain
-    const result: any = await supabase
+    // Use a simple query without complex type inference
+    const { data: rawData, error } = await supabase
       .from('user_subscriptions')
-      .select('amount, created_at')
+      .select('*')
       .eq('referrer_id', userId);
       
-    // Handle any errors with the query
-    if (result.error) {
-      console.error('Error fetching influencer stats:', result.error);
+    if (error) {
+      console.error('Error fetching influencer stats:', error);
       return null;
     }
     
-    // Manually convert the data using our custom interface
+    // Manually process the subscription data with explicit typing
     const subscriptions: SubscriptionData[] = [];
     
-    if (Array.isArray(result.data)) {
-      for (const item of result.data) {
+    if (rawData && Array.isArray(rawData)) {
+      for (const item of rawData) {
+        // Safely extract the fields we need with proper type checking
+        const amount = typeof item?.amount === 'number' ? item.amount : 0;
+        const created_at = typeof item?.created_at === 'string' ? item.created_at : '';
+        
         subscriptions.push({
-          amount: Number(item?.amount || 0),
-          created_at: String(item?.created_at || '')
+          amount,
+          created_at
         });
       }
     }
     
-    // Calculate metrics using the simple array
+    // Calculate metrics
     const totalReferrals = subscriptions.length;
     const totalValue = subscriptions.reduce((sum, sub) => sum + sub.amount, 0);
     const earnings = totalValue * 0.2; // 20% of total value
