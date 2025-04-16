@@ -83,28 +83,27 @@ interface SubscriptionData {
  */
 export const getInfluencerStats = async (userId: string) => {
   try {
-    // Use type assertion without complex type inference
-    const { data, error } = await supabase
+    // Use a more explicit approach to avoid TypeScript type recursion
+    const subscriptionQuery = await supabase
       .from('user_subscriptions')
       .select('amount, created_at')
       .eq('referrer_id', userId);
     
-    if (error) {
-      console.error('Error fetching influencer stats:', error);
+    if (subscriptionQuery.error) {
+      console.error('Error fetching influencer stats:', subscriptionQuery.error);
       return null;
     }
     
-    // Cast directly to a simple array type without complex inference
+    // Cast to any first to break type recursion, then process manually
+    const rawData: any[] = subscriptionQuery.data || [];
     const subscriptions: SubscriptionData[] = [];
     
-    // Manually process each item to ensure type safety
-    if (data && Array.isArray(data)) {
-      for (const item of data) {
-        subscriptions.push({
-          amount: typeof item.amount === 'number' ? item.amount : 0,
-          created_at: item.created_at || ''
-        });
-      }
+    // Manually convert each item to our simple interface
+    for (const item of rawData) {
+      subscriptions.push({
+        amount: typeof item.amount === 'number' ? item.amount : 0,
+        created_at: item.created_at || ''
+      });
     }
     
     // Calculate metrics using the simple array
