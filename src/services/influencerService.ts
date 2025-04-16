@@ -49,12 +49,21 @@ export const getAllInfluencers = async (): Promise<User[]> => {
       return [];
     }
     
-    // Using explicit type casting to resolve the deep instantiation error
-    return (data || []).map(userData => {
-      // First convert to unknown to break the type chain, then cast to the expected type
-      const rawData = userData as unknown;
-      return transformUserFromSupabase(rawData as Record<string, any>);
-    });
+    // Create a type-safe mapping approach
+    const influencers: User[] = [];
+    
+    // Process each user data separately to avoid type recursion
+    if (data) {
+      for (const userData of data) {
+        // Use type assertion to unknown first to break the type chain
+        const userRecord = userData as unknown;
+        // Then safely cast to a simple Record type
+        const influencer = transformUserFromSupabase(userRecord as Record<string, any>);
+        influencers.push(influencer);
+      }
+    }
+    
+    return influencers;
   } catch (error) {
     console.error('Error in getAllInfluencers:', error);
     return [];
