@@ -70,6 +70,12 @@ export const getAllInfluencers = async (): Promise<User[]> => {
   }
 };
 
+// Define a simple interface for subscription records to avoid deep type inference
+interface SubscriptionData {
+  amount: number;
+  created_at: string;
+}
+
 /**
  * Get detailed stats for a specific influencer
  * @param userId The influencer's user ID
@@ -77,26 +83,33 @@ export const getAllInfluencers = async (): Promise<User[]> => {
  */
 export const getInfluencerStats = async (userId: string) => {
   try {
-    // First, get the data without assigning typed variables
-    const result = await supabase
+    // Use type assertion without complex type inference
+    const { data, error } = await supabase
       .from('user_subscriptions')
       .select('amount, created_at')
       .eq('referrer_id', userId);
     
-    if (result.error) {
-      console.error('Error fetching influencer stats:', result.error);
+    if (error) {
+      console.error('Error fetching influencer stats:', error);
       return null;
     }
     
-    // Process the data directly as a plain JavaScript array
-    const subscriptions = result.data as any[] || [];
+    // Cast directly to a simple array type without complex inference
+    const subscriptions: SubscriptionData[] = [];
     
-    // Calculate metrics using the plain array
+    // Manually process each item to ensure type safety
+    if (data && Array.isArray(data)) {
+      for (const item of data) {
+        subscriptions.push({
+          amount: typeof item.amount === 'number' ? item.amount : 0,
+          created_at: item.created_at || ''
+        });
+      }
+    }
+    
+    // Calculate metrics using the simple array
     const totalReferrals = subscriptions.length;
-    const totalValue = subscriptions.reduce((sum, sub) => {
-      const amount = typeof sub.amount === 'number' ? sub.amount : 0;
-      return sum + amount;
-    }, 0);
+    const totalValue = subscriptions.reduce((sum, sub) => sum + sub.amount, 0);
     const earnings = totalValue * 0.2; // 20% of total value
     
     return {
@@ -110,4 +123,3 @@ export const getInfluencerStats = async (userId: string) => {
     return null;
   }
 };
-
