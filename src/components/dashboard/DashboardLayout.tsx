@@ -30,7 +30,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       </div>
       
       <div className="flex-1 md:ml-64 flex flex-col w-full">
-        <header className="dashboard-header md:hidden sticky top-16 left-0 right-0 z-40 bg-white dark:bg-gray-800 shadow-sm">
+        <header className="dashboard-header md:hidden sticky top-0 left-0 right-0 z-40 bg-white dark:bg-gray-800 shadow-sm">
           <div className="p-4 border-b flex items-center justify-between">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -55,7 +55,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           </div>
         </header>
         
-        <header className="dashboard-header hidden md:block sticky top-16 left-0 right-0 z-40 bg-white dark:bg-gray-800 shadow-sm">
+        <header className="dashboard-header hidden md:block sticky top-0 left-0 right-0 z-40 bg-white dark:bg-gray-800 shadow-sm">
           <DashboardHeader />
         </header>
         

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import Layout from '@/components/layout/Layout';
 import Index from '@/pages/Index';
 import InfluencerPage from '@/pages/InfluencerPage';
 import BusinessPage from '@/pages/BusinessPage';
@@ -35,20 +36,24 @@ import CategoryDetailsPage from '@/pages/CategoryDetailsPage';
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/influencer" element={<InfluencerPage />} />
-      <Route path="/business" element={<BusinessPage />} />
-      <Route path="/auth" element={<AuthPage />} />
-      <Route path="/auth/callback" element={<AuthCallbackPage />} />
-      <Route path="/categories" element={<CategoriesPage />} />
-      <Route path="/businesses" element={<BusinessesPage />} />
-      <Route path="/category/:categoryName" element={<CategoryDetailsPage />} />
+      {/* Standard pages with Layout */}
+      <Route element={<Layout />}>
+        <Route path="/" element={<Index />} />
+        <Route path="/influencer" element={<InfluencerPage />} />
+        <Route path="/business" element={<BusinessPage />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route path="/categories" element={<CategoriesPage />} />
+        <Route path="/businesses" element={<BusinessesPage />} />
+        <Route path="/category/:categoryName" element={<CategoryDetailsPage />} />
+        
+        {/* Protected routes for logged in users */}
+        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
+        <Route path="/subscription/:packageId" element={<ProtectedRoute><SubscriptionDetailsPage /></ProtectedRoute>} />
+      </Route>
       
-      {/* Protected routes for logged in users */}
-      <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-      <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
-      <Route path="/subscription/:packageId" element={<ProtectedRoute><SubscriptionDetailsPage /></ProtectedRoute>} />
-      
+      {/* Custom layout pages - No outer Layout wrapper */}
       {/* Business Dashboard */}
       <Route path="/dashboard/business" element={<ProtectedRoute><BusinessDashboardPage /></ProtectedRoute>} />
       
@@ -76,7 +81,7 @@ const AppRoutes = () => {
       <Route path="/admin/seed" element={<ProtectedRoute requireAdmin={true}><AdminSeedDataPage /></ProtectedRoute>} />
       
       {/* 404 route */}
-      <Route path="*" element={<NotFound />} />
+      <Route path="*" element={<Layout><NotFound /></Layout>} />
     </Routes>
   );
 };
