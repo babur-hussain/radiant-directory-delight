@@ -49,8 +49,12 @@ export const getAllInfluencers = async (): Promise<User[]> => {
       return [];
     }
     
-    // Using type assertion to avoid deep instantiation error
-    return (data || []).map(userData => transformUserFromSupabase(userData as any));
+    // Using explicit type casting to resolve the deep instantiation error
+    return (data || []).map(userData => {
+      // First convert to unknown to break the type chain, then cast to the expected type
+      const rawData = userData as unknown;
+      return transformUserFromSupabase(rawData as Record<string, any>);
+    });
   } catch (error) {
     console.error('Error in getAllInfluencers:', error);
     return [];
