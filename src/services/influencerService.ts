@@ -68,12 +68,26 @@ export const getAllInfluencers = async (): Promise<User[]> => {
   }
 };
 
+// Define a simple type for the subscription data
+type SimpleSubscription = {
+  amount: number;
+  created_at: string;
+};
+
+// Define the return type for influencer stats
+type InfluencerStats = {
+  totalReferrals: number;
+  totalValue: number;
+  earnings: number;
+  referralHistory: SimpleSubscription[];
+};
+
 /**
  * Get detailed stats for a specific influencer
  * @param userId The influencer's user ID
  * @returns Detailed stats object or null if error
  */
-export const getInfluencerStats = async (userId: string) => {
+export const getInfluencerStats = async (userId: string): Promise<InfluencerStats | null> => {
   try {
     // Get subscription data related to this influencer
     const { data, error } = await supabase
@@ -86,14 +100,18 @@ export const getInfluencerStats = async (userId: string) => {
       return null;
     }
     
-    // Process the data manually to avoid type recursion issues
-    const subscriptions = [];
+    // Process the data using explicit types to avoid recursion issues
+    const subscriptions: SimpleSubscription[] = [];
     
     if (data && Array.isArray(data)) {
       for (const item of data) {
+        // Explicitly check and convert each property
+        const amount = typeof item.amount === 'number' ? item.amount : 0;
+        const created_at = typeof item.created_at === 'string' ? item.created_at : '';
+        
         subscriptions.push({
-          amount: typeof item.amount === 'number' ? item.amount : 0,
-          created_at: typeof item.created_at === 'string' ? item.created_at : ''
+          amount,
+          created_at
         });
       }
     }
