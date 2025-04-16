@@ -17,7 +17,7 @@ export const setInfluencerStatus = async (userId: string, isInfluencer: boolean)
       .update({ 
         is_influencer: isInfluencer,
         updated_at: new Date().toISOString()
-      } as any)
+      })
       .eq('id', userId);
     
     if (error) {
@@ -49,7 +49,8 @@ export const getAllInfluencers = async (): Promise<User[]> => {
       return [];
     }
     
-    return data.map(userData => transformUserFromSupabase(userData));
+    // Using type assertion to avoid deep instantiation error
+    return (data || []).map(userData => transformUserFromSupabase(userData as any));
   } catch (error) {
     console.error('Error in getAllInfluencers:', error);
     return [];

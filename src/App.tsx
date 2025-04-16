@@ -88,6 +88,7 @@ function AppContent() {
                 <ProtectedRoute requireAdmin>
                   <AdminLayout>
                     {/* Admin routes will be nested here */}
+                    <div>Admin Dashboard Content</div>
                   </AdminLayout>
                 </ProtectedRoute>
               }
