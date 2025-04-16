@@ -8,6 +8,7 @@ import { PopupAdProvider } from './providers/PopupAdProvider';
 import SubscriptionPopupAd from './components/ads/SubscriptionPopupAd';
 import { usePopupAd } from './providers/PopupAdProvider';
 import AppRoutes from './routes';
+import Layout from './components/layout/Layout';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -32,7 +33,9 @@ function AppContent() {
   return (
     <Router>
       <div className="flex flex-col min-h-screen">
-        <AppRoutes />
+        <Layout>
+          <AppRoutes />
+        </Layout>
         
         {/* Subscription Popup Ad */}
         <SubscriptionPopupAd 

@@ -68,13 +68,13 @@ export const getAllInfluencers = async (): Promise<User[]> => {
   }
 };
 
-// Define a simple interface using only primitive types
+// Define primitive types for subscription data
 interface SimpleSubscription {
   amount: number;
   created_at: string;
 }
 
-// Define the return type with primitive types only
+// Define return type with primitive types only
 interface InfluencerStats {
   totalReferrals: number;
   totalValue: number;
@@ -100,36 +100,38 @@ export const getInfluencerStats = async (userId: string): Promise<InfluencerStat
       return null;
     }
     
-    // Use explicitly typed array to avoid recursive type issues
-    const safeReferralHistory: SimpleSubscription[] = [];
+    // Initialize with primitive types
+    const referralHistory: SimpleSubscription[] = [];
     
-    // Process data with careful type checking and conversion
+    // Process data safely with explicit type checking
     if (data && Array.isArray(data)) {
+      // Use for loop with index to avoid any potential type recursion
       for (let i = 0; i < data.length; i++) {
         const item = data[i];
         if (item) {
-          // Create a new object with validated primitive values only
-          const subscription: SimpleSubscription = {
+          // Create a simple object with only primitive values
+          const sub: SimpleSubscription = {
             amount: typeof item.amount === 'number' ? item.amount : 0,
             created_at: typeof item.created_at === 'string' ? item.created_at : ''
           };
-          safeReferralHistory.push(subscription);
+          referralHistory.push(sub);
         }
       }
     }
     
-    // Calculate metrics with our explicitly typed values
-    const totalReferrals = safeReferralHistory.length;
-    const totalValue = safeReferralHistory.reduce((sum, sub) => sum + sub.amount, 0);
+    // Calculate metrics
+    const totalReferrals = referralHistory.length;
+    const totalValue = referralHistory.reduce((sum, sub) => sum + sub.amount, 0);
     const earnings = totalValue * 0.2; // 20% of total value
     
-    // Return a new object with only primitive or explicitly typed values
+    // Return the stats object
     return {
       totalReferrals,
       totalValue,
       earnings,
-      referralHistory: safeReferralHistory
+      referralHistory
     };
+    
   } catch (error) {
     console.error('Error in getInfluencerStats:', error);
     return null;

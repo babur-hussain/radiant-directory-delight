@@ -68,8 +68,8 @@ const BusinessesPage = () => {
   }
   
   return (
-    <div className="container mx-auto px-4 py-12 max-w-7xl">
-      <div className="text-center mb-12">
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <div className="text-center mb-8">
         <h1 className="text-4xl font-bold mb-4">Discover Local Businesses</h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           Find the best businesses in your area. Use the search and filters to narrow down your options.
