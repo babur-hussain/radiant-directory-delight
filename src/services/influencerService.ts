@@ -83,27 +83,26 @@ interface SubscriptionData {
  */
 export const getInfluencerStats = async (userId: string) => {
   try {
-    // Completely bypass type inference with raw query and manual processing
-    const { data: rawData, error } = await supabase
+    // Use any to completely break the type chain
+    const result: any = await supabase
       .from('user_subscriptions')
       .select('amount, created_at')
       .eq('referrer_id', userId);
-    
-    if (error) {
-      console.error('Error fetching influencer stats:', error);
+      
+    // Handle any errors with the query
+    if (result.error) {
+      console.error('Error fetching influencer stats:', result.error);
       return null;
     }
     
-    // Initialize an empty array with our simple interface type
+    // Manually convert the data using our custom interface
     const subscriptions: SubscriptionData[] = [];
     
-    // Process each item individually without relying on TypeScript inference
-    if (rawData) {
-      for (let i = 0; i < rawData.length; i++) {
-        const item = rawData[i];
+    if (Array.isArray(result.data)) {
+      for (const item of result.data) {
         subscriptions.push({
-          amount: typeof item?.amount === 'number' ? item.amount : 0,
-          created_at: typeof item?.created_at === 'string' ? item.created_at : ''
+          amount: Number(item?.amount || 0),
+          created_at: String(item?.created_at || '')
         });
       }
     }
