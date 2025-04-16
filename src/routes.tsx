@@ -36,7 +36,7 @@ import CategoryDetailsPage from '@/pages/CategoryDetailsPage';
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Standard pages with Layout */}
+      {/* Public routes with Layout */}
       <Route element={<Layout />}>
         <Route path="/" element={<Index />} />
         <Route path="/influencer" element={<InfluencerPage />} />
@@ -47,23 +47,19 @@ const AppRoutes = () => {
         <Route path="/businesses" element={<BusinessesPage />} />
         <Route path="/category/:categoryName" element={<CategoryDetailsPage />} />
         
-        {/* Protected routes for logged in users */}
+        {/* Protected routes that still use the main Layout */}
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
         <Route path="/subscription/:packageId" element={<ProtectedRoute><SubscriptionDetailsPage /></ProtectedRoute>} />
       </Route>
       
-      {/* Custom layout pages - No outer Layout wrapper */}
-      {/* Business Dashboard */}
+      {/* Routes without the main Layout - they have their own layouts */}
+      {/* Note: No wrapping Layout for these routes */}
       <Route path="/dashboard/business" element={<ProtectedRoute><BusinessDashboardPage /></ProtectedRoute>} />
-      
-      {/* Influencer Dashboard */}
       <Route path="/dashboard/influencer" element={<ProtectedRoute><InfluencerDashboardPage /></ProtectedRoute>} />
-      
-      {/* Main Dashboard Route - Redirect based on role */}
       <Route path="/dashboard" element={<ProtectedRoute><BusinessDashboardPage /></ProtectedRoute>} />
       
-      {/* Admin routes */}
+      {/* Admin routes - no Layout wrapper */}
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminDashboardPage /></ProtectedRoute>} />
       <Route path="/admin/upload" element={<ProtectedRoute requireAdmin={true}><AdminUploadPage /></ProtectedRoute>} />
@@ -81,7 +77,7 @@ const AppRoutes = () => {
       <Route path="/admin/seed" element={<ProtectedRoute requireAdmin={true}><AdminSeedDataPage /></ProtectedRoute>} />
       
       {/* 404 route */}
-      <Route path="*" element={<Layout><NotFound /></Layout>} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
