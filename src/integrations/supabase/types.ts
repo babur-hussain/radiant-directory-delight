@@ -299,6 +299,7 @@ export type Database = {
           id: string
           instagram_handle: string | null
           is_admin: boolean | null
+          is_influencer: boolean | null
           last_login: string | null
           last_name: string | null
           name: string | null
@@ -306,6 +307,9 @@ export type Database = {
           owner_name: string | null
           phone: string | null
           photo_url: string | null
+          referral_count: number | null
+          referral_earnings: number | null
+          referral_id: string | null
           role: string | null
           subscription: string | null
           subscription_id: string | null
@@ -332,6 +336,7 @@ export type Database = {
           id: string
           instagram_handle?: string | null
           is_admin?: boolean | null
+          is_influencer?: boolean | null
           last_login?: string | null
           last_name?: string | null
           name?: string | null
@@ -339,6 +344,9 @@ export type Database = {
           owner_name?: string | null
           phone?: string | null
           photo_url?: string | null
+          referral_count?: number | null
+          referral_earnings?: number | null
+          referral_id?: string | null
           role?: string | null
           subscription?: string | null
           subscription_id?: string | null
@@ -365,6 +373,7 @@ export type Database = {
           id?: string
           instagram_handle?: string | null
           is_admin?: boolean | null
+          is_influencer?: boolean | null
           last_login?: string | null
           last_name?: string | null
           name?: string | null
@@ -372,6 +381,9 @@ export type Database = {
           owner_name?: string | null
           phone?: string | null
           photo_url?: string | null
+          referral_count?: number | null
+          referral_earnings?: number | null
+          referral_id?: string | null
           role?: string | null
           subscription?: string | null
           subscription_id?: string | null
@@ -474,6 +486,10 @@ export type Database = {
     Functions: {
       is_admin: {
         Args: { user_id: string }
+        Returns: boolean
+      }
+      record_referral: {
+        Args: { referrer_id: string; earning_amount: number }
         Returns: boolean
       }
     }

@@ -71,7 +71,15 @@ function AppContent() {
             />
             <Route path="/categories" element={<AllCategories searchTerm={searchTerm} />} />
             <Route path="/get-listed" element={<GetListedForm isOpen={isGetListedOpen} setIsOpen={setIsGetListedOpen} />} />
-            <Route path="/search" element={<SearchResults results={searchResults} isLoading={isSearchLoading} visible={searchVisible} onResultClick={handleResultClick} onClose={handleSearchClose} />} />
+            <Route path="/search" element={
+              <SearchResults 
+                results={searchResults} 
+                isLoading={isSearchLoading} 
+                visible={searchVisible} 
+                onResultClick={handleResultClick} 
+                onClose={handleSearchClose} 
+              />
+            } />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/influencers" element={<InfluencersPage />} />
             <Route

@@ -61,13 +61,13 @@ export function transformUserFromSupabase(data: any): User {
     subscriptionPackage: data.subscription_package || null,
     customDashboardSections: data.custom_dashboard_sections || null,
     
-    // Referral fields
+    // Referral fields - now included in the database
     referralId: data.referral_id || null,
     referredBy: data.referred_by || null,
     referralEarnings: data.referral_earnings || 0,
     referralCount: data.referral_count || 0,
     
-    // Influencer flag
+    // Influencer flag - now included in the database
     isInfluencer: data.is_influencer || false
   };
 }

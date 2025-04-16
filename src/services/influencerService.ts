@@ -11,14 +11,13 @@ import { transformUserFromSupabase } from '@/lib/supabase/userUtils';
  */
 export const setInfluencerStatus = async (userId: string, isInfluencer: boolean): Promise<boolean> => {
   try {
-    // First add is_influencer column to users table if it doesn't exist
+    // Now that we've added the is_influencer column to the users table
     const { error } = await supabase
       .from('users')
       .update({ 
         is_influencer: isInfluencer,
-        // Add any other influencer-specific fields if needed
         updated_at: new Date().toISOString()
-      })
+      } as any)
       .eq('id', userId);
     
     if (error) {

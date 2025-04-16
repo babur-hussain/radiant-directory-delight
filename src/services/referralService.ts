@@ -30,13 +30,13 @@ export const ensureReferralId = async (userId: string): Promise<string> => {
     // If not, generate and save a new referral ID
     const referralId = generateReferralId();
     
-    // Add referral_id column to users table if it doesn't exist
+    // Now that we've added the referral_id column to users table
     const { error: updateError } = await supabase
       .from('users')
       .update({ 
         referral_id: referralId,
         updated_at: new Date().toISOString()
-      })
+      } as any)
       .eq('id', userId);
     
     if (updateError) {
@@ -72,7 +72,7 @@ export const getUserByReferralId = async (referralId: string): Promise<User | nu
     if (!data) return null;
     
     // Convert data to User type
-    const userRole = data.role?.toLowerCase() || 'user';
+    const userRole = (data.role?.toLowerCase() || 'user') as string;
     
     return {
       uid: data.id,
@@ -90,7 +90,8 @@ export const getUserByReferralId = async (referralId: string): Promise<User | nu
       lastLogin: data.last_login || new Date().toISOString(),
       referralId: data.referral_id || null,
       referralEarnings: data.referral_earnings || 0,
-      referralCount: data.referral_count || 0
+      referralCount: data.referral_count || 0,
+      isInfluencer: data.is_influencer || false
     };
   } catch (error) {
     console.error('Error in getUserByReferralId:', error);
@@ -109,51 +110,47 @@ export const recordReferral = async (referrerId: string, subscriptionAmount: num
     // Calculate referral earnings (20% of subscription amount)
     const earnings = subscriptionAmount * 0.2;
     
-    // First, check if the function already exists
-    const { error: functionCheckError } = await supabase.rpc('is_admin', { user_id: referrerId });
-    
-    if (functionCheckError && functionCheckError.message.includes('does not exist')) {
-      console.error('The record_referral function needs to be created in the database first');
+    // Now that we've created the record_referral function in the database
+    try {
+      // Use the custom function we created
+      const { error } = await supabase.rpc('record_referral', {
+        referrer_id: referrerId,
+        earning_amount: earnings
+      });
       
-      // If the function doesn't exist, do a direct update instead
-      const { data: userData } = await supabase
-        .from('users')
-        .select('referral_earnings, referral_count')
-        .eq('id', referrerId)
-        .single();
-      
-      const currentEarnings = userData?.referral_earnings || 0;
-      const currentCount = userData?.referral_count || 0;
-      
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          referral_earnings: currentEarnings + earnings,
-          referral_count: currentCount + 1,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', referrerId);
-      
-      if (updateError) {
-        console.error('Error updating referral stats:', updateError);
-        return false;
+      if (error) {
+        console.error('Error calling record_referral function:', error);
+        
+        // Fallback if the function call fails - direct update
+        const { data: userData } = await supabase
+          .from('users')
+          .select('referral_earnings, referral_count')
+          .eq('id', referrerId)
+          .single();
+        
+        const currentEarnings = userData?.referral_earnings || 0;
+        const currentCount = userData?.referral_count || 0;
+        
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({
+            referral_earnings: currentEarnings + earnings,
+            referral_count: currentCount + 1,
+            updated_at: new Date().toISOString()
+          } as any)
+          .eq('id', referrerId);
+        
+        if (updateError) {
+          console.error('Error updating referral stats:', updateError);
+          return false;
+        }
       }
       
       return true;
-    }
-    
-    // If the function exists, use it
-    const { error } = await supabase.rpc('record_referral', {
-      referrer_id: referrerId,
-      earning_amount: earnings
-    });
-    
-    if (error) {
+    } catch (error) {
       console.error('Error recording referral:', error);
       return false;
     }
-    
-    return true;
   } catch (error) {
     console.error('Error in recordReferral:', error);
     return false;
