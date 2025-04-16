@@ -77,36 +77,38 @@ export const getAllInfluencers = async (): Promise<User[]> => {
  */
 export const getInfluencerStats = async (userId: string) => {
   try {
-    // Use type-safe approach for fetching subscription data
-    const { data: subscriptionData, error } = await supabase
+    // Break the type chain at the data retrieval point
+    const subscriptionQuery = await supabase
       .from('user_subscriptions')
       .select('amount, created_at')
       .eq('referrer_id', userId);
     
-    if (error) {
-      console.error('Error fetching influencer stats:', error);
+    if (subscriptionQuery.error) {
+      console.error('Error fetching influencer stats:', subscriptionQuery.error);
       return null;
     }
     
-    // Explicitly type the data to avoid deep type instantiation
-    type SubscriptionRecord = {
+    // Explicitly type and cast the subscription data to avoid infinite type instantiation
+    interface SubscriptionRecord {
       amount: number | null;
       created_at: string;
-    };
+    }
     
-    // Cast the data to our explicit type
-    const typedData = subscriptionData as SubscriptionRecord[];
+    // Cast to unknown first to break the type chain
+    const rawData = subscriptionQuery.data as unknown;
+    // Then cast to array of our simple interface
+    const subscriptionData = rawData as SubscriptionRecord[];
     
     // Calculate total earnings, average subscription value, etc.
-    const totalReferrals = typedData.length;
-    const totalValue = typedData.reduce((sum, sub) => sum + (sub.amount || 0), 0);
+    const totalReferrals = subscriptionData.length;
+    const totalValue = subscriptionData.reduce((sum, sub) => sum + (sub.amount || 0), 0);
     const earnings = totalValue * 0.2; // 20% of total value
     
     return {
       totalReferrals,
       totalValue,
       earnings,
-      referralHistory: typedData
+      referralHistory: subscriptionData
     };
   } catch (error) {
     console.error('Error in getInfluencerStats:', error);
