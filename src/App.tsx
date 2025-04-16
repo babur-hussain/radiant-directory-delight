@@ -32,17 +32,16 @@ function AppContent() {
   
   return (
     <Router>
-      <div className="flex flex-col min-h-screen">
-        <Layout>
-          <AppRoutes />
-        </Layout>
-        
-        {/* Subscription Popup Ad */}
-        <SubscriptionPopupAd 
-          open={showSubscriptionPopup} 
-          onOpenChange={setShowSubscriptionPopup} 
-        />
-      </div>
+      {/* Pass the entire router without wrapping it in another div */}
+      <Layout>
+        <AppRoutes />
+      </Layout>
+      
+      {/* Subscription Popup Ad */}
+      <SubscriptionPopupAd 
+        open={showSubscriptionPopup} 
+        onOpenChange={setShowSubscriptionPopup} 
+      />
     </Router>
   );
 }

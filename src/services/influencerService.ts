@@ -103,18 +103,16 @@ export const getInfluencerStats = async (userId: string): Promise<InfluencerStat
     // Initialize with primitive types
     const referralHistory: SimpleSubscription[] = [];
     
-    // Process data safely with explicit type checking
+    // Process data safely using a standard for loop
     if (data && Array.isArray(data)) {
-      // Use for loop with index to avoid any potential type recursion
       for (let i = 0; i < data.length; i++) {
         const item = data[i];
-        if (item) {
+        if (item && typeof item === 'object') {
           // Create a simple object with only primitive values
-          const sub: SimpleSubscription = {
+          referralHistory.push({
             amount: typeof item.amount === 'number' ? item.amount : 0,
-            created_at: typeof item.created_at === 'string' ? item.created_at : ''
-          };
-          referralHistory.push(sub);
+            created_at: typeof item.created_at === 'string' ? item.created_at : new Date().toISOString(),
+          });
         }
       }
     }
