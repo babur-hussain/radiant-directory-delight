@@ -55,6 +55,9 @@ const AppRoutes = () => {
       {/* Influencer Dashboard */}
       <Route path="/dashboard/influencer" element={<ProtectedRoute><InfluencerDashboardPage /></ProtectedRoute>} />
       
+      {/* Main Dashboard Route - Redirect based on role */}
+      <Route path="/dashboard" element={<ProtectedRoute><BusinessDashboardPage /></ProtectedRoute>} />
+      
       {/* Admin routes */}
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminDashboardPage /></ProtectedRoute>} />

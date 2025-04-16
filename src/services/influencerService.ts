@@ -83,10 +83,9 @@ interface SubscriptionData {
  */
 export const getInfluencerStats = async (userId: string) => {
   try {
-    // Use a simple query without complex type inference
-    const { data: rawData, error } = await supabase
+    const { data, error } = await supabase
       .from('user_subscriptions')
-      .select('*')
+      .select('amount, created_at')
       .eq('referrer_id', userId);
       
     if (error) {
@@ -97,15 +96,11 @@ export const getInfluencerStats = async (userId: string) => {
     // Manually process the subscription data with explicit typing
     const subscriptions: SubscriptionData[] = [];
     
-    if (rawData && Array.isArray(rawData)) {
-      for (const item of rawData) {
-        // Safely extract the fields we need with proper type checking
-        const amount = typeof item?.amount === 'number' ? item.amount : 0;
-        const created_at = typeof item?.created_at === 'string' ? item.created_at : '';
-        
+    if (data && Array.isArray(data)) {
+      for (const item of data) {
         subscriptions.push({
-          amount,
-          created_at
+          amount: typeof item.amount === 'number' ? item.amount : 0,
+          created_at: typeof item.created_at === 'string' ? item.created_at : ''
         });
       }
     }
