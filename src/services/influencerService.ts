@@ -81,6 +81,7 @@ interface SubscriptionData {
  */
 export const getInfluencerStats = async (userId: string) => {
   try {
+    // Get subscription data related to this influencer
     const { data, error } = await supabase
       .from('user_subscriptions')
       .select('amount, created_at')
@@ -91,8 +92,8 @@ export const getInfluencerStats = async (userId: string) => {
       return null;
     }
     
-    // Process the subscription data safely
-    const subscriptions: SubscriptionData[] = [];
+    // Process the subscription data safely using explicit typing
+    const subscriptions: Array<{amount: number, created_at: string}> = [];
     
     if (data && Array.isArray(data)) {
       for (const item of data) {
