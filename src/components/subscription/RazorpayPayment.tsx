@@ -9,6 +9,7 @@ import { createSubscription } from '@/services/subscriptionService';
 import { updateUserSubscription } from '@/lib/subscription/update-subscription';
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionStatus } from '@/models/Subscription';
+import { RazorpayResponse } from '@/types/razorpay';
 
 interface RazorpayPaymentProps {
   selectedPackage: ISubscriptionPackage;
@@ -34,9 +35,9 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     console.log("Initiating payment for package:", selectedPackage);
     
     try {
-      // Fix: Pass the selectedPackage directly instead of wrapping it in an object
+      // Pass the selectedPackage directly instead of wrapping it in an object
       await initiatePayment(selectedPackage, true)
-        .then(async (response) => {
+        .then(async (response: RazorpayResponse) => {
           console.log("Payment successful:", response);
           
           // Critical: Add non-refundable and non-cancellable flags for all payments
