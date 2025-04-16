@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { User } from '@/types/auth';
 
 // Simple types to avoid excessive type instantiation
 interface SimpleSubscription {
@@ -106,10 +107,31 @@ export const getInfluencers = async () => {
   }
 };
 
-export const getAllInfluencers = async () => {
+export const getAllInfluencers = async (): Promise<User[]> => {
   try {
-    // Using mock user influencers data
-    return [...mockUserInfluencers];
+    // Transform mock user influencers data to match User type
+    const influencers: User[] = mockUserInfluencers.map(influencer => ({
+      uid: influencer.id,
+      id: influencer.id,
+      email: influencer.email,
+      displayName: influencer.name,
+      name: influencer.name,
+      role: 'Influencer',
+      isAdmin: false,
+      photoURL: influencer.photoURL,
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString(),
+      bio: influencer.bio,
+      niche: influencer.niche,
+      followersCount: influencer.followersCount?.toString(),
+      referralCount: influencer.referralCount,
+      referralEarnings: influencer.referralEarnings,
+      instagramHandle: influencer.instagramHandle,
+      facebookHandle: influencer.facebookHandle,
+      isInfluencer: true
+    }));
+    
+    return influencers;
   } catch (error) {
     console.error('Error fetching all influencers:', error);
     return [];
