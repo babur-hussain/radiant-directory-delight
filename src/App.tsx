@@ -36,6 +36,19 @@ function App() {
 // App content with access to contexts
 function AppContent() {
   const { showSubscriptionPopup, setShowSubscriptionPopup } = usePopupAd();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [isGetListedOpen, setIsGetListedOpen] = useState(false);
+  
+  const handleResultClick = () => {
+    setSearchVisible(false);
+  };
+  
+  const handleSearchClose = () => {
+    setSearchVisible(false);
+  };
   
   return (
     <Router>
@@ -56,16 +69,18 @@ function AppContent() {
                 </>
               }
             />
-            <Route path="/categories" element={<AllCategories />} />
-            <Route path="/get-listed" element={<GetListedForm />} />
-            <Route path="/search" element={<SearchResults />} />
+            <Route path="/categories" element={<AllCategories searchTerm={searchTerm} />} />
+            <Route path="/get-listed" element={<GetListedForm isOpen={isGetListedOpen} setIsOpen={setIsGetListedOpen} />} />
+            <Route path="/search" element={<SearchResults results={searchResults} isLoading={isSearchLoading} visible={searchVisible} onResultClick={handleResultClick} onClose={handleSearchClose} />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/influencers" element={<InfluencersPage />} />
             <Route
               path="/admin/*"
               element={
                 <ProtectedRoute requireAdmin>
-                  <AdminLayout />
+                  <AdminLayout>
+                    {/* Admin routes will be nested here */}
+                  </AdminLayout>
                 </ProtectedRoute>
               }
             />

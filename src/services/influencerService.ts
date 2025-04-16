@@ -11,9 +11,14 @@ import { transformUserFromSupabase } from '@/lib/supabase/userUtils';
  */
 export const setInfluencerStatus = async (userId: string, isInfluencer: boolean): Promise<boolean> => {
   try {
+    // First add is_influencer column to users table if it doesn't exist
     const { error } = await supabase
       .from('users')
-      .update({ is_influencer: isInfluencer })
+      .update({ 
+        is_influencer: isInfluencer,
+        // Add any other influencer-specific fields if needed
+        updated_at: new Date().toISOString()
+      })
       .eq('id', userId);
     
     if (error) {
@@ -38,7 +43,7 @@ export const getAllInfluencers = async (): Promise<User[]> => {
       .from('users')
       .select('*')
       .eq('is_influencer', true)
-      .order('referral_count', { ascending: false });
+      .order('created_at', { ascending: false });
     
     if (error) {
       console.error('Error fetching influencers:', error);

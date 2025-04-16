@@ -17,7 +17,7 @@ export const ensureReferralId = async (userId: string): Promise<string> => {
       .eq('id', userId)
       .single();
     
-    if (error) {
+    if (error && error.message !== "JSON object requested, multiple (or no) rows returned") {
       console.error('Error fetching user referral ID:', error);
       throw error;
     }
@@ -30,9 +30,13 @@ export const ensureReferralId = async (userId: string): Promise<string> => {
     // If not, generate and save a new referral ID
     const referralId = generateReferralId();
     
+    // Add referral_id column to users table if it doesn't exist
     const { error: updateError } = await supabase
       .from('users')
-      .update({ referral_id: referralId })
+      .update({ 
+        referral_id: referralId,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', userId);
     
     if (updateError) {
@@ -68,13 +72,18 @@ export const getUserByReferralId = async (referralId: string): Promise<User | nu
     if (!data) return null;
     
     // Convert data to User type
+    const userRole = data.role?.toLowerCase() || 'user';
+    
     return {
       uid: data.id,
       id: data.id,
       email: data.email || '',
       displayName: data.name || '',
       name: data.name || '',
-      role: data.role || 'User',
+      role: userRole === 'admin' ? 'Admin' : 
+            userRole === 'business' ? 'Business' : 
+            userRole === 'influencer' ? 'Influencer' : 
+            userRole === 'staff' ? 'Staff' : 'User',
       isAdmin: data.is_admin || false,
       photoURL: data.photo_url || null,
       createdAt: data.created_at || new Date().toISOString(),
@@ -100,7 +109,40 @@ export const recordReferral = async (referrerId: string, subscriptionAmount: num
     // Calculate referral earnings (20% of subscription amount)
     const earnings = subscriptionAmount * 0.2;
     
-    // Update referrer's stats
+    // First, check if the function already exists
+    const { error: functionCheckError } = await supabase.rpc('is_admin', { user_id: referrerId });
+    
+    if (functionCheckError && functionCheckError.message.includes('does not exist')) {
+      console.error('The record_referral function needs to be created in the database first');
+      
+      // If the function doesn't exist, do a direct update instead
+      const { data: userData } = await supabase
+        .from('users')
+        .select('referral_earnings, referral_count')
+        .eq('id', referrerId)
+        .single();
+      
+      const currentEarnings = userData?.referral_earnings || 0;
+      const currentCount = userData?.referral_count || 0;
+      
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          referral_earnings: currentEarnings + earnings,
+          referral_count: currentCount + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', referrerId);
+      
+      if (updateError) {
+        console.error('Error updating referral stats:', updateError);
+        return false;
+      }
+      
+      return true;
+    }
+    
+    // If the function exists, use it
     const { error } = await supabase.rpc('record_referral', {
       referrer_id: referrerId,
       earning_amount: earnings
