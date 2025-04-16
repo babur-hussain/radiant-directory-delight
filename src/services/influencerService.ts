@@ -100,29 +100,29 @@ export const getInfluencerStats = async (userId: string): Promise<InfluencerStat
       return null;
     }
     
-    // Initialize with primitive types
+    // Initialize empty array with the correct type
     const referralHistory: SimpleSubscription[] = [];
     
-    // Process data safely using a standard for loop
+    // Process data safely using a traditional for loop to avoid type recursion issues
     if (data && Array.isArray(data)) {
       for (let i = 0; i < data.length; i++) {
         const item = data[i];
         if (item && typeof item === 'object') {
-          // Create a simple object with only primitive values
+          // Create a new object with explicit primitive types
           referralHistory.push({
-            amount: typeof item.amount === 'number' ? item.amount : 0,
-            created_at: typeof item.created_at === 'string' ? item.created_at : new Date().toISOString(),
+            amount: Number(item.amount) || 0,
+            created_at: String(item.created_at) || new Date().toISOString()
           });
         }
       }
     }
     
-    // Calculate metrics
+    // Calculate metrics using primitive operations
     const totalReferrals = referralHistory.length;
     const totalValue = referralHistory.reduce((sum, sub) => sum + sub.amount, 0);
     const earnings = totalValue * 0.2; // 20% of total value
     
-    // Return the stats object
+    // Return a new object with primitive types
     return {
       totalReferrals,
       totalValue,
