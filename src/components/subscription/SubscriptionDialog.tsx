@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -152,10 +151,10 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] w-[calc(100vw-32px)] p-0 overflow-hidden">
+      <DialogContent className="p-0 sm:max-w-xl">
         {step === 'details' ? (
-          <div className="flex flex-col h-full">
-            <DialogHeader className="p-4 sm:p-6 border-b">
+          <>
+            <DialogHeader className="px-6 py-4 border-b sticky top-0 bg-background z-10">
               <DialogTitle className="text-xl font-bold">
                 {selectedPackage.title}
               </DialogTitle>
@@ -164,107 +163,105 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
               </DialogDescription>
             </DialogHeader>
             
-            <ScrollArea className="flex-1 overflow-y-auto p-4 sm:p-6">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Package Details</h3>
-                  <p className="text-sm text-gray-600 mb-4">{selectedPackage.fullDescription || selectedPackage.shortDescription}</p>
-                  
-                  <div className="bg-gray-50 p-4 rounded-lg border">
-                    <div className="flex justify-between mb-2">
-                      <span className="font-medium">Billing</span>
-                      <span>
-                        {isOneTimePackage 
-                          ? 'One-time payment' 
-                          : `${selectedPackage.billingCycle === 'monthly' ? 'Monthly' : 'Annual'} subscription`}
-                      </span>
-                    </div>
+            <div className="flex-1 overflow-y-auto">
+              <ScrollArea className="h-[60vh]">
+                <div className="p-6 space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Package Details</h3>
+                    <p className="text-sm text-gray-600 mb-4">{selectedPackage.fullDescription || selectedPackage.shortDescription}</p>
                     
-                    <div className="flex justify-between mb-2">
-                      <span className="font-medium">Duration</span>
-                      <span>
-                        {isOneTimePackage 
-                          ? `${selectedPackage.durationMonths || 12} months` 
-                          : 'Ongoing until cancelled'}
-                      </span>
-                    </div>
-                    
-                    <Separator className="my-2" />
-                    
-                    {isOneTimePackage ? (
-                      <>
-                        {setupFee > 0 && (
-                          <div className="flex justify-between mb-2">
-                            <span>Setup Fee</span>
-                            <span>{formatPrice(setupFee)}</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between mb-2">
-                          <span>Package Price</span>
-                          <span>{formatPrice(selectedPackage.price)}</span>
-                        </div>
-                        <Separator className="my-2" />
-                        <div className="flex justify-between font-medium">
-                          <span>Total Payment</span>
-                          <span>{formatPrice(initialPayment)}</span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex justify-between mb-2 font-medium">
-                        <span>Price</span>
+                    <div className="bg-gray-50 p-4 rounded-lg border">
+                      <div className="flex justify-between mb-2">
+                        <span className="font-medium">Billing</span>
                         <span>
-                          {formatPrice(selectedPackage.billingCycle === 'monthly' && selectedPackage.monthlyPrice
-                            ? selectedPackage.monthlyPrice
-                            : selectedPackage.price)} 
-                          {isOneTimePackage ? '' : `/${selectedPackage.billingCycle || 'year'}`}
+                          {isOneTimePackage 
+                            ? 'One-time payment' 
+                            : `${selectedPackage.billingCycle === 'monthly' ? 'Monthly' : 'Annual'} subscription`}
                         </span>
                       </div>
-                    )}
+                      
+                      <div className="flex justify-between mb-2">
+                        <span className="font-medium">Duration</span>
+                        <span>
+                          {isOneTimePackage 
+                            ? `${selectedPackage.durationMonths || 12} months` 
+                            : 'Ongoing until cancelled'}
+                        </span>
+                      </div>
+                      
+                      <Separator className="my-2" />
+                      
+                      {isOneTimePackage ? (
+                        <>
+                          {setupFee > 0 && (
+                            <div className="flex justify-between mb-2">
+                              <span>Setup Fee</span>
+                              <span>{formatPrice(setupFee)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between mb-2">
+                            <span>Package Price</span>
+                            <span>{formatPrice(selectedPackage.price)}</span>
+                          </div>
+                          <Separator className="my-2" />
+                          <div className="flex justify-between font-medium">
+                            <span>Total Payment</span>
+                            <span>{formatPrice(initialPayment)}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex justify-between mb-2 font-medium">
+                          <span>Price</span>
+                          <span>
+                            {formatPrice(selectedPackage.billingCycle === 'monthly' && selectedPackage.monthlyPrice
+                              ? selectedPackage.monthlyPrice
+                              : selectedPackage.price)} 
+                            {isOneTimePackage ? '' : `/${selectedPackage.billingCycle || 'year'}`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Features</h3>
-                  <ul className="space-y-2">
-                    {Array.isArray(selectedPackage.features) && selectedPackage.features.length > 0 ? (
-                      selectedPackage.features.map((feature, index) => (
-                        <li key={index} className="flex">
-                          <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0" />
-                          <span>{feature}</span>
+                  
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Features</h3>
+                    <ul className="space-y-2">
+                      {Array.isArray(selectedPackage.features) && selectedPackage.features.length > 0 ? (
+                        selectedPackage.features.map((feature, index) => (
+                          <li key={index} className="flex">
+                            <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0" />
+                            <span>{feature}</span>
+                          </li>
+                        ))
+                      ) : (
+                        <li className="flex">
+                          <Check className="h-5 w-5 text-green-500 mr-2" />
+                          <span>No features available</span>
                         </li>
-                      ))
-                    ) : (
-                      <li className="flex">
-                        <Check className="h-5 w-5 text-green-500 mr-2" />
-                        <span>No features available</span>
-                      </li>
-                    )}
-                  </ul>
-                </div>
-                
-                <div id="terms-section" className="mt-4 pt-4 border-t">
-                  <div className="flex items-start space-x-2">
-                    <div 
-                      className="w-5 h-5 rounded border border-gray-300 flex items-center justify-center cursor-pointer mt-0.5 flex-shrink-0" 
-                      onClick={() => setIsAgreed(!isAgreed)}
-                    >
-                      {isAgreed && <Check className="h-4 w-4 text-primary" />}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      I agree to the <span className="text-primary cursor-pointer">Terms & Conditions</span> and 
-                      <span className="text-primary cursor-pointer"> Privacy Policy</span>. {!isOneTimePackage && 
-                      "I understand that this is a recurring subscription that will be billed according to the package cycle."}
+                      )}
+                    </ul>
+                  </div>
+                  
+                  <div id="terms-section" className="mt-4 pt-4 border-t">
+                    <div className="flex items-start space-x-2">
+                      <div 
+                        className="w-5 h-5 rounded border border-gray-300 flex items-center justify-center cursor-pointer mt-0.5 flex-shrink-0" 
+                        onClick={() => setIsAgreed(!isAgreed)}
+                      >
+                        {isAgreed && <Check className="h-4 w-4 text-primary" />}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        I agree to the <span className="text-primary cursor-pointer">Terms & Conditions</span> and 
+                        <span className="text-primary cursor-pointer"> Privacy Policy</span>. {!isOneTimePackage && 
+                        "I understand that this is a recurring subscription that will be billed according to the package cycle."}
+                      </div>
                     </div>
                   </div>
                 </div>
-                
-                <div className="pb-16 sm:pb-0">
-                  {/* Extra space to ensure content is not hidden behind fixed footer */}
-                </div>
-              </div>
-            </ScrollArea>
+              </ScrollArea>
+            </div>
             
-            <div className="border-t p-4 bg-white">
+            <div className="border-t p-4 bg-white sticky bottom-0">
               <div className="flex flex-col sm:flex-row gap-2 w-full">
                 <Button variant="outline" className="w-full sm:w-auto" onClick={() => setIsOpen(false)}>
                   Cancel
@@ -279,9 +276,9 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                 </Button>
               </div>
             </div>
-          </div>
+          </>
         ) : (
-          <div className="payment-ui-container p-4 sm:p-6">
+          <div className="p-6">
             <RazorpayPayment 
               selectedPackage={selectedPackage}
               onSuccess={handlePaymentSuccess}
