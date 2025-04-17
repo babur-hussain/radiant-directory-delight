@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,6 +65,7 @@ const InfluencerPage = () => {
     toast.info(`Selected package: ${pkg.title}`);
   };
 
+  // Log when dialog visibility changes
   useEffect(() => {
     console.log("Dialog visible:", showDialog);
   }, [showDialog]);
@@ -141,7 +143,7 @@ const InfluencerPage = () => {
                   <Button onClick={() => window.location.reload()}>Try Again</Button>
                 </div>
               ) : (
-                <div className="relative z-50 subscription-packages-container">
+                <div className="relative subscription-packages-container">
                   <SubscriptionPackages 
                     userRole="Influencer"
                     onSelectPackage={handleSelectPackage}

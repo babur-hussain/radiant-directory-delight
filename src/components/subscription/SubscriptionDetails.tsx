@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, ShieldCheck, Loader2 } from "lucide-react";
@@ -266,7 +267,7 @@ const SubscriptionDetails = () => {
               </div>
             )}
             
-            <div className="flex items-start space-x-2 pt-4 border-t">
+            <div id="terms-section" className="flex items-start space-x-2 pt-4 border-t">
               <div className="flex h-5 items-center">
                 <Checkbox 
                   id="terms" 
@@ -288,16 +289,16 @@ const SubscriptionDetails = () => {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex-col items-stretch space-y-2 payment-button-container">
+        <CardFooter className="mt-4 pt-4 border-t">
           <Button 
-            className="w-full h-12 text-base font-medium relative z-999" 
+            className="w-full h-12 text-base font-medium" 
             onClick={handleSubscribe}
             disabled={isProcessing || !termsAccepted}
           >
             <ShieldCheck className="h-4 w-4 mr-2" />
             {isOneTimePackage ? "Proceed to Payment" : "Proceed to Payment"}
           </Button>
-          <p className="text-xs text-center text-muted-foreground">
+          <p className="text-xs mt-2 text-center text-muted-foreground">
             All payments are processed securely via Razorpay
           </p>
         </CardFooter>

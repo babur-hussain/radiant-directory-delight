@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -112,7 +113,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
         Back to Plans
       </Button>
       
-      <Card>
+      <Card className="relative">
         <CardHeader>
           <CardTitle className="text-xl">Checkout</CardTitle>
           <CardDescription>Review your subscription plan before proceeding</CardDescription>
@@ -148,7 +149,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
             </div>
           </div>
           
-          <div className="flex items-start space-x-2">
+          <div id="terms-checkbox-section" className="flex items-start space-x-2">
             <Checkbox 
               id="terms" 
               checked={termsAccepted}
@@ -230,9 +231,9 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
             </div>
           </div>
         </CardContent>
-        <CardFooter className="payment-button-container">
+        <CardFooter className="mt-4 pt-4 border-t">
           <Button 
-            className="w-full h-12 text-base font-medium relative z-999" 
+            className="w-full h-12 text-base font-medium" 
             onClick={handleSubscribe}
             disabled={isProcessing || !termsAccepted}
           >
