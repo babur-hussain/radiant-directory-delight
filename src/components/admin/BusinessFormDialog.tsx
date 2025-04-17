@@ -33,18 +33,18 @@ const BusinessFormDialog: React.FC<BusinessFormDialogProps> = ({
     <Dialog open={isDialogOpen} onOpenChange={(open) => {
       if (!open) onClose();
     }}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[600px] p-0">
+        <DialogHeader className="p-6 pb-2">
           <DialogTitle>{businessData ? 'Edit Business' : 'Add New Business'}</DialogTitle>
         </DialogHeader>
         
-        <div className="p-1">
+        <ScrollArea className="max-h-[calc(85vh-120px)] overflow-y-auto px-6">
           <BusinessForm 
             currentBusiness={businessData}
             onSubmit={onSubmit}
             isSubmitting={isSubmitting}
           />
-        </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
