@@ -118,7 +118,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
           <CardTitle className="text-xl">Checkout</CardTitle>
           <CardDescription>Review your subscription plan before proceeding</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 pb-24 sm:pb-6">
           <div className="border rounded-md p-4">
             <div className="flex justify-between mb-2">
               <h3 className="font-medium">{selectedPackage.title}</h3>
@@ -169,11 +169,11 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
                   <DialogTrigger asChild>
                     <button className="text-primary underline">Terms and Conditions</button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden p-0">
+                    <DialogHeader className="p-4 sm:p-6 border-b">
                       <DialogTitle>Terms and Conditions</DialogTitle>
                     </DialogHeader>
-                    <div className="max-h-[60vh] overflow-y-auto">
+                    <div className="max-h-[60vh] overflow-y-auto p-4 sm:p-6">
                       <DialogDescription>
                         <h4 className="text-base font-semibold mt-4 mb-2">1. Subscription Terms</h4>
                         <p className="mb-2">
@@ -222,8 +222,8 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
                         </p>
                       </DialogDescription>
                     </div>
-                    <DialogFooter className="mt-4 pt-4 border-t">
-                      <Button onClick={() => {}}>I Understand</Button>
+                    <DialogFooter className="p-4 border-t bg-white">
+                      <Button>I Understand</Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -232,9 +232,9 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
             </div>
           </div>
         </CardContent>
-        <CardFooter className="mt-4 pt-4 border-t sticky bottom-0 bg-white z-30">
+        <CardFooter className="mt-4 pt-4 border-t absolute bottom-0 left-0 right-0 bg-white">
           <Button 
-            className="w-full h-12 text-base font-medium" 
+            className="w-full h-12 text-base font-medium bg-blue-500 hover:bg-blue-600" 
             onClick={handleSubscribe}
             disabled={isProcessing || !termsAccepted}
           >
