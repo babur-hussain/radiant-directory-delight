@@ -172,14 +172,14 @@ html {
 /* Enhanced modal and dialog scrolling */
 .modal-content, 
 .dialog-content {
-  max-height: 90vh;
+  max-height: 95vh;
   overflow: hidden;
 }
 
 .modal-body,
 .dialog-body {
   overflow-y: auto;
-  max-height: calc(90vh - 80px);
+  max-height: calc(95vh - 120px);
   padding-right: 8px;
 }
 
@@ -246,9 +246,66 @@ html {
   button, a, [role="button"] {
     @apply min-h-[44px] tap-highlight-transparent;
   }
+  
+  /* Dialog and modal styles for mobile */
+  .radix-dialog-content {
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding-bottom: 0 !important;
+  }
+  
+  /* Make sure dialog content can scroll */
+  .radix-dialog-content > div:not(.radix-dialog-header):not(.radix-dialog-footer) {
+    overflow-y: auto !important;
+    flex: 1 !important;
+  }
+  
+  /* Fixed position close button */
+  .radix-dialog-content [data-radix-dialog-close] {
+    position: fixed !important;
+    top: 12px !important;
+    right: 12px !important;
+    z-index: 100 !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  /* Make dialog footers always visible */
+  .radix-dialog-footer,
+  .dialog-footer,
+  .card-footer {
+    position: sticky !important;
+    bottom: 0 !important;
+    background: white !important;
+    padding: 16px !important;
+    margin-top: auto !important;
+    width: 100% !important;
+    border-top: 1px solid #e5e7eb !important;
+    z-index: 10 !important;
+  }
+  
+  /* Better visibility for terms section */
+  #terms-section {
+    margin-bottom: 16px !important;
+    padding-bottom: 16px !important;
+    overflow-y: auto !important;
+    max-height: 150px !important;
+    border: 1px solid #e5e7eb !important;
+    padding: 12px !important;
+    border-radius: 8px !important;
+    background-color: #f9fafb !important;
+  }
 }
 
-/* Animation for page transitions */
+/* Page transitions */
 .page-transition-enter {
   opacity: 0;
   transform: translateY(10px);
@@ -269,7 +326,7 @@ html {
   transition: opacity 300ms;
 }
 
-/* Fix z-index issues with dropdowns */
+/* Dropdown styles */
 .dropdown-content {
   @apply z-50 bg-white shadow-lg rounded-md overflow-hidden;
 }
@@ -284,148 +341,36 @@ html {
 .radix-dialog-content,
 [data-radix-popper-content-wrapper] {
   max-height: 95vh !important;
-  overflow: hidden !important;
 }
 
-/* Fix for scrollable areas inside dialogs */
-.register-form-scroll-container {
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-}
-
-.register-form-scroll-viewport {
-  height: 100% !important;
-  width: 100% !important;
-}
-
-/* Enhanced Mobile Responsiveness */
-@media (max-width: 640px) {
-  /* Better spacing on mobile */
-  section {
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-  }
-
-  /* Fix input sizing issues */
-  input, 
-  select, 
-  textarea {
-    font-size: 16px !important; /* Prevents iOS zoom on focus */
-  }
-
-  /* Better tap targets for interactive elements */
-  button, 
-  a, 
-  [role="button"] {
-    min-height: 44px;
-    padding: 0.5rem 0.75rem;
-  }
-
-  /* Better card display on small screens */
-  .business-card-image {
-    height: 150px !important;
-  }
-
-  /* Adjust font sizes for better readability */
-  h1 {
-    font-size: 1.75rem !important;
-  }
-
-  h2 {
-    font-size: 1.5rem !important;
-  }
-
-  p {
-    font-size: 0.875rem !important;
-  }
-}
-
-/* Additional responsive fixes */
+/* Make sure footers are always visible on mobile */
 @media (max-width: 768px) {
-  /* Fix dialog positioning */
-  [data-radix-popper-content-wrapper] {
-    max-width: calc(100vw - 16px) !important;
+  /* Add specific fixes for the subscription flow */
+  .subscription-checkout-container .card,
+  .subscription-details-container .card {
+    position: relative !important;
   }
-  
+
+  /* Improve scrolling in dialogs */
   .radix-dialog-content {
-    width: calc(100vw - 32px) !important;
-    margin: 0 16px !important;
-  }
-
-  /* Prevent overflow issues on main content */
-  main {
-    overflow-x: hidden;
-    width: 100%;
-  }
-}
-
-/* Dialog and modal styles override */
-.radix-dialog-content,
-[data-radix-popper-content-wrapper] {
-  max-height: 95vh !important;
-  overflow: hidden !important;
-}
-
-/* Improved scrolling behavior */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Enhanced modal and dialog scrolling */
-.modal-content, 
-.dialog-content {
-  max-height: 95vh;
-  overflow: hidden;
-}
-
-.modal-body,
-.dialog-body {
-  overflow-y: auto;
-  max-height: calc(95vh - 120px);
-  padding-right: 8px;
-}
-
-/* Ensure that scroll areas work properly in dialogs */
-[data-radix-scroll-area-viewport] {
-  height: 100% !important;
-  width: 100% !important;
-}
-
-/* Mobile specific dialog improvements */
-@media (max-width: 768px) {
-  /* Fix dialog positioning */
-  [data-radix-popper-content-wrapper] {
-    max-width: calc(100vw - 32px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
   }
   
-  .radix-dialog-content {
-    width: calc(100vw - 32px) !important;
-    margin: 0 16px !important;
-    padding: 0 !important;
-    overflow: hidden !important;
+  /* Ensure buttons are properly sized and visible */
+  .radix-dialog-content button,
+  .card button {
+    min-height: 48px !important;
+    font-size: 16px !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
   }
   
-  /* Better close button positioning */
-  .radix-dialog-content [data-radix-dialog-close] {
-    top: 12px !important;
-    right: 12px !important;
-    z-index: 100 !important;
-  }
-
-  /* Better footer behavior */
-  .dialog-footer, 
-  .radix-dialog-footer,
-  .card-footer {
-    padding: 16px !important;
-    background: white !important;
-    border-top: 1px solid #e5e7eb !important;
-  }
-  
-  /* Improve button size on mobile */
-  button {
-    min-height: 44px;
-    font-size: 16px;
+  /* Better scroll handling */
+  [data-radix-scroll-area-viewport] {
+    height: auto !important;
+    overflow-y: auto !important;
   }
 }
 
