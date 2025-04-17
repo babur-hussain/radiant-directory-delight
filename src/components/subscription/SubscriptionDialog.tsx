@@ -29,7 +29,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   const { toast } = useToast();
   const { purchaseSubscription, isProcessing } = useSubscription();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshUserData } = useAuth();
   
   useEffect(() => {
     if (isOpen) {
@@ -62,6 +62,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
         throw new Error("User not authenticated");
       }
       
+      // Create subscription record
       const subscription = await purchaseSubscription(selectedPackage);
       
       if (response.razorpay_payment_id) {
@@ -80,11 +81,26 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
           updateData.autopay_total_remaining = response.autopayDetails.totalRemainingAmount || response.remainingAmount;
         }
         
+        // Update the subscription record with payment details
         await supabase
           .from('user_subscriptions')
           .update(updateData)
           .eq('id', subscription.id);
+          
+        // Also update user record for redundancy
+        await supabase
+          .from('users')
+          .update({
+            subscription_id: subscription.id,
+            subscription_status: 'active',
+            subscription_package: selectedPackage.id,
+            subscription: subscription.id
+          })
+          .eq('id', user.id);
       }
+      
+      // Refresh user data to reflect subscription changes
+      await refreshUserData();
       
       toast({
         title: selectedPackage.paymentType === 'one-time' ? "Payment Successful" : "Subscription Successful",
@@ -152,10 +168,10 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="p-0 sm:max-w-xl flex flex-col max-h-[95vh] overflow-hidden">
+      <DialogContent className="flex flex-col p-0 sm:max-w-xl max-h-[95vh] overflow-hidden">
         {step === 'details' ? (
           <>
-            <DialogHeader className="px-0 py-0">
+            <DialogHeader className="px-0 py-0 sticky top-0 z-10 bg-background">
               <div className="px-6 py-4 border-b w-full">
                 <DialogTitle className="text-xl font-bold">
                   {selectedPackage?.title}
@@ -166,7 +182,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
               </div>
             </DialogHeader>
             
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-hidden">
               <ScrollArea className="h-full max-h-[calc(95vh-180px)]">
                 <div className="p-6 space-y-4">
                   <div>
@@ -267,7 +283,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
               </ScrollArea>
             </div>
             
-            <div className="border-t p-4 bg-white mt-auto">
+            <div className="border-t p-4 bg-white mt-auto sticky bottom-0 left-0 right-0 z-10">
               <div className="flex flex-col sm:flex-row gap-2 w-full">
                 <Button variant="outline" className="w-full sm:w-auto" onClick={() => setIsOpen(false)}>
                   Cancel

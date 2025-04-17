@@ -10,8 +10,8 @@ import { updateUserSubscription } from '@/lib/subscription/update-subscription';
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionStatus } from '@/models/Subscription';
 import { RazorpayResponse } from '@/types/razorpay';
-import { recordReferral } from '@/services/referralService';
 import { useSearchParams } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface RazorpayPaymentProps {
   selectedPackage: ISubscriptionPackage;
@@ -25,7 +25,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   onFailure 
 }) => {
   const { initiatePayment, isLoading, error } = useRazorpayPayment();
-  const { user } = useAuth();
+  const { user, refreshUserData } = useAuth();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const referralId = searchParams.get('ref');
@@ -90,9 +90,12 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
                 endDate.setMonth(endDate.getMonth() + 1);
               }
 
+              // Create a unique subscription ID
+              const subscriptionId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
               // Create subscription in Supabase
               const subscriptionData = {
-                id: `sub_${Date.now()}`,
+                id: subscriptionId,
                 userId: user.id,
                 packageId: selectedPackage.id,
                 packageName: selectedPackage.title,
@@ -116,19 +119,42 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
                 referrerId: referralId || null
               };
 
+              // First attempt to create subscription via service
               await createSubscription(subscriptionData);
               
-              // Also update the user record with subscription details
-              await updateUserSubscription(user.id, subscriptionData);
+              // Then ensure user record is updated with subscription details
+              const userResult = await updateUserSubscription(user.id, subscriptionData);
+              
+              // Additionally update user record directly for redundancy
+              await supabase
+                .from('users')
+                .update({
+                  subscription: subscriptionId,
+                  subscription_id: subscriptionId,
+                  subscription_status: 'active',
+                  subscription_package: selectedPackage.id
+                })
+                .eq('id', user.id);
               
               // Process referral if referralId is provided
               if (referralId) {
-                const referralSuccess = await recordReferral(referralId, totalAmount);
-                if (referralSuccess) {
-                  toast({
-                    title: "Referral Applied",
-                    description: "Your referrer will be credited for this subscription.",
-                  });
+                try {
+                  const { data: refData, error: refError } = await supabase.rpc(
+                    'record_referral', 
+                    { 
+                      referrer_id: referralId, 
+                      earning_amount: totalAmount * 0.1 // 10% commission
+                    }
+                  );
+                  
+                  if (!refError && refData) {
+                    toast({
+                      title: "Referral Applied",
+                      description: "Your referrer will be credited for this subscription.",
+                    });
+                  }
+                } catch (refErr) {
+                  console.error("Failed to process referral:", refErr);
                 }
               }
               
@@ -136,8 +162,25 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
                 title: "Subscription Activated",
                 description: `Your ${selectedPackage.title} package has been activated successfully!`,
               });
+              
+              // Refresh user data to update UI with new subscription status
+              await refreshUserData();
+              
             } catch (err) {
               console.error("Failed to store subscription:", err);
+              // Even if storage fails, try a direct update to user record
+              try {
+                await supabase
+                  .from('users')
+                  .update({ 
+                    subscription_status: 'active',
+                    subscription_package: selectedPackage.id 
+                  })
+                  .eq('id', user.id);
+              } catch (fallbackErr) {
+                console.error("Failed fallback update:", fallbackErr);
+              }
+              
               toast({
                 title: "Warning",
                 description: "Payment successful, but we had trouble activating your subscription. Please contact support.",
