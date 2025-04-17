@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -143,10 +142,12 @@ const BusinessPage = () => {
                   <Button onClick={() => window.location.reload()} type="button">Try Again</Button>
                 </div>
               ) : (
-                <SubscriptionPackages 
-                  userRole="Business" 
-                  onSelectPackage={handleSelectPackage}
-                />
+                <div className="relative z-10">
+                  <SubscriptionPackages 
+                    userRole="Business" 
+                    onSelectPackage={handleSelectPackage}
+                  />
+                </div>
               )}
             </div>
           </section>

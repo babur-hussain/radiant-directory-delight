@@ -189,7 +189,7 @@ main {
 button, 
 .subscription-packages-container button {
   position: relative !important;
-  z-index: 10 !important;
+  z-index: 20 !important;
   pointer-events: auto !important;
   cursor: pointer !important;
 }
@@ -197,29 +197,28 @@ button,
 .subscription-packages-container .card {
   position: relative !important;
   overflow: visible !important;
+  z-index: 1 !important;
 }
 
-/* Fix overlay issues that might be blocking clicks */
+/* Ensure card contents have proper z-index */
 .subscription-packages-container .card > * {
   position: relative !important;
   z-index: 5 !important;
 }
 
+/* Fix for button click issues */
+button, 
+.subscription-packages-container button {
+  position: relative !important;
+  z-index: 20 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
 /* Ensure card footers have proper z-index */
 .subscription-packages-container .card .card-footer {
   position: relative !important;
-  z-index: 15 !important;
-}
-
-/* Fix any layout issues in subscription packages cards */
-.subscription-packages-container .card-content,
-.subscription-packages-container .card-footer {
-  position: relative !important;
-}
-
-/* Ensure icons don't capture clicks */
-.subscription-packages-container svg {
-  pointer-events: none !important;
+  z-index: 25 !important;
 }
 
 /* Fix for width issues */
@@ -230,6 +229,42 @@ button,
   width: 100% !important;
   max-width: 100% !important;
   overflow-x: hidden !important;
+}
+
+/* Mobile specific improvements */
+@media (max-width: 768px) {
+  .subscription-packages-container .card {
+    margin-bottom: 1.5rem !important;
+  }
+  
+  .subscription-packages-container button {
+    height: 3rem !important;
+    font-size: 1rem !important;
+    z-index: 50 !important;
+  }
+
+  /* Ensure buttons are tappable on mobile */
+  .subscription-packages-container .card-footer {
+    padding-bottom: 1.25rem !important;
+    padding-top: 0.75rem !important;
+  }
+  
+  /* Fix potential overflow issues */
+  .subscription-packages-container {
+    overflow-x: hidden !important;
+    width: 100% !important;
+  }
+  
+  /* Prevent anything from interfering with button clicks */
+  .subscription-packages-container button::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    z-index: 20;
+  }
 }
 
 /* Fix text overflow in dashboard components */

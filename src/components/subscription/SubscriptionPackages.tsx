@@ -106,11 +106,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
               
               <CardFooter className="p-6 pt-2">
                 <Button 
-                  className={`w-full h-12 text-base font-medium z-10 relative ${
-                    isPopular 
-                      ? 'bg-blue-600 hover:bg-blue-700' 
-                      : 'bg-white text-gray-800 border-2 border-gray-300 hover:bg-gray-50'
-                  }`}
+                  className="w-full h-12 text-base font-medium relative z-20"
                   variant={isPopular ? 'default' : 'outline'}
                   onClick={() => handleSelectPackage(pkg)}
                   type="button"
