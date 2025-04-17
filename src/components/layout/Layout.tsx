@@ -23,8 +23,8 @@ const Layout: React.FC<LayoutProps> = ({ children, hideHeader = false, hideFoote
   
   // Only show header/footer if we're not in dashboard or admin routes
   // and if they're not explicitly hidden by props
-  const showHeader = !hideHeader && !isDashboard && !isAdmin && !isInNoDuplicatePath;
-  const showFooter = !hideFooter && !isDashboard && !isAdmin && !isInNoDuplicatePath;
+  const showHeader = !hideHeader && !isDashboard && !isAdmin;
+  const showFooter = !hideFooter && !isDashboard && !isAdmin;
   
   return (
     <div className="flex flex-col min-h-screen">
