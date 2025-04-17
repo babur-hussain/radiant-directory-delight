@@ -14,7 +14,7 @@ const Layout: React.FC<LayoutProps> = ({ children, hideHeader = false, hideFoote
   const location = useLocation();
   
   // Create a list of paths where we should not show header/footer
-  const noDuplicatePaths = ['/influencers', '/businesses', '/business'];
+  const noDuplicatePaths = ['/influencers', '/businesses', '/business', '/influencer'];
   
   // Check if we're in a layout that might already include Header/Footer
   const isDashboard = location.pathname.includes('/dashboard');
@@ -23,8 +23,8 @@ const Layout: React.FC<LayoutProps> = ({ children, hideHeader = false, hideFoote
   
   // Only show header/footer if we're not in dashboard or admin routes
   // and if they're not explicitly hidden by props
-  const showHeader = !hideHeader && !isDashboard && !isAdmin;
-  const showFooter = !hideFooter && !isDashboard && !isAdmin;
+  const showHeader = !hideHeader && !isDashboard && !isAdmin && !isInNoDuplicatePath;
+  const showFooter = !hideFooter && !isDashboard && !isAdmin && !isInNoDuplicatePath;
   
   return (
     <div className="flex flex-col min-h-screen">

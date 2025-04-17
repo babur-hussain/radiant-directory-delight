@@ -40,8 +40,6 @@ const AppRoutes = () => {
       {/* Public routes with Layout */}
       <Route path="/" element={<Layout />}>
         <Route index element={<Index />} />
-        <Route path="influencer" element={<InfluencerPage />} />
-        <Route path="business" element={<BusinessPage />} />
         <Route path="auth" element={<AuthPage />} />
         <Route path="auth/callback" element={<AuthCallbackPage />} />
         <Route path="categories" element={<CategoriesPage />} />
@@ -55,6 +53,10 @@ const AppRoutes = () => {
         <Route path="subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
         <Route path="subscription/:packageId" element={<ProtectedRoute><SubscriptionDetailsPage /></ProtectedRoute>} />
       </Route>
+      
+      {/* Standalone pages */}
+      <Route path="influencer" element={<InfluencerPage />} />
+      <Route path="business" element={<BusinessPage />} />
       
       {/* Routes without the main Layout - they have their own layouts */}
       {/* Business Dashboard */}
