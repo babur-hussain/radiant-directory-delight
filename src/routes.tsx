@@ -37,8 +37,8 @@ import InfluencersPage from '@/pages/InfluencersPage';
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Public routes with Layout */}
-      <Route path="/" element={<Layout />}>
+      {/* Wrap all routes with Layout to ensure header visibility */}
+      <Route element={<Layout />}>
         <Route index element={<Index />} />
         <Route path="auth" element={<AuthPage />} />
         <Route path="auth/callback" element={<AuthCallbackPage />} />
@@ -48,18 +48,19 @@ const AppRoutes = () => {
         <Route path="category/:categoryName" element={<CategoryDetailsPage />} />
         <Route path="about" element={<div>About Page</div>} />
         
-        {/* Protected routes that still use the main Layout */}
+        {/* Protected routes */}
         <Route path="profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
         <Route path="subscription/:packageId" element={<ProtectedRoute><SubscriptionDetailsPage /></ProtectedRoute>} />
       </Route>
       
-      {/* Standalone pages with their own layout */}
-      <Route path="influencer" element={<Layout><InfluencerPage /></Layout>} />
-      <Route path="business" element={<Layout><BusinessPage /></Layout>} />
+      {/* Standalone pages - also wrapped in Layout */}
+      <Route element={<Layout />}>
+        <Route path="influencer" element={<InfluencerPage />} />
+        <Route path="business" element={<BusinessPage />} />
+      </Route>
       
-      {/* Routes without the main Layout - they have their own layouts */}
-      {/* Business Dashboard */}
+      {/* Dashboard and Admin routes */}
       <Route path="/dashboard/business" element={<ProtectedRoute><BusinessDashboardPage /></ProtectedRoute>} />
       <Route path="/dashboard/influencer" element={<ProtectedRoute><InfluencerDashboardPage /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><BusinessDashboardPage /></ProtectedRoute>} />
