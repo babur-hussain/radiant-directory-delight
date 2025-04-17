@@ -265,6 +265,32 @@ button,
     bottom: -10px;
     z-index: 20;
   }
+  
+  /* Improve payment button visibility */
+  .card button {
+    min-height: 48px !important;
+    z-index: 100 !important;
+    position: relative !important;
+  }
+  
+  /* Fix dialog button issues */
+  .dialog-content button,
+  .dialog-footer button {
+    z-index: 9999 !important;
+    position: relative !important;
+  }
+  
+  /* Make subscription dialog more mobile friendly */
+  [data-radix-popper-content-wrapper] {
+    z-index: 9999 !important;
+    max-width: calc(100vw - 16px) !important;
+  }
+  
+  /* Better visibility for payment processing UI */
+  .subscription-checkout-container {
+    position: relative !important;
+    z-index: 50 !important;
+  }
 }
 
 /* Fix text overflow in dashboard components */

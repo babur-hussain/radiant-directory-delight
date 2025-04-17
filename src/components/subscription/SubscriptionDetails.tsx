@@ -33,14 +33,12 @@ const SubscriptionDetails = () => {
       setError(null);
       
       try {
-        // Try to fetch packages from Firebase first
         const allPackages = await fetchSubscriptionPackages();
         const foundPackage = allPackages.find(pkg => pkg.id === packageId);
         
         if (foundPackage) {
           setSelectedPackage(foundPackage);
         } else {
-          // Fallback to default packages if not found in Firebase
           const defaultPackage = getPackageById(packageId);
           
           if (defaultPackage) {
@@ -52,7 +50,6 @@ const SubscriptionDetails = () => {
       } catch (err) {
         console.error("Error fetching package:", err);
         
-        // Fallback to default packages
         const defaultPackage = getPackageById(packageId);
         
         if (defaultPackage) {
@@ -92,7 +89,6 @@ const SubscriptionDetails = () => {
     console.log("Payment successful:", paymentResponse);
     
     if (selectedPackage) {
-      // Now initiate the subscription with payment details
       await purchaseSubscription(selectedPackage as any);
     }
     
@@ -294,7 +290,7 @@ const SubscriptionDetails = () => {
         </CardContent>
         <CardFooter className="flex-col items-stretch space-y-2">
           <Button 
-            className="w-full" 
+            className="w-full h-12 text-base font-medium relative z-50" 
             onClick={handleSubscribe}
             disabled={isProcessing || !termsAccepted}
           >

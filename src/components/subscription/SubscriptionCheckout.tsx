@@ -39,7 +39,6 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
     console.log("Payment successful:", paymentResponse);
     
     try {
-      // Now initiate the subscription with payment details
       await purchaseSubscription(selectedPackage);
       
       toast({
@@ -233,7 +232,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
         </CardContent>
         <CardFooter>
           <Button 
-            className="w-full" 
+            className="w-full h-12 text-base font-medium relative z-50" 
             onClick={handleSubscribe}
             disabled={isProcessing || !termsAccepted}
           >

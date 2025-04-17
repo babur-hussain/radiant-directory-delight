@@ -141,10 +141,12 @@ const InfluencerPage = () => {
                   <Button onClick={() => window.location.reload()}>Try Again</Button>
                 </div>
               ) : (
-                <SubscriptionPackages 
-                  userRole="Influencer"
-                  onSelectPackage={handleSelectPackage}
-                />
+                <div className="relative z-10">
+                  <SubscriptionPackages 
+                    userRole="Influencer"
+                    onSelectPackage={handleSelectPackage}
+                  />
+                </div>
               )}
             </div>
           </section>
