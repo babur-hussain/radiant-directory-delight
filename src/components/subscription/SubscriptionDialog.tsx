@@ -151,7 +151,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="p-0 sm:max-w-xl">
+      <DialogContent className="p-0 sm:max-w-xl flex flex-col max-h-[85vh]">
         {step === 'details' ? (
           <>
             <DialogHeader className="px-6 py-4 border-b sticky top-0 bg-background z-10">
@@ -163,7 +163,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
               </DialogDescription>
             </DialogHeader>
             
-            <ScrollArea className="flex-1 overflow-y-auto max-h-[60vh]">
+            <ScrollArea className="flex-1 overflow-y-auto">
               <div className="p-6 space-y-4">
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Package Details</h3>
@@ -276,7 +276,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
             </div>
           </>
         ) : (
-          <div className="p-6">
+          <div className="p-6 flex-1 overflow-y-auto">
             <RazorpayPayment 
               selectedPackage={selectedPackage}
               onSuccess={handlePaymentSuccess}
