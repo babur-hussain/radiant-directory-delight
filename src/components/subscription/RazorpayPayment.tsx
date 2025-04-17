@@ -93,30 +93,30 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
               // Create a unique subscription ID
               const subscriptionId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
-              // Create subscription in Supabase
+              // Create subscription in Supabase - using snake_case for column names
               const subscriptionData = {
                 id: subscriptionId,
-                userId: user.id,
-                packageId: selectedPackage.id,
-                packageName: selectedPackage.title,
+                user_id: user.id,
+                package_id: selectedPackage.id,
+                package_name: selectedPackage.title,
                 amount: totalAmount, // Use the total amount including setup fee
-                startDate: startDate,
-                endDate: endDate.toISOString(),
-                status: 'active' as SubscriptionStatus,
-                paymentMethod: 'razorpay',
-                transactionId: response.razorpay_payment_id || '',
-                paymentType: selectedPackage.paymentType,
-                billingCycle: selectedPackage.billingCycle,
-                signupFee: selectedPackage.setupFee || 0,
-                recurringAmount: selectedPackage.price,
-                razorpaySubscriptionId: response.subscription_id || '',
+                start_date: startDate,
+                end_date: endDate.toISOString(),
+                status: 'active',
+                payment_method: 'razorpay',
+                transaction_id: response.razorpay_payment_id || '',
+                payment_type: selectedPackage.paymentType,
+                billing_cycle: selectedPackage.billingCycle,
+                signup_fee: selectedPackage.setupFee || 0,
+                recurring_amount: selectedPackage.price,
+                razorpay_subscription_id: response.subscription_id || '',
                 // For one-time payments, explicitly set as non-cancellable
-                isPausable: selectedPackage.paymentType !== 'one-time',
-                isUserCancellable: selectedPackage.paymentType !== 'one-time',
-                advancePaymentMonths: selectedPackage.advancePaymentMonths || 0,
-                actualStartDate: startDate,
+                is_pausable: selectedPackage.paymentType !== 'one-time',
+                is_user_cancellable: selectedPackage.paymentType !== 'one-time',
+                advance_payment_months: selectedPackage.advancePaymentMonths || 0,
+                actual_start_date: startDate,
                 // Add referral information if available
-                referrerId: referralId || null
+                referrer_id: referralId || null
               };
 
               // First create the subscription record in user_subscriptions table
@@ -134,11 +134,34 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
               console.log("Subscription record created:", subscriptionRecord);
               
               // Then attempt to create subscription via service (extra redundancy)
-              await createSubscription(subscriptionData)
+              // Convert to camelCase for the service
+              const camelCaseData = {
+                id: subscriptionId,
+                userId: user.id,
+                packageId: selectedPackage.id,
+                packageName: selectedPackage.title,
+                amount: totalAmount,
+                startDate: startDate,
+                endDate: endDate.toISOString(),
+                status: 'active' as SubscriptionStatus,
+                paymentMethod: 'razorpay',
+                transactionId: response.razorpay_payment_id || '',
+                paymentType: selectedPackage.paymentType,
+                billingCycle: selectedPackage.billingCycle,
+                signupFee: selectedPackage.setupFee || 0,
+                recurringAmount: selectedPackage.price,
+                razorpaySubscriptionId: response.subscription_id || '',
+                isPausable: selectedPackage.paymentType !== 'one-time',
+                isUserCancellable: selectedPackage.paymentType !== 'one-time',
+                advancePaymentMonths: selectedPackage.advancePaymentMonths || 0,
+                actualStartDate: startDate
+              };
+              
+              await createSubscription(camelCaseData)
                 .catch(err => console.log("Secondary subscription creation failed, using primary method", err));
               
               // Then ensure user record is updated with subscription details
-              await updateUserSubscription(user.id, subscriptionData)
+              await updateUserSubscription(user.id, camelCaseData)
                 .catch(err => console.log("updateUserSubscription failed, trying direct update", err));
               
               // Additionally update user record directly for ultimate redundancy
