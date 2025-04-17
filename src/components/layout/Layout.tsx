@@ -1,21 +1,34 @@
 
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Header from '../Header';
 import Footer from '../Footer';
 
 interface LayoutProps {
   children?: React.ReactNode;
+  hideHeader?: boolean;
+  hideFooter?: boolean;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC<LayoutProps> = ({ children, hideHeader = false, hideFooter = false }) => {
+  const location = useLocation();
+  
+  // Check if we're in a layout that might already include Header/Footer
+  const isDashboard = location.pathname.includes('/dashboard');
+  const isAdmin = location.pathname.includes('/admin');
+  
+  // Only show header/footer if we're not in dashboard or admin routes
+  // and if they're not explicitly hidden by props
+  const showHeader = !hideHeader && !isDashboard && !isAdmin;
+  const showFooter = !hideFooter && !isDashboard && !isAdmin;
+  
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
+      {showHeader && <Header />}
       <main className="flex-grow">
         {children || <Outlet />}
       </main>
-      <Footer />
+      {showFooter && <Footer />}
     </div>
   );
 };

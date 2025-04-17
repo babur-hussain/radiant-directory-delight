@@ -171,7 +171,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
       <DialogContent className="flex flex-col p-0 sm:max-w-xl max-h-[95vh] overflow-hidden">
         {step === 'details' ? (
           <>
-            <DialogHeader className="px-0 py-0 sticky top-0 z-10 bg-background">
+            <DialogHeader className="px-0 py-0 sticky top-0 z-20 bg-background">
               <div className="px-6 py-4 border-b w-full">
                 <DialogTitle className="text-xl font-bold">
                   {selectedPackage?.title}
@@ -182,8 +182,8 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
               </div>
             </DialogHeader>
             
-            <div className="flex-1 overflow-hidden">
-              <ScrollArea className="h-full max-h-[calc(95vh-180px)]">
+            <div className="flex-1 overflow-hidden relative">
+              <ScrollArea className="h-full max-h-[60vh]">
                 <div className="p-6 space-y-4">
                   <div>
                     <h3 className="text-lg font-semibold mb-2">Package Details</h3>
@@ -277,13 +277,13 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                     </div>
                   </div>
                   
-                  {/* Add bottom padding to ensure content isn't hidden behind the footer */}
-                  <div className="pb-4"></div>
+                  {/* Add sufficient bottom padding to prevent content from being hidden */}
+                  <div className="pb-16"></div>
                 </div>
               </ScrollArea>
             </div>
             
-            <div className="border-t p-4 bg-white mt-auto sticky bottom-0 left-0 right-0 z-10">
+            <div className="border-t p-4 bg-white sticky bottom-0 left-0 right-0 z-20 mt-auto">
               <div className="flex flex-col sm:flex-row gap-2 w-full">
                 <Button variant="outline" className="w-full sm:w-auto" onClick={() => setIsOpen(false)}>
                   Cancel

@@ -71,7 +71,7 @@ const InfluencerPage = () => {
   }, [showDialog]);
 
   return (
-    <Layout>
+    <Layout hideHeader={false} hideFooter={false}>
       <div className="min-h-screen">
         <main className="flex-grow">
           <section className="relative py-20 md:py-28 bg-gradient-to-br from-purple-500/10 via-violet-500/10 to-indigo-500/10 overflow-hidden">

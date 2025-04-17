@@ -119,22 +119,50 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
                 referrerId: referralId || null
               };
 
-              // First attempt to create subscription via service
-              await createSubscription(subscriptionData);
+              // First create the subscription record in user_subscriptions table
+              const { data: subscriptionRecord, error: subscriptionError } = await supabase
+                .from('user_subscriptions')
+                .insert(subscriptionData)
+                .select()
+                .single();
+                
+              if (subscriptionError) {
+                console.error("Error inserting subscription record:", subscriptionError);
+                throw subscriptionError;
+              }
+              
+              console.log("Subscription record created:", subscriptionRecord);
+              
+              // Then attempt to create subscription via service (extra redundancy)
+              await createSubscription(subscriptionData)
+                .catch(err => console.log("Secondary subscription creation failed, using primary method", err));
               
               // Then ensure user record is updated with subscription details
-              const userResult = await updateUserSubscription(user.id, subscriptionData);
+              await updateUserSubscription(user.id, subscriptionData)
+                .catch(err => console.log("updateUserSubscription failed, trying direct update", err));
               
-              // Additionally update user record directly for redundancy
-              await supabase
+              // Additionally update user record directly for ultimate redundancy
+              const { data: userData, error: userUpdateError } = await supabase
                 .from('users')
                 .update({
                   subscription: subscriptionId,
                   subscription_id: subscriptionId,
                   subscription_status: 'active',
-                  subscription_package: selectedPackage.id
+                  subscription_package: selectedPackage.id,
+                  // Add additional fields to ensure proper tracking
+                  has_active_subscription: true,
+                  subscription_start_date: startDate,
+                  subscription_end_date: endDate.toISOString()
                 })
-                .eq('id', user.id);
+                .eq('id', user.id)
+                .select();
+                
+              if (userUpdateError) {
+                console.error("Error updating user record:", userUpdateError);
+                // Don't throw here, just log as we have multiple layers of redundancy
+              }
+              
+              console.log("User record updated with subscription:", userData);
               
               // Process referral if referralId is provided
               if (referralId) {
@@ -152,6 +180,8 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
                       title: "Referral Applied",
                       description: "Your referrer will be credited for this subscription.",
                     });
+                  } else if (refError) {
+                    console.error("Referral processing error:", refError);
                   }
                 } catch (refErr) {
                   console.error("Failed to process referral:", refErr);
@@ -174,7 +204,8 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
                   .from('users')
                   .update({ 
                     subscription_status: 'active',
-                    subscription_package: selectedPackage.id 
+                    subscription_package: selectedPackage.id,
+                    has_active_subscription: true
                   })
                   .eq('id', user.id);
               } catch (fallbackErr) {
