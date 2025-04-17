@@ -532,3 +532,57 @@ img {
     margin: 0 16px !important;
   }
 }
+
+/* Fix dialog content scrolling improvements */
+@media (max-width: 768px) {
+  /* Add specific fixes for the subscription dialog */
+  .radix-dialog-content {
+    padding: 16px !important;
+    padding-bottom: 0 !important;
+  }
+  
+  /* Better position for close button */
+  .radix-dialog-content [data-radix-dialog-close] {
+    top: 16px !important;
+    right: 16px !important;
+    z-index: 100 !important;
+    background: rgba(255, 255, 255, 0.8) !important;
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  /* Fix terms section display */
+  #terms-section {
+    margin-top: 16px !important;
+    padding-top: 16px !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 8px !important;
+  }
+  
+  /* Improve dialog footer */
+  .radix-dialog-footer {
+    position: sticky !important;
+    bottom: 0 !important;
+    background: white !important;
+    padding: 12px 0 !important;
+    margin-top: 8px !important;
+    z-index: 50 !important;
+  }
+
+  /* Fix scroll area heights */
+  [data-radix-scroll-area-viewport] {
+    height: auto !important;
+    max-height: 60vh !important;
+    padding-bottom: 16px !important;
+  }
+  
+  /* Fix dialog button spacing */
+  .radix-dialog-content button {
+    min-height: 44px !important;
+    margin-bottom: 0 !important;
+  }
+}

@@ -149,11 +149,12 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
             </div>
           </div>
           
-          <div id="terms-checkbox-section" className="flex items-start space-x-2">
+          <div id="terms-checkbox-section" className="flex items-start space-x-2 pt-4 border-t">
             <Checkbox 
               id="terms" 
               checked={termsAccepted}
               onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+              className="mt-1"
             />
             <div className="grid gap-1.5 leading-none">
               <label
@@ -221,7 +222,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
                         </p>
                       </DialogDescription>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="mt-4 pt-4 border-t">
                       <Button onClick={() => {}}>I Understand</Button>
                     </DialogFooter>
                   </DialogContent>
@@ -231,7 +232,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
             </div>
           </div>
         </CardContent>
-        <CardFooter className="mt-4 pt-4 border-t">
+        <CardFooter className="mt-4 pt-4 border-t sticky bottom-0 bg-white z-30">
           <Button 
             className="w-full h-12 text-base font-medium" 
             onClick={handleSubscribe}

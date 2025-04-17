@@ -152,10 +152,10 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col p-5 pt-6 pb-0 md:p-6">
         {step === 'details' ? (
           <>
-            <DialogHeader>
+            <DialogHeader className="mb-4">
               <DialogTitle className="text-xl font-bold">
                 {selectedPackage.title}
               </DialogTitle>
@@ -164,11 +164,11 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
               </DialogDescription>
             </DialogHeader>
             
-            <div className="flex-1 overflow-hidden flex flex-col">
-              <ScrollArea className="flex-1 pr-4 max-h-[50vh]">
-                <div className="space-y-6 pb-6">
+            <div className="flex-1 overflow-hidden">
+              <ScrollArea className="h-[50vh] md:h-auto md:max-h-[50vh] pr-4">
+                <div className="space-y-4 pb-4">
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">Package Details</h3>
+                    <h3 className="text-lg font-semibold mb-2">Package Details</h3>
                     <p className="text-sm text-gray-600 mb-4">{selectedPackage.fullDescription || selectedPackage.shortDescription}</p>
                     
                     <div className="bg-gray-50 p-4 rounded-lg border">
@@ -225,12 +225,12 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                   </div>
                   
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">Features</h3>
+                    <h3 className="text-lg font-semibold mb-2">Features</h3>
                     <ul className="space-y-2">
                       {Array.isArray(selectedPackage.features) && selectedPackage.features.length > 0 ? (
                         selectedPackage.features.map((feature, index) => (
                           <li key={index} className="flex">
-                            <Check className="h-5 w-5 text-green-500 mr-2" />
+                            <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0" />
                             <span>{feature}</span>
                           </li>
                         ))
@@ -243,10 +243,10 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                     </ul>
                   </div>
                   
-                  <div id="terms-section">
+                  <div id="terms-section" className="mt-4 pt-4 border-t">
                     <div className="flex items-start space-x-2">
                       <div 
-                        className="w-5 h-5 rounded border border-gray-300 flex items-center justify-center cursor-pointer mt-0.5" 
+                        className="w-5 h-5 rounded border border-gray-300 flex items-center justify-center cursor-pointer mt-0.5 flex-shrink-0" 
                         onClick={() => setIsAgreed(!isAgreed)}
                       >
                         {isAgreed && <Check className="h-4 w-4 text-primary" />}
@@ -262,7 +262,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
               </ScrollArea>
             </div>
             
-            <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t">
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t sticky bottom-0 bg-white pb-4 z-10">
               <Button variant="outline" className="w-full sm:w-auto" onClick={() => setIsOpen(false)}>
                 Cancel
               </Button>
@@ -277,7 +277,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
             </DialogFooter>
           </>
         ) : (
-          <div className="payment-ui-container">
+          <div className="payment-ui-container pb-4">
             <RazorpayPayment 
               selectedPackage={selectedPackage}
               onSuccess={handlePaymentSuccess}
