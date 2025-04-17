@@ -54,9 +54,9 @@ const AppRoutes = () => {
         <Route path="subscription/:packageId" element={<ProtectedRoute><SubscriptionDetailsPage /></ProtectedRoute>} />
       </Route>
       
-      {/* Standalone pages */}
-      <Route path="influencer" element={<InfluencerPage />} />
-      <Route path="business" element={<BusinessPage />} />
+      {/* Standalone pages with their own layout */}
+      <Route path="influencer" element={<Layout><InfluencerPage /></Layout>} />
+      <Route path="business" element={<Layout><BusinessPage /></Layout>} />
       
       {/* Routes without the main Layout - they have their own layouts */}
       {/* Business Dashboard */}
