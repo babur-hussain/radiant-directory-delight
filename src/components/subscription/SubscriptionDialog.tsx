@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -144,7 +143,6 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   const recurringAmount = isOneTimePackage ? 0 : selectedPackage.price || 0;
   const advanceMonths = selectedPackage.advancePaymentMonths || 0;
   
-  // Update initial payment calculation to include setup fee for one-time packages
   const initialPayment = isOneTimePackage 
     ? (selectedPackage.price || 0) + setupFee
     : setupFee + (selectedPackage.billingCycle === 'monthly' 
@@ -261,12 +259,12 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
               </div>
             </ScrollArea>
             
-            <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4 payment-button-container">
               <Button variant="outline" className="w-full sm:w-auto" onClick={() => setIsOpen(false)}>
                 Cancel
               </Button>
               <Button 
-                className="w-full sm:w-auto" 
+                className="w-full sm:w-auto relative z-999" 
                 onClick={handleProceedToPayment} 
                 disabled={!isAgreed || isProcessing}
               >
@@ -276,11 +274,13 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
             </DialogFooter>
           </>
         ) : (
-          <RazorpayPayment 
-            selectedPackage={selectedPackage}
-            onSuccess={handlePaymentSuccess}
-            onFailure={handlePaymentFailure}
-          />
+          <div className="payment-ui-container relative z-999">
+            <RazorpayPayment 
+              selectedPackage={selectedPackage}
+              onSuccess={handlePaymentSuccess}
+              onFailure={handlePaymentFailure}
+            />
+          </div>
         )}
       </DialogContent>
     </Dialog>

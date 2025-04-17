@@ -180,7 +180,7 @@ const SubscriptionDetails = () => {
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
 
   return (
-    <div className="container mx-auto px-4 py-10 max-w-4xl">
+    <div className="container mx-auto px-4 py-10 max-w-4xl subscription-details-container">
       <div className="flex items-center mb-6">
         <Button variant="ghost" onClick={() => navigate("/subscription")} className="mr-2">
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -288,9 +288,9 @@ const SubscriptionDetails = () => {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex-col items-stretch space-y-2">
+        <CardFooter className="flex-col items-stretch space-y-2 payment-button-container">
           <Button 
-            className="w-full h-12 text-base font-medium relative z-50" 
+            className="w-full h-12 text-base font-medium relative z-999" 
             onClick={handleSubscribe}
             disabled={isProcessing || !termsAccepted}
           >

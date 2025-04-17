@@ -291,6 +291,43 @@ button,
     position: relative !important;
     z-index: 50 !important;
   }
+
+  /* Ensure the proceed to payment button is always visible */
+  .card-footer button,
+  .card-footer .button {
+    z-index: 9999 !important;
+    position: relative !important;
+    margin-bottom: 15px !important;
+    width: 100% !important;
+    min-height: 54px !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+  }
+  
+  /* Fix for subscription details page on mobile */
+  .subscription-details-container {
+    padding-bottom: 80px !important; /* Add space at the bottom */
+  }
+  
+  /* Make card footers stick to bottom if needed */
+  .subscription-card .card-footer {
+    position: relative !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    padding: 16px !important;
+    background: white !important;
+    z-index: 100 !important;
+  }
+
+  /* Fix for button container visibility */
+  .payment-button-container {
+    position: relative !important;
+    z-index: 999 !important;
+    bottom: 0 !important;
+    background: white !important;
+    margin-top: 20px !important;
+  }
 }
 
 /* Fix text overflow in dashboard components */

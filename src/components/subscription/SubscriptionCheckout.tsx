@@ -70,7 +70,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
   
   if (showPaymentUI) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto subscription-checkout-container">
         <Button 
           variant="ghost" 
           onClick={() => setShowPaymentUI(false)} 
@@ -106,7 +106,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
   }
   
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto subscription-checkout-container">
       <Button variant="ghost" onClick={onBack} className="mb-4">
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back to Plans
@@ -230,9 +230,9 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
             </div>
           </div>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="payment-button-container">
           <Button 
-            className="w-full h-12 text-base font-medium relative z-50" 
+            className="w-full h-12 text-base font-medium relative z-999" 
             onClick={handleSubscribe}
             disabled={isProcessing || !termsAccepted}
           >
