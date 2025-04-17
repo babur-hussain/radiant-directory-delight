@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -991,4 +992,6 @@ img {
     margin: 0 !important;
     width: 100% !important;
     z-index: 50 !important;
-    border-top: 1px solid #e5e7eb !important
+    border-top: 1px solid #e5e7eb !important;
+  } /* Added missing closing brace here */
+}
