@@ -117,10 +117,10 @@ export const getUserById = async (userId: string): Promise<IUser | null> => {
       ownerName: data.owner_name,
       businessCategory: data.business_category,
       website: data.website,
-      // Create address object with data from address table or null values
+      // Create address object with null values since we don't have address fields in the response
       address: {
         street: null,
-        state: data.state || null,
+        state: null,
         country: data.country || null,
         zipCode: null
       },
