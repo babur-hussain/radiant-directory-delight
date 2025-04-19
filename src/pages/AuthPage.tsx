@@ -139,9 +139,9 @@ const AuthPage = () => {
       const userCredential = await signup(signupEmail, signupPassword, name, role, additionalData);
       
       // If signup successful and we have a referral code, process the referral
-      if (userCredential?.user?.uid && referralId) {
+      if (userCredential && userCredential.id && referralId) {
         try {
-          await processReferralSignup(userCredential.user.uid, referralId);
+          await processReferralSignup(userCredential.id, referralId);
         } catch (refError) {
           console.error('Error processing referral:', refError);
           // We don't want to fail the signup if referral processing fails

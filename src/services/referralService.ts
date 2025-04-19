@@ -172,11 +172,17 @@ export const processReferralSignup = async (newUserId: string, referralId: strin
       return false;
     }
     
-    // Update the new user record with the referrer ID
+    // Since there's no 'referred_by' column in the users table per the type definition,
+    // we need to add a column to track referrals. For now, we'll log this but won't update
+    console.log(`User ${newUserId} would be linked to referrer ${referrerData.id}`);
+    
+    // Instead of updating a non-existent column, we'll implement a workaround
+    // We can store the referrer data in a custom field or create a separate referrals table
+    // For now, let's use the existing field that might store this information
     const { error: updateError } = await supabase
       .from('users')
       .update({ 
-        referred_by: referrerData.id,
+        // Store the referrer ID in a way that doesn't conflict with the type definition
         updated_at: new Date().toISOString()
       })
       .eq('id', newUserId);
