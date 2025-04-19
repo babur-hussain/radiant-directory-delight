@@ -1,12 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { User } from '@/types/auth';
-import { Copy, Share2 } from 'lucide-react';
-import { createReferralLink } from '@/utils/referral/referralUtils';
+import { Copy, Share2, RefreshCw } from 'lucide-react';
+import { createReferralLink, generateReferralId } from '@/utils/referral/referralUtils';
 import { useToast } from '@/hooks/use-toast';
+import { ensureReferralId } from '@/services/referralService';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ReferralSectionProps {
   user: User;
@@ -14,9 +16,16 @@ interface ReferralSectionProps {
 
 const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
   const { toast } = useToast();
+  const { refreshUserData } = useAuth();
   const [copySuccess, setCopySuccess] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [referralLink, setReferralLink] = useState('');
   
-  const referralLink = user.referralId ? createReferralLink(user.referralId) : '';
+  useEffect(() => {
+    if (user.referralId) {
+      setReferralLink(createReferralLink(user.referralId));
+    }
+  }, [user.referralId]);
   
   const handleCopyLink = () => {
     if (referralLink) {
@@ -53,6 +62,33 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
     } else {
       // Fallback for browsers that don't support Web Share API
       handleCopyLink();
+    }
+  };
+
+  const handleGenerateNewRefLink = async () => {
+    if (!user.id) return;
+
+    setIsGenerating(true);
+    try {
+      // Generate a new referral ID
+      await ensureReferralId(user.id, true); // Pass true to force generation of a new ID
+      
+      // Refresh user data to get the new referral ID
+      await refreshUserData();
+      
+      toast({
+        title: 'New referral link generated!',
+        description: 'Your referral link has been updated.'
+      });
+    } catch (error) {
+      console.error('Error generating new referral link:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to generate new referral link.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsGenerating(false);
     }
   };
   
@@ -92,6 +128,16 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
             >
               <Copy className="h-4 w-4" />
             </Button>
+          </div>
+          <div className="text-xs text-muted-foreground text-right">
+            <button 
+              onClick={handleGenerateNewRefLink}
+              className="flex items-center text-primary hover:underline" 
+              disabled={isGenerating}
+            >
+              <RefreshCw className="h-3 w-3 mr-1" /> 
+              {isGenerating ? 'Generating...' : 'Generate new link'}
+            </button>
           </div>
         </div>
         

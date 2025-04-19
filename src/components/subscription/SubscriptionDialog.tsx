@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -8,6 +8,8 @@ import RazorpayPayment from './RazorpayPayment';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { updateUserSubscriptionDetails } from '@/lib/mongodb/userUtils';
+import { getUserByReferralId, recordReferral } from '@/services/referralService';
+import { getReferralIdFromURL } from '@/utils/referral/referralUtils';
 
 interface SubscriptionDialogProps {
   isOpen: boolean;
@@ -24,7 +26,16 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   const [paymentSuccess, setPaymentSuccess] = useState<boolean>(false);
   const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
   const [showPaymentUI, setShowPaymentUI] = useState<boolean>(false);
+  const [referrerId, setReferrerId] = useState<string | null>(null);
   const { user, refreshUserData } = useAuth();
+
+  // Check for referral code in URL
+  useEffect(() => {
+    const urlReferralId = getReferralIdFromURL();
+    if (urlReferralId) {
+      setReferrerId(urlReferralId);
+    }
+  }, []);
 
   const handlePaymentSuccess = async (response: any) => {
     console.log("Payment successful. Response:", response);
@@ -42,6 +53,20 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
           selectedPackage.id,
           'active'
         );
+        
+        // Process referral if applicable
+        if (referrerId) {
+          try {
+            const referrerUser = await getUserByReferralId(referrerId);
+            if (referrerUser?.id) {
+              await recordReferral(referrerUser.id, selectedPackage.price);
+              console.log(`Referral earnings recorded for user ${referrerUser.id}`);
+            }
+          } catch (refError) {
+            console.error("Error processing referral:", refError);
+            // We don't want to fail the subscription if referral processing fails
+          }
+        }
         
         // Force refresh of user data to update UI
         await refreshUserData();
@@ -112,6 +137,12 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                   (Includes one-time setup fee: ₹{selectedPackage.setupFee})
                 </p>
               )}
+              
+              {referrerId && (
+                <div className="mt-2 text-xs bg-green-50 text-green-700 p-2 rounded-md">
+                  Referred by a friend! Their referral code has been applied.
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">
@@ -174,6 +205,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
               selectedPackage={selectedPackage}
               onSuccess={handlePaymentSuccess}
               onFailure={handlePaymentFailure}
+              referralId={referrerId}
             />
             <div className="mt-4 text-center">
               <Button 
@@ -194,6 +226,12 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
               <p className="text-sm mt-2">
                 Your subscription has been activated successfully.
               </p>
+              
+              {referrerId && (
+                <p className="text-xs mt-2">
+                  Thanks for using a referral link! Your friend will receive referral benefits.
+                </p>
+              )}
             </div>
 
             <div className="flex justify-center">

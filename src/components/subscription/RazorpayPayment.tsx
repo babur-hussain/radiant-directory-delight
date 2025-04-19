@@ -1,318 +1,154 @@
 
-import React from 'react';
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { useRazorpayPayment } from '@/hooks/useRazorpayPayment';
+import React, { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
-import { createSubscription } from '@/services/subscriptionService';
-import { updateUserSubscription } from '@/lib/subscription/update-subscription';
-import { updateUserSubscriptionDetails } from '@/lib/mongodb/userUtils';
-import { useToast } from '@/hooks/use-toast';
-import { SubscriptionStatus } from '@/models/Subscription';
-import { RazorpayResponse } from '@/types/razorpay';
-import { useSearchParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { generateOrderId } from '@/utils/id-generator';
+import { Loader2 } from 'lucide-react';
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 interface RazorpayPaymentProps {
   selectedPackage: ISubscriptionPackage;
   onSuccess: (response: any) => void;
   onFailure: (error: any) => void;
+  referralId?: string | null;
 }
 
-const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({ 
-  selectedPackage, 
-  onSuccess, 
-  onFailure 
+const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
+  selectedPackage,
+  onSuccess,
+  onFailure,
+  referralId
 }) => {
-  const { initiatePayment, isLoading, error } = useRazorpayPayment();
-  const { user, refreshUserData } = useAuth();
-  const { toast } = useToast();
-  const [searchParams] = useSearchParams();
-  const referralId = searchParams.get('ref');
-  
-  const handlePayNow = async () => {
-    console.log("Initiating payment for package:", selectedPackage);
-    
-    // Calculate total amount including setup fee
-    const totalAmount = (selectedPackage.price || 0) + (selectedPackage.setupFee || 0);
-    console.log(`Payment amount: ${selectedPackage.price} + Setup fee: ${selectedPackage.setupFee} = Total: ${totalAmount}`);
-    
-    // Make a copy of the package with the updated price that includes setup fee
-    const packageWithSetupFee = {
-      ...selectedPackage,
-      totalAmount: totalAmount // Add this for reference
-    };
-    
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
+
+  useEffect(() => {
+    // Load Razorpay script once
+    if (!window.Razorpay) {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => {
+        console.log('Razorpay script loaded');
+        setScriptLoaded(true);
+      };
+      script.onerror = () => {
+        console.error('Failed to load Razorpay script');
+        onFailure(new Error('Failed to load payment gateway. Please try again later.'));
+      };
+      document.body.appendChild(script);
+    } else {
+      setScriptLoaded(true);
+    }
+  }, []);
+
+  const handlePayment = () => {
+    if (!user) {
+      onFailure(new Error('User not authenticated'));
+      return;
+    }
+
+    if (!window.Razorpay) {
+      onFailure(new Error('Payment gateway not loaded'));
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      // Pass the modified package that includes setup fee
-      await initiatePayment(packageWithSetupFee, true)
-        .then(async (response: RazorpayResponse) => {
-          console.log("Payment successful:", response);
+      // Create order ID (in a production app, this would come from your backend)
+      const orderId = generateOrderId();
+      const amount = selectedPackage.price * 100; // Razorpay expects amount in paise
+
+      const options = {
+        key: 'rzp_test_rkBecHOKguN7bR', // Replace with your actual Razorpay key
+        amount: amount,
+        currency: 'INR',
+        name: 'InfluConnect',
+        description: `Subscription: ${selectedPackage.title}`,
+        order_id: orderId,
+        prefill: {
+          name: user.name,
+          email: user.email,
+          contact: user.phone || ''
+        },
+        notes: {
+          package_id: selectedPackage.id,
+          user_id: user.id,
+          package_name: selectedPackage.title,
+          referral_id: referralId || 'none'
+        },
+        theme: {
+          color: '#3B82F6'
+        },
+        handler: function (response: any) {
+          // Add the package info to the response for convenience
+          response.package = selectedPackage;
           
-          // Critical: Add non-refundable and non-cancellable flags for all payments
-          const enhancedResponse = {
-            ...response,
-            // All payments are non-refundable
-            isRefundable: false,
-            autoRefund: false,
-            // Only recurring payments can be cancelled, never one-time payments
-            isCancellable: selectedPackage.paymentType !== 'one-time',
-            // Ensure autopay is disabled for one-time payments
-            enableAutoPay: selectedPackage.paymentType !== 'one-time',
-            // Add additional flags to ensure payments stick
-            paymentType: selectedPackage.paymentType,
-            isNonRefundable: true,
-            refundBlocked: true
-          };
-
-          // Check if user exists before trying to store subscription data
-          if (user && user.id) {
-            try {
-              // Calculate subscription start/end dates
-              const startDate = new Date().toISOString();
-              const endDate = new Date();
-              
-              // For one-time payments, set end date based on package duration
-              if (selectedPackage.paymentType === 'one-time' && selectedPackage.durationMonths) {
-                endDate.setMonth(endDate.getMonth() + selectedPackage.durationMonths);
-              } 
-              // For recurring payments with yearly billing
-              else if (selectedPackage.billingCycle === 'yearly') {
-                endDate.setFullYear(endDate.getFullYear() + 1);
-              } 
-              // Default to monthly for recurring
-              else {
-                endDate.setMonth(endDate.getMonth() + 1);
-              }
-
-              // Create a unique subscription ID
-              const subscriptionId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-
-              // Create subscription in Supabase - using snake_case for column names
-              const subscriptionData = {
-                id: subscriptionId,
-                user_id: user.id,
-                package_id: selectedPackage.id,
-                package_name: selectedPackage.title,
-                amount: totalAmount, // Use the total amount including setup fee
-                start_date: startDate,
-                end_date: endDate.toISOString(),
-                status: 'active',
-                payment_method: 'razorpay',
-                transaction_id: response.razorpay_payment_id || '',
-                payment_type: selectedPackage.paymentType,
-                billing_cycle: selectedPackage.billingCycle,
-                signup_fee: selectedPackage.setupFee || 0,
-                recurring_amount: selectedPackage.price,
-                razorpay_subscription_id: response.subscription_id || '',
-                // For one-time payments, explicitly set as non-cancellable
-                is_pausable: selectedPackage.paymentType !== 'one-time',
-                is_user_cancellable: selectedPackage.paymentType !== 'one-time',
-                advance_payment_months: selectedPackage.advancePaymentMonths || 0,
-                actual_start_date: startDate,
-                // Add referral information if available
-                referrer_id: referralId || null
-              };
-
-              // First create the subscription record in user_subscriptions table
-              const { data: subscriptionRecord, error: subscriptionError } = await supabase
-                .from('user_subscriptions')
-                .insert(subscriptionData)
-                .select()
-                .single();
-                
-              if (subscriptionError) {
-                console.error("Error inserting subscription record:", subscriptionError);
-                throw subscriptionError;
-              }
-              
-              console.log("Subscription record created:", subscriptionRecord);
-              
-              // Then attempt to create subscription via service (extra redundancy)
-              // Convert to camelCase for the service
-              const camelCaseData = {
-                id: subscriptionId,
-                userId: user.id,
-                packageId: selectedPackage.id,
-                packageName: selectedPackage.title,
-                amount: totalAmount,
-                startDate: startDate,
-                endDate: endDate.toISOString(),
-                status: 'active' as SubscriptionStatus,
-                paymentMethod: 'razorpay',
-                transactionId: response.razorpay_payment_id || '',
-                paymentType: selectedPackage.paymentType,
-                billingCycle: selectedPackage.billingCycle,
-                signupFee: selectedPackage.setupFee || 0,
-                recurringAmount: selectedPackage.price,
-                razorpaySubscriptionId: response.subscription_id || '',
-                isPausable: selectedPackage.paymentType !== 'one-time',
-                isUserCancellable: selectedPackage.paymentType !== 'one-time',
-                advancePaymentMonths: selectedPackage.advancePaymentMonths || 0,
-                actualStartDate: startDate
-              };
-              
-              try {
-                await createSubscription(camelCaseData);
-                console.log("Subscription created via service successfully");
-              } catch(err) {
-                console.log("Secondary subscription creation failed, using primary method", err);
-              }
-              
-              try {
-                // Update user subscription via lib function (first attempt)
-                const updateResult = await updateUserSubscription(user.id, camelCaseData);
-                console.log("updateUserSubscription result:", updateResult);
-              } catch(err) {
-                console.log("updateUserSubscription failed, trying direct update", err);
-              }
-              
-              // Use our new utility to ensure user profile is updated with subscription details
-              // This is a reliable backup method if the other methods fail
-              try {
-                const userUpdateResult = await updateUserSubscriptionDetails(
-                  user.id,
-                  subscriptionId,
-                  selectedPackage.id,
-                  'active'
-                );
-                console.log("Direct user profile update result:", userUpdateResult);
-              } catch (err) {
-                console.error("Failed to update user profile with subscription details:", err);
-              }
-              
-              // Additionally update user record directly for ultimate redundancy
-              const { data: userData, error: userUpdateError } = await supabase
-                .from('users')
-                .update({
-                  subscription: subscriptionId,
-                  subscription_id: subscriptionId,
-                  subscription_status: 'active',
-                  subscription_package: selectedPackage.id,
-                  // Add additional fields to ensure proper tracking
-                  has_active_subscription: true,
-                  subscription_start_date: startDate,
-                  subscription_end_date: endDate.toISOString()
-                })
-                .eq('id', user.id)
-                .select();
-                
-              if (userUpdateError) {
-                console.error("Error updating user record:", userUpdateError);
-                // Don't throw here, just log as we have multiple layers of redundancy
-              } else {
-                console.log("User record updated with subscription:", userData);
-              }
-              
-              // Process referral if referralId is provided
-              if (referralId) {
-                try {
-                  const { data: refData, error: refError } = await supabase.rpc(
-                    'record_referral', 
-                    { 
-                      referrer_id: referralId, 
-                      earning_amount: totalAmount * 0.1 // 10% commission
-                    }
-                  );
-                  
-                  if (!refError && refData) {
-                    toast({
-                      title: "Referral Applied",
-                      description: "Your referrer will be credited for this subscription.",
-                    });
-                  } else if (refError) {
-                    console.error("Referral processing error:", refError);
-                  }
-                } catch (refErr) {
-                  console.error("Failed to process referral:", refErr);
-                }
-              }
-              
-              toast({
-                title: "Subscription Activated",
-                description: `Your ${selectedPackage.title} package has been activated successfully!`,
-              });
-              
-              // Refresh user data to update UI with new subscription status
-              await refreshUserData();
-              
-            } catch (err) {
-              console.error("Failed to store subscription:", err);
-              // Even if storage fails, try a direct update to user record
-              try {
-                await supabase
-                  .from('users')
-                  .update({ 
-                    subscription_status: 'active',
-                    subscription_package: selectedPackage.id,
-                    has_active_subscription: true
-                  })
-                  .eq('id', user.id);
-              } catch (fallbackErr) {
-                console.error("Failed fallback update:", fallbackErr);
-              }
-              
-              toast({
-                title: "Warning",
-                description: "Payment successful, but we had trouble activating your subscription. Please contact support.",
-                variant: "destructive"
-              });
-            }
+          // Process referral if applicable
+          if (referralId) {
+            response.referralId = referralId;
           }
           
-          onSuccess(enhancedResponse);
-        })
-        .catch((err) => {
-          console.error("Payment failed:", err);
-          onFailure(err);
-        });
-    } catch (err) {
-      console.error("Error initiating payment:", err);
-      onFailure(err);
+          onSuccess(response);
+        },
+      };
+
+      const razorpayObject = new window.Razorpay(options);
+      razorpayObject.open();
+      setIsLoading(false);
+
+    } catch (error) {
+      console.error('Error initializing payment:', error);
+      setIsLoading(false);
+      onFailure(error);
     }
   };
-  
+
+  useEffect(() => {
+    if (scriptLoaded && !isLoading) {
+      handlePayment();
+    }
+  }, [scriptLoaded]);
+
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h3 className="text-lg font-semibold mb-2">
-          {isLoading ? "Processing Payment..." : "Payment Gateway"}
-        </h3>
-        <p className="text-gray-600 text-sm">
-          {isLoading 
-            ? "Please wait while we redirect you to the payment gateway."
-            : "Click the button below to proceed with payment."
-          }
+    <div className="text-center">
+      <div className="mb-4 p-4 bg-blue-50 rounded-md">
+        <p className="text-blue-700">
+          You'll be redirected to the payment gateway to complete your subscription.
         </p>
       </div>
       
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
-          <p className="font-medium">Payment Error</p>
-          <p className="text-sm">{error}</p>
-          <p className="text-sm mt-2">Please try again or contact support if the issue persists.</p>
+      {isLoading && (
+        <div className="flex flex-col items-center justify-center p-6">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <p className="mt-2 text-sm text-muted-foreground">
+            Initializing payment gateway...
+          </p>
         </div>
       )}
       
-      <div className="flex justify-center">
+      <Button
+        onClick={handlePayment}
+        className="w-full mt-4"
+        disabled={isLoading}
+      >
         {isLoading ? (
-          <div className="flex items-center justify-center space-x-2">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <span>Opening payment gateway...</span>
-          </div>
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Please wait...
+          </>
         ) : (
-          <Button onClick={handlePayNow} className="w-full sm:w-auto">
-            Pay Now
-          </Button>
+          'Pay Now'
         )}
-      </div>
-      
-      <div className="text-center text-sm text-gray-500">
-        <p>You will be redirected to Razorpay's secure payment gateway.</p>
-        <p className="mt-1">Payment is processed securely by Razorpay.</p>
-        <p className="mt-1 font-medium text-rose-600">Note: All payments are non-refundable.</p>
-      </div>
+      </Button>
     </div>
   );
 };

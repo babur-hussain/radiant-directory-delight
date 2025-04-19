@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,10 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/hooks/use-toast';
 import { UserRole } from '@/types/auth';
 import { Chrome } from 'lucide-react';
+import { getReferralIdFromURL, validateReferralId } from '@/utils/referral/referralUtils';
+import { processReferralSignup } from '@/services/referralService';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const AuthPage = () => {
   const { login, loginWithGoogle, signup, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<string>('login');
   
   // Login form state
@@ -29,9 +33,63 @@ const AuthPage = () => {
   const [name, setName] = useState<string>('');
   const [role, setRole] = useState<UserRole>('User');
   
+  // Referral state
+  const [referralId, setReferralId] = useState<string>('');
+  const [isValidReferral, setIsValidReferral] = useState<boolean | null>(null);
+  const [referralChecking, setReferralChecking] = useState<boolean>(false);
+  
   // Form submission state
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Check for referral code in URL and set the active tab to signup if found
+  useEffect(() => {
+    const urlReferralId = getReferralIdFromURL();
+    
+    if (urlReferralId) {
+      setReferralId(urlReferralId);
+      setActiveTab('signup');
+      validateReferralCode(urlReferralId);
+    }
+    
+    // Read the tab parameter from URL query if present
+    const searchParams = new URLSearchParams(location.search);
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'signup' || tabParam === 'login') {
+      setActiveTab(tabParam);
+    }
+  }, [location.search]);
+  
+  // Validate referral code
+  const validateReferralCode = async (code: string) => {
+    if (!code) {
+      setIsValidReferral(null);
+      return;
+    }
+    
+    setReferralChecking(true);
+    try {
+      const isValid = await validateReferralId(code);
+      setIsValidReferral(isValid);
+    } catch (error) {
+      console.error('Error validating referral code:', error);
+      setIsValidReferral(false);
+    } finally {
+      setReferralChecking(false);
+    }
+  };
+  
+  // Handle referral code change
+  const handleReferralCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const code = e.target.value;
+    setReferralId(code);
+    
+    if (code) {
+      validateReferralCode(code);
+    } else {
+      setIsValidReferral(null);
+    }
+  };
   
   useEffect(() => {
     // Redirect to home page if user is already authenticated
@@ -65,10 +123,31 @@ const AuthPage = () => {
       return;
     }
     
+    // Check referral code if provided
+    if (referralId && isValidReferral === false) {
+      setError('Invalid referral code. Please check and try again.');
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
-      await signup(signupEmail, signupPassword, name, role);
+      // Include referral ID in the additional data
+      const additionalData = referralId ? { referralId } : undefined;
+      
+      // Sign up the user
+      const userCredential = await signup(signupEmail, signupPassword, name, role, additionalData);
+      
+      // If signup successful and we have a referral code, process the referral
+      if (userCredential?.user?.uid && referralId) {
+        try {
+          await processReferralSignup(userCredential.user.uid, referralId);
+        } catch (refError) {
+          console.error('Error processing referral:', refError);
+          // We don't want to fail the signup if referral processing fails
+        }
+      }
+      
       toast({
         title: 'Account created successfully',
         description: 'Please check your email to verify your account',
@@ -84,7 +163,11 @@ const AuthPage = () => {
   const handleGoogleLogin = async () => {
     try {
       setError(null);
-      await loginWithGoogle();
+      
+      // Include referral ID in the additional data if on signup tab
+      const additionalData = activeTab === 'signup' && referralId ? { referralId } : undefined;
+      
+      await loginWithGoogle(additionalData);
     } catch (error: any) {
       setError(error.message || 'Failed to login with Google');
     }
@@ -270,6 +353,39 @@ const AuthPage = () => {
                     required
                     minLength={6}
                   />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="referral-code">
+                    Referral Code <span className="text-xs text-muted-foreground">(Optional)</span>
+                  </Label>
+                  <Input 
+                    id="referral-code"
+                    placeholder="Enter referral code"
+                    value={referralId}
+                    onChange={handleReferralCodeChange}
+                    className={
+                      isValidReferral === true
+                        ? "border-green-500 focus:ring-green-500"
+                        : isValidReferral === false
+                        ? "border-red-500 focus:ring-red-500"
+                        : ""
+                    }
+                  />
+                  
+                  {referralId && isValidReferral !== null && !referralChecking && (
+                    <Alert className={`mt-2 ${isValidReferral ? "bg-green-50" : "bg-red-50"} p-2`}>
+                      <AlertDescription className={`text-xs ${isValidReferral ? "text-green-600" : "text-red-600"}`}>
+                        {isValidReferral 
+                          ? "Valid referral code!" 
+                          : "Invalid referral code. Please check and try again."}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {referralChecking && (
+                    <p className="text-xs text-muted-foreground mt-1">Validating referral code...</p>
+                  )}
                 </div>
               </CardContent>
               
