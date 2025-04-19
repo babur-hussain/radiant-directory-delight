@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { UserRole } from '@/types/auth';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 export interface SubscriptionPackagesProps {
   userRole: UserRole | string;
@@ -19,14 +19,17 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   onSelectPackage
 }) => {
   const { packages, isLoading, isError } = useSubscriptionPackages();
+  const navigate = useNavigate();
   
   const filteredPackages = packages?.filter(pkg => pkg.type === userRole) || [];
 
   const handleSelectPackage = (pkg: ISubscriptionPackage) => {
     console.log("Package selected:", pkg.title);
+    
     if (onSelectPackage) {
       onSelectPackage(pkg);
-      toast.info(`Selected package: ${pkg.title}`);
+    } else {
+      navigate(`/subscription/details/${pkg.id}`);
     }
   };
 

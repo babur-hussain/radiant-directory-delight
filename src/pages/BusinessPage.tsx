@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -63,10 +64,6 @@ const BusinessPage = () => {
     setShowDialog(true);
     toast.info(`Selected package: ${pkg.title}`);
   };
-
-  useEffect(() => {
-    console.log("Dialog visible:", showDialog, "Selected package:", selectedPackage?.title);
-  }, [showDialog, selectedPackage]);
 
   return (
     <Layout>
@@ -172,7 +169,7 @@ const BusinessPage = () => {
         </main>
       </div>
       
-      {showDialog && selectedPackage && (
+      {selectedPackage && (
         <SubscriptionDialog 
           isOpen={showDialog}
           setIsOpen={setShowDialog}

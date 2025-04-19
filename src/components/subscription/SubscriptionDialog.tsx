@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import RazorpayPayment from './RazorpayPayment';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,6 +22,8 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
 }) => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [paymentSuccess, setPaymentSuccess] = useState<boolean>(false);
+  const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
+  const [showPaymentUI, setShowPaymentUI] = useState<boolean>(false);
   const { user, refreshUserData } = useAuth();
 
   const handlePaymentSuccess = async (response: any) => {
@@ -56,6 +59,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   const handlePaymentFailure = (error: any) => {
     console.error("Payment failed:", error);
     setIsProcessing(false);
+    setShowPaymentUI(false);
     toast({
       title: "Payment Failed",
       description: error.message || "There was an issue processing your payment. Please try again.",
@@ -69,8 +73,22 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
       // Reset state for next time the dialog opens
       setTimeout(() => {
         setPaymentSuccess(false);
+        setShowPaymentUI(false);
+        setTermsAccepted(false);
       }, 300);
     }
+  };
+
+  const handleProceedToPayment = () => {
+    if (!termsAccepted) {
+      toast({
+        title: "Terms Required",
+        description: "Please accept the terms and conditions to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setShowPaymentUI(true);
   };
 
   return (
@@ -84,7 +102,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        {!paymentSuccess && selectedPackage && (
+        {!paymentSuccess && !showPaymentUI && selectedPackage && (
           <div className="space-y-4">
             <div className="text-center text-sm text-gray-500 mb-4">
               <p>You are subscribing to the {selectedPackage.title} package</p>
@@ -96,12 +114,49 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
               )}
             </div>
 
+            <div className="space-y-4">
+              <div className="text-sm">
+                <h4 className="font-medium mb-2">Package Features:</h4>
+                <ul className="list-disc pl-5 space-y-1">
+                  {selectedPackage.features.slice(0, 5).map((feature, index) => (
+                    <li key={index}>{feature}</li>
+                  ))}
+                </ul>
+              </div>
+              
+              <div className="flex items-start space-x-2 pt-4 border-t">
+                <Checkbox 
+                  id="terms" 
+                  checked={termsAccepted}
+                  onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+                />
+                <div className="grid gap-1.5 leading-none">
+                  <label
+                    htmlFor="terms"
+                    className="text-sm font-medium leading-none"
+                  >
+                    I accept the Terms and Conditions
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    By checking this box, you agree to our Terms of Service and that you have read our Privacy Policy.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {user ? (
-              <RazorpayPayment
-                selectedPackage={selectedPackage}
-                onSuccess={handlePaymentSuccess}
-                onFailure={handlePaymentFailure}
-              />
+              <div className="pt-4">
+                <Button 
+                  onClick={handleProceedToPayment} 
+                  className="w-full"
+                  disabled={isProcessing}
+                >
+                  Proceed to Payment
+                </Button>
+                <p className="text-xs mt-2 text-center text-muted-foreground">
+                  All payments are processed securely via Razorpay
+                </p>
+              </div>
             ) : (
               <div className="text-center">
                 <p className="text-red-500 mb-4">
@@ -110,6 +165,25 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                 <Button onClick={handleCloseDialog}>Close</Button>
               </div>
             )}
+          </div>
+        )}
+
+        {!paymentSuccess && showPaymentUI && selectedPackage && user && (
+          <div>
+            <RazorpayPayment
+              selectedPackage={selectedPackage}
+              onSuccess={handlePaymentSuccess}
+              onFailure={handlePaymentFailure}
+            />
+            <div className="mt-4 text-center">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowPaymentUI(false)} 
+                disabled={isProcessing}
+              >
+                Back
+              </Button>
+            </div>
           </div>
         )}
 

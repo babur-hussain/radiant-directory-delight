@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useRazorpayPayment } from '@/hooks/useRazorpayPayment';
@@ -30,11 +30,6 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const referralId = searchParams.get('ref');
-  
-  useEffect(() => {
-    // Initiate payment automatically when component mounts
-    handlePayNow();
-  }, []);
   
   const handlePayNow = async () => {
     console.log("Initiating payment for package:", selectedPackage);
