@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -147,11 +146,13 @@ const AuthPage = () => {
   const handleGoogleLogin = async () => {
     try {
       setError(null);
+      setIsSubmitting(true);
       
-      // Fix: Remove the argument as loginWithGoogle doesn't accept parameters
       await loginWithGoogle();
+      
     } catch (error: any) {
       setError(error.message || 'Failed to login with Google');
+      setIsSubmitting(false);
     }
   };
 

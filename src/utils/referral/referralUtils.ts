@@ -31,7 +31,7 @@ export function calculateReferralEarnings(subscriptionAmount: number): number {
 export function createReferralLink(referralId: string): string {
   // Create a link to the signup page with the referral ID as a query parameter
   const baseUrl = window.location.origin;
-  return `${baseUrl}/auth?ref=${referralId}`;
+  return `${baseUrl}/auth?ref=${referralId}&tab=signup`;
 }
 
 /**
