@@ -79,16 +79,29 @@ export const getUserById = async (userId: string): Promise<IUser | null> => {
       return null;
     }
 
-    // Convert from snake_case to camelCase
-    return data ? {
+    if (!data) return null;
+
+    // Create an address object from the flat fields if they exist
+    const address = data.address_street || data.address_state || data.address_country || data.address_zip_code
+      ? {
+          street: data.address_street,
+          state: data.address_state,
+          country: data.address_country,
+          zipCode: data.address_zip_code
+        }
+      : undefined;
+
+    // Convert from snake_case to camelCase and handle type conversions
+    const user: IUser = {
       uid: data.id,
       name: data.name,
       email: data.email,
       role: data.role,
       isAdmin: data.is_admin,
       photoURL: data.photo_url,
-      createdAt: data.created_at,
-      lastLogin: data.last_login,
+      // Convert string dates to Date objects
+      createdAt: data.created_at ? new Date(data.created_at) : new Date(),
+      lastLogin: data.last_login ? new Date(data.last_login) : new Date(),
       employeeCode: data.employee_code,
       subscription: data.subscription,
       subscriptionId: data.subscription_id,
@@ -114,14 +127,11 @@ export const getUserById = async (userId: string): Promise<IUser | null> => {
       ownerName: data.owner_name,
       businessCategory: data.business_category,
       website: data.website,
-      address: {
-        street: data.address?.street,
-        state: data.address?.state,
-        country: data.address?.country,
-        zipCode: data.address?.zip_code
-      },
+      address: address,
       gstNumber: data.gst_number
-    } as IUser : null;
+    };
+
+    return user;
   } catch (error) {
     console.error("Error in getUserById:", error);
     return null;
