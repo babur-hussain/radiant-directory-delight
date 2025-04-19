@@ -81,10 +81,10 @@ const Header = () => {
               <UserMenu />
             ) : (
               <>
-                <Link to="/login">
+                <Link to="/auth?tab=login">
                   <Button variant="ghost">Log In</Button>
                 </Link>
-                <Link to="/signup">
+                <Link to="/auth?tab=signup">
                   <Button>Sign Up</Button>
                 </Link>
               </>
