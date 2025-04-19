@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { IUser } from '@/models/User';
 import { toast } from '@/hooks/use-toast';
@@ -116,11 +117,12 @@ export const getUserById = async (userId: string): Promise<IUser | null> => {
       ownerName: data.owner_name,
       businessCategory: data.business_category,
       website: data.website,
+      // Create address object with data from address table or null values
       address: {
-        street: data.street || null,
+        street: null,
         state: data.state || null,
         country: data.country || null,
-        zipCode: data.zip_code || null
+        zipCode: null
       },
       gstNumber: data.gst_number
     };
