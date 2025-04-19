@@ -7,6 +7,7 @@ import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
 import { createSubscription } from '@/services/subscriptionService';
 import { updateUserSubscription } from '@/lib/subscription/update-subscription';
+import { updateUserSubscriptionDetails } from '@/lib/mongodb/userUtils';
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionStatus } from '@/models/Subscription';
 import { RazorpayResponse } from '@/types/razorpay';
@@ -157,12 +158,34 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
                 actualStartDate: startDate
               };
               
-              await createSubscription(camelCaseData)
-                .catch(err => console.log("Secondary subscription creation failed, using primary method", err));
+              try {
+                await createSubscription(camelCaseData);
+                console.log("Subscription created via service successfully");
+              } catch(err) {
+                console.log("Secondary subscription creation failed, using primary method", err);
+              }
               
-              // Then ensure user record is updated with subscription details
-              await updateUserSubscription(user.id, camelCaseData)
-                .catch(err => console.log("updateUserSubscription failed, trying direct update", err));
+              try {
+                // Update user subscription via lib function (first attempt)
+                const updateResult = await updateUserSubscription(user.id, camelCaseData);
+                console.log("updateUserSubscription result:", updateResult);
+              } catch(err) {
+                console.log("updateUserSubscription failed, trying direct update", err);
+              }
+              
+              // Use our new utility to ensure user profile is updated with subscription details
+              // This is a reliable backup method if the other methods fail
+              try {
+                const userUpdateResult = await updateUserSubscriptionDetails(
+                  user.id,
+                  subscriptionId,
+                  selectedPackage.id,
+                  'active'
+                );
+                console.log("Direct user profile update result:", userUpdateResult);
+              } catch (err) {
+                console.error("Failed to update user profile with subscription details:", err);
+              }
               
               // Additionally update user record directly for ultimate redundancy
               const { data: userData, error: userUpdateError } = await supabase
@@ -183,9 +206,9 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
               if (userUpdateError) {
                 console.error("Error updating user record:", userUpdateError);
                 // Don't throw here, just log as we have multiple layers of redundancy
+              } else {
+                console.log("User record updated with subscription:", userData);
               }
-              
-              console.log("User record updated with subscription:", userData);
               
               // Process referral if referralId is provided
               if (referralId) {

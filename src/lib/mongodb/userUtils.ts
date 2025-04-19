@@ -1,30 +1,129 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User, UserRole } from '@/types/auth';
-import * as supabaseUserUtils from '../supabase/userUtils';
+import { IUser } from '@/models/User';
+import { toast } from '@/hooks/use-toast';
 
-// Re-export functions for backwards compatibility
-export const { fetchUserByUid } = supabaseUserUtils;
-
-// Helper function to convert role string to UserRole type
-function transformRole(role: string | null): UserRole {
-  if (!role) return null;
-  
-  // Match with expected UserRole values
-  switch (role.toLowerCase()) {
-    case 'admin':
-      return 'Admin';
-    case 'business':
-      return 'Business';
-    case 'influencer':
-      return 'Influencer';
-    case 'user':
-      return 'User';
-    case 'staff':
-      return 'Staff';
-    default:
-      return 'User'; // Default to User if unknown
+/**
+ * Updates a user's subscription details in the database
+ */
+export const updateUserSubscriptionDetails = async (
+  userId: string,
+  subscriptionId: string,
+  packageId: string,
+  status: 'active' | 'pending' | 'cancelled' | 'expired' = 'active'
+): Promise<boolean> => {
+  if (!userId) {
+    console.error("Cannot update user subscription: No user ID provided");
+    return false;
   }
-}
 
-// We remove the duplicated fetchUserByUid function here
+  try {
+    console.log(`Updating subscription details for user ${userId}:`, {
+      subscriptionId,
+      packageId,
+      status
+    });
+
+    const { error } = await supabase
+      .from('users')
+      .update({
+        subscription: subscriptionId,
+        subscription_id: subscriptionId,
+        subscription_status: status,
+        subscription_package: packageId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
+
+    if (error) {
+      console.error("Error updating user subscription details:", error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update your subscription details. Please contact support.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    console.log("✅ Successfully updated user subscription details");
+    return true;
+  } catch (error) {
+    console.error("Error in updateUserSubscriptionDetails:", error);
+    toast({
+      title: "Update Failed",
+      description: "An unexpected error occurred while updating your subscription details.",
+      variant: "destructive"
+    });
+    return false;
+  }
+};
+
+/**
+ * Fetches a user by ID from the database
+ */
+export const getUserById = async (userId: string): Promise<IUser | null> => {
+  if (!userId) {
+    console.error("Cannot fetch user: No user ID provided");
+    return null;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error("Error fetching user:", error);
+      return null;
+    }
+
+    // Convert from snake_case to camelCase
+    return data ? {
+      uid: data.id,
+      name: data.name,
+      email: data.email,
+      role: data.role,
+      isAdmin: data.is_admin,
+      photoURL: data.photo_url,
+      createdAt: data.created_at,
+      lastLogin: data.last_login,
+      employeeCode: data.employee_code,
+      subscription: data.subscription,
+      subscriptionId: data.subscription_id,
+      subscriptionStatus: data.subscription_status,
+      subscriptionPackage: data.subscription_package,
+      customDashboardSections: data.custom_dashboard_sections,
+      
+      // Shared fields
+      phone: data.phone,
+      instagramHandle: data.instagram_handle,
+      facebookHandle: data.facebook_handle,
+      verified: data.verified,
+      city: data.city,
+      country: data.country,
+      
+      // Influencer specific fields
+      niche: data.niche,
+      followersCount: data.followers_count,
+      bio: data.bio,
+      
+      // Business specific fields
+      businessName: data.business_name,
+      ownerName: data.owner_name,
+      businessCategory: data.business_category,
+      website: data.website,
+      address: {
+        street: data.address?.street,
+        state: data.address?.state,
+        country: data.address?.country,
+        zipCode: data.address?.zip_code
+      },
+      gstNumber: data.gst_number
+    } as IUser : null;
+  } catch (error) {
+    console.error("Error in getUserById:", error);
+    return null;
+  }
+};
