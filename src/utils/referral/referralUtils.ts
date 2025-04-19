@@ -65,20 +65,8 @@ export async function trackReferral(referrerId: string, newUserId: string): Prom
     // For now, we'll just log this relationship since we don't have a 'referred_by' field
     console.log(`User ${newUserId} referred by user with ID ${referrerData.id}`);
     
-    // Since we can't update with a non-existent field, we'll just update the timestamp
-    // This is a temporary solution until the database schema is updated
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ 
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', newUserId);
-
-    if (updateError) {
-      console.error('Error updating referred user:', updateError);
-      return false;
-    }
-
+    // This is a workaround until we can properly add a column to track referrals
+    // We'll just return success since we've validated the referral ID
     return true;
   } catch (error) {
     console.error('Error tracking referral:', error);
