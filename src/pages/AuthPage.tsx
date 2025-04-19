@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,28 +20,23 @@ const AuthPage = () => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<string>('login');
   
-  // Login form state
   const [loginEmail, setLoginEmail] = useState<string>('');
   const [loginPassword, setLoginPassword] = useState<string>('');
   const [employeeCode, setEmployeeCode] = useState<string>('');
   
-  // Signup form state
   const [signupEmail, setSignupEmail] = useState<string>('');
   const [signupPassword, setSignupPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [name, setName] = useState<string>('');
   const [role, setRole] = useState<UserRole>('User');
   
-  // Referral state
   const [referralId, setReferralId] = useState<string>('');
   const [isValidReferral, setIsValidReferral] = useState<boolean | null>(null);
   const [referralChecking, setReferralChecking] = useState<boolean>(false);
   
-  // Form submission state
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Check for referral code in URL and set the active tab to signup if found
   useEffect(() => {
     const urlReferralId = getReferralIdFromURL();
     
@@ -52,7 +46,6 @@ const AuthPage = () => {
       validateReferralCode(urlReferralId);
     }
     
-    // Read the tab parameter from URL query if present
     const searchParams = new URLSearchParams(location.search);
     const tabParam = searchParams.get('tab');
     if (tabParam === 'signup' || tabParam === 'login') {
@@ -60,7 +53,6 @@ const AuthPage = () => {
     }
   }, [location.search]);
   
-  // Validate referral code
   const validateReferralCode = async (code: string) => {
     if (!code) {
       setIsValidReferral(null);
@@ -79,7 +71,6 @@ const AuthPage = () => {
     }
   };
   
-  // Handle referral code change
   const handleReferralCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const code = e.target.value;
     setReferralId(code);
@@ -92,7 +83,6 @@ const AuthPage = () => {
   };
   
   useEffect(() => {
-    // Redirect to home page if user is already authenticated
     if (isAuthenticated) {
       navigate('/');
     }
@@ -105,7 +95,6 @@ const AuthPage = () => {
     
     try {
       await login(loginEmail, loginPassword, employeeCode);
-      // Navigation will be handled by the effect above
     } catch (error: any) {
       setError(error.message || 'Failed to login');
     } finally {
@@ -117,13 +106,11 @@ const AuthPage = () => {
     e.preventDefault();
     setError(null);
     
-    // Validate passwords match
     if (signupPassword !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
     
-    // Check referral code if provided
     if (referralId && isValidReferral === false) {
       setError('Invalid referral code. Please check and try again.');
       return;
@@ -132,19 +119,15 @@ const AuthPage = () => {
     setIsSubmitting(true);
     
     try {
-      // Include referral ID in the additional data
       const additionalData = referralId ? { referralId } : undefined;
       
-      // Sign up the user
       const userCredential = await signup(signupEmail, signupPassword, name, role, additionalData);
       
-      // If signup successful and we have a referral code, process the referral
       if (userCredential && userCredential.id && referralId) {
         try {
           await processReferralSignup(userCredential.id, referralId);
         } catch (refError) {
           console.error('Error processing referral:', refError);
-          // We don't want to fail the signup if referral processing fails
         }
       }
       
@@ -164,7 +147,6 @@ const AuthPage = () => {
     try {
       setError(null);
       
-      // Include referral ID in the additional data if on signup tab
       const additionalData = activeTab === 'signup' && referralId ? { referralId } : undefined;
       
       await loginWithGoogle(additionalData);
