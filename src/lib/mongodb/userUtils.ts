@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { IUser } from '@/models/User';
 import { toast } from '@/hooks/use-toast';
@@ -81,16 +80,6 @@ export const getUserById = async (userId: string): Promise<IUser | null> => {
 
     if (!data) return null;
 
-    // Create an address object from the flat fields if they exist
-    const address = data.address_street || data.address_state || data.address_country || data.address_zip_code
-      ? {
-          street: data.address_street,
-          state: data.address_state,
-          country: data.address_country,
-          zipCode: data.address_zip_code
-        }
-      : undefined;
-
     // Convert from snake_case to camelCase and handle type conversions
     const user: IUser = {
       uid: data.id,
@@ -127,7 +116,12 @@ export const getUserById = async (userId: string): Promise<IUser | null> => {
       ownerName: data.owner_name,
       businessCategory: data.business_category,
       website: data.website,
-      address: address,
+      address: {
+        street: data.street || null,
+        state: data.state || null,
+        country: data.country || null,
+        zipCode: data.zip_code || null
+      },
       gstNumber: data.gst_number
     };
 
