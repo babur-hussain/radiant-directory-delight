@@ -1,26 +1,28 @@
 
 import React from 'react';
-import { RouterProvider } from 'react-router-dom';
+import { RouterProvider, useNavigate } from 'react-router-dom';
 import { router } from './routes';
 import SubscriptionPopupAd from './components/ads/SubscriptionPopupAd';
 import { usePopupAd } from './providers/PopupAdProvider';
 
-const AppRoutes: React.FC = () => {
+// This component will be rendered only after the router is initialized
+const SubscriptionPopupWrapper = () => {
   const { showSubscriptionPopup, setShowSubscriptionPopup } = usePopupAd();
-  
+  // useNavigate is safe to use here since this component is rendered by the router
   return (
-    <>
-      <RouterProvider router={router} />
-      
-      {/* Subscription Popup Ad - Moved to a separate component that will
-          only be rendered once the router has been initialized */}
-      {router.state && (
-        <SubscriptionPopupAd 
-          open={showSubscriptionPopup} 
-          onOpenChange={setShowSubscriptionPopup} 
-        />
-      )}
-    </>
+    <SubscriptionPopupAd 
+      open={showSubscriptionPopup} 
+      onOpenChange={setShowSubscriptionPopup} 
+    />
+  );
+};
+
+const AppRoutes: React.FC = () => {
+  return (
+    <RouterProvider 
+      router={router} 
+      fallbackElement={<div>Loading...</div>}
+    />
   );
 };
 
