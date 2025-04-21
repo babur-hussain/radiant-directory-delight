@@ -4,8 +4,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './App.css';
 import { AuthProvider } from './hooks/useAuth';
 import { PopupAdProvider } from './providers/PopupAdProvider';
-import SubscriptionPopupAd from './components/ads/SubscriptionPopupAd';
-import { usePopupAd } from './providers/PopupAdProvider';
 import AppRoutes from './AppRoutes';
 
 // Create a client
@@ -17,27 +15,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <PopupAdProvider>
-          <AppContent />
+          <AppRoutes />
         </PopupAdProvider>
       </AuthProvider>
     </QueryClientProvider>
-  );
-}
-
-// App content with access to contexts
-function AppContent() {
-  const { showSubscriptionPopup, setShowSubscriptionPopup } = usePopupAd();
-  
-  return (
-    <>
-      <AppRoutes />
-      
-      {/* Subscription Popup Ad */}
-      <SubscriptionPopupAd 
-        open={showSubscriptionPopup} 
-        onOpenChange={setShowSubscriptionPopup} 
-      />
-    </>
   );
 }
 
