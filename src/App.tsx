@@ -1,13 +1,12 @@
 
 import React from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './App.css';
 import { AuthProvider } from './hooks/useAuth';
 import { PopupAdProvider } from './providers/PopupAdProvider';
 import SubscriptionPopupAd from './components/ads/SubscriptionPopupAd';
 import { usePopupAd } from './providers/PopupAdProvider';
-import AppRoutes from './routes';
+import AppRoutes from './AppRoutes';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -30,7 +29,7 @@ function AppContent() {
   const { showSubscriptionPopup, setShowSubscriptionPopup } = usePopupAd();
   
   return (
-    <Router>
+    <>
       <AppRoutes />
       
       {/* Subscription Popup Ad */}
@@ -38,7 +37,7 @@ function AppContent() {
         open={showSubscriptionPopup} 
         onOpenChange={setShowSubscriptionPopup} 
       />
-    </Router>
+    </>
   );
 }
 
