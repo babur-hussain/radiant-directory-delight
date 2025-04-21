@@ -13,6 +13,8 @@ import { Chrome } from 'lucide-react';
 import { getReferralIdFromURL, validateReferralId } from '@/utils/referral/referralUtils';
 import { processReferralSignup } from '@/services/referralService';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import LoginForm from '@/components/auth/LoginForm';
+import RegisterTypeSelector from '@/components/auth/RegisterTypeSelector';
 
 const AuthPage = () => {
   const { login, loginWithGoogle, signup, isAuthenticated, loading } = useAuth();
