@@ -28,6 +28,8 @@ export const AuthContext = createContext<AuthContextType>({
   signup: async () => null,
   logout: async () => {},
   refreshUserData: async () => null,
+  resetPassword: async () => {},
+  updatePassword: async () => {},
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -282,6 +284,64 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Reset password function (sends email)
+  const resetPassword = async (email: string): Promise<void> => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Password reset email sent",
+        description: "Please check your inbox for the reset link",
+      });
+    } catch (error) {
+      console.error("Password reset error:", error);
+      toast({
+        title: "Password reset failed",
+        description: error instanceof Error ? error.message : "Failed to send reset email",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Update password function
+  const updatePassword = async (newPassword: string): Promise<void> => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Password updated",
+        description: "Your password has been successfully changed",
+      });
+    } catch (error) {
+      console.error("Password update error:", error);
+      toast({
+        title: "Password update failed",
+        description: error instanceof Error ? error.message : "Failed to update password",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Refresh user data function
   const refreshUserData = async (): Promise<User | null> => {
     try {
@@ -313,6 +373,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signup,
     logout: logoutUser,
     refreshUserData,
+    resetPassword,
+    updatePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

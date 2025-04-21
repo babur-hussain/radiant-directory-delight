@@ -20,6 +20,7 @@ import SocialLoginButtons from "./SocialLoginButtons";
 import { useAuth } from "@/hooks/useAuth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
+import PasswordResetForm from "./PasswordResetForm";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -38,6 +39,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [resendingEmail, setResendingEmail] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
   const { toast } = useToast();
   const { loginWithGoogle } = useAuth();
 
@@ -137,6 +139,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
   // Is this the default admin email?
   const isAdminEmail = form.watch('email').toLowerCase() === 'baburhussain660@gmail.com';
 
+  // Show password reset form instead of login form
+  if (showPasswordReset) {
+    return <PasswordResetForm onCancel={() => setShowPasswordReset(false)} />;
+  }
+
   return (
     <div className="space-y-6 py-4">
       <div className="text-center mb-8">
@@ -220,12 +227,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
                     variant="link"
                     className="h-auto p-0 text-xs"
                     type="button"
-                    onClick={() => {
-                      toast({
-                        title: "Reset password",
-                        description: "Password reset feature coming soon!",
-                      });
-                    }}
+                    onClick={() => setShowPasswordReset(true)}
                   >
                     Forgot password?
                   </Button>
