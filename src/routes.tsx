@@ -17,10 +17,12 @@ const AppShell = () => {
   return (
     <>
       <Outlet />
-      <SubscriptionPopupAd 
-        open={showSubscriptionPopup} 
-        onOpenChange={setShowSubscriptionPopup} 
-      />
+      {showSubscriptionPopup && (
+        <SubscriptionPopupAd 
+          open={showSubscriptionPopup} 
+          onOpenChange={setShowSubscriptionPopup} 
+        />
+      )}
     </>
   );
 };
@@ -60,6 +62,7 @@ const AdminSeedDataPage = lazy(() => import("@/pages/AdminSeedDataPage"));
 const AdminDashboardManagerPage = lazy(() => import("@/pages/AdminDashboardManagerPage"));
 const AdminDashboardSectionsPage = lazy(() => import("@/pages/AdminDashboardSectionsPage"));
 const AdminDashboardServicePage = lazy(() => import("@/pages/AdminDashboardServicePage"));
+const AdminLoginPage = lazy(() => import("@/pages/AdminLoginPage"));
 
 export const router = createBrowserRouter([
   {
@@ -143,6 +146,10 @@ export const router = createBrowserRouter([
             </ProtectedRoute>
           },
           {
+            path: "admin/login",
+            element: <Suspense fallback={<LoadingComponent />}><AdminLoginPage /></Suspense>
+          },
+          {
             path: "admin/dashboard",
             element: <ProtectedRoute roles={["Admin"]}>
               <Suspense fallback={<LoadingComponent />}><AdminDashboardPage /></Suspense>
@@ -222,7 +229,7 @@ export const router = createBrowserRouter([
           },
         ],
       },
-      // Add a catch-all route at the end to handle 404s
+      // Catch-all route at the end to handle 404s
       {
         path: "*",
         element: <NotFound />
