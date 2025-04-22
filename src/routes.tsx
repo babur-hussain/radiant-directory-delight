@@ -82,6 +82,11 @@ export const router = createBrowserRouter([
             path: "business/:id", 
             element: <Suspense fallback={<LoadingComponent />}><BusinessPage /></Suspense>
           },
+          // Add a route for /business that will work with your current URL
+          { 
+            path: "business", 
+            element: <Suspense fallback={<LoadingComponent />}><BusinessPage /></Suspense>
+          },
           { 
             path: "categories", 
             element: <Suspense fallback={<LoadingComponent />}><CategoriesPage /></Suspense> 

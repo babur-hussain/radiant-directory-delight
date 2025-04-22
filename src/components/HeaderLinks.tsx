@@ -17,6 +17,10 @@ const HeaderLinks = () => {
       <Link to="/influencers" className="text-sm font-medium text-gray-700 hover:text-primary transition-colors">
         Influencers
       </Link>
+      {/* Added the business route link for direct access */}
+      <Link to="/business" className="text-sm font-medium text-gray-700 hover:text-primary transition-colors">
+        Business
+      </Link>
     </div>
   );
 };
