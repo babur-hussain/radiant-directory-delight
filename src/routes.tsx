@@ -1,91 +1,256 @@
 
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Layout from '@/components/layout/Layout';
-import Index from '@/pages/Index';
-import InfluencerPage from '@/pages/InfluencerPage';
-import BusinessPage from '@/pages/BusinessPage';
-import AuthPage from '@/pages/AuthPage';
-import NotFound from '@/pages/NotFound';
-import CategoriesPage from '@/pages/CategoriesPage';
-import BusinessesPage from '@/pages/BusinessesPage';
-import ProfilePage from '@/pages/ProfilePage';
-import SubscriptionPage from '@/pages/SubscriptionPage';
-import SubscriptionDetailsPage from '@/pages/SubscriptionDetailsPage';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import AdminDashboardPage from '@/pages/AdminDashboardPage';
-import AdminUploadPage from '@/pages/AdminUploadPage';
-import AdminBusinessListingsPage from '@/pages/AdminBusinessListingsPage';
-import AdminSubscriptionsPage from '@/pages/AdminSubscriptionsPage';
-import AdminUsersPage from '@/pages/AdminUsersPage';
-import AdminAnalyticsPage from '@/pages/AdminAnalyticsPage';
-import AdminDatabasePage from '@/pages/AdminDatabasePage';
-import AdminSettingsPage from '@/pages/AdminSettingsPage';
-import AdminMigrationPage from '@/pages/AdminMigrationPage';
-import AdminDashboardManagerPage from '@/pages/AdminDashboardManagerPage';
-import AdminDashboardSectionsPage from '@/pages/AdminDashboardSectionsPage';
-import AdminDashboardServicePage from '@/pages/AdminDashboardServicePage';
-import AdminSeedDataPage from '@/pages/AdminSeedDataPage';
-import AdminLoginPage from '@/pages/AdminLoginPage';
-import AuthCallbackPage from '@/pages/AuthCallbackPage';
-import BusinessDashboardPage from '@/pages/BusinessDashboardPage';
-import InfluencerDashboardPage from '@/pages/InfluencerDashboardPage';
-import AdminVideosPage from '@/components/admin/videos/AdminVideosPage';
-import CategoryDetailsPage from '@/pages/CategoryDetailsPage';
-import InfluencersPage from '@/pages/InfluencersPage';
+import React, { lazy, Suspense } from "react";
+import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
+import Layout from "@/components/layout/Layout";
+import Index from "@/pages/Index";
+import NotFound from "@/pages/NotFound";
+import AuthPage from "@/pages/AuthPage";
+import PasswordResetPage from "@/pages/PasswordResetPage";
+import AuthCallbackPage from "@/pages/AuthCallbackPage";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { usePopupAd } from "@/providers/PopupAdProvider";
+import SubscriptionPopupAd from "@/components/ads/SubscriptionPopupAd";
 
-const AppRoutes = () => {
+const AppShell = () => {
+  const { showSubscriptionPopup, setShowSubscriptionPopup } = usePopupAd();
+  
   return (
-    <Routes>
-      {/* Wrap all routes with Layout to ensure header visibility */}
-      <Route element={<Layout />}>
-        <Route index element={<Index />} />
-        <Route path="auth" element={<AuthPage />} />
-        <Route path="auth/callback" element={<AuthCallbackPage />} />
-        <Route path="categories" element={<CategoriesPage />} />
-        <Route path="businesses" element={<BusinessesPage />} />
-        <Route path="influencers" element={<InfluencersPage />} />
-        <Route path="category/:categoryName" element={<CategoryDetailsPage />} />
-        <Route path="about" element={<div>About Page</div>} />
-        
-        {/* Protected routes */}
-        <Route path="profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-        <Route path="subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
-        <Route path="subscription/:packageId" element={<ProtectedRoute><SubscriptionDetailsPage /></ProtectedRoute>} />
-      </Route>
-      
-      {/* Standalone pages - also wrapped in Layout */}
-      <Route element={<Layout />}>
-        <Route path="influencer" element={<InfluencerPage />} />
-        <Route path="business" element={<BusinessPage />} />
-      </Route>
-      
-      {/* Dashboard and Admin routes */}
-      <Route path="/dashboard/business" element={<ProtectedRoute><BusinessDashboardPage /></ProtectedRoute>} />
-      <Route path="/dashboard/influencer" element={<ProtectedRoute><InfluencerDashboardPage /></ProtectedRoute>} />
-      <Route path="/dashboard" element={<ProtectedRoute><BusinessDashboardPage /></ProtectedRoute>} />
-      
-      {/* Admin routes */}
-      <Route path="/admin/login" element={<AdminLoginPage />} />
-      <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminDashboardPage /></ProtectedRoute>} />
-      <Route path="/admin/upload" element={<ProtectedRoute requireAdmin={true}><AdminUploadPage /></ProtectedRoute>} />
-      <Route path="/admin/businesses" element={<ProtectedRoute requireAdmin={true}><AdminBusinessListingsPage /></ProtectedRoute>} />
-      <Route path="/admin/subscriptions" element={<ProtectedRoute requireAdmin={true}><AdminSubscriptionsPage /></ProtectedRoute>} />
-      <Route path="/admin/users" element={<ProtectedRoute requireAdmin={true}><AdminUsersPage /></ProtectedRoute>} />
-      <Route path="/admin/analytics" element={<ProtectedRoute requireAdmin={true}><AdminAnalyticsPage /></ProtectedRoute>} />
-      <Route path="/admin/database" element={<ProtectedRoute requireAdmin={true}><AdminDatabasePage /></ProtectedRoute>} />
-      <Route path="/admin/settings" element={<ProtectedRoute requireAdmin={true}><AdminSettingsPage /></ProtectedRoute>} />
-      <Route path="/admin/migration" element={<ProtectedRoute requireAdmin={true}><AdminMigrationPage /></ProtectedRoute>} />
-      <Route path="/admin/dashboard-manager" element={<ProtectedRoute requireAdmin={true}><AdminDashboardManagerPage /></ProtectedRoute>} />
-      <Route path="/admin/dashboard-sections" element={<ProtectedRoute requireAdmin={true}><AdminDashboardSectionsPage /></ProtectedRoute>} />
-      <Route path="/admin/dashboard-services" element={<ProtectedRoute requireAdmin={true}><AdminDashboardServicePage /></ProtectedRoute>} />
-      <Route path="/admin/videos" element={<ProtectedRoute requireAdmin={true}><AdminVideosPage /></ProtectedRoute>} />
-      <Route path="/admin/seed" element={<ProtectedRoute requireAdmin={true}><AdminSeedDataPage /></ProtectedRoute>} />
-      
-      {/* 404 route */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <>
+      <Outlet />
+      {showSubscriptionPopup && (
+        <SubscriptionPopupAd 
+          open={showSubscriptionPopup} 
+          onOpenChange={setShowSubscriptionPopup} 
+        />
+      )}
+    </>
   );
 };
 
-export default AppRoutes;
+// Loading component for lazy-loaded routes
+const LoadingComponent = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+  </div>
+);
+
+// Lazy loaded components
+const BusinessesPage = lazy(() => import("@/pages/BusinessesPage"));
+const BusinessPage = lazy(() => import("@/pages/BusinessPage"));
+const CategoriesPage = lazy(() => import("@/pages/CategoriesPage"));
+const CategoryDetailsPage = lazy(() => import("@/pages/CategoryDetailsPage"));
+const InfluencersPage = lazy(() => import("@/pages/InfluencersPage"));
+const InfluencerPage = lazy(() => import("@/pages/InfluencerPage"));
+const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
+
+const BusinessDashboardPage = lazy(() => import("@/pages/BusinessDashboardPage"));
+const InfluencerDashboardPage = lazy(() => import("@/pages/InfluencerDashboardPage"));
+
+const SubscriptionPage = lazy(() => import("@/pages/SubscriptionPage"));
+const SubscriptionDetailsPage = lazy(() => import("@/pages/SubscriptionDetailsPage"));
+
+const AdminDashboardPage = lazy(() => import("@/pages/AdminDashboardPage"));
+const AdminUsersPage = lazy(() => import("@/pages/AdminUsersPage"));
+const AdminBusinessListingsPage = lazy(() => import("@/pages/AdminBusinessListingsPage"));
+const AdminSubscriptionsPage = lazy(() => import("@/pages/AdminSubscriptionsPage"));
+const AdminUploadPage = lazy(() => import("@/pages/AdminUploadPage"));
+const AdminMigrationPage = lazy(() => import("@/pages/AdminMigrationPage"));
+const AdminDatabasePage = lazy(() => import("@/pages/AdminDatabasePage"));
+const AdminSettingsPage = lazy(() => import("@/pages/AdminSettingsPage"));
+const AdminAnalyticsPage = lazy(() => import("@/pages/AdminAnalyticsPage"));
+const AdminSeedDataPage = lazy(() => import("@/pages/AdminSeedDataPage"));
+const AdminDashboardManagerPage = lazy(() => import("@/pages/AdminDashboardManagerPage"));
+const AdminDashboardSectionsPage = lazy(() => import("@/pages/AdminDashboardSectionsPage"));
+const AdminDashboardServicePage = lazy(() => import("@/pages/AdminDashboardServicePage"));
+const AdminLoginPage = lazy(() => import("@/pages/AdminLoginPage"));
+
+export const router = createBrowserRouter([
+  {
+    element: <AppShell />,
+    errorElement: <NotFound />,
+    children: [
+      {
+        path: "/",
+        element: <Layout />,
+        children: [
+          { index: true, element: <Index /> },
+          { 
+            path: "businesses", 
+            element: <Suspense fallback={<LoadingComponent />}><BusinessesPage /></Suspense> 
+          },
+          { 
+            path: "business/:id", 
+            element: <Suspense fallback={<LoadingComponent />}><BusinessPage /></Suspense>
+          },
+          // Route for "Grow as Business" page
+          { 
+            path: "business", 
+            element: <Suspense fallback={<LoadingComponent />}><BusinessPage /></Suspense>
+          },
+          // Route for "Earn as Influencer" page
+          { 
+            path: "influencer", 
+            element: <Suspense fallback={<LoadingComponent />}><InfluencerPage /></Suspense>
+          },
+          { 
+            path: "categories", 
+            element: <Suspense fallback={<LoadingComponent />}><CategoriesPage /></Suspense> 
+          },
+          { 
+            path: "category/:id", 
+            element: <Suspense fallback={<LoadingComponent />}><CategoryDetailsPage /></Suspense> 
+          },
+          { 
+            path: "influencers", 
+            element: <Suspense fallback={<LoadingComponent />}><InfluencersPage /></Suspense>
+          },
+          { 
+            path: "influencer/:id", 
+            element: <Suspense fallback={<LoadingComponent />}><InfluencerPage /></Suspense>
+          },
+          { path: "auth", element: <AuthPage /> },
+          { path: "auth/callback", element: <AuthCallbackPage /> },
+          { path: "auth/reset-password", element: <PasswordResetPage /> },
+          
+          {
+            path: "profile",
+            element: <ProtectedRoute>
+              <Suspense fallback={<LoadingComponent />}><ProfilePage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "business-dashboard",
+            element: <ProtectedRoute roles={["Business"]}>
+              <Suspense fallback={<LoadingComponent />}><BusinessDashboardPage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "influencer-dashboard",
+            element: <ProtectedRoute roles={["Influencer"]}>
+              <Suspense fallback={<LoadingComponent />}><InfluencerDashboardPage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "dashboard",
+            element: <ProtectedRoute>
+              <Navigate to="/profile" replace />
+            </ProtectedRoute>
+          },
+          {
+            path: "subscriptions",
+            element: <ProtectedRoute>
+              <Suspense fallback={<LoadingComponent />}><SubscriptionPage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "subscription/:id",
+            element: <ProtectedRoute>
+              <Suspense fallback={<LoadingComponent />}><SubscriptionDetailsPage /></Suspense>
+            </ProtectedRoute>
+          },
+          
+          {
+            path: "admin",
+            element: <ProtectedRoute roles={["Admin"]}>
+              <Navigate to="/admin/dashboard" replace />
+            </ProtectedRoute>
+          },
+          {
+            path: "admin/login",
+            element: <Suspense fallback={<LoadingComponent />}><AdminLoginPage /></Suspense>
+          },
+          {
+            path: "admin/dashboard",
+            element: <ProtectedRoute roles={["Admin"]}>
+              <Suspense fallback={<LoadingComponent />}><AdminDashboardPage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "admin/users",
+            element: <ProtectedRoute roles={["Admin"]}>
+              <Suspense fallback={<LoadingComponent />}><AdminUsersPage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "admin/businesses",
+            element: <ProtectedRoute roles={["Admin"]}>
+              <Suspense fallback={<LoadingComponent />}><AdminBusinessListingsPage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "admin/subscriptions",
+            element: <ProtectedRoute roles={["Admin"]}>
+              <Suspense fallback={<LoadingComponent />}><AdminSubscriptionsPage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "admin/upload",
+            element: <ProtectedRoute roles={["Admin"]}>
+              <Suspense fallback={<LoadingComponent />}><AdminUploadPage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "admin/migration",
+            element: <ProtectedRoute roles={["Admin"]}>
+              <Suspense fallback={<LoadingComponent />}><AdminMigrationPage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "admin/database",
+            element: <ProtectedRoute roles={["Admin"]}>
+              <Suspense fallback={<LoadingComponent />}><AdminDatabasePage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "admin/settings",
+            element: <ProtectedRoute roles={["Admin"]}>
+              <Suspense fallback={<LoadingComponent />}><AdminSettingsPage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "admin/analytics",
+            element: <ProtectedRoute roles={["Admin"]}>
+              <Suspense fallback={<LoadingComponent />}><AdminAnalyticsPage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "admin/seed",
+            element: <ProtectedRoute roles={["Admin"]}>
+              <Suspense fallback={<LoadingComponent />}><AdminSeedDataPage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "admin/dashboard-manager",
+            element: <ProtectedRoute roles={["Admin"]}>
+              <Suspense fallback={<LoadingComponent />}><AdminDashboardManagerPage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "admin/dashboard-sections",
+            element: <ProtectedRoute roles={["Admin"]}>
+              <Suspense fallback={<LoadingComponent />}><AdminDashboardSectionsPage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "admin/dashboard-services",
+            element: <ProtectedRoute roles={["Admin"]}>
+              <Suspense fallback={<LoadingComponent />}><AdminDashboardServicePage /></Suspense>
+            </ProtectedRoute>
+          },
+          // Catch-all route for this path level
+          {
+            path: "*",
+            element: <NotFound />
+          }
+        ],
+      },
+      // Catch-all route at the end to handle 404s
+      {
+        path: "*",
+        element: <NotFound />
+      }
+    ],
+  },
+]);
+
+export default router;

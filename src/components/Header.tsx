@@ -28,9 +28,14 @@ const Header = () => {
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo and Brand */}
-          <div className="flex items-center">
-            <Link to="/" className="text-xl font-bold text-primary">
-              Grow Bharat <span className="text-gray-800">Vyapaar</span>
+          <div className="flex items-center gap-2">
+            <img 
+              src="/lovable-uploads/99199ab2-5520-497e-a73d-9e95ac7e3c89.png"
+              alt="Grow Bharat Vyapaar Logo"
+              className="w-8 h-8 object-contain"
+            />
+            <Link to="/" className="text-xl font-bold text-[#0C3C60]">
+              Grow Bharat <span className="text-[#F5962C]">Vyapaar</span>
             </Link>
           </div>
           
