@@ -5,7 +5,6 @@ import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
 import { generateOrderId } from '@/utils/id-generator';
 import { Loader2 } from 'lucide-react';
-import { RAZORPAY_KEY_ID } from '@/utils/razorpayLoader';
 
 declare global {
   interface Window {
@@ -69,7 +68,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       const amount = selectedPackage.price * 100; // Razorpay expects amount in paise
 
       const options = {
-        key: RAZORPAY_KEY_ID, // Use the imported live key
+        key: 'rzp_test_rkBecHOKguN7bR', // Replace with your actual Razorpay key
         amount: amount,
         currency: 'INR',
         name: 'InfluConnect',

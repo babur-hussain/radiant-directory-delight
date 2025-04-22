@@ -13,11 +13,9 @@ import { Chrome } from 'lucide-react';
 import { getReferralIdFromURL, validateReferralId } from '@/utils/referral/referralUtils';
 import { processReferralSignup } from '@/services/referralService';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import LoginForm from '@/components/auth/LoginForm';
-import RegisterTypeSelector from '@/components/auth/RegisterTypeSelector';
 
 const AuthPage = () => {
-  const { login, loginWithGoogle, signup, isAuthenticated, loading, resetPassword } = useAuth();
+  const { login, loginWithGoogle, signup, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<string>('login');
@@ -90,11 +88,17 @@ const AuthPage = () => {
     }
   }, [isAuthenticated, navigate]);
   
-  const handleLoginSubmit = async (email: string, password: string, employeeCode?: string) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+    
     try {
-      await login(email, password, employeeCode);
-    } catch (error) {
-      throw error; // Let LoginForm component handle the errors
+      await login(loginEmail, loginPassword, employeeCode);
+    } catch (error: any) {
+      setError(error.message || 'Failed to login');
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -173,10 +177,95 @@ const AuthPage = () => {
           </TabsList>
           
           <TabsContent value="login">
-            <LoginForm 
-              onLogin={handleLoginSubmit} 
-              onClose={() => {}} 
-            />
+            <form onSubmit={handleLoginSubmit}>
+              <CardContent className="space-y-4">
+                {error && (
+                  <div className="p-3 text-sm rounded-md bg-destructive/15 text-destructive">
+                    {error}
+                  </div>
+                )}
+                
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">Email</Label>
+                  <Input 
+                    id="login-email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label htmlFor="login-password">Password</Label>
+                    <a 
+                      href="#" 
+                      className="text-xs text-muted-foreground hover:text-primary"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toast({
+                          title: 'Reset Password',
+                          description: 'Please contact support to reset your password.',
+                        });
+                      }}
+                    >
+                      Forgot password?
+                    </a>
+                  </div>
+                  <Input 
+                    id="login-password"
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="employee-code">Employee Code (Optional)</Label>
+                  <Input 
+                    id="employee-code"
+                    placeholder="If applicable"
+                    value={employeeCode}
+                    onChange={(e) => setEmployeeCode(e.target.value)}
+                  />
+                </div>
+              </CardContent>
+              
+              <CardFooter className="flex flex-col space-y-4">
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isSubmitting || loading}
+                >
+                  {isSubmitting ? 'Logging in...' : 'Login'}
+                </Button>
+                
+                <div className="relative w-full">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Or continue with
+                    </span>
+                  </div>
+                </div>
+                
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={handleGoogleLogin}
+                  disabled={isSubmitting || loading}
+                >
+                  <Chrome className="mr-2 h-5 w-5" />
+                  Google
+                </Button>
+              </CardFooter>
+            </form>
           </TabsContent>
           
           <TabsContent value="signup">

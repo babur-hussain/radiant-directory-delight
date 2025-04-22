@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -26,13 +26,13 @@ const SubscriptionPopupAd: React.FC<SubscriptionPopupAdProps> = ({
   const { toast } = useToast();
   const [isDismissed, setIsDismissed] = useState(false);
   
-  const handleSubscribeClick = useCallback(() => {
+  const handleSubscribeClick = () => {
     onOpenChange(false);
     localStorage.setItem('subscription_popup_shown', 'true');
     navigate('/subscription');
-  }, [navigate, onOpenChange]);
+  };
   
-  const handleDismiss = useCallback(() => {
+  const handleDismiss = () => {
     onOpenChange(false);
     localStorage.setItem('subscription_popup_shown', 'true');
     setIsDismissed(true);
@@ -40,7 +40,7 @@ const SubscriptionPopupAd: React.FC<SubscriptionPopupAdProps> = ({
       title: 'Dismissed',
       description: 'You can always subscribe later from your profile.',
     });
-  }, [onOpenChange, toast]);
+  };
   
   return (
     <Dialog open={open && !isDismissed} onOpenChange={onOpenChange}>
