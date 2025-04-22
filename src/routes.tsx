@@ -82,10 +82,15 @@ export const router = createBrowserRouter([
             path: "business/:id", 
             element: <Suspense fallback={<LoadingComponent />}><BusinessPage /></Suspense>
           },
-          // Add a route for /business that will work with your current URL
+          // Route for "Grow as Business" page
           { 
             path: "business", 
             element: <Suspense fallback={<LoadingComponent />}><BusinessPage /></Suspense>
+          },
+          // Route for "Earn as Influencer" page
+          { 
+            path: "influencer", 
+            element: <Suspense fallback={<LoadingComponent />}><InfluencerPage /></Suspense>
           },
           { 
             path: "categories", 
@@ -232,6 +237,11 @@ export const router = createBrowserRouter([
               <Suspense fallback={<LoadingComponent />}><AdminDashboardServicePage /></Suspense>
             </ProtectedRoute>
           },
+          // Catch-all route for this path level
+          {
+            path: "*",
+            element: <NotFound />
+          }
         ],
       },
       // Catch-all route at the end to handle 404s

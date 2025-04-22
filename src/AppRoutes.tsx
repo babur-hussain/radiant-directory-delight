@@ -5,6 +5,8 @@ import { router } from './routes';
 import { usePopupAd } from './providers/PopupAdProvider';
 
 const AppRoutes: React.FC = () => {
+  // We don't need to use usePopupAd here as it's handled in the routes.tsx file
+  
   return (
     <RouterProvider 
       router={router} 
