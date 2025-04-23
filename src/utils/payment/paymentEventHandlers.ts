@@ -1,57 +1,56 @@
 
-import { toast } from '@/hooks/use-toast';
-import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import { recordReferral } from '@/services/referralService';
+import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
+/**
+ * Create standardized payment event handlers for consistency
+ */
 export const createPaymentHandlers = (
-  packageData: ISubscriptionPackage,
-  toast: any,
+  packageData: any,
+  toastFunction: any,
   onSuccess: (response: any) => void,
-  onCancel: () => void,
+  onDismiss: () => void,
   onError: (error: any) => void
 ) => {
-  const handleSuccess = async (response: any) => {
-    console.log('Payment successful:', response);
-    toast({
-      title: 'Payment Successful',
-      description: `Thank you for subscribing to ${packageData.title}!`,
-    });
-    
-    // Process any referral if present
-    if (response.referrerId) {
-      try {
-        await recordReferral(response.referrerId, packageData.price);
-      } catch (err) {
-        console.error('Error processing referral:', err);
-      }
-    }
-    
-    onSuccess(response);
-  };
-
-  const handleDismiss = () => {
-    console.log('Payment dismissed by user');
-    toast({
-      title: 'Payment Cancelled',
-      description: 'You cancelled the payment process.',
-      variant: 'default',
-    });
-    onCancel();
-  };
-
-  const handleError = (error: any) => {
-    console.error('Payment error:', error);
-    toast({
-      title: 'Payment Failed',
-      description: error?.description || error?.message || 'An error occurred during payment.',
-      variant: 'destructive',
-    });
-    onError(error);
-  };
-
   return {
-    handleSuccess,
-    handleDismiss,
-    handleError,
+    handleSuccess: (response: any) => {
+      try {
+        console.log("Payment success:", response);
+        toast('Payment successful! Your subscription has been activated.');
+        
+        // Add package data for convenience
+        const fullResponse = {
+          ...response,
+          package: packageData
+        };
+        
+        onSuccess(fullResponse);
+      } catch (err) {
+        console.error("Error in success handler:", err);
+        onError(err);
+      }
+    },
+    
+    handleDismiss: () => {
+      console.log("Payment modal dismissed by user");
+      toast('Payment cancelled');
+      onDismiss();
+    },
+    
+    handleError: (error: any) => {
+      console.error("Payment error:", error);
+      
+      let errorMessage = "Payment failed";
+      if (error && error.description) {
+        errorMessage = error.description;
+      } else if (error && typeof error === 'string') {
+        errorMessage = error;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      toast(`Payment error: ${errorMessage}`);
+      onError(error);
+    }
   };
 };

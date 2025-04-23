@@ -1,21 +1,46 @@
 
-import { useToast } from '@/hooks/use-toast';
-import { loadRazorpayScript, isRazorpayAvailable } from '@/utils/razorpay';
+import { toast } from 'sonner';
 
-export const loadPaymentScript = async (toast: ReturnType<typeof useToast>['toast']): Promise<boolean> => {
+/**
+ * Load the Razorpay script reliably
+ */
+export const loadPaymentScript = async (): Promise<boolean> => {
   try {
-    const isLoaded = await loadRazorpayScript();
-    
-    if (!isLoaded) {
-      toast({
-        title: "Payment Error",
-        description: 'Failed to load payment gateway. Please check your internet connection and try again.',
-        variant: "destructive"
-      });
-      return false;
+    // Check if already loaded
+    if (typeof (window as any).Razorpay !== 'undefined') {
+      console.log("Razorpay already available");
+      return true;
     }
     
-    return isRazorpayAvailable();
+    console.log("Loading Razorpay script");
+    
+    // Create and load script
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      
+      script.onload = () => {
+        console.log("Razorpay script loaded successfully");
+        resolve(true);
+      };
+      
+      script.onerror = () => {
+        console.error("Failed to load Razorpay script");
+        toast('Failed to load payment gateway. Please try again later.');
+        resolve(false);
+      };
+      
+      // Add timeout
+      setTimeout(() => {
+        if (typeof (window as any).Razorpay === 'undefined') {
+          console.error("Razorpay script load timeout");
+          resolve(false);
+        }
+      }, 10000);
+      
+      document.head.appendChild(script);
+    });
   } catch (error) {
     console.error('Error loading payment script:', error);
     return false;

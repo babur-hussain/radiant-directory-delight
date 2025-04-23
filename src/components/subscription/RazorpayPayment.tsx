@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { generateOrderId } from '@/utils/id-generator';
 import { Loader2 } from 'lucide-react';
 import { RAZORPAY_KEY_ID } from '@/utils/razorpayLoader';
+import { toast } from 'sonner';
 
 declare global {
   interface Window {
@@ -42,21 +43,24 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       };
       script.onerror = () => {
         console.error('Failed to load Razorpay script');
+        toast('Failed to load payment gateway. Please try again later.');
         onFailure(new Error('Failed to load payment gateway. Please try again later.'));
       };
       document.body.appendChild(script);
     } else {
       setScriptLoaded(true);
     }
-  }, []);
+  }, [onFailure]);
 
   const handlePayment = () => {
     if (!user) {
+      toast('User not authenticated. Please login and try again.');
       onFailure(new Error('User not authenticated'));
       return;
     }
 
     if (!window.Razorpay) {
+      toast('Payment gateway not loaded. Please refresh and try again.');
       onFailure(new Error('Payment gateway not loaded'));
       return;
     }
@@ -72,19 +76,23 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         key: RAZORPAY_KEY_ID, // Use the imported live key
         amount: amount,
         currency: 'INR',
-        name: 'InfluConnect',
+        name: 'Grow Bharat Vyapaar',
         description: `Subscription: ${selectedPackage.title}`,
-        order_id: orderId,
+        image: '/lovable-uploads/99199ab2-5520-497e-a73d-9e95ac7e3c89.png',
         prefill: {
-          name: user.name,
-          email: user.email,
+          name: user.name || '',
+          email: user.email || '',
           contact: user.phone || ''
         },
         notes: {
           package_id: selectedPackage.id,
           user_id: user.id,
           package_name: selectedPackage.title,
-          referral_id: referralId || 'none'
+          referral_id: referralId || 'none',
+          // Critical flags to prevent auto refunds
+          autoRefund: "false",
+          isRefundable: "false",
+          isNonRefundable: "true"
         },
         theme: {
           color: '#3B82F6'
@@ -103,11 +111,17 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       };
 
       const razorpayObject = new window.Razorpay(options);
+      razorpayObject.on('payment.failed', function(response: any) {
+        console.error('Payment failed:', response.error);
+        toast('Payment failed: ' + response.error.description);
+        onFailure(response.error);
+      });
       razorpayObject.open();
       setIsLoading(false);
 
     } catch (error) {
       console.error('Error initializing payment:', error);
+      toast('Error initializing payment. Please try again.');
       setIsLoading(false);
       onFailure(error);
     }
