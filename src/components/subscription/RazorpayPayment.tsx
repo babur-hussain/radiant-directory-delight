@@ -92,7 +92,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           // Critical flags to prevent auto refunds
           autoRefund: "false",
           isRefundable: "false",
-          isNonRefundable: "true"
+          isNonRefundable: "true",
+          refundStatus: "no_refund_allowed",
+          isOneTime: (selectedPackage.paymentType === 'one-time').toString(),
+          isCancellable: "false"
         },
         theme: {
           color: '#3B82F6'
@@ -105,6 +108,9 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           if (referralId) {
             response.referralId = referralId;
           }
+          
+          // Add flag to prevent refunds in response processing
+          response.preventRefunds = true;
           
           onSuccess(response);
         },

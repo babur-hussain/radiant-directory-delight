@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
 import { Subscription, PaymentType, BillingCycle } from '@/models/Subscription';
@@ -26,7 +25,7 @@ const fromSupabase = (data: any): Subscription => {
     updatedAt: data.updated_at,
     isPaused: data.is_paused,
     isPausable: data.is_pausable,
-    isUserCancellable: data.is_user_cancellable,
+    isUserCancellable: data.isUserCancellable,
     assignedBy: data.assigned_by,
     assignedAt: data.assigned_at,
     advancePaymentMonths: data.advance_payment_months,

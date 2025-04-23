@@ -1,5 +1,4 @@
 
-import { useToast } from '@/hooks/use-toast';
 import { toast } from 'sonner';
 
 /**
@@ -21,7 +20,11 @@ export const createPaymentHandlers = (
         // Add package data for convenience
         const fullResponse = {
           ...response,
-          package: packageData
+          package: packageData,
+          // Add flags to prevent refunds in payment processor
+          preventRefunds: true,
+          isNonRefundable: true,
+          autoRefund: false
         };
         
         onSuccess(fullResponse);
