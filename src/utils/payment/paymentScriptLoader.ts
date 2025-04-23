@@ -1,10 +1,12 @@
 
-import { toast } from 'sonner';
+import { toast as sonnerToast } from 'sonner';
 
 /**
  * Load the Razorpay script reliably
+ * 
+ * @param toastFn - Optional toast function to use instead of the default
  */
-export const loadPaymentScript = async (): Promise<boolean> => {
+export const loadPaymentScript = async (toastFn?: any): Promise<boolean> => {
   try {
     // Check if already loaded
     if (typeof (window as any).Razorpay !== 'undefined') {
@@ -27,7 +29,18 @@ export const loadPaymentScript = async (): Promise<boolean> => {
       
       script.onerror = () => {
         console.error("Failed to load Razorpay script");
-        toast('Failed to load payment gateway. Please try again later.');
+        
+        // Use provided toast function or fall back to sonner toast
+        if (toastFn) {
+          toastFn({
+            title: "Payment Error",
+            description: 'Failed to load payment gateway. Please try again later.',
+            variant: "destructive"
+          });
+        } else {
+          sonnerToast('Failed to load payment gateway. Please try again later.');
+        }
+        
         resolve(false);
       };
       

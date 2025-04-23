@@ -58,7 +58,7 @@ export const useRazorpayPayment = () => {
         }
       }
       
-      // Load payment script
+      // Load payment script - pass toast function
       const isLoaded = await loadPaymentScript(toast);
       if (!isLoaded) {
         throw new Error('Failed to load payment gateway');
