@@ -155,4 +155,6 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   signup: (email: string, password: string, name: string, role: UserRole, additionalData?: any) => Promise<User | null>;
   refreshUserData: () => Promise<User | null>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
 }

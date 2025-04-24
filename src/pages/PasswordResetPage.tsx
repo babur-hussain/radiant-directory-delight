@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Loader2, Lock, CheckCircle } from "lucide-react";
 
 const passwordResetSchema = z.object({
@@ -34,6 +34,7 @@ const PasswordResetPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { updatePassword } = useAuth();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetComplete, setResetComplete] = useState(false);
@@ -67,13 +68,7 @@ const PasswordResetPage: React.FC = () => {
     setError(null);
 
     try {
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: data.password,
-      });
-
-      if (updateError) {
-        throw updateError;
-      }
+      await updatePassword(data.password);
 
       setResetComplete(true);
       toast({
