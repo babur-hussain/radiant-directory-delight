@@ -7,6 +7,7 @@ import { generateOrderId } from '@/utils/id-generator';
 import { Loader2 } from 'lucide-react';
 import { RAZORPAY_KEY_ID } from '@/utils/razorpayLoader';
 import { toast } from 'sonner';
+import { loadPaymentScript } from '@/utils/payment/paymentScriptLoader';
 
 declare global {
   interface Window {
@@ -30,27 +31,31 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     // Load Razorpay script once
-    if (!window.Razorpay) {
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.async = true;
-      script.onload = () => {
-        console.log('Razorpay script loaded');
+    const loadScript = async () => {
+      setIsLoading(true);
+      const loaded = await loadPaymentScript();
+      if (loaded) {
+        console.log('Razorpay script loaded successfully');
         setScriptLoaded(true);
-      };
-      script.onerror = () => {
+      } else {
         console.error('Failed to load Razorpay script');
         toast('Failed to load payment gateway. Please try again later.');
         onFailure(new Error('Failed to load payment gateway. Please try again later.'));
-      };
-      document.body.appendChild(script);
+      }
+      setIsLoading(false);
+    };
+    
+    if (!window.Razorpay) {
+      loadScript();
     } else {
       setScriptLoaded(true);
     }
-  }, [onFailure]);
+  }, [onFailure, isRetrying]);
 
   const handlePayment = () => {
     if (!user) {
@@ -60,9 +65,16 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     }
 
     if (!window.Razorpay) {
-      toast('Payment gateway not loaded. Please refresh and try again.');
-      onFailure(new Error('Payment gateway not loaded'));
-      return;
+      if (retryCount < 3) {
+        toast('Payment gateway not loaded. Retrying...');
+        setRetryCount(prev => prev + 1);
+        setIsRetrying(!isRetrying); // Toggle to trigger useEffect
+        return;
+      } else {
+        toast('Payment gateway could not be loaded. Please refresh and try again.');
+        onFailure(new Error('Payment gateway not loaded after multiple attempts'));
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -71,6 +83,16 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       // Create order ID (in a production app, this would come from your backend)
       const orderId = generateOrderId();
       const amount = selectedPackage.price * 100; // Razorpay expects amount in paise
+
+      // Add device detection
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const deviceInfo = {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        isMobile: isMobile
+      };
+      
+      console.log('Initializing payment on device:', deviceInfo);
 
       const options = {
         key: RAZORPAY_KEY_ID, // Use the imported live key
@@ -89,6 +111,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           user_id: user.id,
           package_name: selectedPackage.title,
           referral_id: referralId || 'none',
+          device_type: isMobile ? 'mobile' : 'desktop',
           // Critical flags to prevent auto refunds
           autoRefund: "false",
           isRefundable: "false",
@@ -111,17 +134,40 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           
           // Add flag to prevent refunds in response processing
           response.preventRefunds = true;
+          response.isNonRefundable = true;
           
           onSuccess(response);
         },
+        // For better mobile compatibility
+        modal: {
+          escape: false,
+          backdropclose: false,
+          handleback: true,
+          confirm_close: true,
+          ondismiss: function() {
+            toast('Payment cancelled. You can try again.');
+            setIsLoading(false);
+          }
+        },
+        // Prevent routing issues
+        callback_url: window.location.href,
+        redirect: false
       };
 
       const razorpayObject = new window.Razorpay(options);
       razorpayObject.on('payment.failed', function(response: any) {
         console.error('Payment failed:', response.error);
-        toast('Payment failed: ' + response.error.description);
+        toast('Payment failed: ' + (response.error.description || 'Unknown error'));
         onFailure(response.error);
       });
+      
+      // Add extra error handlers
+      razorpayObject.on('payment.error', function(error: any) {
+        console.error('Payment error:', error);
+        toast('Payment error: ' + (error.message || 'Unknown error'));
+        onFailure(error);
+      });
+      
       razorpayObject.open();
       setIsLoading(false);
 
@@ -138,6 +184,11 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       handlePayment();
     }
   }, [scriptLoaded]);
+
+  const retryPayment = () => {
+    setRetryCount(0);
+    setIsRetrying(!isRetrying);
+  };
 
   return (
     <div className="text-center">
@@ -156,8 +207,15 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         </div>
       )}
       
+      {retryCount >= 3 && !scriptLoaded && (
+        <div className="bg-red-50 border border-red-200 p-4 rounded-md mb-4">
+          <p className="text-red-700 font-medium">Payment gateway could not be loaded</p>
+          <p className="text-red-600 text-sm mt-1">Please try again on a different device or browser</p>
+        </div>
+      )}
+      
       <Button
-        onClick={handlePayment}
+        onClick={retryCount >= 3 ? retryPayment : handlePayment}
         className="w-full mt-4"
         disabled={isLoading}
       >
@@ -166,10 +224,18 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Please wait...
           </>
+        ) : retryCount >= 3 ? (
+          'Retry Payment'
         ) : (
           'Pay Now'
         )}
       </Button>
+      
+      {retryCount >= 1 && (
+        <p className="text-xs text-muted-foreground mt-2">
+          Having trouble? Try refreshing the page or using a different browser.
+        </p>
+      )}
     </div>
   );
 };
