@@ -68,7 +68,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       const amount = selectedPackage.price * 100; // Razorpay expects amount in paise
 
       const options = {
-        key: 'rzp_test_rkBecHOKguN7bR', // Replace with your actual Razorpay key
+        key: 'rzp_live_8PGS0Ug3QeCb2I', // Using live key instead of test key
         amount: amount,
         currency: 'INR',
         name: 'InfluConnect',
