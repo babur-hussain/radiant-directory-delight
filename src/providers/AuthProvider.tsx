@@ -10,21 +10,29 @@ interface AuthProviderProps {
 // Create context with a default value
 export const AuthContext = createContext<AuthContextType>({
   user: null,
+  currentUser: null,
   isAuthenticated: false,
   loading: true,
+  initialized: false,
   error: null,
   signIn: () => Promise.resolve(null),
   signOut: () => Promise.resolve(null),
   signUp: () => Promise.resolve(null),
   resetPassword: () => Promise.resolve(null),
   updateUser: () => Promise.resolve(null),
-  refreshUser: () => Promise.resolve(null)
+  refreshUser: () => Promise.resolve(null),
+  refreshUserData: () => Promise.resolve(null),
+  login: () => Promise.resolve(null),
+  logout: () => Promise.resolve(null),
+  loginWithGoogle: () => Promise.resolve(null),
+  signup: () => Promise.resolve(null)
 });
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [initialized, setInitialized] = useState<boolean>(false);
   const [error, setError] = useState<any>(null);
 
   useEffect(() => {
@@ -55,6 +63,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(null);
           setIsAuthenticated(false);
         }
+        setInitialized(true);
       } catch (err) {
         console.error('Error initializing auth:', err);
         setError(err);
@@ -83,7 +92,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(null);
           setIsAuthenticated(false);
         }
-        
+        setInitialized(true);
         setLoading(false);
       }
     );
@@ -236,10 +245,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Aliases for backward compatibility
+  const login = signIn;
+  const logout = signOut;
+  const refreshUserData = refreshUser;
+  const signup = (email: string, password: string, name: string, role: any, additionalData?: any) => {
+    const userData = {
+      name,
+      role,
+      ...additionalData,
+    };
+    return signUp(email, password, userData);
+  };
+
+  const loginWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+    } catch (err) {
+      setError(err);
+      throw err;
+    }
+  };
+
   const contextValue: AuthContextType = {
     user,
+    currentUser: user,
     isAuthenticated,
     loading,
+    initialized,
     error,
     signIn,
     signOut,
@@ -247,6 +289,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     resetPassword,
     updateUser,
     refreshUser,
+    refreshUserData,
+    login,
+    logout,
+    loginWithGoogle,
+    signup,
   };
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;

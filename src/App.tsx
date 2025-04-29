@@ -5,7 +5,7 @@ import './App.css';
 import { AuthProvider } from './providers/AuthProvider';
 import { PopupAdProvider } from './providers/PopupAdProvider';
 import AppRoutes from './AppRoutes';
-import { Toaster } from './components/ui/toast';
+import { Toaster } from './components/ui/toaster';
 
 // Create a client
 const queryClient = new QueryClient();
