@@ -1,5 +1,4 @@
-
-import React, { lazy, Suspense } from "react";
+import React, { lazy } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import Index from "@/pages/Index";
@@ -27,14 +26,6 @@ const AppShell = () => {
   );
 };
 
-// Loading component for lazy-loaded routes
-const LoadingComponent = () => (
-  <div className="flex items-center justify-center min-h-[400px]">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-  </div>
-);
-
-// Lazy loaded components
 const BusinessesPage = lazy(() => import("@/pages/BusinessesPage"));
 const BusinessPage = lazy(() => import("@/pages/BusinessPage"));
 const CategoriesPage = lazy(() => import("@/pages/CategoriesPage"));
@@ -62,73 +53,38 @@ const AdminSeedDataPage = lazy(() => import("@/pages/AdminSeedDataPage"));
 const AdminDashboardManagerPage = lazy(() => import("@/pages/AdminDashboardManagerPage"));
 const AdminDashboardSectionsPage = lazy(() => import("@/pages/AdminDashboardSectionsPage"));
 const AdminDashboardServicePage = lazy(() => import("@/pages/AdminDashboardServicePage"));
-const AdminLoginPage = lazy(() => import("@/pages/AdminLoginPage"));
 
 export const router = createBrowserRouter([
   {
     element: <AppShell />,
-    errorElement: <NotFound />,
     children: [
       {
         path: "/",
         element: <Layout />,
+        errorElement: <NotFound />,
         children: [
           { index: true, element: <Index /> },
-          { 
-            path: "businesses", 
-            element: <Suspense fallback={<LoadingComponent />}><BusinessesPage /></Suspense> 
-          },
-          { 
-            path: "business/:id", 
-            element: <Suspense fallback={<LoadingComponent />}><BusinessPage /></Suspense>
-          },
-          // Route for "Grow as Business" page
-          { 
-            path: "business", 
-            element: <Suspense fallback={<LoadingComponent />}><BusinessPage /></Suspense>
-          },
-          // Route for "Earn as Influencer" page
-          { 
-            path: "influencer", 
-            element: <Suspense fallback={<LoadingComponent />}><InfluencerPage /></Suspense>
-          },
-          { 
-            path: "categories", 
-            element: <Suspense fallback={<LoadingComponent />}><CategoriesPage /></Suspense> 
-          },
-          { 
-            path: "category/:id", 
-            element: <Suspense fallback={<LoadingComponent />}><CategoryDetailsPage /></Suspense> 
-          },
-          { 
-            path: "influencers", 
-            element: <Suspense fallback={<LoadingComponent />}><InfluencersPage /></Suspense>
-          },
-          { 
-            path: "influencer/:id", 
-            element: <Suspense fallback={<LoadingComponent />}><InfluencerPage /></Suspense>
-          },
+          { path: "businesses", element: <BusinessesPage /> },
+          { path: "business/:id", element: <BusinessPage /> },
+          { path: "categories", element: <CategoriesPage /> },
+          { path: "category/:id", element: <CategoryDetailsPage /> },
+          { path: "influencers", element: <InfluencersPage /> },
+          { path: "influencer/:id", element: <InfluencerPage /> },
           { path: "auth", element: <AuthPage /> },
           { path: "auth/callback", element: <AuthCallbackPage /> },
           { path: "auth/reset-password", element: <PasswordResetPage /> },
           
           {
             path: "profile",
-            element: <ProtectedRoute>
-              <Suspense fallback={<LoadingComponent />}><ProfilePage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute><ProfilePage /></ProtectedRoute>
           },
           {
             path: "business-dashboard",
-            element: <ProtectedRoute roles={["Business"]}>
-              <Suspense fallback={<LoadingComponent />}><BusinessDashboardPage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute roles={["Business"]}><BusinessDashboardPage /></ProtectedRoute>
           },
           {
             path: "influencer-dashboard",
-            element: <ProtectedRoute roles={["Influencer"]}>
-              <Suspense fallback={<LoadingComponent />}><InfluencerDashboardPage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute roles={["Influencer"]}><InfluencerDashboardPage /></ProtectedRoute>
           },
           {
             path: "dashboard",
@@ -138,15 +94,11 @@ export const router = createBrowserRouter([
           },
           {
             path: "subscriptions",
-            element: <ProtectedRoute>
-              <Suspense fallback={<LoadingComponent />}><SubscriptionPage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute><SubscriptionPage /></ProtectedRoute>
           },
           {
             path: "subscription/:id",
-            element: <ProtectedRoute>
-              <Suspense fallback={<LoadingComponent />}><SubscriptionDetailsPage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute><SubscriptionDetailsPage /></ProtectedRoute>
           },
           
           {
@@ -156,99 +108,59 @@ export const router = createBrowserRouter([
             </ProtectedRoute>
           },
           {
-            path: "admin/login",
-            element: <Suspense fallback={<LoadingComponent />}><AdminLoginPage /></Suspense>
-          },
-          {
             path: "admin/dashboard",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminDashboardPage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute roles={["Admin"]}><AdminDashboardPage /></ProtectedRoute>
           },
           {
             path: "admin/users",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminUsersPage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute roles={["Admin"]}><AdminUsersPage /></ProtectedRoute>
           },
           {
             path: "admin/businesses",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminBusinessListingsPage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute roles={["Admin"]}><AdminBusinessListingsPage /></ProtectedRoute>
           },
           {
             path: "admin/subscriptions",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminSubscriptionsPage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute roles={["Admin"]}><AdminSubscriptionsPage /></ProtectedRoute>
           },
           {
             path: "admin/upload",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminUploadPage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute roles={["Admin"]}><AdminUploadPage /></ProtectedRoute>
           },
           {
             path: "admin/migration",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminMigrationPage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute roles={["Admin"]}><AdminMigrationPage /></ProtectedRoute>
           },
           {
             path: "admin/database",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminDatabasePage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute roles={["Admin"]}><AdminDatabasePage /></ProtectedRoute>
           },
           {
             path: "admin/settings",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminSettingsPage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute roles={["Admin"]}><AdminSettingsPage /></ProtectedRoute>
           },
           {
             path: "admin/analytics",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminAnalyticsPage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute roles={["Admin"]}><AdminAnalyticsPage /></ProtectedRoute>
           },
           {
             path: "admin/seed",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminSeedDataPage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute roles={["Admin"]}><AdminSeedDataPage /></ProtectedRoute>
           },
           {
             path: "admin/dashboard-manager",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminDashboardManagerPage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute roles={["Admin"]}><AdminDashboardManagerPage /></ProtectedRoute>
           },
           {
             path: "admin/dashboard-sections",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminDashboardSectionsPage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute roles={["Admin"]}><AdminDashboardSectionsPage /></ProtectedRoute>
           },
           {
             path: "admin/dashboard-services",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminDashboardServicePage /></Suspense>
-            </ProtectedRoute>
+            element: <ProtectedRoute roles={["Admin"]}><AdminDashboardServicePage /></ProtectedRoute>
           },
-          // Catch-all route for this path level
-          {
-            path: "*",
-            element: <NotFound />
-          }
         ],
       },
-      // Catch-all route at the end to handle 404s
-      {
-        path: "*",
-        element: <NotFound />
-      }
     ],
   },
 ]);

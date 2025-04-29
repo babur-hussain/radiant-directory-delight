@@ -17,7 +17,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { useAuth } from "@/hooks/useAuth";
 
 const passwordResetSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -33,7 +32,6 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({ onCancel }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const { toast } = useToast();
-  const { resetPassword } = useAuth();
 
   const form = useForm<PasswordResetFormData>({
     resolver: zodResolver(passwordResetSchema),
@@ -47,7 +45,13 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({ onCancel }) => {
     setIsSubmitting(true);
     
     try {
-      await resetPassword(data.email);
+      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+      
+      if (error) {
+        throw error;
+      }
       
       setResetSent(true);
       toast({

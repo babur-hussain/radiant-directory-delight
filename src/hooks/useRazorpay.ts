@@ -6,8 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { 
   ensureRazorpayAvailable, 
-  RAZORPAY_KEY_ID,
-  checkRazorpayCompatibility
+  RAZORPAY_KEY_ID 
 } from '@/utils/razorpayLoader';
 import { 
   createSubscriptionViaEdgeFunction, 
@@ -51,19 +50,6 @@ export const useRazorpay = () => {
       throw new Error(errorMsg);
     }
     
-    // Check device compatibility
-    const compatibility = checkRazorpayCompatibility();
-    if (!compatibility.compatible) {
-      const errorMsg = `Payment may not work in this browser: ${compatibility.reason}. Please try using a different browser or device.`;
-      toast({
-        title: "Browser Compatibility Issue",
-        description: errorMsg,
-        variant: "destructive"
-      });
-      console.warn("Razorpay compatibility issue:", compatibility.reason);
-      // Continue anyway - we'll still try, but warned the user
-    }
-    
     try {
       setIsLoading(true);
       setError(null);
@@ -102,7 +88,7 @@ export const useRazorpay = () => {
       };
       
       // Validate critical package data
-      if (!packageData.id || packageData.price === undefined) {
+      if (!packageData.id || !packageData.price) {
         const errorMsg = 'Invalid package data: missing required fields';
         toast({
           title: "Configuration Error",
@@ -112,20 +98,11 @@ export const useRazorpay = () => {
         throw new Error(errorMsg);
       }
       
-      // Ensure setup fee is properly set
-      const setupFee = packageData.setupFee || 0;
-      const enhancedPackage = {
-        ...packageData,
-        setupFee: setupFee
-      };
-      
-      console.log("Enhanced package with setup fee:", enhancedPackage);
-      
       // Create subscription via edge function
       console.log("Creating subscription via edge function with autopay:", enableAutoPay);
       const result = await createSubscriptionViaEdgeFunction(
         user,
-        enhancedPackage,
+        packageData,
         customerData,
         !isRecurringPayment, // Use one-time API if not recurring
         enableAutoPay       // Pass the autopay preference
@@ -133,27 +110,13 @@ export const useRazorpay = () => {
       
       console.log("Received result from backend:", result);
       
-      // Add device detection for debugging
-      const deviceInfo = {
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-      };
-      console.log("Device info for payment:", deviceInfo);
-      
       // Open Razorpay checkout for payment
       return new Promise((resolve, reject) => {
         try {
-          // Calculate total amount including setup fee
-          const basePrice = enhancedPackage.price || 0;
-          const totalAmount = basePrice + setupFee;
-          
-          console.log(`Payment breakdown: Base price: ${basePrice}, Setup fee: ${setupFee}, Total: ${totalAmount}`);
-          
           // Build Razorpay options for key-only mode (amount-based payment)
           const options = buildRazorpayOptions(
             user,
-            enhancedPackage,
+            packageData,
             customerData,
             result,
             !isRecurringPayment, // isOneTime
@@ -164,7 +127,7 @@ export const useRazorpay = () => {
               // Show success toast
               toast({
                 title: "Payment Successful",
-                description: `Your payment for ${enhancedPackage.title} was successful.`,
+                description: `Your payment for ${packageData.title} was successful.`,
                 variant: "success"
               });
               
@@ -176,18 +139,7 @@ export const useRazorpay = () => {
                 ...response,
                 ...result, // Include all data from the server
                 isRecurring: isRecurringPayment,
-                enableAutoPay: enableAutoPay,
-                // Add flags to prevent refunds
-                preventRefunds: true,
-                isNonRefundable: true,
-                autoRefund: false,
-                deviceInfo: deviceInfo,
-                // Add payment breakdown details
-                paymentBreakdown: {
-                  basePrice: basePrice,
-                  setupFee: setupFee,
-                  totalAmount: totalAmount
-                }
+                enableAutoPay: enableAutoPay
               });
             },
             () => {

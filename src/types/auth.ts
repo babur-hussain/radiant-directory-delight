@@ -4,12 +4,6 @@ export type UserRole = "User" | "Business" | "Influencer" | "Staff" | "Admin";
 export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled' | 'pending' | 'paused' | 'expired' | 'trial';
 export type PaymentType = 'recurring' | 'one-time';
 
-export interface ProtectedRouteProps {
-  children: React.ReactNode;
-  requireAdmin?: boolean;
-  adminOnly?: boolean;
-}
-
 export interface SessionData {
   accessToken: string;
   refreshToken: string;

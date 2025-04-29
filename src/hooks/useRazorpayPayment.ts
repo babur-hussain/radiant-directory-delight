@@ -58,7 +58,7 @@ export const useRazorpayPayment = () => {
         }
       }
       
-      // Load payment script - pass toast function
+      // Load payment script
       const isLoaded = await loadPaymentScript(toast);
       if (!isLoaded) {
         throw new Error('Failed to load payment gateway');
@@ -68,10 +68,8 @@ export const useRazorpayPayment = () => {
       const customerData = validateCustomerData(user!);
       
       // Calculate total amount including setup fee
-      const setupFee = packageData.setupFee || 0;
-      const basePrice = packageData.price || 0;
-      const totalAmount = basePrice + setupFee;
-      console.log(`Calculated payment amount: Base price: ${basePrice} + Setup fee: ${setupFee} = Total: ${totalAmount}`);
+      const totalAmount = (packageData.price || 0) + (packageData.setupFee || 0);
+      console.log(`Calculated payment amount: Base price: ${packageData.price} + Setup fee: ${packageData.setupFee} = Total: ${totalAmount}`);
       
       // Handle payment flow
       return new Promise((resolve, reject) => {
@@ -91,7 +89,7 @@ export const useRazorpayPayment = () => {
             isOneTime: packageData.paymentType === 'one-time',
             isSubscription: packageData.paymentType === 'recurring',
             enableAutoPay: packageData.paymentType === 'recurring' && enableAutoPay,
-            setupFee: setupFee
+            setupFee: packageData.setupFee || 0
           };
           
           const options = buildRazorpayOptions(
