@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -6,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Search, Plus, RefreshCw, Loader2 } from 'lucide-react';
-import { User } from '@/types/auth';
+import { User, getRoleForComparison, getRoleAsString } from '@/types/auth';
 import useSupabaseUsers from '@/hooks/useSupabaseUsers';
 import { useToast } from '@/hooks/use-toast';
 
@@ -18,7 +17,7 @@ const UsersTabContent: React.FC = () => {
   const filteredUsers = users.filter(user => 
     user.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
     user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role?.toLowerCase().includes(searchTerm.toLowerCase())
+    getRoleForComparison(user.role).includes(searchTerm.toLowerCase())
   );
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {

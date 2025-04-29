@@ -54,6 +54,7 @@ export interface UserSubscription {
   paymentType?: 'recurring' | 'one-time';
   packageDetails?: any;
   cancelledAt?: string | Date;
+  cancelReason?: string;
 }
 
 export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled' | 'pending' | 'paused' | 'expired' | 'trial';
@@ -89,4 +90,21 @@ export function getRoleAsString(role: UserRole | UserRole[] | undefined): string
   }
   
   return role;
+}
+
+// Get a single role for functions requiring a single UserRole value
+export function getPrimaryRole(role: UserRole | UserRole[] | undefined): UserRole {
+  if (!role) return 'User';
+  
+  if (Array.isArray(role)) {
+    return role[0] || 'User';
+  }
+  
+  return role;
+}
+
+// Helper function to convert role to string for lowercase comparison
+export function getRoleForComparison(role: UserRole | UserRole[] | undefined): string {
+  const roleString = getRoleAsString(role);
+  return roleString.toLowerCase();
 }

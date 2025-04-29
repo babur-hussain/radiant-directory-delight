@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import UserDetailsPopup from '@/components/admin/UserDetailsPopup';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
+import { getRoleForComparison } from '@/types/auth';
 
 const AdminUsersPage = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -45,15 +46,15 @@ const AdminUsersPage = () => {
       let filtered = [...users];
       
       if (searchTerm) {
-        filtered = filtered.filter((user) => 
+        filtered = filtered.filter(user => 
+          user.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
           user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (user.name || user.displayName)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.role?.toLowerCase().includes(searchTerm.toLowerCase())
+          getRoleForComparison(user.role).includes(searchTerm.toLowerCase())
         );
       }
       
       if (employeeCodeFilter) {
-        filtered = filtered.filter((user) => 
+        filtered = filtered.filter(user => 
           user.employeeCode?.toLowerCase().includes(employeeCodeFilter.toLowerCase())
         );
       }

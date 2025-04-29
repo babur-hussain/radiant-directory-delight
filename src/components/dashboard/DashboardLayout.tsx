@@ -11,10 +11,15 @@ import {
   SheetTrigger 
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getRoleAsString, UserRole } from "@/types/auth";
+import { getRoleAsString } from "@/types/auth";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+}
+
+interface DashboardSidebarProps {
+  userRole?: string;
+  onItemClick?: () => void;
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
