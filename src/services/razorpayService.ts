@@ -1,4 +1,3 @@
-
 /**
  * Service for Razorpay API interactions
  */
@@ -332,7 +331,6 @@ export const buildRazorpayOptions = (
       ondismiss: onDismiss,
       escape: false,
       backdropclose: false,
-      handleback: true,
       confirm_close: true
     },
     // Add return URLs to prevent routing errors
