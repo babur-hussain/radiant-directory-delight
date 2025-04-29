@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +20,9 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
   const [showPaymentUI, setShowPaymentUI] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const { toast } = useToast();
+  
+  // Calculate total price including setup fee
+  const totalPrice = selectedPackage.price + (selectedPackage.setupFee || 0);
   
   const handleSubscribe = () => {
     if (!termsAccepted) {
@@ -106,6 +108,8 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
     );
   }
   
+  const isOneTimePackage = selectedPackage.paymentType === 'one-time';
+  
   return (
     <div className="max-w-2xl mx-auto subscription-checkout-container">
       <Button variant="ghost" onClick={onBack} className="mb-4">
@@ -122,7 +126,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
           <div className="border rounded-md p-4">
             <div className="flex justify-between mb-2">
               <h3 className="font-medium">{selectedPackage.title}</h3>
-              <span className="font-bold">₹{selectedPackage.price}/year</span>
+              <span className="font-bold">₹{totalPrice}</span>
             </div>
             <p className="text-sm text-muted-foreground">{selectedPackage.shortDescription}</p>
           </div>
@@ -130,22 +134,33 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
           <div className="space-y-4">
             <h3 className="font-medium">Payment Details</h3>
             <div className="space-y-2 text-sm">
+              {selectedPackage.setupFee > 0 && (
+                <div className="flex justify-between">
+                  <span>One-time setup fee</span>
+                  <span>₹{selectedPackage.setupFee}</span>
+                </div>
+              )}
               <div className="flex justify-between">
-                <span>One-time setup fee</span>
-                <span>₹{selectedPackage.setupFee || 0}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Annual subscription</span>
+                <span>{isOneTimePackage ? 'Base price' : 'Annual subscription'}</span>
                 <span>₹{selectedPackage.price}</span>
               </div>
-              <div className="border-t pt-2 flex justify-between font-medium">
-                <span>Initial payment</span>
-                <span>₹{selectedPackage.setupFee || 0}</span>
-              </div>
-              <div className="flex justify-between font-medium">
-                <span>Annual recurring payment</span>
-                <span>₹{selectedPackage.price}</span>
-              </div>
+              {isOneTimePackage ? (
+                <div className="border-t pt-2 flex justify-between font-medium">
+                  <span>Total payment</span>
+                  <span>₹{totalPrice}</span>
+                </div>
+              ) : (
+                <>
+                  <div className="border-t pt-2 flex justify-between font-medium">
+                    <span>Initial payment</span>
+                    <span>₹{selectedPackage.setupFee || 0}</span>
+                  </div>
+                  <div className="flex justify-between font-medium">
+                    <span>Annual recurring payment</span>
+                    <span>₹{selectedPackage.price}</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
           

@@ -241,12 +241,18 @@ export const buildRazorpayOptions = (
   // Get current URL (to create valid return URLs)
   const currentUrl = window.location.href.split('?')[0].split('#')[0];
   
+  // Calculate the total amount including setup fee
+  const totalAmount = (packageData.price || 0) + (packageData.setupFee || 0);
+  console.log(`Total amount with setup fee: ${totalAmount} (price: ${packageData.price}, setup fee: ${packageData.setupFee})`);
+  
   // Include autopay information in notes
   const notes: Record<string, string> = {
     packageId: packageData.id.toString(),
     userId: user.id,
     enableAutoPay: enableAutoPay ? "true" : "false",
     isRecurring: packageData.paymentType === 'recurring' ? "true" : "false",
+    setupFee: String(packageData.setupFee || 0), // Include setup fee explicitly
+    totalAmount: String(totalAmount), // Include total amount explicitly
     // CRITICAL: Add these parameters to prevent auto-refunds
     autoRefund: "false",
     isRefundable: "false",
@@ -275,8 +281,8 @@ export const buildRazorpayOptions = (
     name: 'Grow Bharat Vyapaar',
     description: `Payment for ${packageData.title}`,
     image: 'https://your-company-logo.png',
-    // Fix the TypeScript error by adding fallback when result.amount is undefined
-    amount: result.amount !== undefined ? result.amount : Math.round(packageData.price * 100),
+    // Make sure to use the totalAmount that includes setup fee
+    amount: result.amount !== undefined ? result.amount : Math.round(totalAmount * 100),
     currency: 'INR',
     notes: notes,
     theme: {
@@ -290,7 +296,8 @@ export const buildRazorpayOptions = (
         isSubscription: !isOneTime,
         enableAutoPay: enableAutoPay,
         packageDetails: packageData,
-        amount: result.amount !== undefined ? result.amount : Math.round(packageData.price * 100),
+        // Use totalAmount (including setup fee) for consistency
+        amount: result.amount !== undefined ? result.amount : Math.round(totalAmount * 100),
         // Add flags to prevent refunds
         preventRefunds: true,
         isNonRefundable: true,

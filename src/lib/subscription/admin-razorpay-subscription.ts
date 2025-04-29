@@ -37,7 +37,9 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
     const setupFee = packageDetails.setupFee || 0;
     const recurringAmount = isOneTime ? 0 : packageDetails.price || 0;
     const advanceAmount = isOneTime ? 0 : (recurringAmount * advancePaymentMonths);
-    const totalAmount = isOneTime ? packageDetails.price : (setupFee + advanceAmount);
+    const totalAmount = isOneTime ? 
+      packageDetails.price + setupFee : // Include setup fee for one-time payments
+      (setupFee + advanceAmount);
     
     // Handle the case where nextBillingDate is provided directly in paymentDetails
     let nextBillingDate = recurringStartDate.toISOString();
@@ -46,6 +48,7 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
     }
     
     console.log("Creating subscription with nextBillingDate:", nextBillingDate);
+    console.log("Total amount calculated:", totalAmount, "(setup fee:", setupFee, ", base price:", packageDetails.price, ")");
     
     // Prepare subscription data
     const subscription: SubscriptionData = {

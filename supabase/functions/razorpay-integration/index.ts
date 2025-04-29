@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -34,7 +33,9 @@ function calculateInitialPayment(packageData: any, enableAutoPay: boolean): numb
   
   // One-time payment case - FIXED: Include setup fee for one-time packages
   if (packageData.paymentType === 'one-time') {
-    return (packageData.price || 0) + (packageData.setupFee || 0);
+    const total = (packageData.price || 0) + (packageData.setupFee || 0);
+    console.log(`One-time payment: ${packageData.price} + ${packageData.setupFee} (setup fee) = ${total}`);
+    return total;
   }
   
   // Recurring payment case
@@ -51,6 +52,7 @@ function calculateInitialPayment(packageData: any, enableAutoPay: boolean): numb
     }
   }
   
+  console.log(`Recurring payment initial amount: ${packageData.setupFee} (setup fee) + ${initialAmount - (packageData.setupFee || 0)} (advance payment) = ${initialAmount}`);
   return initialAmount;
 }
 
@@ -60,7 +62,9 @@ function calculateTotalPackagePrice(packageData: any): number {
   
   // One-time payment case - FIXED: Include setup fee in total package price
   if (packageData.paymentType === 'one-time') {
-    return (packageData.price || 0) + (packageData.setupFee || 0);
+    const total = (packageData.price || 0) + (packageData.setupFee || 0);
+    console.log(`One-time total price: ${packageData.price} + ${packageData.setupFee} (setup fee) = ${total}`);
+    return total;
   }
   
   // For recurring packages
@@ -68,14 +72,19 @@ function calculateTotalPackagePrice(packageData: any): number {
   const setupFee = packageData.setupFee || 0;
   
   // Calculate total based on billing cycle
+  let recurringTotal = 0;
   if (packageData.billingCycle === 'monthly' && packageData.monthlyPrice) {
-    return setupFee + (packageData.monthlyPrice * durationMonths);
+    recurringTotal = packageData.monthlyPrice * durationMonths;
   } else {
     // For yearly billing
     const yearlyPrice = packageData.price || 0;
     const totalYears = Math.ceil(durationMonths / 12);
-    return setupFee + (yearlyPrice * totalYears);
+    recurringTotal = yearlyPrice * totalYears;
   }
+  
+  const total = setupFee + recurringTotal;
+  console.log(`Recurring total price: ${setupFee} (setup fee) + ${recurringTotal} (recurring) = ${total}`);
+  return total;
 }
 
 // Calculate the remaining amount to be paid after the initial payment
@@ -219,6 +228,7 @@ serve(async (req) => {
     
     // Calculate amount in paise (100 paise = 1 INR)
     const amountInPaise = Math.round(initialPaymentAmount * 100);
+    console.log(`Amount in paise: ${amountInPaise}`);
     
     // Generate a receipt ID
     const receiptId = generateReceiptId();

@@ -82,7 +82,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     try {
       // Create order ID (in a production app, this would come from your backend)
       const orderId = generateOrderId();
-      const amount = selectedPackage.price * 100; // Razorpay expects amount in paise
+      
+      // Calculate total amount including setup fee
+      const amount = (selectedPackage.price + (selectedPackage.setupFee || 0)) * 100; // Razorpay expects amount in paise
+      console.log(`Processing payment with amount: ${amount/100} rupees (price: ${selectedPackage.price}, setup fee: ${selectedPackage.setupFee || 0})`);
 
       // Add device detection
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -112,6 +115,9 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           package_name: selectedPackage.title,
           referral_id: referralId || 'none',
           device_type: isMobile ? 'mobile' : 'desktop',
+          setup_fee: String(selectedPackage.setupFee || 0), // Include setup fee explicitly
+          base_price: String(selectedPackage.price), // Base price separately
+          total_amount: String(selectedPackage.price + (selectedPackage.setupFee || 0)), // Total amount
           // Critical flags to prevent auto refunds
           autoRefund: "false",
           isRefundable: "false",
@@ -135,6 +141,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           // Add flag to prevent refunds in response processing
           response.preventRefunds = true;
           response.isNonRefundable = true;
+          
+          // Add setup fee to response for proper handling
+          response.setupFee = selectedPackage.setupFee || 0;
+          response.totalAmount = selectedPackage.price + (selectedPackage.setupFee || 0);
           
           onSuccess(response);
         },

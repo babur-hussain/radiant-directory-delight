@@ -1,59 +1,56 @@
 
-import { toast } from 'sonner';
-
 /**
- * Create standardized payment event handlers for consistency
+ * Create payment event handlers for Razorpay checkout
  */
 export const createPaymentHandlers = (
   packageData: any,
-  toastFunction: any,
+  toast: any,
   onSuccess: (response: any) => void,
   onDismiss: () => void,
   onError: (error: any) => void
 ) => {
-  return {
-    handleSuccess: (response: any) => {
-      try {
-        console.log("Payment success:", response);
-        toast('Payment successful! Your subscription has been activated.');
-        
-        // Add package data for convenience
-        const fullResponse = {
-          ...response,
-          package: packageData,
-          // Add flags to prevent refunds in payment processor
-          preventRefunds: true,
-          isNonRefundable: true,
-          autoRefund: false
-        };
-        
-        onSuccess(fullResponse);
-      } catch (err) {
-        console.error("Error in success handler:", err);
-        onError(err);
-      }
-    },
+  const handleSuccess = (response: any) => {
+    console.log('Payment successful:', response);
     
-    handleDismiss: () => {
-      console.log("Payment modal dismissed by user");
-      toast('Payment cancelled');
-      onDismiss();
-    },
+    // Add package details to response for easier access
+    const completeResponse = {
+      ...response,
+      packageDetails: packageData,
+      amount: (packageData.price || 0) + (packageData.setupFee || 0), // Include setup fee
+      isOneTime: packageData.paymentType === 'one-time',
+      isSubscription: packageData.paymentType === 'recurring',
+      // Add critical flags to prevent refunds
+      preventRefunds: true,
+      isNonRefundable: true,
+      autoRefund: false
+    };
     
-    handleError: (error: any) => {
-      console.error("Payment error:", error);
-      
-      let errorMessage = "Payment failed";
-      if (error && error.description) {
-        errorMessage = error.description;
-      } else if (error && typeof error === 'string') {
-        errorMessage = error;
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
-      toast(`Payment error: ${errorMessage}`);
-      onError(error);
-    }
+    toast({
+      title: "Payment Successful",
+      description: `Your payment for ${packageData.title} has been processed.`,
+    });
+    
+    onSuccess(completeResponse);
   };
+  
+  const handleDismiss = () => {
+    console.log('Payment dismissed');
+    toast({
+      title: "Payment Cancelled",
+      description: "You've cancelled the payment process.",
+    });
+    onDismiss();
+  };
+  
+  const handleError = (error: any) => {
+    console.error('Payment error:', error);
+    toast({
+      title: "Payment Failed",
+      description: error.description || error.message || "Something went wrong with your payment.",
+      variant: "destructive"
+    });
+    onError(error);
+  };
+  
+  return { handleSuccess, handleDismiss, handleError };
 };

@@ -131,7 +131,9 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
           <div className="space-y-4">
             <div className="text-center text-sm text-gray-500 mb-4">
               <p>You are subscribing to the {selectedPackage.title} package</p>
-              <p className="text-lg font-bold mt-1">₹{selectedPackage.price}</p>
+              <p className="text-lg font-bold mt-1">
+                ₹{selectedPackage.price + (selectedPackage.setupFee || 0)}
+              </p>
               {selectedPackage.setupFee > 0 && (
                 <p className="text-xs mt-1">
                   (Includes one-time setup fee: ₹{selectedPackage.setupFee})

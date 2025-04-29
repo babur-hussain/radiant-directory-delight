@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, ShieldCheck, Loader2 } from "lucide-react";
@@ -179,6 +178,8 @@ const SubscriptionDetails = () => {
   }
 
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
+  // Calculate the total price including setup fee
+  const totalPrice = selectedPackage.price + (selectedPackage.setupFee || 0);
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-4xl subscription-details-container">
@@ -225,15 +226,27 @@ const SubscriptionDetails = () => {
               <h3 className="text-lg font-medium mb-2">Pricing</h3>
               <div className="space-y-2 text-sm">
                 {isOneTimePackage ? (
-                  <div className="border-t pt-2 flex justify-between font-medium">
-                    <span>One-time payment</span>
-                    <span>₹{selectedPackage.price}</span>
-                  </div>
+                  <>
+                    {selectedPackage.setupFee > 0 && (
+                      <div className="flex justify-between">
+                        <span>Setup fee</span>
+                        <span>₹{selectedPackage.setupFee}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span>Base price</span>
+                      <span>₹{selectedPackage.price}</span>
+                    </div>
+                    <div className="border-t pt-2 flex justify-between font-medium">
+                      <span>Total one-time payment</span>
+                      <span>₹{totalPrice}</span>
+                    </div>
+                  </>
                 ) : (
                   <>
                     <div className="flex justify-between">
                       <span>One-time setup fee</span>
-                      <span>₹{selectedPackage.setupFee}</span>
+                      <span>₹{selectedPackage.setupFee || 0}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Annual subscription</span>
@@ -241,7 +254,7 @@ const SubscriptionDetails = () => {
                     </div>
                     <div className="border-t pt-2 flex justify-between font-medium">
                       <span>Initial payment</span>
-                      <span>₹{selectedPackage.setupFee}</span>
+                      <span>₹{selectedPackage.setupFee || 0}</span>
                     </div>
                     <div className="flex justify-between font-medium">
                       <span>Annual recurring payment</span>
