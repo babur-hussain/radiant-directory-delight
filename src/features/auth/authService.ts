@@ -1,3 +1,4 @@
+
 import { getRoleAsString, User, UserRole } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { createOrUpdateUser } from '@/api/services/userAPI';
@@ -41,6 +42,9 @@ export async function authenticateUser(email: string, password: string) {
       console.error('Error fetching user data:', userError);
     }
     
+    // Determine the role correctly, ensuring it's a valid UserRole
+    const userRole: UserRole | UserRole[] = userData?.role as UserRole || 'User';
+    
     // Combine auth data with user profile data
     const user: User = {
       id: data.user.id,
@@ -48,7 +52,7 @@ export async function authenticateUser(email: string, password: string) {
       email: data.user.email || '',
       name: userData?.name || data.user.user_metadata?.name || '',
       displayName: userData?.name || data.user.user_metadata?.name || '',
-      role: userData?.role || 'User',
+      role: userRole,
       isAdmin: userData?.is_admin || false,
       photoURL: userData?.photo_url || data.user.user_metadata?.avatar_url || '',
       createdAt: data.user.created_at || new Date().toISOString(),
@@ -137,6 +141,9 @@ export async function getCurrentUser(): Promise<User | null> {
       console.error('Error fetching user data:', userError);
     }
     
+    // Set role with proper type handling
+    const userRole: UserRole | UserRole[] = userData?.role as UserRole || 'User';
+    
     // Combine auth data with user profile data
     const user: User = {
       id: data.user.id,
@@ -144,7 +151,7 @@ export async function getCurrentUser(): Promise<User | null> {
       email: data.user.email || '',
       name: userData?.name || data.user.user_metadata?.name || '',
       displayName: userData?.name || data.user.user_metadata?.name || '',
-      role: userData?.role || 'User',
+      role: userRole,
       isAdmin: userData?.is_admin || false,
       photoURL: userData?.photo_url || data.user.user_metadata?.avatar_url || '',
       createdAt: data.user.created_at || new Date().toISOString(),

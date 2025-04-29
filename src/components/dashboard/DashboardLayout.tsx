@@ -11,14 +11,14 @@ import {
   SheetTrigger 
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getRoleAsString } from "@/types/auth";
+import { getRoleAsString, getPrimaryRole, UserRole } from "@/types/auth";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 interface DashboardSidebarProps {
-  userRole?: string;
+  userRole?: UserRole;
   onItemClick?: () => void;
 }
 
@@ -26,7 +26,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const userRole = user?.role ? getRoleAsString(user.role) : "";
+  const roleString = getRoleAsString(user?.role);
+  // Convert string role to UserRole type
+  const userRole = user?.role ? getPrimaryRole(user.role) : "User";
   
   return (
     <div className="dashboard-layout flex min-h-screen w-full bg-gray-50 dark:bg-gray-900">
