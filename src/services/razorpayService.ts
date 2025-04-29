@@ -1,3 +1,4 @@
+
 /**
  * Service for Razorpay API interactions
  */
@@ -330,8 +331,8 @@ export const buildRazorpayOptions = (
     modal: {
       ondismiss: onDismiss,
       escape: false,
-      backdropclose: false,
-      confirm_close: true
+      backdropclose: false
+      // Removed confirm_close as it's not in the allowed type
     },
     // Add return URLs to prevent routing errors
     callback_url: currentUrl,
