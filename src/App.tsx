@@ -2,9 +2,10 @@
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './App.css';
-import { AuthProvider } from './hooks/useAuth';
+import { AuthProvider } from './providers/AuthProvider';
 import { PopupAdProvider } from './providers/PopupAdProvider';
 import AppRoutes from './AppRoutes';
+import { Toaster } from './components/ui/toast';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -16,6 +17,7 @@ function App() {
       <AuthProvider>
         <PopupAdProvider>
           <AppRoutes />
+          <Toaster />
         </PopupAdProvider>
       </AuthProvider>
     </QueryClientProvider>

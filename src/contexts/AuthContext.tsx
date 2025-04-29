@@ -1,9 +1,8 @@
 
-// Re-export the provider and context from our main implementation
-import { AuthProvider, AuthContext } from "@/hooks/useAuth";
+import { AuthContext } from "@/providers/AuthProvider";
 import type { User, UserRole, AuthContextType } from "@/types/auth";
+import { useAuth } from "@/hooks/useAuth";
 
 // Re-export what's needed for backward compatibility
-export { AuthProvider, AuthContext };
+export { AuthContext, useAuth };
 export type { User, UserRole, AuthContextType };
-export { useAuth } from "@/hooks/useAuth";
