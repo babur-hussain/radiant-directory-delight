@@ -166,8 +166,6 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         modal: {
           escape: false,
           backdropclose: false,
-          handleback: true,
-          confirm_close: true,
           ondismiss: function() {
             toast('Payment cancelled. You can try again.');
             setIsLoading(false);

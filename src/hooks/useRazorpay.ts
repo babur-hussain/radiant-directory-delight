@@ -102,7 +102,7 @@ export const useRazorpay = () => {
       };
       
       // Validate critical package data
-      if (!packageData.id || !packageData.price) {
+      if (!packageData.id || packageData.price === undefined) {
         const errorMsg = 'Invalid package data: missing required fields';
         toast({
           title: "Configuration Error",
@@ -112,11 +112,20 @@ export const useRazorpay = () => {
         throw new Error(errorMsg);
       }
       
+      // Ensure setup fee is properly set
+      const setupFee = packageData.setupFee || 0;
+      const enhancedPackage = {
+        ...packageData,
+        setupFee: setupFee
+      };
+      
+      console.log("Enhanced package with setup fee:", enhancedPackage);
+      
       // Create subscription via edge function
       console.log("Creating subscription via edge function with autopay:", enableAutoPay);
       const result = await createSubscriptionViaEdgeFunction(
         user,
-        packageData,
+        enhancedPackage,
         customerData,
         !isRecurringPayment, // Use one-time API if not recurring
         enableAutoPay       // Pass the autopay preference
@@ -135,10 +144,16 @@ export const useRazorpay = () => {
       // Open Razorpay checkout for payment
       return new Promise((resolve, reject) => {
         try {
+          // Calculate total amount including setup fee
+          const basePrice = enhancedPackage.price || 0;
+          const totalAmount = basePrice + setupFee;
+          
+          console.log(`Payment breakdown: Base price: ${basePrice}, Setup fee: ${setupFee}, Total: ${totalAmount}`);
+          
           // Build Razorpay options for key-only mode (amount-based payment)
           const options = buildRazorpayOptions(
             user,
-            packageData,
+            enhancedPackage,
             customerData,
             result,
             !isRecurringPayment, // isOneTime
@@ -149,7 +164,7 @@ export const useRazorpay = () => {
               // Show success toast
               toast({
                 title: "Payment Successful",
-                description: `Your payment for ${packageData.title} was successful.`,
+                description: `Your payment for ${enhancedPackage.title} was successful.`,
                 variant: "success"
               });
               
@@ -166,7 +181,13 @@ export const useRazorpay = () => {
                 preventRefunds: true,
                 isNonRefundable: true,
                 autoRefund: false,
-                deviceInfo: deviceInfo
+                deviceInfo: deviceInfo,
+                // Add payment breakdown details
+                paymentBreakdown: {
+                  basePrice: basePrice,
+                  setupFee: setupFee,
+                  totalAmount: totalAmount
+                }
               });
             },
             () => {

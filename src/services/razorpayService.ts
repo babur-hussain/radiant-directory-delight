@@ -334,7 +334,7 @@ export const buildRazorpayOptions = (
       backdropclose: false
       // Removed confirm_close as it's not in the allowed type
     },
-    // Add return URLs to prevent routing errors
+    // Add return URLs to prevent routing issues
     callback_url: currentUrl,
     redirect: false
   };
