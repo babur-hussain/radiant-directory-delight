@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +11,6 @@ import SubscriptionDialog from '@/components/subscription/SubscriptionDialog';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { toast } from 'sonner';
 
-// Don't wrap BusinessPage in Layout, since it's already wrapped by the router
 const BusinessPage = () => {
   const navigate = useNavigate();
   const { packages, isLoading, isError } = useSubscriptionPackages();

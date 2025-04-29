@@ -2,25 +2,18 @@
 import React from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './routes';
-import SubscriptionPopupAd from './components/ads/SubscriptionPopupAd';
 import { usePopupAd } from './providers/PopupAdProvider';
 
 const AppRoutes: React.FC = () => {
-  const { showSubscriptionPopup, setShowSubscriptionPopup } = usePopupAd();
+  // We don't need to use usePopupAd here as it's handled in the routes.tsx file
   
   return (
-    <>
-      <RouterProvider 
-        router={router} 
-        fallbackElement={<div>Loading...</div>}
-      />
-      {showSubscriptionPopup && (
-        <SubscriptionPopupAd 
-          open={showSubscriptionPopup} 
-          onOpenChange={setShowSubscriptionPopup} 
-        />
-      )}
-    </>
+    <RouterProvider 
+      router={router} 
+      fallbackElement={<div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>}
+    />
   );
 };
 

@@ -1,4 +1,3 @@
-
 /**
  * Service for Razorpay API interactions
  */
@@ -247,7 +246,14 @@ export const buildRazorpayOptions = (
     packageId: packageData.id.toString(),
     userId: user.id,
     enableAutoPay: enableAutoPay ? "true" : "false",
-    isRecurring: packageData.paymentType === 'recurring' ? "true" : "false"
+    isRecurring: packageData.paymentType === 'recurring' ? "true" : "false",
+    // CRITICAL: Add these parameters to prevent auto-refunds
+    autoRefund: "false",
+    isRefundable: "false",
+    isNonRefundable: "true",
+    refundStatus: "no_refund_allowed",
+    // For one-time payments, explicitly mark as non-cancellable
+    isCancellable: isOneTime ? "false" : "true"
   };
   
   // Add additional autopay details if available
@@ -284,7 +290,11 @@ export const buildRazorpayOptions = (
         isSubscription: !isOneTime,
         enableAutoPay: enableAutoPay,
         packageDetails: packageData,
-        amount: result.amount !== undefined ? result.amount : Math.round(packageData.price * 100)
+        amount: result.amount !== undefined ? result.amount : Math.round(packageData.price * 100),
+        // Add flags to prevent refunds
+        preventRefunds: true,
+        isNonRefundable: true,
+        autoRefund: false
       });
     },
     modal: {
@@ -332,4 +342,3 @@ export const buildRazorpayOptions = (
   
   return options;
 };
-

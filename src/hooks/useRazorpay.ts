@@ -6,7 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { 
   ensureRazorpayAvailable, 
-  RAZORPAY_KEY_ID 
+  RAZORPAY_KEY_ID,
+  checkRazorpayCompatibility
 } from '@/utils/razorpayLoader';
 import { 
   createSubscriptionViaEdgeFunction, 
@@ -48,6 +49,19 @@ export const useRazorpay = () => {
         variant: "destructive"
       });
       throw new Error(errorMsg);
+    }
+    
+    // Check device compatibility
+    const compatibility = checkRazorpayCompatibility();
+    if (!compatibility.compatible) {
+      const errorMsg = `Payment may not work in this browser: ${compatibility.reason}. Please try using a different browser or device.`;
+      toast({
+        title: "Browser Compatibility Issue",
+        description: errorMsg,
+        variant: "destructive"
+      });
+      console.warn("Razorpay compatibility issue:", compatibility.reason);
+      // Continue anyway - we'll still try, but warned the user
     }
     
     try {
@@ -110,6 +124,14 @@ export const useRazorpay = () => {
       
       console.log("Received result from backend:", result);
       
+      // Add device detection for debugging
+      const deviceInfo = {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+      };
+      console.log("Device info for payment:", deviceInfo);
+      
       // Open Razorpay checkout for payment
       return new Promise((resolve, reject) => {
         try {
@@ -139,7 +161,12 @@ export const useRazorpay = () => {
                 ...response,
                 ...result, // Include all data from the server
                 isRecurring: isRecurringPayment,
-                enableAutoPay: enableAutoPay
+                enableAutoPay: enableAutoPay,
+                // Add flags to prevent refunds
+                preventRefunds: true,
+                isNonRefundable: true,
+                autoRefund: false,
+                deviceInfo: deviceInfo
               });
             },
             () => {
