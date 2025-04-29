@@ -51,6 +51,9 @@ export interface UserSubscription {
   paymentStatus?: string;
   paymentMethod?: string;
   transactionId?: string;
+  paymentType?: 'recurring' | 'one-time';
+  packageDetails?: any;
+  cancelledAt?: string | Date;
 }
 
 export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled' | 'pending' | 'paused' | 'expired' | 'trial';
@@ -64,4 +67,26 @@ export function isUserSubscription(value: any): value is UserSubscription {
     'startDate' in value &&
     'endDate' in value
   );
+}
+
+// Helper function to handle role comparison safely
+export function hasRole(user: User | null, roleToCheck: UserRole): boolean {
+  if (!user || !user.role) return false;
+  
+  if (Array.isArray(user.role)) {
+    return user.role.includes(roleToCheck);
+  }
+  
+  return user.role === roleToCheck;
+}
+
+// Helper function to get role as string for display
+export function getRoleAsString(role: UserRole | UserRole[] | undefined): string {
+  if (!role) return '';
+  
+  if (Array.isArray(role)) {
+    return role.join(', ');
+  }
+  
+  return role;
 }

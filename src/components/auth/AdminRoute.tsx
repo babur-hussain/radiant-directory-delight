@@ -2,7 +2,8 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { ProtectedRouteProps } from '@/types/auth';
+import { hasRole } from '@/types/auth';
+import type { ProtectedRouteProps } from '@/types/auth';
 
 const AdminRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, user, loading } = useAuth();
@@ -19,10 +20,8 @@ const AdminRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/admin/login" replace />;
   }
 
-  // Check if user is admin
-  const isAdmin = user?.isAdmin || 
-                 (user?.role === 'Admin') || 
-                 (Array.isArray(user?.role) && user?.role.includes('Admin'));
+  // Check if user is admin using the helper function
+  const isAdmin = user?.isAdmin || hasRole(user, 'Admin');
 
   if (!isAdmin) {
     return <Navigate to="/admin/login" replace />;
