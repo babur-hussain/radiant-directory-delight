@@ -11,30 +11,21 @@ import {
   SheetTrigger 
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getRoleAsString, getPrimaryRole, UserRole } from "@/types/auth";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-}
-
-interface DashboardSidebarProps {
-  userRole?: UserRole;
-  onItemClick?: () => void;
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const roleString = getRoleAsString(user?.role);
-  // Convert string role to UserRole type
-  const userRole = user?.role ? getPrimaryRole(user.role) : "User";
   
   return (
     <div className="dashboard-layout flex min-h-screen w-full bg-gray-50 dark:bg-gray-900">
       <div className="hidden md:block md:w-64 flex-shrink-0">
         <div className="fixed h-screen w-64 overflow-y-auto border-r bg-white dark:bg-gray-800 pt-16">
-          <DashboardSidebar userRole={userRole} />
+          <DashboardSidebar userRole={user?.role} />
         </div>
       </div>
       
@@ -51,7 +42,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               <SheetContent side="left" className="p-0 w-64 pt-16 z-[99999]">
                 <div className="h-full overflow-y-auto">
                   <DashboardSidebar 
-                    userRole={userRole}
+                    userRole={user?.role} 
                     onItemClick={() => setIsMobileMenuOpen(false)}
                   />
                 </div>

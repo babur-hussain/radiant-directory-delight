@@ -1,7 +1,6 @@
 
 import { User, IUser } from '../models/User';
 import { loadAllUsers } from '@/features/auth/authStorage';
-import { getRoleAsString } from '@/types/auth';
 
 export const importUsersToMongoDB = async (
   progressCallback?: (progress: number) => void
@@ -40,7 +39,7 @@ export const importUsersToMongoDB = async (
           uid: user.uid || user.id,
           name: user.name || user.displayName || null,
           email: user.email || null,
-          role: getRoleAsString(user.role), // Convert role to string
+          role: user.role || null,
           isAdmin: Boolean(user.isAdmin) || false,
           photoURL: user.photoURL || null,
           createdAt: user.createdAt ? new Date(user.createdAt) : new Date(),

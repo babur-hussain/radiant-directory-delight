@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { User, getRoleAsString } from '@/types/auth';
+import { User } from '@/types/auth';
 
 interface RecentUsersCardProps {
   users?: User[];
@@ -66,7 +67,7 @@ const RecentUsersCard: React.FC<RecentUsersCardProps> = ({ users = [], isLoading
                 <div className="flex-1 space-y-1">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium leading-none">{user.name || user.email}</p>
-                    <Badge variant={getRoleBadgeVariant(getRoleAsString(user.role))}>{getRoleAsString(user.role) || 'User'}</Badge>
+                    <Badge variant={getRoleBadgeVariant(user.role)}>{user.role || 'User'}</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>

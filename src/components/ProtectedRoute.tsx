@@ -3,7 +3,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import Loading from '@/components/ui/loading';
-import { UserRole, hasRole } from '@/types/auth';
+import { UserRole } from '@/types/auth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -37,7 +37,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Role-based access check
-  if (roles.length > 0 && !roles.some(role => hasRole(user, role))) {
+  if (roles.length > 0 && !roles.includes(user.role)) {
     return <Navigate to="/" replace />;
   }
 

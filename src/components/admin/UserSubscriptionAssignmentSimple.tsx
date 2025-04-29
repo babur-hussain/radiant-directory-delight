@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { User, UserRole, UserSubscription, getPrimaryRole } from '@/types/auth';
+import { User, UserRole, UserSubscription } from '@/types/auth';
 import { fetchSubscriptionPackagesByType, saveSubscription } from '@/api/mongoAPI';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -32,12 +32,10 @@ const UserSubscriptionAssignmentSimple: React.FC<UserSubscriptionAssignmentSimpl
   const { toast } = useToast();
 
   // Determine package type based on user role
-  const getPackageType = (role: UserRole | UserRole[] | undefined): string => {
-    const primaryRole = getPrimaryRole(role);
-    
-    if (primaryRole === 'Business') return 'business';
-    if (primaryRole === 'Influencer') return 'influencer';
-    if (primaryRole === 'Admin' || user.isAdmin) return 'admin';
+  const getPackageType = (role: UserRole): string => {
+    if (role === 'Business') return 'business';
+    if (role === 'Influencer') return 'influencer';
+    if (role === 'Admin' || user.isAdmin) return 'admin';
     return 'user';
   };
 

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { User, UserSubscription, SubscriptionStatus } from '@/types/auth';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
@@ -44,7 +45,7 @@ export const useSubscriptionAssignment = (
         if (error) throw error;
         
         if (data) {
-          const subscription: UserSubscription = {
+          setUserCurrentSubscription({
             id: data.id,
             userId: data.user_id,
             packageId: data.package_id,
@@ -58,8 +59,7 @@ export const useSubscriptionAssignment = (
             cancelledAt: data.cancelled_at,
             cancelReason: data.cancel_reason,
             paymentType: data.payment_type as PaymentType
-          };
-          setUserCurrentSubscription(subscription);
+          });
         }
       } catch (err) {
         console.error('Error fetching user subscription:', err);
