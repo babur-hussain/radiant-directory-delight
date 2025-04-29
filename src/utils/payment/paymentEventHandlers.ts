@@ -1,59 +1,89 @@
 
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 
 /**
- * Create standardized payment event handlers for consistency
+ * Create event handlers for payment process
  */
 export const createPaymentHandlers = (
-  packageData: any,
-  toastFunction: any,
-  onSuccess: (response: any) => void,
-  onDismiss: () => void,
-  onError: (error: any) => void
+  packageData: ISubscriptionPackage,
+  toastFn: any,
+  onSuccessCallback: (response: any) => void,
+  onDismissCallback: () => void,
+  onErrorCallback: (error: any) => void
 ) => {
   return {
     handleSuccess: (response: any) => {
+      console.log("Payment success handler triggered with:", response);
+      
+      // Calculate total amount including setup fee
+      const totalAmount = packageData.price + (packageData.setupFee || 0);
+      console.log(`Successful payment for ${packageData.title} - Amount: ${totalAmount}`);
+      
+      // Add critical flags to prevent refunds
+      const enrichedResponse = {
+        ...response,
+        packageDetails: packageData,
+        amount: totalAmount * 100, // Convert to paise
+        isNonRefundable: true,
+        preventRefunds: true,
+        autoRefund: false,
+        // Include setup fee information
+        setupFee: packageData.setupFee || 0,
+        basePrice: packageData.price,
+        totalAmount: totalAmount
+      };
+      
+      // Notify success
       try {
-        console.log("Payment success:", response);
-        toast('Payment successful! Your subscription has been activated.');
-        
-        // Add package data for convenience
-        const fullResponse = {
-          ...response,
-          package: packageData,
-          // Add flags to prevent refunds in payment processor
-          preventRefunds: true,
-          isNonRefundable: true,
-          autoRefund: false
-        };
-        
-        onSuccess(fullResponse);
-      } catch (err) {
-        console.error("Error in success handler:", err);
-        onError(err);
+        toastFn({
+          title: "Payment Successful",
+          description: `Your payment for ${packageData.title} was successful`,
+          variant: "success"
+        });
+      } catch (error) {
+        console.error("Error showing success toast:", error);
       }
+      
+      // Call success callback
+      onSuccessCallback(enrichedResponse);
     },
     
     handleDismiss: () => {
-      console.log("Payment modal dismissed by user");
-      toast('Payment cancelled');
-      onDismiss();
+      console.log("Payment dismissed by user");
+      
+      try {
+        toastFn({
+          title: "Payment Cancelled",
+          description: "You cancelled the payment process",
+          variant: "info"
+        });
+      } catch (error) {
+        console.error("Error showing dismiss toast:", error);
+      }
+      
+      onDismissCallback();
     },
     
     handleError: (error: any) => {
       console.error("Payment error:", error);
+      let errorMessage = "There was an error processing your payment";
       
-      let errorMessage = "Payment failed";
-      if (error && error.description) {
-        errorMessage = error.description;
-      } else if (error && typeof error === 'string') {
-        errorMessage = error;
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
+      if (error && error.error) {
+        errorMessage = error.error.description || errorMessage;
       }
       
-      toast(`Payment error: ${errorMessage}`);
-      onError(error);
+      try {
+        toastFn({
+          title: "Payment Failed",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      } catch (err) {
+        console.error("Error showing error toast:", err);
+      }
+      
+      onErrorCallback(error);
     }
   };
 };

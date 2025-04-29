@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, ShieldCheck, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, ShieldCheck, Loader2, Info } from "lucide-react";
 import InfoCircle from "@/components/ui/InfoCircle";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -154,10 +154,20 @@ const SubscriptionDetails = () => {
           <CardHeader>
             <CardTitle>Process Payment</CardTitle>
             <CardDescription>
-              {selectedPackage.paymentType === "one-time" 
+              {selectedPackage?.paymentType === "one-time" 
                 ? "Complete your one-time payment to activate your package" 
                 : "Complete your payment to activate your subscription"}
             </CardDescription>
+            {selectedPackage?.setupFee && selectedPackage.setupFee > 0 && (
+              <Alert className="mt-2 bg-blue-50 border-blue-200">
+                <Info className="h-4 w-4 text-blue-500" />
+                <AlertTitle>Payment Details</AlertTitle>
+                <AlertDescription className="text-sm">
+                  Your payment includes a one-time registration fee of ₹{selectedPackage.setupFee} and 
+                  {selectedPackage.paymentType === "one-time" ? " the package price" : " the subscription amount"} of ₹{selectedPackage.price}.
+                </AlertDescription>
+              </Alert>
+            )}
           </CardHeader>
           <CardContent>
             {paymentProcessing ? (
@@ -167,7 +177,7 @@ const SubscriptionDetails = () => {
               </div>
             ) : (
               <RazorpayPayment 
-                selectedPackage={selectedPackage}
+                selectedPackage={selectedPackage as any}
                 onSuccess={handlePaymentSuccess}
                 onFailure={handlePaymentFailure}
               />

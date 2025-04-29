@@ -1,53 +1,34 @@
 
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import LoadingScreen from '../components/common/LoadingScreen';
 
-const AuthCallbackPage = () => {
+const AuthCallbackPage: React.FC = () => {
+  const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
-    const handleAuthCallback = async () => {
-      // Get the URL hash
-      const hash = window.location.hash;
-      
+    // Process the authentication callback
+    const processAuthCallback = async () => {
       try {
-        if (hash) {
-          // Process the OAuth callback
-          const { data, error } = await supabase.auth.getSession();
-          
-          if (error) {
-            console.error('Error processing auth callback:', error);
-            navigate('/auth');
-            return;
-          }
-          
-          if (data.session) {
-            // Redirect to home page or dashboard
-            navigate('/');
-          } else {
-            navigate('/auth');
-          }
+        // After processing, redirect to the appropriate page
+        if (isAuthenticated) {
+          navigate('/dashboard', { replace: true });
         } else {
-          // No hash, redirect to auth page
-          navigate('/auth');
+          navigate('/auth', { replace: true });
         }
       } catch (error) {
-        console.error('Error in auth callback:', error);
-        navigate('/auth');
+        console.error('Error processing auth callback:', error);
+        navigate('/auth', { replace: true });
       }
     };
 
-    handleAuthCallback();
-  }, [navigate]);
+    processAuthCallback();
+  }, [isAuthenticated, navigate, location]);
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      <p className="mt-4 text-lg">Completing authentication...</p>
-    </div>
-  );
+  return <LoadingScreen />;
 };
 
 export default AuthCallbackPage;

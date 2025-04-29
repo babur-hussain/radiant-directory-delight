@@ -5,9 +5,8 @@ import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
 import { generateOrderId } from '@/utils/id-generator';
 import { Loader2 } from 'lucide-react';
-import { RAZORPAY_KEY_ID } from '@/utils/razorpayLoader';
+import { RAZORPAY_KEY_ID, loadPaymentScript, checkRazorpayCompatibility } from '@/utils/payment/paymentScriptLoader';
 import { toast } from 'sonner';
-import { loadPaymentScript } from '@/utils/payment/paymentScriptLoader';
 
 declare global {
   interface Window {
@@ -33,8 +32,15 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [compatibilityWarning, setCompatibilityWarning] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check device compatibility
+    const compatibility = checkRazorpayCompatibility();
+    if (!compatibility.compatible) {
+      setCompatibilityWarning(compatibility.reason || 'Your browser may not fully support our payment system');
+    }
+    
     // Load Razorpay script once
     const loadScript = async () => {
       setIsLoading(true);
@@ -82,7 +88,16 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
     try {
       // Create order ID (in a production app, this would come from your backend)
       const orderId = generateOrderId();
-      const amount = selectedPackage.price * 100; // Razorpay expects amount in paise
+      
+      // Calculate total amount including setup fee
+      const setupFee = selectedPackage.setupFee || 0;
+      const basePrice = selectedPackage.price;
+      const totalAmount = basePrice + setupFee; // Include setup fee in the total
+      
+      // Convert to paise (Razorpay expects amount in paise)
+      const amountInPaise = totalAmount * 100; 
+      
+      console.log(`Payment breakdown: Base price: ₹${basePrice}, Setup fee: ₹${setupFee}, Total: ₹${totalAmount}`);
 
       // Add device detection
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -96,7 +111,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
 
       const options = {
         key: RAZORPAY_KEY_ID, // Use the imported live key
-        amount: amount,
+        amount: amountInPaise, // Total amount in paise (include setup fee)
         currency: 'INR',
         name: 'Grow Bharat Vyapaar',
         description: `Subscription: ${selectedPackage.title}`,
@@ -112,6 +127,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           package_name: selectedPackage.title,
           referral_id: referralId || 'none',
           device_type: isMobile ? 'mobile' : 'desktop',
+          // Payment breakdown in notes
+          base_price: basePrice.toString(),
+          setup_fee: setupFee.toString(),
+          total_amount: totalAmount.toString(),
           // Critical flags to prevent auto refunds
           autoRefund: "false",
           isRefundable: "false",
@@ -124,8 +143,13 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           color: '#3B82F6'
         },
         handler: function (response: any) {
-          // Add the package info to the response for convenience
+          // Add payment breakdown details to response
           response.package = selectedPackage;
+          response.paymentBreakdown = {
+            basePrice: basePrice,
+            setupFee: setupFee,
+            totalAmount: totalAmount
+          };
           
           // Process referral if applicable
           if (referralId) {
@@ -196,7 +220,23 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         <p className="text-blue-700">
           You'll be redirected to the payment gateway to complete your subscription.
         </p>
+        
+        {selectedPackage.setupFee > 0 && (
+          <div className="mt-2 p-2 bg-blue-100 rounded">
+            <p className="text-sm font-medium text-blue-800">
+              Payment breakdown: Registration fee ₹{selectedPackage.setupFee} + Subscription ₹{selectedPackage.price} = Total ₹{selectedPackage.price + selectedPackage.setupFee}
+            </p>
+          </div>
+        )}
       </div>
+      
+      {compatibilityWarning && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+          <p className="text-sm text-yellow-700">
+            Warning: {compatibilityWarning}. We recommend using Chrome, Firefox or Safari.
+          </p>
+        </div>
+      )}
       
       {isLoading && (
         <div className="flex flex-col items-center justify-center p-6">

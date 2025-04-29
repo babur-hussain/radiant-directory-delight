@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
-import { ShoppingCart, ArrowLeft, Loader2 } from "lucide-react";
+import { ShoppingCart, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { useSubscription } from "@/hooks";
 import RazorpayPayment from "./RazorpayPayment";
 
@@ -86,6 +86,24 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
           <CardHeader>
             <CardTitle className="text-xl">Complete Payment</CardTitle>
             <CardDescription>Process your payment to activate your subscription</CardDescription>
+            
+            {/* Payment breakdown note */}
+            {selectedPackage.setupFee > 0 && (
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-md">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-blue-700">
+                      Your payment of <strong>₹{selectedPackage.price + selectedPackage.setupFee}</strong> includes:
+                    </p>
+                    <ul className="mt-1 text-sm text-blue-600 list-disc list-inside">
+                      <li>Registration fee: ₹{selectedPackage.setupFee}</li>
+                      <li>{selectedPackage.paymentType === 'one-time' ? 'Package price' : 'Subscription fee'}: ₹{selectedPackage.price}</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             {paymentProcessing ? (

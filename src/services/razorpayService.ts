@@ -1,3 +1,4 @@
+
 /**
  * Service for Razorpay API interactions
  */
@@ -174,14 +175,19 @@ export const createSubscriptionViaEdgeFunction = async (
       Object.entries(cleanedCustomerData).filter(([_, value]) => value)
     );
     
+    // Ensure setup fee is included in package data
+    const enhancedPackageData = {
+      ...packageData,
+      setupFee: packageData.setupFee || 0, // Ensure setupFee is defined
+      paymentType: packageData.paymentType || 'one-time'
+    };
+    
+    console.log("Package data with setup fee:", enhancedPackageData);
+    
     // Create request payload
     const payload = {
       userId: user.id,
-      packageData: {
-        ...packageData,
-        // Ensure the correct payment type is set
-        paymentType: packageData.paymentType || 'one-time'
-      },
+      packageData: enhancedPackageData,
       customerData: filteredCustomerData,
       // Add flags to indicate payment preferences
       useOneTimePreferred: useOneTimePreferred,
@@ -231,6 +237,13 @@ export const buildRazorpayOptions = (
 ): RazorpayOptions => {
   console.log("Building Razorpay options with result:", result);
   
+  // Calculate total amount including setup fee
+  const setupFee = packageData.setupFee || 0;
+  const basePrice = packageData.price || 0;
+  const totalAmount = basePrice + setupFee;
+  
+  console.log(`Payment breakdown: Base price: ${basePrice}, Setup fee: ${setupFee}, Total: ${totalAmount}`);
+  
   // Ensure we have properly formatted customer data with no empty values
   const cleanedPrefill: Record<string, string> = {};
   
@@ -241,12 +254,16 @@ export const buildRazorpayOptions = (
   // Get current URL (to create valid return URLs)
   const currentUrl = window.location.href.split('?')[0].split('#')[0];
   
-  // Include autopay information in notes
+  // Include setup fee information in notes
   const notes: Record<string, string> = {
     packageId: packageData.id.toString(),
     userId: user.id,
     enableAutoPay: enableAutoPay ? "true" : "false",
     isRecurring: packageData.paymentType === 'recurring' ? "true" : "false",
+    // Payment breakdown
+    basePrice: String(basePrice),
+    setupFee: String(setupFee),
+    totalAmount: String(totalAmount),
     // CRITICAL: Add these parameters to prevent auto-refunds
     autoRefund: "false",
     isRefundable: "false",
@@ -255,6 +272,11 @@ export const buildRazorpayOptions = (
     // For one-time payments, explicitly mark as non-cancellable
     isCancellable: isOneTime ? "false" : "true"
   };
+  
+  // Add device detection info
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  notes.deviceType = isMobile ? "mobile" : "desktop";
+  notes.userAgent = navigator.userAgent.substring(0, 100); // Truncate if too long
   
   // Add additional autopay details if available
   if (result.autopayDetails) {
@@ -275,8 +297,8 @@ export const buildRazorpayOptions = (
     name: 'Grow Bharat Vyapaar',
     description: `Payment for ${packageData.title}`,
     image: 'https://your-company-logo.png',
-    // Fix the TypeScript error by adding fallback when result.amount is undefined
-    amount: result.amount !== undefined ? result.amount : Math.round(packageData.price * 100),
+    // Use total amount including setup fee, convert to paise
+    amount: Math.round(totalAmount * 100),
     currency: 'INR',
     notes: notes,
     theme: {
@@ -284,13 +306,22 @@ export const buildRazorpayOptions = (
     },
     handler: function(response: any) {
       console.log("Payment success response:", response);
+      
+      // Add payment breakdown to response
+      const paymentBreakdown = {
+        basePrice: basePrice,
+        setupFee: setupFee,
+        totalAmount: totalAmount
+      };
+      
       onSuccess({
         ...response,
-        ...result, // Include all data from the edge function result
+        ...result,
+        paymentBreakdown: paymentBreakdown,
         isSubscription: !isOneTime,
         enableAutoPay: enableAutoPay,
         packageDetails: packageData,
-        amount: result.amount !== undefined ? result.amount : Math.round(packageData.price * 100),
+        amount: Math.round(totalAmount * 100),
         // Add flags to prevent refunds
         preventRefunds: true,
         isNonRefundable: true,
@@ -300,7 +331,9 @@ export const buildRazorpayOptions = (
     modal: {
       ondismiss: onDismiss,
       escape: false,
-      backdropclose: false
+      backdropclose: false,
+      handleback: true,
+      confirm_close: true
     },
     // Add return URLs to prevent routing errors
     callback_url: currentUrl,
@@ -321,7 +354,7 @@ export const buildRazorpayOptions = (
     
     // Add recurring_token for autopay
     options.recurring_token = {
-      max_amount: result.totalAmount ? Math.round(result.totalAmount * 100) : Math.round(packageData.price * 100 * 12),
+      max_amount: result.totalAmount ? Math.round(result.totalAmount * 100) : Math.round(totalAmount * 100 * 12),
       expire_by: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 365) // 1 year from now in seconds
     };
     
