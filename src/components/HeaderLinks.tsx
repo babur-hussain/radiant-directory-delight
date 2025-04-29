@@ -11,7 +11,7 @@ const HeaderLinks = () => {
       <Link to="/categories" className="text-sm font-medium text-gray-700 hover:text-primary transition-colors">
         Categories
       </Link>
-      <Link to="/businesses" className="text-sm font-medium text-gray-700 hover:text-primary transition-colors">
+      <Link to="/business" className="text-sm font-medium text-gray-700 hover:text-primary transition-colors">
         Businesses
       </Link>
       <Link to="/about" className="text-sm font-medium text-gray-700 hover:text-primary transition-colors">

@@ -7,27 +7,13 @@ import AuthPage from "@/pages/AuthPage";
 import PasswordResetPage from "@/pages/PasswordResetPage";
 import AuthCallbackPage from "@/pages/AuthCallbackPage";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { usePopupAd } from "@/providers/PopupAdProvider";
-import SubscriptionPopupAd from "@/components/ads/SubscriptionPopupAd";
+import BusinessPage from "@/pages/BusinessPage";
 
 const AppShell = () => {
-  const { showSubscriptionPopup, setShowSubscriptionPopup } = usePopupAd();
-  
-  return (
-    <>
-      <Outlet />
-      {showSubscriptionPopup && (
-        <SubscriptionPopupAd 
-          open={showSubscriptionPopup} 
-          onOpenChange={setShowSubscriptionPopup} 
-        />
-      )}
-    </>
-  );
+  return <Outlet />;
 };
 
 const BusinessesPage = lazy(() => import("@/pages/BusinessesPage"));
-const BusinessPage = lazy(() => import("@/pages/BusinessPage"));
 const CategoriesPage = lazy(() => import("@/pages/CategoriesPage"));
 const CategoryDetailsPage = lazy(() => import("@/pages/CategoryDetailsPage"));
 const InfluencersPage = lazy(() => import("@/pages/InfluencersPage"));
@@ -66,6 +52,8 @@ export const router = createBrowserRouter([
           { index: true, element: <Index /> },
           { path: "businesses", element: <BusinessesPage /> },
           { path: "business/:id", element: <BusinessPage /> },
+          // Add explicit route for /business that redirects to the BusinessPage
+          { path: "business", element: <BusinessPage /> },
           { path: "categories", element: <CategoriesPage /> },
           { path: "category/:id", element: <CategoryDetailsPage /> },
           { path: "influencers", element: <InfluencersPage /> },
@@ -73,6 +61,7 @@ export const router = createBrowserRouter([
           { path: "auth", element: <AuthPage /> },
           { path: "auth/callback", element: <AuthCallbackPage /> },
           { path: "auth/reset-password", element: <PasswordResetPage /> },
+          
           
           {
             path: "profile",
