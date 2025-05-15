@@ -245,36 +245,17 @@ serve(async (req) => {
       totalRemainingAmount: remainingAmount
     };
     
-    // CRITICAL: Enhanced flags to prevent auto-refunds
-    // These flags will be passed to Razorpay to control refund behavior
+    // Optimize notes to stay under 15 key limit
     const notes = {
       packageId: packageData.id.toString(),
       userId: userId,
-      enableAutoPay: (enableAutoPay && !isOneTime) ? "true" : "false",
-      isRecurring: isRecurring && !isOneTime ? "true" : "false",
-      initialPayment: initialPaymentAmount.toString(),
       setupFee: (packageData.setupFee || 0).toString(),
-      advanceMonths: (packageData.advancePaymentMonths || 0).toString(),
-      nextBillingDate: nextBillingDate,
-      totalPackageMonths: (packageData.durationMonths || 12).toString(),
       totalAmount: totalPackagePrice.toString(),
-      remainingAmount: remainingAmount.toString(),
-      recurringPaymentAmount: recurringPaymentAmount.toString(),
-      recurringPaymentCount: recurringPaymentCount.toString(),
-      packageEndDate: packageEndDate,
-      // CRITICAL: Enhanced parameters to prevent auto-refunds
-      autoRefund: "false",
-      isRefundable: "false",
+      // Most critical refund prevention flags
       isNonRefundable: "true",
-      refund_status: "no_refund_possible",
-      refundPolicy: "no_refunds",
-      refundsDisabled: "true",
-      nonRefundableTransaction: "true",
-      refundEligible: "false",
+      refundStatus: "no_refund_allowed",
       transaction_id: transactionId,
-      // For one-time payments, explicitly mark as non-cancellable
-      isCancellable: isOneTime ? "false" : "true",
-      paymentVerified: "pending"
+      refundPolicy: "no_refunds"
     };
     
     // Key-only mode: Don't create an order or subscription ID
@@ -289,29 +270,19 @@ serve(async (req) => {
         currency: "INR",
         name: "Grow Bharat Vyapaar",
         description: packageData.title || "Subscription payment",
-        receipt: receiptId,
         notes: notes,
         isOneTime,
         isSubscription: !isOneTime,
         enableAutoPay: enableAutoPay && !isOneTime,
         setupFee: packageData.setupFee || 0,
-        advanceMonths: packageData.advancePaymentMonths || 0,
-        nextBillingDate: nextBillingDate,
-        packageEndDate: packageEndDate,
-        totalPackageMonths: packageData.durationMonths || 12,
         totalAmount: totalPackagePrice,
         remainingAmount: remainingAmount,
-        recurringPaymentAmount: recurringPaymentAmount,
-        recurringPaymentCount: recurringPaymentCount,
         autopayDetails: autopayDetails,
-        // CRITICAL: Enhanced flags to prevent auto-refund
+        // Critical flags to prevent auto-refund - separate from notes
         autoRefund: false,
         isRefundable: false, 
         isNonRefundable: true,
         refundPolicy: "no_refunds",
-        refundsDisabled: true,
-        nonRefundableTransaction: true,
-        refundEligible: false,
         transaction_id: transactionId
       }),
       {

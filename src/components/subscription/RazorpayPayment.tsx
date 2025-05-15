@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
@@ -100,6 +99,22 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       // Generate a unique transaction ID to track refunds
       const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
+      // Optimize notes to stay under the 15 limit
+      const notes = {
+        package_id: selectedPackage.id,
+        user_id: user.id,
+        referral_id: referralId || 'none',
+        setup_fee: String(selectedPackage.setupFee || 0),
+        base_price: String(selectedPackage.price),
+        total_amount: String(selectedPackage.price + (selectedPackage.setupFee || 0)),
+        // Critical flags for refund prevention - keeping only the most important ones
+        isNonRefundable: "true",
+        refundStatus: "no_refund_allowed",
+        transaction_id: transactionId,
+        refundPolicy: "no_refunds",
+        paymentVerified: "pending"
+      };
+
       const options = {
         key: RAZORPAY_KEY_ID, // Use the imported live key
         amount: amount,
@@ -112,30 +127,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           email: user.email || '',
           contact: user.phone || ''
         },
-        notes: {
-          package_id: selectedPackage.id,
-          user_id: user.id,
-          package_name: selectedPackage.title,
-          referral_id: referralId || 'none',
-          device_type: isMobile ? 'mobile' : 'desktop',
-          setup_fee: String(selectedPackage.setupFee || 0), // Include setup fee explicitly
-          base_price: String(selectedPackage.price), // Base price separately
-          total_amount: String(selectedPackage.price + (selectedPackage.setupFee || 0)), // Total amount
-          // Enhanced critical flags to prevent auto refunds
-          autoRefund: "false",
-          isRefundable: "false",
-          isNonRefundable: "true",
-          refundStatus: "no_refund_allowed",
-          isOneTime: (selectedPackage.paymentType === 'one-time').toString(),
-          isCancellable: "false",
-          // Add additional flags for absolute refund prevention
-          transaction_id: transactionId,
-          refundsDisabled: "true",
-          refundPolicy: "no_refunds",
-          nonRefundableTransaction: "true",
-          refundEligible: "false",
-          paymentVerified: "pending"
-        },
+        notes: notes,
         theme: {
           color: '#3B82F6'
         },

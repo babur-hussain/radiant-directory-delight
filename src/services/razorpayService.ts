@@ -135,6 +135,43 @@ const cleanRazorpayOptions = (options: Record<string, any>): void => {
   
   // Disable redirects to prevent routing issues
   options.redirect = false;
+  
+  // CRUCIAL FIX: Check if notes object has too many entries (Razorpay limit is 15)
+  if (options.notes && Object.keys(options.notes).length > 15) {
+    console.warn("Too many notes for Razorpay (limit is 15). Keeping only essential ones.");
+    
+    // Create a new notes object with only essential keys
+    const essentialNotes: Record<string, string> = {};
+    
+    // Define priority keys to keep
+    const priorityKeys = [
+      'packageId', 'userId', 'package_id', 'user_id', 'transaction_id',
+      'referral_id', 'setup_fee', 'base_price', 'total_amount',
+      'isNonRefundable', 'refundStatus', 'refundPolicy'
+    ];
+    
+    // First add priority keys
+    priorityKeys.forEach(key => {
+      if (options.notes[key] !== undefined) {
+        essentialNotes[key] = options.notes[key];
+      }
+    });
+    
+    // If we still have room, add other keys until we hit 15
+    const remainingSlots = 15 - Object.keys(essentialNotes).length;
+    if (remainingSlots > 0) {
+      Object.keys(options.notes)
+        .filter(key => !priorityKeys.includes(key))
+        .slice(0, remainingSlots)
+        .forEach(key => {
+          essentialNotes[key] = options.notes[key];
+        });
+    }
+    
+    // Replace the original notes with our trimmed version
+    options.notes = essentialNotes;
+    console.log("Reduced notes to:", Object.keys(options.notes).length, "items");
+  }
 };
 
 /**
@@ -245,35 +282,17 @@ export const buildRazorpayOptions = (
   const totalAmount = (packageData.price || 0) + (packageData.setupFee || 0);
   console.log(`Total amount with setup fee: ${totalAmount} (price: ${packageData.price}, setup fee: ${packageData.setupFee})`);
   
-  // Include autopay information in notes
+  // Optimize notes - keep under 15 limit
   const notes: Record<string, string> = {
     packageId: packageData.id.toString(),
     userId: user.id,
-    enableAutoPay: enableAutoPay ? "true" : "false",
-    isRecurring: packageData.paymentType === 'recurring' ? "true" : "false",
-    setupFee: String(packageData.setupFee || 0), // Include setup fee explicitly
-    totalAmount: String(totalAmount), // Include total amount explicitly
-    // CRITICAL: Add these parameters to prevent auto-refunds
-    autoRefund: "false",
-    isRefundable: "false",
+    setupFee: String(packageData.setupFee || 0),
+    totalAmount: String(totalAmount),
+    // Critical flags - only keep the essential ones
     isNonRefundable: "true",
     refundStatus: "no_refund_allowed",
-    // For one-time payments, explicitly mark as non-cancellable
-    isCancellable: isOneTime ? "false" : "true"
+    transaction_id: `txn_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
   };
-  
-  // Add additional autopay details if available
-  if (result.autopayDetails) {
-    notes.autopayDetails = JSON.stringify(result.autopayDetails);
-  }
-  
-  // Add autopay details to notes if they exist in the result
-  if (enableAutoPay && packageData.paymentType === 'recurring') {
-    if (result.nextBillingDate) notes.nextBillingDate = result.nextBillingDate;
-    if (result.recurringPaymentAmount) notes.recurringAmount = String(result.recurringPaymentAmount);
-    if (result.recurringPaymentCount) notes.remainingPayments = String(result.recurringPaymentCount);
-    if (result.remainingAmount) notes.totalRemainingAmount = String(result.remainingAmount);
-  }
   
   // Base options for Razorpay
   const options: RazorpayOptions = {
