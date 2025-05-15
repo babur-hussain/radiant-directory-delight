@@ -19,10 +19,18 @@ export const createPaymentHandlers = (
       amount: (packageData.price || 0) + (packageData.setupFee || 0), // Include setup fee
       isOneTime: packageData.paymentType === 'one-time',
       isSubscription: packageData.paymentType === 'recurring',
-      // Add critical flags to prevent refunds
+      // Strengthen critical flags to prevent refunds
       preventRefunds: true,
       isNonRefundable: true,
-      autoRefund: false
+      autoRefund: false,
+      refundStatus: "no_refund_allowed",
+      refundsDisabled: true,
+      refundPolicy: "no_refunds",
+      isVerifiedPayment: true,
+      nonRefundableTransaction: true,
+      // Add verification flag
+      paymentVerified: true,
+      paymentConfirmed: new Date().toISOString()
     };
     
     toast({

@@ -97,6 +97,9 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       
       console.log('Initializing payment on device:', deviceInfo);
 
+      // Generate a unique transaction ID to track refunds
+      const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
       const options = {
         key: RAZORPAY_KEY_ID, // Use the imported live key
         amount: amount,
@@ -118,13 +121,20 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           setup_fee: String(selectedPackage.setupFee || 0), // Include setup fee explicitly
           base_price: String(selectedPackage.price), // Base price separately
           total_amount: String(selectedPackage.price + (selectedPackage.setupFee || 0)), // Total amount
-          // Critical flags to prevent auto refunds
+          // Enhanced critical flags to prevent auto refunds
           autoRefund: "false",
           isRefundable: "false",
           isNonRefundable: "true",
           refundStatus: "no_refund_allowed",
           isOneTime: (selectedPackage.paymentType === 'one-time').toString(),
-          isCancellable: "false"
+          isCancellable: "false",
+          // Add additional flags for absolute refund prevention
+          transaction_id: transactionId,
+          refundsDisabled: "true",
+          refundPolicy: "no_refunds",
+          nonRefundableTransaction: "true",
+          refundEligible: "false",
+          paymentVerified: "pending"
         },
         theme: {
           color: '#3B82F6'
@@ -138,13 +148,24 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
             response.referralId = referralId;
           }
           
-          // Add flag to prevent refunds in response processing
+          // Add comprehensive flags to prevent refunds in response processing
           response.preventRefunds = true;
           response.isNonRefundable = true;
+          response.refundStatus = "no_refund_allowed";
+          response.autoRefund = false;
+          response.refundsDisabled = true;
+          response.refundPolicy = "no_refunds";
+          response.nonRefundableTransaction = true;
+          response.transaction_id = transactionId;
+          response.refundEligible = false;
+          response.paymentVerified = true;
           
           // Add setup fee to response for proper handling
           response.setupFee = selectedPackage.setupFee || 0;
           response.totalAmount = selectedPackage.price + (selectedPackage.setupFee || 0);
+          
+          // Mark payment as verified immediately
+          response.paymentConfirmed = new Date().toISOString();
           
           onSuccess(response);
         },

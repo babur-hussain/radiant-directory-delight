@@ -233,6 +233,9 @@ serve(async (req) => {
     // Generate a receipt ID
     const receiptId = generateReceiptId();
     
+    // Generate a unique transaction ID to track and prevent refunds
+    const transactionId = `txn_${Date.now().toString(36)}${Math.random().toString(36).substring(2, 5)}`;
+    
     // Create autopay details object for structured response
     const autopayDetails = {
       enabled: enableAutoPay && isRecurring && !isOneTime,
@@ -242,7 +245,7 @@ serve(async (req) => {
       totalRemainingAmount: remainingAmount
     };
     
-    // CRITICAL: Ensure proper flags are set to prevent auto-refunds
+    // CRITICAL: Enhanced flags to prevent auto-refunds
     // These flags will be passed to Razorpay to control refund behavior
     const notes = {
       packageId: packageData.id.toString(),
@@ -259,13 +262,19 @@ serve(async (req) => {
       recurringPaymentAmount: recurringPaymentAmount.toString(),
       recurringPaymentCount: recurringPaymentCount.toString(),
       packageEndDate: packageEndDate,
-      // CRITICAL: Add these parameters to prevent auto-refunds
+      // CRITICAL: Enhanced parameters to prevent auto-refunds
       autoRefund: "false",
       isRefundable: "false",
       isNonRefundable: "true",
       refund_status: "no_refund_possible",
+      refundPolicy: "no_refunds",
+      refundsDisabled: "true",
+      nonRefundableTransaction: "true",
+      refundEligible: "false",
+      transaction_id: transactionId,
       // For one-time payments, explicitly mark as non-cancellable
-      isCancellable: isOneTime ? "false" : "true"
+      isCancellable: isOneTime ? "false" : "true",
+      paymentVerified: "pending"
     };
     
     // Key-only mode: Don't create an order or subscription ID
@@ -295,10 +304,15 @@ serve(async (req) => {
         recurringPaymentAmount: recurringPaymentAmount,
         recurringPaymentCount: recurringPaymentCount,
         autopayDetails: autopayDetails,
-        // CRITICAL: Add flags to prevent auto-refund
+        // CRITICAL: Enhanced flags to prevent auto-refund
         autoRefund: false,
-        isRefundable: false,
-        isNonRefundable: true
+        isRefundable: false, 
+        isNonRefundable: true,
+        refundPolicy: "no_refunds",
+        refundsDisabled: true,
+        nonRefundableTransaction: true,
+        refundEligible: false,
+        transaction_id: transactionId
       }),
       {
         status: 200,

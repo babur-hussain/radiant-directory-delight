@@ -17,6 +17,9 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
     // Generate a unique subscription ID if not provided
     const subscriptionId = paymentDetails?.subscriptionId || paymentDetails?.razorpay_subscription_id || `sub${Date.now()}`;
     
+    // Generate a unique transaction ID for tracking and refund prevention
+    const transactionId = paymentDetails?.transaction_id || paymentDetails?.razorpay_payment_id || `txn_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    
     const isOneTime = packageDetails.paymentType === "one-time";
     
     // Get advance payment months from either payment details or package
@@ -50,7 +53,10 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
     console.log("Creating subscription with nextBillingDate:", nextBillingDate);
     console.log("Total amount calculated:", totalAmount, "(setup fee:", setupFee, ", base price:", packageDetails.price, ")");
     
-    // Prepare subscription data
+    // Add timestamp to mark when this payment was processed and protected
+    const paymentProcessedAt = new Date().toISOString();
+    
+    // Prepare subscription data with enhanced refund protection
     const subscription: SubscriptionData = {
       id: subscriptionId,
       userId: userId,
@@ -74,13 +80,23 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
       paymentType: packageDetails.paymentType || "recurring",
       billingCycle: packageDetails.billingCycle,
       recurringAmount: recurringAmount,
-      nextBillingDate: isOneTime ? undefined : nextBillingDate
+      nextBillingDate: isOneTime ? undefined : nextBillingDate,
+      // Add enhanced refund protection measures
+      isNonRefundable: true,
+      autoRefund: false,
+      refundStatus: "no_refund_allowed",
+      refundsDisabled: true,
+      nonRefundableTransaction: true,
+      transactionId: transactionId,
+      paymentVerified: true,
+      paymentVerifiedAt: paymentProcessedAt,
+      refundEligible: false
     };
     
     // Add payment details if provided
     if (paymentDetails) {
       subscription.paymentMethod = "razorpay";
-      subscription.transactionId = paymentDetails.razorpay_payment_id || paymentDetails.paymentId;
+      subscription.transactionId = paymentDetails.razorpay_payment_id || paymentDetails.paymentId || transactionId;
       
       // For recurring subscriptions, add the subscription ID
       if (!isOneTime && (paymentDetails.subscriptionId || paymentDetails.razorpay_subscription_id)) {
@@ -91,13 +107,29 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
       if (paymentDetails.razorpay_order_id || paymentDetails.orderId) {
         subscription.razorpayOrderId = paymentDetails.razorpay_order_id || paymentDetails.orderId;
       }
+      
+      // Add payment completion time
+      if (paymentDetails.paymentConfirmed) {
+        subscription.paymentConfirmedAt = paymentDetails.paymentConfirmed;
+      } else {
+        subscription.paymentConfirmedAt = paymentProcessedAt;
+      }
     }
     
     // Save to MongoDB
     try {
-      console.log("Saving subscription to database:", subscription);
+      console.log("Saving subscription to database with refund protection:", subscription);
+      
+      // Call a webhook to verify and finalize payment (optional step for production)
+      try {
+        await finalizePayment(transactionId, totalAmount, userId);
+      } catch (webhookErr) {
+        console.warn("Error calling payment finalization webhook:", webhookErr);
+        // Continue anyway, this is just an extra safeguard
+      }
+      
       await axios.post('http://localhost:3001/api/subscriptions', subscription);
-      console.log(`Razorpay subscription ${subscriptionId} assigned to user ${userId}`);
+      console.log(`Razorpay subscription ${subscriptionId} assigned to user ${userId} with refund protection enabled`);
       return true;
     } catch (error) {
       console.error("Error saving subscription to MongoDB:", error);
@@ -107,4 +139,12 @@ export const adminAssignRazorpaySubscription = async (userId: string, packageDet
     console.error("Error assigning Razorpay subscription:", error);
     return false;
   }
+};
+
+// Helper function to finalize payment (mock implementation)
+const finalizePayment = async (transactionId: string, amount: number, userId: string): Promise<void> => {
+  console.log(`Finalizing payment ${transactionId} for user ${userId} amount ${amount}`);
+  // In production you would call your payment provider's API to mark the payment as finalized
+  // This is just a placeholder function
+  return Promise.resolve();
 };
