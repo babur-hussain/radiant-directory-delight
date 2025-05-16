@@ -26,6 +26,7 @@ export const loadRazorpayScript = (): Promise<boolean> => {
 
 /**
  * Ensure Razorpay is available by loading it if needed
+ * This is the function that was missing but is imported in useRazorpay.ts
  */
 export const ensureRazorpayAvailable = async (): Promise<boolean> => {
   // Check if Razorpay is already available in window
@@ -40,6 +41,7 @@ export const ensureRazorpayAvailable = async (): Promise<boolean> => {
 
 /**
  * Check browser compatibility with Razorpay
+ * This is the function that was missing but is imported in useRazorpay.ts
  */
 export const checkRazorpayCompatibility = (): { compatible: boolean; reason?: string } => {
   // Basic compatibility checks

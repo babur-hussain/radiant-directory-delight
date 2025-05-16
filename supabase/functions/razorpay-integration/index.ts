@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -245,18 +246,21 @@ serve(async (req) => {
       totalRemainingAmount: remainingAmount
     };
     
-    // Optimize notes to stay under 15 key limit
+    // Optimize notes to stay under 15 key limit - THIS IS THE KEY FIX
+    // Only include the most important fields
     const notes = {
       packageId: packageData.id.toString(),
       userId: userId,
-      setupFee: (packageData.setupFee || 0).toString(),
-      totalAmount: totalPackagePrice.toString(),
-      // Most critical refund prevention flags
       isNonRefundable: "true",
-      refundStatus: "no_refund_allowed",
+      refundStatus: "no_refund_allowed", 
       transaction_id: transactionId,
       refundPolicy: "no_refunds"
     };
+    
+    // Add setup fee only if it exists
+    if (packageData.setupFee && packageData.setupFee > 0) {
+      notes.setupFee = (packageData.setupFee || 0).toString();
+    }
     
     // Key-only mode: Don't create an order or subscription ID
     // Instead, let Razorpay handle direct payment with just the key and amount

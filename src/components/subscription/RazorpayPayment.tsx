@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
@@ -32,6 +33,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [transactionId] = useState(`txn_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`);
 
   useEffect(() => {
     // Load Razorpay script once
@@ -96,24 +98,27 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       
       console.log('Initializing payment on device:', deviceInfo);
 
-      // Generate a unique transaction ID to track refunds
-      const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-
-      // Optimize notes to stay under the 15 limit
+      // Optimize notes to stay under the 15 limit - THIS IS KEY TO FIXING THE ERROR
+      // Only include the most critical notes
       const notes = {
         package_id: selectedPackage.id,
         user_id: user.id,
-        referral_id: referralId || 'none',
-        setup_fee: String(selectedPackage.setupFee || 0),
-        base_price: String(selectedPackage.price),
         total_amount: String(selectedPackage.price + (selectedPackage.setupFee || 0)),
-        // Critical flags for refund prevention - keeping only the most important ones
         isNonRefundable: "true",
         refundStatus: "no_refund_allowed",
         transaction_id: transactionId,
-        refundPolicy: "no_refunds",
-        paymentVerified: "pending"
+        refundPolicy: "no_refunds"
       };
+
+      // Only add referral ID if it exists
+      if (referralId) {
+        notes.referral_id = referralId;
+      }
+
+      // Add setup fee only if it exists to save on note count
+      if (selectedPackage.setupFee) {
+        notes.setup_fee = String(selectedPackage.setupFee);
+      }
 
       const options = {
         key: RAZORPAY_KEY_ID, // Use the imported live key
@@ -127,7 +132,9 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           email: user.email || '',
           contact: user.phone || ''
         },
-        notes: notes,
+        notes: notes, // OPTIMIZED TO STAY UNDER 15 ITEMS
+        transaction_id: transactionId, // Add at top level for stronger tracking
+        isNonRefundable: true, // Add at top level for stronger prevention
         theme: {
           color: '#3B82F6'
         },

@@ -1,3 +1,4 @@
+
 /**
  * Service for Razorpay API interactions
  */
@@ -18,6 +19,11 @@ export const createRazorpayCheckout = (options: RazorpayOptions): any => {
   
   // Make a deep copy of options to avoid mutation issues
   const safeOptions = JSON.parse(JSON.stringify(options));
+  
+  // Add transaction ID at top level if not present
+  if (!safeOptions.transaction_id) {
+    safeOptions.transaction_id = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  }
   
   console.log("Creating Razorpay instance with options:", safeOptions);
   
@@ -146,13 +152,29 @@ const cleanRazorpayOptions = (options: Record<string, any>): void => {
     // Define priority keys to keep
     const priorityKeys = [
       'packageId', 'userId', 'package_id', 'user_id', 'transaction_id',
-      'referral_id', 'setup_fee', 'base_price', 'total_amount',
       'isNonRefundable', 'refundStatus', 'refundPolicy'
     ];
     
-    // First add priority keys
+    // Create a new notes object with only essential keys (maximum 15)
+    const essentialNotes: Record<string, string> = {};
+    
+    // First add the critical refund prevention flags (these MUST be included)
+    essentialNotes['isNonRefundable'] = "true";
+    essentialNotes['refundStatus'] = "no_refund_allowed";
+    essentialNotes['refundPolicy'] = "no_refunds";
+    
+    // Add transaction ID (critical for tracking)
+    if (options.transaction_id) {
+      essentialNotes['transaction_id'] = options.transaction_id;
+    } else if (options.notes.transaction_id) {
+      essentialNotes['transaction_id'] = options.notes.transaction_id;
+    } else {
+      essentialNotes['transaction_id'] = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    }
+    
+    // Then add other priority keys
     priorityKeys.forEach(key => {
-      if (options.notes[key] !== undefined) {
+      if (options.notes[key] !== undefined && Object.keys(essentialNotes).length < 15) {
         essentialNotes[key] = options.notes[key];
       }
     });
@@ -161,7 +183,7 @@ const cleanRazorpayOptions = (options: Record<string, any>): void => {
     const remainingSlots = 15 - Object.keys(essentialNotes).length;
     if (remainingSlots > 0) {
       Object.keys(options.notes)
-        .filter(key => !priorityKeys.includes(key))
+        .filter(key => !priorityKeys.includes(key) && !essentialNotes[key])
         .slice(0, remainingSlots)
         .forEach(key => {
           essentialNotes[key] = options.notes[key];
