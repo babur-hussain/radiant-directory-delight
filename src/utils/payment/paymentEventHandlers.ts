@@ -32,7 +32,7 @@ export const createPaymentHandlers = (
       isVerifiedPayment: true,
       nonRefundableTransaction: true,
       // Use consistent transaction ID
-      transaction_id: response.transaction_id || transactionId,
+      transaction_id: response.transaction_id || response.razorpay_payment_id || transactionId,
       // Add verification flag
       paymentVerified: true,
       paymentConfirmed: new Date().toISOString()

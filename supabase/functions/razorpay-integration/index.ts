@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -247,7 +246,7 @@ serve(async (req) => {
     };
     
     // Optimize notes to stay under 15 key limit - THIS IS THE KEY FIX
-    // Only include the most important fields
+    // Only include the most important fields, max 6 keys to be safe
     const notes = {
       packageId: packageData.id.toString(),
       userId: userId,

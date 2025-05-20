@@ -1,4 +1,3 @@
-
 // Define Razorpay key - Use live key for production
 export const RAZORPAY_KEY_ID = 'rzp_live_8PGS0Ug3QeCb2I';
 
@@ -48,7 +47,10 @@ export function enhanceRazorpayForRefundPrevention() {
   const originalRazorpay = (window as any).Razorpay;
   
   // Only replace if it hasn't been enhanced already
-  if ((window as any).RazorpayEnhanced) return;
+  if ((window as any).RazorpayEnhanced) {
+    console.log('Razorpay already enhanced, skipping enhancement.');
+    return;
+  }
   
   // Mark as enhanced to avoid multiple enhancements
   (window as any).RazorpayEnhanced = true;
@@ -70,33 +72,41 @@ export function enhanceRazorpayForRefundPrevention() {
       }
       
       // Check if we're approaching the 15 notes limit
-      if (Object.keys(args[0].notes).length > 10) {
+      const currentNoteCount = Object.keys(args[0].notes).length;
+      console.log(`Current note count: ${currentNoteCount}`);
+      
+      if (currentNoteCount > 10) {
         console.warn('Too many notes detected (over 10), reducing to essentials only');
         
-        // Keep only the essential notes
-        const importantNotes: Record<string, string> = {};
+        // Keep only the essential notes to avoid the 15-note limit
+        const importantNotes: Record<string, string> = {
+          isNonRefundable: "true",
+          refundStatus: "no_refund_allowed",
+          refundPolicy: "no_refunds",
+          transaction_id: args[0].transaction_id
+        };
         
-        // Critical flags that must be preserved
-        importantNotes['isNonRefundable'] = "true";
-        importantNotes['refundStatus'] = "no_refund_allowed";
-        importantNotes['refundPolicy'] = "no_refunds";
-        importantNotes['transaction_id'] = args[0].transaction_id || `txn_${Date.now()}`;
+        // Only add package_id and user_id if they exist - these are crucial for transaction tracking
+        if (args[0].notes.package_id) importantNotes.package_id = args[0].notes.package_id;
+        if (args[0].notes.packageId) importantNotes.packageId = args[0].notes.packageId;
+        if (args[0].notes.user_id) importantNotes.user_id = args[0].notes.user_id;
+        if (args[0].notes.userId) importantNotes.userId = args[0].notes.userId;
         
-        // Add core transaction details if available
-        if (args[0].notes.package_id) importantNotes['package_id'] = args[0].notes.package_id;
-        if (args[0].notes.packageId) importantNotes['packageId'] = args[0].notes.packageId;
-        if (args[0].notes.user_id) importantNotes['user_id'] = args[0].notes.user_id;
-        if (args[0].notes.userId) importantNotes['userId'] = args[0].notes.userId;
-        
-        // Replace notes with our streamlined version
+        // Replace with optimized notes
+        console.log(`Optimized notes count from ${currentNoteCount} to ${Object.keys(importantNotes).length}`);
         args[0].notes = importantNotes;
       } else {
         // Just add the critical refund prevention flags
         args[0].notes.isNonRefundable = "true";
         args[0].notes.refundStatus = "no_refund_allowed";
         args[0].notes.refundPolicy = "no_refunds";
-        args[0].notes.transaction_id = args[0].transaction_id || `txn_${Date.now()}`;
+        args[0].notes.transaction_id = args[0].transaction_id;
       }
+      
+      // Set essential non-refundable flags at the top level too
+      args[0].autoRefund = false;
+      args[0].isRefundable = false;
+      args[0].isNonRefundable = true;
     }
     
     // Create the instance with our enhanced options
@@ -107,24 +117,24 @@ export function enhanceRazorpayForRefundPrevention() {
     instance.open = function() {
       console.log('Opening Razorpay with refund prevention enabled');
       
-      // Final check to ensure we don't exceed notes limit
+      // Final check before opening - crucial to prevent the 15 notes limit error
       if (args[0] && args[0].notes && Object.keys(args[0].notes).length > 15) {
         console.warn('Too many notes detected before opening Razorpay. Reducing to avoid errors.');
         
-        // Create a new notes object with only essential keys
-        const essentialNotes: Record<string, string> = {};
+        // Create new notes object with only the most essential keys
+        const essentialNotes: Record<string, string> = {
+          isNonRefundable: "true",
+          refundStatus: "no_refund_allowed",
+          refundPolicy: "no_refunds",
+          transaction_id: args[0].transaction_id || `txn_${Date.now()}`
+        };
         
-        // Critical flags that must be preserved
-        essentialNotes['isNonRefundable'] = "true";
-        essentialNotes['refundStatus'] = "no_refund_allowed";
-        essentialNotes['refundPolicy'] = "no_refunds";
-        essentialNotes['transaction_id'] = args[0].transaction_id || args[0].notes.transaction_id || `txn_${Date.now()}`;
+        console.log(`Final notes reduction from ${Object.keys(args[0].notes).length} to ${Object.keys(essentialNotes).length}`);
         
-        // Replace notes with essentials only
+        // Replace notes with reduced version
         args[0].notes = essentialNotes;
       }
       
-      // Invoke original method
       return originalOpen.apply(this, arguments);
     };
     
@@ -137,6 +147,11 @@ export function enhanceRazorpayForRefundPrevention() {
       (window as any).Razorpay[key] = originalRazorpay[key];
     }
   }
+  
+  // Export the enhancer function to window for reuse
+  (window as any).enhanceRazorpayForRefundPrevention = enhanceRazorpayForRefundPrevention;
+  
+  console.log('Razorpay successfully enhanced to prevent refunds');
 }
 
 /**

@@ -33,6 +33,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  // Create a transaction ID at component initialization and reuse it
   const [transactionId] = useState(`txn_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`);
 
   useEffect(() => {
@@ -88,22 +89,11 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       const amount = (selectedPackage.price + (selectedPackage.setupFee || 0)) * 100; // Razorpay expects amount in paise
       console.log(`Processing payment with amount: ${amount/100} rupees (price: ${selectedPackage.price}, setup fee: ${selectedPackage.setupFee || 0})`);
 
-      // Add device detection
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      const deviceInfo = {
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        isMobile: isMobile
-      };
-      
-      console.log('Initializing payment on device:', deviceInfo);
-
       // Optimize notes to stay under the 15 limit - THIS IS KEY TO FIXING THE ERROR
       // Only include the most critical notes
       const notes: Record<string, string> = {
         package_id: selectedPackage.id,
         user_id: user.id,
-        total_amount: String(selectedPackage.price + (selectedPackage.setupFee || 0)),
         isNonRefundable: "true",
         refundStatus: "no_refund_allowed",
         transaction_id: transactionId,
