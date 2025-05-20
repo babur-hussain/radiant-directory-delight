@@ -1,3 +1,4 @@
+
 // Define Razorpay key - Use live key for production
 export const RAZORPAY_KEY_ID = 'rzp_live_8PGS0Ug3QeCb2I';
 
@@ -39,8 +40,9 @@ export const loadRazorpayScript = (): Promise<boolean> => {
 
 /**
  * Enhance Razorpay to prevent refunds
+ * Export this function so it can be used in other files
  */
-function enhanceRazorpayForRefundPrevention() {
+export function enhanceRazorpayForRefundPrevention() {
   if (!(window as any).Razorpay) return;
   
   const originalRazorpay = (window as any).Razorpay;
