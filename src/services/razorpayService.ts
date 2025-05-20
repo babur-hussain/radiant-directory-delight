@@ -1,4 +1,3 @@
-
 /**
  * Service for Razorpay API interactions
  */
@@ -146,9 +145,6 @@ const cleanRazorpayOptions = (options: Record<string, any>): void => {
   if (options.notes && Object.keys(options.notes).length > 15) {
     console.warn("Too many notes for Razorpay (limit is 15). Keeping only essential ones.");
     
-    // Create a new notes object with only essential keys
-    const essentialNotes: Record<string, string> = {};
-    
     // Define priority keys to keep
     const priorityKeys = [
       'packageId', 'userId', 'package_id', 'user_id', 'transaction_id',
@@ -156,42 +152,42 @@ const cleanRazorpayOptions = (options: Record<string, any>): void => {
     ];
     
     // Create a new notes object with only essential keys (maximum 15)
-    const essentialNotes: Record<string, string> = {};
+    const priorityNotes: Record<string, string> = {};
     
     // First add the critical refund prevention flags (these MUST be included)
-    essentialNotes['isNonRefundable'] = "true";
-    essentialNotes['refundStatus'] = "no_refund_allowed";
-    essentialNotes['refundPolicy'] = "no_refunds";
+    priorityNotes['isNonRefundable'] = "true";
+    priorityNotes['refundStatus'] = "no_refund_allowed";
+    priorityNotes['refundPolicy'] = "no_refunds";
     
     // Add transaction ID (critical for tracking)
     if (options.transaction_id) {
-      essentialNotes['transaction_id'] = options.transaction_id;
+      priorityNotes['transaction_id'] = options.transaction_id;
     } else if (options.notes.transaction_id) {
-      essentialNotes['transaction_id'] = options.notes.transaction_id;
+      priorityNotes['transaction_id'] = options.notes.transaction_id;
     } else {
-      essentialNotes['transaction_id'] = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      priorityNotes['transaction_id'] = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     }
     
     // Then add other priority keys
     priorityKeys.forEach(key => {
-      if (options.notes[key] !== undefined && Object.keys(essentialNotes).length < 15) {
-        essentialNotes[key] = options.notes[key];
+      if (options.notes[key] !== undefined && Object.keys(priorityNotes).length < 15) {
+        priorityNotes[key] = options.notes[key];
       }
     });
     
     // If we still have room, add other keys until we hit 15
-    const remainingSlots = 15 - Object.keys(essentialNotes).length;
+    const remainingSlots = 15 - Object.keys(priorityNotes).length;
     if (remainingSlots > 0) {
       Object.keys(options.notes)
-        .filter(key => !priorityKeys.includes(key) && !essentialNotes[key])
+        .filter(key => !priorityKeys.includes(key) && !priorityNotes[key])
         .slice(0, remainingSlots)
         .forEach(key => {
-          essentialNotes[key] = options.notes[key];
+          priorityNotes[key] = options.notes[key];
         });
     }
     
     // Replace the original notes with our trimmed version
-    options.notes = essentialNotes;
+    options.notes = priorityNotes;
     console.log("Reduced notes to:", Object.keys(options.notes).length, "items");
   }
 };

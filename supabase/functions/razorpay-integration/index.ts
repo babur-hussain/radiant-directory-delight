@@ -23,16 +23,16 @@ function generateReceiptId(): string {
   return `receipt_${Date.now().toString(36)}${Math.random().toString(36).substring(2, 5)}`;
 }
 
-// Get the current timestamp in seconds (Razorpay format)
-function getCurrentTimestamp(): number {
-  return Math.floor(Date.now() / 1000);
+// Generate a consistent transaction ID
+function generateTransactionId(): string {
+  return `txn_${Date.now().toString(36)}${Math.random().toString(36).substring(2, 5)}`;
 }
 
 // Calculate initial payment including setup fee and advance payments
 function calculateInitialPayment(packageData: any, enableAutoPay: boolean): number {
   if (!packageData) return 0;
   
-  // One-time payment case - FIXED: Include setup fee for one-time packages
+  // One-time payment case - Include setup fee for one-time packages
   if (packageData.paymentType === 'one-time') {
     const total = (packageData.price || 0) + (packageData.setupFee || 0);
     console.log(`One-time payment: ${packageData.price} + ${packageData.setupFee} (setup fee) = ${total}`);
@@ -61,7 +61,7 @@ function calculateInitialPayment(packageData: any, enableAutoPay: boolean): numb
 function calculateTotalPackagePrice(packageData: any): number {
   if (!packageData) return 0;
   
-  // One-time payment case - FIXED: Include setup fee in total package price
+  // One-time payment case - Include setup fee in total package price
   if (packageData.paymentType === 'one-time') {
     const total = (packageData.price || 0) + (packageData.setupFee || 0);
     console.log(`One-time total price: ${packageData.price} + ${packageData.setupFee} (setup fee) = ${total}`);
@@ -235,7 +235,7 @@ serve(async (req) => {
     const receiptId = generateReceiptId();
     
     // Generate a unique transaction ID to track and prevent refunds
-    const transactionId = `txn_${Date.now().toString(36)}${Math.random().toString(36).substring(2, 5)}`;
+    const transactionId = generateTransactionId();
     
     // Create autopay details object for structured response
     const autopayDetails = {
@@ -256,15 +256,6 @@ serve(async (req) => {
       transaction_id: transactionId,
       refundPolicy: "no_refunds"
     };
-    
-    // Add setup fee only if it exists
-    if (packageData.setupFee && packageData.setupFee > 0) {
-      notes.setupFee = (packageData.setupFee || 0).toString();
-    }
-    
-    // Key-only mode: Don't create an order or subscription ID
-    // Instead, let Razorpay handle direct payment with just the key and amount
-    console.log("Setting up direct key-only mode payment with amount:", amountInPaise);
     
     // Return successful response with payment details
     return new Response(

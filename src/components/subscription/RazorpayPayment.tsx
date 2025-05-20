@@ -100,7 +100,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
 
       // Optimize notes to stay under the 15 limit - THIS IS KEY TO FIXING THE ERROR
       // Only include the most critical notes
-      const notes = {
+      const notes: Record<string, string> = {
         package_id: selectedPackage.id,
         user_id: user.id,
         total_amount: String(selectedPackage.price + (selectedPackage.setupFee || 0)),

@@ -9,6 +9,9 @@ export const createPaymentHandlers = (
   onDismiss: () => void,
   onError: (error: any) => void
 ) => {
+  // Create a persistent transaction ID for this payment flow
+  const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  
   const handleSuccess = (response: any) => {
     console.log('Payment successful:', response);
     
@@ -28,6 +31,8 @@ export const createPaymentHandlers = (
       refundPolicy: "no_refunds",
       isVerifiedPayment: true,
       nonRefundableTransaction: true,
+      // Use consistent transaction ID
+      transaction_id: response.transaction_id || transactionId,
       // Add verification flag
       paymentVerified: true,
       paymentConfirmed: new Date().toISOString()
@@ -60,5 +65,10 @@ export const createPaymentHandlers = (
     onError(error);
   };
   
-  return { handleSuccess, handleDismiss, handleError };
+  return { 
+    handleSuccess, 
+    handleDismiss, 
+    handleError,
+    transactionId 
+  };
 };
