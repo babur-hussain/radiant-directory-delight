@@ -1,15 +1,12 @@
 
 import React from 'react';
-import { RouterProvider } from 'react-router-dom';
+import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { router } from './routes';
-import { usePopupAd } from './providers/PopupAdProvider';
 import Layout from './components/layout/Layout';
 import NotFound from './pages/NotFound';
 
 const AppRoutes: React.FC = () => {
-  const { showSubscriptionPopup, setShowSubscriptionPopup } = usePopupAd();
-  
-  // Use a fallback that has its own Layout (not dependent on Router)
+  // Create a fallback element that doesn't rely on router hooks
   const fallbackElement = (
     <Layout hideHeader={false} hideFooter={false}>
       <div className="flex items-center justify-center min-h-[400px]">

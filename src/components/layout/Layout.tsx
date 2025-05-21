@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Header from '../Header';
 import Footer from '../Footer';
 
@@ -11,7 +11,6 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, hideHeader = false, hideFooter = false }) => {
-  // Always show header, removing previous conditional logic
   const showHeader = true;
   const showFooter = !hideFooter;
   

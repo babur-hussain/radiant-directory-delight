@@ -10,6 +10,13 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { usePopupAd } from "@/providers/PopupAdProvider";
 import SubscriptionPopupAd from "@/components/ads/SubscriptionPopupAd";
 
+// Fix: Wrap the NotFound component in a Layout when used as errorElement
+const NotFoundPage = () => (
+  <Layout hideHeader={false} hideFooter={false}>
+    <NotFound />
+  </Layout>
+);
+
 const AppShell = () => {
   const { showSubscriptionPopup, setShowSubscriptionPopup } = usePopupAd();
   
@@ -73,7 +80,7 @@ const AdminLoginPage = lazy(() => import("@/pages/AdminLoginPage"));
 export const router = createBrowserRouter([
   {
     element: <AppShell />,
-    errorElement: <Layout hideHeader={false} hideFooter={false}><NotFound /></Layout>,
+    errorElement: <NotFoundPage />,
     children: [
       {
         path: "/",

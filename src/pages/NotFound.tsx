@@ -1,31 +1,9 @@
 
-import { useEffect } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { useLocation } from "react-router-dom";
 
-const NotFound = () => {
-  // Try to use location, but with a fallback if we're outside Router context
-  let pathname = "/unknown";
-  let locationAvailable = true;
-  
-  try {
-    const location = useLocation();
-    pathname = location.pathname;
-  } catch (error) {
-    locationAvailable = false;
-    console.warn("NotFound component rendered outside Router context");
-  }
-
-  useEffect(() => {
-    if (locationAvailable) {
-      console.error(
-        "404 Error: User attempted to access non-existent route:",
-        pathname
-      );
-    }
-  }, [pathname, locationAvailable]);
-
+const NotFound: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center max-w-md px-4">
