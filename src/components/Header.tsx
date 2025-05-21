@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
@@ -7,9 +8,10 @@ import UserMenu from './UserMenu';
 import { useAuth } from '@/hooks/useAuth';
 
 const Header: React.FC = () => {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,10 +20,16 @@ const Header: React.FC = () => {
         setScrolled(isScrolled);
       }
     };
+    
+    // Set loading state to false after a brief delay to simulate auth loading
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
 
     window.addEventListener('scroll', handleScroll);
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      clearTimeout(timer);
     };
   }, [scrolled]);
 
@@ -46,8 +54,8 @@ const Header: React.FC = () => {
         <div className="flex items-center space-x-3">
           {isLoading ? (
             <div className="h-10 w-20 bg-gray-200 animate-pulse rounded"></div>
-          ) : isAuthenticated ? (
-            <UserMenu user={user} />
+          ) : isAuthenticated && user ? (
+            <UserMenu />
           ) : (
             <>
               <Button variant="outline" asChild>
