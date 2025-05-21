@@ -73,7 +73,7 @@ const AdminLoginPage = lazy(() => import("@/pages/AdminLoginPage"));
 export const router = createBrowserRouter([
   {
     element: <AppShell />,
-    errorElement: <NotFound />,
+    errorElement: <Layout hideHeader={false} hideFooter={false}><NotFound /></Layout>,
     children: [
       {
         path: "/",
@@ -275,7 +275,7 @@ export const router = createBrowserRouter([
       // Catch-all route at the end to handle 404s
       {
         path: "*",
-        element: <NotFound />
+        element: <Layout><NotFound /></Layout>
       }
     ],
   },

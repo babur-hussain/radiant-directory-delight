@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ServiceCard from '@/components/services/ServiceCard';
 import Testimonial from '@/components/Testimonial';
@@ -91,11 +90,11 @@ const ServicesPage = () => {
   const faqs = [
     {
       question: 'How do you select the right influencers for my brand?',
-      answer: 'We use a comprehensive vetting process that evaluates influencers based on audience demographics, engagement metrics, content quality, brand alignment, and past performance. We'll work with you to understand your brand values and target audience before making any recommendations.'
+      answer: 'We use a comprehensive vetting process that evaluates influencers based on audience demographics, engagement metrics, content quality, brand alignment, and past performance. We\'ll work with you to understand your brand values and target audience before making any recommendations.'
     },
     {
       question: 'What platforms do you specialize in for influencer marketing?',
-      answer: 'We have expertise across all major social platforms including Instagram, YouTube, TikTok, LinkedIn, Facebook, and Twitter. Our team stays current with emerging platforms to ensure we're leveraging the most effective channels for your target audience.'
+      answer: 'We have expertise across all major social platforms including Instagram, YouTube, TikTok, LinkedIn, Facebook, and Twitter. Our team stays current with emerging platforms to ensure we\'re leveraging the most effective channels for your target audience.'
     },
     {
       question: 'How do you measure the success of influencer campaigns?',
@@ -103,7 +102,7 @@ const ServicesPage = () => {
     },
     {
       question: 'What budget do I need for an effective influencer campaign?',
-      answer: 'Effective campaigns can be executed across various budget ranges. We work with you to develop a strategy that maximizes your ROI within your available budget, whether you're working with nano-influencers or celebrity partners.'
+      answer: 'Effective campaigns can be executed across various budget ranges. We work with you to develop a strategy that maximizes your ROI within your available budget, whether you\'re working with nano-influencers or celebrity partners.'
     },
     {
       question: 'How long does it take to see results from influencer marketing?',
