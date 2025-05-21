@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    --primary: 220 90% 56%;
+    --primary: 30 92% 57%; /* Vibrant orange (F5962C) */
     --primary-foreground: 0 0% 98%;
 
     --secondary: 240 4.8% 95.9%;
@@ -45,7 +46,7 @@
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 220 90% 56%;
+    --primary: 30 92% 57%; /* Vibrant orange (F5962C) */
     --primary-foreground: 0 0% 98%;
 
     --secondary: 240 3.7% 15.9%;

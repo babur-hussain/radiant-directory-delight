@@ -18,7 +18,7 @@ const Layout: React.FC<LayoutProps> = ({ children, hideHeader = false, hideFoote
   return (
     <div className="flex flex-col min-h-screen">
       {showHeader && <Header />}
-      <main className="flex-grow">
+      <main className="flex-grow pt-0">
         {children || <Outlet />}
       </main>
       {showFooter && <Footer />}

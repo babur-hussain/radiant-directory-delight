@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import UserMenu from '@/components/UserMenu';
 import { useAuth } from '@/hooks/useAuth';
-import { Search, LayoutDashboard } from 'lucide-react';
+import { Search, LayoutDashboard, Phone } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
 import HeaderLinks from './HeaderLinks';
@@ -34,15 +34,21 @@ const Header = () => {
               alt="Grow Bharat Vyapaar Logo"
               className="w-8 h-8 object-contain"
             />
-            <Link to="/" className="text-xl font-bold text-[#0C3C60]">
-              Grow Bharat <span className="text-[#F5962C]">Vyapaar</span>
+            <Link to="/" className="text-xl font-bold text-brand-blue">
+              Grow Bharat <span className="text-brand-orange">Vyapaar</span>
             </Link>
           </div>
           
           {/* Navigation Links - Desktop */}
           <HeaderLinks />
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
+            {/* Phone Number */}
+            <a href="tel:6232571406" className="hidden sm:flex items-center gap-1 text-brand-blue hover:text-brand-orange transition-colors">
+              <Phone size={16} />
+              <span className="text-sm font-medium">6232571406</span>
+            </a>
+            
             {/* Search Form */}
             <form onSubmit={handleSearchSubmit} className="hidden md:flex items-center">
               <Input
@@ -59,7 +65,7 @@ const Header = () => {
             
             {/* Dashboard Button */}
             <Link to="/dashboard">
-              <Button variant="outline" size="sm" className="gap-1">
+              <Button variant="outline" size="sm" className="gap-1 hidden sm:flex">
                 <LayoutDashboard className="h-4 w-4" />
                 Dashboard
               </Button>
@@ -74,7 +80,7 @@ const Header = () => {
                   <Button variant="ghost">Log In</Button>
                 </Link>
                 <Link to="/auth?tab=signup">
-                  <Button>Sign Up</Button>
+                  <Button className="bg-brand-orange hover:bg-brand-orange/90 text-white">Sign Up</Button>
                 </Link>
               </>
             )}

@@ -62,6 +62,12 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// New brand colors
+				brand: {
+					orange: '#F5962C',
+					blue: '#0C3C60',
+					yellow: '#FEF7CD',
 				}
 			},
 			borderRadius: {
@@ -106,6 +112,9 @@ export default {
 				sans: ['"SF Pro Display"', 'system-ui', 'sans-serif'],
 				serif: ['Georgia', 'serif'],
 			},
+			backgroundImage: {
+				'gradient-orange-yellow': 'linear-gradient(90deg, #F5962C 0%, #FEF7CD 100%)',
+			}
 		}
 	},
 	plugins: [require("tailwindcss-animate")],

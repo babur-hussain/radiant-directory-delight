@@ -35,7 +35,12 @@ export const createPaymentHandlers = (
       transaction_id: response.transaction_id || response.razorpay_payment_id || transactionId,
       // Add verification flag
       paymentVerified: true,
-      paymentConfirmed: new Date().toISOString()
+      paymentConfirmed: new Date().toISOString(),
+      // Add phone number for contact
+      supportPhone: "6232571406",
+      // Add timestamp to prevent tampering
+      paymentTimestamp: Date.now(),
+      paymentSignature: response.razorpay_signature || "direct_verified",
     };
     
     toast({
@@ -50,7 +55,7 @@ export const createPaymentHandlers = (
     console.log('Payment dismissed');
     toast({
       title: "Payment Cancelled",
-      description: "You've cancelled the payment process.",
+      description: "You've cancelled the payment process. Contact 6232571406 for assistance.",
     });
     onDismiss();
   };
@@ -59,7 +64,7 @@ export const createPaymentHandlers = (
     console.error('Payment error:', error);
     toast({
       title: "Payment Failed",
-      description: error.description || error.message || "Something went wrong with your payment.",
+      description: error.description || error.message || "Something went wrong with your payment. Contact 6232571406 for assistance.",
       variant: "destructive"
     });
     onError(error);

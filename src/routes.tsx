@@ -1,4 +1,3 @@
-
 import React, { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -34,7 +33,14 @@ const LoadingComponent = () => (
   </div>
 );
 
-// Lazy loaded components
+// New pages
+const BlogPage = lazy(() => import("@/pages/BlogPage"));
+const BlogPostPage = lazy(() => import("@/pages/BlogPostPage"));
+const ServicesPage = lazy(() => import("@/pages/ServicesPage"));
+const AboutPage = lazy(() => import("@/pages/AboutPage"));
+const PortfolioPage = lazy(() => import("@/pages/PortfolioPage"));
+
+// Existing lazy loaded components
 const BusinessesPage = lazy(() => import("@/pages/BusinessesPage"));
 const BusinessPage = lazy(() => import("@/pages/BusinessPage"));
 const CategoriesPage = lazy(() => import("@/pages/CategoriesPage"));
@@ -108,6 +114,28 @@ export const router = createBrowserRouter([
             path: "influencer/:id", 
             element: <Suspense fallback={<LoadingComponent />}><InfluencerPage /></Suspense>
           },
+          // New routes
+          { 
+            path: "blog", 
+            element: <Suspense fallback={<LoadingComponent />}><BlogPage /></Suspense>
+          },
+          { 
+            path: "blog/:id", 
+            element: <Suspense fallback={<LoadingComponent />}><BlogPostPage /></Suspense>
+          },
+          { 
+            path: "services", 
+            element: <Suspense fallback={<LoadingComponent />}><ServicesPage /></Suspense>
+          },
+          { 
+            path: "about", 
+            element: <Suspense fallback={<LoadingComponent />}><AboutPage /></Suspense>
+          },
+          { 
+            path: "portfolio", 
+            element: <Suspense fallback={<LoadingComponent />}><PortfolioPage /></Suspense>
+          },
+          
           { path: "auth", element: <AuthPage /> },
           { path: "auth/callback", element: <AuthCallbackPage /> },
           { path: "auth/reset-password", element: <PasswordResetPage /> },
