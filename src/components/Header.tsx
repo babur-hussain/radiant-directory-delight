@@ -31,11 +31,20 @@ const Header: React.FC = () => {
     }, 500);
 
     window.addEventListener('scroll', handleScroll);
+    
+    // Add class to body when mobile menu is open to prevent scrolling
+    if (mobileMenuOpen) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
       clearTimeout(timer);
+      document.body.classList.remove('overflow-hidden');
     };
-  }, [scrolled]);
+  }, [scrolled, mobileMenuOpen]);
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -103,77 +112,92 @@ const Header: React.FC = () => {
           </button>
         </div>
 
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-white shadow-lg fixed top-16 left-0 right-0 z-50 py-4 px-6 border-t h-[calc(100vh-4rem)] overflow-y-auto">
-            <nav className="flex flex-col space-y-4">
-              <Link
-                to="/"
-                className="text-gray-800 hover:text-purple-600 py-3 border-b border-gray-100 tap-highlight-transparent"
-                onClick={closeMobileMenu}
-              >
-                Home
-              </Link>
-              <Link
-                to="/categories"
-                className="text-gray-800 hover:text-pink-500 py-3 border-b border-gray-100 tap-highlight-transparent"
-                onClick={closeMobileMenu}
-              >
-                Categories
-              </Link>
-              <Link
-                to="/businesses"
-                className="text-gray-800 hover:text-blue-500 py-3 border-b border-gray-100 tap-highlight-transparent"
-                onClick={closeMobileMenu}
-              >
-                Businesses
-              </Link>
-              <Link
-                to="/influencers"
-                className="text-gray-800 hover:text-orange-500 py-3 border-b border-gray-100 tap-highlight-transparent"
-                onClick={closeMobileMenu}
-              >
-                Influencers
-              </Link>
-              <Link
-                to="/blog"
-                className="text-gray-800 hover:text-teal-500 py-3 border-b border-gray-100 tap-highlight-transparent"
-                onClick={closeMobileMenu}
-              >
-                Blog
-              </Link>
-              <Link
-                to="/services"
-                className="text-gray-800 hover:text-green-500 py-3 border-b border-gray-100 tap-highlight-transparent"
-                onClick={closeMobileMenu}
-              >
-                Services
-              </Link>
-              <Link
-                to="/about"
-                className="text-gray-800 hover:text-yellow-500 py-3 tap-highlight-transparent"
-                onClick={closeMobileMenu}
-              >
-                About Us
-              </Link>
-              {!isAuthenticated && (
-                <div className="pt-4 flex flex-col space-y-3">
-                  <Button variant="outline" className="w-full rounded-full h-12" onClick={() => {
-                    closeMobileMenu();
-                    handleLoginClick();
-                  }}>
-                    Login
-                  </Button>
-                  <Button variant="gradient" className="w-full rounded-full h-12" onClick={() => {
-                    closeMobileMenu();
-                    handleRegisterClick();
-                  }}>
-                    Register
-                  </Button>
-                </div>
-              )}
-            </nav>
+        {/* Mobile Menu - Now with a beautiful transparent blur gradient */}
+        <div 
+          className={`md:hidden fixed inset-0 z-40 transition-transform duration-300 ease-in-out ${
+            mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-pink-500/20 to-blue-500/30 backdrop-blur-lg" onClick={closeMobileMenu}></div>
+          <div className="fixed top-16 left-0 right-0 bottom-0 bg-white/80 backdrop-blur-md shadow-xl border-t border-gray-200 z-50 overflow-y-auto h-[calc(100vh-4rem)]">
+            <div className="py-6 px-6">
+              <nav className="flex flex-col space-y-4">
+                <Link
+                  to="/"
+                  className="text-gray-800 hover:text-purple-600 py-3 border-b border-gray-100 tap-highlight-transparent flex items-center font-medium"
+                  onClick={closeMobileMenu}
+                >
+                  <span className="text-purple-600 mr-2">•</span>
+                  Home
+                </Link>
+                <Link
+                  to="/categories"
+                  className="text-gray-800 hover:text-pink-500 py-3 border-b border-gray-100 tap-highlight-transparent flex items-center font-medium"
+                  onClick={closeMobileMenu}
+                >
+                  <span className="text-pink-500 mr-2">•</span>
+                  Categories
+                </Link>
+                <Link
+                  to="/businesses"
+                  className="text-gray-800 hover:text-blue-500 py-3 border-b border-gray-100 tap-highlight-transparent flex items-center font-medium"
+                  onClick={closeMobileMenu}
+                >
+                  <span className="text-blue-500 mr-2">•</span>
+                  Businesses
+                </Link>
+                <Link
+                  to="/influencers"
+                  className="text-gray-800 hover:text-orange-500 py-3 border-b border-gray-100 tap-highlight-transparent flex items-center font-medium"
+                  onClick={closeMobileMenu}
+                >
+                  <span className="text-orange-500 mr-2">•</span>
+                  Influencers
+                </Link>
+                <Link
+                  to="/blog"
+                  className="text-gray-800 hover:text-teal-500 py-3 border-b border-gray-100 tap-highlight-transparent flex items-center font-medium"
+                  onClick={closeMobileMenu}
+                >
+                  <span className="text-teal-500 mr-2">•</span>
+                  Blog
+                </Link>
+                <Link
+                  to="/services"
+                  className="text-gray-800 hover:text-green-500 py-3 border-b border-gray-100 tap-highlight-transparent flex items-center font-medium"
+                  onClick={closeMobileMenu}
+                >
+                  <span className="text-green-500 mr-2">•</span>
+                  Services
+                </Link>
+                <Link
+                  to="/about"
+                  className="text-gray-800 hover:text-yellow-500 py-3 tap-highlight-transparent flex items-center font-medium"
+                  onClick={closeMobileMenu}
+                >
+                  <span className="text-yellow-500 mr-2">•</span>
+                  About Us
+                </Link>
+                {!isAuthenticated && (
+                  <div className="pt-6 flex flex-col space-y-3">
+                    <Button variant="outline" className="w-full rounded-full h-12" onClick={() => {
+                      closeMobileMenu();
+                      handleLoginClick();
+                    }}>
+                      Login
+                    </Button>
+                    <Button variant="gradient" className="w-full rounded-full h-12" onClick={() => {
+                      closeMobileMenu();
+                      handleRegisterClick();
+                    }}>
+                      Register
+                    </Button>
+                  </div>
+                )}
+              </nav>
+            </div>
           </div>
-        )}
+        </div>
       </header>
 
       <AuthModal 
