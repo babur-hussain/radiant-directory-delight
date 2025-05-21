@@ -48,15 +48,15 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col">
-      {/* Backdrop with enhanced blur effect */}
+      {/* Enhanced backdrop with beautiful blur gradient effect */}
       <div 
         className="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-pink-500/20 to-blue-500/30 backdrop-blur-lg"
         onClick={onClose}
       />
       
       {/* Menu content with beautiful styling */}
-      <div className="fixed top-16 left-0 right-0 bottom-0 bg-white/80 backdrop-blur-md shadow-xl border-t border-gray-200/50 overflow-y-auto animate-slideIn">
-        <div className="py-6 px-5">
+      <div className="fixed top-16 left-0 right-0 bottom-0 bg-white/80 backdrop-blur-md shadow-xl border-t border-gray-200/50 overflow-y-auto z-50 animate-slideIn">
+        <div className="py-6 px-5 max-h-[calc(100vh-64px)] overflow-auto">
           <nav className="flex flex-col space-y-1">
             <Link
               to="/"

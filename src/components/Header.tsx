@@ -90,7 +90,7 @@ const Header: React.FC = () => {
           </div>
 
           <button
-            className="md:hidden flex items-center justify-center w-10 h-10 tap-highlight-transparent z-50"
+            className="md:hidden flex items-center justify-center w-10 h-10 z-50 tap-highlight-transparent"
             onClick={toggleMobileMenu}
             aria-label="Toggle mobile menu"
             aria-expanded={mobileMenuOpen}
@@ -105,7 +105,7 @@ const Header: React.FC = () => {
         </div>
       </header>
 
-      {/* Use our MobileMenu component */}
+      {/* Mobile menu with enhanced visibility and styling */}
       <MobileMenu 
         isOpen={mobileMenuOpen} 
         onClose={closeMobileMenu} 
