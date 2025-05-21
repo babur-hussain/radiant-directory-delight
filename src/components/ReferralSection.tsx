@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -183,8 +182,7 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
         
         <Button 
           className="w-full" 
-          variant="gradientBlue"
-          rounded="full" 
+          variant="gradient"
           onClick={handleShare}
           disabled={!referralLink || isLoading}
         >
