@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -84,6 +83,7 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
     max-width: 100vw;
+    padding-top: 64px; /* Match header height */
   }
   
   /* Prevent content jumping when modals open */
@@ -240,5 +240,20 @@
   /* Improved touch targets */
   button, a, [role="button"] {
     @apply min-h-[44px] tap-highlight-transparent;
+  }
+  
+  /* Fix header on mobile */
+  .main-header {
+    @apply bg-white/95 shadow-sm;
+  }
+  
+  /* Adjust padding for mobile scroll */
+  body {
+    padding-top: 64px;
+  }
+  
+  /* Make search more prominent on mobile */
+  .search-container input {
+    font-size: 16px; /* Prevents iOS zoom */
   }
 }

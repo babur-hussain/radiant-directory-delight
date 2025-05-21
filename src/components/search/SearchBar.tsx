@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -199,7 +200,7 @@ const SearchBar = ({
 
   return (
     <div ref={searchContainerRef} className="relative z-20">
-      <div className="bg-white shadow-xl rounded-xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
+      <div className="bg-white rounded-xl overflow-hidden transition-all duration-300 shadow-md">
         <div className="flex flex-col md:flex-row">
           <div className="relative flex-grow border-b md:border-b-0 md:border-r border-gray-100">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -208,7 +209,7 @@ const SearchBar = ({
             <input
               ref={searchInputRef}
               type="text"
-              className="block w-full pl-12 pr-10 py-5 focus:ring-0 focus:outline-none text-gray-900 placeholder-gray-500"
+              className="block w-full pl-12 pr-10 py-4 focus:ring-0 focus:outline-none text-gray-700 placeholder-gray-500"
               placeholder="Search for businesses, services..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -228,11 +229,11 @@ const SearchBar = ({
 
           <div className="relative">
             <div
-              className="location-selector flex items-center w-full md:w-52 px-4 py-5 cursor-pointer"
+              className="location-selector flex items-center w-full md:w-52 px-4 py-4 cursor-pointer"
               onClick={toggleLocationDropdown}
             >
               <MapPin className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0" />
-              <span className="text-gray-900 truncate">{location}</span>
+              <span className="text-gray-700 truncate">{location}</span>
               <ChevronDown className={`h-4 w-4 text-gray-400 ml-auto transition-transform duration-200 ${showLocationDropdown ? 'rotate-180' : ''}`} />
             </div>
 
@@ -263,7 +264,7 @@ const SearchBar = ({
           </div>
 
           <Button
-            className="m-3 md:m-2 rounded-lg transition-smooth"
+            className="m-3 md:m-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full"
             size="lg"
             onClick={handleSearch}
           >
