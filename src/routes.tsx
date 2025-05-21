@@ -1,3 +1,4 @@
+
 import React, { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -78,6 +79,13 @@ const InfluencerDashboardPage = lazy(() => import("@/pages/InfluencerDashboardPa
 
 const SubscriptionPage = lazy(() => import("@/pages/SubscriptionPage"));
 const SubscriptionDetailsPage = lazy(() => import("@/pages/SubscriptionDetailsPage"));
+
+// Import the missing page components
+const BlogPage = lazy(() => import("@/pages/BlogPage"));
+const BlogPostPage = lazy(() => import("@/pages/BlogPostPage"));
+const ServicesPage = lazy(() => import("@/pages/ServicesPage"));
+const AboutPage = lazy(() => import("@/pages/AboutPage"));
+const PortfolioPage = lazy(() => import("@/pages/PortfolioPage"));
 
 const AdminDashboardPage = lazy(() => import("@/pages/AdminDashboardPage"));
 const AdminUsersPage = lazy(() => import("@/pages/AdminUsersPage"));

@@ -6,7 +6,7 @@ type PopupAdContextType = {
   showSubscriptionPopup: boolean;
   setShowSubscriptionPopup: (show: boolean) => void;
   triggerSubscriptionPopup: () => void;
-  state?: {
+  state: {
     user?: User | null;
   };
 };
