@@ -17,6 +17,31 @@ const NotFoundPage = () => (
   </Layout>
 );
 
+// New component to route users to the appropriate dashboard based on their role
+// Important: Define this BEFORE it's used in the routes
+const DashboardRouter = () => {
+  const { state } = usePopupAd();
+  const user = state?.user;
+  
+  if (!user) {
+    return <Navigate to="/profile" replace />;
+  }
+  
+  if (user.role === "Admin" || user.isAdmin) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+  
+  if (user.role === "Business") {
+    return <Navigate to="/dashboard/business" replace />;
+  }
+  
+  if (user.role === "Influencer") {
+    return <Navigate to="/dashboard/influencer" replace />;
+  }
+  
+  return <Navigate to="/profile" replace />;
+};
+
 const AppShell = () => {
   const { showSubscriptionPopup, setShowSubscriptionPopup } = usePopupAd();
   
@@ -302,28 +327,5 @@ export const router = createBrowserRouter([
     ],
   },
 ]);
-
-// New component to route users to the appropriate dashboard based on their role
-const DashboardRouter = () => {
-  const { user } = usePopupAd();
-  
-  if (!user) {
-    return <Navigate to="/profile" replace />;
-  }
-  
-  if (user.role === "Admin" || user.isAdmin) {
-    return <Navigate to="/admin/dashboard" replace />;
-  }
-  
-  if (user.role === "Business") {
-    return <Navigate to="/dashboard/business" replace />;
-  }
-  
-  if (user.role === "Influencer") {
-    return <Navigate to="/dashboard/influencer" replace />;
-  }
-  
-  return <Navigate to="/profile" replace />;
-};
 
 export default router;

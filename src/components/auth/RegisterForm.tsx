@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { RegisterTypeSelector } from './RegisterTypeSelector';
+import RegisterTypeSelector from './RegisterTypeSelector';
 import { UserRole } from '@/types/auth';
 import { checkAndProcessReferralFromURL } from '@/services/referralService';
 
@@ -34,7 +34,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const RegisterForm: React.FC = () => {
-  const { register, loading, error: authError } = useAuth();
+  const { signup, loading, error: authError } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [referralId, setReferralId] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -86,7 +86,7 @@ const RegisterForm: React.FC = () => {
       console.log('Registering user with data:', { email: data.email, additionalData });
       
       // Register the user
-      const { user, error } = await register(data.email, data.password, additionalData);
+      const { user, error } = await signup(data.email, data.password, additionalData);
       
       if (error) {
         console.error('Registration error:', error);

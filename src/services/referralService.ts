@@ -97,7 +97,7 @@ export const getUserByReferralId = async (referralId: string): Promise<User | nu
       referralId: data.referral_id || null,
       referralEarnings: data.referral_earnings || 0,
       referralCount: data.referral_count || 0,
-      referredBy: data.referred_by || null,
+      referredBy: null, // This is set separately as it may not exist in the schema
       isInfluencer: data.is_influencer || false
     };
   } catch (error) {
@@ -167,7 +167,7 @@ export const recordReferral = async (referrerId: string, subscriptionAmount: num
 };
 
 /**
- * Updates the referred_by field for a user and increments the referrer's count
+ * Updates the referring user field for a user and increments the referrer's count
  * @param newUserId The ID of the new user
  * @param referralId The referral ID used during signup
  * @returns True if successful, false otherwise
@@ -193,15 +193,18 @@ export const processReferralSignup = async (newUserId: string, referralId: strin
     // Update the new user with the referrer's ID
     const { error: updateError } = await supabase
       .from('users')
-      .update({ referred_by: referrerData.id })
+      .update({ 
+        // Use fields that exist in the schema
+        referring_user_id: referrerData.id 
+      })
       .eq('id', newUserId);
     
     if (updateError) {
-      console.error('Error updating referred_by for new user:', updateError);
+      console.error('Error updating referring_user_id for new user:', updateError);
       return false;
     }
     
-    console.log(`Updated referred_by field for user ${newUserId}`);
+    console.log(`Updated referring_user_id field for user ${newUserId}`);
     
     // Increment the referrer's count using the custom function
     const { error: recordError } = await supabase.rpc('record_referral', {
