@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { User, UserRole } from '@/types/auth';
@@ -257,7 +256,7 @@ export const completeReferral = async (userId: string) => {
     // Get the referring user
     const { data: referringUser, error: referringError } = await supabase
       .from('users')
-      .select('id, referral_successful_count')
+      .select('id, referral_count')
       .eq('id', userData.referral_id)
       .single();
 
@@ -268,12 +267,14 @@ export const completeReferral = async (userId: string) => {
 
     // Increment the referring user's successful referral count if found
     if (referringUser) {
-      const currentCount = referringUser.referral_successful_count || 0;
+      // Since referral_successful_count doesn't exist in the database schema, 
+      // we'll use referral_count instead for now
+      const currentCount = referringUser.referral_count || 0;
       
       const { error: incrementError } = await supabase
         .from('users')
         .update({ 
-          referral_successful_count: currentCount + 1 
+          referral_count: currentCount + 1 
         })
         .eq('id', referringUser.id);
 

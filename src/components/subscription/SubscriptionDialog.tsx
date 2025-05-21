@@ -57,10 +57,10 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
         // Process referral if applicable
         if (referrerId) {
           try {
-            const referrerUser = await getUserByReferralId(referrerId);
-            if (referrerUser?.id) {
-              await recordReferral(referrerUser.id, selectedPackage.price);
-              console.log(`Referral earnings recorded for user ${referrerUser.id}`);
+            const referrerResponse = await getUserByReferralId(referrerId);
+            if (referrerResponse?.success && referrerResponse.user && referrerResponse.user.id) {
+              await recordReferral(referrerId, selectedPackage.price);
+              console.log(`Referral earnings recorded for user ${referrerResponse.user.id}`);
             }
           } catch (refError) {
             console.error("Error processing referral:", refError);

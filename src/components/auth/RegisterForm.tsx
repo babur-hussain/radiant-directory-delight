@@ -30,6 +30,7 @@ const RegisterForm: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const referralCode = searchParams.get("ref") || "";
+  const [signupError, setSignupError] = useState<string | null>(null);
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -49,19 +50,20 @@ const RegisterForm: React.FC = () => {
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
+    setSignupError(null);
     
     try {
       // Register the user with auth service
       const result = await signup(data.email, data.password, data.name, selectedRole);
       
-      if (!result || result.error) {
+      if (!result || (result as any).error) {
         // Handle registration error
         toast({
           title: "Registration failed",
-          description: result?.error?.message || "Something went wrong. Please try again.",
+          description: (result as any)?.error?.message || "Something went wrong. Please try again.",
           variant: "destructive",
         });
-        console.error("Registration error:", result?.error);
+        console.error("Registration error:", (result as any)?.error);
       } else if (result.id) {
         // Track referral if a referral code was provided
         if (referralCode) {
