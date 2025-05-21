@@ -1,69 +1,68 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 240 10% 3.9%;
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 30 92% 57%; /* Vibrant orange (F5962C) */
-    --primary-foreground: 0 0% 98%;
+    --primary: 221 83% 60%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222 47% 11%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221 83% 60%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
 
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 30 92% 57%; /* Vibrant orange (F5962C) */
-    --primary-foreground: 0 0% 98%;
+    --primary: 221 83% 60%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
   }
 }
 
@@ -77,6 +76,7 @@
     width: 100%;
     position: relative;
     scroll-behavior: smooth;
+    font-family: 'Poppins', sans-serif;
   }
 
   body {
@@ -97,6 +97,49 @@
     margin: 0 auto;
     padding-left: 1rem;
     padding-right: 1rem;
+  }
+
+  /* Add new heading styles */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold;
+  }
+
+  h1 {
+    @apply text-3xl md:text-4xl lg:text-5xl;
+    background: linear-gradient(90deg, #7209B7, #F72585);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  h2 {
+    @apply text-2xl md:text-3xl;
+  }
+
+  /* Add button hover effects */
+  .btn-hover-effect {
+    @apply relative overflow-hidden transition-all duration-300;
+  }
+
+  .btn-hover-effect::before {
+    content: '';
+    @apply absolute top-0 left-0 w-0 h-full bg-white/20 transition-all duration-500;
+  }
+
+  .btn-hover-effect:hover::before {
+    @apply w-full;
+  }
+
+  /* Customized scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-brand-purple/50 rounded-full transition-colors hover:bg-brand-purple;
   }
 
   @media (min-width: 640px) {
@@ -133,96 +176,38 @@
 /* Custom text gradient utilities */
 @layer utilities {
   .text-gradient-purple {
-    @apply bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-brand-purple via-brand-pink to-brand-blue bg-clip-text text-transparent;
   }
   
   .text-gradient-blue {
-    @apply bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-brand-blue via-brand-teal to-brand-green bg-clip-text text-transparent;
   }
   
-  .text-gradient-pink {
-    @apply bg-gradient-to-r from-pink-500 via-rose-500 to-red-500 bg-clip-text text-transparent;
+  .text-gradient-warm {
+    @apply bg-gradient-to-r from-brand-pink via-brand-orange to-brand-yellow bg-clip-text text-transparent;
+  }
+
+  .card-hover-effect {
+    @apply transition-all duration-300 hover:shadow-lg hover:translate-y-[-5px];
+  }
+
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-md shadow-lg border border-white/20 rounded-xl;
   }
 }
 
 /* Custom animations */
-@layer utilities {
-  .transition-smooth {
-    @apply transition-all duration-300 ease-in-out;
-  }
-  
-  .glass-effect {
-    @apply bg-white/90 backdrop-blur-md border border-white/20;
-  }
-  
-  .text-balance {
-    text-wrap: balance;
-  }
-  
-  /* Better mobile taps */
-  .tap-highlight-transparent {
-    -webkit-tap-highlight-color: transparent;
-  }
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }
 
-/* Improved scrolling behavior */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Enhanced modal and dialog scrolling */
-.modal-content, 
-.dialog-content {
-  max-height: 95vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-body,
-.dialog-body {
-  overflow-y: auto;
-  max-height: calc(95vh - 120px);
-  padding-right: 8px;
-  flex: 1;
-}
-
-/* Ensure that scroll areas work properly in dialogs */
-[data-radix-scroll-area-viewport] {
-  height: 100% !important;
-  width: 100% !important;
-  overflow-y: auto !important;
-}
-
-/* Fix for scrollable forms in modals */
-.auth-form-container {
-  height: 100%;
-  width: 100%;
-}
-
-/* Fix for tabs content scrolling */
-.tabs-with-scroll [role="tabpanel"] {
-  height: 100%;
-  overflow: hidden;
-}
-
-/* Loading shimmer effect */
-.shimmer {
-  @apply relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent;
-}
-
-/* Better loading animations */
-@keyframes pulse-bg {
+@keyframes float {
   0%, 100% {
-    background-color: rgba(229, 231, 235, 0.7);
+    transform: translateY(0);
   }
   50% {
-    background-color: rgba(209, 213, 219, 0.7);
+    transform: translateY(-10px);
   }
-}
-
-.animate-pulse-bg {
-  animation: pulse-bg 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* Improved scrollbar */
@@ -249,749 +234,5 @@ html {
   /* Improved touch targets */
   button, a, [role="button"] {
     @apply min-h-[44px] tap-highlight-transparent;
-  }
-  
-  /* Dialog and modal styles for mobile */
-  .radix-dialog-content {
-    max-height: 95vh !important;
-    overflow: hidden !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-  
-  /* Make sure dialog content can scroll */
-  .radix-dialog-content > div:not(.radix-dialog-header):not(.radix-dialog-footer) {
-    overflow-y: auto !important;
-    flex: 1 !important;
-  }
-  
-  /* Fixed position close button */
-  .radix-dialog-content [data-radix-dialog-close] {
-    position: fixed !important;
-    top: 12px !important;
-    right: 12px !important;
-    z-index: 100 !important;
-    background: rgba(255, 255, 255, 0.9) !important;
-    width: 32px !important;
-    height: 32px !important;
-    border-radius: 50% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-  }
-  
-  /* Make dialog footers always visible */
-  .radix-dialog-footer,
-  .dialog-footer,
-  .card-footer {
-    position: sticky !important;
-    bottom: 0 !important;
-    background: white !important;
-    padding: 16px !important;
-    margin-top: auto !important;
-    width: 100% !important;
-    border-top: 1px solid #e5e7eb !important;
-    z-index: 10 !important;
-  }
-  
-  /* Improved touch targets */
-  button, a, [role="button"] {
-    @apply min-h-[44px] tap-highlight-transparent;
-  }
-  
-  /* Dialog and modal styles for mobile */
-  .radix-dialog-content {
-    max-height: 95vh !important;
-    overflow: hidden !important;
-    display: flex !important;
-    flex-direction: column !important;
-    padding-bottom: 0 !important;
-  }
-  
-  /* Make sure dialog content can scroll */
-  .radix-dialog-content > div:not(.radix-dialog-header):not(.radix-dialog-footer) {
-    overflow-y: auto !important;
-    flex: 1 !important;
-  }
-  
-  /* Fixed position close button */
-  .radix-dialog-content [data-radix-dialog-close] {
-    position: fixed !important;
-    top: 12px !important;
-    right: 12px !important;
-    z-index: 100 !important;
-    background: rgba(255, 255, 255, 0.9) !important;
-    width: 32px !important;
-    height: 32px !important;
-    border-radius: 50% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-  }
-  
-  /* Make dialog footers always visible */
-  .radix-dialog-footer,
-  .dialog-footer,
-  .card-footer {
-    position: sticky !important;
-    bottom: 0 !important;
-    background: white !important;
-    padding: 16px !important;
-    margin-top: auto !important;
-    width: 100% !important;
-    border-top: 1px solid #e5e7eb !important;
-    z-index: 10 !important;
-  }
-  
-  /* Better visibility for terms section */
-  #terms-section {
-    margin-bottom: 16px !important;
-    padding-bottom: 16px !important;
-    overflow-y: auto !important;
-    max-height: 150px !important;
-    border: 1px solid #e5e7eb !important;
-    padding: 12px !important;
-    border-radius: 8px !important;
-    background-color: #f9fafb !important;
-  }
-}
-
-/* Page transitions */
-.page-transition-enter {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-.page-transition-enter-active {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 300ms, transform 300ms;
-}
-
-.page-transition-exit {
-  opacity: 1;
-}
-
-.page-transition-exit-active {
-  opacity: 0;
-  transition: opacity 300ms;
-}
-
-/* Dropdown styles */
-.dropdown-content {
-  @apply z-50 bg-white shadow-lg rounded-md overflow-hidden;
-}
-
-/* App specific styles */
-.app-main-content {
-  min-height: 100vh;
-  width: 100%;
-}
-
-/* Dialog and modal styles override */
-.radix-dialog-content,
-[data-radix-popper-content-wrapper] {
-  max-height: 95vh !important;
-}
-
-/* Make sure footers are always visible on mobile */
-@media (max-width: 768px) {
-  /* Add specific fixes for the subscription flow */
-  .subscription-checkout-container .card,
-  .subscription-details-container .card {
-    position: relative !important;
-  }
-
-  /* Improve scrolling in dialogs */
-  .radix-dialog-content {
-    display: flex !important;
-    flex-direction: column !important;
-    overflow-y: auto !important;
-  }
-  
-  /* Ensure buttons are properly sized and visible */
-  .radix-dialog-content button,
-  .card button {
-    min-height: 48px !important;
-    font-size: 16px !important;
-    touch-action: manipulation !important;
-    -webkit-tap-highlight-color: transparent !important;
-  }
-  
-  /* Better scroll handling */
-  [data-radix-scroll-area-viewport] {
-    height: auto !important;
-    overflow-y: auto !important;
-  }
-}
-
-/* Header Styles - Enhanced and Fixed */
-.main-header {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  background-color: #ffffff !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-  z-index: 9999 !important;
-  height: 64px !important;
-}
-
-.main-header .container {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  height: 100% !important;
-  width: 100% !important;
-  max-width: 1280px !important;
-  margin: 0 auto !important;
-  padding: 0 16px !important;
-}
-
-.main-header .logo-container {
-  display: flex !important;
-  align-items: center !important;
-}
-
-.main-header .logo-text {
-  font-size: 1.5rem !important;
-  font-weight: 700 !important;
-  color: #3b82f6 !important;
-  text-decoration: none !important;
-}
-
-.main-header nav {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  margin: 0 auto !important;
-}
-
-.main-header nav a {
-  color: #111827 !important;
-  margin: 0 16px !important;
-  font-size: 1rem !important;
-  font-weight: 500 !important;
-  text-decoration: none !important;
-  transition: color 0.2s ease !important;
-}
-
-.main-header nav a:hover {
-  color: #3b82f6 !important;
-}
-
-.main-header .actions {
-  display: flex !important;
-  align-items: center !important;
-  gap: 12px !important;
-}
-
-/* Mobile Menu */
-.mobile-menu-button {
-  display: none !important;
-}
-
-.mobile-menu {
-  display: none !important;
-}
-
-@media (max-width: 768px) {
-  .main-header nav {
-    display: none !important;
-  }
-  
-  .mobile-menu-button {
-    display: flex !important;
-  }
-  
-  .mobile-menu {
-    position: absolute !important;
-    top: 64px !important;
-    left: 0 !important;
-    width: 100% !important;
-    background-color: white !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-    padding: 16px !important;
-    z-index: 9998 !important;
-  }
-  
-  .mobile-menu.visible {
-    display: block !important;
-  }
-  
-  .mobile-menu a {
-    display: block !important;
-    padding: 12px 0 !important;
-    font-size: 1.1rem !important;
-    border-bottom: 1px solid #f1f1f1 !important;
-  }
-}
-
-/* Main content padding */
-main {
-  width: 100%;
-  padding-top: 64px; /* Match header height */
-}
-
-/* Fix link colors */
-.main-header a, 
-.main-header button,
-.main-header .font-bold {
-  color: #000000 !important;
-  text-decoration: none !important;
-}
-
-/* Fix button display in header */
-.main-header button {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-/* Fix for user menu dropdown */
-.radix-dropdown-menu-content {
-  z-index: 10000 !important;
-}
-
-/* Layout specific styles */
-.admin-layout,
-.dashboard-layout {
-  padding-top: 0; /* Reset padding as these layouts handle their own spacing */
-  min-height: calc(100vh - 64px);
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-/* Auth modal scrolling fix */
-.auth-modal-content {
-  max-height: 90vh;
-  overflow: hidden;
-}
-
-.auth-modal-body {
-  max-height: calc(90vh - 120px);
-  overflow-y: auto;
-}
-
-/* Form scrolling fix */
-.scrollable-form-container {
-  max-height: 70vh;
-  overflow-y: auto;
-  padding-right: 10px;
-}
-
-/* Admin and dashboard headers */
-.dashboard-header, 
-.admin-header {
-  position: sticky !important;
-  top: 64px !important;
-  z-index: 40 !important;
-  width: 100% !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-
-/* Proper z-index hierarchy */
-.radix-sheet-content,
-.radix-dropdown-menu-content,
-.radix-popover-content {
-  z-index: 99999 !important;
-}
-
-/* Fix for button click issues */
-button, 
-.subscription-packages-container button {
-  position: relative !important;
-  z-index: 20 !important;
-  pointer-events: auto !important;
-  cursor: pointer !important;
-}
-
-.subscription-packages-container .card {
-  position: relative !important;
-  overflow: visible !important;
-  z-index: 1 !important;
-}
-
-/* Ensure card contents have proper z-index */
-.subscription-packages-container .card > * {
-  position: relative !important;
-  z-index: 5 !important;
-}
-
-/* Fix for button click issues */
-button, 
-.subscription-packages-container button {
-  position: relative !important;
-  z-index: 20 !important;
-  pointer-events: auto !important;
-  cursor: pointer !important;
-}
-
-/* Ensure card footers have proper z-index */
-.subscription-packages-container .card .card-footer {
-  position: relative !important;
-  z-index: 25 !important;
-}
-
-/* Fix for width issues */
-.admin-layout .w-full,
-.admin-layout .card,
-.admin-layout .space-y-6,
-.admin-layout .card-content {
-  width: 100% !important;
-  max-width: 100% !important;
-  overflow-x: hidden !important;
-}
-
-/* Mobile specific improvements */
-@media (max-width: 768px) {
-  .subscription-packages-container .card {
-    margin-bottom: 1.5rem !important;
-  }
-  
-  .subscription-packages-container button {
-    height: 3rem !important;
-    font-size: 1rem !important;
-    z-index: 50 !important;
-  }
-
-  /* Ensure buttons are tappable on mobile */
-  .subscription-packages-container .card-footer {
-    padding-bottom: 1.25rem !important;
-    padding-top: 0.75rem !important;
-  }
-  
-  /* Fix potential overflow issues */
-  .subscription-packages-container {
-    overflow-x: hidden !important;
-    width: 100% !important;
-  }
-  
-  /* Prevent anything from interfering with button clicks */
-  .subscription-packages-container button::after {
-    content: '';
-    position: absolute;
-    top: -10px;
-    left: -10px;
-    right: -10px;
-    bottom: -10px;
-    z-index: 20;
-  }
-  
-  /* Improve payment button visibility */
-  .card button {
-    min-height: 48px !important;
-    font-size: 16px !important;
-  }
-  
-  /* Fix dialog button issues */
-  .dialog-content button,
-  .dialog-footer button {
-    z-index: 40 !important;
-    position: relative !important;
-  }
-  
-  /* Make subscription dialog more mobile friendly */
-  [data-radix-popper-content-wrapper] {
-    z-index: 9999 !important;
-    max-width: calc(100vw - 16px) !important;
-  }
-  
-  /* Better visibility for payment processing UI */
-  .subscription-checkout-container {
-    position: relative !important;
-  }
-
-  /* Improve mobile checkout form visibility */
-  .card-footer {
-    border-top: 1px solid #e5e7eb;
-    padding-top: 16px !important;
-    margin-top: 16px !important;
-    background-color: #fff !important;
-    padding-bottom: 16px !important;
-  }
-  
-  /* Ensure the proceed to payment button has enough spacing */
-  .card-footer button,
-  .card-footer .button {
-    min-height: 48px !important;
-    font-size: 16px !important;
-    font-weight: 500 !important;
-    margin-bottom: 10px !important;
-  }
-  
-  /* Fix for subscription details page on mobile */
-  .subscription-details-container {
-    padding-bottom: 20px !important;
-  }
-  
-  /* Dialog content scrolling improvements */
-  .radix-dialog-content,
-  [data-radix-popper-content-wrapper] {
-    overflow: hidden !important;
-  }
-
-  /* Improve scroll area visibility */
-  [data-radix-scroll-area-viewport] {
-    height: auto !important;
-    max-height: 60vh !important;
-  }
-}
-
-/* Make sure footers are always visible on mobile */
-@media (max-width: 768px) {
-  /* Add specific fixes for the subscription flow */
-  .subscription-checkout-container .card,
-  .subscription-details-container .card {
-    margin-bottom: 80px !important;
-  }
-
-  /* Ensure footer buttons are visible */
-  #terms-checkbox-section,
-  #terms-section {
-    margin-bottom: 16px !important;
-    padding-bottom: 16px !important;
-  }
-  
-  /* Improve scrolling in dialogs */
-  .radix-dialog-content {
-    display: flex !important;
-    flex-direction: column !important;
-  }
-  
-  /* Make dialog footers always visible */
-  .radix-dialog-footer {
-    border-top: 1px solid #e5e7eb !important;
-    padding-top: 16px !important;
-    margin-top: auto !important;
-    background: white !important;
-  }
-
-  /* Make sure ScrollArea works well in mobile dialogs */
-  [data-radix-scroll-area-viewport] > div {
-    padding-bottom: 20px !important;
-  }
-  
-  /* Improve buttons on mobile */
-  button {
-    touch-action: manipulation !important;
-    -webkit-tap-highlight-color: transparent !important;
-  }
-}
-
-/* Fix text overflow in dashboard components */
-.admin-layout p, 
-.admin-layout h2, 
-.admin-layout h3,
-.admin-layout .card-description {
-  overflow-wrap: break-word !important;
-  word-wrap: break-word !important;
-  word-break: break-word !important;
-  max-width: 100% !important;
-}
-
-/* Fix tab content overflow */
-.admin-layout .tabs-content {
-  width: 100% !important;
-  max-width: 100% !important;
-  overflow-x: hidden !important;
-}
-
-/* Form validation styling */
-.form-error {
-  color: #ef4444;
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
-}
-
-/* Button enhancements */
-.btn-primary {
-  background-color: #3b82f6;
-  color: white;
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  transition: background-color 0.2s;
-}
-
-.btn-primary:hover {
-  background-color: #2563eb;
-}
-
-.btn-outline {
-  background-color: transparent;
-  border: 1px solid #e5e7eb;
-  color: #111827;
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  transition: all 0.2s;
-}
-
-.btn-outline:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
-}
-
-/* Other styles */
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
-
-/* Responsive Global Fixes */
-@media (max-width: 768px) {
-  .container {
-    padding-left: 16px !important;
-    padding-right: 16px !important;
-    width: 100% !important;
-  }
-  
-  /* Fix content shifting */
-  body, html {
-    overflow-x: hidden;
-    width: 100%;
-    position: relative;
-  }
-  
-  /* Better spacing for mobile */
-  section {
-    padding: 40px 0 !important;
-  }
-  
-  /* Prevent horizontal overflow */
-  .overflow-x-auto {
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  /* Better tap targets */
-  button, a, [role="button"] {
-    min-height: 44px;
-  }
-}
-
-/* Prevent layout shift with images */
-img {
-  display: block;
-  height: auto;
-  max-width: 100%;
-}
-
-/* Prevent overflow issues */
-.index-page > div,
-.index-page > section {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-/* Additional responsive fixes */
-@media (max-width: 640px) {
-  .hero-content h1 {
-    font-size: 1.75rem !important;
-  }
-  
-  .business-card-image {
-    height: 150px !important;
-  }
-  
-  /* Make form fields more touchable */
-  input, select, textarea {
-    font-size: 16px !important; /* Prevents iOS zoom on focus */
-    padding: 10px !important;
-  }
-}
-
-/* Fix any modal positioning issues on mobile */
-@media (max-width: 768px) {
-  [data-radix-popper-content-wrapper] {
-    max-width: calc(100vw - 16px) !important;
-  }
-  
-  .radix-dialog-content {
-    width: calc(100vw - 32px) !important;
-    margin: 0 16px !important;
-  }
-}
-
-/* Fix dialog content scrolling improvements */
-@media (max-width: 768px) {
-  /* Add specific fixes for the subscription dialog */
-  .radix-dialog-content {
-    padding: 0 !important;
-    max-height: 95vh !important;
-    width: calc(100vw - 32px) !important;
-    margin: 0 16px !important;
-    overflow: hidden !important;
-  }
-  
-  /* Better position for close button */
-  .radix-dialog-content [data-radix-dialog-close] {
-    top: 12px !important;
-    right: 12px !important;
-    z-index: 100 !important;
-    background: rgba(255, 255, 255, 0.8) !important;
-    width: 32px !important;
-    height: 32px !important;
-    border-radius: 50% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-  
-  /* Fix terms section display */
-  #terms-section {
-    margin-top: 16px !important;
-    padding-top: 16px !important;
-    margin-bottom: 16px !important;
-    padding-bottom: 16px !important;
-  }
-  
-  /* Improve dialog footer */
-  .radix-dialog-footer,
-  .card-footer {
-    position: relative !important;
-    bottom: 0 !important;
-    background: white !important;
-    padding: 16px !important;
-    margin: 0 !important;
-    width: 100% !important;
-    z-index: 50 !important;
-    border-top: 1px solid #e5e7eb !important;
   }
 }

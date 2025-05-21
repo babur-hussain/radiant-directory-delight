@@ -1,92 +1,147 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import UserMenu from '@/components/UserMenu';
-import { useAuth } from '@/hooks/useAuth';
-import { Search, LayoutDashboard, Phone } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { useState } from 'react';
+import { Menu, X } from 'lucide-react';
+import { Button } from './ui/button';
 import HeaderLinks from './HeaderLinks';
+import UserMenu from './UserMenu';
+import { useAuth } from '@/hooks/useAuth';
 
-const Header = () => {
-  const { isAuthenticated, user } = useAuth();
-  const [searchTerm, setSearchTerm] = useState('');
+const Header: React.FC = () => {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
+  useEffect(() => {
+    const handleScroll = () => {
+      const isScrolled = window.scrollY > 10;
+      if (isScrolled !== scrolled) {
+        setScrolled(isScrolled);
+      }
+    };
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Implement search logic here, e.g., navigate to search results page
-    console.log('Search submitted:', searchTerm);
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [scrolled]);
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
   };
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
-          {/* Logo and Brand */}
-          <div className="flex items-center gap-2">
-            <img 
-              src="/lovable-uploads/99199ab2-5520-497e-a73d-9e95ac7e3c89.png"
-              alt="Grow Bharat Vyapaar Logo"
-              className="w-8 h-8 object-contain"
-            />
-            <Link to="/" className="text-xl font-bold text-brand-blue">
-              Grow Bharat <span className="text-brand-orange">Vyapaar</span>
-            </Link>
-          </div>
-          
-          {/* Navigation Links - Desktop */}
-          <HeaderLinks />
-          
-          <div className="flex items-center gap-2 md:gap-4">
-            {/* Phone Number */}
-            <a href="tel:6232571406" className="hidden sm:flex items-center gap-1 text-brand-blue hover:text-brand-orange transition-colors">
-              <Phone size={16} />
-              <span className="text-sm font-medium">6232571406</span>
-            </a>
-            
-            {/* Search Form */}
-            <form onSubmit={handleSearchSubmit} className="hidden md:flex items-center">
-              <Input
-                type="search"
-                placeholder="Search businesses..."
-                value={searchTerm}
-                onChange={handleSearchChange}
-                className="mr-2"
-              />
-              <Button type="submit" variant="outline" size="icon">
-                <Search className="h-4 w-4" />
-              </Button>
-            </form>
-            
-            {/* Dashboard Button */}
-            <Link to="/dashboard">
-              <Button variant="outline" size="sm" className="gap-1 hidden sm:flex">
-                <LayoutDashboard className="h-4 w-4" />
-                Dashboard
-              </Button>
-            </Link>
-            
-            {/* Auth Buttons or User Menu */}
-            {isAuthenticated ? (
-              <UserMenu />
-            ) : (
-              <>
-                <Link to="/auth?tab=login">
-                  <Button variant="ghost">Log In</Button>
-                </Link>
-                <Link to="/auth?tab=signup">
-                  <Button className="bg-brand-orange hover:bg-brand-orange/90 text-white">Sign Up</Button>
-                </Link>
-              </>
-            )}
-          </div>
+    <header className="main-header bg-white/80 backdrop-blur-lg shadow-md transition-all duration-300">
+      <div className="container h-16 flex items-center justify-between">
+        <div className="flex items-center">
+          <Link to="/" className="flex items-center space-x-2">
+            <div className="bg-gradient-to-r from-brand-purple to-brand-pink rounded-full w-8 h-8 flex items-center justify-center text-white font-bold">G</div>
+            <span className="text-lg md:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-purple to-brand-blue">
+              Grow Bharat
+            </span>
+          </Link>
         </div>
+
+        <HeaderLinks />
+        
+        <div className="flex items-center space-x-3">
+          {isLoading ? (
+            <div className="h-10 w-20 bg-gray-200 animate-pulse rounded"></div>
+          ) : isAuthenticated ? (
+            <UserMenu user={user} />
+          ) : (
+            <>
+              <Button variant="outline" asChild>
+                <Link to="/login">Login</Link>
+              </Button>
+              <Button variant="gradient" className="hidden sm:flex" asChild>
+                <Link to="/register">Register</Link>
+              </Button>
+            </>
+          )}
+        </div>
+
+        <button
+          className="md:hidden flex items-center"
+          onClick={toggleMobileMenu}
+          aria-label="Toggle mobile menu"
+        >
+          {mobileMenuOpen ? (
+            <X className="h-6 w-6 text-gray-700" />
+          ) : (
+            <Menu className="h-6 w-6 text-gray-700" />
+          )}
+        </button>
       </div>
+
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-white shadow-lg absolute top-16 left-0 right-0 z-50 py-4 px-6 border-t">
+          <nav className="flex flex-col space-y-4">
+            <Link
+              to="/"
+              className="text-gray-800 hover:text-brand-purple py-2 border-b border-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Home
+            </Link>
+            <Link
+              to="/categories"
+              className="text-gray-800 hover:text-brand-pink py-2 border-b border-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Categories
+            </Link>
+            <Link
+              to="/businesses"
+              className="text-gray-800 hover:text-brand-blue py-2 border-b border-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Businesses
+            </Link>
+            <Link
+              to="/influencers"
+              className="text-gray-800 hover:text-brand-orange py-2 border-b border-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Influencers
+            </Link>
+            <Link
+              to="/blog"
+              className="text-gray-800 hover:text-brand-teal py-2 border-b border-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Blog
+            </Link>
+            <Link
+              to="/services"
+              className="text-gray-800 hover:text-brand-green py-2 border-b border-gray-100"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Services
+            </Link>
+            <Link
+              to="/about"
+              className="text-gray-800 hover:text-brand-yellow py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              About Us
+            </Link>
+            {!isAuthenticated && (
+              <div className="pt-4 flex flex-col space-y-3">
+                <Button variant="outline" asChild className="w-full">
+                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                    Login
+                  </Link>
+                </Button>
+                <Button variant="gradient" asChild className="w-full">
+                  <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
+                    Register
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </nav>
+        </div>
+      )}
     </header>
   );
 };

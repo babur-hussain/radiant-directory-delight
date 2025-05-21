@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/poppins": "^5.2.6",
     "@hookform/resolvers": "^3.9.0",
     "@nivo/bar": "^0.88.0",
     "@nivo/line": "^0.88.0",

@@ -68,10 +68,10 @@ const ServicesSection = () => {
   ];
 
   return (
-    <section className="py-16 bg-gray-50">
+    <section className="py-20 bg-gradient-to-b from-white to-brand-light/60">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-3">Our <span className="text-brand-orange">Services</span></h2>
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-bold mb-3">Our <span className="text-gradient-purple">Services</span></h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
             Comprehensive solutions to help brands and influencers create impactful partnerships and achieve their marketing goals.
           </p>

@@ -63,12 +63,18 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// New brand colors
+				// New vibrant brand colors inspired by influencer.com
 				brand: {
-					orange: '#F5962C',
-					blue: '#0C3C60',
-					yellow: '#FEF7CD',
-				}
+					orange: '#FF6B35',
+					blue: '#4361EE',
+					purple: '#7209B7',
+					pink: '#F72585',
+					yellow: '#FFD60A',
+					green: '#38B000',
+					teal: '#4CC9F0',
+					light: '#F8F9FA',
+					dark: '#212529',
+				},
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -98,6 +104,10 @@ export default {
 				},
 				'shimmer': {
 					'100%': { transform: 'translateX(100%)' }
+				},
+				'float': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-10px)' }
 				}
 			},
 			animation: {
@@ -106,14 +116,20 @@ export default {
 				'fade-in': 'fade-in 0.5s ease-out',
 				'fade-up': 'fade-up 0.5s ease-out',
 				'scale-in': 'scale-in 0.3s ease-out',
-				'shimmer': 'shimmer 1.5s infinite'
+				'shimmer': 'shimmer 1.5s infinite',
+				'float': 'float 3s ease-in-out infinite'
 			},
 			fontFamily: {
 				sans: ['"SF Pro Display"', 'system-ui', 'sans-serif'],
 				serif: ['Georgia', 'serif'],
+				display: ['"Poppins"', 'sans-serif']
 			},
 			backgroundImage: {
-				'gradient-orange-yellow': 'linear-gradient(90deg, #F5962C 0%, #FEF7CD 100%)',
+				'gradient-orange-yellow': 'linear-gradient(90deg, #FF6B35 0%, #FFD60A 100%)',
+				'gradient-blue-purple': 'linear-gradient(90deg, #4361EE 0%, #7209B7 100%)',
+				'gradient-purple-pink': 'linear-gradient(90deg, #7209B7 0%, #F72585 100%)',
+				'gradient-teal-blue': 'linear-gradient(90deg, #4CC9F0 0%, #4361EE 100%)',
+				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
 			}
 		}
 	},

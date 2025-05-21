@@ -131,22 +131,22 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
   };
   
   return (
-    <Card>
+    <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-brand-purple/5">
       <CardHeader>
-        <CardTitle>Your Referrals</CardTitle>
+        <CardTitle className="text-gradient-purple">Your Referrals</CardTitle>
         <CardDescription>
           Invite friends and earn 20% of their subscription payment
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-primary/10 rounded-md p-4 text-center">
+          <div className="bg-gradient-to-br from-brand-green/10 to-brand-teal/10 rounded-xl p-4 text-center border border-brand-green/10">
             <p className="text-sm text-muted-foreground">Total Earnings</p>
-            <p className="text-2xl font-bold text-primary">₹{referralStats.referralEarnings}</p>
+            <p className="text-2xl font-bold text-brand-green">₹{referralStats.referralEarnings}</p>
           </div>
-          <div className="bg-primary/10 rounded-md p-4 text-center">
+          <div className="bg-gradient-to-br from-brand-pink/10 to-brand-purple/10 rounded-xl p-4 text-center border border-brand-pink/10">
             <p className="text-sm text-muted-foreground">Referrals</p>
-            <p className="text-2xl font-bold text-primary">{referralStats.referralCount}</p>
+            <p className="text-2xl font-bold text-brand-pink">{referralStats.referralCount}</p>
           </div>
         </div>
         
@@ -156,14 +156,14 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
             <Input 
               value={referralLink} 
               readOnly
-              className="bg-muted"
+              className="bg-muted focus:ring-2 focus:ring-brand-blue/20"
               placeholder={isLoading ? "Loading..." : "Generate a referral link"}
             />
             <Button 
               variant="outline" 
               size="icon" 
               onClick={handleCopyLink}
-              className={copySuccess ? "bg-green-100 text-green-600" : ""}
+              className={copySuccess ? "bg-brand-green/10 text-brand-green border-brand-green/20" : ""}
               disabled={!referralLink || isLoading}
             >
               <Copy className="h-4 w-4" />
@@ -172,7 +172,7 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
           <div className="text-xs text-muted-foreground text-right">
             <button 
               onClick={handleGenerateNewRefLink}
-              className="flex items-center text-primary hover:underline" 
+              className="flex items-center text-brand-blue hover:text-brand-purple hover:underline" 
               disabled={isGenerating || isLoading}
             >
               <RefreshCw className={`h-3 w-3 mr-1 ${isGenerating ? 'animate-spin' : ''}`} /> 
@@ -183,16 +183,17 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
         
         <Button 
           className="w-full" 
-          variant="default" 
+          variant="gradientBlue"
+          rounded="full" 
           onClick={handleShare}
           disabled={!referralLink || isLoading}
         >
           <Share2 className="mr-2 h-4 w-4" /> Share with Friends
         </Button>
         
-        <div className="text-xs text-muted-foreground">
-          <p>How it works:</p>
-          <ol className="list-decimal list-inside space-y-1 mt-1">
+        <div className="text-xs text-muted-foreground bg-brand-light/50 p-3 rounded-xl">
+          <p className="font-medium mb-1 text-brand-dark">How it works:</p>
+          <ol className="list-decimal list-inside space-y-1">
             <li>Share your unique referral link with friends</li>
             <li>When they subscribe using your link, you earn 20% of their payment</li>
             <li>Your earnings will be added to your account automatically</li>
