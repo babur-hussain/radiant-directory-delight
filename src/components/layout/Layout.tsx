@@ -16,6 +16,15 @@ const Layout: React.FC<LayoutProps> = ({ children, hideHeader = false, hideFoote
   const showFooter = !hideFooter;
   const isMobile = useIsMobile();
   
+  // Add class to document body to help with mobile menu styling
+  React.useEffect(() => {
+    document.body.classList.add('has-mobile-layout');
+    
+    return () => {
+      document.body.classList.remove('has-mobile-layout');
+    };
+  }, []);
+  
   return (
     <div className="flex flex-col min-h-screen">
       {showHeader && <Header />}

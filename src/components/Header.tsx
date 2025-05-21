@@ -39,6 +39,7 @@ const Header: React.FC = () => {
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
+    console.log("Mobile menu toggled:", !mobileMenuOpen); // Debug log
   };
 
   const handleLoginClick = () => {
@@ -88,9 +89,11 @@ const Header: React.FC = () => {
           </div>
 
           <button
-            className="md:hidden flex items-center justify-center w-10 h-10 tap-highlight-transparent"
+            className="md:hidden flex items-center justify-center w-10 h-10 tap-highlight-transparent z-50"
             onClick={toggleMobileMenu}
             aria-label="Toggle mobile menu"
+            aria-expanded={mobileMenuOpen}
+            type="button"
           >
             {mobileMenuOpen ? (
               <X className="h-6 w-6 text-gray-700" />
@@ -101,7 +104,7 @@ const Header: React.FC = () => {
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden bg-white shadow-lg absolute top-16 left-0 right-0 z-50 py-4 px-6 border-t">
+          <div className="md:hidden bg-white shadow-lg fixed top-16 left-0 right-0 z-50 py-4 px-6 border-t h-[calc(100vh-4rem)] overflow-y-auto">
             <nav className="flex flex-col space-y-4">
               <Link
                 to="/"

@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -308,6 +309,36 @@
     word-break: break-word !important;
     max-width: 100% !important;
   }
+  
+  /* Enhanced mobile menu styling */
+  .main-header .mobile-menu {
+    position: fixed;
+    top: 64px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: calc(100vh - 64px);
+    background-color: white;
+    z-index: 50;
+    overflow-y: auto;
+    transform: translateX(0);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Mobile menu button improvements */
+  .mobile-menu-button {
+    position: relative;
+    z-index: 60;
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
 }
 
 /* Form and modal improvements */
@@ -472,6 +503,31 @@
     max-height: 60vh;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 20px;
+  }
+  
+  /* Mobile menu improvements */
+  .md\:hidden.fixed {
+    display: flex !important;
+    flex-direction: column;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  /* Ensure menu button is above everything */
+  button[aria-label="Toggle mobile menu"] {
+    z-index: 60;
+    position: relative;
+    touch-action: manipulation;
+  }
+  
+  /* Enhance mobile menu animation */
+  @keyframes slideInMenu {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .md\:hidden.fixed nav {
+    animation: slideInMenu 0.2s ease-out;
   }
 }
 
