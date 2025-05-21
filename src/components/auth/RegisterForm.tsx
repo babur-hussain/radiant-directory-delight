@@ -34,7 +34,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const RegisterForm: React.FC = () => {
-  const { signup, loading, error: authError } = useAuth();
+  const { signup, loading } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [referralId, setReferralId] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -86,23 +86,23 @@ const RegisterForm: React.FC = () => {
       console.log('Registering user with data:', { email: data.email, additionalData });
       
       // Register the user
-      const { user, error } = await signup(data.email, data.password, additionalData);
+      const result = await signup(data.email, data.password, additionalData);
       
-      if (error) {
-        console.error('Registration error:', error);
-        setError(error.message || 'Failed to register');
+      if (result?.error) {
+        console.error('Registration error:', result.error);
+        setError(result.error.message || 'Failed to register');
         return;
       }
       
-      if (user && referralId) {
+      if (result?.user && referralId) {
         // Process the referral if a referral ID was provided
-        console.log('Processing referral for new user:', user.id);
-        await checkAndProcessReferralFromURL(user.id);
+        console.log('Processing referral for new user:', result.user.id);
+        await checkAndProcessReferralFromURL(result.user.id);
       }
       
       // Redirect to home page or onboarding
       navigate('/');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Registration error:', err);
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     }
@@ -121,7 +121,10 @@ const RegisterForm: React.FC = () => {
             name="role"
             render={({ field }) => (
               <FormItem className="space-y-1">
-                <RegisterTypeSelector value={field.value} onChange={field.onChange} />
+                <RegisterTypeSelector 
+                  selectedType={field.value} 
+                  onSelectType={field.onChange} 
+                />
               </FormItem>
             )}
           />
@@ -228,9 +231,9 @@ const RegisterForm: React.FC = () => {
           )}
 
           {/* Error message */}
-          {(error || authError) && (
+          {error && (
             <div className="bg-destructive/10 text-destructive px-3 py-2 rounded-md text-sm">
-              {error || authError}
+              {error}
             </div>
           )}
 

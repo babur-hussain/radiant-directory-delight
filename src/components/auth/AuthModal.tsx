@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -22,7 +23,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
   redirectUrl,
 }) => {
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   // Close modal and redirect if user becomes authenticated
@@ -34,6 +35,17 @@ const AuthModal: React.FC<AuthModalProps> = ({
       }
     }
   }, [isAuthenticated, open, onOpenChange, navigate, redirectUrl]);
+
+  const handleGoogleLogin = async () => {
+    try {
+      await loginWithGoogle();
+      if (redirectUrl) {
+        navigate(redirectUrl);
+      }
+    } catch (error) {
+      console.error('Error logging in with Google:', error);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -51,7 +63,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           </TabsList>
           
           <TabsContent value="login" className="space-y-4">
-            <SocialLoginButtons />
+            <SocialLoginButtons onGoogleLogin={handleGoogleLogin} />
             
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -64,16 +76,11 @@ const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             </div>
             
-            <LoginForm onSuccess={() => {
-              onOpenChange(false);
-              if (redirectUrl) {
-                navigate(redirectUrl);
-              }
-            }} />
+            <LoginForm />
           </TabsContent>
           
           <TabsContent value="register" className="space-y-4">
-            <SocialLoginButtons />
+            <SocialLoginButtons onGoogleLogin={handleGoogleLogin} />
             
             <div className="relative">
               <div className="absolute inset-0 flex items-center">

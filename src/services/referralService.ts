@@ -191,20 +191,21 @@ export const processReferralSignup = async (newUserId: string, referralId: strin
     console.log(`Found referrer with ID ${referrerData.id}`);
     
     // Update the new user with the referrer's ID
+    // Use a custom metadata field since there's no direct referring_user_id column
     const { error: updateError } = await supabase
       .from('users')
       .update({ 
-        // Use fields that exist in the schema
-        referring_user_id: referrerData.id 
+        // Store the referrer ID in a field that exists in the schema
+        referral_id: referralId
       })
       .eq('id', newUserId);
     
     if (updateError) {
-      console.error('Error updating referring_user_id for new user:', updateError);
+      console.error('Error updating referral_id for new user:', updateError);
       return false;
     }
     
-    console.log(`Updated referring_user_id field for user ${newUserId}`);
+    console.log(`Updated referral_id field for user ${newUserId}`);
     
     // Increment the referrer's count using the custom function
     const { error: recordError } = await supabase.rpc('record_referral', {

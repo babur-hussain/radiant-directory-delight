@@ -9,6 +9,7 @@ import AuthCallbackPage from "@/pages/AuthCallbackPage";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { usePopupAd } from "@/providers/PopupAdProvider";
 import SubscriptionPopupAd from "@/components/ads/SubscriptionPopupAd";
+import { useAuth } from "@/hooks/useAuth";
 
 // Fix: Wrap the NotFound component in a Layout when used as errorElement
 const NotFoundPage = () => (
@@ -17,11 +18,16 @@ const NotFoundPage = () => (
   </Layout>
 );
 
+// Loading component for lazy-loaded routes
+const LoadingComponent = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+  </div>
+);
+
 // New component to route users to the appropriate dashboard based on their role
-// Important: Define this BEFORE it's used in the routes
 const DashboardRouter = () => {
-  const { state } = usePopupAd();
-  const user = state?.user;
+  const { user } = useAuth();
   
   if (!user) {
     return <Navigate to="/profile" replace />;
@@ -57,20 +63,6 @@ const AppShell = () => {
     </>
   );
 };
-
-// Loading component for lazy-loaded routes
-const LoadingComponent = () => (
-  <div className="flex items-center justify-center min-h-[400px]">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-  </div>
-);
-
-// New pages
-const BlogPage = lazy(() => import("@/pages/BlogPage"));
-const BlogPostPage = lazy(() => import("@/pages/BlogPostPage"));
-const ServicesPage = lazy(() => import("@/pages/ServicesPage"));
-const AboutPage = lazy(() => import("@/pages/AboutPage"));
-const PortfolioPage = lazy(() => import("@/pages/PortfolioPage"));
 
 // Existing lazy loaded components
 const BusinessesPage = lazy(() => import("@/pages/BusinessesPage"));

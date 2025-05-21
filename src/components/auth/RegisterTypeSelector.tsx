@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 export interface RegisterTypeSelectorProps {
   onSelectType: (type: UserRole) => void;
-  selectedType: UserRole; 
+  selectedType: UserRole;
 }
 
 const RegisterTypeSelector: React.FC<RegisterTypeSelectorProps> = ({ 
@@ -46,17 +46,7 @@ const RegisterTypeSelector: React.FC<RegisterTypeSelectorProps> = ({
       activeColor: "border-purple-500 bg-purple-500/10",
       iconBg: "bg-purple-100",
       buttonColor: "bg-purple-500 hover:bg-purple-600"
-    },
-    {
-      id: "Staff",
-      title: "Staff Member",
-      description: "Join as a staff member to manage businesses and platform operations.",
-      icon: <UserCheck className="h-10 w-10 mb-3 text-amber-500" />,
-      color: "bg-amber-500/10 border-amber-200 hover:border-amber-500",
-      activeColor: "border-amber-500 bg-amber-500/10",
-      iconBg: "bg-amber-100",
-      buttonColor: "bg-amber-500 hover:bg-amber-600"
-    },
+    }
   ];
 
   return (
@@ -68,7 +58,7 @@ const RegisterTypeSelector: React.FC<RegisterTypeSelectorProps> = ({
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-3">
         {registrationTypes.map((type) => (
           <Card 
             key={type.id} 
