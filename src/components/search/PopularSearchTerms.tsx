@@ -6,16 +6,16 @@ interface PopularSearchTermsProps {
 }
 
 const PopularSearchTerms: React.FC<PopularSearchTermsProps> = ({ onTermClick }) => {
-  const popularTerms = ['Restaurants', 'Hotels', 'Coffee', 'Gyms', 'Doctors', 'Auto Services'];
+  const popularTerms = ['Restaurants', 'Hotels', 'Coffee', 'Gyms', 'Doctors', 'Auto'];
 
   return (
-    <div className="mt-4 flex flex-col items-center">
-      <span className="text-gray-500 mb-2">Popular:</span>
-      <div className="flex flex-wrap justify-center items-center gap-2 text-sm">
+    <div className="mt-2 sm:mt-4 flex flex-col items-center">
+      <span className="text-gray-500 text-xs sm:text-sm mb-1 sm:mb-2">Popular:</span>
+      <div className="flex flex-wrap justify-center items-center gap-1 sm:gap-2 text-xs sm:text-sm">
         {popularTerms.map((term) => (
           <button
             key={term}
-            className="px-4 py-2 bg-white shadow-sm rounded-full hover:bg-gray-50 text-gray-700 transition-colors"
+            className="px-2 py-1 sm:px-4 sm:py-2 bg-white shadow-sm rounded-full hover:bg-gray-50 text-gray-700 transition-colors tap-highlight-transparent"
             onClick={() => onTermClick(term)}
           >
             {term}

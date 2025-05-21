@@ -14,6 +14,7 @@ const Header: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [initialTab, setInitialTab] = useState<'login' | 'register'>('login');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,20 +42,26 @@ const Header: React.FC = () => {
   };
 
   const handleLoginClick = () => {
+    setInitialTab('login');
     setAuthModalOpen(true);
   };
 
   const handleRegisterClick = () => {
+    setInitialTab('register');
     setAuthModalOpen(true);
+  };
+
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
   };
 
   return (
     <>
       <header className={`main-header fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/95 shadow-md' : 'bg-transparent'}`}>
-        <div className="container h-16 flex items-center justify-between">
+        <div className="container mx-auto h-16 flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
-              <div className="bg-purple-600 rounded-full w-10 h-10 flex items-center justify-center text-white font-bold">G</div>
+              <div className="bg-purple-600 rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-white font-bold">G</div>
               <span className="text-lg md:text-2xl font-bold text-gray-900">
                 Grow Bharat
               </span>
@@ -63,17 +70,17 @@ const Header: React.FC = () => {
 
           <HeaderLinks />
           
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             {isLoading ? (
               <div className="h-10 w-20 bg-gray-200 animate-pulse rounded"></div>
             ) : isAuthenticated && user ? (
               <UserMenu />
             ) : (
               <>
-                <Button variant="outline" className="rounded-full" onClick={handleLoginClick}>
+                <Button variant="outline" className="rounded-full text-sm px-3 py-1 h-9 sm:h-10 sm:px-4 sm:py-2" onClick={handleLoginClick}>
                   Login
                 </Button>
-                <Button variant="gradient" className="hidden sm:flex rounded-full" onClick={handleRegisterClick}>
+                <Button variant="gradient" className="hidden sm:flex rounded-full text-sm px-3 py-1 h-9 sm:h-10 sm:px-4 sm:py-2" onClick={handleRegisterClick}>
                   Register
                 </Button>
               </>
@@ -81,7 +88,7 @@ const Header: React.FC = () => {
           </div>
 
           <button
-            className="md:hidden flex items-center"
+            className="md:hidden flex items-center justify-center w-10 h-10 tap-highlight-transparent"
             onClick={toggleMobileMenu}
             aria-label="Toggle mobile menu"
           >
@@ -98,63 +105,63 @@ const Header: React.FC = () => {
             <nav className="flex flex-col space-y-4">
               <Link
                 to="/"
-                className="text-gray-800 hover:text-purple-600 py-2 border-b border-gray-100"
-                onClick={() => setMobileMenuOpen(false)}
+                className="text-gray-800 hover:text-purple-600 py-3 border-b border-gray-100 tap-highlight-transparent"
+                onClick={closeMobileMenu}
               >
                 Home
               </Link>
               <Link
                 to="/categories"
-                className="text-gray-800 hover:text-pink-500 py-2 border-b border-gray-100"
-                onClick={() => setMobileMenuOpen(false)}
+                className="text-gray-800 hover:text-pink-500 py-3 border-b border-gray-100 tap-highlight-transparent"
+                onClick={closeMobileMenu}
               >
                 Categories
               </Link>
               <Link
                 to="/businesses"
-                className="text-gray-800 hover:text-blue-500 py-2 border-b border-gray-100"
-                onClick={() => setMobileMenuOpen(false)}
+                className="text-gray-800 hover:text-blue-500 py-3 border-b border-gray-100 tap-highlight-transparent"
+                onClick={closeMobileMenu}
               >
                 Businesses
               </Link>
               <Link
                 to="/influencers"
-                className="text-gray-800 hover:text-orange-500 py-2 border-b border-gray-100"
-                onClick={() => setMobileMenuOpen(false)}
+                className="text-gray-800 hover:text-orange-500 py-3 border-b border-gray-100 tap-highlight-transparent"
+                onClick={closeMobileMenu}
               >
                 Influencers
               </Link>
               <Link
                 to="/blog"
-                className="text-gray-800 hover:text-teal-500 py-2 border-b border-gray-100"
-                onClick={() => setMobileMenuOpen(false)}
+                className="text-gray-800 hover:text-teal-500 py-3 border-b border-gray-100 tap-highlight-transparent"
+                onClick={closeMobileMenu}
               >
                 Blog
               </Link>
               <Link
                 to="/services"
-                className="text-gray-800 hover:text-green-500 py-2 border-b border-gray-100"
-                onClick={() => setMobileMenuOpen(false)}
+                className="text-gray-800 hover:text-green-500 py-3 border-b border-gray-100 tap-highlight-transparent"
+                onClick={closeMobileMenu}
               >
                 Services
               </Link>
               <Link
                 to="/about"
-                className="text-gray-800 hover:text-yellow-500 py-2"
-                onClick={() => setMobileMenuOpen(false)}
+                className="text-gray-800 hover:text-yellow-500 py-3 tap-highlight-transparent"
+                onClick={closeMobileMenu}
               >
                 About Us
               </Link>
               {!isAuthenticated && (
                 <div className="pt-4 flex flex-col space-y-3">
-                  <Button variant="outline" className="w-full rounded-full" onClick={() => {
-                    setMobileMenuOpen(false);
+                  <Button variant="outline" className="w-full rounded-full h-12" onClick={() => {
+                    closeMobileMenu();
                     handleLoginClick();
                   }}>
                     Login
                   </Button>
-                  <Button variant="gradient" className="w-full rounded-full" onClick={() => {
-                    setMobileMenuOpen(false);
+                  <Button variant="gradient" className="w-full rounded-full h-12" onClick={() => {
+                    closeMobileMenu();
                     handleRegisterClick();
                   }}>
                     Register
@@ -169,7 +176,7 @@ const Header: React.FC = () => {
       <AuthModal 
         open={authModalOpen} 
         onOpenChange={setAuthModalOpen} 
-        defaultTab="login"
+        defaultTab={initialTab}
       />
     </>
   );

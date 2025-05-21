@@ -11,13 +11,13 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, hideHeader = false, hideFooter = false }) => {
-  const showHeader = true;
+  const showHeader = !hideHeader;
   const showFooter = !hideFooter;
   
   return (
     <div className="flex flex-col min-h-screen">
       {showHeader && <Header />}
-      <main className="flex-grow pt-0">
+      <main className="flex-grow pt-0 w-full overflow-x-hidden">
         {children || <Outlet />}
       </main>
       {showFooter && <Footer />}
