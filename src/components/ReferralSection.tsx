@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { User } from '@/types/auth';
 import { Copy, Share2, RefreshCw } from 'lucide-react';
-import { createReferralLink, generateReferralId } from '@/utils/referral/referralUtils';
+import { generateReferralLink } from '@/utils/referral/referralUtils';
 import { useToast } from '@/hooks/use-toast';
 import { ensureReferralId, getReferralStats } from '@/services/referralService';
 import { useAuth } from '@/hooks/useAuth';
@@ -53,7 +53,7 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
         
         // Create the referral link
         if (user.referralId) {
-          setReferralLink(createReferralLink(user.referralId));
+          setReferralLink(generateReferralLink(user.referralId));
         }
       } catch (error) {
         console.error('Error loading referral data:', error);
