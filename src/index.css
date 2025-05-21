@@ -225,13 +225,25 @@
 }
 
 @keyframes slideIn {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 @keyframes blurIn {
   from { backdrop-filter: blur(0); }
   to { backdrop-filter: blur(8px); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+.animate-blurIn {
+  animation: blurIn 0.3s ease-out forwards;
 }
 
 /* Improved scrollbar */
@@ -328,26 +340,7 @@
   }
   
   /* Enhanced mobile menu styling */
-  .main-header .mobile-menu {
-    position: fixed;
-    top: 64px;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: calc(100vh - 64px);
-    background-color: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    z-index: 50;
-    overflow-y: auto;
-    transform: translateX(0);
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Mobile menu button improvements */
-  .mobile-menu-button {
+  .main-header .mobile-menu-button {
     position: relative;
     z-index: 60;
     min-height: 44px;
@@ -361,7 +354,7 @@
   
   /* Mobile menu backdrop enhancement */
   .mobile-menu-backdrop {
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeIn 0.3s ease-out, blurIn 0.3s ease-out;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
