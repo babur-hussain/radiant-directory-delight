@@ -6,9 +6,6 @@ type PopupAdContextType = {
   showSubscriptionPopup: boolean;
   setShowSubscriptionPopup: (show: boolean) => void;
   triggerSubscriptionPopup: () => void;
-  state: {
-    user?: User | null;
-  };
 };
 
 const PopupAdContext = createContext<PopupAdContextType | undefined>(undefined);
@@ -17,7 +14,7 @@ export const PopupAdProvider: React.FC<{ children: React.ReactNode }> = ({
   children 
 }) => {
   const [showSubscriptionPopup, setShowSubscriptionPopup] = useState(false);
-  const [state, setState] = useState<{user?: User | null}>({});
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   
   // Check if the popup has been shown before
   useEffect(() => {
@@ -38,7 +35,7 @@ export const PopupAdProvider: React.FC<{ children: React.ReactNode }> = ({
   
   // Method to update user state
   const updateUserState = (user: User | null) => {
-    setState(prev => ({ ...prev, user }));
+    setCurrentUser(user);
   };
   
   return (
@@ -46,7 +43,6 @@ export const PopupAdProvider: React.FC<{ children: React.ReactNode }> = ({
       showSubscriptionPopup,
       setShowSubscriptionPopup,
       triggerSubscriptionPopup,
-      state
     }}>
       {children}
     </PopupAdContext.Provider>

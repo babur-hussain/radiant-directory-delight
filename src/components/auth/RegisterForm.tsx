@@ -25,7 +25,7 @@ type FormData = z.infer<typeof formSchema>;
 const RegisterForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>("User");
-  const { register: authRegister } = useAuth();
+  const { signup } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -52,7 +52,7 @@ const RegisterForm: React.FC = () => {
     
     try {
       // Register the user with auth service
-      const result = await authRegister(data.email, data.password, data.name);
+      const result = await signup(data.email, data.password, data.name, selectedRole);
       
       if (!result || result.error) {
         // Handle registration error
@@ -62,11 +62,11 @@ const RegisterForm: React.FC = () => {
           variant: "destructive",
         });
         console.error("Registration error:", result?.error);
-      } else if (result.user) {
+      } else if (result.id) {
         // Track referral if a referral code was provided
         if (referralCode) {
           try {
-            await trackReferral(referralCode, result.user.uid, selectedRole);
+            await trackReferral(referralCode, result.id, selectedRole);
           } catch (error) {
             console.error("Error tracking referral:", error);
             // Don't fail the registration if referral tracking fails

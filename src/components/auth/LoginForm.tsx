@@ -1,41 +1,38 @@
+
 import React, { useState } from 'react';
-import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Link } from 'react-router-dom';
 
-// Form schema with validation
+// Define form schema
 const formSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
+  password: z.string().min(1, { message: 'Password is required.' }),
   employeeCode: z.string().optional(),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+// Infer form data type from schema
+type FormData = z.infer<typeof formSchema>;
 
-interface LoginFormProps {
-  onClose?: () => void;
+// Define component props
+export interface LoginFormProps {
   onLogin?: (email: string, password: string, employeeCode?: string) => Promise<void>;
+  onClose?: () => void;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onClose, onLogin }) => {
-  const { login, loading } = useAuth();
-  const [error, setError] = useState<string | null>(null);
+const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onClose }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [showEmployeeCode, setShowEmployeeCode] = useState(false);
   
-  // Initialize form with default values
-  const form = useForm<FormValues>({
+  const { login } = useAuth();
+  const { toast } = useToast();
+  
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: '',
@@ -44,93 +41,110 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose, onLogin }) => {
     },
   });
   
-  // Handle form submission
-  const onSubmit = async (data: FormValues) => {
+  const onSubmit = async (data: FormData) => {
+    setIsLoading(true);
+    
     try {
-      setError(null);
-      
       if (onLogin) {
-        // Use provided login handler if available
         await onLogin(data.email, data.password, data.employeeCode);
       } else {
-        // Otherwise use the default login handler
         await login(data.email, data.password, data.employeeCode);
       }
       
-      // Close modal if needed
       if (onClose) {
         onClose();
       }
-    } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to login');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      
+      toast({
+        title: 'Login failed',
+        description: error?.message || 'Invalid email or password. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
   
   return (
-    <div className="w-full space-y-4">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {error && (
-            <div className="p-3 text-sm rounded-md bg-destructive/15 text-destructive">
-              {error}
-            </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input placeholder="you@example.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-          
+        />
+        
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder="••••••••" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        {showEmployeeCode && (
           <FormField
             control={form.control}
-            name="email"
+            name="employeeCode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>Employee Code (Optional)</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="you@example.com" autoComplete="email" {...field} />
+                  <Input placeholder="Enter employee code" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input type="password" placeholder="••••••••" autoComplete="current-password" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <div className="flex justify-end">
-            <Link
-              to="/auth/reset-password"
-              className="text-sm text-primary hover:underline"
-            >
-              Forgot password?
-            </Link>
-          </div>
-          
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={loading}
+        )}
+        
+        <div className="flex items-center justify-between">
+          <Button
+            type="button"
+            variant="link"
+            className="p-0 text-xs text-primary"
+            onClick={() => setShowEmployeeCode(!showEmployeeCode)}
           >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
-              </>
-            ) : (
-              'Sign in'
-            )}
+            {showEmployeeCode ? 'Hide employee code' : 'Have an employee code?'}
           </Button>
-        </form>
-      </Form>
-    </div>
+          
+          <Button
+            type="button"
+            variant="link"
+            className="p-0 text-xs text-primary"
+            onClick={() => {
+              // Forgot password functionality
+              toast({
+                title: 'Password reset',
+                description: 'Please check your email for password reset instructions.',
+              });
+            }}
+          >
+            Forgot password?
+          </Button>
+        </div>
+        
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? 'Signing in...' : 'Sign in'}
+        </Button>
+      </form>
+    </Form>
   );
 };
 

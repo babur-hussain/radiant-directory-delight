@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { PartnersSection } from '@/components/PartnersSection';
+import PartnersSection from '@/components/PartnersSection';
 
 const AboutPage = () => {
   return (

@@ -1,6 +1,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
+import { User, UserRole } from '@/types/auth';
+import { nanoid } from 'nanoid';
 
 /**
  * Track a referral when a user registers through a referral link
@@ -22,8 +24,8 @@ export const trackReferral = async (
     // First, find the referring user by their referral code
     const { data: referringUsers, error: findError } = await supabase
       .from('users')
-      .select('id, referral_count, referral_successful_count')
-      .eq('referral_code', referralCode)
+      .select('id, referral_count')
+      .eq('referral_id', referralCode)
       .limit(1);
 
     if (findError) {
@@ -42,8 +44,7 @@ export const trackReferral = async (
     const { error: updateError } = await supabase
       .from('users')
       .update({ 
-        referred_by: referringUser.id,
-        referral_status: 'pending' 
+        referral_id: referringUser.id 
       })
       .eq('id', newUserId);
 
@@ -65,23 +66,6 @@ export const trackReferral = async (
       return { success: false, error: incrementError };
     }
 
-    // Create a referral record
-    const { error: referralError } = await supabase
-      .from('referrals')
-      .insert([
-        { 
-          referring_user_id: referringUser.id,
-          referred_user_id: newUserId,
-          status: 'pending',
-          user_role: userRole
-        }
-      ]);
-
-    if (referralError) {
-      console.error("Error creating referral record:", referralError);
-      return { success: false, error: referralError };
-    }
-
     return { 
       success: true, 
       message: "Referral tracked successfully" 
@@ -93,74 +77,205 @@ export const trackReferral = async (
 };
 
 /**
+ * Process a referral signup
+ * @param userId - The ID of the newly registered user
+ * @param referralCode - The referral code from the URL
+ */
+export const processReferralSignup = async (userId: string, referralCode: string) => {
+  try {
+    if (!userId || !referralCode) {
+      return { success: false, error: "Missing user ID or referral code" };
+    }
+    
+    // Get user role
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
+    
+    if (userError || !userData) {
+      return { success: false, error: userError };
+    }
+    
+    // Track the referral
+    return await trackReferral(referralCode, userId, userData.role);
+  } catch (error) {
+    console.error("Error processing referral signup:", error);
+    return { success: false, error };
+  }
+};
+
+/**
+ * Generate a new referral ID for a user
+ * @param userId - The ID of the user
+ * @param forceNew - Whether to force generation of a new ID
+ */
+export const ensureReferralId = async (userId: string, forceNew = false) => {
+  try {
+    // Check if user already has a referral ID
+    if (!forceNew) {
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('referral_id')
+        .eq('id', userId)
+        .single();
+      
+      if (!userError && user && user.referral_id) {
+        return { success: true, referralId: user.referral_id };
+      }
+    }
+    
+    // Generate a new referral ID
+    const referralId = nanoid(8);
+    
+    // Update the user with the new referral ID
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ referral_id: referralId })
+      .eq('id', userId);
+    
+    if (updateError) {
+      return { success: false, error: updateError };
+    }
+    
+    return { success: true, referralId };
+  } catch (error) {
+    console.error("Error ensuring referral ID:", error);
+    return { success: false, error };
+  }
+};
+
+/**
+ * Get a user's referral statistics
+ * @param userId - The ID of the user
+ */
+export const getReferralStats = async (userId: string) => {
+  try {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('referral_count, referral_earnings')
+      .eq('id', userId)
+      .single();
+    
+    if (error) {
+      console.error("Error getting referral stats:", error);
+      return null;
+    }
+    
+    return {
+      referralCount: user?.referral_count || 0,
+      referralEarnings: user?.referral_earnings || 0
+    };
+  } catch (error) {
+    console.error("Error getting referral stats:", error);
+    return null;
+  }
+};
+
+/**
+ * Get a user by their referral ID
+ * @param referralId - The referral ID
+ */
+export const getUserByReferralId = async (referralId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('referral_id', referralId)
+      .single();
+    
+    if (error) {
+      return { success: false, error };
+    }
+    
+    return { success: true, user: data };
+  } catch (error) {
+    console.error("Error getting user by referral ID:", error);
+    return { success: false, error };
+  }
+};
+
+/**
+ * Record a successful referral
+ * @param referralId - The referral ID
+ * @param subscriptionAmount - The amount of the subscription
+ */
+export const recordReferral = async (referralId: string, subscriptionAmount: number) => {
+  try {
+    // Get the referring user
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, referral_earnings, referral_count')
+      .eq('referral_id', referralId)
+      .single();
+    
+    if (userError || !user) {
+      return { success: false, error: userError || new Error("User not found") };
+    }
+    
+    // Calculate earnings (20% of subscription amount)
+    const earnings = subscriptionAmount * 0.2;
+    
+    // Update the referring user's earnings
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        referral_earnings: (user.referral_earnings || 0) + earnings
+      })
+      .eq('id', user.id);
+    
+    if (updateError) {
+      return { success: false, error: updateError };
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error("Error recording referral:", error);
+    return { success: false, error };
+  }
+};
+
+/**
  * Mark a referral as successful after certain conditions are met
  * (e.g., user completes profile, makes a purchase, etc.)
  */
 export const completeReferral = async (userId: string) => {
   try {
-    // Find the user's referral record
-    const { data: referrals, error: findError } = await supabase
-      .from('referrals')
-      .select('id, referring_user_id, status')
-      .eq('referred_user_id', userId)
-      .eq('status', 'pending')
-      .limit(1);
-
-    if (findError) {
-      console.error("Error finding referral:", findError);
-      return { success: false, error: findError };
-    }
-
-    if (!referrals || referrals.length === 0) {
-      console.log("No pending referral found for user:", userId);
-      return { success: false, error: "No pending referral found" };
-    }
-
-    const referral = referrals[0];
-
-    // Update the referral status to 'completed'
-    const { error: updateReferralError } = await supabase
-      .from('referrals')
-      .update({ status: 'completed' })
-      .eq('id', referral.id);
-
-    if (updateReferralError) {
-      console.error("Error updating referral status:", updateReferralError);
-      return { success: false, error: updateReferralError };
-    }
-
-    // Update user's referral status
-    const { error: updateUserError } = await supabase
+    // Find the user who was referred
+    const { data: userData, error: userError } = await supabase
       .from('users')
-      .update({ referral_status: 'completed' })
-      .eq('id', userId);
+      .select('referral_id')
+      .eq('id', userId)
+      .single();
 
-    if (updateUserError) {
-      console.error("Error updating user referral status:", updateUserError);
-      return { success: false, error: updateUserError };
+    if (userError || !userData || !userData.referral_id) {
+      console.log("No referral found for user:", userId);
+      return { success: false, error: "No referral found" };
     }
 
-    // Increment the referring user's successful referral count
-    const { data: referringUsers, error: findReferringError } = await supabase
+    // Get the referring user
+    const { data: referringUser, error: referringError } = await supabase
       .from('users')
-      .select('referral_successful_count')
-      .eq('id', referral.referring_user_id)
-      .limit(1);
+      .select('id, referral_successful_count')
+      .eq('id', userData.referral_id)
+      .single();
 
-    if (findReferringError) {
-      console.error("Error finding referring user:", findReferringError);
-      return { success: false, error: findReferringError };
+    if (referringError) {
+      console.error("Error finding referring user:", referringError);
+      return { success: false, error: referringError };
     }
 
-    if (referringUsers && referringUsers.length > 0) {
-      const currentCount = referringUsers[0].referral_successful_count || 0;
+    // Increment the referring user's successful referral count if found
+    if (referringUser) {
+      const currentCount = referringUser.referral_successful_count || 0;
       
       const { error: incrementError } = await supabase
         .from('users')
         .update({ 
           referral_successful_count: currentCount + 1 
         })
-        .eq('id', referral.referring_user_id);
+        .eq('id', referringUser.id);
 
       if (incrementError) {
         console.error("Error incrementing successful referral count:", incrementError);

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ServicesSection } from '@/components/services/ServicesSection';
+import ServicesSection from '@/components/services/ServicesSection';
 
 const ServicesPage = () => {
   return (

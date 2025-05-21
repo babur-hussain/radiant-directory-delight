@@ -1,41 +1,20 @@
 
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { Chrome } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Chrome } from 'lucide-react';
 
-interface SocialLoginButtonsProps {
-  onGoogleLogin?: () => void;
-  isDisabled?: boolean;
+export interface SocialLoginButtonsProps {
+  onGoogleLogin: () => void;
 }
 
-const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({
-  onGoogleLogin,
-  isDisabled = false,
-}) => {
-  const { loginWithGoogle } = useAuth();
-  
-  // If no onGoogleLogin function is provided, use the default from useAuth
-  const handleGoogleLogin = async () => {
-    if (onGoogleLogin) {
-      onGoogleLogin();
-    } else if (loginWithGoogle) {
-      try {
-        await loginWithGoogle();
-      } catch (error) {
-        console.error("Google login error:", error);
-      }
-    }
-  };
-
+const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({ onGoogleLogin }) => {
   return (
-    <div className="grid gap-2">
+    <div className="space-y-2">
       <Button
-        variant="outline"
         type="button"
-        onClick={handleGoogleLogin}
-        disabled={isDisabled}
+        variant="outline"
         className="w-full"
+        onClick={onGoogleLogin}
       >
         <Chrome className="mr-2 h-4 w-4" />
         Continue with Google
