@@ -7,7 +7,7 @@ import { User } from '@/types/auth';
 import { Copy, Share2, RefreshCw } from 'lucide-react';
 import { createReferralLink, generateReferralId } from '@/utils/referral/referralUtils';
 import { useToast } from '@/hooks/use-toast';
-import { ensureReferralId } from '@/services/referralService';
+import { ensureReferralId, getReferralStats } from '@/services/referralService';
 import { useAuth } from '@/hooks/useAuth';
 
 interface ReferralSectionProps {
@@ -19,13 +19,51 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
   const { refreshUserData } = useAuth();
   const [copySuccess, setCopySuccess] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [referralLink, setReferralLink] = useState('');
+  const [referralStats, setReferralStats] = useState({
+    referralCount: user.referralCount || 0,
+    referralEarnings: user.referralEarnings || 0
+  });
   
+  // Load the latest referral stats
   useEffect(() => {
-    if (user.referralId) {
-      setReferralLink(createReferralLink(user.referralId));
-    }
-  }, [user.referralId]);
+    const loadReferralStats = async () => {
+      if (!user.id) {
+        setIsLoading(false);
+        return;
+      }
+      
+      try {
+        // First ensure the user has a referral ID
+        if (!user.referralId) {
+          await ensureReferralId(user.id);
+          await refreshUserData();
+        } else {
+          // If they already have a referral ID, get the updated stats
+          const stats = await getReferralStats(user.id);
+          
+          if (stats) {
+            setReferralStats({
+              referralCount: stats.referralCount,
+              referralEarnings: stats.referralEarnings
+            });
+          }
+        }
+        
+        // Create the referral link
+        if (user.referralId) {
+          setReferralLink(createReferralLink(user.referralId));
+        }
+      } catch (error) {
+        console.error('Error loading referral data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadReferralStats();
+  }, [user.id, user.referralId, refreshUserData]);
   
   const handleCopyLink = () => {
     if (referralLink) {
@@ -104,11 +142,11 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-primary/10 rounded-md p-4 text-center">
             <p className="text-sm text-muted-foreground">Total Earnings</p>
-            <p className="text-2xl font-bold text-primary">₹{user.referralEarnings || 0}</p>
+            <p className="text-2xl font-bold text-primary">₹{referralStats.referralEarnings}</p>
           </div>
           <div className="bg-primary/10 rounded-md p-4 text-center">
             <p className="text-sm text-muted-foreground">Referrals</p>
-            <p className="text-2xl font-bold text-primary">{user.referralCount || 0}</p>
+            <p className="text-2xl font-bold text-primary">{referralStats.referralCount}</p>
           </div>
         </div>
         
@@ -119,12 +157,14 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
               value={referralLink} 
               readOnly
               className="bg-muted"
+              placeholder={isLoading ? "Loading..." : "Generate a referral link"}
             />
             <Button 
               variant="outline" 
               size="icon" 
               onClick={handleCopyLink}
               className={copySuccess ? "bg-green-100 text-green-600" : ""}
+              disabled={!referralLink || isLoading}
             >
               <Copy className="h-4 w-4" />
             </Button>
@@ -133,9 +173,9 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
             <button 
               onClick={handleGenerateNewRefLink}
               className="flex items-center text-primary hover:underline" 
-              disabled={isGenerating}
+              disabled={isGenerating || isLoading}
             >
-              <RefreshCw className="h-3 w-3 mr-1" /> 
+              <RefreshCw className={`h-3 w-3 mr-1 ${isGenerating ? 'animate-spin' : ''}`} /> 
               {isGenerating ? 'Generating...' : 'Generate new link'}
             </button>
           </div>
@@ -145,6 +185,7 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
           className="w-full" 
           variant="default" 
           onClick={handleShare}
+          disabled={!referralLink || isLoading}
         >
           <Share2 className="mr-2 h-4 w-4" /> Share with Friends
         </Button>

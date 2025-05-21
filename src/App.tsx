@@ -7,7 +7,14 @@ import { PopupAdProvider } from './providers/PopupAdProvider';
 import AppRoutes from './AppRoutes';
 
 // Create a client
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // Root component with providers
 function App() {

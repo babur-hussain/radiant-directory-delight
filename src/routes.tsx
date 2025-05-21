@@ -165,10 +165,25 @@ export const router = createBrowserRouter([
               <Suspense fallback={<LoadingComponent />}><InfluencerDashboardPage /></Suspense>
             </ProtectedRoute>
           },
+          // Fix: Add proper routing for dashboard to direct users to the right dashboard based on their role
           {
             path: "dashboard",
             element: <ProtectedRoute>
-              <Navigate to="/profile" replace />
+              <Suspense fallback={<LoadingComponent />}>
+                <DashboardRouter />
+              </Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "dashboard/business",
+            element: <ProtectedRoute roles={["Business", "Admin"]}>
+              <Suspense fallback={<LoadingComponent />}><BusinessDashboardPage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "dashboard/influencer",
+            element: <ProtectedRoute roles={["Influencer", "Admin"]}>
+              <Suspense fallback={<LoadingComponent />}><InfluencerDashboardPage /></Suspense>
             </ProtectedRoute>
           },
           {
@@ -287,5 +302,28 @@ export const router = createBrowserRouter([
     ],
   },
 ]);
+
+// New component to route users to the appropriate dashboard based on their role
+const DashboardRouter = () => {
+  const { user } = usePopupAd();
+  
+  if (!user) {
+    return <Navigate to="/profile" replace />;
+  }
+  
+  if (user.role === "Admin" || user.isAdmin) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+  
+  if (user.role === "Business") {
+    return <Navigate to="/dashboard/business" replace />;
+  }
+  
+  if (user.role === "Influencer") {
+    return <Navigate to="/dashboard/influencer" replace />;
+  }
+  
+  return <Navigate to="/profile" replace />;
+};
 
 export default router;

@@ -49,22 +49,14 @@ const UserMenu = () => {
     navigate("/profile");
   };
 
-  // Handle dashboard click
+  // Handle dashboard click - Updated to use the /dashboard route
   const handleDashboardClick = () => {
-    if (userData?.role === "Admin" || userData?.isAdmin) {
-      navigate("/admin");
-    } else if (userData?.role === "Influencer") {
-      navigate("/dashboard/influencer");
-    } else if (userData?.role === "Business") {
-      navigate("/dashboard/business");
-    } else {
-      navigate("/profile");
-    }
+    navigate("/dashboard");
   };
 
   // Handle subscription details click
   const handleSubscriptionClick = () => {
-    navigate("/subscription");
+    navigate("/subscriptions");
   };
 
   // Add logout handler to properly call the logout function and redirect
