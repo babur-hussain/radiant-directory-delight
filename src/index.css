@@ -256,4 +256,32 @@
   .search-container input {
     font-size: 16px; /* Prevents iOS zoom */
   }
+
+  /* Form styles for mobile */
+  form {
+    @apply px-1;
+  }
+
+  /* Dialog padding for mobile */
+  .dialog-content {
+    padding: 1rem !important;
+  }
+
+  /* Tabs for auth forms */
+  .tabs-content {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Form and modal improvements */
+.auth-form-container {
+  @apply max-h-[85vh] overflow-hidden;
+}
+
+.form-scroll-container {
+  @apply overflow-y-auto -mx-4 px-4 pb-4;
+  max-height: calc(85vh - 150px);
+  -webkit-overflow-scrolling: touch;
 }
