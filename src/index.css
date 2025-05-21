@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -229,6 +228,176 @@
 
 ::-webkit-scrollbar-thumb {
   @apply bg-muted-foreground/30 rounded-full transition-colors hover:bg-muted-foreground/50;
+}
+
+/* Mobile specific styles */
+@media (max-width: 768px) {
+  /* Fix issues with auth modal */
+  .radix-dialog-content {
+    width: calc(100vw - 24px) !important;
+    margin: 0 12px !important;
+    padding: 16px !important;
+    overflow: hidden !important;
+    max-height: 90vh !important;
+  }
+
+  [data-radix-scroll-area-viewport] {
+    -webkit-overflow-scrolling: touch;
+    max-height: 70vh !important;
+  }
+
+  /* Fix form fields on small screens */
+  form input, form select, form textarea, form .form-control {
+    font-size: 16px !important; /* Prevents iOS zoom */
+    min-height: 42px !important;
+  }
+
+  .form-label {
+    font-size: 14px !important;
+  }
+
+  /* Make auth dialog more mobile friendly */
+  .radix-dialog-content [data-radix-dialog-close] {
+    top: 8px !important;
+    right: 8px !important;
+  }
+  
+  /* Improve TabsList touchability */
+  [role="tablist"] {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  [role="tab"] {
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* Better form spacing */
+  .form-group, .form-field, form > div {
+    margin-bottom: 12px !important;
+  }
+  
+  /* Fix registration type selector */
+  [role="radiogroup"] {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px !important;
+  }
+  
+  [role="radiogroup"] label {
+    min-height: 68px !important;
+    padding: 8px 4px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  /* Better form layout on small screens */
+  .auth-modal-content form,
+  .auth-dialog form {
+    padding-bottom: 16px !important;
+  }
+  
+  /* Prevent text overflow */
+  .form-message {
+    font-size: 12px !important;
+    word-break: break-word !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Form and modal improvements */
+.auth-form-container {
+  @apply max-h-[85vh] overflow-hidden;
+}
+
+.form-scroll-container {
+  @apply overflow-y-auto -mx-4 px-4 pb-4;
+  max-height: calc(85vh - 150px);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Additional responsive fixes */
+@media (max-width: 640px) {
+  .hero-section {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+  
+  .search-bar {
+    padding: 0.5rem;
+  }
+  
+  .popular-terms {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  /* Better vertical spacing */
+  .space-y-responsive {
+    @apply space-y-3 sm:space-y-4 md:space-y-6;
+  }
+  
+  /* Reduce font sizes on very small screens */
+  .text-responsive {
+    @apply text-sm sm:text-base;
+  }
+  
+  .heading-responsive {
+    @apply text-xl sm:text-2xl md:text-3xl;
+  }
+  
+  /* Fix field sizing on small screens */
+  .form-field {
+    @apply mb-3;
+  }
+  
+  .form-grid {
+    @apply grid grid-cols-1 gap-3;
+  }
+  
+  /* Fix button sizing on small screens */
+  .cta-button {
+    @apply w-full py-3;
+  }
+}
+
+/* Improve auth modal responsiveness */
+@media (max-width: 768px) {
+  .auth-modal {
+    @apply p-3 w-[calc(100vw-24px)] max-w-md mx-auto;
+  }
+  
+  .auth-tabs {
+    @apply -mx-3 mb-4 overflow-x-auto;
+  }
+  
+  .auth-form {
+    @apply px-0;
+  }
+  
+  /* Fix auth form scrolling */
+  [data-radix-scroll-area-viewport] {
+    padding-right: 4px;
+  }
+}
+
+/* Fix dialog content scrolling improvements */
+@media (max-width: 768px) {
+  .radix-dialog-content {
+    max-height: 90vh !important;
+    overflow: hidden !important;
+  }
+  
+  .radix-dialog-body {
+    max-height: calc(90vh - 120px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* Mobile specific styles */

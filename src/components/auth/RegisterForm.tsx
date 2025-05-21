@@ -194,17 +194,45 @@ const RegisterForm: React.FC = () => {
         </Alert>
       )}
       
-      <ScrollArea className="max-h-[70vh] md:max-h-none px-2 -mx-2">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pb-4">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Full Name *</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter your full name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email *</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="Enter your email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <FormField
               control={form.control}
-              name="name"
+              name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name *</FormLabel>
+                  <FormLabel>Phone Number</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your full name" {...field} />
+                    <Input type="tel" placeholder="Phone number" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -213,183 +241,153 @@ const RegisterForm: React.FC = () => {
             
             <FormField
               control={form.control}
-              name="email"
+              name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email *</FormLabel>
+                  <FormLabel>Password *</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="Enter your email" {...field} />
+                    <Input type="password" placeholder="Create a password" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <FormField
+              control={form.control}
+              name="city"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>City</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Your city" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <FormField
+              control={form.control}
+              name="country"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Country</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Your country" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          
+          {selectedRole === "Business" && (
+            <>
               <FormField
                 control={form.control}
-                name="phone"
+                name="businessName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
+                    <FormLabel>Business Name</FormLabel>
                     <FormControl>
-                      <Input type="tel" placeholder="Phone number" {...field} />
+                      <Input placeholder="Your business name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password *</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="Create a password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>City</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Your city" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="country"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Country</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Your country" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            {selectedRole === "Business" && (
-              <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
-                  name="businessName"
+                  name="businessCategory"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Business Name</FormLabel>
+                      <FormLabel>Business Category</FormLabel>
                       <FormControl>
-                        <Input placeholder="Your business name" {...field} />
+                        <Input placeholder="e.g. Restaurant, Retail, etc." {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <FormField
-                    control={form.control}
-                    name="businessCategory"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Business Category</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. Restaurant, Retail, etc." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                <FormField
+                  control={form.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Website</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://www.example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </>
+          )}
+          
+          <FormField
+            control={form.control}
+            name="referralCode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="flex items-center gap-1">
+                  Referral Code 
+                  <span className="text-xs text-muted-foreground">(Optional)</span>
+                </FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input
+                      placeholder="Enter referral code"
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        handleReferralCodeChange(e);
+                      }}
+                      className={
+                        isValidReferral === true
+                          ? "border-green-500 focus:ring-green-500"
+                          : isValidReferral === false
+                          ? "border-red-500 focus:ring-red-500"
+                          : ""
+                      }
+                    />
+                    {isValidReferral === true && (
+                      <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-500" />
                     )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="website"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Website</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://www.example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                    {isValidReferral === false && (
+                      <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-red-500" />
                     )}
-                  />
-                </div>
-              </>
+                  </div>
+                </FormControl>
+                {referralCode && isValidReferral !== null && !referralChecking && (
+                  <Alert className={`mt-1 p-2 ${isValidReferral ? "bg-green-50" : "bg-red-50"}`}>
+                    <AlertDescription className={`text-xs ${isValidReferral ? "text-green-600" : "text-red-600"}`}>
+                      {isValidReferral 
+                        ? "Valid referral code!" 
+                        : "Invalid referral code. Please check and try again."}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {referralChecking && (
+                  <div className="text-xs text-muted-foreground mt-1">Validating referral code...</div>
+                )}
+                <FormMessage />
+              </FormItem>
             )}
-            
-            <FormField
-              control={form.control}
-              name="referralCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-1">
-                    Referral Code 
-                    <span className="text-xs text-muted-foreground">(Optional)</span>
-                  </FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        placeholder="Enter referral code"
-                        {...field}
-                        onChange={(e) => {
-                          field.onChange(e);
-                          handleReferralCodeChange(e);
-                        }}
-                        className={
-                          isValidReferral === true
-                            ? "border-green-500 focus:ring-green-500"
-                            : isValidReferral === false
-                            ? "border-red-500 focus:ring-red-500"
-                            : ""
-                        }
-                      />
-                      {isValidReferral === true && (
-                        <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-500" />
-                      )}
-                      {isValidReferral === false && (
-                        <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-red-500" />
-                      )}
-                    </div>
-                  </FormControl>
-                  {referralCode && isValidReferral !== null && !referralChecking && (
-                    <Alert className={`mt-1 p-2 ${isValidReferral ? "bg-green-50" : "bg-red-50"}`}>
-                      <AlertDescription className={`text-xs ${isValidReferral ? "text-green-600" : "text-red-600"}`}>
-                        {isValidReferral 
-                          ? "Valid referral code!" 
-                          : "Invalid referral code. Please check and try again."}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                  {referralChecking && (
-                    <div className="text-xs text-muted-foreground mt-1">Validating referral code...</div>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <Button type="submit" className="w-full mt-6" disabled={isLoading}>
-              {isLoading ? "Creating Account..." : "Create Account"}
-            </Button>
-          </form>
-        </Form>
-      </ScrollArea>
+          />
+          
+          <Button type="submit" className="w-full mt-6" disabled={isLoading}>
+            {isLoading ? "Creating Account..." : "Create Account"}
+          </Button>
+        </form>
+      </Form>
     </div>
   );
 };
