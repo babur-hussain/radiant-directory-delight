@@ -110,7 +110,8 @@ const OnboardingGuide: React.FC = () => {
         </div>
       </div>
       
-      <style jsx>{`
+      <style>
+        {`
         .step-card::after {
           content: '';
           position: absolute;
@@ -127,7 +128,8 @@ const OnboardingGuide: React.FC = () => {
             display: block;
           }
         }
-      `}</style>
+        `}
+      </style>
     </section>
   );
 };
