@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { businessesData } from '@/data/businessesData';
 import SearchResults, { BusinessResult } from '../SearchResults';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const locations = [
   'Madhya Pradesh',
@@ -55,10 +56,101 @@ const SearchBar = ({
   const [showResults, setShowResults] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<BusinessResult[]>([]);
+  const [allBusinesses, setAllBusinesses] = useState<BusinessResult[]>([]);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const locationDropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  // Load all businesses on component mount
+  useEffect(() => {
+    const fetchBusinesses = async () => {
+      try {
+        // First try to fetch from Supabase
+        const { data: supabaseData, error } = await supabase
+          .from('businesses')
+          .select('*');
+        
+        if (error) {
+          console.error("Error fetching from Supabase:", error);
+          throw error;
+        }
+        
+        // If Supabase data exists and has items, use that
+        if (supabaseData && supabaseData.length > 0) {
+          console.log("Loaded businesses from Supabase:", supabaseData.length);
+          
+          const formattedBusinesses = supabaseData.map(business => ({
+            id: business.id,
+            name: business.name || "Unnamed Business",
+            category: business.category || "Uncategorized",
+            address: business.address || "No address",
+            location: business.location || "",
+            rating: typeof business.rating === 'number' ? business.rating : 0,
+            reviews: typeof business.reviews === 'number' ? business.reviews : 0,
+            image: business.image || "",
+            description: business.description || "No description",
+            tags: Array.isArray(business.tags) ? business.tags : [],
+            featured: !!business.featured
+          }));
+          
+          setAllBusinesses(formattedBusinesses);
+        } else {
+          // Fallback to local data if Supabase is empty
+          console.log("No Supabase data, using local businessesData instead");
+          
+          if (Array.isArray(businessesData) && businessesData.length > 0) {
+            const formattedBusinesses = businessesData.map(business => ({
+              id: business.id,
+              name: business.name || "Unnamed Business",
+              category: business.category || "Uncategorized",
+              address: business.address || "No address",
+              location: "",
+              rating: typeof business.rating === 'number' ? business.rating : 0,
+              reviews: typeof business.reviews === 'number' ? business.reviews : 0,
+              image: business.image || "",
+              description: business.description || "No description",
+              tags: Array.isArray(business.tags) ? business.tags : [],
+              featured: !!business.featured
+            }));
+            
+            setAllBusinesses(formattedBusinesses);
+          } else {
+            console.warn("No businesses found in local data");
+            setAllBusinesses([]);
+          }
+        }
+      } catch (err) {
+        console.error("Error loading businesses:", err);
+        toast({
+          title: "Error Loading Businesses",
+          description: "There was a problem loading the business data. Using fallback data.",
+          variant: "destructive"
+        });
+        
+        // Use local data as fallback
+        if (Array.isArray(businessesData)) {
+          const formattedBusinesses = businessesData.map(business => ({
+            id: business.id,
+            name: business.name || "Unnamed Business",
+            category: business.category || "Uncategorized",
+            address: business.address || "No address",
+            location: "",
+            rating: typeof business.rating === 'number' ? business.rating : 0,
+            reviews: typeof business.reviews === 'number' ? business.reviews : 0,
+            image: business.image || "",
+            description: business.description || "No description",
+            tags: Array.isArray(business.tags) ? business.tags : [],
+            featured: !!business.featured
+          }));
+          
+          setAllBusinesses(formattedBusinesses);
+        }
+      }
+    };
+    
+    fetchBusinesses();
+  }, [toast]);
 
   useEffect(() => {
     if (initialQuery) {
@@ -79,9 +171,8 @@ const SearchBar = ({
         
         setTimeout(() => {
           try {
-            // Make sure businessesData is available and is an array
-            if (!Array.isArray(businessesData)) {
-              console.error("Business data is not an array:", businessesData);
+            if (!Array.isArray(allBusinesses)) {
+              console.error("Business data is not available:", allBusinesses);
               toast({
                 title: "Data Error",
                 description: "Could not load business data. Please try again.",
@@ -91,13 +182,14 @@ const SearchBar = ({
               return;
             }
             
-            console.log("Searching for:", searchQuery, "in", businessesData.length, "businesses");
+            console.log("Searching for:", searchQuery, "in", allBusinesses.length, "businesses");
             
             const queryLower = searchQuery.toLowerCase();
-            const results = businessesData.filter(business => {
+            const results = allBusinesses.filter(business => {
               // Safely check each property
               const nameMatch = business.name?.toLowerCase().includes(queryLower) || false;
               const categoryMatch = business.category?.toLowerCase().includes(queryLower) || false;
+              const descriptionMatch = business.description?.toLowerCase().includes(queryLower) || false;
               let tagMatch = false;
               
               if (Array.isArray(business.tags)) {
@@ -106,20 +198,8 @@ const SearchBar = ({
                 );
               }
               
-              return nameMatch || categoryMatch || tagMatch;
-            }).map(business => ({
-              id: business.id,
-              name: business.name || "Unnamed Business",
-              category: business.category || "Uncategorized",
-              address: business.address || "No address",
-              location: business.location || "",
-              rating: typeof business.rating === 'number' ? business.rating : 0,
-              reviews: typeof business.reviews === 'number' ? business.reviews : 0,
-              image: business.image || "",
-              description: business.description || "No description",
-              tags: Array.isArray(business.tags) ? business.tags : [],
-              featured: !!business.featured
-            }));
+              return nameMatch || categoryMatch || descriptionMatch || tagMatch;
+            });
             
             console.log("Search results:", results.length);
             setSearchResults(results);
@@ -142,7 +222,7 @@ const SearchBar = ({
     }, 300);
 
     return () => clearTimeout(delaySearch);
-  }, [searchQuery, toast]);
+  }, [searchQuery, toast, allBusinesses]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
