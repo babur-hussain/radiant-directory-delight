@@ -2,10 +2,14 @@
 import React from 'react';
 import SearchBar from './search/SearchBar';
 import PopularSearchTerms from './search/PopularSearchTerms';
+import { useNavigate } from 'react-router-dom';
 
 const HeroSection: React.FC = () => {
+  const navigate = useNavigate();
+  
   const handleTermClick = (term: string) => {
     console.log("Search term clicked:", term);
+    navigate(`/businesses?search=${encodeURIComponent(term)}`);
   };
   
   return (

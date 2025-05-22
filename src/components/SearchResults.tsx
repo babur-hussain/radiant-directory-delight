@@ -55,22 +55,27 @@ const SearchResults = ({ results, isLoading, visible, onResultClick, onClose }: 
     };
   }, [visible, isMobile]);
 
+  // If not visible, don't render anything
   if (!visible) return null;
+
+  console.log("Rendering search results:", results.length, "items");
 
   return (
     <div 
       ref={resultsRef}
       className={cn(
-        "search-results-container absolute left-0 right-0 top-2 z-40 bg-white shadow-2xl transition-all duration-200 border border-gray-100 rounded-xl",
-        visible ? "opacity-100" : "opacity-0 pointer-events-none"
+        "search-results-container absolute left-0 right-0 top-full z-40 bg-white/95 shadow-2xl transition-all duration-200 border border-gray-100 rounded-xl",
+        visible ? "opacity-100 translate-y-1" : "opacity-0 pointer-events-none translate-y-0"
       )}
       style={{ 
         maxHeight: isMobile ? 'calc(80vh)' : '70vh',
-        marginTop: '0.5rem'
+        marginTop: '0.5rem',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)'
       }}
     >
       <div className="h-full flex flex-col">
-        <div className="sticky top-0 z-10 flex justify-between items-center bg-white p-4 border-b">
+        <div className="sticky top-0 z-10 flex justify-between items-center bg-white/95 p-4 border-b">
           <div className="flex items-center gap-2">
             <h3 className="font-medium text-gray-700">Search Results</h3>
             {!isLoading && results.length > 0 && (

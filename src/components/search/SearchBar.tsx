@@ -79,24 +79,49 @@ const SearchBar = ({
         
         setTimeout(() => {
           try {
-            const results = businessesData.filter(business => 
-              business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              business.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              business.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-            ).map(business => ({
+            // Make sure businessesData is available and is an array
+            if (!Array.isArray(businessesData)) {
+              console.error("Business data is not an array:", businessesData);
+              toast({
+                title: "Data Error",
+                description: "Could not load business data. Please try again.",
+                variant: "destructive"
+              });
+              setIsSearching(false);
+              return;
+            }
+            
+            console.log("Searching for:", searchQuery, "in", businessesData.length, "businesses");
+            
+            const queryLower = searchQuery.toLowerCase();
+            const results = businessesData.filter(business => {
+              // Safely check each property
+              const nameMatch = business.name?.toLowerCase().includes(queryLower) || false;
+              const categoryMatch = business.category?.toLowerCase().includes(queryLower) || false;
+              let tagMatch = false;
+              
+              if (Array.isArray(business.tags)) {
+                tagMatch = business.tags.some(tag => 
+                  typeof tag === 'string' && tag.toLowerCase().includes(queryLower)
+                );
+              }
+              
+              return nameMatch || categoryMatch || tagMatch;
+            }).map(business => ({
               id: business.id,
-              name: business.name,
-              category: business.category,
-              address: business.address,
-              location: business.location,
-              rating: business.rating,
-              reviews: business.reviews,
-              image: business.image,
-              description: business.description,
-              tags: business.tags,
-              featured: business.featured
+              name: business.name || "Unnamed Business",
+              category: business.category || "Uncategorized",
+              address: business.address || "No address",
+              location: business.location || "",
+              rating: typeof business.rating === 'number' ? business.rating : 0,
+              reviews: typeof business.reviews === 'number' ? business.reviews : 0,
+              image: business.image || "",
+              description: business.description || "No description",
+              tags: Array.isArray(business.tags) ? business.tags : [],
+              featured: !!business.featured
             }));
             
+            console.log("Search results:", results.length);
             setSearchResults(results);
             setShowResults(true);
           } catch (error) {
@@ -127,6 +152,7 @@ const SearchBar = ({
         setShowLocationDropdown(false);
       }
       
+      // Handle clicks outside search results
       if (searchContainerRef.current && 
           !searchContainerRef.current.contains(event.target as Node)) {
         const resultsElement = document.querySelector('.search-results-container');
@@ -155,7 +181,9 @@ const SearchBar = ({
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      navigate(`/businesses?search=${searchQuery}&location=${location}`);
+      console.log("Navigating to businesses with query:", searchQuery);
+      navigate(`/businesses?search=${encodeURIComponent(searchQuery)}&location=${encodeURIComponent(location)}`);
+      setShowResults(false);
     } else {
       if (searchInputRef.current) {
         searchInputRef.current.focus();
@@ -168,6 +196,7 @@ const SearchBar = ({
   };
 
   const handleResultClick = (id: number) => {
+    console.log("Business clicked:", id);
     setShowResults(false);
     navigate(`/business?id=${id}`);
   };

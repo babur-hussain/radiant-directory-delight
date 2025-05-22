@@ -31,6 +31,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
     };
   }, [isOpen]);
 
+  // If not open, don't render the menu
   if (!isOpen) return null;
 
   const handleItemClick = () => {
@@ -47,10 +48,10 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col">
+    <div className="fixed inset-0 z-40 flex flex-col">
       {/* Enhanced backdrop with beautiful blur gradient effect */}
       <div 
-        className="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-pink-500/20 to-blue-500/30 backdrop-blur-lg"
+        className="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-pink-500/20 to-blue-500/30 backdrop-blur-lg animate-fadeIn"
         onClick={onClose}
       />
       
