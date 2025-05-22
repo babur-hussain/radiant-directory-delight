@@ -63,7 +63,7 @@ const AdminSubscriptionsPage = () => {
   
   useEffect(() => {
     if (dbConnected && !isLoading) {
-      console.log("Database connected, loaded packages:", packages?.length);
+      console.log("Database connected, loaded packages:", Array.isArray(packages) ? packages.length : 'none');
     }
   }, [dbConnected, packages, isLoading]);
   
@@ -175,7 +175,7 @@ const AdminSubscriptionsPage = () => {
                     <Loading message="Loading subscription packages..." className="py-10" />
                   ) : (
                     <SubscriptionPackagesTable 
-                      packages={packages}
+                      packages={Array.isArray(packages) ? packages : []}
                       onEdit={handleEditPackage}
                       onDelete={handleDeletePackage}
                     />

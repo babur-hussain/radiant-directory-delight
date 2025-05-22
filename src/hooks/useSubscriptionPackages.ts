@@ -1,10 +1,11 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { getAllPackages, savePackage, deletePackage } from '@/services/packageService';
 import { toast } from '@/hooks/use-toast';
 
 // Sample fallback packages to display while loading
-const fallbackPackages = [
+const fallbackPackages: ISubscriptionPackage[] = [
   {
     id: 'business-basic',
     title: 'Business Basic',
@@ -43,7 +44,7 @@ export const useSubscriptionPackages = () => {
     queryKey: ['subscription-packages'],
     queryFn: async () => {
       try {
-        const cachedPackages = queryClient.getQueryData(['subscription-packages']);
+        const cachedPackages = queryClient.getQueryData<ISubscriptionPackage[]>(['subscription-packages']);
         if (cachedPackages) {
           console.log("Using cached subscription packages");
           return cachedPackages;
@@ -181,8 +182,8 @@ export const useSubscriptionPackages = () => {
   };
 
   return {
-    // Return fallback packages if loading or error
-    packages: packages || fallbackPackages,
+    // Return packages with proper typing, ensuring it's always an array
+    packages: packages as ISubscriptionPackage[],
     isLoading,
     isError,
     error,

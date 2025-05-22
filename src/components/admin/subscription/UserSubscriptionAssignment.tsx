@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useSubscriptionAssignment } from '@/hooks/useSubscriptionAssignment';
 import { User, UserSubscription } from '@/types/auth';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 
 interface UserSubscriptionAssignmentProps {
   user: User; 
@@ -170,13 +171,13 @@ const UserSubscriptionAssignment: React.FC<UserSubscriptionAssignmentProps> = ({
           <Select
             value={selectedPackage}
             onValueChange={setSelectedPackage}
-            disabled={disabled || packages.length === 0}
+            disabled={disabled || (Array.isArray(packages) && packages.length === 0)}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a package" />
             </SelectTrigger>
             <SelectContent>
-              {packages.map((pkg) => (
+              {Array.isArray(packages) && packages.map((pkg: ISubscriptionPackage) => (
                 <SelectItem key={pkg.id} value={pkg.id}>
                   {pkg.title}
                 </SelectItem>

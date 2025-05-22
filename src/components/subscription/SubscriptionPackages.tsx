@@ -23,8 +23,8 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   const navigate = useNavigate();
   
   // Filter packages by user role, but fallback to all packages if none match
-  const filteredPackages = packages?.filter(pkg => pkg.type === userRole) || [];
-  const packagesToDisplay = filteredPackages.length > 0 ? filteredPackages : packages || [];
+  const filteredPackages = Array.isArray(packages) ? packages.filter(pkg => pkg.type === userRole) : [];
+  const packagesToDisplay = filteredPackages.length > 0 ? filteredPackages : (Array.isArray(packages) ? packages : []);
 
   const handleSelectPackage = (pkg: ISubscriptionPackage) => {
     console.log("Package selected:", pkg.title);

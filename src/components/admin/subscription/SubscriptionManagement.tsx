@@ -169,7 +169,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
             </TableRow>
           </TableHeader>
           <TableBody>
-            {packages.map((pkg) => (
+            {Array.isArray(packages) && packages.map((pkg) => (
               <TableRow key={pkg.id}>
                 <TableCell className="font-mono text-xs">{pkg.id}</TableCell>
                 <TableCell>{pkg.title}</TableCell>

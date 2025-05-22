@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
 import { useToast } from '@/hooks/use-toast';
 import { PaymentType } from '@/models/Subscription';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 
 interface SubscriptionAssignment {
   userId: string;
@@ -106,7 +107,9 @@ export const useSubscriptionAssignment = (
     
     try {
       // Find the package details
-      const packageToAssign = packages.find(pkg => pkg.id === selectedPackage);
+      const packageToAssign = Array.isArray(packages) ? 
+        packages.find(pkg => pkg.id === selectedPackage) : undefined;
+      
       if (!packageToAssign) throw new Error('Selected package not found');
       
       const startDate = new Date();

@@ -55,14 +55,14 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
   
   // Set selected package when packages are loaded
   useEffect(() => {
-    if (packages && packages.length > 0 && !selectedPackage) {
+    if (Array.isArray(packages) && packages.length > 0 && !selectedPackage) {
       setSelectedPackage(packages[0].id);
     }
   }, [packages, selectedPackage]);
   
   // Load package sections when selected package changes
   useEffect(() => {
-    if (selectedPackage && packages) {
+    if (selectedPackage && Array.isArray(packages)) {
       const pkg = packages.find(p => p.id === selectedPackage);
       if (pkg) {
         setCurrentPackageSections(pkg.dashboardSections || []);
@@ -90,6 +90,15 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
         toast({
           title: "Error",
           description: "No package selected",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (!Array.isArray(packages)) {
+        toast({
+          title: "Error",
+          description: "Packages data is invalid",
           variant: "destructive"
         });
         return;
@@ -162,7 +171,7 @@ const DashboardSectionsManager: React.FC<DashboardSectionsManagerProps> = ({ use
             <div className="py-8 text-center text-muted-foreground">Loading dashboard sections...</div>
           ) : (
             <PackageSectionsList
-              packages={packages}
+              packages={Array.isArray(packages) ? packages : []}
               selectedPackage={selectedPackage}
               setSelectedPackage={handleSelectPackage}
               packageSections={currentPackageSections}
