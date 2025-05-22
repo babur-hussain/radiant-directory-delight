@@ -2,6 +2,8 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from './ui/button';
+import { useLocation } from 'react-router-dom';
+import { Home, Grid, Store, Users, BookOpen, Briefcase, Info } from 'lucide-react';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -18,6 +20,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   onLoginClick,
   onRegisterClick
 }) => {
+  const location = useLocation();
+  
   // Add effect to prevent body scrolling when menu is open
   useEffect(() => {
     if (isOpen) {
@@ -47,6 +51,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
     }
   };
 
+  const isActive = (path: string) => location.pathname === path;
+
   return (
     <div className="fixed inset-0 z-40 flex flex-col">
       {/* Enhanced backdrop with beautiful blur gradient effect */}
@@ -56,69 +62,69 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
       />
       
       {/* Menu content with beautiful styling */}
-      <div className="fixed top-16 left-0 right-0 bottom-0 bg-white/80 backdrop-blur-md shadow-xl border-t border-gray-200/50 overflow-y-auto z-50 animate-slideIn">
+      <div className="fixed top-16 left-0 right-0 bottom-0 bg-white/90 backdrop-blur-md shadow-xl border-t border-gray-200/50 overflow-y-auto z-50 animate-slideIn">
         <div className="py-6 px-5 max-h-[calc(100vh-64px)] overflow-auto">
           <nav className="flex flex-col space-y-1">
             <Link
               to="/"
-              className="text-gray-800 font-medium py-4 border-b border-gray-100/70 flex items-center space-x-3 tap-highlight-transparent transition-colors hover:text-purple-600"
+              className={`text-gray-800 font-medium py-4 border-b border-gray-100/70 flex items-center space-x-3 tap-highlight-transparent transition-colors ${isActive('/') ? 'text-purple-600 font-semibold' : 'hover:text-purple-600'}`}
               onClick={handleItemClick}
             >
-              <span className="w-2 h-2 rounded-full bg-purple-600"></span>
+              <Home className={`w-5 h-5 ${isActive('/') ? 'text-purple-600' : 'text-gray-500'}`} />
               <span>Home</span>
             </Link>
             
             <Link
               to="/categories"
-              className="text-gray-800 font-medium py-4 border-b border-gray-100/70 flex items-center space-x-3 tap-highlight-transparent transition-colors hover:text-pink-500"
+              className={`text-gray-800 font-medium py-4 border-b border-gray-100/70 flex items-center space-x-3 tap-highlight-transparent transition-colors ${isActive('/categories') ? 'text-pink-500 font-semibold' : 'hover:text-pink-500'}`}
               onClick={handleItemClick}
             >
-              <span className="w-2 h-2 rounded-full bg-pink-500"></span>
+              <Grid className={`w-5 h-5 ${isActive('/categories') ? 'text-pink-500' : 'text-gray-500'}`} />
               <span>Categories</span>
             </Link>
             
             <Link
               to="/businesses"
-              className="text-gray-800 font-medium py-4 border-b border-gray-100/70 flex items-center space-x-3 tap-highlight-transparent transition-colors hover:text-blue-500"
+              className={`text-gray-800 font-medium py-4 border-b border-gray-100/70 flex items-center space-x-3 tap-highlight-transparent transition-colors ${isActive('/businesses') ? 'text-blue-500 font-semibold' : 'hover:text-blue-500'}`}
               onClick={handleItemClick}
             >
-              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+              <Store className={`w-5 h-5 ${isActive('/businesses') ? 'text-blue-500' : 'text-gray-500'}`} />
               <span>Businesses</span>
             </Link>
             
             <Link
               to="/influencers"
-              className="text-gray-800 font-medium py-4 border-b border-gray-100/70 flex items-center space-x-3 tap-highlight-transparent transition-colors hover:text-orange-500"
+              className={`text-gray-800 font-medium py-4 border-b border-gray-100/70 flex items-center space-x-3 tap-highlight-transparent transition-colors ${isActive('/influencers') ? 'text-orange-500 font-semibold' : 'hover:text-orange-500'}`}
               onClick={handleItemClick}
             >
-              <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+              <Users className={`w-5 h-5 ${isActive('/influencers') ? 'text-orange-500' : 'text-gray-500'}`} />
               <span>Influencers</span>
             </Link>
             
             <Link
               to="/blog"
-              className="text-gray-800 font-medium py-4 border-b border-gray-100/70 flex items-center space-x-3 tap-highlight-transparent transition-colors hover:text-teal-500"
+              className={`text-gray-800 font-medium py-4 border-b border-gray-100/70 flex items-center space-x-3 tap-highlight-transparent transition-colors ${isActive('/blog') ? 'text-teal-500 font-semibold' : 'hover:text-teal-500'}`}
               onClick={handleItemClick}
             >
-              <span className="w-2 h-2 rounded-full bg-teal-500"></span>
+              <BookOpen className={`w-5 h-5 ${isActive('/blog') ? 'text-teal-500' : 'text-gray-500'}`} />
               <span>Blog</span>
             </Link>
             
             <Link
               to="/services"
-              className="text-gray-800 font-medium py-4 border-b border-gray-100/70 flex items-center space-x-3 tap-highlight-transparent transition-colors hover:text-green-500"
+              className={`text-gray-800 font-medium py-4 border-b border-gray-100/70 flex items-center space-x-3 tap-highlight-transparent transition-colors ${isActive('/services') ? 'text-green-500 font-semibold' : 'hover:text-green-500'}`}
               onClick={handleItemClick}
             >
-              <span className="w-2 h-2 rounded-full bg-green-500"></span>
+              <Briefcase className={`w-5 h-5 ${isActive('/services') ? 'text-green-500' : 'text-gray-500'}`} />
               <span>Services</span>
             </Link>
             
             <Link
               to="/about"
-              className="text-gray-800 font-medium py-4 flex items-center space-x-3 tap-highlight-transparent transition-colors hover:text-yellow-500"
+              className={`text-gray-800 font-medium py-4 flex items-center space-x-3 tap-highlight-transparent transition-colors ${isActive('/about') ? 'text-yellow-500 font-semibold' : 'hover:text-yellow-500'}`}
               onClick={handleItemClick}
             >
-              <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+              <Info className={`w-5 h-5 ${isActive('/about') ? 'text-yellow-500' : 'text-gray-500'}`} />
               <span>About Us</span>
             </Link>
           </nav>

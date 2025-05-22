@@ -670,3 +670,143 @@
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* Additional responsive fixes */
+@media (max-width: 640px) {
+  /* Better loading skeletons */
+  .skeleton {
+    @apply animate-pulse bg-gray-200 rounded-md;
+  }
+  
+  .skeleton-text {
+    @apply h-4 w-3/4 skeleton mb-2;
+  }
+  
+  .skeleton-title {
+    @apply h-6 w-1/2 skeleton mb-4;
+  }
+  
+  .skeleton-image {
+    @apply h-32 w-full skeleton mb-4;
+  }
+  
+  .skeleton-button {
+    @apply h-10 w-24 skeleton;
+  }
+  
+  .skeleton-avatar {
+    @apply h-10 w-10 rounded-full skeleton;
+  }
+  
+  /* Add extra touch area to improve mobile experience */
+  .touch-target {
+    @apply relative;
+  }
+  
+  .touch-target::after {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    right: -8px;
+    bottom: -8px;
+    z-index: -1;
+  }
+
+  /* Fix for tap highlight color */
+  a, button, [role="button"], .interactive {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Improved loading animations */
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.shimmer {
+  animation-duration: 1.5s;
+  animation-fill-mode: forwards;
+  animation-iteration-count: infinite;
+  animation-name: shimmer;
+  animation-timing-function: linear;
+  background: linear-gradient(to right, #f6f7f8 8%, #edeef1 18%, #f6f7f8 33%);
+  background-size: 800px 104px;
+}
+
+/* Page transitions */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.page-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Enhance fade in animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* Staggered animation helper classes */
+.stagger-item:nth-child(1) { animation-delay: 0.1s; }
+.stagger-item:nth-child(2) { animation-delay: 0.2s; }
+.stagger-item:nth-child(3) { animation-delay: 0.3s; }
+.stagger-item:nth-child(4) { animation-delay: 0.4s; }
+.stagger-item:nth-child(5) { animation-delay: 0.5s; }
+.stagger-item:nth-child(6) { animation-delay: 0.6s; }
+
+/* Improved lazy loading for images */
+.lazy-image {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.lazy-image.loaded {
+  opacity: 1;
+}
+
+/* Better focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.focus-ring:focus-visible {
+  @apply ring-2 ring-offset-2 ring-primary;
+}
+
+/* Smooth transitions */
+.transition-smooth {
+  @apply transition-all duration-300 ease-in-out;
+}

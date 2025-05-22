@@ -1,9 +1,9 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Header from '../Header';
 import Footer from '../Footer';
-import { useIsMobile } from '@/hooks/use-responsive';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface LayoutProps {
   children?: React.ReactNode;
@@ -15,6 +15,7 @@ const Layout: React.FC<LayoutProps> = ({ children, hideHeader = false, hideFoote
   const showHeader = !hideHeader;
   const showFooter = !hideFooter;
   const isMobile = useIsMobile();
+  const location = useLocation();
   
   // Add class to document body to help with mobile menu styling
   React.useEffect(() => {
@@ -24,6 +25,11 @@ const Layout: React.FC<LayoutProps> = ({ children, hideHeader = false, hideFoote
       document.body.classList.remove('has-mobile-layout');
     };
   }, []);
+  
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
   
   return (
     <div className="flex flex-col min-h-screen">

@@ -1,21 +1,51 @@
 
 import { useState, useEffect } from 'react';
 
-export function useIsMobile(breakpoint = 768) {
-  const [isMobile, setIsMobile] = useState(false);
+const MOBILE_BREAKPOINT = 768;
+
+export function useIsMobile() {
+  const [isMobile, setIsMobile] = useState<boolean>(false);
 
   useEffect(() => {
     // Set initial value
-    setIsMobile(window.innerWidth < breakpoint);
+    const checkIsMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     
-    // Update on resize
+    // Check initially
+    checkIsMobile();
+    
+    // Add resize listener with debounce for performance
+    let resizeTimer: ReturnType<typeof setTimeout>;
     const handleResize = () => {
-      setIsMobile(window.innerWidth < breakpoint);
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(checkIsMobile, 100);
     };
     
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [breakpoint]);
+    window.addEventListener('resize', handleResize, { passive: true });
+    
+    return () => {
+      clearTimeout(resizeTimer);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   return isMobile;
+}
+
+export function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    
+    // Set initial value
+    setMatches(media.matches);
+    
+    // Update matches on change
+    const listener = () => setMatches(media.matches);
+    media.addEventListener("change", listener);
+    
+    return () => media.removeEventListener("change", listener);
+  }, [query]);
+
+  return matches;
 }

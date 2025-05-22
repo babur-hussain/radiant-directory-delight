@@ -3,11 +3,12 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { User } from '@/types/auth';
-import { Copy, Share2, RefreshCw } from 'lucide-react';
+import { Copy, Share2, RefreshCw, Loader2 } from 'lucide-react';
 import { generateReferralLink } from '@/utils/referral/referralUtils';
 import { useToast } from '@/hooks/use-toast';
 import { ensureReferralId, getReferralStats } from '@/services/referralService';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ReferralSectionProps {
   user: User;
@@ -24,9 +25,12 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
     referralCount: user.referralCount || 0,
     referralEarnings: user.referralEarnings || 0
   });
+  const isMobile = useIsMobile();
   
   // Load the latest referral stats
   useEffect(() => {
+    let isMounted = true;
+    
     const loadReferralStats = async () => {
       if (!user.id) {
         setIsLoading(false);
@@ -42,7 +46,7 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
           // If they already have a referral ID, get the updated stats
           const stats = await getReferralStats(user.id);
           
-          if (stats) {
+          if (stats && isMounted) {
             setReferralStats({
               referralCount: stats.referralCount,
               referralEarnings: stats.referralEarnings
@@ -51,17 +55,23 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
         }
         
         // Create the referral link - updated to use auth page
-        if (user.referralId) {
+        if (user.referralId && isMounted) {
           setReferralLink(generateReferralLink(user.referralId));
         }
       } catch (error) {
         console.error('Error loading referral data:', error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
     
     loadReferralStats();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [user.id, user.referralId, refreshUserData]);
   
   const handleCopyLink = () => {
@@ -129,6 +139,17 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
     }
   };
   
+  if (isLoading) {
+    return (
+      <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-brand-purple/5">
+        <CardContent className="flex flex-col items-center justify-center min-h-[300px]">
+          <Loader2 className="h-8 w-8 animate-spin text-brand-purple mb-4" />
+          <p className="text-sm text-muted-foreground">Loading referral data...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+  
   return (
     <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-brand-purple/5">
       <CardHeader>
@@ -155,7 +176,7 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
             <Input 
               value={referralLink} 
               readOnly
-              className="bg-muted focus:ring-2 focus:ring-brand-blue/20"
+              className={`bg-muted focus:ring-2 focus:ring-brand-blue/20 ${isMobile ? 'text-xs' : ''}`}
               placeholder={isLoading ? "Loading..." : "Generate a referral link"}
             />
             <Button 
@@ -171,7 +192,7 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
           <div className="text-xs text-muted-foreground text-right">
             <button 
               onClick={handleGenerateNewRefLink}
-              className="flex items-center text-brand-blue hover:text-brand-purple hover:underline" 
+              className="flex items-center text-brand-blue hover:text-brand-purple hover:underline ml-auto" 
               disabled={isGenerating || isLoading}
             >
               <RefreshCw className={`h-3 w-3 mr-1 ${isGenerating ? 'animate-spin' : ''}`} /> 
