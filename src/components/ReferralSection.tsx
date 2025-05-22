@@ -50,7 +50,7 @@ const ReferralSection: React.FC<ReferralSectionProps> = ({ user }) => {
           }
         }
         
-        // Create the referral link
+        // Create the referral link - updated to use auth page
         if (user.referralId) {
           setReferralLink(generateReferralLink(user.referralId));
         }

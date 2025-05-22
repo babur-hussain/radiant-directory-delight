@@ -1,4 +1,3 @@
-
 import React, { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -11,6 +10,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { usePopupAd } from "@/providers/PopupAdProvider";
 import SubscriptionPopupAd from "@/components/ads/SubscriptionPopupAd";
 import { useAuth } from "@/hooks/useAuth";
+import { getReferralIdFromURL } from "@/utils/referral/referralUtils";
 
 // Fix: Wrap the NotFound component in a Layout when used as errorElement
 const NotFoundPage = () => (
@@ -25,6 +25,12 @@ const LoadingComponent = () => (
     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
   </div>
 );
+
+// Referral redirect component
+const ReferralRedirect = () => {
+  const referralId = getReferralIdFromURL();
+  return <Navigate to={`/auth?tab=signup&ref=${referralId || ''}`} replace />;
+};
 
 // New component to route users to the appropriate dashboard based on their role
 const DashboardRouter = () => {
@@ -312,6 +318,10 @@ export const router = createBrowserRouter([
               <Suspense fallback={<LoadingComponent />}><AdminDashboardServicePage /></Suspense>
             </ProtectedRoute>
           },
+          // Add explicit referral route
+          { path: "register", element: <ReferralRedirect /> },
+          { path: "ref/:referralId", element: <ReferralRedirect /> },
+          
           // Catch-all route for this path level
           {
             path: "*",

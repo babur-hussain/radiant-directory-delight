@@ -40,6 +40,7 @@ const AuthPage = () => {
   const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
+    // Check for referral code in URL and set it
     const urlReferralId = getReferralIdFromURL();
     
     if (urlReferralId) {
@@ -48,6 +49,7 @@ const AuthPage = () => {
       validateReferralCode(urlReferralId);
     }
     
+    // Check for tab parameter in URL
     const searchParams = new URLSearchParams(location.search);
     const tabParam = searchParams.get('tab');
     if (tabParam === 'signup' || tabParam === 'login') {
@@ -162,7 +164,9 @@ const AuthPage = () => {
           <CardDescription className="text-center">
             {activeTab === 'login' 
               ? 'Enter your credentials to login to your account' 
-              : 'Fill in the details below to create your account'}
+              : referralId 
+                ? 'You were invited by someone! Create your account to get started.' 
+                : 'Fill in the details below to create your account'}
           </CardDescription>
         </CardHeader>
         

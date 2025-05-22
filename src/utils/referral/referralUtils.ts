@@ -35,5 +35,5 @@ export const validateReferralId = async (referralId: string): Promise<boolean> =
  */
 export const generateReferralLink = (referralId: string): string => {
   const baseUrl = window.location.origin;
-  return `${baseUrl}/register?ref=${referralId}`;
+  return `${baseUrl}/auth?tab=signup&ref=${referralId}`;
 };
