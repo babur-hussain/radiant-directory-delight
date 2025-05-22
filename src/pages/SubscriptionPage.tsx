@@ -5,43 +5,33 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionPackages from "@/components/subscription/SubscriptionPackages";
-import { Loader2 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 
 const SubscriptionPage = () => {
   const { user, isAuthenticated } = useAuth();
   const { fetchUserSubscription } = useSubscription(user?.id);
   const [subscription, setSubscription] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const getSubscription = async () => {
       if (isAuthenticated && user) {
         try {
+          setIsLoading(true);
           const result = await fetchUserSubscription(user.id);
-          if (result.success && result.data) {
+          if (result?.success && result?.data) {
             setSubscription(result.data);
           }
         } catch (error) {
           console.error("Error fetching subscription:", error);
+        } finally {
+          setIsLoading(false);
         }
       }
-      setIsLoading(false);
     };
 
     getSubscription();
   }, [isAuthenticated, user, fetchUserSubscription]);
-
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="container mx-auto px-4 py-16 flex justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2">Loading subscription data...</span>
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,12 +10,24 @@ import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import SubscriptionDialog from '@/components/subscription/SubscriptionDialog';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { toast } from 'sonner';
+import SubscriptionPackagesLoading from '@/components/subscription/SubscriptionPackagesLoading';
 
 const BusinessPage = () => {
   const navigate = useNavigate();
   const { packages, isLoading, isError } = useSubscriptionPackages();
   const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
   const [showDialog, setShowDialog] = useState(false);
+  const [renderLoading, setRenderLoading] = useState(false);
+  
+  // Only set loading after a delay to prevent flashing
+  useEffect(() => {
+    if (isLoading) {
+      const timer = setTimeout(() => setRenderLoading(true), 500);
+      return () => clearTimeout(timer);
+    } else {
+      setRenderLoading(false);
+    }
+  }, [isLoading]);
   
   const benefits = [
     {
@@ -67,6 +79,7 @@ const BusinessPage = () => {
   return (
     <div className="min-h-screen">
       <main className="flex-grow">
+        {/* Hero section */}
         <section className="relative py-20 md:py-28 bg-gradient-to-br from-blue-500/10 via-cyan-500/10 to-teal-500/10 overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-50"></div>
           
@@ -90,6 +103,7 @@ const BusinessPage = () => {
           </div>
         </section>
 
+        {/* Benefits section */}
         <section className="py-20 bg-white">
           <div className="container px-4 mx-auto">
             <div className="text-center mb-16">
@@ -118,6 +132,7 @@ const BusinessPage = () => {
           </div>
         </section>
 
+        {/* Subscription packages section */}
         <section id="subscription-packages" className="py-20 bg-gray-50">
           <div className="container px-4 mx-auto">
             <div className="text-center mb-16">
@@ -127,9 +142,9 @@ const BusinessPage = () => {
               </p>
             </div>
 
-            {isLoading ? (
-              <div className="flex justify-center items-center py-20">
-                <Loading size="lg" message="Loading subscription packages..." />
+            {renderLoading && isLoading ? (
+              <div className="relative z-10">
+                <SubscriptionPackagesLoading />
               </div>
             ) : isError ? (
               <div className="text-center py-10">
@@ -147,6 +162,7 @@ const BusinessPage = () => {
           </div>
         </section>
 
+        {/* CTA section */}
         <section className="py-16 bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 text-white">
           <div className="container px-4 mx-auto text-center">
             <h2 className="text-3xl font-bold mb-6">Ready to Start Your Business Growth?</h2>

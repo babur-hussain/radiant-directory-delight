@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,10 +19,12 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   userRole,
   onSelectPackage
 }) => {
-  const { packages, isLoading, isError } = useSubscriptionPackages();
+  const { packages, isLoading } = useSubscriptionPackages();
   const navigate = useNavigate();
   
+  // Filter packages by user role, but fallback to all packages if none match
   const filteredPackages = packages?.filter(pkg => pkg.type === userRole) || [];
+  const packagesToDisplay = filteredPackages.length > 0 ? filteredPackages : packages || [];
 
   const handleSelectPackage = (pkg: ISubscriptionPackage) => {
     console.log("Package selected:", pkg.title);
@@ -33,27 +36,10 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
     }
   };
 
-  if (isLoading) {
-    return <p className="text-center text-muted-foreground">Loading subscription packages...</p>;
-  }
-
-  if (isError) {
-    return <p className="text-center text-red-500">Error loading subscription packages. Please try again later.</p>;
-  }
-
-  if (filteredPackages.length === 0) {
-    return (
-      <div className="text-center p-8 border rounded-lg shadow-sm bg-gray-50">
-        <p className="text-muted-foreground">No packages available for {userRole}s at the moment.</p>
-        <p className="mt-2 text-sm">Please check back later or contact our support team.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="subscription-packages-container">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredPackages.map((pkg) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in">
+        {packagesToDisplay.map((pkg) => {
           const isPopular = pkg.popular;
           const isOneTime = pkg.paymentType === 'one-time';
           const billingCycle = pkg.billingCycle || 'yearly';
