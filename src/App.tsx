@@ -19,15 +19,13 @@ const queryClient = new QueryClient({
 // Root component with providers
 function App() {
   return (
-    <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <PopupAdProvider>
-            <AppRoutes />
-          </PopupAdProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <PopupAdProvider>
+          <AppRoutes />
+        </PopupAdProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

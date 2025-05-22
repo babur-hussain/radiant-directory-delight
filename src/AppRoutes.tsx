@@ -1,9 +1,8 @@
 
 import React from 'react';
-import { RouterProvider, createBrowserRouter } from 'react-router-dom';
+import { RouterProvider } from 'react-router-dom';
 import { router } from './routes';
 import Layout from './components/layout/Layout';
-import NotFound from './pages/NotFound';
 
 const AppRoutes: React.FC = () => {
   // Create a fallback element that doesn't rely on router hooks
