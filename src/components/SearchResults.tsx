@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,7 @@ export interface BusinessResult {
   address: string;
   description: string;
   tags: string[];
+  location: string; // Added location property to match SearchBar.tsx
 }
 
 interface SearchResultsProps {

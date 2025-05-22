@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -80,19 +79,36 @@ const SearchBar = ({
         if (supabaseData && supabaseData.length > 0) {
           console.log("Loaded businesses from Supabase:", supabaseData.length);
           
-          const formattedBusinesses = supabaseData.map(business => ({
-            id: business.id,
-            name: business.name || "Unnamed Business",
-            category: business.category || "Uncategorized",
-            address: business.address || "No address",
-            location: business.location || "",
-            rating: typeof business.rating === 'number' ? business.rating : 0,
-            reviews: typeof business.reviews === 'number' ? business.reviews : 0,
-            image: business.image || "",
-            description: business.description || "No description",
-            tags: Array.isArray(business.tags) ? business.tags : [],
-            featured: !!business.featured
-          }));
+          // Extract location from address if possible, or use a default
+          const formattedBusinesses = supabaseData.map(business => {
+            // Try to extract state/location from address
+            let extractedLocation = '';
+            if (business.address) {
+              // Check if the address contains any of our known locations
+              const addressLower = business.address.toLowerCase();
+              const foundLocation = locations.find(loc => 
+                addressLower.includes(loc.toLowerCase())
+              );
+              
+              if (foundLocation) {
+                extractedLocation = foundLocation;
+              }
+            }
+            
+            return {
+              id: business.id,
+              name: business.name || "Unnamed Business",
+              category: business.category || "Uncategorized",
+              address: business.address || "No address",
+              location: extractedLocation || "Madhya Pradesh", // Default if not found
+              rating: typeof business.rating === 'number' ? business.rating : 0,
+              reviews: typeof business.reviews === 'number' ? business.reviews : 0,
+              image: business.image || "",
+              description: business.description || "No description",
+              tags: Array.isArray(business.tags) ? business.tags : [],
+              featured: !!business.featured
+            };
+          });
           
           setAllBusinesses(formattedBusinesses);
         } else {
@@ -105,7 +121,7 @@ const SearchBar = ({
               name: business.name || "Unnamed Business",
               category: business.category || "Uncategorized",
               address: business.address || "No address",
-              location: "",
+              location: business.location || "Madhya Pradesh", // Use location from local data or default
               rating: typeof business.rating === 'number' ? business.rating : 0,
               reviews: typeof business.reviews === 'number' ? business.reviews : 0,
               image: business.image || "",
@@ -135,7 +151,7 @@ const SearchBar = ({
             name: business.name || "Unnamed Business",
             category: business.category || "Uncategorized",
             address: business.address || "No address",
-            location: "",
+            location: business.location || "Madhya Pradesh", // Use location from local data or default
             rating: typeof business.rating === 'number' ? business.rating : 0,
             reviews: typeof business.reviews === 'number' ? business.reviews : 0,
             image: business.image || "",
