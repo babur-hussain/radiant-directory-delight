@@ -26,7 +26,7 @@ const Index = () => {
       <HeroSection />
       
       <div className="py-4 sm:py-6 md:py-8">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-2 md:mb-4">Welcome to <span className="text-brand-orange">Lovable</span></h2>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-2 md:mb-4">Welcome to <span className="text-brand-orange">GROW BHARAT VYAPAAR</span></h2>
         <p className="text-center text-gray-600 max-w-2xl mx-auto px-4 text-sm sm:text-base">
           India's most innovative influencer-business matchmaking platform – empowering creators and local brands to grow together.
         </p>
