@@ -1,29 +1,52 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { getAllPackages, savePackage, deletePackage } from '@/services/packageService';
 import { toast } from '@/hooks/use-toast';
 
-// Sample fallback packages to display while loading
+// Updated fallback packages to display while loading
 const fallbackPackages: ISubscriptionPackage[] = [
+  // Influencer Packages
   {
-    id: 'business-basic',
-    title: 'Business Basic',
-    price: 999,
-    type: 'Business',
-    features: ['Feature 1', 'Feature 2', 'Feature 3'],
-    shortDescription: 'Essential package for small businesses',
+    id: 'influencer-basic',
+    title: 'Basic',
+    price: 299,
+    type: 'Influencer',
+    features: ['Free profile creation', '6 video categories', 'Local business connections', '200 KM radius visibility'],
+    shortDescription: '200 KM radius visibility',
     paymentType: 'recurring',
     billingCycle: 'monthly',
     popular: false
   },
   {
-    id: 'business-pro',
-    title: 'Business Pro',
-    price: 1999,
+    id: 'influencer-pro',
+    title: 'Pro',
+    price: 499,
+    type: 'Influencer',
+    features: ['All Basic features', 'Higher exposure', 'More business connections', '450 KM radius visibility'],
+    shortDescription: '450 KM radius visibility',
+    paymentType: 'recurring',
+    billingCycle: 'monthly',
+    popular: true
+  },
+  {
+    id: 'influencer-premium',
+    title: 'Premium',
+    price: 799,
+    type: 'Influencer',
+    features: ['All Pro features', 'Premium placement', 'Maximum earning potential', '1050 KM radius visibility'],
+    shortDescription: '1050 KM radius visibility',
+    paymentType: 'recurring',
+    billingCycle: 'monthly',
+    popular: false
+  },
+  // Business Package
+  {
+    id: 'business-local',
+    title: 'Local Connect',
+    price: 399,
     type: 'Business',
-    features: ['All Basic features', 'Feature 4', 'Feature 5', 'Feature 6'],
-    shortDescription: 'Advanced package for growing businesses',
+    features: ['Access to local influencer lists', 'Category-based recommendations', 'Virtual contact numbers', 'Business dashboard'],
+    shortDescription: 'Connect with local influencers',
     paymentType: 'recurring',
     billingCycle: 'monthly',
     popular: true

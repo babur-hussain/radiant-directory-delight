@@ -36,6 +36,15 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
     }
   };
 
+  const getVisibilityRange = (pkg: ISubscriptionPackage): string => {
+    if (pkg.type === 'Influencer') {
+      if (pkg.price <= 299) return '200 KM radius';
+      if (pkg.price <= 499) return '450 KM radius';
+      return '1050 KM radius';
+    }
+    return 'Local area';
+  };
+
   return (
     <div className="subscription-packages-container">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in">
@@ -44,10 +53,21 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
           const isOneTime = pkg.paymentType === 'one-time';
           const billingCycle = pkg.billingCycle || 'yearly';
           const timeframe = isOneTime ? 'total' : `/${billingCycle}`;
+          const visibilityRange = getVisibilityRange(pkg);
           
           // Determine price to display based on payment type
           const displayPrice = isOneTime ? pkg.price : 
                               (billingCycle === 'monthly' && pkg.monthlyPrice) ? pkg.monthlyPrice : pkg.price;
+          
+          // Determine package tier for influencer packages
+          let packageTier = '';
+          if (pkg.type === 'Influencer') {
+            if (pkg.price <= 299) packageTier = 'Basic';
+            else if (pkg.price <= 499) packageTier = 'Pro';
+            else packageTier = 'Premium';
+          } else if (pkg.type === 'Business') {
+            packageTier = 'Local Connect';
+          }
           
           return (
             <Card 
@@ -67,12 +87,12 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
               <CardContent className="p-6 pt-8">
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-2xl font-bold">{pkg.title}</h3>
+                    <h3 className="text-2xl font-bold">{packageTier || pkg.title}</h3>
                     <div className="flex items-baseline mt-2">
                       <span className="text-4xl font-extrabold">₹{displayPrice}</span>
                       <span className="text-gray-500 ml-1">{timeframe}</span>
                     </div>
-                    <p className="text-gray-600 mt-2">{pkg.shortDescription || `${pkg.type} package for your needs`}</p>
+                    <p className="text-gray-600 mt-2">{pkg.shortDescription || `${visibilityRange} visibility`}</p>
                   </div>
                   
                   <ul className="space-y-3">
@@ -83,11 +103,32 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
                           <span>{feature}</span>
                         </li>
                       ))
+                    ) : pkg.type === 'Influencer' ? (
+                      <>
+                        <li className="flex items-start">
+                          <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                          <span>{visibilityRange} visibility</span>
+                        </li>
+                        <li className="flex items-start">
+                          <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                          <span>Category showcase</span>
+                        </li>
+                        <li className="flex items-start">
+                          <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                          <span>{packageTier === 'Premium' ? 'Premium placement' : 'Standard placement'}</span>
+                        </li>
+                      </>
                     ) : (
-                      <li className="flex items-start">
-                        <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-                        <span>Basic features included</span>
-                      </li>
+                      <>
+                        <li className="flex items-start">
+                          <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                          <span>Access to local influencer lists</span>
+                        </li>
+                        <li className="flex items-start">
+                          <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                          <span>Category-based recommendations</span>
+                        </li>
+                      </>
                     )}
                   </ul>
                 </div>

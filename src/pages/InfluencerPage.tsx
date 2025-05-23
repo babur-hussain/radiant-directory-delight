@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Award, CheckSquare, Star, TrendingUp, Users, Zap } from 'lucide-react';
+import { ArrowRight, Award, CheckSquare, MapPin, Star, TrendingUp, Users, Zap } from 'lucide-react';
 import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
 import Loading from '@/components/ui/loading';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
@@ -19,33 +20,33 @@ const InfluencerPage = () => {
   const benefits = [
     {
       icon: Users,
-      title: "Expand Your Audience",
-      description: "Connect with businesses looking for influencers in your niche and grow your follower base."
-    },
-    {
-      icon: Star,
-      title: "Premium Brand Partnerships",
-      description: "Get exclusive access to collaboration opportunities with top brands and businesses."
-    },
-    {
-      icon: TrendingUp,
-      title: "Monetize Your Content",
-      description: "Transform your social media presence into a sustainable income stream through partnerships."
-    },
-    {
-      icon: Award,
-      title: "Verified Influencer Badge",
-      description: "Stand out with our verified badge that shows businesses you're a trusted partner."
-    },
-    {
-      icon: Zap,
-      title: "Analytics Dashboard",
-      description: "Track your performance, engagement, and earnings with our intuitive analytics tools."
+      title: "Create a Free Profile",
+      description: "Showcase your social links and content categories to businesses looking for influencers like you."
     },
     {
       icon: CheckSquare,
-      title: "Personalized Opportunities",
-      description: "Receive tailored collaboration offers that match your audience and content style."
+      title: "Choose 6 Video Categories",
+      description: "Specialize in the content areas you excel at and find matching businesses."
+    },
+    {
+      icon: MapPin,
+      title: "Get Listed Locally",
+      description: "Connect with businesses in your area who are looking for local influencers like you."
+    },
+    {
+      icon: Award,
+      title: "Verified Badge",
+      description: "Stand out with our verified badge that shows businesses you're a trusted creator."
+    },
+    {
+      icon: Zap,
+      title: "Free Premium Plan",
+      description: "Get the ₹799 Premium plan FREE for one month when you post a reel about Lovable."
+    },
+    {
+      icon: TrendingUp,
+      title: "Increase Your Reach",
+      description: "Choose plans that expand your visibility from 200 KM to over 1050 KM radius."
     },
   ];
 
@@ -76,17 +77,17 @@ const InfluencerPage = () => {
           <div className="container px-4 mx-auto relative z-10">
             <div className="max-w-3xl mx-auto text-center">
               <h1 className="text-4xl md:text-5xl font-bold mb-6 text-gradient-purple">
-                Maximize Your Earning Potential as an Influencer
+                🎥 Be Seen. Be Paid. Be a Star.
               </h1>
               <p className="text-xl text-gray-600 mb-8">
-                Join our platform and turn your passion into profit by connecting with brands that value your unique voice and audience.
+                Join for FREE, showcase your social power, and unlock earning opportunities from brands near you.
               </p>
               <Button 
                 size="lg" 
                 className="bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 hover:from-indigo-500 hover:via-violet-500 hover:to-purple-500 text-white shadow-md hover:shadow-lg transition-all duration-300"
                 onClick={scrollToPackages}
               >
-                Start Your Journey <ArrowRight className="ml-2 h-5 w-5" />
+                Create My Influencer Profile <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </div>
           </div>
@@ -127,6 +128,11 @@ const InfluencerPage = () => {
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                 Select the plan that best fits your goals and take your influencer career to the next level.
               </p>
+              <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg inline-block">
+                <p className="text-amber-700">
+                  <span className="font-bold">🎁 Special Offer:</span> Post a reel about Lovable and get the ₹799 Premium plan FREE for 1 month!
+                </p>
+              </div>
             </div>
 
             {isLoading ? (
@@ -151,9 +157,12 @@ const InfluencerPage = () => {
 
         <section className="py-16 bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 text-white">
           <div className="container px-4 mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-6">Ready to Start Your Influencer Journey?</h2>
-            <p className="text-lg mb-8 max-w-2xl mx-auto text-white/90">
+            <h2 className="text-3xl font-bold mb-6">Start Growing Your Influence Today!</h2>
+            <p className="text-lg mb-4 max-w-2xl mx-auto text-white/90">
               Join thousands of successful influencers who are growing their audience and income with our platform.
+            </p>
+            <p className="text-md mb-8 max-w-2xl mx-auto text-white/80">
+              Refer another influencer and earn 20% of their plan instantly!
             </p>
             <Button 
               size="lg" 
