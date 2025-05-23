@@ -1,4 +1,3 @@
-
 import React from 'react';
 import HeroSection from '@/components/HeroSection';
 import CategorySection from '@/components/CategorySection';
@@ -172,7 +171,7 @@ const Index = () => {
           <div className="mt-10 text-center">
             <div className="inline-block bg-amber-50 border border-amber-200 rounded-lg p-4 max-w-xl">
               <p className="text-amber-700">
-                <span className="font-bold">🎁 Special Offer:</span> Post a reel about Lovable and get the ₹799 Premium plan FREE for 1 month!
+                <span className="font-bold">🎁 Special Offer:</span> Post a reel about GROW BHARAT VYAPAAR and get the ₹799 Premium plan FREE for 1 month!
               </p>
             </div>
           </div>
