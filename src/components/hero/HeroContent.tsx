@@ -60,8 +60,8 @@ const HeroContent: React.FC = () => {
       
       <div className="mt-5 sm:mt-6 text-xs sm:text-sm text-gray-500">
         <span>Visit us at </span>
-        <a href="https://lovable.app" className="text-primary hover:underline">
-          lovable.app
+        <a href="https://www.growbhartvyapaar.com" className="text-primary hover:underline">
+          growbhartvyapaar.com
         </a>
       </div>
     </div>
