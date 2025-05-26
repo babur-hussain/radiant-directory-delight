@@ -116,6 +116,102 @@ export type Database = {
         }
         Relationships: []
       }
+      influencers: {
+        Row: {
+          bio: string | null
+          city: string | null
+          country: string | null
+          cover_image: string | null
+          created_at: string | null
+          email: string | null
+          engagement_rate: number | null
+          facebook_handle: string | null
+          featured: boolean | null
+          followers_count: number | null
+          id: number
+          instagram_handle: string | null
+          linkedin_handle: string | null
+          location: string | null
+          name: string
+          niche: string | null
+          phone: string | null
+          previous_brands: string[] | null
+          priority: number | null
+          profile_image: string | null
+          rating: number | null
+          reviews: number | null
+          state: string | null
+          tags: string[] | null
+          tiktok_handle: string | null
+          twitter_handle: string | null
+          updated_at: string | null
+          website: string | null
+          youtube_handle: string | null
+        }
+        Insert: {
+          bio?: string | null
+          city?: string | null
+          country?: string | null
+          cover_image?: string | null
+          created_at?: string | null
+          email?: string | null
+          engagement_rate?: number | null
+          facebook_handle?: string | null
+          featured?: boolean | null
+          followers_count?: number | null
+          id?: number
+          instagram_handle?: string | null
+          linkedin_handle?: string | null
+          location?: string | null
+          name: string
+          niche?: string | null
+          phone?: string | null
+          previous_brands?: string[] | null
+          priority?: number | null
+          profile_image?: string | null
+          rating?: number | null
+          reviews?: number | null
+          state?: string | null
+          tags?: string[] | null
+          tiktok_handle?: string | null
+          twitter_handle?: string | null
+          updated_at?: string | null
+          website?: string | null
+          youtube_handle?: string | null
+        }
+        Update: {
+          bio?: string | null
+          city?: string | null
+          country?: string | null
+          cover_image?: string | null
+          created_at?: string | null
+          email?: string | null
+          engagement_rate?: number | null
+          facebook_handle?: string | null
+          featured?: boolean | null
+          followers_count?: number | null
+          id?: number
+          instagram_handle?: string | null
+          linkedin_handle?: string | null
+          location?: string | null
+          name?: string
+          niche?: string | null
+          phone?: string | null
+          previous_brands?: string[] | null
+          priority?: number | null
+          profile_image?: string | null
+          rating?: number | null
+          reviews?: number | null
+          state?: string | null
+          tags?: string[] | null
+          tiktok_handle?: string | null
+          twitter_handle?: string | null
+          updated_at?: string | null
+          website?: string | null
+          youtube_handle?: string | null
+        }
+        Relationships: []
+      }
       subscription_packages: {
         Row: {
           advance_payment_months: number | null
