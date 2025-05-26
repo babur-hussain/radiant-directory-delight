@@ -1,10 +1,12 @@
+
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './App.css';
 import { AuthProvider } from './providers/AuthProvider';
 import { PopupAdProvider } from './providers/PopupAdProvider';
 import AppRoutes from './AppRoutes';
-import { BrowserRouter as Router, Route, Routes, Toaster } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Toaster } from '@/components/ui/toaster';
 import Header from './components/Header';
 import Index from './pages/Index';
 import BusinessesPage from './pages/BusinessesPage';
