@@ -1,209 +1,84 @@
-
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { useLocation } from 'react-router-dom';
 import { 
-  Home, 
-  Upload, 
-  Store, 
-  Users, 
-  ListChecks, 
-  Database, 
-  Settings, 
-  Layout, 
-  Layers, 
-  History, 
-  BarChartBig, 
-  Hash,
-  VideoIcon
+  LayoutDashboard,
+  Building2,
+  Upload,
+  Users,
+  BarChart3,
+  Settings
 } from "lucide-react";
 
-interface AdminSidebarProps {
-  onItemClick?: () => void;
-}
-
-const AdminSidebar: React.FC<AdminSidebarProps> = ({ onItemClick }) => {
-  const navLinkClasses = "flex items-center px-3 py-2 text-gray-800 hover:bg-gray-100 rounded-md transition-colors";
-  const activeNavLinkClasses = "bg-primary text-white hover:bg-primary hover:text-white";
+const AdminSidebar: React.FC = () => {
+  const location = useLocation();
   
-  const handleClick = () => {
-    if (onItemClick) {
-      onItemClick();
+  const menuItems = [
+    {
+      title: "Dashboard",
+      href: "/admin",
+      icon: LayoutDashboard,
+      active: location.pathname === "/admin"
+    },
+    {
+      title: "Business Listings", 
+      href: "/admin/businesses",
+      icon: Building2,
+      active: location.pathname === "/admin/businesses"
+    },
+    {
+      title: "Influencer Listings", 
+      href: "/admin/influencers",
+      icon: Users,
+      active: location.pathname === "/admin/influencers"
+    },
+    {
+      title: "CSV Upload",
+      href: "/admin/upload", 
+      icon: Upload,
+      active: location.pathname === "/admin/upload"
+    },
+    {
+      title: "User Management",
+      href: "/admin/users",
+      icon: Users,
+      active: location.pathname === "/admin/users"
+    },
+    {
+      title: "Analytics",
+      href: "/admin/analytics", 
+      icon: BarChart3,
+      active: location.pathname === "/admin/analytics"
+    },
+    {
+      title: "Settings",
+      href: "/admin/settings",
+      icon: Settings,
+      active: location.pathname === "/admin/settings"
     }
-  };
+  ];
 
   return (
-    <div className="py-6 px-4">
-      <h2 className="text-lg font-semibold mb-6 px-3">Admin Dashboard</h2>
-      
-      <div className="space-y-1">
-        <NavLink 
-          to="/admin" 
-          onClick={handleClick}
-          className={({ isActive }) => 
-            cn(navLinkClasses, isActive && activeNavLinkClasses)
-          }
-          end
-        >
-          <Home className="h-4 w-4 mr-2" />
-          <span>Dashboard</span>
-        </NavLink>
-        
-        <NavLink 
-          to="/admin/businesses" 
-          onClick={handleClick}
-          className={({ isActive }) => 
-            cn(navLinkClasses, isActive && activeNavLinkClasses)
-          }
-        >
-          <Store className="h-4 w-4 mr-2" />
-          <span>Businesses</span>
-        </NavLink>
-        
-        <NavLink 
-          to="/admin/upload" 
-          onClick={handleClick}
-          className={({ isActive }) => 
-            cn(navLinkClasses, isActive && activeNavLinkClasses)
-          }
-        >
-          <Upload className="h-4 w-4 mr-2" />
-          <span>CSV Upload</span>
-        </NavLink>
-        
-        <NavLink 
-          to="/admin/videos" 
-          onClick={handleClick}
-          className={({ isActive }) => 
-            cn(navLinkClasses, isActive && activeNavLinkClasses)
-          }
-        >
-          <VideoIcon className="h-4 w-4 mr-2" />
-          <span>Videos</span>
-        </NavLink>
-        
-        <NavLink 
-          to="/admin/users" 
-          onClick={handleClick}
-          className={({ isActive }) => 
-            cn(navLinkClasses, isActive && activeNavLinkClasses)
-          }
-        >
-          <Users className="h-4 w-4 mr-2" />
-          <span>Users</span>
-        </NavLink>
-        
-        <NavLink 
-          to="/admin/subscriptions" 
-          onClick={handleClick}
-          className={({ isActive }) => 
-            cn(navLinkClasses, isActive && activeNavLinkClasses)
-          }
-        >
-          <ListChecks className="h-4 w-4 mr-2" />
-          <span>Subscriptions</span>
-        </NavLink>
-        
-        <NavLink 
-          to="/admin/analytics" 
-          onClick={handleClick}
-          className={({ isActive }) => 
-            cn(navLinkClasses, isActive && activeNavLinkClasses)
-          }
-        >
-          <BarChartBig className="h-4 w-4 mr-2" />
-          <span>Analytics</span>
-        </NavLink>
-        
-        <div className="pt-4 pb-2">
-          <div className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Dashboard Management
-          </div>
-        </div>
-        
-        <NavLink 
-          to="/admin/dashboard-manager" 
-          onClick={handleClick}
-          className={({ isActive }) => 
-            cn(navLinkClasses, isActive && activeNavLinkClasses)
-          }
-        >
-          <Layout className="h-4 w-4 mr-2" />
-          <span>Dashboard Manager</span>
-        </NavLink>
-        
-        <NavLink 
-          to="/admin/dashboard-sections" 
-          onClick={handleClick}
-          className={({ isActive }) => 
-            cn(navLinkClasses, isActive && activeNavLinkClasses)
-          }
-        >
-          <Layers className="h-4 w-4 mr-2" />
-          <span>Dashboard Sections</span>
-        </NavLink>
-        
-        <NavLink 
-          to="/admin/dashboard-services" 
-          onClick={handleClick}
-          className={({ isActive }) => 
-            cn(navLinkClasses, isActive && activeNavLinkClasses)
-          }
-        >
-          <Hash className="h-4 w-4 mr-2" />
-          <span>Dashboard Services</span>
-        </NavLink>
-        
-        <div className="pt-4 pb-2">
-          <div className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            System
-          </div>
-        </div>
-        
-        <NavLink 
-          to="/admin/database" 
-          onClick={handleClick}
-          className={({ isActive }) => 
-            cn(navLinkClasses, isActive && activeNavLinkClasses)
-          }
-        >
-          <Database className="h-4 w-4 mr-2" />
-          <span>Database</span>
-        </NavLink>
-        
-        <NavLink 
-          to="/admin/migration" 
-          onClick={handleClick}
-          className={({ isActive }) => 
-            cn(navLinkClasses, isActive && activeNavLinkClasses)
-          }
-        >
-          <History className="h-4 w-4 mr-2" />
-          <span>Migration</span>
-        </NavLink>
-        
-        <NavLink 
-          to="/admin/settings" 
-          onClick={handleClick}
-          className={({ isActive }) => 
-            cn(navLinkClasses, isActive && activeNavLinkClasses)
-          }
-        >
-          <Settings className="h-4 w-4 mr-2" />
-          <span>Settings</span>
-        </NavLink>
-        
-        <NavLink 
-          to="/admin/seed" 
-          onClick={handleClick}
-          className={({ isActive }) => 
-            cn(navLinkClasses, isActive && activeNavLinkClasses)
-          }
-        >
-          <Hash className="h-4 w-4 mr-2" />
-          <span>Seed Data</span>
-        </NavLink>
-      </div>
+    <div className="py-4 text-gray-700 dark:text-gray-400">
+      <p className="px-6 text-sm font-bold uppercase">Admin Panel</p>
+      <nav className="mt-6 space-y-1">
+        {menuItems.map((item) => (
+          <NavLink
+            key={item.title}
+            to={item.href}
+            className={({ isActive }) =>
+              `flex items-center gap-3 rounded-lg px-6 py-3 text-sm font-medium transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                isActive
+                  ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-50"
+                  : ""
+              }`
+            }
+          >
+            <item.icon className="h-4 w-4" />
+            {item.title}
+          </NavLink>
+        ))}
+      </nav>
     </div>
   );
 };
