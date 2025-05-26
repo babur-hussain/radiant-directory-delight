@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import RazorpayPayment from './RazorpayPayment';
+import PaytmPayment from './PaytmPayment';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { updateUserSubscriptionDetails } from '@/lib/mongodb/userUtils';
@@ -45,7 +46,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
     if (user?.id && selectedPackage) {
       try {
         // Update the user profile with subscription details
-        const subscriptionId = response.razorpay_payment_id || `sub_${Date.now()}`;
+        const subscriptionId = response.TXNID || `sub_${Date.now()}`;
         await updateUserSubscriptionDetails(
           user.id,
           subscriptionId,
@@ -63,7 +64,6 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
             }
           } catch (refError) {
             console.error("Error processing referral:", refError);
-            // We don't want to fail the subscription if referral processing fails
           }
         }
         
@@ -86,7 +86,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
     setShowPaymentUI(false);
     toast({
       title: "Payment Failed",
-      description: error.message || "There was an issue processing your payment. Please try again.",
+      description: error.RESPMSG || error.message || "There was an issue processing your payment. Please try again.",
       variant: "destructive",
     });
   };
@@ -94,7 +94,6 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   const handleCloseDialog = () => {
     if (!isProcessing) {
       setIsOpen(false);
-      // Reset state for next time the dialog opens
       setTimeout(() => {
         setPaymentSuccess(false);
         setShowPaymentUI(false);
@@ -186,7 +185,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                   Proceed to Payment
                 </Button>
                 <p className="text-xs mt-2 text-center text-muted-foreground">
-                  All payments are processed securely via Razorpay
+                  All payments are processed securely via Paytm
                 </p>
               </div>
             ) : (
@@ -202,7 +201,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
 
         {!paymentSuccess && showPaymentUI && selectedPackage && user && (
           <div>
-            <RazorpayPayment
+            <PaytmPayment
               selectedPackage={selectedPackage}
               onSuccess={handlePaymentSuccess}
               onFailure={handlePaymentFailure}

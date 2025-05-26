@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, ShieldCheck, Loader2 } from "lucide-react";
@@ -11,7 +12,7 @@ import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { useSubscription } from "@/hooks";
 import { useToast } from "@/hooks/use-toast";
-import RazorpayPayment from "./RazorpayPayment";
+import PaytmPayment from "./PaytmPayment";
 
 const SubscriptionDetails = () => {
   const { packageId } = useParams();
@@ -153,7 +154,7 @@ const SubscriptionDetails = () => {
           <CardHeader>
             <CardTitle>Process Payment</CardTitle>
             <CardDescription>
-              {selectedPackage.paymentType === "one-time" 
+              {selectedPackage?.paymentType === "one-time" 
                 ? "Complete your one-time payment to activate your package" 
                 : "Complete your payment to activate your subscription"}
             </CardDescription>
@@ -165,8 +166,8 @@ const SubscriptionDetails = () => {
                 <p className="mt-4 text-center">Processing your payment...</p>
               </div>
             ) : (
-              <RazorpayPayment 
-                selectedPackage={selectedPackage}
+              <PaytmPayment 
+                selectedPackage={selectedPackage!}
                 onSuccess={handlePaymentSuccess}
                 onFailure={handlePaymentFailure}
               />

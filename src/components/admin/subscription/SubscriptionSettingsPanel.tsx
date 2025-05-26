@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 
 interface SubscriptionSettingsPanelProps {
-  onConfigureRazorpay: () => void;
+  onConfigurePaytm: () => void;
 }
 
-const SubscriptionSettingsPanel: React.FC<SubscriptionSettingsPanelProps> = ({ onConfigureRazorpay }) => {
+const SubscriptionSettingsPanel: React.FC<SubscriptionSettingsPanelProps> = ({ onConfigurePaytm }) => {
   return (
     <Card>
       <CardHeader>
@@ -19,11 +19,11 @@ const SubscriptionSettingsPanel: React.FC<SubscriptionSettingsPanelProps> = ({ o
           <h3 className="text-lg font-medium mb-2">Payment Gateway</h3>
           <Button 
             variant="outline" 
-            onClick={onConfigureRazorpay}
+            onClick={onConfigurePaytm}
             className="w-full sm:w-auto"
           >
             <Settings className="h-4 w-4 mr-2" />
-            Configure Razorpay
+            Configure Paytm
           </Button>
         </div>
       </CardContent>

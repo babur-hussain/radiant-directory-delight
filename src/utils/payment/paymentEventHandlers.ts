@@ -1,6 +1,6 @@
 
 /**
- * Create payment event handlers for Razorpay checkout
+ * Create payment event handlers for Paytm checkout
  */
 export const createPaymentHandlers = (
   packageData: any,
@@ -10,7 +10,7 @@ export const createPaymentHandlers = (
   onError: (error: any) => void
 ) => {
   // Create a persistent transaction ID for this payment flow
-  const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  const transactionId = `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
   
   const handleSuccess = (response: any) => {
     console.log('Payment successful:', response);
@@ -19,10 +19,10 @@ export const createPaymentHandlers = (
     const completeResponse = {
       ...response,
       packageDetails: packageData,
-      amount: (packageData.price || 0) + (packageData.setupFee || 0), // Include setup fee
+      amount: (packageData.price || 0) + (packageData.setupFee || 0),
       isOneTime: packageData.paymentType === 'one-time',
       isSubscription: packageData.paymentType === 'recurring',
-      // Strengthen critical flags to prevent refunds
+      // Payment verification flags
       preventRefunds: true,
       isNonRefundable: true,
       autoRefund: false,
@@ -31,16 +31,12 @@ export const createPaymentHandlers = (
       refundPolicy: "no_refunds",
       isVerifiedPayment: true,
       nonRefundableTransaction: true,
-      // Use consistent transaction ID
-      transaction_id: response.transaction_id || response.razorpay_payment_id || transactionId,
-      // Add verification flag
+      transaction_id: response.TXNID || transactionId,
       paymentVerified: true,
       paymentConfirmed: new Date().toISOString(),
-      // Add phone number for contact
       supportPhone: "6232571406",
-      // Add timestamp to prevent tampering
       paymentTimestamp: Date.now(),
-      paymentSignature: response.razorpay_signature || "direct_verified",
+      paymentSignature: response.CHECKSUMHASH || "paytm_verified",
     };
     
     toast({
@@ -64,7 +60,7 @@ export const createPaymentHandlers = (
     console.error('Payment error:', error);
     toast({
       title: "Payment Failed",
-      description: error.description || error.message || "Something went wrong with your payment. Contact 6232571406 for assistance.",
+      description: error.RESPMSG || error.message || "Something went wrong with your payment. Contact 6232571406 for assistance.",
       variant: "destructive"
     });
     onError(error);
