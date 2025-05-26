@@ -1,8 +1,10 @@
+
 import React from 'react';
 import HeroSection from '@/components/HeroSection';
 import CategorySection from '@/components/CategorySection';
 import FeaturedBusinesses from '@/components/FeaturedBusinesses';
 import FeaturedInfluencers from '@/components/FeaturedInfluencers';
+import TopInfluencers from '@/components/TopInfluencers';
 import TestimonialSection from '@/components/TestimonialSection';
 import CallToAction from '@/components/CallToAction';
 import CtaSection from '@/components/CtaSection';
@@ -181,7 +183,7 @@ const Index = () => {
       
       <CollaborationsSection />
       <FeaturedBusinesses />
-      <FeaturedInfluencers />
+      <TopInfluencers />
       <OnboardingGuide />
       
       {/* Marketing Strategy Section */}
