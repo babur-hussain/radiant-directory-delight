@@ -11,7 +11,11 @@ import {
   Settings
 } from "lucide-react";
 
-const AdminSidebar: React.FC = () => {
+interface AdminSidebarProps {
+  onItemClick?: () => void;
+}
+
+const AdminSidebar: React.FC<AdminSidebarProps> = ({ onItemClick }) => {
   const location = useLocation();
   
   const menuItems = [
@@ -59,6 +63,12 @@ const AdminSidebar: React.FC = () => {
     }
   ];
 
+  const handleItemClick = () => {
+    if (onItemClick) {
+      onItemClick();
+    }
+  };
+
   return (
     <div className="py-4 text-gray-700 dark:text-gray-400">
       <p className="px-6 text-sm font-bold uppercase">Admin Panel</p>
@@ -67,6 +77,7 @@ const AdminSidebar: React.FC = () => {
           <NavLink
             key={item.title}
             to={item.href}
+            onClick={handleItemClick}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg px-6 py-3 text-sm font-medium transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 ${
                 isActive
