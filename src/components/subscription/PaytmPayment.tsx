@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
 import { generateOrderId } from '@/utils/id-generator';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, CreditCard } from 'lucide-react';
 import { getPaymentGatewayKey } from '@/utils/payment/paymentScriptLoader';
 import { toast } from 'sonner';
 import { loadPaymentScript } from '@/utils/payment/paymentScriptLoader';
@@ -33,6 +33,7 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [paymentInitiated, setPaymentInitiated] = useState(false);
   const [transactionId] = useState(`TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`);
 
   useEffect(() => {
@@ -72,6 +73,7 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
 
     setIsLoading(true);
     setPaymentError(null);
+    setPaymentInitiated(true);
 
     try {
       // Create order ID
@@ -98,60 +100,66 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
 
       console.log('Initiating payment with data:', paymentData);
 
-      // For now, simulate payment processing with a delay
-      // In production, you would call your backend API here
-      setTimeout(() => {
-        // Simulate random payment success/failure for demo
-        const isSuccess = Math.random() > 0.3; // 70% success rate for demo
+      // TODO: Replace this with actual Paytm integration
+      // For now, we'll show a message that this is demo mode
+      toast.error('Demo Mode: This is a simulation. In production, integrate with actual Paytm payment gateway.');
+      
+      // Simulate payment gateway interaction
+      // In production, you would open the actual Paytm payment gateway here
+      const userConfirmed = window.confirm(
+        `Demo Payment Confirmation\n\nAmount: ₹${amount}\nPackage: ${selectedPackage.title}\n\nThis is a demo. Click OK to simulate successful payment, Cancel to simulate failure.`
+      );
+      
+      if (userConfirmed) {
+        // Simulate successful payment
+        const successResponse = {
+          TXNID: transactionId,
+          ORDERID: orderId,
+          TXNAMOUNT: amount.toString(),
+          STATUS: 'TXN_SUCCESS',
+          RESPCODE: '01',
+          RESPMSG: 'Transaction Successful',
+          PAYMENTMODE: 'WALLET',
+          BANKNAME: 'PAYTM',
+          MID: getPaymentGatewayKey(),
+          package: selectedPackage,
+          referralId: referralId,
+          transaction_id: transactionId,
+          setupFee: selectedPackage.setupFee || 0,
+          totalAmount: amount,
+          paymentConfirmed: new Date().toISOString(),
+          paymentVerified: true,
+        };
         
-        if (isSuccess) {
-          const successResponse = {
-            TXNID: transactionId,
-            ORDERID: orderId,
-            TXNAMOUNT: amount.toString(),
-            STATUS: 'TXN_SUCCESS',
-            RESPCODE: '01',
-            RESPMSG: 'Transaction Successful',
-            PAYMENTMODE: 'WALLET',
-            BANKNAME: 'PAYTM',
-            MID: getPaymentGatewayKey(),
-            package: selectedPackage,
-            referralId: referralId,
-            transaction_id: transactionId,
-            setupFee: selectedPackage.setupFee || 0,
-            totalAmount: amount,
-            paymentConfirmed: new Date().toISOString(),
-            paymentVerified: true,
-          };
-          
-          toast.success('Payment completed successfully!');
-          onSuccess(successResponse);
-        } else {
-          const errorResponse = {
-            STATUS: 'TXN_FAILURE',
-            RESPCODE: '227',
-            RESPMSG: 'Payment failed. Please try again.',
-            ORDERID: orderId
-          };
-          
-          setPaymentError('Payment failed. Please try again with a different payment method.');
-          onFailure(errorResponse);
-        }
+        toast.success('Payment completed successfully!');
+        onSuccess(successResponse);
+      } else {
+        // Simulate payment failure
+        const errorResponse = {
+          STATUS: 'TXN_FAILURE',
+          RESPCODE: '227',
+          RESPMSG: 'Payment cancelled by user',
+          ORDERID: orderId
+        };
         
-        setIsLoading(false);
-      }, 3000); // 3 second delay to simulate payment processing
+        setPaymentError('Payment was cancelled.');
+        onFailure(errorResponse);
+      }
 
     } catch (error) {
       console.error('Error initializing payment:', error);
       setPaymentError('Payment initialization failed. Please try again.');
-      setIsLoading(false);
       onFailure(error);
+    } finally {
+      setIsLoading(false);
+      setPaymentInitiated(false);
     }
   };
 
   const retryPayment = () => {
     setRetryCount(prev => prev + 1);
     setPaymentError(null);
+    setPaymentInitiated(false);
   };
 
   return (
@@ -162,6 +170,16 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
         </p>
         <p className="text-blue-600 text-sm mt-1">
           Total amount: ₹{(selectedPackage.price + (selectedPackage.setupFee || 0)).toLocaleString('en-IN')}
+        </p>
+      </div>
+
+      <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-md">
+        <div className="flex items-center justify-center mb-2">
+          <AlertCircle className="h-5 w-5 text-orange-500 mr-2" />
+          <p className="text-orange-700 font-medium">Demo Mode</p>
+        </div>
+        <p className="text-orange-600 text-xs">
+          This is a demonstration. In production, integrate with actual Paytm payment gateway.
         </p>
       </div>
       
@@ -175,11 +193,11 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
         </div>
       )}
       
-      {isLoading && (
+      {isLoading && paymentInitiated && (
         <div className="flex flex-col items-center justify-center p-6">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           <p className="mt-2 text-sm text-muted-foreground">
-            {scriptLoaded ? 'Processing payment...' : 'Loading payment gateway...'}
+            Processing payment...
           </p>
         </div>
       )}
@@ -190,15 +208,18 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
         disabled={isLoading || !scriptLoaded}
         variant={paymentError ? "outline" : "default"}
       >
-        {isLoading ? (
+        {isLoading && paymentInitiated ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            {scriptLoaded ? 'Processing...' : 'Loading...'}
+            Processing...
           </>
         ) : paymentError ? (
           'Try Again'
         ) : (
-          `Pay ₹${(selectedPackage.price + (selectedPackage.setupFee || 0)).toLocaleString('en-IN')}`
+          <>
+            <CreditCard className="mr-2 h-4 w-4" />
+            Pay ₹{(selectedPackage.price + (selectedPackage.setupFee || 0)).toLocaleString('en-IN')}
+          </>
         )}
       </Button>
       

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
 import { generateOrderId } from '@/utils/id-generator';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CreditCard, AlertCircle } from 'lucide-react';
 import { RAZORPAY_KEY_ID } from '@/utils/razorpayLoader';
 import { toast } from 'sonner';
 import { loadPaymentScript } from '@/utils/payment/paymentScriptLoader';
@@ -33,11 +33,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  // Create a transaction ID at component initialization and reuse it
+  const [paymentInitiated, setPaymentInitiated] = useState(false);
   const [transactionId] = useState(`txn_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`);
 
   useEffect(() => {
-    // Load Razorpay script once
     const loadScript = async () => {
       setIsLoading(true);
       const loaded = await loadPaymentScript();
@@ -46,51 +45,46 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         setScriptLoaded(true);
       } else {
         console.error('Failed to load Razorpay script');
-        toast('Failed to load payment gateway. Please try again later.');
-        onFailure(new Error('Failed to load payment gateway. Please try again later.'));
+        toast.error('Failed to load payment gateway. Please try again later.');
       }
       setIsLoading(false);
     };
     
-    if (!window.Razorpay) {
+    if (!window.Razorpay && !scriptLoaded) {
       loadScript();
-    } else {
+    } else if (window.Razorpay) {
       setScriptLoaded(true);
     }
-  }, [onFailure, isRetrying]);
+  }, [isRetrying]);
 
   const handlePayment = () => {
     if (!user) {
-      toast('User not authenticated. Please login and try again.');
+      toast.error('User not authenticated. Please login and try again.');
       onFailure(new Error('User not authenticated'));
       return;
     }
 
     if (!window.Razorpay) {
       if (retryCount < 3) {
-        toast('Payment gateway not loaded. Retrying...');
+        toast.error('Payment gateway not loaded. Retrying...');
         setRetryCount(prev => prev + 1);
-        setIsRetrying(!isRetrying); // Toggle to trigger useEffect
+        setIsRetrying(!isRetrying);
         return;
       } else {
-        toast('Payment gateway could not be loaded. Please refresh and try again.');
+        toast.error('Payment gateway could not be loaded. Please refresh and try again.');
         onFailure(new Error('Payment gateway not loaded after multiple attempts'));
         return;
       }
     }
 
     setIsLoading(true);
+    setPaymentInitiated(true);
 
     try {
-      // Create order ID (in a production app, this would come from your backend)
       const orderId = generateOrderId();
-      
-      // Calculate total amount including setup fee
-      const amount = (selectedPackage.price + (selectedPackage.setupFee || 0)) * 100; // Razorpay expects amount in paise
+      const amount = (selectedPackage.price + (selectedPackage.setupFee || 0)) * 100;
       console.log(`Processing payment with amount: ${amount/100} rupees (price: ${selectedPackage.price}, setup fee: ${selectedPackage.setupFee || 0})`);
 
-      // Optimize notes to stay under the 15 limit - THIS IS KEY TO FIXING THE ERROR
-      // Only include the most critical notes
       const notes: Record<string, string> = {
         package_id: selectedPackage.id,
         user_id: user.id,
@@ -100,18 +94,16 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         refundPolicy: "no_refunds"
       };
 
-      // Only add referral ID if it exists
       if (referralId) {
         notes.referral_id = referralId;
       }
 
-      // Add setup fee only if it exists to save on note count
       if (selectedPackage.setupFee) {
         notes.setup_fee = String(selectedPackage.setupFee);
       }
 
       const options = {
-        key: RAZORPAY_KEY_ID, // Use the imported live key
+        key: RAZORPAY_KEY_ID,
         amount: amount,
         currency: 'INR',
         name: 'Grow Bharat Vyapaar',
@@ -122,22 +114,19 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           email: user.email || '',
           contact: user.phone || ''
         },
-        notes: notes, // OPTIMIZED TO STAY UNDER 15 ITEMS
-        transaction_id: transactionId, // Add at top level for stronger tracking
-        isNonRefundable: true, // Add at top level for stronger prevention
+        notes: notes,
+        transaction_id: transactionId,
+        isNonRefundable: true,
         theme: {
           color: '#3B82F6'
         },
         handler: function (response: any) {
-          // Add the package info to the response for convenience
           response.package = selectedPackage;
           
-          // Process referral if applicable
           if (referralId) {
             response.referralId = referralId;
           }
           
-          // Add comprehensive flags to prevent refunds in response processing
           response.preventRefunds = true;
           response.isNonRefundable = true;
           response.refundStatus = "no_refund_allowed";
@@ -148,43 +137,42 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           response.transaction_id = transactionId;
           response.refundEligible = false;
           response.paymentVerified = true;
-          
-          // Add setup fee to response for proper handling
           response.setupFee = selectedPackage.setupFee || 0;
           response.totalAmount = selectedPackage.price + (selectedPackage.setupFee || 0);
-          
-          // Mark payment as verified immediately
           response.paymentConfirmed = new Date().toISOString();
           
           onSuccess(response);
         },
-        // For better mobile compatibility
         modal: {
           escape: false,
           backdropclose: false,
           handleback: true,
           confirm_close: true,
           ondismiss: function() {
-            toast('Payment cancelled. You can try again.');
+            toast.error('Payment cancelled. You can try again.');
             setIsLoading(false);
+            setPaymentInitiated(false);
           }
         },
-        // Prevent routing issues
         callback_url: window.location.href,
         redirect: false
       };
 
       const razorpayObject = new window.Razorpay(options);
+      
       razorpayObject.on('payment.failed', function(response: any) {
         console.error('Payment failed:', response.error);
-        toast('Payment failed: ' + (response.error.description || 'Unknown error'));
+        toast.error('Payment failed: ' + (response.error.description || 'Unknown error'));
+        setIsLoading(false);
+        setPaymentInitiated(false);
         onFailure(response.error);
       });
       
-      // Add extra error handlers
       razorpayObject.on('payment.error', function(error: any) {
         console.error('Payment error:', error);
-        toast('Payment error: ' + (error.message || 'Unknown error'));
+        toast.error('Payment error: ' + (error.message || 'Unknown error'));
+        setIsLoading(false);
+        setPaymentInitiated(false);
         onFailure(error);
       });
       
@@ -193,32 +181,43 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
 
     } catch (error) {
       console.error('Error initializing payment:', error);
-      toast('Error initializing payment. Please try again.');
+      toast.error('Error initializing payment. Please try again.');
       setIsLoading(false);
+      setPaymentInitiated(false);
       onFailure(error);
     }
   };
 
-  useEffect(() => {
-    if (scriptLoaded && !isLoading) {
-      handlePayment();
-    }
-  }, [scriptLoaded]);
-
   const retryPayment = () => {
     setRetryCount(0);
     setIsRetrying(!isRetrying);
+    setPaymentInitiated(false);
   };
 
   return (
     <div className="text-center">
       <div className="mb-4 p-4 bg-blue-50 rounded-md">
-        <p className="text-blue-700">
-          You'll be redirected to the payment gateway to complete your subscription.
+        <p className="text-blue-700 font-medium">
+          Complete your payment to activate your subscription
+        </p>
+        <p className="text-blue-600 text-sm mt-1">
+          Total amount: ₹{(selectedPackage.price + (selectedPackage.setupFee || 0)).toLocaleString('en-IN')}
         </p>
       </div>
       
-      {isLoading && (
+      {!scriptLoaded && (
+        <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-md">
+          <div className="flex items-center justify-center mb-2">
+            <AlertCircle className="h-5 w-5 text-orange-500 mr-2" />
+            <p className="text-orange-700 font-medium">Loading Payment Gateway</p>
+          </div>
+          <p className="text-orange-600 text-xs">
+            Please wait while we prepare the payment interface...
+          </p>
+        </div>
+      )}
+      
+      {isLoading && paymentInitiated && (
         <div className="flex flex-col items-center justify-center p-6">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           <p className="mt-2 text-sm text-muted-foreground">
@@ -237,9 +236,9 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
       <Button
         onClick={retryCount >= 3 ? retryPayment : handlePayment}
         className="w-full mt-4"
-        disabled={isLoading}
+        disabled={isLoading || !scriptLoaded}
       >
-        {isLoading ? (
+        {isLoading && paymentInitiated ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Please wait...
@@ -247,7 +246,10 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         ) : retryCount >= 3 ? (
           'Retry Payment'
         ) : (
-          'Pay Now'
+          <>
+            <CreditCard className="mr-2 h-4 w-4" />
+            Pay ₹{(selectedPackage.price + (selectedPackage.setupFee || 0)).toLocaleString('en-IN')}
+          </>
         )}
       </Button>
       
