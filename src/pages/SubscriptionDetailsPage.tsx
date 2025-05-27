@@ -1,284 +1,357 @@
-import React, { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { useSubscription } from "@/hooks";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { getPackageById } from "@/data/subscriptionData";
-import { ArrowLeft, Calendar, CheckCircle, Clock, CreditCard, XCircle, Loader2, AlertTriangle } from "lucide-react";
-import InfoCircle from "@/components/ui/InfoCircle";
-import { Link, useNavigate } from "react-router-dom";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import AdvancedSubscriptionDetails from "@/components/admin/subscription/AdvancedSubscriptionDetails";
+
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Check, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
+import { useSubscription } from '@/hooks/useSubscription';
+import { toast } from 'sonner';
+import Layout from '@/components/layout/Layout';
+import PaytmPayment from '@/components/subscription/PaytmPayment';
+import { adminAssignPaytmSubscription } from '@/lib/subscription/admin-paytm-subscription';
 
 const SubscriptionDetailsPage = () => {
-  const { user, isAuthenticated } = useAuth();
-  const { fetchUserSubscription, cancelSubscription } = useSubscription(user?.id);
+  const { packageId } = useParams();
   const navigate = useNavigate();
-  const [subscription, setSubscription] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [packageDetails, setPackageDetails] = useState<any>(null);
+  const { user, isAuthenticated } = useAuth();
+  const { packages, isLoading, isError } = useSubscriptionPackages();
+  const { fetchUserSubscription } = useSubscription(user?.id);
   
+  const [selectedPackage, setSelectedPackage] = useState<any>(null);
+  const [showPayment, setShowPayment] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [activeSubscription, setActiveSubscription] = useState<any>(null);
+
   useEffect(() => {
-    const fetchSubscription = async () => {
-      if (isAuthenticated && user?.id) {
+    if (!isAuthenticated) {
+      toast.error('Please login to view subscription details');
+      navigate('/login');
+      return;
+    }
+
+    // Check for active subscription
+    const checkActiveSubscription = async () => {
+      if (user) {
         try {
           const result = await fetchUserSubscription(user.id);
-          if (result.success && result.data) {
-            setSubscription(result.data);
-            
-            if (result.data?.packageId) {
-              const pkgDetails = getPackageById(result.data.packageId);
-              setPackageDetails(pkgDetails);
-            }
+          if (result?.success && result?.data) {
+            setActiveSubscription(result.data);
           }
         } catch (error) {
-          console.error("Error fetching subscription:", error);
+          console.error('Error checking subscription:', error);
         }
       }
-      setIsLoading(false);
     };
+
+    checkActiveSubscription();
+  }, [isAuthenticated, user, navigate, fetchUserSubscription]);
+
+  useEffect(() => {
+    if (packages && packageId) {
+      const pkg = packages.find(p => p.id === packageId);
+      if (pkg) {
+        setSelectedPackage(pkg);
+      } else {
+        toast.error('Package not found');
+        navigate('/subscription');
+      }
+    }
+  }, [packages, packageId, navigate]);
+
+  const handlePaymentSuccess = async (paymentResponse: any) => {
+    console.log('Payment successful, processing subscription:', paymentResponse);
     
-    fetchSubscription();
-  }, [isAuthenticated, user, fetchUserSubscription]);
+    // Validate payment response before processing
+    if (!paymentResponse.paymentVerified || paymentResponse.STATUS !== 'TXN_SUCCESS') {
+      toast.error('Payment verification failed. Please contact support.');
+      return;
+    }
+
+    setIsProcessing(true);
+    
+    try {
+      // Create subscription using the payment details
+      const subscriptionCreated = await adminAssignPaytmSubscription(
+        user!.uid,
+        selectedPackage,
+        paymentResponse
+      );
+
+      if (subscriptionCreated) {
+        toast.success('Subscription activated successfully!');
+        
+        // Redirect to dashboard or subscription page
+        setTimeout(() => {
+          navigate('/subscription');
+        }, 2000);
+      } else {
+        toast.error('Failed to activate subscription. Please contact support.');
+      }
+    } catch (error) {
+      console.error('Error processing subscription:', error);
+      toast.error('Failed to activate subscription. Please contact support.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handlePaymentFailure = (error: any) => {
+    console.error('Payment failed:', error);
+    setShowPayment(false);
+    
+    let errorMessage = 'Payment failed. Please try again.';
+    if (error.RESPMSG) {
+      errorMessage = error.RESPMSG;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    toast.error(errorMessage);
+  };
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-10 flex justify-center items-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
-        <span>Loading subscription details...</span>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="container mx-auto px-4 py-10">
-        <Card>
-          <CardHeader>
-            <CardTitle>Subscription Details</CardTitle>
-            <CardDescription>
-              Please sign in to view your subscription details
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>You need to be logged in to access subscription details.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!subscription) {
-    return (
-      <div className="container mx-auto px-4 py-10">
-        <div className="flex items-center mb-6">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mr-2">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <h1 className="text-2xl font-bold">Subscription Details</h1>
+      <Layout>
+        <div className="container mx-auto px-4 py-12">
+          <div className="flex justify-center items-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="ml-2">Loading package details...</span>
+          </div>
         </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>No Active Subscription</CardTitle>
-            <CardDescription>
-              You don't have an active subscription plan
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4">Subscribe to one of our plans to access premium features.</p>
-          </CardContent>
-          <CardFooter>
-            <Button asChild>
-              <Link to="/subscription">View Subscription Plans</Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+      </Layout>
     );
   }
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  if (isError || !selectedPackage) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12">
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Package Not Found</h2>
+            <p className="text-gray-600 mb-4">The requested subscription package could not be found.</p>
+            <Button onClick={() => navigate('/subscription')}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Packages
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
-  const isOneTime = subscription.paymentType === "one-time";
-
-  return (
-    <div className="container mx-auto px-4 py-10">
-      <div className="flex items-center mb-6">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="mr-2">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-2xl font-bold">Subscription Details</h1>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-xl">{packageDetails?.title}</CardTitle>
-                    {isOneTime && (
-                      <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
-                        One-time purchase
-                      </Badge>
-                    )}
-                  </div>
-                  <CardDescription>{packageDetails?.shortDescription}</CardDescription>
-                </div>
-                <Badge variant={subscription.status === 'active' ? 'default' : 'destructive'}>
-                  {subscription.status === 'active' ? (
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                  ) : (
-                    <XCircle className="h-3 w-3 mr-1" />
-                  )}
-                  {subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1)}
-                </Badge>
+  // Show success message if processing subscription
+  if (isProcessing) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12">
+          <Card className="max-w-2xl mx-auto">
+            <CardContent className="text-center py-12">
+              <Loader2 className="h-12 w-12 animate-spin text-green-600 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-green-600 mb-2">Payment Successful!</h2>
+              <p className="text-gray-600 mb-4">
+                Your subscription is being activated. Please wait...
+              </p>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-green-700 text-sm">
+                  You will be redirected to your subscription dashboard shortly.
+                </p>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Check if user already has active subscription
+  if (activeSubscription && activeSubscription.status === 'active') {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12">
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader>
+              <CardTitle>You already have an active subscription</CardTitle>
+              <CardDescription>
+                You cannot purchase a new subscription while your current one is active.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div>
-                  <h3 className="font-medium mb-2">Package Details</h3>
-                  <p>{packageDetails?.fullDescription}</p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-blue-800">Current Subscription</h3>
+                  <p className="text-blue-700">{activeSubscription.packageName}</p>
+                  <p className="text-blue-600 text-sm">
+                    Active until {new Date(activeSubscription.endDate).toLocaleDateString()}
+                  </p>
                 </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex items-center">
-                    <CreditCard className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        {isOneTime ? "Amount Paid" : "Subscription Amount"}
-                      </p>
-                      <p className="font-medium">
-                        ₹{subscription.amount}
-                        {!isOneTime && "/year"}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Start Date</p>
-                      <p className="font-medium">{formatDate(subscription.startDate)}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        {isOneTime ? "Valid Until" : "Renewal Date"}
-                      </p>
-                      <p className="font-medium">{formatDate(subscription.endDate)}</p>
-                    </div>
-                  </div>
-                  
-                  {!isOneTime && (
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Billing Cycle</p>
-                        <p className="font-medium">Annual</p>
-                      </div>
-                    </div>
-                  )}
+                <div className="flex gap-2">
+                  <Button onClick={() => navigate('/subscription')} variant="outline">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Subscriptions
+                  </Button>
                 </div>
-                
-                {isOneTime && (
-                  <div className="bg-amber-50 p-3 rounded-md border border-amber-200 mt-4">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
-                      <div>
-                        <h4 className="font-medium text-amber-800">One-time Purchase</h4>
-                        <p className="text-sm text-amber-700">
-                          This is a one-time purchase, not a recurring subscription. 
-                          You will not be charged again and your access will end on {formatDate(subscription.endDate)}.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                <AdvancedSubscriptionDetails subscription={subscription} />
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline" asChild>
-                <Link to="/subscription">Change Plan</Link>
-              </Button>
-              
-              {subscription.status === 'active' && !isOneTime && subscription.isUserCancellable !== false && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="destructive">Cancel Subscription</Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Cancel Your Subscription</DialogTitle>
-                      <DialogDescription>
-                        Are you sure you want to cancel your subscription? You will lose access to premium features once your current period ends.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => {}}>Keep Subscription</Button>
-                      <Button 
-                        variant="destructive" 
-                        onClick={() => {
-                          cancelSubscription();
-                        }}
-                      >
-                        Cancel Subscription
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              )}
-              
-              {isOneTime && subscription.status === 'active' && (
-                <div className="flex items-center">
-                  <InfoCircle className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">One-time purchases cannot be cancelled or refunded</span>
-                </div>
-              )}
-            </CardFooter>
           </Card>
         </div>
-        
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Included Features</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                {packageDetails?.features && packageDetails.features.length > 0 ? (
-                  packageDetails.features.map((feature: string, index: number) => (
-                    <li key={index} className="flex items-start">
-                      <CheckCircle className="h-4 w-4 text-primary mr-2 mt-0.5" />
-                      <span>{feature}</span>
-                    </li>
-                  ))
-                ) : (
-                  <li>No features listed for this package</li>
+      </Layout>
+    );
+  }
+
+  const isOneTime = selectedPackage.paymentType === 'one-time';
+  const timeframe = isOneTime ? 'total' : `/${selectedPackage.billingCycle || 'yearly'}`;
+  const displayPrice = selectedPackage.billingCycle === 'monthly' && selectedPackage.monthlyPrice 
+    ? selectedPackage.monthlyPrice 
+    : selectedPackage.price;
+  const totalAmount = selectedPackage.price + (selectedPackage.setupFee || 0);
+
+  return (
+    <Layout>
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto">
+          <Button
+            onClick={() => navigate('/subscription')}
+            variant="ghost"
+            className="mb-6"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Packages
+          </Button>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Package Details */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-2xl">{selectedPackage.title}</CardTitle>
+                  {selectedPackage.popular && (
+                    <Badge className="bg-blue-600 text-white">Most Popular</Badge>
+                  )}
+                </div>
+                <CardDescription>{selectedPackage.shortDescription}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <div className="flex items-baseline">
+                    <span className="text-4xl font-bold">₹{displayPrice.toLocaleString('en-IN')}</span>
+                    <span className="text-gray-500 ml-1">{timeframe}</span>
+                  </div>
+                  {selectedPackage.setupFee > 0 && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      + ₹{selectedPackage.setupFee.toLocaleString('en-IN')} setup fee
+                    </p>
+                  )}
+                  <p className="text-lg font-semibold text-green-600 mt-2">
+                    Total: ₹{totalAmount.toLocaleString('en-IN')}
+                  </p>
+                </div>
+
+                {selectedPackage.fullDescription && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Description</h3>
+                    <p className="text-gray-600">{selectedPackage.fullDescription}</p>
+                  </div>
                 )}
-              </ul>
-            </CardContent>
-          </Card>
+
+                <div>
+                  <h3 className="font-semibold mb-3">Features</h3>
+                  <ul className="space-y-2">
+                    {Array.isArray(selectedPackage.features) && selectedPackage.features.length > 0 ? (
+                      selectedPackage.features.map((feature, index) => (
+                        <li key={index} className="flex items-start">
+                          <Check className="h-5 w-5 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
+                          <span>{feature}</span>
+                        </li>
+                      ))
+                    ) : (
+                      <li className="flex items-start">
+                        <Check className="h-5 w-5 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
+                        <span>Package features will be updated soon</span>
+                      </li>
+                    )}
+                  </ul>
+                </div>
+
+                {selectedPackage.termsAndConditions && (
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="font-semibold mb-2">Terms & Conditions</h3>
+                    <p className="text-sm text-gray-600">{selectedPackage.termsAndConditions}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Payment Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Complete Your Purchase</CardTitle>
+                <CardDescription>
+                  {showPayment ? 'Complete your payment to activate your subscription' : 'Ready to get started?'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!showPayment ? (
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h3 className="font-semibold text-blue-800 mb-2">Payment Summary</h3>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span>Package Price:</span>
+                          <span>₹{selectedPackage.price.toLocaleString('en-IN')}</span>
+                        </div>
+                        {selectedPackage.setupFee > 0 && (
+                          <div className="flex justify-between">
+                            <span>Setup Fee:</span>
+                            <span>₹{selectedPackage.setupFee.toLocaleString('en-IN')}</span>
+                          </div>
+                        )}
+                        <hr className="my-2" />
+                        <div className="flex justify-between font-semibold">
+                          <span>Total Amount:</span>
+                          <span>₹{totalAmount.toLocaleString('en-IN')}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Button 
+                      onClick={() => setShowPayment(true)} 
+                      className="w-full h-12 text-lg"
+                      size="lg"
+                    >
+                      Proceed to Payment
+                    </Button>
+
+                    <p className="text-xs text-gray-500 text-center">
+                      By proceeding, you agree to our terms and conditions
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <PaytmPayment
+                      selectedPackage={selectedPackage}
+                      onSuccess={handlePaymentSuccess}
+                      onFailure={handlePaymentFailure}
+                    />
+                    
+                    <Button 
+                      onClick={() => setShowPayment(false)} 
+                      variant="outline" 
+                      className="w-full"
+                    >
+                      Back to Summary
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

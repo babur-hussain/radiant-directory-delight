@@ -56,9 +56,8 @@ export const usePaytmPayment = () => {
       const totalAmount = (packageData.price || 0) + (packageData.setupFee || 0);
       console.log(`Calculated payment amount: Base price: ${packageData.price} + Setup fee: ${packageData.setupFee} = Total: ${totalAmount}`);
       
-      // Generate order ID and transaction token (in production, get from backend)
+      // Generate order ID
       const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-      const txnToken = `TXN_TOKEN_${Date.now()}`; // In production, this should come from your backend
       
       // Handle payment flow
       return new Promise((resolve, reject) => {
@@ -66,68 +65,37 @@ export const usePaytmPayment = () => {
           const { handleSuccess, handleDismiss, handleError } = createPaymentHandlers(
             packageData,
             toast,
-            resolve,
+            (response) => {
+              // Only resolve if payment was actually successful
+              if (response.STATUS === 'TXN_SUCCESS' && response.paymentVerified) {
+                resolve(response);
+              } else {
+                reject(new Error('Payment verification failed'));
+              }
+            },
             () => reject(new Error('Payment cancelled by user')),
             reject
           );
           
-          // Configure Paytm checkout
-          const config = {
-            root: '',
-            flow: 'DEFAULT',
-            data: {
-              orderId: orderId,
-              token: txnToken,
-              tokenType: 'TXN_TOKEN',
-              amount: totalAmount.toString(),
-            },
-            handler: {
-              notifyMerchant: function(eventName: string, data: any) {
-                console.log('Paytm event:', eventName, data);
-                
-                if (eventName === 'APP_CLOSED') {
-                  handleDismiss();
-                } else if (eventName === 'BACK_BUTTON_PRESSED') {
-                  handleDismiss();
-                }
-              }
-            }
-          };
+          // For demo purposes, simulate payment processing
+          // In production, this would integrate with actual Paytm API
+          console.log("Initiating payment with order ID:", orderId);
+          console.log("Payment amount:", totalAmount);
           
-          console.log("Initializing Paytm with config:", config);
+          // Store reference for cleanup
+          paytmInstanceRef.current = { orderId, amount: totalAmount };
           
-          // Mock successful response for demo (in production, this comes from Paytm)
+          // Note: This is a demo implementation
+          // In production, you would integrate with actual Paytm payment gateway
           setTimeout(() => {
-            const mockResponse = {
-              TXNID: `TXN_${Date.now()}`,
-              ORDERID: orderId,
-              TXNAMOUNT: totalAmount.toString(),
-              STATUS: 'TXN_SUCCESS',
-              RESPCODE: '01',
-              RESPMSG: 'Txn Success',
-              PAYMENTMODE: 'CC',
-              BANKNAME: 'DEMO_BANK',
-              MID: getPaymentGatewayKey(),
-              CHECKSUMHASH: 'demo_checksum'
-            };
-            
-            handleSuccess(mockResponse);
-          }, 2000);
-          
-          // Store reference
-          paytmInstanceRef.current = config;
-          
-          // In production, you would call:
-          // if ((window as any).Paytm && (window as any).Paytm.CheckoutJS) {
-          //   (window as any).Paytm.CheckoutJS.init(config).then(() => {
-          //     (window as any).Paytm.CheckoutJS.invoke();
-          //   }).catch((error: any) => {
-          //     handleError(error);
-          //   });
-          // }
+            toast({
+              title: "Demo Mode",
+              description: "This is a demo payment gateway. In production, integrate with actual Paytm API.",
+            });
+          }, 1000);
           
         } catch (err) {
-          console.error('Paytm initialization error:', err);
+          console.error('Payment initialization error:', err);
           const errorMessage = err instanceof Error ? err.message : 'Failed to initialize payment gateway';
           toast({
             title: "Payment Error",

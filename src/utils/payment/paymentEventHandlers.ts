@@ -15,6 +15,13 @@ export const createPaymentHandlers = (
   const handleSuccess = (response: any) => {
     console.log('Payment successful:', response);
     
+    // Validate payment response
+    if (!response.STATUS || response.STATUS !== 'TXN_SUCCESS') {
+      console.error('Invalid payment response:', response);
+      handleError({ message: 'Payment verification failed', response });
+      return;
+    }
+    
     // Add package details to response for easier access
     const completeResponse = {
       ...response,
@@ -23,14 +30,6 @@ export const createPaymentHandlers = (
       isOneTime: packageData.paymentType === 'one-time',
       isSubscription: packageData.paymentType === 'recurring',
       // Payment verification flags
-      preventRefunds: true,
-      isNonRefundable: true,
-      autoRefund: false,
-      refundStatus: "no_refund_allowed",
-      refundsDisabled: true,
-      refundPolicy: "no_refunds",
-      isVerifiedPayment: true,
-      nonRefundableTransaction: true,
       transaction_id: response.TXNID || transactionId,
       paymentVerified: true,
       paymentConfirmed: new Date().toISOString(),
@@ -41,7 +40,7 @@ export const createPaymentHandlers = (
     
     toast({
       title: "Payment Successful",
-      description: `Your payment for ${packageData.title} has been processed.`,
+      description: `Your payment for ${packageData.title} has been processed successfully.`,
     });
     
     onSuccess(completeResponse);
@@ -51,16 +50,25 @@ export const createPaymentHandlers = (
     console.log('Payment dismissed');
     toast({
       title: "Payment Cancelled",
-      description: "You've cancelled the payment process. Contact 6232571406 for assistance.",
+      description: "You've cancelled the payment process. Your subscription is not active.",
     });
     onDismiss();
   };
   
   const handleError = (error: any) => {
     console.error('Payment error:', error);
+    
+    let errorMessage = "Payment failed. Please try again.";
+    
+    if (error.RESPMSG) {
+      errorMessage = error.RESPMSG;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     toast({
       title: "Payment Failed",
-      description: error.RESPMSG || error.message || "Something went wrong with your payment. Contact 6232571406 for assistance.",
+      description: `${errorMessage} Contact 6232571406 for assistance.`,
       variant: "destructive"
     });
     onError(error);
