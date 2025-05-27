@@ -18,11 +18,11 @@ export interface SubscriptionPackage {
   dashboardSections?: string[];
 }
 
-// Empty arrays for backward compatibility with existing code
+// Empty arrays - no dummy data
 export const businessPackages: SubscriptionPackage[] = [];
 export const influencerPackages: SubscriptionPackage[] = [];
 
-// Function to get package by ID
+// Function to get package by ID - returns undefined if not found
 export const getPackageById = (packageId: string, packages?: SubscriptionPackage[]): SubscriptionPackage | undefined => {
   if (packages) {
     return packages.find(pkg => pkg.id === packageId);

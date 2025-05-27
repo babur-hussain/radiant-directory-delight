@@ -1,62 +1,13 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { getAllPackages, savePackage, deletePackage } from '@/services/packageService';
 import { toast } from '@/hooks/use-toast';
 
-// Updated fallback packages to display while loading
-const fallbackPackages: ISubscriptionPackage[] = [
-  // Influencer Packages
-  {
-    id: 'influencer-basic',
-    title: 'Basic',
-    price: 299,
-    type: 'Influencer',
-    features: ['Free profile creation', '6 video categories', 'Local business connections', '200 KM radius visibility'],
-    shortDescription: '200 KM radius visibility',
-    paymentType: 'recurring',
-    billingCycle: 'monthly',
-    popular: false
-  },
-  {
-    id: 'influencer-pro',
-    title: 'Pro',
-    price: 499,
-    type: 'Influencer',
-    features: ['All Basic features', 'Higher exposure', 'More business connections', '450 KM radius visibility'],
-    shortDescription: '450 KM radius visibility',
-    paymentType: 'recurring',
-    billingCycle: 'monthly',
-    popular: true
-  },
-  {
-    id: 'influencer-premium',
-    title: 'Premium',
-    price: 799,
-    type: 'Influencer',
-    features: ['All Pro features', 'Premium placement', 'Maximum earning potential', '1050 KM radius visibility'],
-    shortDescription: '1050 KM radius visibility',
-    paymentType: 'recurring',
-    billingCycle: 'monthly',
-    popular: false
-  },
-  // Business Package
-  {
-    id: 'business-local',
-    title: 'Local Connect',
-    price: 399,
-    type: 'Business',
-    features: ['Access to local influencer lists', 'Category-based recommendations', 'Virtual contact numbers', 'Business dashboard'],
-    shortDescription: 'Connect with local influencers',
-    paymentType: 'recurring',
-    billingCycle: 'monthly',
-    popular: true
-  }
-];
-
 export const useSubscriptionPackages = () => {
   const queryClient = useQueryClient();
   
-  // Query to fetch all packages with shorter timeout and retry logic
+  // Query to fetch all packages - no fallback packages
   const {
     data: packages,
     isLoading,
@@ -67,28 +18,20 @@ export const useSubscriptionPackages = () => {
     queryKey: ['subscription-packages'],
     queryFn: async () => {
       try {
-        const cachedPackages = queryClient.getQueryData<ISubscriptionPackage[]>(['subscription-packages']);
-        if (cachedPackages) {
-          console.log("Using cached subscription packages");
-          return cachedPackages;
-        }
-        
-        console.log("Fetching all subscription packages");
+        console.log("Fetching all subscription packages from database");
         const packages = await getAllPackages();
-        console.log("Successfully fetched packages:", packages?.length);
-        return packages?.length > 0 ? packages : fallbackPackages;
+        console.log("Successfully fetched packages:", packages?.length || 0);
+        return packages || [];
       } catch (err) {
         console.error('Error fetching subscription packages:', err);
-        // Return fallback packages instead of throwing when there's an error
-        console.log("Using fallback packages due to error");
-        return fallbackPackages;
+        throw err;
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes cache
     retry: 1,
     retryDelay: 1000,
-    // Initialize with fallback data to avoid loading state
-    placeholderData: fallbackPackages
+    // No placeholder data - show loading state instead
+    placeholderData: undefined
   });
   
   // Create or update mutation with proper text handling

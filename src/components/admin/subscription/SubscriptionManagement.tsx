@@ -23,7 +23,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { useSubscriptionPackages, ISubscriptionPackage } from '@/hooks/useSubscriptionPackages';
-import { CheckCircle2, AlertCircle, RefreshCw, Database, Activity } from 'lucide-react';
+import { CheckCircle2, AlertCircle, RefreshCw, Database, Activity, Loader2 } from 'lucide-react';
 
 interface SubscriptionPackageManagementProps {
   onPermissionError?: (error: any) => void; 
@@ -104,11 +104,32 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
   };
 
   if (isLoading) {
-    return <p>Loading subscription packages...</p>;
+    return (
+      <Card className="w-full">
+        <CardContent className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-3 text-lg">Loading subscription packages...</span>
+        </CardContent>
+      </Card>
+    );
   }
 
   if (isError) {
-    return <p>Error: {error?.message}</p>;
+    return (
+      <Card className="w-full">
+        <CardContent className="py-12">
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-red-600 mb-2">Error Loading Packages</h3>
+            <p className="text-gray-600 mb-4">{error?.message}</p>
+            <Button onClick={() => refetch()} variant="outline">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -116,7 +137,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
       <CardHeader>
         <CardTitle>Subscription Package Management</CardTitle>
         <CardDescription>
-          Add, edit, and remove subscription packages.
+          Add, edit, and remove subscription packages from the database.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -157,33 +178,41 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
           </Card>
         )}
 
-        <Table>
-          <TableCaption>List of available subscription packages.</TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {Array.isArray(packages) && packages.map((pkg) => (
-              <TableRow key={pkg.id}>
-                <TableCell className="font-mono text-xs">{pkg.id}</TableCell>
-                <TableCell>{pkg.title}</TableCell>
-                <TableCell>₹{pkg.price}</TableCell>
-                <TableCell>{pkg.type}</TableCell>
-                <TableCell>
-                  <Button variant="destructive" size="sm" onClick={() => handleRemovePackage(pkg.id)}>
-                    Remove
-                  </Button>
-                </TableCell>
+        {!packages || packages.length === 0 ? (
+          <div className="text-center py-8">
+            <Database className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">No Packages Found</h3>
+            <p className="text-gray-600">No subscription packages have been created yet.</p>
+          </div>
+        ) : (
+          <Table>
+            <TableCaption>List of subscription packages from database ({packages.length} total).</TableCaption>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {packages.map((pkg) => (
+                <TableRow key={pkg.id}>
+                  <TableCell className="font-mono text-xs">{pkg.id}</TableCell>
+                  <TableCell>{pkg.title}</TableCell>
+                  <TableCell>₹{pkg.price.toLocaleString('en-IN')}</TableCell>
+                  <TableCell>{pkg.type}</TableCell>
+                  <TableCell>
+                    <Button variant="destructive" size="sm" onClick={() => handleRemovePackage(pkg.id)}>
+                      Remove
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
   );
