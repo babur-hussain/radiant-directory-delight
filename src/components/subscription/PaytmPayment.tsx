@@ -34,7 +34,6 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [paymentInitiated, setPaymentInitiated] = useState(false);
-  const [transactionId] = useState(`TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`);
 
   useEffect(() => {
     const loadScript = async () => {
@@ -76,79 +75,113 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
     setPaymentInitiated(true);
 
     try {
-      // Create order ID
-      const orderId = generateOrderId();
-      
       // Calculate total amount including setup fee
       const amount = selectedPackage.price + (selectedPackage.setupFee || 0);
       console.log(`Processing payment with amount: ${amount} rupees`);
 
-      // Call backend to get payment token (this would be your actual payment integration)
-      const paymentData = {
-        orderId,
-        amount,
-        customerInfo: {
-          custId: user.uid,
-          email: user.email,
-          phone: user.phone || '9999999999'
+      // Call the Paytm integration edge function to get payment details
+      const response = await fetch('/functions/v1/paytm-integration', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        packageInfo: {
-          packageId: selectedPackage.id,
-          packageName: selectedPackage.title
+        body: JSON.stringify({
+          packageData: selectedPackage,
+          customerData: {
+            custId: user.uid,
+            email: user.email,
+            phone: user.phone || '9999999999',
+            name: user.name || 'Customer'
+          },
+          userId: user.uid,
+          referralId: referralId,
+          enableAutoPay: selectedPackage.paymentType === 'recurring'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to initialize payment');
+      }
+
+      const paymentData = await response.json();
+      console.log('Payment data received:', paymentData);
+
+      // Check if Paytm is loaded
+      if (!window.Paytm || !window.Paytm.CheckoutJS) {
+        throw new Error('Paytm payment gateway not loaded');
+      }
+
+      // Configure Paytm payment
+      const config = {
+        "root": "",
+        "flow": "DEFAULT",
+        "data": {
+          "orderId": paymentData.orderId,
+          "token": paymentData.txnToken,
+          "tokenType": "TXN_TOKEN",
+          "amount": paymentData.amount.toString()
+        },
+        "handler": {
+          "notifyMerchant": function(eventName: string, data: any) {
+            console.log("Paytm event:", eventName, data);
+            
+            if (eventName === 'APP_CLOSED') {
+              setPaymentError('Payment was cancelled.');
+              onFailure({ message: 'Payment cancelled by user' });
+              setIsLoading(false);
+              setPaymentInitiated(false);
+            }
+          }
         }
       };
 
-      console.log('Initiating payment with data:', paymentData);
-
-      // TODO: Replace this with actual Paytm integration
-      // For now, we'll show a message that this is demo mode
-      toast.error('Demo Mode: This is a simulation. In production, integrate with actual Paytm payment gateway.');
-      
-      // Simulate payment gateway interaction
-      // In production, you would open the actual Paytm payment gateway here
-      const userConfirmed = window.confirm(
-        `Demo Payment Confirmation\n\nAmount: ₹${amount}\nPackage: ${selectedPackage.title}\n\nThis is a demo. Click OK to simulate successful payment, Cancel to simulate failure.`
-      );
-      
-      if (userConfirmed) {
-        // Simulate successful payment
-        const successResponse = {
-          TXNID: transactionId,
-          ORDERID: orderId,
-          TXNAMOUNT: amount.toString(),
-          STATUS: 'TXN_SUCCESS',
-          RESPCODE: '01',
-          RESPMSG: 'Transaction Successful',
-          PAYMENTMODE: 'WALLET',
-          BANKNAME: 'PAYTM',
-          MID: getPaymentGatewayKey(),
-          package: selectedPackage,
-          referralId: referralId,
-          transaction_id: transactionId,
-          setupFee: selectedPackage.setupFee || 0,
-          totalAmount: amount,
-          paymentConfirmed: new Date().toISOString(),
-          paymentVerified: true,
-        };
-        
-        toast.success('Payment completed successfully!');
-        onSuccess(successResponse);
+      // Initialize Paytm payment
+      if (window.Paytm.CheckoutJS.init) {
+        window.Paytm.CheckoutJS.init(config).then(function() {
+          console.log('Paytm CheckoutJS initialized');
+          
+          // Invoke payment
+          window.Paytm.CheckoutJS.invoke().then(function(response: any) {
+            console.log('Payment response:', response);
+            
+            if (response && response.STATUS === 'TXN_SUCCESS') {
+              // Payment successful
+              const successResponse = {
+                ...response,
+                package: selectedPackage,
+                referralId: referralId,
+                setupFee: selectedPackage.setupFee || 0,
+                totalAmount: amount,
+                paymentConfirmed: new Date().toISOString(),
+                paymentVerified: true,
+              };
+              
+              toast.success('Payment completed successfully!');
+              onSuccess(successResponse);
+            } else {
+              // Payment failed
+              const errorMessage = response?.RESPMSG || 'Payment failed';
+              setPaymentError(errorMessage);
+              onFailure(response || { message: 'Payment failed' });
+            }
+          }).catch(function(error: any) {
+            console.error('Payment invoke error:', error);
+            setPaymentError('Payment processing failed. Please try again.');
+            onFailure(error);
+          });
+        }).catch(function(error: any) {
+          console.error('Paytm init error:', error);
+          setPaymentError('Failed to initialize payment gateway.');
+          onFailure(error);
+        });
       } else {
-        // Simulate payment failure
-        const errorResponse = {
-          STATUS: 'TXN_FAILURE',
-          RESPCODE: '227',
-          RESPMSG: 'Payment cancelled by user',
-          ORDERID: orderId
-        };
-        
-        setPaymentError('Payment was cancelled.');
-        onFailure(errorResponse);
+        throw new Error('Paytm CheckoutJS not properly loaded');
       }
 
     } catch (error) {
       console.error('Error initializing payment:', error);
-      setPaymentError('Payment initialization failed. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Payment initialization failed';
+      setPaymentError(errorMessage);
       onFailure(error);
     } finally {
       setIsLoading(false);
@@ -170,16 +203,6 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
         </p>
         <p className="text-blue-600 text-sm mt-1">
           Total amount: ₹{(selectedPackage.price + (selectedPackage.setupFee || 0)).toLocaleString('en-IN')}
-        </p>
-      </div>
-
-      <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-md">
-        <div className="flex items-center justify-center mb-2">
-          <AlertCircle className="h-5 w-5 text-orange-500 mr-2" />
-          <p className="text-orange-700 font-medium">Demo Mode</p>
-        </div>
-        <p className="text-orange-600 text-xs">
-          This is a demonstration. In production, integrate with actual Paytm payment gateway.
         </p>
       </div>
       

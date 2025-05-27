@@ -2,9 +2,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
-// Constants - use demo credentials
+// Paytm configuration - replace with your actual credentials
 const PAYTM_MID = Deno.env.get("PAYTM_MID") || "rxazcv89315285244163";
-const PAYTM_KEY = Deno.env.get("PAYTM_KEY") || "demo_key";
+const PAYTM_KEY = Deno.env.get("PAYTM_KEY") || "";
+const PAYTM_WEBSITE = Deno.env.get("PAYTM_WEBSITE") || "WEBSTAGING";
+const PAYTM_ENVIRONMENT = Deno.env.get("PAYTM_ENVIRONMENT") || "TEST"; // TEST or PROD
 
 // Define CORS headers
 const corsHeaders = {
@@ -18,18 +20,29 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Generate a receipt ID for internal tracking
-function generateReceiptId(): string {
-  return `receipt_${Date.now().toString(36)}${Math.random().toString(36).substring(2, 5)}`;
-}
-
 // Generate a consistent transaction ID
 function generateTransactionId(): string {
   return `TXN_${Date.now().toString(36)}${Math.random().toString(36).substring(2, 5)}`;
 }
 
+// Generate checksum for Paytm
+async function generateChecksum(params: any, key: string): Promise<string> {
+  // This is a simplified checksum generation
+  // In production, use Paytm's official checksum library
+  const queryString = Object.keys(params)
+    .sort()
+    .map(k => `${k}=${params[k]}`)
+    .join('&');
+  
+  const encoder = new TextEncoder();
+  const data = encoder.encode(queryString + key);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 // Calculate initial payment including setup fee and advance payments
-function calculateInitialPayment(packageData: any, enableAutoPay: boolean): number {
+function calculateInitialPayment(packageData: any): number {
   if (!packageData) return 0;
   
   // One-time payment case - Include setup fee for one-time packages
@@ -86,13 +99,13 @@ serve(async (req) => {
       );
     }
     
-    const { packageData, customerData, userId, useOneTimePreferred = true, enableAutoPay = true } = body;
+    const { packageData, customerData, userId, referralId, enableAutoPay = true } = body;
     
     // Validate required fields
-    if (!packageData || !userId) {
-      console.error("Missing required fields:", { packageData, userId });
+    if (!packageData || !userId || !customerData) {
+      console.error("Missing required fields:", { packageData, userId, customerData });
       return new Response(
-        JSON.stringify({ error: "Missing required fields: packageData and userId" }),
+        JSON.stringify({ error: "Missing required fields: packageData, userId, and customerData" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -100,51 +113,62 @@ serve(async (req) => {
       );
     }
 
-    console.log("Creating subscription with data:", { 
-      packageId: packageData.id, 
-      userId, 
-      useOneTimePreferred, 
-      enableAutoPay 
-    });
-
-    // Determine payment type based on package data and user preference
-    const isRecurring = packageData.paymentType === 'recurring' && enableAutoPay;
-    const isOneTime = packageData.paymentType === 'one-time' || useOneTimePreferred || !isRecurring;
-    
-    console.log(`Processing payment type: ${isOneTime ? 'one-time' : 'recurring'} with autopay: ${enableAutoPay}`);
-    
     // Calculate the initial payment amount including setup fee and advance payments
-    const initialPaymentAmount = calculateInitialPayment(packageData, enableAutoPay);
+    const initialPaymentAmount = calculateInitialPayment(packageData);
     console.log(`Calculated initial payment amount: ${initialPaymentAmount}`);
     
     // Generate order ID and transaction token
     const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const txnToken = generateTransactionId();
     
-    // Return successful response with payment details
+    // Prepare Paytm parameters
+    const paytmParams = {
+      MID: PAYTM_MID,
+      WEBSITE: PAYTM_WEBSITE,
+      INDUSTRY_TYPE_ID: "Retail",
+      CHANNEL_ID: "WEB",
+      ORDER_ID: orderId,
+      CUST_ID: customerData.custId,
+      TXN_AMOUNT: initialPaymentAmount.toString(),
+      CALLBACK_URL: `${req.headers.get("origin")}/payment-success`,
+      EMAIL: customerData.email,
+      MOBILE_NO: customerData.phone,
+    };
+
+    // Generate checksum if key is available
+    let checksumHash = "";
+    if (PAYTM_KEY) {
+      checksumHash = await generateChecksum(paytmParams, PAYTM_KEY);
+    }
+
+    // For production, you would call Paytm's token generation API here
+    // For now, we'll return the necessary data for frontend integration
+    const response = {
+      mid: PAYTM_MID,
+      orderId: orderId,
+      txnToken: txnToken, // In production, get this from Paytm's token API
+      amount: initialPaymentAmount,
+      currency: "INR",
+      website: PAYTM_WEBSITE,
+      industryType: "Retail",
+      channelId: "WEB",
+      callbackUrl: `${req.headers.get("origin")}/payment-success`,
+      checksumHash: checksumHash,
+      customerInfo: customerData,
+      packageInfo: packageData,
+      referralId: referralId,
+      isOneTime: packageData.paymentType === 'one-time',
+      isSubscription: packageData.paymentType === 'recurring',
+      enableAutoPay: enableAutoPay && packageData.paymentType === 'recurring',
+      setupFee: packageData.setupFee || 0,
+      totalAmount: initialPaymentAmount,
+      environment: PAYTM_ENVIRONMENT
+    };
+
+    console.log("Returning payment response:", response);
+
     return new Response(
-      JSON.stringify({ 
-        mid: PAYTM_MID,
-        orderId: orderId,
-        txnToken: txnToken,
-        amount: initialPaymentAmount,
-        currency: "INR",
-        website: "WEBSTAGING",
-        industryType: "Retail",
-        channelId: "WEB",
-        callbackUrl: `${req.headers.get("origin")}/payment-success`,
-        isOneTime,
-        isSubscription: !isOneTime,
-        enableAutoPay: enableAutoPay && !isOneTime,
-        setupFee: packageData.setupFee || 0,
-        totalAmount: initialPaymentAmount,
-        // Critical flags to prevent auto-refund
-        autoRefund: false,
-        isRefundable: false, 
-        isNonRefundable: true,
-        refundPolicy: "no_refunds",
-        transaction_id: txnToken
-      }),
+      JSON.stringify(response),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
