@@ -236,31 +236,62 @@ const mapDbRowToPackage = (dbRow: any): ISubscriptionPackage => {
     }
   }
   
-  // Parse features from JSON string or use empty array
+  // Parse features with improved handling for different formats
   let features: string[] = [];
-  try {
-    if (typeof dbRow.features === 'string' && dbRow.features) {
-      // Try to parse as JSON
-      features = JSON.parse(dbRow.features);
-    } else if (Array.isArray(dbRow.features)) {
+  
+  if (dbRow.features) {
+    if (Array.isArray(dbRow.features)) {
+      // Already an array, use as is
       features = dbRow.features;
-    } else if (typeof dbRow.features === 'string' && dbRow.features.includes('✅')) {
-      // Handle non-JSON formatted features with checkmarks
-      features = dbRow.features.split('\n').map((feature: string) => feature.trim());
-    }
-  } catch (e) {
-    console.warn("Error parsing features:", e);
-    // If parsing fails, try to split by newlines or commas
-    if (typeof dbRow.features === 'string') {
-      if (dbRow.features.includes('\n')) {
-        features = dbRow.features.split('\n').map((f: string) => f.trim()).filter(Boolean);
-      } else if (dbRow.features.includes(',')) {
-        features = dbRow.features.split(',').map((f: string) => f.trim()).filter(Boolean);
-      } else if (dbRow.features.trim()) {
-        features = [dbRow.features.trim()];
+    } else if (typeof dbRow.features === 'string') {
+      const featuresString = dbRow.features.trim();
+      
+      if (!featuresString) {
+        features = [];
+      } else {
+        try {
+          // First try to parse as JSON
+          const parsed = JSON.parse(featuresString);
+          features = Array.isArray(parsed) ? parsed : [featuresString];
+        } catch (e) {
+          // If JSON parsing fails, handle different text formats
+          console.log("JSON parsing failed, trying alternative parsing methods");
+          
+          // Check if it contains checkmarks or bullets
+          if (featuresString.includes('✅') || featuresString.includes('✔')) {
+            // Split by checkmarks and clean up
+            features = featuresString
+              .split(/[✅✔]/)
+              .map((feature: string) => feature.trim())
+              .filter((feature: string) => feature.length > 0)
+              .map((feature: string) => feature.replace(/^[•\-\*]\s*/, '').trim()); // Remove bullets
+          } else if (featuresString.includes('\n')) {
+            // Split by newlines
+            features = featuresString
+              .split('\n')
+              .map((feature: string) => feature.trim())
+              .filter((feature: string) => feature.length > 0)
+              .map((feature: string) => feature.replace(/^[•\-\*✅✔]\s*/, '').trim()); // Remove bullets and checkmarks
+          } else if (featuresString.includes(',')) {
+            // Split by commas
+            features = featuresString
+              .split(',')
+              .map((feature: string) => feature.trim())
+              .filter((feature: string) => feature.length > 0)
+              .map((feature: string) => feature.replace(/^[•\-\*✅✔]\s*/, '').trim()); // Remove bullets and checkmarks
+          } else {
+            // Single feature
+            features = [featuresString.replace(/^[•\-\*✅✔]\s*/, '').trim()];
+          }
+        }
       }
     }
   }
+  
+  // Clean up features to ensure they don't start with checkmarks or bullets
+  features = features.map(feature => 
+    feature.replace(/^[•\-\*✅✔]\s*/, '').trim()
+  ).filter(feature => feature.length > 0);
   
   // Parse dashboard_sections from JSON string or use empty array
   let dashboardSections: string[] = [];
