@@ -313,105 +313,107 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onSwitch
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="text-center">Create Your Account</CardTitle>
-        <CardDescription className="text-center">
-          Step {step} of 3 - {step === 1 ? 'Choose Role' : step === 2 ? 'Basic Info' : 'Additional Details'}
-        </CardDescription>
+    <div className="w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="text-center">Create Your Account</CardTitle>
+          <CardDescription className="text-center">
+            Step {step} of 3 - {step === 1 ? 'Choose Role' : step === 2 ? 'Basic Info' : 'Additional Details'}
+          </CardDescription>
+          
+          {/* Progress bar */}
+          <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(step / 3) * 100}%` }}
+            />
+          </div>
+        </CardHeader>
         
-        {/* Progress bar */}
-        <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
-          <div 
-            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${(step / 3) * 100}%` }}
-          />
-        </div>
-      </CardHeader>
-      
-      <CardContent>
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        
-        {renderStep()}
-      </CardContent>
-      
-      <CardFooter className="flex flex-col space-y-4">
-        <div className="flex justify-between w-full">
-          {step > 1 && (
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={handleBack}
-              disabled={isLoading}
-            >
-              Back
-            </Button>
+        <CardContent className="max-h-[50vh] overflow-y-auto">
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
           
-          <div className="flex-1 flex justify-end">
-            {step < 3 ? (
+          {renderStep()}
+        </CardContent>
+        
+        <CardFooter className="flex flex-col space-y-4">
+          <div className="flex justify-between w-full">
+            {step > 1 && (
               <Button 
                 type="button" 
-                onClick={handleNext}
+                variant="outline" 
+                onClick={handleBack}
                 disabled={isLoading}
-                className="px-8"
               >
-                Next
-              </Button>
-            ) : (
-              <Button 
-                type="button" 
-                onClick={handleSubmit}
-                disabled={isLoading}
-                className="px-8"
-              >
-                {isLoading ? 'Creating Account...' : 'Create Account'}
+                Back
               </Button>
             )}
-          </div>
-        </div>
-        
-        {step === 1 && (
-          <>
-            <div className="relative w-full">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or</span>
-              </div>
-            </div>
             
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="w-full" 
-              onClick={handleGoogleSignup}
-              disabled={isLoading}
+            <div className="flex-1 flex justify-end">
+              {step < 3 ? (
+                <Button 
+                  type="button" 
+                  onClick={handleNext}
+                  disabled={isLoading}
+                  className="px-8"
+                >
+                  Next
+                </Button>
+              ) : (
+                <Button 
+                  type="button" 
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  className="px-8"
+                >
+                  {isLoading ? 'Creating Account...' : 'Create Account'}
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          {step === 1 && (
+            <>
+              <div className="relative w-full">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or</span>
+                </div>
+              </div>
+              
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full" 
+                onClick={handleGoogleSignup}
+                disabled={isLoading}
+              >
+                <Chrome className="mr-2 h-4 w-4" />
+                Continue with Google
+              </Button>
+            </>
+          )}
+          
+          <div className="text-center text-sm text-gray-600">
+            Already have an account?{' '}
+            <button 
+              type="button"
+              onClick={onSwitchToLogin}
+              className="text-blue-600 hover:underline font-medium"
             >
-              <Chrome className="mr-2 h-4 w-4" />
-              Continue with Google
-            </Button>
-          </>
-        )}
-        
-        <div className="text-center text-sm text-gray-600">
-          Already have an account?{' '}
-          <button 
-            type="button"
-            onClick={onSwitchToLogin}
-            className="text-blue-600 hover:underline font-medium"
-          >
-            Sign In
-          </button>
-        </div>
-      </CardFooter>
-    </Card>
+              Sign In
+            </button>
+          </div>
+        </CardFooter>
+      </Card>
+    </div>
   );
 };
 

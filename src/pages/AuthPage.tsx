@@ -116,9 +116,9 @@ const AuthPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4">
-      <div className="w-full max-w-4xl">
-        <div className="text-center mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-8 px-4">
+      <div className="w-full max-w-6xl h-full">
+        <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Join <span className="text-orange-600">GROW BHARAT VYAPAAR</span>
           </h1>
@@ -127,18 +127,20 @@ const AuthPage = () => {
           </p>
         </div>
 
-        {activeTab === 'register' ? (
-          <RegistrationForm
-            onSuccess={handleAuthSuccess}
-            onSwitchToLogin={() => setActiveTab('login')}
-          />
-        ) : (
-          <LoginForm
-            onSuccess={handleAuthSuccess}
-            onSwitchToRegister={() => setActiveTab('register')}
-            onForgotPassword={() => setShowForgotPassword(true)}
-          />
-        )}
+        <div className="flex justify-center items-start min-h-[80vh]">
+          {activeTab === 'register' ? (
+            <RegistrationForm
+              onSuccess={handleAuthSuccess}
+              onSwitchToLogin={() => setActiveTab('login')}
+            />
+          ) : (
+            <LoginForm
+              onSuccess={handleAuthSuccess}
+              onSwitchToRegister={() => setActiveTab('register')}
+              onForgotPassword={() => setShowForgotPassword(true)}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
