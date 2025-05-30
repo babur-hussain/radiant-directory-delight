@@ -1,6 +1,68 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole, UserSubscription, isUserSubscription } from '@/types/auth';
+
+// Get user by ID
+export const getUserById = async (uid: string): Promise<User | null> => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', uid)
+    .single();
+  
+  if (error) {
+    console.error('Error fetching user by ID:', error);
+    if (error.code === 'PGRST116') {
+      // No rows returned
+      return null;
+    }
+    throw error;
+  }
+  
+  if (!data) return null;
+  
+  return {
+    uid: data.id,
+    id: data.id,
+    email: data.email,
+    displayName: data.name,
+    name: data.name,
+    photoURL: data.photo_url,
+    isAdmin: data.is_admin || false,
+    role: data.role as UserRole,
+    employeeCode: data.employee_code,
+    createdAt: data.created_at,
+    lastLogin: data.last_login,
+    phone: data.phone,
+    instagramHandle: data.instagram_handle,
+    facebookHandle: data.facebook_handle,
+    verified: data.verified,
+    city: data.city,
+    country: data.country,
+    niche: data.niche,
+    followersCount: data.followers_count,
+    bio: data.bio,
+    businessName: data.business_name,
+    ownerName: data.owner_name,
+    businessCategory: data.business_category,
+    website: data.website,
+    gstNumber: data.gst_number,
+    subscription: data.subscription,
+    subscriptionId: data.subscription_id,
+    subscriptionStatus: data.subscription_status,
+    subscriptionPackage: data.subscription_package,
+    customDashboardSections: data.custom_dashboard_sections,
+    referralId: data.referral_id,
+    referralCount: data.referral_count || 0,
+    referralEarnings: data.referral_earnings || 0,
+    address: data.address ? {
+      street: data.address.street,
+      city: data.address.city,
+      state: data.address.state,
+      country: data.address.country,
+      zipCode: data.address.zipCode
+    } : null
+  } as User;
+};
 
 // Get all users
 export const getAllUsers = async (): Promise<User[]> => {
@@ -91,7 +153,49 @@ export const updateUser = async (uid: string, updates: Partial<User>): Promise<U
     throw error;
   }
   
-  return data;
+  // Return the updated user with proper mapping
+  return {
+    uid: data.id,
+    id: data.id,
+    email: data.email,
+    displayName: data.name,
+    name: data.name,
+    photoURL: data.photo_url,
+    isAdmin: data.is_admin || false,
+    role: data.role as UserRole,
+    employeeCode: data.employee_code,
+    createdAt: data.created_at,
+    lastLogin: data.last_login,
+    phone: data.phone,
+    instagramHandle: data.instagram_handle,
+    facebookHandle: data.facebook_handle,
+    verified: data.verified,
+    city: data.city,
+    country: data.country,
+    niche: data.niche,
+    followersCount: data.followers_count,
+    bio: data.bio,
+    businessName: data.business_name,
+    ownerName: data.owner_name,
+    businessCategory: data.business_category,
+    website: data.website,
+    gstNumber: data.gst_number,
+    subscription: data.subscription,
+    subscriptionId: data.subscription_id,
+    subscriptionStatus: data.subscription_status,
+    subscriptionPackage: data.subscription_package,
+    customDashboardSections: data.custom_dashboard_sections,
+    referralId: data.referral_id,
+    referralCount: data.referral_count || 0,
+    referralEarnings: data.referral_earnings || 0,
+    address: data.address ? {
+      street: data.address.street,
+      city: data.address.city,
+      state: data.address.state,
+      country: data.address.country,
+      zipCode: data.address.zipCode
+    } : null
+  } as User;
 };
 
 // Delete user

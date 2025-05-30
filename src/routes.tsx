@@ -119,7 +119,7 @@ export const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <Layout />,
+        element: <Layout><Outlet /></Layout>,
         children: [
           { index: true, element: <Index /> },
           { 
