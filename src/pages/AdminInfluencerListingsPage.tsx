@@ -142,7 +142,7 @@ const AdminInfluencerListingsPage = () => {
           cover_image: values.cover_image,
           tags,
           previous_brands,
-          reviews: randomReviews,
+          reviews_count: randomReviews,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };

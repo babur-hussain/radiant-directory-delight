@@ -119,6 +119,7 @@ export type Database = {
       influencers: {
         Row: {
           bio: string | null
+          category: string | null
           city: string | null
           country: string | null
           cover_image: string | null
@@ -140,6 +141,7 @@ export type Database = {
           profile_image: string | null
           rating: number | null
           reviews: number | null
+          reviews_count: number | null
           state: string | null
           tags: string[] | null
           tiktok_handle: string | null
@@ -150,6 +152,7 @@ export type Database = {
         }
         Insert: {
           bio?: string | null
+          category?: string | null
           city?: string | null
           country?: string | null
           cover_image?: string | null
@@ -171,6 +174,7 @@ export type Database = {
           profile_image?: string | null
           rating?: number | null
           reviews?: number | null
+          reviews_count?: number | null
           state?: string | null
           tags?: string[] | null
           tiktok_handle?: string | null
@@ -181,6 +185,7 @@ export type Database = {
         }
         Update: {
           bio?: string | null
+          category?: string | null
           city?: string | null
           country?: string | null
           cover_image?: string | null
@@ -202,6 +207,7 @@ export type Database = {
           profile_image?: string | null
           rating?: number | null
           reviews?: number | null
+          reviews_count?: number | null
           state?: string | null
           tags?: string[] | null
           tiktok_handle?: string | null

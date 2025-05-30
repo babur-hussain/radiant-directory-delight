@@ -2,12 +2,34 @@
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, Plus, Eye, Edit, Trash2 } from 'lucide-react';
-import { Influencer } from '@/lib/csv/influencerTypes';
+import { Search, Filter, Plus } from 'lucide-react';
 import InfluencerTableContent from './table/InfluencerTableContent';
-import { initializeInfluencerData, deleteInfluencer } from '@/lib/csv/influencerDatabase';
-import { getInfluencersData } from '@/lib/csv/influencerStore';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Influencer {
+  id: number;
+  name: string;
+  email?: string;
+  niche?: string;
+  location?: string;
+  followers_count?: number;
+  engagement_rate?: number;
+  rating?: number;
+  featured?: boolean;
+  priority?: number;
+  instagram_handle?: string;
+  youtube_handle?: string;
+  profile_image?: string;
+  cover_image?: string;
+  bio?: string;
+  tags?: string[];
+  previous_brands?: string[];
+  reviews_count?: number;
+  category?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 interface TableInfluencerListingsProps {
   onRefresh: () => void;
@@ -29,44 +51,42 @@ const TableInfluencerListings: React.FC<TableInfluencerListingsProps> = ({
   const { toast } = useToast();
   const itemsPerPage = 10;
 
-  // Load influencers data
+  // Load influencers data from Supabase
   useEffect(() => {
-    const loadInfluencers = async () => {
-      try {
-        setIsLoading(true);
-        await initializeInfluencerData();
-        const influencersData = getInfluencersData();
-        setInfluencers(influencersData);
-        setFilteredInfluencers(influencersData);
-      } catch (error) {
+    loadInfluencers();
+  }, []);
+
+  const loadInfluencers = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('influencers')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
         console.error("Error loading influencers:", error);
         toast({
           title: "Error",
           description: "Failed to load influencers data",
           variant: "destructive"
         });
-      } finally {
-        setIsLoading(false);
+        return;
       }
-    };
 
-    loadInfluencers();
-  }, [toast]);
-
-  // Listen for data changes
-  useEffect(() => {
-    const handleDataChange = () => {
-      const influencersData = getInfluencersData();
-      setInfluencers(influencersData);
-      setFilteredInfluencers(influencersData);
-    };
-
-    window.addEventListener('influencerDataChanged', handleDataChange);
-    
-    return () => {
-      window.removeEventListener('influencerDataChanged', handleDataChange);
-    };
-  }, []);
+      setInfluencers(data || []);
+      setFilteredInfluencers(data || []);
+    } catch (error) {
+      console.error("Error loading influencers:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load influencers data",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Filter influencers based on search term
   useEffect(() => {
@@ -86,14 +106,24 @@ const TableInfluencerListings: React.FC<TableInfluencerListingsProps> = ({
 
   const handleDeleteInfluencer = async (influencer: Influencer) => {
     if (window.confirm(`Are you sure you want to delete ${influencer.name}?`)) {
-      const success = await deleteInfluencer(influencer.id);
-      if (success) {
+      try {
+        const { error } = await supabase
+          .from('influencers')
+          .delete()
+          .eq('id', influencer.id);
+
+        if (error) throw error;
+
         toast({
           title: "Influencer Deleted",
           description: `${influencer.name} has been deleted successfully.`,
         });
+        
+        // Refresh the list
+        loadInfluencers();
         onRefresh();
-      } else {
+      } catch (error) {
+        console.error("Error deleting influencer:", error);
         toast({
           title: "Delete Failed",
           description: "Failed to delete the influencer. Please try again.",

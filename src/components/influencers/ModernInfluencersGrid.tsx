@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Star, Users, TrendingUp, Instagram, Youtube, MapPin, Search, Filter, Crown, Heart, CheckCircle, Globe } from 'lucide-react';
-import { getInfluencers } from '@/services/influencerService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Influencer {
-  id: string;
+  id: number;
   name: string;
   niche: string;
   location: string;
@@ -24,7 +24,7 @@ interface Influencer {
   cover_image?: string;
   bio?: string;
   tags?: string[];
-  reviews?: number;
+  reviews_count?: number;
   category?: string;
 }
 
@@ -74,8 +74,18 @@ const ModernInfluencersGrid: React.FC = () => {
 
   const fetchInfluencers = async () => {
     try {
-      const data = await getInfluencers();
-      setInfluencers(data);
+      const { data, error } = await supabase
+        .from('influencers')
+        .select('*')
+        .order('priority', { ascending: false })
+        .order('followers_count', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching influencers:', error);
+        return;
+      }
+
+      setInfluencers(data || []);
     } catch (error) {
       console.error('Error fetching influencers:', error);
     } finally {
@@ -100,7 +110,7 @@ const ModernInfluencersGrid: React.FC = () => {
 
     if (selectedLocation !== 'all') {
       filtered = filtered.filter(influencer => 
-        influencer.location.toLowerCase().includes(selectedLocation.toLowerCase())
+        influencer.location?.toLowerCase().includes(selectedLocation.toLowerCase())
       );
     }
 
@@ -297,7 +307,7 @@ const ModernInfluencersGrid: React.FC = () => {
                     <div className="absolute bottom-4 left-4">
                       <div className="w-16 h-16 rounded-full border-4 border-white overflow-hidden shadow-xl">
                         <img
-                          src={influencer.profile_image}
+                          src={influencer.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(influencer.name)}&size=64&background=7c3aed&color=fff`}
                           alt={influencer.name}
                           className="w-full h-full object-cover"
                         />
@@ -316,7 +326,7 @@ const ModernInfluencersGrid: React.FC = () => {
                       </Badge>
                       <div className="flex items-center text-gray-500 text-sm">
                         <MapPin className="w-3 h-3 mr-1" />
-                        {influencer.location.split(',')[0]}
+                        {influencer.location?.split(',')[0]}
                       </div>
                     </div>
 
@@ -396,7 +406,7 @@ const ModernInfluencersGrid: React.FC = () => {
                       <div className="absolute bottom-4 left-4">
                         <div className="w-20 h-20 rounded-full border-4 border-white overflow-hidden shadow-xl transition-transform duration-500 group-hover:scale-110">
                           <img
-                            src={influencer.profile_image}
+                            src={influencer.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(influencer.name)}&size=80&background=7c3aed&color=fff`}
                             alt={influencer.name}
                             className="w-full h-full object-cover"
                           />
@@ -415,7 +425,7 @@ const ModernInfluencersGrid: React.FC = () => {
                         </Badge>
                         <div className="flex items-center text-gray-500 text-sm">
                           <MapPin className="w-3 h-3 mr-1" />
-                          {influencer.location.split(',')[0]}
+                          {influencer.location?.split(',')[0]}
                         </div>
                       </div>
 
