@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,8 +39,8 @@ const InfluencerPage = () => {
     },
     {
       icon: Zap,
-      title: "Free Premium Plan",
-      description: "Get the ₹799 Premium plan FREE for one month when you post a reel about Lovable."
+      title: "Premium Features",
+      description: "Access advanced features to grow your influence and connect with more brands."
     },
     {
       icon: TrendingUp,
@@ -128,11 +127,6 @@ const InfluencerPage = () => {
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                 Select the plan that best fits your goals and take your influencer career to the next level.
               </p>
-              <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg inline-block">
-                <p className="text-amber-700">
-                  <span className="font-bold">🎁 Special Offer:</span> Post a reel about Lovable and get the ₹799 Premium plan FREE for 1 month!
-                </p>
-              </div>
             </div>
 
             {isLoading ? (
