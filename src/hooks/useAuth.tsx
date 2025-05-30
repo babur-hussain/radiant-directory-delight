@@ -18,8 +18,8 @@ export const useAuth = (): AuthContextType => {
 
 // Hook for checking if user is authenticated
 export const useIsAuthenticated = (): boolean => {
-  const { user, isLoading } = useAuth();
-  return !isLoading && !!user;
+  const { user, loading } = useAuth();
+  return !loading && !!user;
 };
 
 // Hook for checking user role

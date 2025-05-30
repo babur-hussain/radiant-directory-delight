@@ -7,14 +7,18 @@ import { Toaster } from '@/components/ui/sonner';
 
 interface LayoutProps {
   children: React.ReactNode;
+  hideHeader?: boolean;
+  hideFooter?: boolean;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC<LayoutProps> = ({ children, hideHeader = false, hideFooter = false }) => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <ErrorBoundary>
-        <Header />
-      </ErrorBoundary>
+      {!hideHeader && (
+        <ErrorBoundary>
+          <Header />
+        </ErrorBoundary>
+      )}
       
       <main className="flex-1">
         <ErrorBoundary>
@@ -22,9 +26,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </ErrorBoundary>
       </main>
       
-      <ErrorBoundary>
-        <Footer />
-      </ErrorBoundary>
+      {!hideFooter && (
+        <ErrorBoundary>
+          <Footer />
+        </ErrorBoundary>
+      )}
       
       <Toaster 
         position="top-right"

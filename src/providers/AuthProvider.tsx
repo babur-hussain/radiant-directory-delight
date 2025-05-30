@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -21,6 +22,7 @@ export const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   loading: true,
+  isLoading: true, // Add this property
   initialized: false,
   login: async () => null,
   loginWithGoogle: async () => {},
@@ -342,6 +344,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     isAuthenticated: !!user,
     loading,
+    isLoading: loading, // Map loading to isLoading for compatibility
     initialized,
     login,
     loginWithGoogle: handleGoogleLogin,
