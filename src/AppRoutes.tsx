@@ -1,7 +1,7 @@
 
-
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Layout from './components/layout/Layout';
 import Index from './pages/Index';
 import AuthPage from './pages/AuthPage';
 import BusinessPage from './pages/BusinessPage';
@@ -22,72 +22,74 @@ const AppRoutes: React.FC = () => {
 
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/business/:businessId" element={<BusinessPage />} />
-        
-        {/* Protected Routes */}
-        <Route 
-          path="/subscription" 
-          element={
-            <ProtectedRoute>
-              <SubscriptionPage />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/subscription/details/:packageId?" 
-          element={
-            <ProtectedRoute>
-              <SubscriptionDetailsPage />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/profile" 
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          } 
-        />
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/business/:businessId" element={<BusinessPage />} />
+          
+          {/* Protected Routes */}
+          <Route 
+            path="/subscription" 
+            element={
+              <ProtectedRoute>
+                <SubscriptionPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/subscription/details/:packageId?" 
+            element={
+              <ProtectedRoute>
+                <SubscriptionDetailsPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            } 
+          />
 
-        {/* Admin Routes */}
-        <Route 
-          path="/admin" 
-          element={
-            <AdminRoute>
-              <AdminDashboardPage />
-            </AdminRoute>
-          } 
-        />
-        <Route 
-          path="/admin/users" 
-          element={
-            <AdminRoute>
-              <AdminUsersPage />
-            </AdminRoute>
-          } 
-        />
-        <Route 
-          path="/admin/businesses" 
-          element={
-            <AdminRoute>
-              <AdminBusinessListingsPage />
-            </AdminRoute>
-          } 
-        />
-        <Route
-          path="/admin/subscriptions"
-          element={
-            <AdminRoute>
-              <AdminSubscriptionsPage />
-            </AdminRoute>
-          }
-        />
-        <Route path="/payment-success" element={<PaymentSuccessPage />} />
-      </Routes>
+          {/* Admin Routes */}
+          <Route 
+            path="/admin" 
+            element={
+              <AdminRoute>
+                <AdminDashboardPage />
+              </AdminRoute>
+            } 
+          />
+          <Route 
+            path="/admin/users" 
+            element={
+              <AdminRoute>
+                <AdminUsersPage />
+              </AdminRoute>
+            } 
+          />
+          <Route 
+            path="/admin/businesses" 
+            element={
+              <AdminRoute>
+                <AdminBusinessListingsPage />
+              </AdminRoute>
+            } 
+          />
+          <Route
+            path="/admin/subscriptions"
+            element={
+              <AdminRoute>
+                <AdminSubscriptionsPage />
+              </AdminRoute>
+            }
+          />
+          <Route path="/payment-success" element={<PaymentSuccessPage />} />
+        </Routes>
+      </Layout>
     </Router>
   );
 };
