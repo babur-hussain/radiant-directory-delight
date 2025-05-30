@@ -1,43 +1,42 @@
 
-import React, { useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
-import Header from '../Header';
-import Footer from '../Footer';
-import { useIsMobile } from '@/hooks/use-mobile';
+import React from 'react';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import { Toaster } from '@/components/ui/sonner';
 
 interface LayoutProps {
-  children?: React.ReactNode;
-  hideHeader?: boolean;
-  hideFooter?: boolean;
+  children: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, hideHeader = false, hideFooter = false }) => {
-  const showHeader = !hideHeader;
-  const showFooter = !hideFooter;
-  const isMobile = useIsMobile();
-  const location = useLocation();
-  
-  // Add class to document body to help with mobile menu styling
-  React.useEffect(() => {
-    document.body.classList.add('has-mobile-layout');
-    
-    return () => {
-      document.body.classList.remove('has-mobile-layout');
-    };
-  }, []);
-  
-  // Scroll to top on route change
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [location.pathname]);
-  
+const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="flex flex-col min-h-screen">
-      {showHeader && <Header />}
-      <main className={`flex-grow pt-0 w-full overflow-x-hidden ${isMobile ? 'pb-4' : 'pb-8'}`}>
-        {children || <Outlet />}
+    <div className="min-h-screen flex flex-col bg-background">
+      <ErrorBoundary>
+        <Header />
+      </ErrorBoundary>
+      
+      <main className="flex-1">
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </main>
-      {showFooter && <Footer />}
+      
+      <ErrorBoundary>
+        <Footer />
+      </ErrorBoundary>
+      
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: 'white',
+            border: '1px solid #e2e8f0',
+            fontSize: '14px'
+          }
+        }}
+      />
     </div>
   );
 };

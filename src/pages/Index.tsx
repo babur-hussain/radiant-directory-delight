@@ -1,3 +1,4 @@
+
 import React from 'react';
 import HeroSection from '@/components/HeroSection';
 import CategorySection from '@/components/CategorySection';
@@ -19,58 +20,72 @@ import PhotoCollage from '@/components/PhotoCollage';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Check, BookOpen, Phone, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
 const Index = () => {
   const navigate = useNavigate();
-  return <div className="index-page overflow-hidden">
+  
+  return (
+    <div className="index-page overflow-hidden">
       <HeroSection />
       
-      <div className="py-4 sm:py-6 md:py-8">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-2 md:mb-4">Welcome to <span className="text-brand-orange">GROW BHARAT VYAPAAR</span></h2>
-        <p className="text-center text-gray-600 max-w-2xl mx-auto px-4 text-sm sm:text-base">
-          India's most innovative influencer-business matchmaking platform – empowering creators and local brands to grow together.
-        </p>
-      </div>
+      {/* Welcome Section */}
+      <section className="py-6 sm:py-8 md:py-12 bg-gradient-to-r from-blue-50 to-purple-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center max-w-4xl mx-auto">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 md:mb-4">
+              Welcome to <span className="text-brand-orange">GROW BHARAT VYAPAAR</span>
+            </h2>
+            <p className="text-gray-600 text-sm sm:text-base md:text-lg max-w-3xl mx-auto">
+              India's most innovative influencer-business matchmaking platform – empowering creators and local brands to grow together.
+            </p>
+          </div>
+        </div>
+      </section>
       
       <CtaSection />
       
       {/* Business Section */}
-      <section className="py-16 bg-white">
+      <section className="py-12 sm:py-16 bg-white">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">
+          <div className="max-w-4xl mx-auto text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">
               📈 Reach the Right Audience Through Trusted Local Influencers
             </h2>
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8">
               Find, connect, and collaborate with influencers based on location and category.
             </p>
-            <Button onClick={() => navigate('/businesses')} size="lg" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
-              Register My Business <ArrowRight className="ml-2 h-5 w-5" />
+            <Button 
+              onClick={() => navigate('/businesses')} 
+              size="lg" 
+              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-sm sm:text-base"
+            >
+              Register My Business <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="bg-blue-50 rounded-xl p-6 text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MapPin className="h-8 w-8 text-blue-600" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto">
+            <div className="bg-blue-50 rounded-xl p-4 sm:p-6 text-center">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <MapPin className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Local Discovery</h3>
-              <p className="text-gray-600">Find influencers near your business location</p>
+              <h3 className="text-lg sm:text-xl font-semibold mb-2">Local Discovery</h3>
+              <p className="text-gray-600 text-sm sm:text-base">Find influencers near your business location</p>
             </div>
             
-            <div className="bg-blue-50 rounded-xl p-6 text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Phone className="h-8 w-8 text-blue-600" />
+            <div className="bg-blue-50 rounded-xl p-4 sm:p-6 text-center">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <Phone className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Secure Contact</h3>
-              <p className="text-gray-600">Use virtual numbers to connect securely</p>
+              <h3 className="text-lg sm:text-xl font-semibold mb-2">Secure Contact</h3>
+              <p className="text-gray-600 text-sm sm:text-base">Use virtual numbers to connect securely</p>
             </div>
             
-            <div className="bg-blue-50 rounded-xl p-6 text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <BookOpen className="h-8 w-8 text-blue-600" />
+            <div className="bg-blue-50 rounded-xl p-4 sm:p-6 text-center sm:col-span-2 lg:col-span-1">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Curated Lists</h3>
-              <p className="text-gray-600">Get recommendations for just ₹399/month</p>
+              <h3 className="text-lg sm:text-xl font-semibold mb-2">Curated Lists</h3>
+              <p className="text-gray-600 text-sm sm:text-base">Get recommendations for just ₹399/month</p>
             </div>
           </div>
         </div>
@@ -81,87 +96,93 @@ const Index = () => {
       <VideoReelsSection />
       
       {/* Influencer Section */}
-      <section className="py-16 bg-gradient-to-br from-purple-50 to-indigo-50">
+      <section className="py-12 sm:py-16 bg-gradient-to-br from-purple-50 to-indigo-50">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">
+          <div className="max-w-4xl mx-auto text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">
               🎥 Be Seen. Be Paid. Be a Star.
             </h2>
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8">
               Join for FREE, showcase your social power, and unlock earning opportunities from brands near you.
             </p>
-            <Button onClick={() => navigate('/influencers')} size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-              Create My Influencer Profile <ArrowRight className="ml-2 h-5 w-5" />
+            <Button 
+              onClick={() => navigate('/influencers')} 
+              size="lg" 
+              className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-sm sm:text-base"
+            >
+              Create My Influencer Profile <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="font-bold text-lg mb-2">Basic</h3>
-              <div className="text-3xl font-bold mb-1">₹299<span className="text-sm font-normal text-gray-500">/month</span></div>
-              <p className="text-gray-600 mb-4">200 KM radius visibility</p>
-              <ul className="mb-4 space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
+            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+              <h3 className="font-bold text-base sm:text-lg mb-2">Basic</h3>
+              <div className="text-2xl sm:text-3xl font-bold mb-1">
+                ₹299<span className="text-sm font-normal text-gray-500">/month</span>
+              </div>
+              <p className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base">200 KM radius visibility</p>
+              <ul className="mb-4 space-y-2 text-sm sm:text-base">
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-2" />
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
                   <span>Free profile creation</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-2" />
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
                   <span>6 video categories</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-2" />
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
                   <span>Local business connections</span>
                 </li>
               </ul>
             </div>
             
-            <div className="bg-white rounded-xl shadow-sm p-6 border-2 border-purple-500 relative">
-              <div className="absolute top-0 right-6 transform -translate-y-1/2 bg-purple-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border-2 border-purple-500 relative">
+              <div className="absolute top-0 right-4 sm:right-6 transform -translate-y-1/2 bg-purple-500 text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-bold">
                 Popular
               </div>
-              <h3 className="font-bold text-lg mb-2">Pro</h3>
-              <div className="text-3xl font-bold mb-1">₹499<span className="text-sm font-normal text-gray-500">/month</span></div>
-              <p className="text-gray-600 mb-4">450 KM radius visibility</p>
-              <ul className="mb-4 space-y-2">
+              <h3 className="font-bold text-base sm:text-lg mb-2">Pro</h3>
+              <div className="text-2xl sm:text-3xl font-bold mb-1">
+                ₹499<span className="text-sm font-normal text-gray-500">/month</span>
+              </div>
+              <p className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base">450 KM radius visibility</p>
+              <ul className="mb-4 space-y-2 text-sm sm:text-base">
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-2" />
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
                   <span>All Basic features</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-2" />
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
                   <span>Higher exposure</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-2" />
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
                   <span>More business connections</span>
                 </li>
               </ul>
             </div>
             
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="font-bold text-lg mb-2">Premium</h3>
-              <div className="text-3xl font-bold mb-1">₹799<span className="text-sm font-normal text-gray-500">/month</span></div>
-              <p className="text-gray-600 mb-4">1050 KM radius visibility</p>
-              <ul className="mb-4 space-y-2">
+            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 sm:col-span-2 lg:col-span-1">
+              <h3 className="font-bold text-base sm:text-lg mb-2">Premium</h3>
+              <div className="text-2xl sm:text-3xl font-bold mb-1">
+                ₹799<span className="text-sm font-normal text-gray-500">/month</span>
+              </div>
+              <p className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base">1050 KM radius visibility</p>
+              <ul className="mb-4 space-y-2 text-sm sm:text-base">
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-2" />
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
                   <span>All Pro features</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-2" />
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
                   <span>Premium placement</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-2" />
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
                   <span>Maximum earning potential</span>
                 </li>
               </ul>
             </div>
-          </div>
-          
-          <div className="mt-10 text-center">
-            
           </div>
         </div>
       </section>
@@ -172,51 +193,30 @@ const Index = () => {
       <OnboardingGuide />
       
       {/* Marketing Strategy Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-12 sm:py-16 bg-gray-50">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">How We Help You Grow</h2>
-            <p className="text-lg text-gray-600">
+          <div className="max-w-4xl mx-auto text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">How We Help You Grow</h2>
+            <p className="text-base sm:text-lg text-gray-600">
               Our comprehensive growth strategies for both influencers and businesses.
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <div className="text-2xl mb-3">🎯</div>
-              <h3 className="text-lg font-semibold mb-2">Targeted Marketing</h3>
-              <p className="text-gray-600">Targeted ads on Instagram, Facebook & LinkedIn to reach the right audience</p>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <div className="text-2xl mb-3">🤝</div>
-              <h3 className="text-lg font-semibold mb-2">Networking Events</h3>
-              <p className="text-gray-600">Local influencer meet-ups & business networking events</p>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <div className="text-2xl mb-3">💬</div>
-              <h3 className="text-lg font-semibold mb-2">Success Stories</h3>
-              <p className="text-gray-600">Real success stories & influencer testimonials</p>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <div className="text-2xl mb-3">🔍</div>
-              <h3 className="text-lg font-semibold mb-2">Search Visibility</h3>
-              <p className="text-gray-600">Google Ads + SEO for organic reach</p>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <div className="text-2xl mb-3">📊</div>
-              <h3 className="text-lg font-semibold mb-2">Analytics Dashboard</h3>
-              <p className="text-gray-600">Track influencer reach and campaign performance</p>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <div className="text-2xl mb-3">🎧</div>
-              <h3 className="text-lg font-semibold mb-2">Dedicated Support</h3>
-              <p className="text-gray-600">Account support for premium influencers</p>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
+            {[
+              { icon: "🎯", title: "Targeted Marketing", desc: "Targeted ads on Instagram, Facebook & LinkedIn to reach the right audience" },
+              { icon: "🤝", title: "Networking Events", desc: "Local influencer meet-ups & business networking events" },
+              { icon: "💬", title: "Success Stories", desc: "Real success stories & influencer testimonials" },
+              { icon: "🔍", title: "Search Visibility", desc: "Google Ads + SEO for organic reach" },
+              { icon: "📊", title: "Analytics Dashboard", desc: "Track influencer reach and campaign performance" },
+              { icon: "🎧", title: "Dedicated Support", desc: "Account support for premium influencers" }
+            ].map((item, index) => (
+              <div key={index} className="bg-white p-4 sm:p-6 rounded-lg shadow-sm">
+                <div className="text-xl sm:text-2xl mb-2 sm:mb-3">{item.icon}</div>
+                <h3 className="text-base sm:text-lg font-semibold mb-2">{item.title}</h3>
+                <p className="text-gray-600 text-sm sm:text-base">{item.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -228,13 +228,20 @@ const Index = () => {
       <CollaborationGuidelines />
       
       {/* Referral CTA */}
-      <section className="py-12 bg-gradient-to-br from-orange-500 to-pink-500 text-white">
+      <section className="py-8 sm:py-12 bg-gradient-to-br from-orange-500 to-pink-500 text-white">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-4">Refer & Earn 20% Commission!</h2>
-          <p className="text-lg mb-6 max-w-2xl mx-auto">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-4">
+            Refer & Earn 20% Commission!
+          </h2>
+          <p className="text-base sm:text-lg mb-4 sm:mb-6 max-w-2xl mx-auto">
             Refer a business or influencer to our platform and earn 20% of their plan instantly!
           </p>
-          <Button variant="outline" size="lg" className="bg-white text-pink-600 hover:bg-white/90" onClick={() => navigate('/referral')}>
+          <Button 
+            variant="outline" 
+            size="lg" 
+            className="w-full sm:w-auto bg-white text-pink-600 hover:bg-white/90 text-sm sm:text-base" 
+            onClick={() => navigate('/referral')}
+          >
             Join Referral Program
           </Button>
         </div>
@@ -242,6 +249,8 @@ const Index = () => {
       
       <PhotoCollage />
       <CallToAction />
-    </div>;
+    </div>
+  );
 };
+
 export default Index;
