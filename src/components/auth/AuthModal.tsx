@@ -48,6 +48,21 @@ const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
+  const handleAuthSuccess = () => {
+    onOpenChange(false);
+    if (redirectUrl) {
+      navigate(redirectUrl);
+    }
+  };
+
+  const handleSwitchToRegister = () => {
+    setActiveTab('register');
+  };
+
+  const handleSwitchToLogin = () => {
+    setActiveTab('login');
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden max-h-[90vh]">
@@ -79,7 +94,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                 </div>
                 
-                <LoginForm />
+                <LoginForm 
+                  onSuccess={handleAuthSuccess}
+                  onSwitchToRegister={handleSwitchToRegister}
+                />
               </TabsContent>
               
               <TabsContent value="register" className="space-y-4 mt-0 pt-0">
