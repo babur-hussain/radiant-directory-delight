@@ -1,327 +1,145 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { UserRole } from '@/types/auth';
-import { Chrome } from 'lucide-react';
-import { getReferralIdFromURL, validateReferralId } from '@/utils/referral/referralUtils';
-import { processReferralSignup } from '@/services/referralService';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import RegistrationForm from '@/components/auth/RegistrationForm';
 import LoginForm from '@/components/auth/LoginForm';
-import RegisterTypeSelector from '@/components/auth/RegisterTypeSelector';
 
 const AuthPage = () => {
-  const { login, loginWithGoogle, signup, isAuthenticated, loading, resetPassword } = useAuth();
+  const { isAuthenticated, resetPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<string>('login');
-  
-  const [loginEmail, setLoginEmail] = useState<string>('');
-  const [loginPassword, setLoginPassword] = useState<string>('');
-  const [employeeCode, setEmployeeCode] = useState<string>('');
-  
-  const [signupEmail, setSignupEmail] = useState<string>('');
-  const [signupPassword, setSignupPassword] = useState<string>('');
-  const [confirmPassword, setConfirmPassword] = useState<string>('');
-  const [name, setName] = useState<string>('');
-  const [role, setRole] = useState<UserRole>('User');
-  
-  const [referralId, setReferralId] = useState<string>('');
-  const [isValidReferral, setIsValidReferral] = useState<boolean | null>(null);
-  const [referralChecking, setReferralChecking] = useState<boolean>(false);
-  
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  useEffect(() => {
-    // Check for referral code in URL and set it
-    const urlReferralId = getReferralIdFromURL();
-    
-    if (urlReferralId) {
-      setReferralId(urlReferralId);
-      setActiveTab('signup');
-      validateReferralCode(urlReferralId);
-    }
-    
-    // Check for tab parameter in URL
-    const searchParams = new URLSearchParams(location.search);
-    const tabParam = searchParams.get('tab');
-    if (tabParam === 'signup' || tabParam === 'login') {
-      setActiveTab(tabParam);
-    }
-  }, [location.search]);
-  
-  const validateReferralCode = async (code: string) => {
-    if (!code) {
-      setIsValidReferral(null);
-      return;
-    }
-    
-    setReferralChecking(true);
-    try {
-      const isValid = await validateReferralId(code);
-      setIsValidReferral(isValid);
-    } catch (error) {
-      console.error('Error validating referral code:', error);
-      setIsValidReferral(false);
-    } finally {
-      setReferralChecking(false);
-    }
-  };
-  
-  const handleReferralCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const code = e.target.value;
-    setReferralId(code);
-    
-    if (code) {
-      validateReferralCode(code);
-    } else {
-      setIsValidReferral(null);
-    }
-  };
-  
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>('register');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
+
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/');
     }
   }, [isAuthenticated, navigate]);
-  
-  const handleLoginSubmit = async (email: string, password: string, employeeCode?: string) => {
-    try {
-      await login(email, password, employeeCode);
-    } catch (error) {
-      throw error; // Let LoginForm component handle the errors
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const tab = searchParams.get('tab');
+    if (tab === 'login' || tab === 'register') {
+      setActiveTab(tab);
     }
+    
+    // Check for referral code - if present, default to register
+    const ref = searchParams.get('ref');
+    if (ref) {
+      setActiveTab('register');
+    }
+  }, [location.search]);
+
+  const handleAuthSuccess = () => {
+    toast({
+      title: "Success!",
+      description: "You have been successfully authenticated.",
+    });
+    navigate('/');
   };
-  
-  const handleSignupSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    
-    if (signupPassword !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-    
-    if (referralId && isValidReferral === false) {
-      setError('Invalid referral code. Please check and try again.');
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
-    try {
-      const additionalData = referralId ? { referralId } : undefined;
-      
-      const userCredential = await signup(signupEmail, signupPassword, name, role, additionalData);
-      
-      if (userCredential && userCredential.id && referralId) {
-        try {
-          await processReferralSignup(userCredential.id, referralId);
-        } catch (refError) {
-          console.error('Error processing referral:', refError);
-        }
-      }
-      
+
+  const handleForgotPassword = async () => {
+    if (!resetEmail) {
       toast({
-        title: 'Account created successfully',
-        description: 'Please check your email to verify your account',
+        title: "Email required",
+        description: "Please enter your email address.",
+        variant: "destructive",
       });
-      setActiveTab('login');
-    } catch (error: any) {
-      setError(error.message || 'Failed to create account');
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
-  };
-  
-  const handleGoogleLogin = async () => {
+
+    setIsResetting(true);
     try {
-      setError(null);
-      setIsSubmitting(true);
-      
-      await loginWithGoogle();
-      
+      await resetPassword(resetEmail);
+      setShowForgotPassword(false);
+      setResetEmail('');
+      toast({
+        title: "Reset email sent",
+        description: "Please check your inbox for password reset instructions.",
+      });
     } catch (error: any) {
-      setError(error.message || 'Failed to login with Google');
-      setIsSubmitting(false);
+      toast({
+        title: "Reset failed",
+        description: error.message || "Failed to send reset email.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResetting(false);
     }
   };
 
-  return (
-    <div className="container flex items-center justify-center min-h-screen py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">
-            {activeTab === 'login' ? 'Login to your account' : 'Create an account'}
-          </CardTitle>
-          <CardDescription className="text-center">
-            {activeTab === 'login' 
-              ? 'Enter your credentials to login to your account' 
-              : referralId 
-                ? 'You were invited by someone! Create your account to get started.' 
-                : 'Fill in the details below to create your account'}
-          </CardDescription>
-        </CardHeader>
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="signup">Sign up</TabsTrigger>
-          </TabsList>
+  if (showForgotPassword) {
+    return (
+      <div className="container flex items-center justify-center min-h-screen py-12">
+        <div className="w-full max-w-md space-y-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold">Reset Password</h1>
+            <p className="text-gray-600 mt-2">
+              Enter your email address and we'll send you a reset link.
+            </p>
+          </div>
           
-          <TabsContent value="login">
-            <LoginForm 
-              onLogin={handleLoginSubmit} 
-              onClose={() => {}} 
+          <div className="space-y-4">
+            <input
+              type="email"
+              placeholder="Enter your email"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </TabsContent>
-          
-          <TabsContent value="signup">
-            <form onSubmit={handleSignupSubmit}>
-              <CardContent className="space-y-4">
-                {error && (
-                  <div className="p-3 text-sm rounded-md bg-destructive/15 text-destructive">
-                    {error}
-                  </div>
-                )}
-                
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input 
-                    id="name"
-                    placeholder="John Doe"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input 
-                    id="signup-email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={signupEmail}
-                    onChange={(e) => setSignupEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="role">I am a</Label>
-                  <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Business">Business Owner</SelectItem>
-                      <SelectItem value="Influencer">Influencer</SelectItem>
-                      <SelectItem value="User">General User</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input 
-                    id="signup-password"
-                    type="password"
-                    value={signupPassword}
-                    onChange={(e) => setSignupPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm Password</Label>
-                  <Input 
-                    id="confirm-password"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="referral-code">
-                    Referral Code <span className="text-xs text-muted-foreground">(Optional)</span>
-                  </Label>
-                  <Input 
-                    id="referral-code"
-                    placeholder="Enter referral code"
-                    value={referralId}
-                    onChange={handleReferralCodeChange}
-                    className={
-                      isValidReferral === true
-                        ? "border-green-500 focus:ring-green-500"
-                        : isValidReferral === false
-                        ? "border-red-500 focus:ring-red-500"
-                        : ""
-                    }
-                  />
-                  
-                  {referralId && isValidReferral !== null && !referralChecking && (
-                    <Alert className={`mt-2 ${isValidReferral ? "bg-green-50" : "bg-red-50"} p-2`}>
-                      <AlertDescription className={`text-xs ${isValidReferral ? "text-green-600" : "text-red-600"}`}>
-                        {isValidReferral 
-                          ? "Valid referral code!" 
-                          : "Invalid referral code. Please check and try again."}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                  
-                  {referralChecking && (
-                    <p className="text-xs text-muted-foreground mt-1">Validating referral code...</p>
-                  )}
-                </div>
-              </CardContent>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={handleForgotPassword}
+                disabled={isResetting}
+                className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isResetting ? 'Sending...' : 'Send Reset Link'}
+              </button>
               
-              <CardFooter className="flex flex-col space-y-4">
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={isSubmitting || loading}
-                >
-                  {isSubmitting ? 'Creating Account...' : 'Create Account'}
-                </Button>
-                
-                <div className="relative w-full">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                      Or continue with
-                    </span>
-                  </div>
-                </div>
-                
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full" 
-                  onClick={handleGoogleLogin}
-                  disabled={isSubmitting || loading}
-                >
-                  <Chrome className="mr-2 h-5 w-5" />
-                  Google
-                </Button>
-              </CardFooter>
-            </form>
-          </TabsContent>
-        </Tabs>
-      </Card>
+              <button
+                onClick={() => setShowForgotPassword(false)}
+                className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50"
+              >
+                Back to Login
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4">
+      <div className="w-full max-w-4xl">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Join <span className="text-orange-600">GROW BHARAT VYAPAAR</span>
+          </h1>
+          <p className="text-gray-600">
+            India's premier platform connecting businesses and influencers
+          </p>
+        </div>
+
+        {activeTab === 'register' ? (
+          <RegistrationForm
+            onSuccess={handleAuthSuccess}
+            onSwitchToLogin={() => setActiveTab('login')}
+          />
+        ) : (
+          <LoginForm
+            onSuccess={handleAuthSuccess}
+            onSwitchToRegister={() => setActiveTab('register')}
+            onForgotPassword={() => setShowForgotPassword(true)}
+          />
+        )}
+      </div>
     </div>
   );
 };

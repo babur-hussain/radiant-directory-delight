@@ -1,27 +1,25 @@
 
+import { getUserByReferralId } from '@/services/referralService';
+
 /**
- * Get the referral ID from the URL query parameters
- * @returns The referral ID or null if not found
+ * Get referral ID from URL parameters
  */
 export const getReferralIdFromURL = (): string | null => {
   const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get('ref');
+  return urlParams.get('ref') || urlParams.get('referral') || urlParams.get('referralCode');
 };
 
 /**
- * Validate a referral ID by checking if it exists in the database
- * @param referralId - The referral ID to validate
- * @returns True if valid, false if invalid
+ * Validate if a referral ID exists and is valid
  */
 export const validateReferralId = async (referralId: string): Promise<boolean> => {
-  // This is a placeholder implementation
-  // In a real implementation, you would make an API call to validate the referral ID
-  if (!referralId) return false;
+  if (!referralId || referralId.trim() === '') {
+    return false;
+  }
   
   try {
-    // For now, we'll consider any non-empty referral ID as valid
-    // In a real implementation, you would make an API call to check
-    return true;
+    const result = await getUserByReferralId(referralId);
+    return result.success && result.user;
   } catch (error) {
     console.error('Error validating referral ID:', error);
     return false;
@@ -29,11 +27,32 @@ export const validateReferralId = async (referralId: string): Promise<boolean> =
 };
 
 /**
- * Generate a referral link for a user
- * @param referralId - The user's referral ID
- * @returns The full referral link
+ * Generate referral URL for a user
  */
-export const generateReferralLink = (referralId: string): string => {
-  const baseUrl = window.location.origin;
-  return `${baseUrl}/auth?tab=signup&ref=${referralId}`;
+export const generateReferralURL = (referralId: string, baseUrl?: string): string => {
+  const base = baseUrl || window.location.origin;
+  return `${base}/auth?ref=${referralId}&tab=register`;
+};
+
+/**
+ * Extract referral data from URL and store it temporarily
+ */
+export const processReferralFromURL = () => {
+  const referralId = getReferralIdFromURL();
+  
+  if (referralId) {
+    // Store in sessionStorage to persist during registration flow
+    sessionStorage.setItem('referralCode', referralId);
+    return referralId;
+  }
+  
+  // Check if we have a stored referral code
+  return sessionStorage.getItem('referralCode');
+};
+
+/**
+ * Clear stored referral data
+ */
+export const clearStoredReferralData = () => {
+  sessionStorage.removeItem('referralCode');
 };
