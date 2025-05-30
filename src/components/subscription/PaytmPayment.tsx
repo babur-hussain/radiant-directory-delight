@@ -95,13 +95,45 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
         })
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to initialize payment');
+        const errorText = await response.text();
+        console.error('HTTP error response:', errorText);
+        
+        let errorMessage = 'Failed to initialize payment';
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          console.error('Could not parse error response as JSON');
+          errorMessage = `Server error (${response.status}): ${errorText.substring(0, 100)}`;
+        }
+        
+        throw new Error(errorMessage);
       }
 
-      const paymentData = await response.json();
+      const responseText = await response.text();
+      console.log('Raw response text:', responseText);
+
+      let paymentData;
+      try {
+        paymentData = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse response as JSON:', responseText);
+        throw new Error('Invalid response format from payment server');
+      }
+
       console.log('Payment data received:', paymentData);
+
+      if (!paymentData.success) {
+        throw new Error(paymentData.error || 'Payment initialization failed');
+      }
+
+      if (!paymentData.txnToken || !paymentData.orderId) {
+        throw new Error('Invalid payment configuration received');
+      }
 
       // Configure Paytm payment
       const config = {
@@ -126,34 +158,42 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
         }
       };
 
+      console.log('Initializing Paytm with config:', config);
+
       // Initialize Paytm payment
       if (window.Paytm?.CheckoutJS?.init) {
-        await window.Paytm.CheckoutJS.init(config);
-        console.log('Paytm CheckoutJS initialized');
-        
-        // Invoke payment
-        const paymentResponse = await window.Paytm.CheckoutJS.invoke();
-        console.log('Payment response:', paymentResponse);
-        
-        if (paymentResponse && paymentResponse.STATUS === 'TXN_SUCCESS') {
-          // Payment successful
-          const successResponse = {
-            ...paymentResponse,
-            package: selectedPackage,
-            referralId: referralId,
-            setupFee: selectedPackage.setupFee || 0,
-            totalAmount: amount,
-            paymentConfirmed: new Date().toISOString(),
-            paymentVerified: true,
-          };
+        try {
+          await window.Paytm.CheckoutJS.init(config);
+          console.log('Paytm CheckoutJS initialized successfully');
           
-          toast.success('Payment completed successfully!');
-          onSuccess(successResponse);
-        } else {
-          // Payment failed
-          const errorMessage = paymentResponse?.RESPMSG || 'Payment failed';
-          setPaymentError(errorMessage);
-          onFailure(paymentResponse || { message: 'Payment failed' });
+          // Invoke payment
+          const paymentResponse = await window.Paytm.CheckoutJS.invoke();
+          console.log('Payment response received:', paymentResponse);
+          
+          if (paymentResponse && paymentResponse.STATUS === 'TXN_SUCCESS') {
+            // Payment successful
+            const successResponse = {
+              ...paymentResponse,
+              package: selectedPackage,
+              referralId: referralId,
+              setupFee: selectedPackage.setupFee || 0,
+              totalAmount: amount,
+              paymentConfirmed: new Date().toISOString(),
+              paymentVerified: true,
+            };
+            
+            toast.success('Payment completed successfully!');
+            onSuccess(successResponse);
+          } else {
+            // Payment failed
+            const errorMessage = paymentResponse?.RESPMSG || 'Payment failed';
+            setPaymentError(errorMessage);
+            onFailure(paymentResponse || { message: 'Payment failed' });
+          }
+        } catch (paytmError) {
+          console.error('Error during Paytm checkout:', paytmError);
+          setPaymentError('Payment gateway error. Please try again.');
+          onFailure(paytmError);
         }
       } else {
         throw new Error('Paytm CheckoutJS not properly loaded');

@@ -2,11 +2,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
-// Paytm configuration - replace with your actual credentials
+// Paytm configuration - using demo credentials for production testing
 const PAYTM_MID = Deno.env.get("PAYTM_MID") || "rxazcv89315285244163";
 const PAYTM_KEY = Deno.env.get("PAYTM_KEY") || "bKMfNxPPf_QdZppa";
 const PAYTM_WEBSITE = Deno.env.get("PAYTM_WEBSITE") || "WEBSTAGING";
-const PAYTM_ENVIRONMENT = Deno.env.get("PAYTM_ENVIRONMENT") || "PROD"; // PROD for production
+const PAYTM_ENVIRONMENT = "PROD"; // Always use PROD for live transactions
 
 // Define CORS headers
 const corsHeaders = {
@@ -20,25 +20,60 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// Helper function to create error response
+function createErrorResponse(message: string, status = 500) {
+  return new Response(
+    JSON.stringify({ 
+      error: message,
+      success: false,
+      timestamp: new Date().toISOString()
+    }),
+    {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    }
+  );
+}
+
+// Helper function to create success response
+function createSuccessResponse(data: any) {
+  return new Response(
+    JSON.stringify({ 
+      ...data,
+      success: true,
+      timestamp: new Date().toISOString()
+    }),
+    {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    }
+  );
+}
+
 // Generate checksum for Paytm using crypto API
 async function generateChecksum(params: any, key: string): Promise<string> {
-  const queryString = Object.keys(params)
-    .sort()
-    .map(k => `${k}=${params[k]}`)
-    .join('&');
-  
-  const encoder = new TextEncoder();
-  const data = encoder.encode(queryString + key);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  try {
+    const queryString = Object.keys(params)
+      .sort()
+      .map(k => `${k}=${params[k]}`)
+      .join('&');
+    
+    const encoder = new TextEncoder();
+    const data = encoder.encode(queryString + key);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (error) {
+    console.error('Error generating checksum:', error);
+    throw new Error('Failed to generate payment checksum');
+  }
 }
 
 // Generate transaction token from Paytm
 async function getTransactionToken(params: any): Promise<string> {
   const paytmUrl = PAYTM_ENVIRONMENT === 'PROD' 
-    ? 'https://securegw.paytm.in/theia/api/v1/initiateTransaction?mid=' + PAYTM_MID + '&orderId=' + params.ORDER_ID
-    : 'https://securegw-stage.paytm.in/theia/api/v1/initiateTransaction?mid=' + PAYTM_MID + '&orderId=' + params.ORDER_ID;
+    ? `https://securegw.paytm.in/theia/api/v1/initiateTransaction?mid=${PAYTM_MID}&orderId=${params.ORDER_ID}`
+    : `https://securegw-stage.paytm.in/theia/api/v1/initiateTransaction?mid=${PAYTM_MID}&orderId=${params.ORDER_ID}`;
 
   const body = {
     body: {
@@ -59,9 +94,11 @@ async function getTransactionToken(params: any): Promise<string> {
     },
   };
 
-  const checksum = await generateChecksum(body, PAYTM_KEY);
-  
   try {
+    const checksum = await generateChecksum(body, PAYTM_KEY);
+    
+    console.log(`Making request to Paytm URL: ${paytmUrl}`);
+    
     const response = await fetch(paytmUrl, {
       method: 'POST',
       headers: {
@@ -72,15 +109,29 @@ async function getTransactionToken(params: any): Promise<string> {
       body: JSON.stringify(body),
     });
 
-    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(`Paytm API request failed with status: ${response.status}`);
+    }
+
+    const responseText = await response.text();
+    console.log('Paytm API response:', responseText);
     
-    if (result.body.resultInfo.resultStatus === 'S') {
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse Paytm response as JSON:', responseText);
+      throw new Error('Invalid response format from Paytm API');
+    }
+    
+    if (result.body?.resultInfo?.resultStatus === 'S') {
       return result.body.txnToken;
     } else {
-      throw new Error('Failed to get transaction token: ' + result.body.resultInfo.resultMsg);
+      const errorMsg = result.body?.resultInfo?.resultMsg || 'Unknown error from Paytm';
+      throw new Error(`Paytm API error: ${errorMsg}`);
     }
   } catch (error) {
-    console.error('Error getting transaction token:', error);
+    console.error('Error in getTransactionToken:', error);
     throw error;
   }
 }
@@ -116,7 +167,7 @@ function calculateInitialPayment(packageData: any): number {
 
 // Server entrypoint
 serve(async (req) => {
-  console.log("Request received:", req.method, new URL(req.url).pathname);
+  console.log("Paytm Integration Request:", req.method, new URL(req.url).pathname);
   
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -131,38 +182,39 @@ serve(async (req) => {
     let body;
     try {
       body = await req.json();
-      console.log("Request body:", JSON.stringify(body, null, 2));
+      console.log("Request body received:", JSON.stringify(body, null, 2));
     } catch (e) {
       console.error("Error parsing request body:", e);
-      return new Response(
-        JSON.stringify({ error: "Invalid request body" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return createErrorResponse("Invalid request body - must be valid JSON", 400);
     }
     
     const { packageData, customerData, userId, referralId, enableAutoPay = true } = body;
     
     // Validate required fields
     if (!packageData || !userId || !customerData) {
-      console.error("Missing required fields:", { packageData, userId, customerData });
-      return new Response(
-        JSON.stringify({ error: "Missing required fields: packageData, userId, and customerData" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      console.error("Missing required fields:", { packageData: !!packageData, userId: !!userId, customerData: !!customerData });
+      return createErrorResponse("Missing required fields: packageData, userId, and customerData", 400);
+    }
+
+    // Validate customer data
+    if (!customerData.custId || !customerData.email) {
+      return createErrorResponse("Customer data must include custId and email", 400);
     }
 
     // Calculate the initial payment amount including setup fee and advance payments
     const initialPaymentAmount = calculateInitialPayment(packageData);
     console.log(`Calculated initial payment amount: ${initialPaymentAmount}`);
     
+    if (initialPaymentAmount <= 0) {
+      return createErrorResponse("Invalid payment amount calculated", 400);
+    }
+    
     // Generate order ID
     const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    console.log(`Generated order ID: ${orderId}`);
+    
+    // Get the origin for callback URL
+    const origin = req.headers.get("origin") || "http://localhost:3000";
     
     // Prepare Paytm parameters for transaction token
     const paytmParams = {
@@ -173,10 +225,12 @@ serve(async (req) => {
       ORDER_ID: orderId,
       CUST_ID: customerData.custId,
       TXN_AMOUNT: initialPaymentAmount.toString(),
-      CALLBACK_URL: `${req.headers.get("origin")}/payment-success`,
+      CALLBACK_URL: `${origin}/payment-success`,
       EMAIL: customerData.email,
-      MOBILE_NO: customerData.phone,
+      MOBILE_NO: customerData.phone || "9999999999",
     };
+
+    console.log("Paytm parameters:", paytmParams);
 
     // Get transaction token from Paytm
     let txnToken;
@@ -185,13 +239,7 @@ serve(async (req) => {
       console.log('Transaction token obtained successfully');
     } catch (error) {
       console.error('Failed to get transaction token:', error);
-      return new Response(
-        JSON.stringify({ error: "Failed to initialize payment with Paytm" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return createErrorResponse(`Failed to initialize payment: ${error.message}`, 500);
     }
 
     // Return the payment configuration for frontend
@@ -204,7 +252,7 @@ serve(async (req) => {
       website: PAYTM_WEBSITE,
       industryType: "Retail",
       channelId: "WEB",
-      callbackUrl: `${req.headers.get("origin")}/payment-success`,
+      callbackUrl: `${origin}/payment-success`,
       customerInfo: customerData,
       packageInfo: packageData,
       referralId: referralId,
@@ -217,22 +265,13 @@ serve(async (req) => {
     };
 
     console.log("Returning payment response:", response);
+    return createSuccessResponse(response);
 
-    return new Response(
-      JSON.stringify(response),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
   } catch (error) {
-    console.error("Error processing request:", error);
-    return new Response(
-      JSON.stringify({ error: error.message || "Internal server error" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+    console.error("Unhandled error in Paytm integration:", error);
+    return createErrorResponse(
+      error instanceof Error ? error.message : "Internal server error", 
+      500
     );
   }
 });
