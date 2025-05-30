@@ -1,8 +1,8 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+import Index from './pages/Index';
+import AuthPage from './pages/AuthPage';
 import BusinessPage from './pages/BusinessPage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import SubscriptionDetailsPage from './pages/SubscriptionDetailsPage';
@@ -12,9 +12,8 @@ import AdminUsersPage from './pages/AdminUsersPage';
 import AdminBusinessesPage from './pages/AdminBusinessesPage';
 import AdminSubscriptionsPage from './pages/AdminSubscriptionsPage';
 import { useAuth } from './hooks/useAuth';
-import { ProtectedRoute } from './components/ProtectedRoute';
-import { AdminRoute } from './components/AdminRoute';
-import PricingPage from './pages/PricingPage';
+import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/auth/AdminRoute';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 
 const AppRoutes: React.FC = () => {
@@ -23,17 +22,15 @@ const AppRoutes: React.FC = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<AuthPage />} />
         <Route path="/business/:businessId" element={<BusinessPage />} />
         
         {/* Protected Routes */}
         <Route 
           path="/subscription" 
           element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <ProtectedRoute>
               <SubscriptionPage />
             </ProtectedRoute>
           } 
@@ -41,7 +38,7 @@ const AppRoutes: React.FC = () => {
         <Route 
           path="/subscription/details/:packageId?" 
           element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <ProtectedRoute>
               <SubscriptionDetailsPage />
             </ProtectedRoute>
           } 
@@ -49,7 +46,7 @@ const AppRoutes: React.FC = () => {
         <Route 
           path="/profile" 
           element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <ProtectedRoute>
               <ProfilePage />
             </ProtectedRoute>
           } 
@@ -59,7 +56,7 @@ const AppRoutes: React.FC = () => {
         <Route 
           path="/admin" 
           element={
-            <AdminRoute isAuthenticated={isAuthenticated}>
+            <AdminRoute>
               <AdminDashboardPage />
             </AdminRoute>
           } 
@@ -67,7 +64,7 @@ const AppRoutes: React.FC = () => {
         <Route 
           path="/admin/users" 
           element={
-            <AdminRoute isAuthenticated={isAuthenticated}>
+            <AdminRoute>
               <AdminUsersPage />
             </AdminRoute>
           } 
@@ -75,7 +72,7 @@ const AppRoutes: React.FC = () => {
         <Route 
           path="/admin/businesses" 
           element={
-            <AdminRoute isAuthenticated={isAuthenticated}>
+            <AdminRoute>
               <AdminBusinessesPage />
             </AdminRoute>
           } 
@@ -83,7 +80,7 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/admin/subscriptions"
           element={
-            <AdminRoute isAuthenticated={isAuthenticated}>
+            <AdminRoute>
               <AdminSubscriptionsPage />
             </AdminRoute>
           }
