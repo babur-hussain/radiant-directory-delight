@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole, UserSubscription, isUserSubscription } from '@/types/auth';
 
@@ -54,13 +55,7 @@ export const getUserById = async (uid: string): Promise<User | null> => {
     referralId: data.referral_id,
     referralCount: data.referral_count || 0,
     referralEarnings: data.referral_earnings || 0,
-    address: data.address ? {
-      street: data.address.street,
-      city: data.address.city,
-      state: data.address.state,
-      country: data.address.country,
-      zipCode: data.address.zipCode
-    } : null
+    address: null // Address is stored in a separate table
   } as User;
 };
 
@@ -110,13 +105,7 @@ export const getAllUsers = async (): Promise<User[]> => {
     referralId: userData.referral_id,
     referralCount: userData.referral_count || 0,
     referralEarnings: userData.referral_earnings || 0,
-    address: userData.address ? {
-      street: userData.address.street,
-      city: userData.address.city,
-      state: userData.address.state,
-      country: userData.address.country,
-      zipCode: userData.address.zipCode
-    } : null
+    address: null // Address is stored in a separate table
   })) as User[];
 };
 
@@ -188,13 +177,7 @@ export const updateUser = async (uid: string, updates: Partial<User>): Promise<U
     referralId: data.referral_id,
     referralCount: data.referral_count || 0,
     referralEarnings: data.referral_earnings || 0,
-    address: data.address ? {
-      street: data.address.street,
-      city: data.address.city,
-      state: data.address.state,
-      country: data.address.country,
-      zipCode: data.address.zipCode
-    } : null
+    address: null // Address is stored in a separate table
   } as User;
 };
 
