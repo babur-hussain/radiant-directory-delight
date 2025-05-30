@@ -92,6 +92,7 @@ const BlogPostPage = lazy(() => import("@/pages/BlogPostPage"));
 const ServicesPage = lazy(() => import("@/pages/ServicesPage"));
 const AboutPage = lazy(() => import("@/pages/AboutPage"));
 const PortfolioPage = lazy(() => import("@/pages/PortfolioPage"));
+const ContactPage = lazy(() => import("@/pages/ContactPage"));
 
 const AdminDashboardPage = lazy(() => import("@/pages/AdminDashboardPage"));
 const AdminUsersPage = lazy(() => import("@/pages/AdminUsersPage"));
@@ -175,6 +176,10 @@ export const router = createBrowserRouter([
           { 
             path: "portfolio", 
             element: <Suspense fallback={<LoadingComponent />}><PortfolioPage /></Suspense>
+          },
+          { 
+            path: "contact", 
+            element: <Suspense fallback={<LoadingComponent />}><ContactPage /></Suspense>
           },
           
           { path: "auth", element: <AuthPage /> },

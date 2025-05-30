@@ -5,7 +5,6 @@ import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, CreditCard, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { loadPhonePeScript } from '@/utils/payment/phonePeLoader';
 
 interface PhonePePaymentProps {
   selectedPackage: ISubscriptionPackage;
@@ -22,25 +21,7 @@ const PhonePePayment: React.FC<PhonePePaymentProps> = ({
 }) => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [scriptLoaded, setScriptLoaded] = useState(false);
   const [paymentInitiated, setPaymentInitiated] = useState(false);
-
-  useEffect(() => {
-    const loadScript = async () => {
-      setIsLoading(true);
-      const loaded = await loadPhonePeScript();
-      if (loaded) {
-        console.log('PhonePe script loaded successfully');
-        setScriptLoaded(true);
-      } else {
-        console.error('Failed to load PhonePe script');
-        toast.error('Failed to load payment gateway. Please try again later.');
-      }
-      setIsLoading(false);
-    };
-    
-    loadScript();
-  }, []);
 
   const handlePayment = async () => {
     if (!user) {
@@ -119,18 +100,6 @@ const PhonePePayment: React.FC<PhonePePaymentProps> = ({
         </p>
       </div>
       
-      {!scriptLoaded && (
-        <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-md">
-          <div className="flex items-center justify-center mb-2">
-            <AlertCircle className="h-5 w-5 text-orange-500 mr-2" />
-            <p className="text-orange-700 font-medium">Loading Payment Gateway</p>
-          </div>
-          <p className="text-orange-600 text-xs">
-            Please wait while we prepare the PhonePe payment interface...
-          </p>
-        </div>
-      )}
-      
       {isLoading && paymentInitiated && (
         <div className="flex flex-col items-center justify-center p-6">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -143,7 +112,7 @@ const PhonePePayment: React.FC<PhonePePaymentProps> = ({
       <Button
         onClick={handlePayment}
         className="w-full mt-4"
-        disabled={isLoading || !scriptLoaded}
+        disabled={isLoading}
       >
         {isLoading && paymentInitiated ? (
           <>
