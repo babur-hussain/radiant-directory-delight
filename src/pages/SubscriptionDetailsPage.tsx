@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,8 +9,8 @@ import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from 'sonner';
 import Layout from '@/components/layout/Layout';
-import PaytmPayment from '@/components/subscription/PaytmPayment';
-import { adminAssignPaytmSubscription } from '@/lib/subscription/admin-paytm-subscription';
+import PhonePePayment from '@/components/subscription/PhonePePayment';
+import { adminAssignPhonePeSubscription } from '@/lib/subscription/admin-phonepe-subscription';
 
 const SubscriptionDetailsPage = () => {
   const { packageId } = useParams();
@@ -65,7 +64,7 @@ const SubscriptionDetailsPage = () => {
     console.log('Payment successful, processing subscription:', paymentResponse);
     
     // Validate payment response before processing
-    if (!paymentResponse.paymentVerified || paymentResponse.STATUS !== 'TXN_SUCCESS') {
+    if (!paymentResponse.paymentVerified) {
       toast.error('Payment verification failed. Please contact support.');
       return;
     }
@@ -74,7 +73,7 @@ const SubscriptionDetailsPage = () => {
     
     try {
       // Create subscription using the payment details
-      const subscriptionCreated = await adminAssignPaytmSubscription(
+      const subscriptionCreated = await adminAssignPhonePeSubscription(
         user!.uid,
         selectedPackage,
         paymentResponse
@@ -103,9 +102,7 @@ const SubscriptionDetailsPage = () => {
     setShowPayment(false);
     
     let errorMessage = 'Payment failed. Please try again.';
-    if (error.RESPMSG) {
-      errorMessage = error.RESPMSG;
-    } else if (error.message) {
+    if (error.message) {
       errorMessage = error.message;
     }
     
@@ -331,7 +328,7 @@ const SubscriptionDetailsPage = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <PaytmPayment
+                    <PhonePePayment
                       selectedPackage={selectedPackage}
                       onSuccess={handlePaymentSuccess}
                       onFailure={handlePaymentFailure}

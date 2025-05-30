@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, ShieldCheck, Loader2 } from "lucide-react";
@@ -12,7 +11,7 @@ import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { useSubscription } from "@/hooks";
 import { useToast } from "@/hooks/use-toast";
-import PaytmPayment from "./PaytmPayment";
+import PhonePePayment from "./PhonePePayment";
 
 const SubscriptionDetails = () => {
   const { packageId } = useParams();
@@ -166,7 +165,7 @@ const SubscriptionDetails = () => {
                 <p className="mt-4 text-center">Processing your payment...</p>
               </div>
             ) : (
-              <PaytmPayment 
+              <PhonePePayment 
                 selectedPackage={selectedPackage!}
                 onSuccess={handlePaymentSuccess}
                 onFailure={handlePaymentFailure}
@@ -179,7 +178,6 @@ const SubscriptionDetails = () => {
   }
 
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
-  // Calculate the total price including setup fee
   const totalPrice = selectedPackage.price + (selectedPackage.setupFee || 0);
 
   return (
@@ -313,7 +311,7 @@ const SubscriptionDetails = () => {
             {isOneTimePackage ? "Proceed to Payment" : "Proceed to Payment"}
           </Button>
           <p className="text-xs mt-2 text-center text-muted-foreground">
-            All payments are processed securely via Razorpay
+            All payments are processed securely via PhonePe
           </p>
         </CardFooter>
       </Card>
