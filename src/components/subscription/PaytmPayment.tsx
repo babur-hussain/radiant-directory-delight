@@ -75,11 +75,13 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
       const amount = selectedPackage.price + (selectedPackage.setupFee || 0);
       console.log(`Processing payment with amount: ${amount} rupees`);
 
-      // Call the Paytm integration edge function to get payment details
-      const response = await fetch('/functions/v1/paytm-integration', {
+      // Call the Paytm integration edge function with full URL
+      const supabaseUrl = 'https://kyjdfhajtdqhdoijzmgk.supabase.co';
+      const response = await fetch(`${supabaseUrl}/functions/v1/paytm-integration`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5amRmaGFqdGRxaGRvaWp6bWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1MDM0MzYsImV4cCI6MjA1ODA3OTQzNn0.c4zxQzkX6UPpTXB8fQUWU_FV0M0jCbEe1ThzDfUYlYY`
         },
         body: JSON.stringify({
           packageData: selectedPackage,
