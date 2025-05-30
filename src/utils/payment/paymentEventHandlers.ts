@@ -1,6 +1,6 @@
 
 /**
- * Create payment event handlers for Paytm checkout
+ * Create payment event handlers for PhonePe checkout
  */
 export const createPaymentHandlers = (
   packageData: any,
@@ -16,7 +16,7 @@ export const createPaymentHandlers = (
     console.log('Payment successful:', response);
     
     // Validate payment response
-    if (!response.STATUS || response.STATUS !== 'TXN_SUCCESS') {
+    if (!response.success || response.code !== 'PAYMENT_SUCCESS') {
       console.error('Invalid payment response:', response);
       handleError({ message: 'Payment verification failed', response });
       return;
@@ -30,12 +30,12 @@ export const createPaymentHandlers = (
       isOneTime: packageData.paymentType === 'one-time',
       isSubscription: packageData.paymentType === 'recurring',
       // Payment verification flags
-      transaction_id: response.TXNID || transactionId,
+      transaction_id: response.data?.merchantTransactionId || transactionId,
       paymentVerified: true,
       paymentConfirmed: new Date().toISOString(),
       supportPhone: "6232571406",
       paymentTimestamp: Date.now(),
-      paymentSignature: response.CHECKSUMHASH || "paytm_verified",
+      paymentSignature: response.data?.transactionId || "phonepe_verified",
     };
     
     toast({
@@ -60,10 +60,10 @@ export const createPaymentHandlers = (
     
     let errorMessage = "Payment failed. Please try again.";
     
-    if (error.RESPMSG) {
-      errorMessage = error.RESPMSG;
-    } else if (error.message) {
+    if (error.message) {
       errorMessage = error.message;
+    } else if (error.data?.message) {
+      errorMessage = error.data.message;
     }
     
     toast({

@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import PaytmPayment from './PaytmPayment';
+import PhonePePayment from './PhonePePayment';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { updateUserSubscriptionDetails } from '@/lib/mongodb/userUtils';
@@ -46,7 +46,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
     if (user?.id && selectedPackage) {
       try {
         // Update the user profile with subscription details
-        const subscriptionId = response.TXNID || `sub_${Date.now()}`;
+        const subscriptionId = response.merchantTransactionId || `sub_${Date.now()}`;
         await updateUserSubscriptionDetails(
           user.id,
           subscriptionId,
@@ -86,7 +86,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
     setShowPaymentUI(false);
     toast({
       title: "Payment Failed",
-      description: error.RESPMSG || error.message || "There was an issue processing your payment. Please try again.",
+      description: error.message || "There was an issue processing your payment. Please try again.",
       variant: "destructive",
     });
   };
@@ -185,7 +185,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                   Proceed to Payment
                 </Button>
                 <p className="text-xs mt-2 text-center text-muted-foreground">
-                  All payments are processed securely via Paytm
+                  All payments are processed securely via PhonePe
                 </p>
               </div>
             ) : (
@@ -201,7 +201,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
 
         {!paymentSuccess && showPaymentUI && selectedPackage && user && (
           <div>
-            <PaytmPayment
+            <PhonePePayment
               selectedPackage={selectedPackage}
               onSuccess={handlePaymentSuccess}
               onFailure={handlePaymentFailure}

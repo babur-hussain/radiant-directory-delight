@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import SubscriptionManagement from '@/components/admin/SubscriptionManagement';
-import SubscriptionSettingsPanel from '@/components/admin/subscription/SubscriptionSettingsPanel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -11,19 +10,15 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 const AdminSubscriptionsPage = () => {
-  const [paytmSettings, setPaytmSettings] = useState({
+  const [phonePeSettings, setPhonePeSettings] = useState({
     merchantId: '',
-    merchantKey: '',
-    environment: 'TEST'
+    saltKey: '',
+    saltIndex: '1',
+    environment: 'PRODUCTION'
   });
 
-  const handleConfigurePaytm = () => {
-    toast.info('Opening Paytm configuration...');
-    // You can add a modal or redirect to configuration page here
-  };
-
-  const handleSavePaytmSettings = () => {
-    toast.success('Paytm settings saved successfully');
+  const handleSavePhonePeSettings = () => {
+    toast.success('PhonePe settings saved successfully');
   };
 
   return (
@@ -58,12 +53,10 @@ const AdminSubscriptionsPage = () => {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
-            <SubscriptionSettingsPanel onConfigurePaytm={handleConfigurePaytm} />
-            
             <Card>
               <CardHeader>
-                <CardTitle>Paytm Configuration</CardTitle>
-                <CardDescription>Configure Paytm payment gateway settings</CardDescription>
+                <CardTitle>PhonePe Configuration</CardTitle>
+                <CardDescription>Configure PhonePe payment gateway settings for production</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -71,37 +64,54 @@ const AdminSubscriptionsPage = () => {
                     <Label htmlFor="merchantId">Merchant ID</Label>
                     <Input
                       id="merchantId"
-                      value={paytmSettings.merchantId}
-                      onChange={(e) => setPaytmSettings({...paytmSettings, merchantId: e.target.value})}
-                      placeholder="Enter Paytm Merchant ID"
+                      value={phonePeSettings.merchantId}
+                      onChange={(e) => setPhonePeSettings({...phonePeSettings, merchantId: e.target.value})}
+                      placeholder="Enter PhonePe Merchant ID"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="merchantKey">Merchant Key</Label>
+                    <Label htmlFor="saltKey">Salt Key</Label>
                     <Input
-                      id="merchantKey"
+                      id="saltKey"
                       type="password"
-                      value={paytmSettings.merchantKey}
-                      onChange={(e) => setPaytmSettings({...paytmSettings, merchantKey: e.target.value})}
-                      placeholder="Enter Paytm Merchant Key"
+                      value={phonePeSettings.saltKey}
+                      onChange={(e) => setPhonePeSettings({...phonePeSettings, saltKey: e.target.value})}
+                      placeholder="Enter PhonePe Salt Key"
                     />
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="environment">Environment</Label>
-                  <select
-                    id="environment"
-                    value={paytmSettings.environment}
-                    onChange={(e) => setPaytmSettings({...paytmSettings, environment: e.target.value})}
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                  >
-                    <option value="TEST">Test</option>
-                    <option value="PROD">Production</option>
-                  </select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="saltIndex">Salt Index</Label>
+                    <Input
+                      id="saltIndex"
+                      value={phonePeSettings.saltIndex}
+                      onChange={(e) => setPhonePeSettings({...phonePeSettings, saltIndex: e.target.value})}
+                      placeholder="Enter PhonePe Salt Index"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="environment">Environment</Label>
+                    <select
+                      id="environment"
+                      value={phonePeSettings.environment}
+                      onChange={(e) => setPhonePeSettings({...phonePeSettings, environment: e.target.value})}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    >
+                      <option value="UAT">UAT (Testing)</option>
+                      <option value="PRODUCTION">Production</option>
+                    </select>
+                  </div>
                 </div>
-                <Button onClick={handleSavePaytmSettings}>
-                  Save Paytm Settings
+                <Button onClick={handleSavePhonePeSettings}>
+                  Save PhonePe Settings
                 </Button>
+                <div className="mt-4 p-4 bg-blue-50 rounded-md">
+                  <p className="text-blue-700 text-sm">
+                    <strong>Note:</strong> These settings need to be configured in the Supabase Edge Function secrets for production use.
+                    Required secrets: PHONEPE_MERCHANT_ID, PHONEPE_SALT_KEY, PHONEPE_SALT_INDEX
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

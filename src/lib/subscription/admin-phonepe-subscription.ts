@@ -2,7 +2,7 @@
 import { SubscriptionData } from "./types";
 import axios from 'axios';
 
-export const adminAssignPaytmSubscription = async (userId: string, packageDetails: any, paymentDetails: any): Promise<boolean> => {
+export const adminAssignPhonePeSubscription = async (userId: string, packageDetails: any, paymentDetails: any): Promise<boolean> => {
   try {
     if (!userId) {
       console.error("Invalid user ID");
@@ -15,10 +15,10 @@ export const adminAssignPaytmSubscription = async (userId: string, packageDetail
     }
     
     // Generate a unique subscription ID if not provided
-    const subscriptionId = paymentDetails?.subscriptionId || paymentDetails?.TXNID || `sub${Date.now()}`;
+    const subscriptionId = paymentDetails?.subscriptionId || paymentDetails?.merchantTransactionId || `sub${Date.now()}`;
     
     // Generate a unique transaction ID for tracking
-    const transactionId = paymentDetails?.transaction_id || paymentDetails?.TXNID || `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const transactionId = paymentDetails?.transaction_id || paymentDetails?.merchantTransactionId || `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     
     const isOneTime = packageDetails.paymentType === "one-time";
     
@@ -53,10 +53,10 @@ export const adminAssignPaytmSubscription = async (userId: string, packageDetail
     console.log("Creating subscription with nextBillingDate:", nextBillingDate);
     console.log("Total amount calculated:", totalAmount, "(setup fee:", setupFee, ", base price:", packageDetails.price, ")");
     
-    // Add timestamp to mark when this payment was processed and protected
+    // Add timestamp to mark when this payment was processed
     const paymentProcessedAt = new Date().toISOString();
     
-    // Prepare subscription data with enhanced refund protection
+    // Prepare subscription data
     const subscription: SubscriptionData = {
       id: subscriptionId,
       userId: userId,
@@ -81,12 +81,6 @@ export const adminAssignPaytmSubscription = async (userId: string, packageDetail
       billingCycle: packageDetails.billingCycle,
       recurringAmount: recurringAmount,
       nextBillingDate: isOneTime ? undefined : nextBillingDate,
-      // Add enhanced refund protection measures
-      isNonRefundable: true,
-      autoRefund: false,
-      refundStatus: "no_refund_allowed",
-      refundsDisabled: true,
-      nonRefundableTransaction: true,
       transactionId: transactionId,
       paymentVerified: true,
       paymentVerifiedAt: paymentProcessedAt,
@@ -95,17 +89,12 @@ export const adminAssignPaytmSubscription = async (userId: string, packageDetail
     
     // Add payment details if provided
     if (paymentDetails) {
-      subscription.paymentMethod = "paytm";
-      subscription.transactionId = paymentDetails.TXNID || paymentDetails.paymentId || transactionId;
+      subscription.paymentMethod = "phonepe";
+      subscription.transactionId = paymentDetails.merchantTransactionId || paymentDetails.paymentId || transactionId;
       
       // For recurring subscriptions, add the subscription ID
-      if (!isOneTime && (paymentDetails.subscriptionId || paymentDetails.TXNID)) {
-        subscription.paytmSubscriptionId = paymentDetails.TXNID || paymentDetails.subscriptionId;
-      }
-      
-      // Add order ID if available
-      if (paymentDetails.ORDERID || paymentDetails.orderId) {
-        subscription.paytmOrderId = paymentDetails.ORDERID || paymentDetails.orderId;
+      if (!isOneTime && (paymentDetails.subscriptionId || paymentDetails.merchantTransactionId)) {
+        subscription.phonePeTransactionId = paymentDetails.merchantTransactionId || paymentDetails.subscriptionId;
       }
       
       // Add payment completion time
@@ -118,33 +107,16 @@ export const adminAssignPaytmSubscription = async (userId: string, packageDetail
     
     // Save to MongoDB
     try {
-      console.log("Saving subscription to database with refund protection:", subscription);
-      
-      // Call a webhook to verify and finalize payment (optional step for production)
-      try {
-        await finalizePayment(transactionId, totalAmount, userId);
-      } catch (webhookErr) {
-        console.warn("Error calling payment finalization webhook:", webhookErr);
-        // Continue anyway, this is just an extra safeguard
-      }
-      
+      console.log("Saving subscription to database:", subscription);
       await axios.post('http://localhost:3001/api/subscriptions', subscription);
-      console.log(`Paytm subscription ${subscriptionId} assigned to user ${userId} with refund protection enabled`);
+      console.log(`PhonePe subscription ${subscriptionId} assigned to user ${userId}`);
       return true;
     } catch (error) {
       console.error("Error saving subscription to MongoDB:", error);
       return false;
     }
   } catch (error) {
-    console.error("Error assigning Paytm subscription:", error);
+    console.error("Error assigning PhonePe subscription:", error);
     return false;
   }
-};
-
-// Helper function to finalize payment (mock implementation)
-const finalizePayment = async (transactionId: string, amount: number, userId: string): Promise<void> => {
-  console.log(`Finalizing payment ${transactionId} for user ${userId} amount ${amount}`);
-  // In production you would call your payment provider's API to mark the payment as finalized
-  // This is just a placeholder function
-  return Promise.resolve();
 };

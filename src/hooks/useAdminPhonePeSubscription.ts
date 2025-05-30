@@ -2,43 +2,42 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
-import { adminAssignRazorpaySubscription } from '@/lib/subscription/admin-razorpay-subscription';
+import { adminAssignPhonePeSubscription } from '@/lib/subscription/admin-phonepe-subscription';
 
-// This is a simplified version of the hook to fix the errors
-export const useAdminRazorpaySubscription = (userId: string) => {
+export const useAdminPhonePeSubscription = (userId: string) => {
   const { user: adminUser } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Create a Razorpay subscription for a user
-  const createRazorpaySubscription = useCallback(async (packageData: any, paymentDetails: any) => {
+  // Create a PhonePe subscription for a user
+  const createPhonePeSubscription = useCallback(async (packageData: any, paymentDetails: any) => {
     setIsLoading(true);
     setError(null);
     
     try {
       if (!adminUser?.isAdmin) {
-        throw new Error("Only administrators can assign Razorpay subscriptions");
+        throw new Error("Only administrators can assign PhonePe subscriptions");
       }
       
-      const success = await adminAssignRazorpaySubscription(userId, packageData, paymentDetails);
+      const success = await adminAssignPhonePeSubscription(userId, packageData, paymentDetails);
       
       if (success) {
         toast({
           title: "Subscription Created",
-          description: `Successfully created Razorpay subscription for user.`,
+          description: `Successfully created PhonePe subscription for user.`,
         });
         return true;
       } else {
-        throw new Error("Failed to create Razorpay subscription");
+        throw new Error("Failed to create PhonePe subscription");
       }
     } catch (error) {
-      console.error("Error creating Razorpay subscription:", error);
+      console.error("Error creating PhonePe subscription:", error);
       setError(error instanceof Error ? error.message : "Failed to create subscription");
       
       toast({
         title: "Creation Failed",
-        description: "Could not create Razorpay subscription",
+        description: "Could not create PhonePe subscription",
         variant: "destructive",
       });
       return false;
@@ -47,7 +46,7 @@ export const useAdminRazorpaySubscription = (userId: string) => {
     }
   }, [adminUser, toast, userId]);
   
-  // Mock functions to fix import errors
+  // Mock functions for other operations
   const adminPauseSubscription = useCallback(async () => {
     console.log("Pause subscription requested");
     return false;
@@ -59,7 +58,7 @@ export const useAdminRazorpaySubscription = (userId: string) => {
   }, []);
   
   return {
-    createRazorpaySubscription,
+    createPhonePeSubscription,
     adminPauseSubscription,
     adminResumeSubscription,
     isLoading,
