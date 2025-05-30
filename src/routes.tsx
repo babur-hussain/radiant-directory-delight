@@ -1,3 +1,4 @@
+
 import React, { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -97,6 +98,7 @@ const ContactPage = lazy(() => import("@/pages/ContactPage"));
 const AdminDashboardPage = lazy(() => import("@/pages/AdminDashboardPage"));
 const AdminUsersPage = lazy(() => import("@/pages/AdminUsersPage"));
 const AdminBusinessListingsPage = lazy(() => import("@/pages/AdminBusinessListingsPage"));
+const AdminInfluencerListingsPage = lazy(() => import("@/pages/AdminInfluencerListingsPage"));
 const AdminSubscriptionsPage = lazy(() => import("@/pages/AdminSubscriptionsPage"));
 const AdminUploadPage = lazy(() => import("@/pages/AdminUploadPage"));
 const AdminMigrationPage = lazy(() => import("@/pages/AdminMigrationPage"));
@@ -270,6 +272,12 @@ export const router = createBrowserRouter([
             path: "admin/businesses",
             element: <ProtectedRoute roles={["Admin"]}>
               <Suspense fallback={<LoadingComponent />}><AdminBusinessListingsPage /></Suspense>
+            </ProtectedRoute>
+          },
+          {
+            path: "admin/influencers",
+            element: <ProtectedRoute roles={["Admin"]}>
+              <Suspense fallback={<LoadingComponent />}><AdminInfluencerListingsPage /></Suspense>
             </ProtectedRoute>
           },
           {
