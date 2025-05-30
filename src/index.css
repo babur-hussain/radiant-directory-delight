@@ -1,854 +1,29 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-
-    --primary: 221 83% 60%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222 47% 11%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222 47% 11%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221 83% 60%;
-
-    --radius: 1rem;
-  }
-
-  .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 221 83% 60%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-  }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  html, body {
-    @apply overflow-x-hidden;
-    width: 100%;
-    position: relative;
-    scroll-behavior: smooth;
-    font-family: 'Poppins', sans-serif;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
-    max-width: 100vw;
-    padding-top: 64px; /* Match header height */
-  }
-  
-  /* Prevent content jumping when modals open */
-  body.overflow-hidden {
-    padding-right: var(--scrollbar-width, 0px);
-    overflow: hidden !important;
-    height: 100% !important;
-  }
-
-  /* Ensure all content containers have proper width constraints */
-  .container {
-    width: 100%;
-    max-width: 100%;
-    margin: 0 auto;
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  /* Add new heading styles */
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-display font-bold;
-  }
-
-  h1 {
-    @apply text-3xl md:text-4xl lg:text-5xl;
-    background: linear-gradient(90deg, #7209B7, #F72585);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  h2 {
-    @apply text-2xl md:text-3xl;
-  }
-
-  /* Add button hover effects */
-  .btn-hover-effect {
-    @apply relative overflow-hidden transition-all duration-300;
-  }
-
-  .btn-hover-effect::before {
-    content: '';
-    @apply absolute top-0 left-0 w-0 h-full bg-white/20 transition-all duration-500;
-  }
-
-  .btn-hover-effect:hover::before {
-    @apply w-full;
-  }
-
-  /* Customized scrollbar */
-  ::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    @apply bg-gray-100 rounded-full;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    @apply bg-brand-purple/50 rounded-full transition-colors hover:bg-brand-purple;
-  }
-
-  @media (min-width: 640px) {
-    .container {
-      max-width: 640px;
-    }
-  }
-
-  @media (min-width: 768px) {
-    .container {
-      max-width: 768px;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .container {
-      max-width: 1024px;
-    }
-  }
-
-  @media (min-width: 1280px) {
-    .container {
-      max-width: 1280px;
-    }
-  }
-
-  /* Fix common mobile issues */
-  img {
-    max-width: 100%;
-    height: auto;
-  }
-
-  /* Enhanced 3D animations and effects */
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-
-  .animation-delay-2000 {
-    animation-delay: 2s;
-  }
-
-  .animation-delay-4000 {
-    animation-delay: 4s;
-  }
-
-  /* Enhanced floating animation */
-  @keyframes float {
-    0%, 100% {
-      transform: translateY(0px) rotate(0deg);
-    }
-    33% {
-      transform: translateY(-10px) rotate(1deg);
-    }
-    66% {
-      transform: translateY(5px) rotate(-1deg);
-    }
-  }
-
-  /* 3D card effects */
-  .card-3d {
-    transform-style: preserve-3d;
-    transition: transform 0.6s;
-  }
-
-  .card-3d:hover {
-    transform: rotateY(10deg) rotateX(5deg) scale(1.05);
-  }
-
-  /* Gradient text utilities */
-  .text-gradient-rainbow {
-    background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7, #dda0dd);
-    background-size: 300% 300%;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: rainbow 3s ease-in-out infinite;
-  }
-
-  @keyframes rainbow {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-  }
-
-  /* Glass morphism effects */
-  .glass-effect {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-
-  /* Enhanced line clamp utilities */
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .line-clamp-3 {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
+html {
+  font-family: 'Inter', system-ui, sans-serif;
+  scroll-behavior: smooth;
 }
 
-/* Custom text gradient utilities */
-@layer utilities {
-  .text-gradient-purple {
-    @apply bg-gradient-to-r from-brand-purple via-brand-pink to-brand-blue bg-clip-text text-transparent;
-  }
-  
-  .text-gradient-blue {
-    @apply bg-gradient-to-r from-brand-blue via-brand-teal to-brand-green bg-clip-text text-transparent;
-  }
-  
-  .text-gradient-warm {
-    @apply bg-gradient-to-r from-brand-pink via-brand-orange to-brand-yellow bg-clip-text text-transparent;
-  }
-
-  .card-hover-effect {
-    @apply transition-all duration-300 hover:shadow-lg hover:translate-y-[-5px];
-  }
-
-  .glass-card {
-    @apply bg-white/70 backdrop-blur-md shadow-lg border border-white/20 rounded-xl;
-  }
-  
-  /* Add the missing utility class */
-  .tap-highlight-transparent {
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  /* Enhanced 3D utilities */
-  .perspective-1000 {
-    perspective: 1000px;
-  }
-
-  .preserve-3d {
-    transform-style: preserve-3d;
-  }
-
-  .backface-hidden {
-    backface-visibility: hidden;
-  }
+body {
+  background-color: #fafafa;
+  color: #333;
+  line-height: 1.6;
 }
 
 /* Custom animations */
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-/* Mobile menu animations - enhanced for smoother transitions */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideIn {
-  from { transform: translateY(-20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes blurIn {
-  from { backdrop-filter: blur(0); }
-  to { backdrop-filter: blur(8px); }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-out forwards;
-}
-
-.animate-slideIn {
-  animation: slideIn 0.4s ease-out forwards;
-}
-
-.animate-blurIn {
-  animation: blurIn 0.4s ease-out forwards;
-}
-
-/* Improved scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  @apply bg-secondary/50;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground/30 rounded-full transition-colors hover:bg-muted-foreground/50;
-}
-
-/* Mobile specific styles */
-@media (max-width: 768px) {
-  /* Fix issues with auth modal */
-  .radix-dialog-content {
-    width: calc(100vw - 24px) !important;
-    margin: 0 12px !important;
-    padding: 16px !important;
-    overflow: hidden !important;
-    max-height: 90vh !important;
-  }
-
-  [data-radix-scroll-area-viewport] {
-    -webkit-overflow-scrolling: touch;
-    max-height: 70vh !important;
-  }
-
-  /* Fix form fields on small screens */
-  form input, form select, form textarea, form .form-control {
-    font-size: 16px !important; /* Prevents iOS zoom */
-    min-height: 42px !important;
-  }
-
-  .form-label {
-    font-size: 14px !important;
-  }
-
-  /* Make auth dialog more mobile friendly */
-  .radix-dialog-content [data-radix-dialog-close] {
-    top: 8px !important;
-    right: 8px !important;
-  }
-  
-  /* Improve TabsList touchability */
-  [role="tablist"] {
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  
-  [role="tab"] {
-    min-height: 44px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-
-  /* Better form spacing */
-  .form-group, .form-field, form > div {
-    margin-bottom: 12px !important;
-  }
-  
-  /* Fix registration type selector */
-  [role="radiogroup"] {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px !important;
-  }
-  
-  [role="radiogroup"] label {
-    min-height: 68px !important;
-    padding: 8px 4px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-  
-  /* Better form layout on small screens */
-  .auth-modal-content form,
-  .auth-dialog form {
-    padding-bottom: 16px !important;
-  }
-  
-  /* Prevent text overflow */
-  .form-message {
-    font-size: 12px !important;
-    word-break: break-word !important;
-    max-width: 100% !important;
-  }
-  
-  /* Enhanced mobile menu styling */
-  .main-header .mobile-menu-button {
-    position: relative;
-    z-index: 60;
-    min-height: 44px;
-    min-width: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-  }
-  
-  /* Mobile menu backdrop enhancement */
-  .mobile-menu-backdrop {
-    animation: fadeIn 0.3s ease-out, blurIn 0.3s ease-out;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-  }
-  
-  /* Mobile menu content enhancement */
-  .mobile-menu-content {
-    animation: slideIn 0.3s ease-out;
-  }
-  
-  /* Mobile menu links enhancement */
-  .mobile-menu nav a {
-    display: flex;
-    align-items: center;
-    padding: 12px 16px;
-    font-size: 16px;
-    font-weight: 500;
-    border-radius: 8px;
-    margin-bottom: 4px;
-    transition: all 0.2s ease;
-  }
-  
-  .mobile-menu nav a:hover,
-  .mobile-menu nav a:active {
-    background-color: rgba(255, 255, 255, 0.5);
-  }
-  
-  /* Glass effect for mobile menu */
-  .glass-menu {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  }
-}
-
-/* Form and modal improvements */
-.auth-form-container {
-  @apply max-h-[85vh] overflow-hidden;
-}
-
-.form-scroll-container {
-  @apply overflow-y-auto -mx-4 px-4 pb-4;
-  max-height: calc(85vh - 150px);
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Additional responsive fixes */
-@media (max-width: 640px) {
-  .hero-section {
-    padding-top: 1.5rem;
-    padding-bottom: 1.5rem;
-  }
-  
-  .search-bar {
-    padding: 0.5rem;
-  }
-  
-  .popular-terms {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-  
-  /* Better vertical spacing */
-  .space-y-responsive {
-    @apply space-y-3 sm:space-y-4 md:space-y-6;
-  }
-  
-  /* Reduce font sizes on very small screens */
-  .text-responsive {
-    @apply text-sm sm:text-base;
-  }
-  
-  .heading-responsive {
-    @apply text-xl sm:text-2xl md:text-3xl;
-  }
-  
-  /* Fix field sizing on small screens */
-  .form-field {
-    @apply mb-3;
-  }
-  
-  .form-grid {
-    @apply grid grid-cols-1 gap-3;
-  }
-  
-  /* Fix button sizing on small screens */
-  .cta-button {
-    @apply w-full py-3;
-  }
-}
-
-/* Improve auth modal responsiveness */
-@media (max-width: 768px) {
-  .auth-modal {
-    @apply p-3 w-[calc(100vw-24px)] max-w-md mx-auto;
-  }
-  
-  .auth-tabs {
-    @apply -mx-3 mb-4 overflow-x-auto;
-  }
-  
-  .auth-form {
-    @apply px-0;
-  }
-  
-  /* Fix auth form scrolling */
-  [data-radix-scroll-area-viewport] {
-    padding-right: 4px;
-  }
-}
-
-/* Fix dialog content scrolling improvements */
-@media (max-width: 768px) {
-  .radix-dialog-content {
-    max-height: 90vh !important;
-    overflow: hidden !important;
-  }
-  
-  .radix-dialog-body {
-    max-height: calc(90vh - 120px);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
-/* Mobile specific styles */
-@media (max-width: 768px) {
-  .search-results-container {
-    background-color: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(8px);
-  }
-  
-  /* Improved touch targets */
-  button, a, [role="button"] {
-    @apply min-h-[44px] tap-highlight-transparent;
-  }
-  
-  /* Fix header on mobile */
-  .main-header {
-    @apply bg-white/95 shadow-sm;
-  }
-  
-  /* Adjust padding for mobile scroll */
-  body {
-    padding-top: 60px;
-  }
-  
-  /* Make search more prominent on mobile */
-  .search-container input {
-    font-size: 16px; /* Prevents iOS zoom */
-  }
-
-  /* Form styles for mobile */
-  form {
-    @apply px-1;
-  }
-
-  /* Dialog padding for mobile */
-  .dialog-content {
-    padding: 1rem !important;
-  }
-
-  /* Tabs for auth forms */
-  .tabs-content {
-    max-height: calc(100vh - 200px);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  /* Improved mobile form fields */
-  input, select, textarea {
-    font-size: 16px !important; /* Prevents iOS zoom */
-  }
-  
-  /* Fix for button spacing on mobile */
-  .button-group {
-    @apply flex flex-col sm:flex-row gap-2;
-  }
-  
-  /* Fix touch targets for nav links */
-  nav a, nav button {
-    @apply py-3 px-2 tap-highlight-transparent;
-  }
-  
-  /* Fix scrolling issues in modals */
-  [data-radix-scroll-area-viewport] {
-    -webkit-overflow-scrolling: touch;
-    max-height: 65vh !important;
-    padding-bottom: 16px;
-  }
-  
-  /* Fix overflow issues for form containers */
-  .form-scroll-container {
-    overflow-y: auto;
-    max-height: 60vh;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 20px;
-  }
-  
-  /* Mobile menu improvements */
-  .md\:hidden.fixed {
-    display: flex !important;
-    flex-direction: column;
-    visibility: visible !important;
-    opacity: 1 !important;
-  }
-
-  /* Ensure menu button is above everything */
-  button[aria-label="Toggle mobile menu"] {
-    z-index: 60;
-    position: relative;
-    touch-action: manipulation;
-  }
-  
-  /* Enhance mobile menu animation */
-  @keyframes slideInMenu {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  
-  .md\:hidden.fixed nav {
-    animation: slideInMenu 0.2s ease-out;
-  }
-}
-
-/* Form and modal improvements */
-.auth-form-container {
-  @apply max-h-[85vh] overflow-hidden;
-}
-
-.form-scroll-container {
-  @apply overflow-y-auto -mx-4 px-4 pb-4;
-  max-height: calc(85vh - 150px);
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Additional responsive fixes */
-@media (max-width: 640px) {
-  .hero-section {
-    padding-top: 1.5rem;
-    padding-bottom: 1.5rem;
-  }
-  
-  .search-bar {
-    padding: 0.5rem;
-  }
-  
-  .popular-terms {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-  
-  /* Better vertical spacing */
-  .space-y-responsive {
-    @apply space-y-3 sm:space-y-4 md:space-y-6;
-  }
-  
-  /* Reduce font sizes on very small screens */
-  .text-responsive {
-    @apply text-sm sm:text-base;
-  }
-  
-  .heading-responsive {
-    @apply text-xl sm:text-2xl md:text-3xl;
-  }
-  
-  /* Fix field sizing on small screens */
-  .form-field {
-    @apply mb-3;
-  }
-  
-  .form-grid {
-    @apply grid grid-cols-1 gap-3;
-  }
-  
-  /* Fix button sizing on small screens */
-  .cta-button {
-    @apply w-full py-3;
-  }
-}
-
-/* Improve auth modal responsiveness */
-@media (max-width: 768px) {
-  .auth-modal {
-    @apply p-3 w-[calc(100vw-24px)] max-w-md mx-auto;
-  }
-  
-  .auth-tabs {
-    @apply -mx-3 mb-4 overflow-x-auto;
-  }
-  
-  .auth-form {
-    @apply px-0;
-  }
-  
-  /* Fix auth form scrolling */
-  [data-radix-scroll-area-viewport] {
-    padding-right: 4px;
-  }
-}
-
-/* Fix dialog content scrolling improvements */
-@media (max-width: 768px) {
-  .radix-dialog-content {
-    max-height: 90vh !important;
-    overflow: hidden !important;
-  }
-  
-  .radix-dialog-body {
-    max-height: calc(90vh - 120px);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
-/* Additional responsive fixes */
-@media (max-width: 640px) {
-  /* Better loading skeletons */
-  .skeleton {
-    @apply animate-pulse bg-gray-200 rounded-md;
-  }
-  
-  .skeleton-text {
-    @apply h-4 w-3/4 skeleton mb-2;
-  }
-  
-  .skeleton-title {
-    @apply h-6 w-1/2 skeleton mb-4;
-  }
-  
-  .skeleton-image {
-    @apply h-32 w-full skeleton mb-4;
-  }
-  
-  .skeleton-button {
-    @apply h-10 w-24 skeleton;
-  }
-  
-  .skeleton-avatar {
-    @apply h-10 w-10 rounded-full skeleton;
-  }
-  
-  /* Add extra touch area to improve mobile experience */
-  .touch-target {
-    @apply relative;
-  }
-  
-  .touch-target::after {
-    content: '';
-    position: absolute;
-    top: -8px;
-    left: -8px;
-    right: -8px;
-    bottom: -8px;
-    z-index: -1;
-  }
-
-  /* Fix for tap highlight color */
-  a, button, [role="button"], .interactive {
-    -webkit-tap-highlight-color: transparent;
-  }
-}
-
-/* Improved loading animations */
-@keyframes shimmer {
-  0% {
-    background-position: -468px 0;
-  }
-  100% {
-    background-position: 468px 0;
-  }
-}
-
-.shimmer {
-  animation-duration: 1.5s;
-  animation-fill-mode: forwards;
-  animation-iteration-count: infinite;
-  animation-name: shimmer;
-  animation-timing-function: linear;
-  background: linear-gradient(to right, #f6f7f8 8%, #edeef1 18%, #f6f7f8 33%);
-  background-size: 800px 104px;
-}
-
-/* Page transitions */
-.page-transition-enter {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-.page-transition-enter-active {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 300ms, transform 300ms;
-}
-
-.page-transition-exit {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.page-transition-exit-active {
-  opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 300ms, transform 300ms;
-}
-
-/* Enhance fade in animation */
-@keyframes fadeInUp {
+@keyframes fade-in {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -859,39 +34,143 @@
   }
 }
 
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
 .animate-fade-in {
-  animation: fadeInUp 0.5s ease-out forwards;
+  animation: fade-in 0.6s ease-out forwards;
 }
 
-/* Staggered animation helper classes */
-.stagger-item:nth-child(1) { animation-delay: 0.1s; }
-.stagger-item:nth-child(2) { animation-delay: 0.2s; }
-.stagger-item:nth-child(3) { animation-delay: 0.3s; }
-.stagger-item:nth-child(4) { animation-delay: 0.4s; }
-.stagger-item:nth-child(5) { animation-delay: 0.5s; }
-.stagger-item:nth-child(6) { animation-delay: 0.6s; }
-
-/* Improved lazy loading for images */
-.lazy-image {
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
+.animate-scale-in {
+  animation: scale-in 0.4s ease-out forwards;
 }
 
-.lazy-image.loaded {
-  opacity: 1;
+.animate-slide-up {
+  animation: slide-up 0.8s ease-out forwards;
 }
 
-/* Better focus styles for accessibility */
-:focus-visible {
-  outline: 2px solid var(--ring);
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Hide scrollbar for auto-scroll container */
+.auto-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Glassmorphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Gradient text utilities */
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Custom card hover effects */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Smooth transitions for all interactive elements */
+button, a, input, select {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Custom focus styles */
+.focus-ring:focus {
+  outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
 
-.focus-ring:focus-visible {
-  @apply ring-2 ring-offset-2 ring-primary;
+/* Animation delays */
+.animation-delay-200 {
+  animation-delay: 0.2s;
 }
 
-/* Smooth transitions */
-.transition-smooth {
-  @apply transition-all duration-300 ease-in-out;
+.animation-delay-400 {
+  animation-delay: 0.4s;
+}
+
+.animation-delay-600 {
+  animation-delay: 0.6s;
+}
+
+.animation-delay-800 {
+  animation-delay: 0.8s;
+}
+
+/* Custom scroll behavior */
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }

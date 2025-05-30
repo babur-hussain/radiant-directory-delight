@@ -1,6 +1,265 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types/auth';
+
+// Real influencers data based on the provided information
+const realInfluencersData = [
+  // Entertainment & Comedy
+  {
+    id: '1',
+    name: 'Bhuvan Bam',
+    email: 'contact@bhuvan.bam22',
+    niche: 'Comedy, Music',
+    location: 'Delhi',
+    followers_count: 22200000,
+    engagement_rate: 8.5,
+    rating: 4.9,
+    featured: true,
+    priority: 10,
+    instagram_handle: 'bhuvan.bam22',
+    youtube_handle: 'BB Ki Vines',
+    profile_image: 'https://ui-avatars.com/api/?name=Bhuvan+Bam&size=400&background=7c3aed&color=fff',
+    cover_image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&h=400&fit=crop',
+    bio: 'Comedian, musician, and content creator. Creator of BB Ki Vines.',
+    tags: ['Comedy', 'Music', 'YouTube', 'Viral Content'],
+    previous_brands: ['Netflix', 'Amazon Prime', 'Disney+ Hotstar'],
+    reviews: 485,
+    category: 'Entertainment & Comedy'
+  },
+  {
+    id: '2',
+    name: 'CarryMinati',
+    email: 'contact@carryminati',
+    niche: 'Comedy, Gaming',
+    location: 'Faridabad, Haryana',
+    followers_count: 22100000,
+    engagement_rate: 9.2,
+    rating: 4.8,
+    featured: true,
+    priority: 9,
+    instagram_handle: 'carryminati',
+    youtube_handle: 'CarryMinati',
+    profile_image: 'https://ui-avatars.com/api/?name=CarryMinati&size=400&background=ef4444&color=fff',
+    cover_image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&h=400&fit=crop',
+    bio: 'Gaming content creator and roast king of India.',
+    tags: ['Gaming', 'Comedy', 'Roasting', 'YouTube'],
+    previous_brands: ['OnePlus', 'Garena Free Fire', 'PUBG Mobile'],
+    reviews: 523,
+    category: 'Entertainment & Comedy'
+  },
+  {
+    id: '3',
+    name: 'Ashish Chanchlani',
+    email: 'contact@ashishchanchlani',
+    niche: 'Comedy',
+    location: 'Mumbai',
+    followers_count: 17300000,
+    engagement_rate: 7.8,
+    rating: 4.7,
+    featured: true,
+    priority: 8,
+    instagram_handle: 'ashishchanchlani',
+    youtube_handle: 'Ashish Chanchlani Vines',
+    profile_image: 'https://ui-avatars.com/api/?name=Ashish+Chanchlani&size=400&background=10b981&color=fff',
+    cover_image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=400&fit=crop',
+    bio: 'Comedy content creator known for relatable vines and sketches.',
+    tags: ['Comedy', 'Vines', 'Entertainment'],
+    previous_brands: ['Myntra', 'Paytm', 'Flipkart'],
+    reviews: 412,
+    category: 'Entertainment & Comedy'
+  },
+  {
+    id: '4',
+    name: 'Kusha Kapila',
+    email: 'contact@kushakapila',
+    niche: 'Comedy, Fashion',
+    location: 'Delhi',
+    followers_count: 4300000,
+    engagement_rate: 6.5,
+    rating: 4.6,
+    featured: false,
+    priority: 7,
+    instagram_handle: 'kushakapila',
+    profile_image: 'https://ui-avatars.com/api/?name=Kusha+Kapila&size=400&background=ec4899&color=fff',
+    cover_image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&h=400&fit=crop',
+    bio: 'Fashion and comedy content creator, digital influencer.',
+    tags: ['Comedy', 'Fashion', 'Lifestyle'],
+    previous_brands: ['Nykaa', 'H&M', 'Zara'],
+    reviews: 289,
+    category: 'Entertainment & Comedy'
+  },
+  {
+    id: '5',
+    name: 'Dolly Singh',
+    email: 'contact@dollysingh',
+    niche: 'Comedy, Fashion',
+    location: 'Delhi',
+    followers_count: 1600000,
+    engagement_rate: 5.8,
+    rating: 4.5,
+    featured: false,
+    priority: 6,
+    instagram_handle: 'dollysingh',
+    profile_image: 'https://ui-avatars.com/api/?name=Dolly+Singh&size=400&background=8b5cf6&color=fff',
+    cover_image: 'https://images.unsplash.com/photo-1494790108755-2616c5a78d96?w=800&h=400&fit=crop',
+    bio: 'Comedy and fashion content creator.',
+    tags: ['Comedy', 'Fashion', 'Content Creation'],
+    previous_brands: ['Myntra', 'Lakme', 'Forever 21'],
+    reviews: 156,
+    category: 'Entertainment & Comedy'
+  },
+
+  // Fashion & Lifestyle
+  {
+    id: '6',
+    name: 'Komal Pandey',
+    email: 'contact@komalpandeyofficial',
+    niche: 'Fashion',
+    location: 'Delhi',
+    followers_count: 1900000,
+    engagement_rate: 7.2,
+    rating: 4.7,
+    featured: true,
+    priority: 8,
+    instagram_handle: 'komalpandeyofficial',
+    profile_image: 'https://ui-avatars.com/api/?name=Komal+Pandey&size=400&background=f59e0b&color=fff',
+    cover_image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&h=400&fit=crop',
+    bio: 'Fashion stylist and content creator.',
+    tags: ['Fashion', 'Styling', 'Lifestyle'],
+    previous_brands: ['Nykaa Fashion', 'Myntra', 'AJIO'],
+    reviews: 234,
+    category: 'Fashion & Lifestyle'
+  },
+  {
+    id: '7',
+    name: 'Masoom Minawala',
+    email: 'contact@masoomminawala',
+    niche: 'Fashion, Luxury',
+    location: 'Mumbai',
+    followers_count: 1400000,
+    engagement_rate: 6.8,
+    rating: 4.6,
+    featured: false,
+    priority: 7,
+    instagram_handle: 'masoomminawala',
+    profile_image: 'https://ui-avatars.com/api/?name=Masoom+Minawala&size=400&background=06b6d4&color=fff',
+    cover_image: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=800&h=400&fit=crop',
+    bio: 'Luxury fashion and lifestyle influencer.',
+    tags: ['Fashion', 'Luxury', 'Lifestyle'],
+    previous_brands: ['Gucci', 'Louis Vuitton', 'Chanel'],
+    reviews: 189,
+    category: 'Fashion & Lifestyle'
+  },
+
+  // Gaming & Tech
+  {
+    id: '8',
+    name: 'Dynamo Gaming',
+    email: 'contact@aadityadynamo',
+    niche: 'Gaming',
+    location: 'Mumbai',
+    followers_count: 2200000,
+    engagement_rate: 8.9,
+    rating: 4.8,
+    featured: true,
+    priority: 8,
+    instagram_handle: 'aadityadynamo',
+    youtube_handle: 'Dynamo Gaming',
+    profile_image: 'https://ui-avatars.com/api/?name=Dynamo+Gaming&size=400&background=3b82f6&color=fff',
+    cover_image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&h=400&fit=crop',
+    bio: 'Professional gamer and esports influencer.',
+    tags: ['Gaming', 'Esports', 'PUBG Mobile'],
+    previous_brands: ['PUBG Mobile', 'OnePlus', 'Red Bull'],
+    reviews: 312,
+    category: 'Gaming & Tech'
+  },
+  {
+    id: '9',
+    name: 'Mortal',
+    email: 'contact@ig_mortal',
+    niche: 'Gaming',
+    location: 'Mumbai',
+    followers_count: 2500000,
+    engagement_rate: 9.1,
+    rating: 4.9,
+    featured: true,
+    priority: 9,
+    instagram_handle: 'ig_mortal',
+    youtube_handle: 'Mortal',
+    profile_image: 'https://ui-avatars.com/api/?name=Mortal&size=400&background=dc2626&color=fff',
+    cover_image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&h=400&fit=crop',
+    bio: 'Gaming content creator and streamer.',
+    tags: ['Gaming', 'Streaming', 'PUBG Mobile'],
+    previous_brands: ['PUBG Mobile', 'Asus ROG', 'HyperX'],
+    reviews: 398,
+    category: 'Gaming & Tech'
+  },
+
+  // Fitness & Health
+  {
+    id: '10',
+    name: 'Ranveer Allahbadia',
+    email: 'contact@beerbiceps',
+    niche: 'Fitness, Lifestyle',
+    location: 'Mumbai',
+    followers_count: 3400000,
+    engagement_rate: 7.5,
+    rating: 4.8,
+    featured: true,
+    priority: 8,
+    instagram_handle: 'beerbiceps',
+    youtube_handle: 'BeerBiceps',
+    profile_image: 'https://ui-avatars.com/api/?name=Ranveer+Allahbadia&size=400&background=059669&color=fff',
+    cover_image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop',
+    bio: 'Fitness enthusiast, entrepreneur, and podcast host.',
+    tags: ['Fitness', 'Entrepreneurship', 'Motivation'],
+    previous_brands: ['MuscleBlaze', 'Nike', 'Under Armour'],
+    reviews: 445,
+    category: 'Fitness & Health'
+  },
+
+  // Music & Dance
+  {
+    id: '11',
+    name: 'Neha Kakkar',
+    email: 'contact@nehakakkar',
+    niche: 'Music',
+    location: 'Mumbai',
+    followers_count: 14800000,
+    engagement_rate: 8.7,
+    rating: 4.9,
+    featured: true,
+    priority: 10,
+    instagram_handle: 'nehakakkar',
+    profile_image: 'https://ui-avatars.com/api/?name=Neha+Kakkar&size=400&background=f97316&color=fff',
+    cover_image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=400&fit=crop',
+    bio: 'Playback singer and music composer.',
+    tags: ['Music', 'Singing', 'Bollywood'],
+    previous_brands: ['T-Series', 'Zee Music', 'Sony Music'],
+    reviews: 567,
+    category: 'Music & Dance'
+  },
+  {
+    id: '12',
+    name: 'Riyaz Aly',
+    email: 'contact@riyaz.14',
+    niche: 'Dance, Lip-sync',
+    location: 'Jaipur',
+    followers_count: 27600000,
+    engagement_rate: 9.5,
+    rating: 4.8,
+    featured: true,
+    priority: 10,
+    instagram_handle: 'riyaz.14',
+    tiktok_handle: 'riyaz.14',
+    profile_image: 'https://ui-avatars.com/api/?name=Riyaz+Aly&size=400&background=a855f7&color=fff',
+    cover_image: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=800&h=400&fit=crop',
+    bio: 'Dance and lip-sync content creator.',
+    tags: ['Dance', 'Lip-sync', 'TikTok', 'Instagram Reels'],
+    previous_brands: ['Garnier', 'Myntra', 'Boat'],
+    reviews: 623,
+    category: 'Music & Dance'
+  }
+];
 
 // Simple types to avoid excessive type instantiation
 interface SimpleSubscription {
@@ -17,60 +276,9 @@ interface InfluencerStats {
   subscriptions: SimpleSubscription[];
 }
 
-// Mock data for influencers since the actual table doesn't exist
-const mockInfluencers = [
-  { id: '1', name: 'John Doe', categoryId: 'cat1', locationId: 'loc1' },
-  { id: '2', name: 'Jane Smith', categoryId: 'cat2', locationId: 'loc2' },
-  { id: '3', name: 'Alex Johnson', categoryId: 'cat1', locationId: 'loc3' },
-];
-
-// Mock data for users as influencers
-const mockUserInfluencers = [
-  { 
-    id: '1', 
-    name: 'John Doe', 
-    email: 'john@example.com', 
-    photoURL: null, 
-    bio: 'Marketing expert with 5 years of experience',
-    referralCount: 15,
-    referralEarnings: 15000,
-    followersCount: 5000,
-    niche: 'Digital Marketing',
-    instagramHandle: 'johndoe',
-    facebookHandle: 'johndoefb'
-  },
-  { 
-    id: '2', 
-    name: 'Jane Smith', 
-    email: 'jane@example.com', 
-    photoURL: null, 
-    bio: 'Content creator and social media specialist',
-    referralCount: 25,
-    referralEarnings: 22000,
-    followersCount: 8500,
-    niche: 'Content Creation',
-    instagramHandle: 'janesmith',
-    facebookHandle: null
-  },
-  { 
-    id: '3', 
-    name: 'Alex Johnson', 
-    email: 'alex@example.com', 
-    photoURL: null, 
-    bio: 'SEO expert and business consultant',
-    referralCount: 10,
-    referralEarnings: 9000,
-    followersCount: 3000,
-    niche: 'SEO & Analytics',
-    instagramHandle: null,
-    facebookHandle: 'alexjohnson'
-  }
-];
-
 export const getInfluencersByCategory = async (categoryId: string) => {
   try {
-    // Using mock data instead of supabase query
-    return mockInfluencers.filter(inf => inf.categoryId === categoryId);
+    return realInfluencersData.filter(inf => inf.category === categoryId);
   } catch (error) {
     console.error('Error fetching influencers by category:', error);
     return [];
@@ -79,8 +287,7 @@ export const getInfluencersByCategory = async (categoryId: string) => {
 
 export const getInfluencersByLocation = async (locationId: string) => {
   try {
-    // Using mock data instead of supabase query
-    return mockInfluencers.filter(inf => inf.locationId === locationId);
+    return realInfluencersData.filter(inf => inf.location.includes(locationId));
   } catch (error) {
     console.error('Error fetching influencers by location:', error);
     return [];
@@ -89,8 +296,7 @@ export const getInfluencersByLocation = async (locationId: string) => {
 
 export const getInfluencerById = async (id: string) => {
   try {
-    // Using mock data instead of supabase query
-    return mockInfluencers.find(inf => inf.id === id) || null;
+    return realInfluencersData.find(inf => inf.id === id) || null;
   } catch (error) {
     console.error('Error fetching influencer by ID:', error);
     return null;
@@ -99,8 +305,7 @@ export const getInfluencerById = async (id: string) => {
 
 export const getInfluencers = async () => {
   try {
-    // Using mock data instead of actual database query
-    return [...mockInfluencers];
+    return [...realInfluencersData];
   } catch (error) {
     console.error('Error fetching influencers:', error);
     return [];
@@ -109,8 +314,7 @@ export const getInfluencers = async () => {
 
 export const getAllInfluencers = async (): Promise<User[]> => {
   try {
-    // Transform mock user influencers data to match User type
-    const influencers: User[] = mockUserInfluencers.map(influencer => ({
+    const influencers: User[] = realInfluencersData.map(influencer => ({
       uid: influencer.id,
       id: influencer.id,
       email: influencer.email,
@@ -118,16 +322,16 @@ export const getAllInfluencers = async (): Promise<User[]> => {
       name: influencer.name,
       role: 'Influencer',
       isAdmin: false,
-      photoURL: influencer.photoURL,
+      photoURL: influencer.profile_image,
       createdAt: new Date().toISOString(),
       lastLogin: new Date().toISOString(),
       bio: influencer.bio,
       niche: influencer.niche,
-      followersCount: influencer.followersCount?.toString(),
-      referralCount: influencer.referralCount,
-      referralEarnings: influencer.referralEarnings,
-      instagramHandle: influencer.instagramHandle,
-      facebookHandle: influencer.facebookHandle,
+      followersCount: influencer.followers_count?.toString(),
+      referralCount: Math.floor(Math.random() * 50) + 10,
+      referralEarnings: Math.floor(Math.random() * 100000) + 5000,
+      instagramHandle: influencer.instagram_handle,
+      facebookHandle: null,
       isInfluencer: true
     }));
     

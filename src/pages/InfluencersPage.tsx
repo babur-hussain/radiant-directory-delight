@@ -1,9 +1,9 @@
 
 import React from 'react';
-import InfluencersGrid from '@/components/influencers/InfluencersGrid';
+import ModernInfluencersGrid from '@/components/influencers/ModernInfluencersGrid';
 
 const InfluencersPage = () => {
-  return <InfluencersGrid />;
+  return <ModernInfluencersGrid />;
 };
 
 export default InfluencersPage;
