@@ -313,9 +313,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onSwitch
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
-      <Card className="w-full">
-        <CardHeader>
+    <div className="w-full max-w-2xl mx-auto">
+      <Card className="w-full max-h-[85vh] flex flex-col">
+        <CardHeader className="flex-shrink-0">
           <CardTitle className="text-center">Create Your Account</CardTitle>
           <CardDescription className="text-center">
             Step {step} of 3 - {step === 1 ? 'Choose Role' : step === 2 ? 'Basic Info' : 'Additional Details'}
@@ -330,7 +330,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onSwitch
           </div>
         </CardHeader>
         
-        <CardContent className="max-h-[50vh] overflow-y-auto">
+        <CardContent className="flex-1 overflow-y-auto px-6 py-4">
           {error && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
@@ -338,10 +338,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onSwitch
             </Alert>
           )}
           
-          {renderStep()}
+          <div className="space-y-4">
+            {renderStep()}
+          </div>
         </CardContent>
         
-        <CardFooter className="flex flex-col space-y-4">
+        <CardFooter className="flex-shrink-0 flex flex-col space-y-4 border-t pt-6">
           <div className="flex justify-between w-full">
             {step > 1 && (
               <Button 
