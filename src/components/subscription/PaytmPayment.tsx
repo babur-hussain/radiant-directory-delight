@@ -100,24 +100,23 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
       console.log('Response status:', response.status);
       console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
+      const responseText = await response.text();
+      console.log('Raw response text:', responseText);
+
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('HTTP error response:', errorText);
+        console.error('HTTP error response:', responseText);
         
         let errorMessage = 'Failed to initialize payment';
         try {
-          const errorData = JSON.parse(errorText);
+          const errorData = JSON.parse(responseText);
           errorMessage = errorData.error || errorMessage;
         } catch (e) {
           console.error('Could not parse error response as JSON');
-          errorMessage = `Server error (${response.status}): ${errorText.substring(0, 100)}`;
+          errorMessage = `Server error (${response.status}): ${responseText.substring(0, 100)}`;
         }
         
         throw new Error(errorMessage);
       }
-
-      const responseText = await response.text();
-      console.log('Raw response text:', responseText);
 
       let paymentData;
       try {

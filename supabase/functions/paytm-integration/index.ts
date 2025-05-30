@@ -2,11 +2,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
-// Paytm configuration - using demo credentials for production testing
+// Paytm configuration - using staging credentials for testing
 const PAYTM_MID = Deno.env.get("PAYTM_MID") || "rxazcv89315285244163";
 const PAYTM_KEY = Deno.env.get("PAYTM_KEY") || "bKMfNxPPf_QdZppa";
 const PAYTM_WEBSITE = Deno.env.get("PAYTM_WEBSITE") || "WEBSTAGING";
-const PAYTM_ENVIRONMENT = "PROD"; // Always use PROD for live transactions
+const PAYTM_ENVIRONMENT = "STAGING"; // Use STAGING for testing
 
 // Define CORS headers
 const corsHeaders = {
@@ -50,19 +50,36 @@ function createSuccessResponse(data: any) {
   );
 }
 
-// Generate checksum for Paytm using crypto API
-async function generateChecksum(params: any, key: string): Promise<string> {
+// Generate checksum for Paytm using Web Crypto API
+async function generateChecksum(params: Record<string, any>, key: string): Promise<string> {
   try {
-    const queryString = Object.keys(params)
+    // Sort parameters alphabetically
+    const sortedParams = Object.keys(params)
       .sort()
-      .map(k => `${k}=${params[k]}`)
+      .reduce((result: Record<string, any>, key) => {
+        result[key] = params[key];
+        return result;
+      }, {});
+    
+    // Create query string
+    const paramString = Object.keys(sortedParams)
+      .map(k => `${k}=${sortedParams[k]}`)
       .join('&');
     
+    console.log('Checksum param string:', paramString);
+    
+    // Create data to hash
+    const dataToHash = paramString + key;
     const encoder = new TextEncoder();
-    const data = encoder.encode(queryString + key);
+    const data = encoder.encode(dataToHash);
+    
+    // Generate SHA-256 hash
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    const checksum = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    console.log('Generated checksum:', checksum);
+    return checksum;
   } catch (error) {
     console.error('Error generating checksum:', error);
     throw new Error('Failed to generate payment checksum');
@@ -70,34 +87,49 @@ async function generateChecksum(params: any, key: string): Promise<string> {
 }
 
 // Generate transaction token from Paytm
-async function getTransactionToken(params: any): Promise<string> {
+async function getTransactionToken(orderId: string, amount: string, custId: string, email: string, phone: string, callbackUrl: string): Promise<string> {
   const paytmUrl = PAYTM_ENVIRONMENT === 'PROD' 
-    ? `https://securegw.paytm.in/theia/api/v1/initiateTransaction?mid=${PAYTM_MID}&orderId=${params.ORDER_ID}`
-    : `https://securegw-stage.paytm.in/theia/api/v1/initiateTransaction?mid=${PAYTM_MID}&orderId=${params.ORDER_ID}`;
+    ? `https://securegw.paytm.in/theia/api/v1/initiateTransaction?mid=${PAYTM_MID}&orderId=${orderId}`
+    : `https://securegw-stage.paytm.in/theia/api/v1/initiateTransaction?mid=${PAYTM_MID}&orderId=${orderId}`;
 
-  const body = {
+  const requestBody = {
     body: {
       requestType: "Payment",
       mid: PAYTM_MID,
       websiteName: PAYTM_WEBSITE,
-      orderId: params.ORDER_ID,
-      callbackUrl: params.CALLBACK_URL,
+      orderId: orderId,
+      callbackUrl: callbackUrl,
       txnAmount: {
-        value: params.TXN_AMOUNT,
+        value: amount,
         currency: "INR",
       },
       userInfo: {
-        custId: params.CUST_ID,
-        email: params.EMAIL,
-        mobile: params.MOBILE_NO,
+        custId: custId,
+        email: email,
+        mobile: phone,
       },
     },
   };
 
   try {
-    const checksum = await generateChecksum(body, PAYTM_KEY);
+    // Generate checksum for the request body
+    const checksumParams = {
+      MID: PAYTM_MID,
+      ORDER_ID: orderId,
+      CUST_ID: custId,
+      TXN_AMOUNT: amount,
+      CHANNEL_ID: "WEB",
+      WEBSITE: PAYTM_WEBSITE,
+      INDUSTRY_TYPE_ID: "Retail",
+      EMAIL: email,
+      MOBILE_NO: phone,
+      CALLBACK_URL: callbackUrl
+    };
+    
+    const checksum = await generateChecksum(checksumParams, PAYTM_KEY);
     
     console.log(`Making request to Paytm URL: ${paytmUrl}`);
+    console.log('Request body:', JSON.stringify(requestBody, null, 2));
     
     const response = await fetch(paytmUrl, {
       method: 'POST',
@@ -106,10 +138,11 @@ async function getTransactionToken(params: any): Promise<string> {
         'X-MID': PAYTM_MID,
         'X-CHECKSUM': checksum,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
+      console.error(`Paytm API request failed with status: ${response.status}`);
       throw new Error(`Paytm API request failed with status: ${response.status}`);
     }
 
@@ -124,11 +157,15 @@ async function getTransactionToken(params: any): Promise<string> {
       throw new Error('Invalid response format from Paytm API');
     }
     
+    // Check if the response is successful
     if (result.body?.resultInfo?.resultStatus === 'S') {
+      console.log('Transaction token obtained successfully:', result.body.txnToken);
       return result.body.txnToken;
     } else {
       const errorMsg = result.body?.resultInfo?.resultMsg || 'Unknown error from Paytm';
-      throw new Error(`Paytm API error: ${errorMsg}`);
+      const errorCode = result.body?.resultInfo?.resultCode || 'UNKNOWN';
+      console.error(`Paytm API error - Code: ${errorCode}, Message: ${errorMsg}`);
+      throw new Error(`Paytm API error: ${errorMsg} (Code: ${errorCode})`);
     }
   } catch (error) {
     console.error('Error in getTransactionToken:', error);
@@ -214,28 +251,21 @@ serve(async (req) => {
     console.log(`Generated order ID: ${orderId}`);
     
     // Get the origin for callback URL
-    const origin = req.headers.get("origin") || "http://localhost:3000";
-    
-    // Prepare Paytm parameters for transaction token
-    const paytmParams = {
-      MID: PAYTM_MID,
-      WEBSITE: PAYTM_WEBSITE,
-      INDUSTRY_TYPE_ID: "Retail",
-      CHANNEL_ID: "WEB",
-      ORDER_ID: orderId,
-      CUST_ID: customerData.custId,
-      TXN_AMOUNT: initialPaymentAmount.toString(),
-      CALLBACK_URL: `${origin}/payment-success`,
-      EMAIL: customerData.email,
-      MOBILE_NO: customerData.phone || "9999999999",
-    };
-
-    console.log("Paytm parameters:", paytmParams);
+    const origin = req.headers.get("origin") || "https://preview--radiant-directory-delight.lovable.app";
+    const callbackUrl = `${origin}/payment-success`;
+    console.log(`Callback URL: ${callbackUrl}`);
 
     // Get transaction token from Paytm
     let txnToken;
     try {
-      txnToken = await getTransactionToken(paytmParams);
+      txnToken = await getTransactionToken(
+        orderId,
+        initialPaymentAmount.toString(),
+        customerData.custId,
+        customerData.email,
+        customerData.phone || "9999999999",
+        callbackUrl
+      );
       console.log('Transaction token obtained successfully');
     } catch (error) {
       console.error('Failed to get transaction token:', error);
@@ -252,7 +282,7 @@ serve(async (req) => {
       website: PAYTM_WEBSITE,
       industryType: "Retail",
       channelId: "WEB",
-      callbackUrl: `${origin}/payment-success`,
+      callbackUrl: callbackUrl,
       customerInfo: customerData,
       packageInfo: packageData,
       referralId: referralId,
