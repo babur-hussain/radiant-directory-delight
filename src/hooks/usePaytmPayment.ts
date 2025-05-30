@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { validatePaymentRequest, validateCustomerData } from '@/utils/payment/paymentValidator';
-import { loadPaymentScript, getPaymentGatewayKey, getPaytmEnvironment } from '@/utils/payment/paymentScriptLoader';
+import { loadPaymentScript, isPaymentGatewayAvailable } from '@/utils/payment/paymentScriptLoader';
 import { createPaymentHandlers } from '@/utils/payment/paymentEventHandlers';
 
 export const usePaytmPayment = () => {
@@ -56,10 +56,28 @@ export const usePaytmPayment = () => {
       const totalAmount = (packageData.price || 0) + (packageData.setupFee || 0);
       console.log(`Calculated payment amount: Base price: ${packageData.price} + Setup fee: ${packageData.setupFee} = Total: ${totalAmount}`);
       
-      // Generate order ID
-      const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      // Call backend to get payment configuration
+      const response = await fetch('/functions/v1/paytm-integration', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          packageData,
+          customerData,
+          userId: user!.uid,
+          enableAutoPay
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to initialize payment');
+      }
+
+      const paymentConfig = await response.json();
       
-      // Handle payment flow
+      // Handle payment flow with real Paytm integration
       return new Promise((resolve, reject) => {
         try {
           const { handleSuccess, handleDismiss, handleError } = createPaymentHandlers(
@@ -77,22 +95,44 @@ export const usePaytmPayment = () => {
             reject
           );
           
-          // For demo purposes, simulate payment processing
-          // In production, this would integrate with actual Paytm API
-          console.log("Initiating payment with order ID:", orderId);
-          console.log("Payment amount:", totalAmount);
+          // Configure Paytm checkout
+          const config = {
+            "root": "",
+            "flow": "DEFAULT",
+            "data": {
+              "orderId": paymentConfig.orderId,
+              "token": paymentConfig.txnToken,
+              "tokenType": "TXN_TOKEN",
+              "amount": paymentConfig.amount.toString()
+            },
+            "handler": {
+              "notifyMerchant": function(eventName: string, data: any) {
+                console.log("Paytm event:", eventName, data);
+                
+                if (eventName === 'APP_CLOSED') {
+                  handleDismiss();
+                }
+              }
+            }
+          };
+
+          // Initialize and invoke Paytm payment
+          if (isPaymentGatewayAvailable() && (window as any).Paytm?.CheckoutJS) {
+            (window as any).Paytm.CheckoutJS.init(config).then(() => {
+              return (window as any).Paytm.CheckoutJS.invoke();
+            }).then((paymentResponse: any) => {
+              if (paymentResponse.STATUS === 'TXN_SUCCESS') {
+                handleSuccess(paymentResponse);
+              } else {
+                handleError(paymentResponse);
+              }
+            }).catch(handleError);
+          } else {
+            throw new Error('Paytm payment gateway not available');
+          }
           
           // Store reference for cleanup
-          paytmInstanceRef.current = { orderId, amount: totalAmount };
-          
-          // Note: This is a demo implementation
-          // In production, you would integrate with actual Paytm payment gateway
-          setTimeout(() => {
-            toast({
-              title: "Demo Mode",
-              description: "This is a demo payment gateway. In production, integrate with actual Paytm API.",
-            });
-          }, 1000);
+          paytmInstanceRef.current = { orderId: paymentConfig.orderId, amount: totalAmount };
           
         } catch (err) {
           console.error('Payment initialization error:', err);

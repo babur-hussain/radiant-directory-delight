@@ -3,11 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
-import { generateOrderId } from '@/utils/id-generator';
 import { Loader2, AlertCircle, CreditCard } from 'lucide-react';
-import { getPaymentGatewayKey } from '@/utils/payment/paymentScriptLoader';
 import { toast } from 'sonner';
-import { loadPaymentScript } from '@/utils/payment/paymentScriptLoader';
+import { loadPaymentScript, isPaymentGatewayAvailable } from '@/utils/payment/paymentScriptLoader';
 
 declare global {
   interface Window {
@@ -33,7 +31,6 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const [paymentInitiated, setPaymentInitiated] = useState(false);
 
   useEffect(() => {
     const loadScript = async () => {
@@ -51,9 +48,9 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
       setIsLoading(false);
     };
     
-    if (!window.Paytm && !scriptLoaded) {
+    if (!isPaymentGatewayAvailable() && !scriptLoaded) {
       loadScript();
-    } else if (window.Paytm) {
+    } else if (isPaymentGatewayAvailable()) {
       setScriptLoaded(true);
     }
   }, [retryCount]);
@@ -65,14 +62,13 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
       return;
     }
 
-    if (!scriptLoaded) {
+    if (!scriptLoaded || !isPaymentGatewayAvailable()) {
       setPaymentError('Payment gateway not ready. Please try again.');
       return;
     }
 
     setIsLoading(true);
     setPaymentError(null);
-    setPaymentInitiated(true);
 
     try {
       // Calculate total amount including setup fee
@@ -100,16 +96,12 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to initialize payment');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to initialize payment');
       }
 
       const paymentData = await response.json();
       console.log('Payment data received:', paymentData);
-
-      // Check if Paytm is loaded
-      if (!window.Paytm || !window.Paytm.CheckoutJS) {
-        throw new Error('Paytm payment gateway not loaded');
-      }
 
       // Configure Paytm payment
       const config = {
@@ -129,51 +121,40 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
               setPaymentError('Payment was cancelled.');
               onFailure({ message: 'Payment cancelled by user' });
               setIsLoading(false);
-              setPaymentInitiated(false);
             }
           }
         }
       };
 
       // Initialize Paytm payment
-      if (window.Paytm.CheckoutJS.init) {
-        window.Paytm.CheckoutJS.init(config).then(function() {
-          console.log('Paytm CheckoutJS initialized');
+      if (window.Paytm?.CheckoutJS?.init) {
+        await window.Paytm.CheckoutJS.init(config);
+        console.log('Paytm CheckoutJS initialized');
+        
+        // Invoke payment
+        const paymentResponse = await window.Paytm.CheckoutJS.invoke();
+        console.log('Payment response:', paymentResponse);
+        
+        if (paymentResponse && paymentResponse.STATUS === 'TXN_SUCCESS') {
+          // Payment successful
+          const successResponse = {
+            ...paymentResponse,
+            package: selectedPackage,
+            referralId: referralId,
+            setupFee: selectedPackage.setupFee || 0,
+            totalAmount: amount,
+            paymentConfirmed: new Date().toISOString(),
+            paymentVerified: true,
+          };
           
-          // Invoke payment
-          window.Paytm.CheckoutJS.invoke().then(function(response: any) {
-            console.log('Payment response:', response);
-            
-            if (response && response.STATUS === 'TXN_SUCCESS') {
-              // Payment successful
-              const successResponse = {
-                ...response,
-                package: selectedPackage,
-                referralId: referralId,
-                setupFee: selectedPackage.setupFee || 0,
-                totalAmount: amount,
-                paymentConfirmed: new Date().toISOString(),
-                paymentVerified: true,
-              };
-              
-              toast.success('Payment completed successfully!');
-              onSuccess(successResponse);
-            } else {
-              // Payment failed
-              const errorMessage = response?.RESPMSG || 'Payment failed';
-              setPaymentError(errorMessage);
-              onFailure(response || { message: 'Payment failed' });
-            }
-          }).catch(function(error: any) {
-            console.error('Payment invoke error:', error);
-            setPaymentError('Payment processing failed. Please try again.');
-            onFailure(error);
-          });
-        }).catch(function(error: any) {
-          console.error('Paytm init error:', error);
-          setPaymentError('Failed to initialize payment gateway.');
-          onFailure(error);
-        });
+          toast.success('Payment completed successfully!');
+          onSuccess(successResponse);
+        } else {
+          // Payment failed
+          const errorMessage = paymentResponse?.RESPMSG || 'Payment failed';
+          setPaymentError(errorMessage);
+          onFailure(paymentResponse || { message: 'Payment failed' });
+        }
       } else {
         throw new Error('Paytm CheckoutJS not properly loaded');
       }
@@ -185,14 +166,12 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
       onFailure(error);
     } finally {
       setIsLoading(false);
-      setPaymentInitiated(false);
     }
   };
 
   const retryPayment = () => {
     setRetryCount(prev => prev + 1);
     setPaymentError(null);
-    setPaymentInitiated(false);
   };
 
   return (
@@ -216,7 +195,7 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
         </div>
       )}
       
-      {isLoading && paymentInitiated && (
+      {isLoading && (
         <div className="flex flex-col items-center justify-center p-6">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           <p className="mt-2 text-sm text-muted-foreground">
@@ -231,7 +210,7 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
         disabled={isLoading || !scriptLoaded}
         variant={paymentError ? "outline" : "default"}
       >
-        {isLoading && paymentInitiated ? (
+        {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Processing...
@@ -248,7 +227,7 @@ const PaytmPayment: React.FC<PaytmPaymentProps> = ({
       
       {!scriptLoaded && !isLoading && (
         <p className="text-xs text-muted-foreground mt-2">
-          Having trouble? Try refreshing the page or check your internet connection.
+          Loading payment gateway...
         </p>
       )}
     </div>

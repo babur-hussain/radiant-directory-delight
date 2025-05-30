@@ -4,9 +4,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 // Paytm configuration - replace with your actual credentials
 const PAYTM_MID = Deno.env.get("PAYTM_MID") || "rxazcv89315285244163";
-const PAYTM_KEY = Deno.env.get("PAYTM_KEY") || "";
+const PAYTM_KEY = Deno.env.get("PAYTM_KEY") || "bKMfNxPPf_QdZppa";
 const PAYTM_WEBSITE = Deno.env.get("PAYTM_WEBSITE") || "WEBSTAGING";
-const PAYTM_ENVIRONMENT = Deno.env.get("PAYTM_ENVIRONMENT") || "TEST"; // TEST or PROD
+const PAYTM_ENVIRONMENT = Deno.env.get("PAYTM_ENVIRONMENT") || "PROD"; // PROD for production
 
 // Define CORS headers
 const corsHeaders = {
@@ -20,15 +20,8 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Generate a consistent transaction ID
-function generateTransactionId(): string {
-  return `TXN_${Date.now().toString(36)}${Math.random().toString(36).substring(2, 5)}`;
-}
-
-// Generate checksum for Paytm
+// Generate checksum for Paytm using crypto API
 async function generateChecksum(params: any, key: string): Promise<string> {
-  // This is a simplified checksum generation
-  // In production, use Paytm's official checksum library
   const queryString = Object.keys(params)
     .sort()
     .map(k => `${k}=${params[k]}`)
@@ -39,6 +32,57 @@ async function generateChecksum(params: any, key: string): Promise<string> {
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Generate transaction token from Paytm
+async function getTransactionToken(params: any): Promise<string> {
+  const paytmUrl = PAYTM_ENVIRONMENT === 'PROD' 
+    ? 'https://securegw.paytm.in/theia/api/v1/initiateTransaction?mid=' + PAYTM_MID + '&orderId=' + params.ORDER_ID
+    : 'https://securegw-stage.paytm.in/theia/api/v1/initiateTransaction?mid=' + PAYTM_MID + '&orderId=' + params.ORDER_ID;
+
+  const body = {
+    body: {
+      requestType: "Payment",
+      mid: PAYTM_MID,
+      websiteName: PAYTM_WEBSITE,
+      orderId: params.ORDER_ID,
+      callbackUrl: params.CALLBACK_URL,
+      txnAmount: {
+        value: params.TXN_AMOUNT,
+        currency: "INR",
+      },
+      userInfo: {
+        custId: params.CUST_ID,
+        email: params.EMAIL,
+        mobile: params.MOBILE_NO,
+      },
+    },
+  };
+
+  const checksum = await generateChecksum(body, PAYTM_KEY);
+  
+  try {
+    const response = await fetch(paytmUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-MID': PAYTM_MID,
+        'X-CHECKSUM': checksum,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const result = await response.json();
+    
+    if (result.body.resultInfo.resultStatus === 'S') {
+      return result.body.txnToken;
+    } else {
+      throw new Error('Failed to get transaction token: ' + result.body.resultInfo.resultMsg);
+    }
+  } catch (error) {
+    console.error('Error getting transaction token:', error);
+    throw error;
+  }
 }
 
 // Calculate initial payment including setup fee and advance payments
@@ -117,11 +161,10 @@ serve(async (req) => {
     const initialPaymentAmount = calculateInitialPayment(packageData);
     console.log(`Calculated initial payment amount: ${initialPaymentAmount}`);
     
-    // Generate order ID and transaction token
+    // Generate order ID
     const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-    const txnToken = generateTransactionId();
     
-    // Prepare Paytm parameters
+    // Prepare Paytm parameters for transaction token
     const paytmParams = {
       MID: PAYTM_MID,
       WEBSITE: PAYTM_WEBSITE,
@@ -135,25 +178,33 @@ serve(async (req) => {
       MOBILE_NO: customerData.phone,
     };
 
-    // Generate checksum if key is available
-    let checksumHash = "";
-    if (PAYTM_KEY) {
-      checksumHash = await generateChecksum(paytmParams, PAYTM_KEY);
+    // Get transaction token from Paytm
+    let txnToken;
+    try {
+      txnToken = await getTransactionToken(paytmParams);
+      console.log('Transaction token obtained successfully');
+    } catch (error) {
+      console.error('Failed to get transaction token:', error);
+      return new Response(
+        JSON.stringify({ error: "Failed to initialize payment with Paytm" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
-    // For production, you would call Paytm's token generation API here
-    // For now, we'll return the necessary data for frontend integration
+    // Return the payment configuration for frontend
     const response = {
       mid: PAYTM_MID,
       orderId: orderId,
-      txnToken: txnToken, // In production, get this from Paytm's token API
+      txnToken: txnToken,
       amount: initialPaymentAmount,
       currency: "INR",
       website: PAYTM_WEBSITE,
       industryType: "Retail",
       channelId: "WEB",
       callbackUrl: `${req.headers.get("origin")}/payment-success`,
-      checksumHash: checksumHash,
       customerInfo: customerData,
       packageInfo: packageData,
       referralId: referralId,

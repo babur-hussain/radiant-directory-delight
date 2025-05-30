@@ -1,8 +1,9 @@
+
 import { toast as toastFunction } from '@/hooks/use-toast';
 
 // Paytm configuration - replace with your actual credentials
 const PAYTM_MID = 'rxazcv89315285244163'; // Replace with your actual merchant ID
-const PAYTM_ENVIRONMENT = 'TEST' as 'TEST' | 'PROD'; // Change to 'PROD' for production
+const PAYTM_ENVIRONMENT = 'PROD' as 'TEST' | 'PROD'; // Set to PROD for production
 
 /**
  * Load the Paytm payment script
