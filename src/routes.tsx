@@ -1,3 +1,4 @@
+
 import React, { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -108,6 +109,9 @@ const AdminDashboardSectionsPage = lazy(() => import("@/pages/AdminDashboardSect
 const AdminDashboardServicePage = lazy(() => import("@/pages/AdminDashboardServicePage"));
 const AdminLoginPage = lazy(() => import("@/pages/AdminLoginPage"));
 
+// Import PaymentSuccessPage
+const PaymentSuccessPage = lazy(() => import("@/pages/PaymentSuccessPage"));
+
 export const router = createBrowserRouter([
   {
     element: <AppShell />,
@@ -177,6 +181,12 @@ export const router = createBrowserRouter([
           { path: "auth", element: <AuthPage /> },
           { path: "auth/callback", element: <AuthCallbackPage /> },
           { path: "auth/reset-password", element: <PasswordResetPage /> },
+          
+          // Add PaymentSuccessPage route
+          { 
+            path: "payment-success", 
+            element: <Suspense fallback={<LoadingComponent />}><PaymentSuccessPage /></Suspense>
+          },
           
           {
             path: "profile",
