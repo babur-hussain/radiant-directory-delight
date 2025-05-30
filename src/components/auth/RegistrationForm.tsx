@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,6 +52,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onSwitch
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const scrollableRef = useRef<HTMLDivElement>(null);
   
   const [formData, setFormData] = useState<FormData>({
     role: 'User' as UserRole,
@@ -72,6 +72,68 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onSwitch
       setFormData(prev => ({ ...prev, referralCode: urlReferralCode }));
     }
   }, []);
+
+  // Add keyboard navigation for scrolling
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!scrollableRef.current) return;
+      
+      const scrollAmount = 50;
+      
+      switch (event.key) {
+        case 'ArrowDown':
+          event.preventDefault();
+          scrollableRef.current.scrollBy({
+            top: scrollAmount,
+            behavior: 'smooth'
+          });
+          break;
+        case 'ArrowUp':
+          event.preventDefault();
+          scrollableRef.current.scrollBy({
+            top: -scrollAmount,
+            behavior: 'smooth'
+          });
+          break;
+        case 'PageDown':
+          event.preventDefault();
+          scrollableRef.current.scrollBy({
+            top: scrollableRef.current.clientHeight,
+            behavior: 'smooth'
+          });
+          break;
+        case 'PageUp':
+          event.preventDefault();
+          scrollableRef.current.scrollBy({
+            top: -scrollableRef.current.clientHeight,
+            behavior: 'smooth'
+          });
+          break;
+      }
+    };
+
+    // Add focus to the scrollable area for keyboard events
+    if (scrollableRef.current) {
+      scrollableRef.current.addEventListener('keydown', handleKeyDown);
+      scrollableRef.current.setAttribute('tabindex', '0');
+    }
+
+    return () => {
+      if (scrollableRef.current) {
+        scrollableRef.current.removeEventListener('keydown', handleKeyDown);
+      }
+    };
+  }, []);
+
+  // Scroll to top when step changes
+  useEffect(() => {
+    if (scrollableRef.current) {
+      scrollableRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  }, [step]);
 
   const updateFormData = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -313,9 +375,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onSwitch
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      <Card className="w-full max-h-[90vh] flex flex-col">
-        <CardHeader className="flex-shrink-0 px-6 pt-6 pb-4">
+    <div className="w-full max-w-2xl mx-auto h-[90vh]">
+      <Card className="w-full h-full flex flex-col bg-white shadow-lg">
+        <CardHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b bg-gray-50">
           <CardTitle className="text-center">Create Your Account</CardTitle>
           <CardDescription className="text-center">
             Step {step} of 3 - {step === 1 ? 'Choose Role' : step === 2 ? 'Basic Info' : 'Additional Details'}
@@ -330,7 +392,15 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onSwitch
           </div>
         </CardHeader>
         
-        <CardContent className="flex-1 overflow-y-auto px-6 py-0">
+        <CardContent 
+          ref={scrollableRef}
+          className="flex-1 overflow-y-auto px-6 py-4 focus:outline-none scroll-smooth"
+          style={{ 
+            scrollBehavior: 'smooth',
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#CBD5E0 #F7FAFC'
+          }}
+        >
           {error && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
@@ -338,12 +408,15 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onSwitch
             </Alert>
           )}
           
-          <div className="space-y-4 pb-4">
+          <div className="space-y-4 pb-6">
             {renderStep()}
           </div>
+          
+          {/* Add some extra space at the bottom for better scrolling */}
+          <div className="h-8"></div>
         </CardContent>
         
-        <CardFooter className="flex-shrink-0 flex flex-col space-y-4 border-t pt-4 px-6 pb-6">
+        <CardFooter className="flex-shrink-0 flex flex-col space-y-4 border-t pt-4 px-6 pb-6 bg-gray-50">
           <div className="flex justify-between w-full">
             {step > 1 && (
               <Button 
@@ -412,6 +485,11 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onSwitch
             >
               Sign In
             </button>
+          </div>
+          
+          {/* Keyboard navigation hint */}
+          <div className="text-center text-xs text-gray-400">
+            Use ↑↓ arrow keys or Page Up/Down to scroll
           </div>
         </CardFooter>
       </Card>
