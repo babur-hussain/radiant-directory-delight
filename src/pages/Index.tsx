@@ -19,12 +19,9 @@ import PhotoCollage from '@/components/PhotoCollage';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Check, BookOpen, Phone, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
 const Index = () => {
   const navigate = useNavigate();
-  
-  return (
-    <div className="index-page overflow-hidden">
+  return <div className="index-page overflow-hidden">
       <HeroSection />
       
       <div className="py-4 sm:py-6 md:py-8">
@@ -46,11 +43,7 @@ const Index = () => {
             <p className="text-lg text-gray-600 mb-8">
               Find, connect, and collaborate with influencers based on location and category.
             </p>
-            <Button 
-              onClick={() => navigate('/businesses')}
-              size="lg"
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-            >
+            <Button onClick={() => navigate('/businesses')} size="lg" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
               Register My Business <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
@@ -97,11 +90,7 @@ const Index = () => {
             <p className="text-lg text-gray-600 mb-8">
               Join for FREE, showcase your social power, and unlock earning opportunities from brands near you.
             </p>
-            <Button 
-              onClick={() => navigate('/influencers')}
-              size="lg"
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-            >
+            <Button onClick={() => navigate('/influencers')} size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
               Create My Influencer Profile <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
@@ -172,11 +161,7 @@ const Index = () => {
           </div>
           
           <div className="mt-10 text-center">
-            <div className="inline-block bg-amber-50 border border-amber-200 rounded-lg p-4 max-w-xl">
-              <p className="text-amber-700">
-                <span className="font-bold">🎁 Special Offer:</span> Post a reel about GROW BHARAT VYAPAAR and get the ₹799 Premium plan FREE for 1 month!
-              </p>
-            </div>
+            
           </div>
         </div>
       </section>
@@ -249,12 +234,7 @@ const Index = () => {
           <p className="text-lg mb-6 max-w-2xl mx-auto">
             Refer a business or influencer to our platform and earn 20% of their plan instantly!
           </p>
-          <Button 
-            variant="outline"
-            size="lg"
-            className="bg-white text-pink-600 hover:bg-white/90"
-            onClick={() => navigate('/referral')}
-          >
+          <Button variant="outline" size="lg" className="bg-white text-pink-600 hover:bg-white/90" onClick={() => navigate('/referral')}>
             Join Referral Program
           </Button>
         </div>
@@ -262,8 +242,6 @@ const Index = () => {
       
       <PhotoCollage />
       <CallToAction />
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
