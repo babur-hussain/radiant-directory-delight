@@ -26,18 +26,20 @@ const InfluencerFormDialog: React.FC<InfluencerFormDialogProps> = ({
 }) => {
   return (
     <Dialog open={show} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle className="text-xl font-semibold">
             {influencer ? "Edit Influencer" : "Add New Influencer"}
           </DialogTitle>
         </DialogHeader>
         
-        <InfluencerForm
-          influencer={influencer}
-          onSubmit={onSubmit}
-          isSubmitting={isSubmitting}
-        />
+        <div className="flex-1 overflow-y-auto">
+          <InfluencerForm
+            influencer={influencer}
+            onSubmit={onSubmit}
+            isSubmitting={isSubmitting}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );
