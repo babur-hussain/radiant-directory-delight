@@ -330,7 +330,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onSwitch
           </div>
         </CardHeader>
         
-        <CardContent className="flex-1 overflow-y-auto px-6 py-4">
+        <CardContent className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
           {error && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
