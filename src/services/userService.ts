@@ -44,140 +44,65 @@ export const getAllUsers = async (): Promise<User[]> => {
     subscriptionId: userData.subscription_id,
     subscriptionStatus: userData.subscription_status,
     subscriptionPackage: userData.subscription_package,
-    customDashboardSections: userData.custom_dashboard_sections
+    customDashboardSections: userData.custom_dashboard_sections,
+    referralId: userData.referral_id,
+    referralCount: userData.referral_count || 0,
+    referralEarnings: userData.referral_earnings || 0,
+    address: userData.address ? {
+      street: userData.address.street,
+      city: userData.address.city,
+      state: userData.address.state,
+      country: userData.address.country,
+      zipCode: userData.address.zipCode
+    } : null
   })) as User[];
 };
 
-// Get user by ID
-export const getUserById = async (userId: string): Promise<User | null> => {
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', userId)
-    .single();
-  
-  if (error) {
-    console.error(`Error fetching user by ID ${userId}:`, error);
-    throw error;
-  }
-  
-  return data ? {
-    uid: data.id,
-    id: data.id,
-    email: data.email,
-    displayName: data.name,
-    name: data.name,
-    photoURL: data.photo_url,
-    isAdmin: data.is_admin || false,
-    role: data.role as UserRole,
-    employeeCode: data.employee_code,
-    createdAt: data.created_at,
-    lastLogin: data.last_login,
-    phone: data.phone,
-    instagramHandle: data.instagram_handle,
-    facebookHandle: data.facebook_handle,
-    verified: data.verified,
-    city: data.city,
-    country: data.country,
-    niche: data.niche,
-    followersCount: data.followers_count,
-    bio: data.bio,
-    businessName: data.business_name,
-    ownerName: data.owner_name,
-    businessCategory: data.business_category,
-    website: data.website,
-    gstNumber: data.gst_number,
-    subscription: data.subscription,
-    subscriptionId: data.subscription_id,
-    subscriptionStatus: data.subscription_status,
-    subscriptionPackage: data.subscription_package,
-    customDashboardSections: data.custom_dashboard_sections
-  } as User : null;
-};
-
 // Update user
-export const updateUser = async (userId: string, userData: Partial<User>): Promise<User> => {
-  // Convert user data to snake_case format
-  const formattedData: any = {
-    name: userData.name || userData.displayName,
-    email: userData.email,
-    photo_url: userData.photoURL,
-    role: userData.role,
-    is_admin: userData.isAdmin,
-    employee_code: userData.employeeCode,
-    phone: userData.phone,
-    instagram_handle: userData.instagramHandle,
-    facebook_handle: userData.facebookHandle,
-    verified: userData.verified,
-    city: userData.city,
-    country: userData.country,
-    niche: userData.niche,
-    followers_count: userData.followersCount,
-    bio: userData.bio,
-    business_name: userData.businessName,
-    owner_name: userData.ownerName,
-    business_category: userData.businessCategory,
-    website: userData.website,
-    gst_number: userData.gstNumber,
-    subscription_id: userData.subscriptionId,
-    subscription_status: userData.subscriptionStatus,
-    subscription_package: userData.subscriptionPackage,
-    custom_dashboard_sections: userData.customDashboardSections,
-    updated_at: new Date().toISOString()
-  };
-  
-  // Handle subscription object if it exists
-  if (userData.subscription) {
-    if (isUserSubscription(userData.subscription)) {
-      // Convert object to string for storage
-      formattedData.subscription = JSON.stringify(userData.subscription);
-    } else {
-      formattedData.subscription = userData.subscription;
-    }
-  }
-  
+export const updateUser = async (uid: string, updates: Partial<User>): Promise<User | null> => {
   const { data, error } = await supabase
     .from('users')
-    .update(formattedData)
-    .eq('id', userId)
+    .update({
+      name: updates.name,
+      role: updates.role,
+      is_admin: updates.isAdmin,
+      phone: updates.phone,
+      instagram_handle: updates.instagramHandle,
+      facebook_handle: updates.facebookHandle,
+      verified: updates.verified,
+      city: updates.city,
+      country: updates.country,
+      niche: updates.niche,
+      followers_count: updates.followersCount,
+      bio: updates.bio,
+      business_name: updates.businessName,
+      owner_name: updates.ownerName,
+      business_category: updates.businessCategory,
+      website: updates.website,
+      gst_number: updates.gstNumber,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', uid)
     .select()
     .single();
   
   if (error) {
-    console.error(`Error updating user with ID ${userId}:`, error);
+    console.error('Error updating user:', error);
     throw error;
   }
   
-  return {
-    uid: data.id,
-    id: data.id,
-    email: data.email,
-    displayName: data.name,
-    name: data.name,
-    photoURL: data.photo_url,
-    isAdmin: data.is_admin || false,
-    role: data.role as UserRole,
-    employeeCode: data.employee_code,
-    createdAt: data.created_at,
-    lastLogin: data.last_login,
-    phone: data.phone,
-    instagramHandle: data.instagram_handle,
-    facebookHandle: data.facebook_handle,
-    verified: data.verified,
-    city: data.city,
-    country: data.country,
-    niche: data.niche,
-    followersCount: data.followers_count,
-    bio: data.bio,
-    businessName: data.business_name,
-    ownerName: data.owner_name,
-    businessCategory: data.business_category,
-    website: data.website,
-    gstNumber: data.gst_number,
-    subscription: data.subscription,
-    subscriptionId: data.subscription_id,
-    subscriptionStatus: data.subscription_status,
-    subscriptionPackage: data.subscription_package,
-    customDashboardSections: data.custom_dashboard_sections
-  } as User;
+  return data;
+};
+
+// Delete user
+export const deleteUser = async (uid: string): Promise<void> => {
+  const { error } = await supabase
+    .from('users')
+    .delete()
+    .eq('id', uid);
+  
+  if (error) {
+    console.error('Error deleting user:', error);
+    throw error;
+  }
 };

@@ -66,7 +66,7 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
   const createTestUsersIfEmpty = async () => {
     try {
       setIsLoading(true);
-      await generateTestUsers(5, 'User');
+      await generateTestUsers(5, 'User' as UserRole);
       await generateTestUsers(5, 'Business');
       await generateTestUsers(5, 'Influencer');
       await generateTestUsers(1, 'Admin');
@@ -393,7 +393,7 @@ export const UserPermissionsTab: React.FC<UserPermissionsTabProps> = ({
                         <SelectItem value="Business">Business</SelectItem>
                         <SelectItem value="Influencer">Influencer</SelectItem>
                         <SelectItem value="Admin">Admin</SelectItem>
-                        <SelectItem value="staff">Staff</SelectItem>
+                        <SelectItem value="Staff">Staff</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
