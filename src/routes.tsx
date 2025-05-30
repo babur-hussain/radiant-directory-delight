@@ -246,100 +246,6 @@ export const router = createBrowserRouter([
             </ProtectedRoute>
           },
           
-          {
-            path: "admin",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Navigate to="/admin/dashboard" replace />
-            </ProtectedRoute>
-          },
-          {
-            path: "admin/login",
-            element: <Suspense fallback={<LoadingComponent />}><AdminLoginPage /></Suspense>
-          },
-          {
-            path: "admin/dashboard",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminDashboardPage /></Suspense>
-            </ProtectedRoute>
-          },
-          {
-            path: "admin/users",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminUsersPage /></Suspense>
-            </ProtectedRoute>
-          },
-          {
-            path: "admin/businesses",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminBusinessListingsPage /></Suspense>
-            </ProtectedRoute>
-          },
-          {
-            path: "admin/influencers",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminInfluencerListingsPage /></Suspense>
-            </ProtectedRoute>
-          },
-          {
-            path: "admin/subscriptions",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminSubscriptionsPage /></Suspense>
-            </ProtectedRoute>
-          },
-          {
-            path: "admin/upload",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminUploadPage /></Suspense>
-            </ProtectedRoute>
-          },
-          {
-            path: "admin/migration",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminMigrationPage /></Suspense>
-            </ProtectedRoute>
-          },
-          {
-            path: "admin/database",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminDatabasePage /></Suspense>
-            </ProtectedRoute>
-          },
-          {
-            path: "admin/settings",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminSettingsPage /></Suspense>
-            </ProtectedRoute>
-          },
-          {
-            path: "admin/analytics",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminAnalyticsPage /></Suspense>
-            </ProtectedRoute>
-          },
-          {
-            path: "admin/seed",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminSeedDataPage /></Suspense>
-            </ProtectedRoute>
-          },
-          {
-            path: "admin/dashboard-manager",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminDashboardManagerPage /></Suspense>
-            </ProtectedRoute>
-          },
-          {
-            path: "admin/dashboard-sections",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminDashboardSectionsPage /></Suspense>
-            </ProtectedRoute>
-          },
-          {
-            path: "admin/dashboard-services",
-            element: <ProtectedRoute roles={["Admin"]}>
-              <Suspense fallback={<LoadingComponent />}><AdminDashboardServicePage /></Suspense>
-            </ProtectedRoute>
-          },
           // Add explicit referral route
           { path: "register", element: <ReferralRedirect /> },
           { path: "ref/:referralId", element: <ReferralRedirect /> },
@@ -350,6 +256,101 @@ export const router = createBrowserRouter([
             element: <NotFound />
           }
         ],
+      },
+      // Admin routes - these should be outside the main Layout
+      {
+        path: "admin",
+        element: <ProtectedRoute roles={["Admin"]}>
+          <Navigate to="/admin/dashboard" replace />
+        </ProtectedRoute>
+      },
+      {
+        path: "admin/login",
+        element: <Suspense fallback={<LoadingComponent />}><AdminLoginPage /></Suspense>
+      },
+      {
+        path: "admin/dashboard",
+        element: <ProtectedRoute roles={["Admin"]}>
+          <Suspense fallback={<LoadingComponent />}><AdminDashboardPage /></Suspense>
+        </ProtectedRoute>
+      },
+      {
+        path: "admin/users",
+        element: <ProtectedRoute roles={["Admin"]}>
+          <Suspense fallback={<LoadingComponent />}><AdminUsersPage /></Suspense>
+        </ProtectedRoute>
+      },
+      {
+        path: "admin/businesses",
+        element: <ProtectedRoute roles={["Admin"]}>
+          <Suspense fallback={<LoadingComponent />}><AdminBusinessListingsPage /></Suspense>
+        </ProtectedRoute>
+      },
+      {
+        path: "admin/influencers",
+        element: <ProtectedRoute roles={["Admin"]}>
+          <Suspense fallback={<LoadingComponent />}><AdminInfluencerListingsPage /></Suspense>
+        </ProtectedRoute>
+      },
+      {
+        path: "admin/subscriptions",
+        element: <ProtectedRoute roles={["Admin"]}>
+          <Suspense fallback={<LoadingComponent />}><AdminSubscriptionsPage /></Suspense>
+        </ProtectedRoute>
+      },
+      {
+        path: "admin/upload",
+        element: <ProtectedRoute roles={["Admin"]}>
+          <Suspense fallback={<LoadingComponent />}><AdminUploadPage /></Suspense>
+        </ProtectedRoute>
+      },
+      {
+        path: "admin/migration",
+        element: <ProtectedRoute roles={["Admin"]}>
+          <Suspense fallback={<LoadingComponent />}><AdminMigrationPage /></Suspense>
+        </ProtectedRoute>
+      },
+      {
+        path: "admin/database",
+        element: <ProtectedRoute roles={["Admin"]}>
+          <Suspense fallback={<LoadingComponent />}><AdminDatabasePage /></Suspense>
+        </ProtectedRoute>
+      },
+      {
+        path: "admin/settings",
+        element: <ProtectedRoute roles={["Admin"]}>
+          <Suspense fallback={<LoadingComponent />}><AdminSettingsPage /></Suspense>
+        </ProtectedRoute>
+      },
+      {
+        path: "admin/analytics",
+        element: <ProtectedRoute roles={["Admin"]}>
+          <Suspense fallback={<LoadingComponent />}><AdminAnalyticsPage /></Suspense>
+        </ProtectedRoute>
+      },
+      {
+        path: "admin/seed",
+        element: <ProtectedRoute roles={["Admin"]}>
+          <Suspense fallback={<LoadingComponent />}><AdminSeedDataPage /></Suspense>
+        </ProtectedRoute>
+      },
+      {
+        path: "admin/dashboard-manager",
+        element: <ProtectedRoute roles={["Admin"]}>
+          <Suspense fallback={<LoadingComponent />}><AdminDashboardManagerPage /></Suspense>
+        </ProtectedRoute>
+      },
+      {
+        path: "admin/dashboard-sections",
+        element: <ProtectedRoute roles={["Admin"]}>
+          <Suspense fallback={<LoadingComponent />}><AdminDashboardSectionsPage /></Suspense>
+        </ProtectedRoute>
+      },
+      {
+        path: "admin/dashboard-services",
+        element: <ProtectedRoute roles={["Admin"]}>
+          <Suspense fallback={<LoadingComponent />}><AdminDashboardServicePage /></Suspense>
+        </ProtectedRoute>
       },
       // Catch-all route at the end to handle 404s
       {
