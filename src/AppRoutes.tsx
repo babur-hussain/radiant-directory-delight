@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Index from './pages/Index';
@@ -9,7 +10,7 @@ import SubscriptionDetailsPage from './pages/SubscriptionDetailsPage';
 import ProfilePage from './pages/ProfilePage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminUsersPage from './pages/AdminUsersPage';
-import AdminBusinessesPage from './pages/AdminBusinessesPage';
+import AdminBusinessListingsPage from './pages/AdminBusinessListingsPage';
 import AdminSubscriptionsPage from './pages/AdminSubscriptionsPage';
 import { useAuth } from './hooks/useAuth';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -73,7 +74,7 @@ const AppRoutes: React.FC = () => {
           path="/admin/businesses" 
           element={
             <AdminRoute>
-              <AdminBusinessesPage />
+              <AdminBusinessListingsPage />
             </AdminRoute>
           } 
         />
