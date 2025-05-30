@@ -23,8 +23,6 @@ const PhonePePayment: React.FC<PhonePePaymentProps> = ({
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
-  const [isRetrying, setIsRetrying] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
   const [paymentInitiated, setPaymentInitiated] = useState(false);
 
   useEffect(() => {
@@ -42,7 +40,7 @@ const PhonePePayment: React.FC<PhonePePaymentProps> = ({
     };
     
     loadScript();
-  }, [isRetrying]);
+  }, []);
 
   const handlePayment = async () => {
     if (!user) {
@@ -87,7 +85,14 @@ const PhonePePayment: React.FC<PhonePePaymentProps> = ({
 
       const paymentConfig = await response.json();
       
-      if (paymentConfig.paymentUrl) {
+      if (paymentConfig.success && paymentConfig.paymentUrl) {
+        // Store payment details and redirect to PhonePe
+        sessionStorage.setItem('phonepe_payment_details', JSON.stringify({
+          merchantTransactionId: paymentConfig.merchantTransactionId,
+          amount: paymentConfig.amount,
+          packageId: selectedPackage.id
+        }));
+        
         // Redirect to PhonePe payment page
         window.location.href = paymentConfig.paymentUrl;
       } else {
@@ -101,12 +106,6 @@ const PhonePePayment: React.FC<PhonePePaymentProps> = ({
       setPaymentInitiated(false);
       onFailure(error);
     }
-  };
-
-  const retryPayment = () => {
-    setRetryCount(0);
-    setIsRetrying(!isRetrying);
-    setPaymentInitiated(false);
   };
 
   return (

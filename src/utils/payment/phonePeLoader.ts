@@ -19,9 +19,9 @@ export const loadPhonePeScript = (): Promise<boolean> => {
     
     // Use production URL for PRODUCTION environment
     if (PHONEPE_ENVIRONMENT === 'PRODUCTION') {
-      script.src = 'https://api.phonepe.com/apis/pg-sandbox/pg/v1/js/checkout.js';
+      script.src = 'https://api.phonepe.com/apis/hermes/pg/v1/js/checkout.js';
     } else {
-      script.src = 'https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/js/checkout.js';
+      script.src = 'https://api-preprod.phonepe.com/apis/hermes/pg/v1/js/checkout.js';
     }
     
     script.async = true;

@@ -1,204 +1,142 @@
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { CheckCircle, Loader2, XCircle } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
+import { useAuth } from '@/hooks/useAuth';
+import { adminAssignPhonePeSubscription } from '@/lib/subscription/admin-phonepe-subscription';
+import { toast } from 'sonner';
 
 const PaymentSuccessPage = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [paymentStatus, setPaymentStatus] = useState<'loading' | 'success' | 'failed'>('loading');
-  const [paymentDetails, setPaymentDetails] = useState<any>(null);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [isProcessing, setIsProcessing] = useState(true);
+  const [paymentStatus, setPaymentStatus] = useState<'processing' | 'success' | 'failed'>('processing');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Get payment response parameters from URL
-    const status = searchParams.get('STATUS');
-    const orderId = searchParams.get('ORDERID');
-    const txnId = searchParams.get('TXNID');
-    const amount = searchParams.get('TXNAMOUNT');
-    const respCode = searchParams.get('RESPCODE');
-    const respMsg = searchParams.get('RESPMSG');
+    const processPayment = async () => {
+      const txnId = searchParams.get('txnId');
+      const status = searchParams.get('status');
+      
+      if (!txnId || !user) {
+        setPaymentStatus('failed');
+        setError('Invalid payment details or user not authenticated');
+        setIsProcessing(false);
+        return;
+      }
 
-    console.log('Payment callback received:', {
-      status,
-      orderId,
-      txnId,
-      amount,
-      respCode,
-      respMsg
-    });
-
-    const processPaymentResponse = async () => {
       try {
-        if (status === 'TXN_SUCCESS' && respCode === '01') {
-          // Payment successful
-          setPaymentStatus('success');
-          setPaymentDetails({
-            orderId,
-            txnId,
-            amount,
-            status,
-            message: respMsg || 'Payment completed successfully'
-          });
+        // Get stored payment details
+        const storedDetails = sessionStorage.getItem('phonepe_payment_details');
+        if (!storedDetails) {
+          throw new Error('Payment details not found');
+        }
+        
+        const paymentDetails = JSON.parse(storedDetails);
+        
+        if (status === 'SUCCESS') {
+          // Verify payment with backend and create subscription
+          const paymentResponse = {
+            merchantTransactionId: txnId,
+            paymentVerified: true,
+            amount: paymentDetails.amount,
+            status: 'COMPLETED'
+          };
 
-          toast.success('Payment completed successfully!');
+          // Get package details from stored data
+          const packageData = {
+            id: paymentDetails.packageId,
+            price: paymentDetails.amount,
+            setupFee: 0,
+            title: 'Subscription Package'
+          };
 
-          // Redirect to subscription page after 3 seconds
-          setTimeout(() => {
-            navigate('/subscription');
-          }, 3000);
+          const subscriptionCreated = await adminAssignPhonePeSubscription(
+            user.uid,
+            packageData,
+            paymentResponse
+          );
 
+          if (subscriptionCreated) {
+            setPaymentStatus('success');
+            toast.success('Payment successful! Your subscription has been activated.');
+            
+            // Clear stored payment details
+            sessionStorage.removeItem('phonepe_payment_details');
+          } else {
+            throw new Error('Failed to activate subscription');
+          }
         } else {
-          // Payment failed
           setPaymentStatus('failed');
-          setPaymentDetails({
-            orderId,
-            txnId,
-            status,
-            message: respMsg || 'Payment failed'
-          });
-
-          toast.error(`Payment failed: ${respMsg || 'Unknown error'}`);
+          setError('Payment was not successful');
         }
       } catch (error) {
-        console.error('Error processing payment response:', error);
+        console.error('Error processing payment:', error);
         setPaymentStatus('failed');
-        setPaymentDetails({
-          message: 'Error processing payment response'
-        });
-        toast.error('Error processing payment response');
+        setError(error instanceof Error ? error.message : 'Unknown error occurred');
+      } finally {
+        setIsProcessing(false);
       }
     };
 
-    // Process the payment response
-    if (status) {
-      processPaymentResponse();
-    } else {
-      // No payment data found, redirect to subscription page
-      setTimeout(() => {
-        navigate('/subscription');
-      }, 2000);
-    }
-  }, [searchParams, navigate]);
+    processPayment();
+  }, [searchParams, user]);
 
-  if (paymentStatus === 'loading') {
-    return (
-      <Layout>
-        <div className="container mx-auto px-4 py-12">
-          <Card className="max-w-2xl mx-auto">
-            <CardContent className="text-center py-12">
-              <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold mb-2">Processing Payment</h2>
-              <p className="text-gray-600">
-                Please wait while we verify your payment...
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (paymentStatus === 'success') {
-    return (
-      <Layout>
-        <div className="container mx-auto px-4 py-12">
-          <Card className="max-w-2xl mx-auto">
-            <CardHeader>
-              <div className="text-center">
-                <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
-                <CardTitle className="text-2xl text-green-600">Payment Successful!</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="text-center space-y-4">
-              <p className="text-gray-600">
-                Your payment has been processed successfully.
-              </p>
-              
-              {paymentDetails && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="space-y-2 text-sm">
-                    {paymentDetails.txnId && (
-                      <div className="flex justify-between">
-                        <span>Transaction ID:</span>
-                        <span className="font-mono">{paymentDetails.txnId}</span>
-                      </div>
-                    )}
-                    {paymentDetails.orderId && (
-                      <div className="flex justify-between">
-                        <span>Order ID:</span>
-                        <span className="font-mono">{paymentDetails.orderId}</span>
-                      </div>
-                    )}
-                    {paymentDetails.amount && (
-                      <div className="flex justify-between">
-                        <span>Amount:</span>
-                        <span>₹{paymentDetails.amount}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <p className="text-sm text-gray-500">
-                You will be redirected to your subscription dashboard in a few seconds...
-              </p>
-
-              <Button onClick={() => navigate('/subscription')} className="mt-4">
-                Go to Subscription Dashboard
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </Layout>
-    );
-  }
-
-  // Payment failed
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12">
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
-            <div className="text-center">
-              <XCircle className="h-16 w-16 text-red-600 mx-auto mb-4" />
-              <CardTitle className="text-2xl text-red-600">Payment Failed</CardTitle>
-            </div>
+            <CardTitle className="text-center flex items-center justify-center gap-2">
+              {isProcessing && <Loader2 className="h-6 w-6 animate-spin" />}
+              {paymentStatus === 'success' && <CheckCircle className="h-6 w-6 text-green-600" />}
+              {paymentStatus === 'failed' && <XCircle className="h-6 w-6 text-red-600" />}
+              
+              {isProcessing && 'Processing Payment...'}
+              {paymentStatus === 'success' && 'Payment Successful!'}
+              {paymentStatus === 'failed' && 'Payment Failed'}
+            </CardTitle>
+            <CardDescription className="text-center">
+              {isProcessing && 'Please wait while we verify your payment...'}
+              {paymentStatus === 'success' && 'Your subscription has been activated successfully.'}
+              {paymentStatus === 'failed' && 'There was an issue processing your payment.'}
+            </CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-4">
-            <p className="text-gray-600">
-              {paymentDetails?.message || 'Your payment could not be processed.'}
-            </p>
+            {paymentStatus === 'success' && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-green-700">
+                  Thank you for your payment! You can now access all features of your subscription.
+                </p>
+              </div>
+            )}
             
-            {paymentDetails && paymentDetails.orderId && (
+            {paymentStatus === 'failed' && error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Order ID:</span>
-                    <span className="font-mono">{paymentDetails.orderId}</span>
-                  </div>
-                  {paymentDetails.txnId && (
-                    <div className="flex justify-between">
-                      <span>Transaction ID:</span>
-                      <span className="font-mono">{paymentDetails.txnId}</span>
-                    </div>
-                  )}
-                </div>
+                <p className="text-red-700">{error}</p>
+                <p className="text-red-600 text-sm mt-2">
+                  Please try again or contact support if the issue persists.
+                </p>
               </div>
             )}
 
             <div className="flex gap-2 justify-center">
-              <Button 
-                onClick={() => navigate('/subscription')} 
-                variant="outline"
-              >
-                Try Again
-              </Button>
-              <Button onClick={() => navigate('/contact')}>
-                Contact Support
+              {paymentStatus === 'success' && (
+                <Button onClick={() => navigate('/subscription')}>
+                  View Subscription
+                </Button>
+              )}
+              {paymentStatus === 'failed' && (
+                <Button onClick={() => navigate('/subscription')} variant="outline">
+                  Try Again
+                </Button>
+              )}
+              <Button onClick={() => navigate('/')} variant="outline">
+                Go Home
               </Button>
             </div>
           </CardContent>
