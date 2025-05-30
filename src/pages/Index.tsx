@@ -1,4 +1,3 @@
-
 import React from 'react';
 import HeroSection from '@/components/HeroSection';
 import CategorySection from '@/components/CategorySection';
@@ -16,6 +15,7 @@ import CollaborationsSection from '@/components/collaborations/CollaborationsSec
 import GoogleRankInfo from '@/components/seo/GoogleRankInfo';
 import OnboardingGuide from '@/components/influencer/OnboardingGuide';
 import CollaborationGuidelines from '@/components/brand/CollaborationGuidelines';
+import PhotoCollage from '@/components/PhotoCollage';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Check, BookOpen, Phone, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -260,6 +260,7 @@ const Index = () => {
         </div>
       </section>
       
+      <PhotoCollage />
       <CallToAction />
     </div>
   );
