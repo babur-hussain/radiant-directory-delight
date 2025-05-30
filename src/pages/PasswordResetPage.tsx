@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Lock, CheckCircle } from "lucide-react";
+import { Loader2, Lock, CheckCircle, AlertCircle } from "lucide-react";
 
 const passwordResetSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
@@ -38,6 +38,8 @@ const PasswordResetPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetComplete, setResetComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Check if the URL has the necessary token parameters
   const hasValidParams = searchParams.has('type') && searchParams.has('access_token');
@@ -78,14 +80,15 @@ const PasswordResetPage: React.FC = () => {
       setResetComplete(true);
       toast({
         title: "Password reset successful",
-        description: "Your password has been updated.",
+        description: "Your password has been updated successfully.",
       });
     } catch (err) {
       console.error("Password update error:", err);
-      setError(err instanceof Error ? err.message : "Failed to update password");
+      const errorMessage = err instanceof Error ? err.message : "Failed to update password";
+      setError(errorMessage);
       toast({
         title: "Password reset failed",
-        description: err instanceof Error ? err.message : "An unknown error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -98,20 +101,24 @@ const PasswordResetPage: React.FC = () => {
   };
 
   return (
-    <div className="container flex items-center justify-center min-h-screen py-12">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            Reset Your Password
+            {resetComplete ? "Password Updated!" : "Reset Your Password"}
           </CardTitle>
           <CardDescription className="text-center">
-            Enter your new password below
+            {resetComplete 
+              ? "Your password has been successfully changed" 
+              : "Enter your new password below"
+            }
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-4">
           {error && (
             <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
@@ -119,13 +126,15 @@ const PasswordResetPage: React.FC = () => {
 
           {resetComplete ? (
             <div className="text-center py-8 space-y-4">
-              <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
-              <h3 className="text-xl font-semibold">Password Successfully Reset</h3>
-              <p className="text-muted-foreground">
-                Your password has been updated. You can now log in with your new password.
-              </p>
-              <Button onClick={redirectToLogin} className="mt-4">
-                Go to Login
+              <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold">Password Successfully Reset</h3>
+                <p className="text-muted-foreground">
+                  Your password has been updated. You can now log in with your new password.
+                </p>
+              </div>
+              <Button onClick={redirectToLogin} className="w-full mt-6">
+                Continue to Login
               </Button>
             </div>
           ) : hasValidParams ? (
@@ -140,14 +149,25 @@ const PasswordResetPage: React.FC = () => {
                       <FormControl>
                         <div className="relative">
                           <Input
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             placeholder="Enter new password"
                             {...field}
+                            className="pl-10 pr-10"
                           />
-                          <Lock className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                          >
+                            {showPassword ? "👁️" : "👁️‍🗨️"}
+                          </button>
                         </div>
                       </FormControl>
                       <FormMessage />
+                      <p className="text-xs text-muted-foreground">
+                        Password must be at least 8 characters long
+                      </p>
                     </FormItem>
                   )}
                 />
@@ -161,11 +181,19 @@ const PasswordResetPage: React.FC = () => {
                       <FormControl>
                         <div className="relative">
                           <Input
-                            type="password"
+                            type={showConfirmPassword ? "text" : "password"}
                             placeholder="Confirm new password"
                             {...field}
+                            className="pl-10 pr-10"
                           />
-                          <Lock className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                          >
+                            {showConfirmPassword ? "👁️" : "👁️‍🗨️"}
+                          </button>
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -176,7 +204,7 @@ const PasswordResetPage: React.FC = () => {
                 <Button
                   type="submit"
                   className="w-full mt-6"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !form.formState.isValid}
                 >
                   {isSubmitting ? (
                     <>
@@ -190,8 +218,15 @@ const PasswordResetPage: React.FC = () => {
               </form>
             </Form>
           ) : (
-            <div className="text-center py-8">
-              <Button onClick={redirectToLogin} variant="secondary">
+            <div className="text-center py-8 space-y-4">
+              <AlertCircle className="h-16 w-16 text-red-500 mx-auto" />
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold">Invalid Reset Link</h3>
+                <p className="text-muted-foreground">
+                  This password reset link is invalid or has expired. Please request a new one.
+                </p>
+              </div>
+              <Button onClick={redirectToLogin} variant="outline" className="w-full">
                 Back to Login
               </Button>
             </div>
