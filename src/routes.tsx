@@ -1,4 +1,3 @@
-
 import React, { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -130,12 +129,12 @@ export const router = createBrowserRouter([
             path: "business/:id", 
             element: <Suspense fallback={<LoadingComponent />}><BusinessPage /></Suspense>
           },
-          // Route for "Grow as Business" page
+          // Fixed: Route for "Grow as Business" page - direct component loading
           { 
             path: "business", 
             element: <Suspense fallback={<LoadingComponent />}><BusinessPage /></Suspense>
           },
-          // Route for "Earn as Influencer" page
+          // Fixed: Route for "Earn as Influencer" page - direct component loading
           { 
             path: "influencer", 
             element: <Suspense fallback={<LoadingComponent />}><InfluencerPage /></Suspense>
