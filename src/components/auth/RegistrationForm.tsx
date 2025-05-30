@@ -21,13 +21,40 @@ interface RegistrationFormProps {
   onSwitchToLogin?: () => void;
 }
 
+interface FormData {
+  role: UserRole;
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  phone: string;
+  city: string;
+  country: string;
+  referralCode: string;
+  // Business fields
+  businessName?: string;
+  ownerName?: string;
+  businessCategory?: string;
+  website?: string;
+  gstNumber?: string;
+  // Influencer fields
+  niche?: string;
+  followersCount?: string;
+  instagramHandle?: string;
+  facebookHandle?: string;
+  bio?: string;
+  // Staff fields
+  staffRole?: string;
+  employeeCode?: string;
+}
+
 const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onSwitchToLogin }) => {
   const { signup, loginWithGoogle } = useAuth();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     role: 'User' as UserRole,
     name: '',
     email: '',
@@ -37,7 +64,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess, onSwitch
     city: '',
     country: '',
     referralCode: '',
-    // Role-specific fields will be added dynamically
   });
 
   useEffect(() => {

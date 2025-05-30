@@ -19,7 +19,7 @@ export const validateReferralId = async (referralId: string): Promise<boolean> =
   
   try {
     const result = await getUserByReferralId(referralId);
-    return result.success && result.user;
+    return result.success && !!result.user;
   } catch (error) {
     console.error('Error validating referral ID:', error);
     return false;
@@ -32,6 +32,13 @@ export const validateReferralId = async (referralId: string): Promise<boolean> =
 export const generateReferralURL = (referralId: string, baseUrl?: string): string => {
   const base = baseUrl || window.location.origin;
   return `${base}/auth?ref=${referralId}&tab=register`;
+};
+
+/**
+ * Generate referral link for a user (alias for generateReferralURL)
+ */
+export const generateReferralLink = (referralId: string, baseUrl?: string): string => {
+  return generateReferralURL(referralId, baseUrl);
 };
 
 /**
