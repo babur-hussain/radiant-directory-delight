@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,11 +16,12 @@ interface SubscriptionPackagesProps {
 
 const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ 
   userRole = "Business", 
-  filterByType = true,
+  filterByType = false, // Default to false to show all packages
   onSelectPackage
 }) => {
   const { user } = useAuth();
-  const { packages, isLoading, isError } = useSubscriptionPackages();
+  // Pass 'all' when we want to fetch all packages
+  const { packages, isLoading, isError } = useSubscriptionPackages(filterByType ? userRole : 'all');
 
   console.log("=== SubscriptionPackages Debug ===");
   console.log("Raw packages from hook:", packages);
