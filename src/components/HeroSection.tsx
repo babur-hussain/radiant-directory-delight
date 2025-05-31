@@ -1,88 +1,29 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import SearchBar from './search/SearchBar';
 import { useNavigate } from 'react-router-dom';
-import SearchBar from '@/components/search/SearchBar';
+import HeroContent from './hero/HeroContent';
 
-const HeroSection = () => {
+const HeroSection: React.FC = () => {
   const navigate = useNavigate();
-
+  
   return (
-    <section className="relative py-20 md:py-28 bg-gradient-to-br from-purple-50 via-white to-indigo-50 overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-30"></div>
-      
-      <div className="container px-4 mx-auto relative z-10">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Main Heading */}
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            <span className="block text-gray-900 mb-2">Connect. Create.</span>
-            <span className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 bg-clip-text text-transparent">
-              Grow.
-            </span>
-          </h1>
-          
-          {/* Subtitle */}
-          <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed max-w-3xl mx-auto">
-            Where Influencers & Businesses Build Powerful Local Partnerships.
-          </p>
-          
-          {/* Description */}
-          <p className="text-lg text-gray-500 mb-12 max-w-2xl mx-auto">
-            India's most innovative influencer-business matchmaking platform – empowering creators 
-            and local brands to grow together.
-          </p>
-          
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-            <Button 
-              size="lg" 
-              className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-4 text-lg"
-              onClick={() => navigate('/influencer')}
-            >
-              Join as Influencer
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline"
-              className="border-2 border-gray-300 hover:border-purple-300 hover:bg-purple-50 transition-all duration-300 px-8 py-4 text-lg"
-              onClick={() => navigate('/business')}
-            >
-              Register Your Business
-            </Button>
-            <Button 
-              size="lg" 
-              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-4 text-lg"
-              onClick={() => navigate('/subscription')}
-            >
-              View Plans
-            </Button>
-          </div>
-          
-          {/* Website URL */}
-          <p className="text-gray-500 mb-12">
-            Visit us at <span className="font-medium">growbhartvyapaar.com</span>
-          </p>
-          
-          {/* Search Section */}
-          <div className="max-w-3xl mx-auto">
-            <SearchBar />
-          </div>
-        </div>
+    <section className="relative bg-gradient-to-b from-purple-100 to-pink-50 pt-16 md:pt-24 pb-12 md:pb-16 overflow-hidden min-h-[60vh] sm:min-h-[70vh]">
+      {/* Abstract shapes background */}
+      <div className="absolute inset-0 overflow-hidden opacity-10">
+        <div className="absolute -top-20 -right-20 w-64 h-64 sm:w-96 sm:h-96 bg-brand-purple/30 rounded-full filter blur-3xl"></div>
+        <div className="absolute top-40 -left-20 w-48 h-48 sm:w-72 sm:h-72 bg-brand-blue/30 rounded-full filter blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-40 h-40 sm:w-64 sm:h-64 bg-brand-pink/30 rounded-full filter blur-3xl"></div>
       </div>
       
-      {/* Welcome Section */}
-      <div className="container px-4 mx-auto mt-20">
-        <div className="text-center max-w-4xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Welcome to <span className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 bg-clip-text text-transparent">
-              GROW BHARAT VYAPAAR
-            </span>
-          </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            India's most innovative influencer-business matchmaking platform – empowering creators and 
-            local brands to grow together through meaningful partnerships.
-          </p>
+      {/* Content */}
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 relative z-10 max-w-7xl">
+        <HeroContent />
+        
+        <div className="mt-4 sm:mt-6 md:mt-8 w-full max-w-4xl mx-auto px-2 sm:px-0">
+          <div className="bg-white p-2 sm:p-3 md:p-4 lg:p-6 shadow-xl rounded-xl sm:rounded-2xl">
+            <SearchBar initialQuery="" onResultsVisibilityChange={() => {}} />
+          </div>
         </div>
       </div>
     </section>
