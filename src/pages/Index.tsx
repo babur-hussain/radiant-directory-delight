@@ -1,4 +1,3 @@
-
 import React from 'react';
 import HeroSection from '@/components/HeroSection';
 import CategorySection from '@/components/CategorySection';
@@ -20,9 +19,15 @@ import PhotoCollage from '@/components/PhotoCollage';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Check, BookOpen, Phone, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Index = () => {
   const navigate = useNavigate();
+  const { packages, isLoading, isError } = useSubscriptionPackages();
+  
+  // Filter packages to show only Influencer type for the home page display
+  const influencerPackages = packages.filter(pkg => pkg.type === 'Influencer').slice(0, 3);
   
   return (
     <div className="index-page overflow-hidden">
@@ -95,7 +100,7 @@ const Index = () => {
       <ServicesSection />
       <VideoReelsSection />
       
-      {/* Influencer Section */}
+      {/* Influencer Section with Live Packages */}
       <section className="py-12 sm:py-16 bg-gradient-to-br from-purple-50 to-indigo-50">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center mb-8 sm:mb-12">
@@ -115,74 +120,63 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
-            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
-              <h3 className="font-bold text-base sm:text-lg mb-2">Basic</h3>
-              <div className="text-2xl sm:text-3xl font-bold mb-1">
-                ₹299<span className="text-sm font-normal text-gray-500">/month</span>
+            {isLoading ? (
+              // Loading skeletons
+              Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+                  <Skeleton className="h-6 w-16 mb-2" />
+                  <Skeleton className="h-8 w-24 mb-1" />
+                  <Skeleton className="h-4 w-32 mb-4" />
+                  <div className="space-y-2 mb-4">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                  </div>
+                </div>
+              ))
+            ) : isError ? (
+              // Error state
+              <div className="col-span-1 sm:col-span-2 lg:col-span-3 text-center py-8">
+                <p className="text-gray-600 mb-4">Unable to load packages at the moment</p>
+                <Button onClick={() => window.location.reload()} variant="outline">
+                  Try Again
+                </Button>
               </div>
-              <p className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base">200 KM radius visibility</p>
-              <ul className="mb-4 space-y-2 text-sm sm:text-base">
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
-                  <span>Free profile creation</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
-                  <span>6 video categories</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
-                  <span>Local business connections</span>
-                </li>
-              </ul>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border-2 border-purple-500 relative">
-              <div className="absolute top-0 right-4 sm:right-6 transform -translate-y-1/2 bg-purple-500 text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-bold">
-                Popular
+            ) : influencerPackages.length > 0 ? (
+              // Live packages from Supabase
+              influencerPackages.map((pkg, index) => (
+                <div 
+                  key={pkg.id} 
+                  className={`bg-white rounded-xl shadow-sm p-4 sm:p-6 ${
+                    pkg.popular ? 'border-2 border-purple-500 relative' : ''
+                  }`}
+                >
+                  {pkg.popular && (
+                    <div className="absolute top-0 right-4 sm:right-6 transform -translate-y-1/2 bg-purple-500 text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-bold">
+                      Popular
+                    </div>
+                  )}
+                  <h3 className="font-bold text-base sm:text-lg mb-2">{pkg.title}</h3>
+                  <div className="text-2xl sm:text-3xl font-bold mb-1">
+                    ₹{pkg.monthlyPrice || pkg.price}<span className="text-sm font-normal text-gray-500">/month</span>
+                  </div>
+                  <p className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base">{pkg.shortDescription}</p>
+                  <ul className="mb-4 space-y-2 text-sm sm:text-base">
+                    {pkg.features.slice(0, 3).map((feature, featureIndex) => (
+                      <li key={featureIndex} className="flex items-center">
+                        <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))
+            ) : (
+              // Fallback when no packages are available
+              <div className="col-span-1 sm:col-span-2 lg:col-span-3 text-center py-8">
+                <p className="text-gray-600">No packages available at the moment</p>
               </div>
-              <h3 className="font-bold text-base sm:text-lg mb-2">Pro</h3>
-              <div className="text-2xl sm:text-3xl font-bold mb-1">
-                ₹499<span className="text-sm font-normal text-gray-500">/month</span>
-              </div>
-              <p className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base">450 KM radius visibility</p>
-              <ul className="mb-4 space-y-2 text-sm sm:text-base">
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
-                  <span>All Basic features</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
-                  <span>Higher exposure</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
-                  <span>More business connections</span>
-                </li>
-              </ul>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 sm:col-span-2 lg:col-span-1">
-              <h3 className="font-bold text-base sm:text-lg mb-2">Premium</h3>
-              <div className="text-2xl sm:text-3xl font-bold mb-1">
-                ₹799<span className="text-sm font-normal text-gray-500">/month</span>
-              </div>
-              <p className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base">1050 KM radius visibility</p>
-              <ul className="mb-4 space-y-2 text-sm sm:text-base">
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
-                  <span>All Pro features</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
-                  <span>Premium placement</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-2 flex-shrink-0" />
-                  <span>Maximum earning potential</span>
-                </li>
-              </ul>
-            </div>
+            )}
           </div>
         </div>
       </section>
