@@ -10,15 +10,31 @@ import { v4 as uuidv4 } from 'uuid';
 const getAllPackages = async (): Promise<ISubscriptionPackage[]> => {
   try {
     console.log("Fetching all packages from Supabase");
+    
+    // First check if we can connect to Supabase
+    const { data: testConnection, error: connectionError } = await supabase
+      .from('subscription_packages')
+      .select('count', { count: 'exact', head: true });
+    
+    if (connectionError) {
+      console.error('Supabase connection error:', connectionError);
+      throw new Error(`Database connection failed: ${connectionError.message}`);
+    }
+    
+    console.log('Supabase connection successful, fetching packages...');
+    
     const { data, error } = await supabase
       .from('subscription_packages')
       .select('*')
+      .eq('is_active', true)
       .order('price', { ascending: true });
     
     if (error) {
       console.error('Supabase error fetching packages:', error);
       throw new Error(`Failed to fetch packages: ${error.message}`);
     }
+    
+    console.log('Raw data from Supabase:', data);
     
     if (!data || data.length === 0) {
       console.log('No subscription packages found in database');
@@ -223,6 +239,8 @@ const deletePackage = async (id: string): Promise<void> => {
  * Map a Supabase row to an ISubscriptionPackage object
  */
 const mapDbRowToPackage = (dbRow: any): ISubscriptionPackage => {
+  console.log('Mapping database row to package:', dbRow);
+  
   // Validate payment type
   const paymentType: PaymentType = dbRow.payment_type?.toLowerCase() === 'one-time' ? 'one-time' : 'recurring';
   
@@ -305,7 +323,7 @@ const mapDbRowToPackage = (dbRow: any): ISubscriptionPackage => {
     console.warn("Error parsing dashboard_sections:", e);
   }
   
-  return {
+  const mappedPackage = {
     id: dbRow.id,
     title: dbRow.title || '',
     price: typeof dbRow.price === 'number' ? dbRow.price : 0,
@@ -324,6 +342,9 @@ const mapDbRowToPackage = (dbRow: any): ISubscriptionPackage => {
     dashboardSections: dashboardSections,
     isActive: true
   };
+  
+  console.log('Mapped package:', mappedPackage);
+  return mappedPackage;
 };
 
 export { 

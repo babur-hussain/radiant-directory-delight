@@ -16,36 +16,34 @@ export const useSubscriptionPackages = () => {
   } = useQuery({
     queryKey: ['subscription-packages'],
     queryFn: async () => {
+      console.log("Starting to fetch subscription packages...");
+      
       try {
-        console.log("Fetching all subscription packages from database");
         const packages = await getAllPackages();
-        console.log("Successfully fetched packages:", packages?.length || 0, packages);
+        console.log("Hook received packages:", packages?.length || 0, packages);
         
-        // Ensure we always return an array
-        if (!packages) {
-          console.log("No packages returned, using empty array");
-          return [];
-        }
-        
-        if (!Array.isArray(packages)) {
-          console.log("Packages is not an array, converting:", typeof packages);
-          return [];
-        }
-        
-        return packages;
+        // Always return an array, even if empty
+        return Array.isArray(packages) ? packages : [];
       } catch (err) {
-        console.error('Error fetching subscription packages:', err);
-        // Return empty array instead of throwing to prevent infinite loading
+        console.error('Hook error fetching subscription packages:', err);
+        
+        // Show user-friendly error message
+        toast({
+          title: "Connection Error",
+          description: "Failed to load subscription packages. Please check your internet connection.",
+          variant: "destructive"
+        });
+        
+        // Don't throw the error, return empty array to prevent infinite loading
         return [];
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes cache
-    retry: 1, // Reduce retry attempts
-    retryDelay: 1000,
-    // Set initial data to empty array to prevent undefined issues
-    initialData: [],
-    // Add this to prevent refetching on window focus
-    refetchOnWindowFocus: false
+    retry: 2, // Retry twice on failure
+    retryDelay: 2000, // Wait 2 seconds between retries
+    initialData: [], // Start with empty array
+    refetchOnWindowFocus: false,
+    refetchOnMount: true
   });
   
   // Create or update mutation with proper text handling
