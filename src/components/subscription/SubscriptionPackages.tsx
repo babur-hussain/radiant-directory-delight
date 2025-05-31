@@ -21,23 +21,28 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   onSelectPackage
 }) => {
   const { user } = useAuth();
+  
+  console.log("=== SubscriptionPackages Component Render ===");
+  console.log("Props:", { userRole, filterByType, onSelectPackage: !!onSelectPackage });
+  console.log("User:", user ? { id: user.id, role: user.role } : 'No user');
+  
   // Always fetch all packages, then filter in component if needed
   const { packages, isLoading, isError, error } = useSubscriptionPackages();
 
-  console.log("=== SubscriptionPackages Component Debug ===");
-  console.log("Raw packages from hook:", packages);
-  console.log("Packages type:", typeof packages);
-  console.log("Packages is array:", Array.isArray(packages));
-  console.log("Packages length:", packages?.length);
-  console.log("User role filter:", userRole);
-  console.log("Filter by type:", filterByType);
-  console.log("Is loading:", isLoading);
-  console.log("Is error:", isError);
-  console.log("Error details:", error);
+  console.log("=== Hook Response ===");
+  console.log("packages:", packages);
+  console.log("packages type:", typeof packages);
+  console.log("packages is array:", Array.isArray(packages));
+  console.log("packages length:", packages?.length);
+  console.log("isLoading:", isLoading);
+  console.log("isError:", isError);
+  console.log("error:", error);
 
   // Filter packages based on filterByType prop
   const filteredPackages = React.useMemo(() => {
     console.log("=== Filtering packages ===");
+    console.log("filterByType:", filterByType);
+    console.log("userRole:", userRole);
     
     if (!packages) {
       console.log("No packages to filter - packages is null/undefined");
@@ -45,7 +50,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
     }
 
     if (!Array.isArray(packages)) {
-      console.log("Packages is not an array:", typeof packages);
+      console.log("Packages is not an array:", typeof packages, packages);
       return [];
     }
 
@@ -54,7 +59,12 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
       return [];
     }
 
-    console.log("Starting with packages:", packages.length);
+    console.log("Available packages:", packages.map(p => ({ 
+      id: p.id, 
+      title: p.title, 
+      type: p.type, 
+      isActive: p.isActive 
+    })));
 
     if (!filterByType) {
       console.log("Not filtering by type, showing all packages:", packages.length);
@@ -63,23 +73,33 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
 
     const filtered = packages.filter(pkg => {
       const matches = pkg.type === userRole;
-      console.log(`Package ${pkg.title} (${pkg.type}) matches ${userRole}:`, matches);
+      console.log(`Package "${pkg.title}" (${pkg.type}) matches ${userRole}:`, matches);
       return matches;
     });
     
-    console.log("Filtered packages:", filtered.length, filtered);
+    console.log("Filtered packages:", filtered.length);
+    console.log("Filtered package details:", filtered.map(p => ({ 
+      id: p.id, 
+      title: p.title, 
+      type: p.type 
+    })));
+    
     return filtered;
   }, [packages, userRole, filterByType]);
 
+  console.log("=== Final filtered packages ===");
+  console.log("filteredPackages:", filteredPackages);
+  console.log("filteredPackages length:", filteredPackages?.length);
+
   const handleSelectPackage = (pkg: ISubscriptionPackage) => {
-    console.log("Package selected:", pkg.title);
+    console.log("Package selected:", pkg.title, pkg.id);
     if (onSelectPackage) {
       onSelectPackage(pkg);
     }
   };
 
   if (isLoading) {
-    console.log("Component showing loading state");
+    console.log("Rendering loading state");
     return (
       <div className="grid md:grid-cols-3 gap-6 max-w-7xl mx-auto">
         {[1, 2, 3].map((i) => (
@@ -106,7 +126,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   }
 
   if (isError) {
-    console.error("Component showing error state");
+    console.log("Rendering error state");
     return (
       <div className="text-center py-12">
         <div className="mb-4">
@@ -130,9 +150,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   }
 
   if (!filteredPackages || filteredPackages.length === 0) {
-    console.log("Component showing no packages state");
-    console.log("filteredPackages:", filteredPackages);
-    console.log("Original packages:", packages);
+    console.log("Rendering no packages state");
     
     return (
       <div className="text-center py-12">
@@ -143,24 +161,29 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
         <p className="text-gray-600 mb-4">
           {filterByType 
             ? `No subscription packages found for ${userRole} users.` 
-            : 'No subscription packages are currently available in the database.'
+            : 'No subscription packages are currently available.'
           }
         </p>
-        <p className="text-sm text-gray-500 mb-4">
-          Please contact admin to add subscription packages or check if packages exist in the database.
-        </p>
-        <div className="text-xs text-gray-400 bg-gray-100 p-2 rounded">
-          Debug: Original packages: {packages?.length || 0}, Filtered: {filteredPackages?.length || 0}
+        <div className="text-xs text-gray-400 bg-gray-100 p-4 rounded mt-4">
+          <strong>Debug Info:</strong><br />
+          Raw packages: {packages?.length || 0}<br />
+          Filtered packages: {filteredPackages?.length || 0}<br />
+          Filter by type: {filterByType ? 'Yes' : 'No'}<br />
+          User role: {userRole}<br />
+          Loading: {isLoading ? 'Yes' : 'No'}<br />
+          Error: {isError ? 'Yes' : 'No'}
         </div>
       </div>
     );
   }
 
-  console.log("Component rendering packages:", filteredPackages.length);
+  console.log("Rendering packages:", filteredPackages.length);
 
   return (
     <div className="grid md:grid-cols-3 gap-6 max-w-7xl mx-auto">
       {filteredPackages.map((pkg) => {
+        console.log("Rendering package:", pkg.title, pkg.id);
+        
         const monthlyPrice = pkg.monthlyPrice || pkg.price;
         const isPopular = pkg.popular;
         
