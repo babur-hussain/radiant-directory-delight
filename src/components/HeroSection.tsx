@@ -1,21 +1,40 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import SearchBar from './search/SearchBar';
 import { useNavigate } from 'react-router-dom';
 import HeroContent from './hero/HeroContent';
 
 const HeroSection: React.FC = () => {
   const navigate = useNavigate();
-  const [searchType, setSearchType] = useState<'influencers' | 'businesses' | 'both'>('both');
   
-  const handleSearchTypeChange = (type: 'influencers' | 'businesses' | 'both') => {
-    setSearchType(type);
-    console.log('Search type changed to:', type);
+  const handleSearch = (params: {
+    query: string;
+    category: string;
+    city: string;
+    filters: string;
+  }) => {
+    console.log('Search parameters:', params);
+    // Navigate to search results page with parameters
+    const searchParams = new URLSearchParams();
+    if (params.query) searchParams.set('q', params.query);
+    if (params.category !== 'all') searchParams.set('category', params.category);
+    if (params.city !== 'all') searchParams.set('city', params.city);
+    if (params.filters !== 'all') searchParams.set('filter', params.filters);
+    
+    // Navigate to appropriate page based on filter
+    if (params.filters === 'influencers') {
+      navigate(`/influencers?${searchParams.toString()}`);
+    } else if (params.filters === 'businesses') {
+      navigate(`/businesses?${searchParams.toString()}`);
+    } else {
+      // For unified search, you might want to create a new search results page
+      // For now, let's default to businesses page
+      navigate(`/businesses?${searchParams.toString()}`);
+    }
   };
 
   const handleResultsVisibilityChange = (visible: boolean) => {
     console.log('Results visibility changed:', visible);
-    // You can add logic here to handle search results visibility
   };
   
   return (
@@ -36,8 +55,7 @@ const HeroSection: React.FC = () => {
             <SearchBar 
               initialQuery="" 
               onResultsVisibilityChange={handleResultsVisibilityChange}
-              searchType={searchType}
-              onSearchTypeChange={handleSearchTypeChange}
+              onSearch={handleSearch}
             />
           </div>
         </div>
