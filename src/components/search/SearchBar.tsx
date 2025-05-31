@@ -12,6 +12,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useIsMobile } from '@/hooks/use-mobile';
+import SearchResults from '@/components/SearchResults';
+import { useBusinessPageData } from '@/hooks/useBusinessPageData';
 
 interface SearchBarProps {
   initialQuery?: string;
@@ -36,8 +38,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const [city, setCity] = useState('all');
   const [filters, setFilters] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
+
+  // Get business data for search results
+  const { loading, filteredBusinesses } = useBusinessPageData(query);
 
   // Combined categories for both influencers and businesses
   const allCategories = [
@@ -99,12 +106,18 @@ const SearchBar: React.FC<SearchBarProps> = ({
       filters 
     });
     
-    if (onSearch) {
-      onSearch({ query, category, city, filters });
+    if (query.length > 0) {
+      setShowResults(true);
+      setIsLoading(true);
+      
+      // Simulate loading time
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 300);
     }
     
     if (onResultsVisibilityChange) {
-      onResultsVisibilityChange(true);
+      onResultsVisibilityChange(query.length > 0);
     }
   };
 
@@ -113,6 +126,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     setCategory('all');
     setCity('all');
     setFilters('all');
+    setShowResults(false);
     if (onResultsVisibilityChange) {
       onResultsVisibilityChange(false);
     }
@@ -121,6 +135,19 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
+    }
+  };
+
+  const handleResultClick = (id: number) => {
+    console.log('Result clicked:', id);
+    // Navigate to business detail page or handle result click
+    window.location.href = `/business/${id}`;
+  };
+
+  const handleCloseResults = () => {
+    setShowResults(false);
+    if (onResultsVisibilityChange) {
+      onResultsVisibilityChange(false);
     }
   };
 
@@ -133,14 +160,29 @@ const SearchBar: React.FC<SearchBarProps> = ({
       
       return () => clearTimeout(debounceTimer);
     } else if (query.length === 0) {
+      setShowResults(false);
       if (onResultsVisibilityChange) {
         onResultsVisibilityChange(false);
       }
     }
   }, [query]);
 
+  // Transform business data to match SearchResults interface
+  const searchResults = filteredBusinesses.map(business => ({
+    id: business.id,
+    name: business.name,
+    category: business.category,
+    image: business.image || '/placeholder.svg',
+    rating: business.rating,
+    reviews: business.reviews,
+    address: business.address || '',
+    description: business.description || '',
+    tags: business.tags || [],
+    location: business.address ? business.address.split(',').pop()?.trim() || '' : ''
+  }));
+
   return (
-    <div className={cn("w-full space-y-3 sm:space-y-4", className)}>
+    <div className={cn("w-full space-y-3 sm:space-y-4 relative", className)}>
       {/* Main Search Input */}
       <div className="relative flex items-center">
         <div className="relative flex-1">
@@ -236,16 +278,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
         </Select>
       </div>
 
-      {/* Search Button - Only show on mobile or when filters are active */}
-      {(isMobile || category !== 'all' || city !== 'all' || filters !== 'all') && (
-        <Button 
-          onClick={handleSearch}
-          className="w-full h-10 sm:h-12 text-white font-semibold rounded-lg sm:rounded-xl text-sm sm:text-base transition-all duration-300 shadow-lg hover:shadow-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-        >
-          <Search className="h-4 w-4 mr-2" />
-          Search All
-        </Button>
-      )}
+      {/* Search Results */}
+      <SearchResults
+        results={searchResults}
+        isLoading={isLoading || loading}
+        visible={showResults}
+        onResultClick={handleResultClick}
+        onClose={handleCloseResults}
+      />
     </div>
   );
 };
