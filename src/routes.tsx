@@ -94,6 +94,7 @@ const ServicesPage = lazy(() => import("@/pages/ServicesPage"));
 const AboutPage = lazy(() => import("@/pages/AboutPage"));
 const PortfolioPage = lazy(() => import("@/pages/PortfolioPage"));
 const ContactPage = lazy(() => import("@/pages/ContactPage"));
+const ReferralPage = lazy(() => import("@/pages/ReferralPage"));
 
 const AdminDashboardPage = lazy(() => import("@/pages/AdminDashboardPage"));
 const AdminUsersPage = lazy(() => import("@/pages/AdminUsersPage"));
@@ -182,6 +183,11 @@ export const router = createBrowserRouter([
           { 
             path: "contact", 
             element: <Suspense fallback={<LoadingComponent />}><ContactPage /></Suspense>
+          },
+          // Add the missing referral route
+          { 
+            path: "referral", 
+            element: <Suspense fallback={<LoadingComponent />}><ReferralPage /></Suspense>
           },
           
           { path: "auth", element: <AuthPage /> },
