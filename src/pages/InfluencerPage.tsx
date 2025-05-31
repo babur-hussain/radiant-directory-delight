@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +12,7 @@ import { toast } from 'sonner';
 
 const InfluencerPage = () => {
   const navigate = useNavigate();
-  const { packages, isLoading, isError, error } = useSubscriptionPackages('Influencer');
+  const { packages, isLoading, isError, error } = useSubscriptionPackages();
   const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   
@@ -140,6 +139,7 @@ const InfluencerPage = () => {
             <div className="relative subscription-packages-container">
               <SubscriptionPackages 
                 userRole="Influencer"
+                filterByType={true}
                 onSelectPackage={handleSelectPackage}
               />
             </div>
