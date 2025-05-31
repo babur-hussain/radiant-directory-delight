@@ -21,85 +21,32 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   onSelectPackage
 }) => {
   const { user } = useAuth();
-  
-  console.log("=== SubscriptionPackages Component Render ===");
-  console.log("Props:", { userRole, filterByType, onSelectPackage: !!onSelectPackage });
-  console.log("User:", user ? { id: user.id, role: user.role } : 'No user');
-  
-  // Always fetch all packages, then filter in component if needed
   const { packages, isLoading, isError, error } = useSubscriptionPackages();
 
-  console.log("=== Hook Response ===");
-  console.log("packages:", packages);
-  console.log("packages type:", typeof packages);
-  console.log("packages is array:", Array.isArray(packages));
-  console.log("packages length:", packages?.length);
-  console.log("isLoading:", isLoading);
-  console.log("isError:", isError);
-  console.log("error:", error);
+  console.log("SubscriptionPackages - packages:", packages);
+  console.log("SubscriptionPackages - isLoading:", isLoading);
+  console.log("SubscriptionPackages - isError:", isError);
 
-  // Filter packages based on filterByType prop
+  // Filter packages if needed
   const filteredPackages = React.useMemo(() => {
-    console.log("=== Filtering packages ===");
-    console.log("filterByType:", filterByType);
-    console.log("userRole:", userRole);
-    
-    if (!packages) {
-      console.log("No packages to filter - packages is null/undefined");
+    if (!packages || packages.length === 0) {
       return [];
     }
-
-    if (!Array.isArray(packages)) {
-      console.log("Packages is not an array:", typeof packages, packages);
-      return [];
-    }
-
-    if (packages.length === 0) {
-      console.log("No packages available to filter - empty array");
-      return [];
-    }
-
-    console.log("Available packages:", packages.map(p => ({ 
-      id: p.id, 
-      title: p.title, 
-      type: p.type, 
-      isActive: p.isActive 
-    })));
 
     if (!filterByType) {
-      console.log("Not filtering by type, showing all packages:", packages.length);
       return packages;
     }
 
-    const filtered = packages.filter(pkg => {
-      const matches = pkg.type === userRole;
-      console.log(`Package "${pkg.title}" (${pkg.type}) matches ${userRole}:`, matches);
-      return matches;
-    });
-    
-    console.log("Filtered packages:", filtered.length);
-    console.log("Filtered package details:", filtered.map(p => ({ 
-      id: p.id, 
-      title: p.title, 
-      type: p.type 
-    })));
-    
-    return filtered;
+    return packages.filter(pkg => pkg.type === userRole);
   }, [packages, userRole, filterByType]);
 
-  console.log("=== Final filtered packages ===");
-  console.log("filteredPackages:", filteredPackages);
-  console.log("filteredPackages length:", filteredPackages?.length);
-
   const handleSelectPackage = (pkg: ISubscriptionPackage) => {
-    console.log("Package selected:", pkg.title, pkg.id);
     if (onSelectPackage) {
       onSelectPackage(pkg);
     }
   };
 
   if (isLoading) {
-    console.log("Rendering loading state");
     return (
       <div className="grid md:grid-cols-3 gap-6 max-w-7xl mx-auto">
         {[1, 2, 3].map((i) => (
@@ -126,7 +73,6 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   }
 
   if (isError) {
-    console.log("Rendering error state");
     return (
       <div className="text-center py-12">
         <div className="mb-4">
@@ -139,10 +85,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
         <p className="text-sm text-red-500 mb-4">
           Error: {error?.message || 'Unknown error'}
         </p>
-        <Button 
-          onClick={() => window.location.reload()} 
-          variant="outline"
-        >
+        <Button onClick={() => window.location.reload()} variant="outline">
           Refresh Page
         </Button>
       </div>
@@ -150,8 +93,6 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   }
 
   if (!filteredPackages || filteredPackages.length === 0) {
-    console.log("Rendering no packages state");
-    
     return (
       <div className="text-center py-12">
         <div className="mb-4">
@@ -164,26 +105,13 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
             : 'No subscription packages are currently available.'
           }
         </p>
-        <div className="text-xs text-gray-400 bg-gray-100 p-4 rounded mt-4">
-          <strong>Debug Info:</strong><br />
-          Raw packages: {packages?.length || 0}<br />
-          Filtered packages: {filteredPackages?.length || 0}<br />
-          Filter by type: {filterByType ? 'Yes' : 'No'}<br />
-          User role: {userRole}<br />
-          Loading: {isLoading ? 'Yes' : 'No'}<br />
-          Error: {isError ? 'Yes' : 'No'}
-        </div>
       </div>
     );
   }
 
-  console.log("Rendering packages:", filteredPackages.length);
-
   return (
     <div className="grid md:grid-cols-3 gap-6 max-w-7xl mx-auto">
       {filteredPackages.map((pkg) => {
-        console.log("Rendering package:", pkg.title, pkg.id);
-        
         const monthlyPrice = pkg.monthlyPrice || pkg.price;
         const isPopular = pkg.popular;
         
@@ -201,14 +129,6 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
                 <Badge className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-1 text-sm font-semibold">
                   <Star className="h-3 w-3 mr-1" />
                   Most Popular
-                </Badge>
-              </div>
-            )}
-
-            {!pkg.isActive && (
-              <div className="absolute -top-3 right-4">
-                <Badge variant="secondary" className="text-xs">
-                  Inactive
                 </Badge>
               </div>
             )}
@@ -237,19 +157,12 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
 
             <CardContent className="px-6 pb-6">
               <div className="space-y-3">
-                {Array.isArray(pkg.features) && pkg.features.length > 0 ? (
-                  pkg.features.map((feature, index) => (
-                    <div key={index} className="flex items-start">
-                      <Check className="h-5 w-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700 text-sm">{feature}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="flex items-start">
+                {pkg.features.map((feature, index) => (
+                  <div key={index} className="flex items-start">
                     <Check className="h-5 w-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 text-sm">Full access to platform features</span>
+                    <span className="text-gray-700 text-sm">{feature}</span>
                   </div>
-                )}
+                ))}
               </div>
             </CardContent>
 
@@ -261,15 +174,10 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
                     ? 'bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-800 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
                     : 'bg-gray-900 hover:bg-gray-800 text-white'
                 }`}
-                disabled={!user || !pkg.isActive}
+                disabled={!user}
               >
-                {!user ? 'Login Required' : !pkg.isActive ? 'Not Available' : 'Choose Plan'}
+                {!user ? 'Login Required' : 'Choose Plan'}
               </Button>
-              {!user && (
-                <p className="text-xs text-center text-gray-500 mt-2">
-                  Please log in to subscribe
-                </p>
-              )}
             </CardFooter>
           </Card>
         );
