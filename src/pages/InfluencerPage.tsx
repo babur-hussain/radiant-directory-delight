@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 
 const InfluencerPage = () => {
   const navigate = useNavigate();
-  const { packages, isLoading, isError, error } = useSubscriptionPackages();
+  const { packages, isLoading, isError, error } = useSubscriptionPackages('Influencer');
   const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   
@@ -61,16 +61,21 @@ const InfluencerPage = () => {
     console.log("Package selected on Influencer page:", pkg.title);
     setSelectedPackage(pkg);
     setShowDialog(true);
-    toast.info(`Selected package: ${pkg.title}`);
+    toast.success(`Selected package: ${pkg.title}`);
   };
 
   useEffect(() => {
+    console.log("=== InfluencerPage Debug ===");
+    console.log("Packages loading:", isLoading);
+    console.log("Packages error:", isError);
+    console.log("Packages data:", packages);
     console.log("Dialog visible:", showDialog);
-  }, [showDialog]);
+  }, [packages, isLoading, isError, showDialog]);
 
   return (
     <div className="min-h-screen">
       <main className="flex-grow">
+        {/* Hero Section */}
         <section className="relative py-20 md:py-28 bg-gradient-to-br from-purple-500/10 via-violet-500/10 to-indigo-500/10 overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-50"></div>
           
@@ -93,6 +98,7 @@ const InfluencerPage = () => {
           </div>
         </section>
 
+        {/* Benefits Section */}
         <section className="py-20 bg-white">
           <div className="container px-4 mx-auto">
             <div className="text-center mb-16">
@@ -121,6 +127,7 @@ const InfluencerPage = () => {
           </div>
         </section>
 
+        {/* Subscription Packages Section */}
         <section id="subscription-packages" className="py-20 bg-gray-50">
           <div className="container px-4 mx-auto">
             <div className="text-center mb-16">
@@ -130,35 +137,16 @@ const InfluencerPage = () => {
               </p>
             </div>
 
-            {isLoading ? (
-              <div className="flex justify-center items-center py-20">
-                <Loading size="lg" message="Loading subscription packages..." />
-              </div>
-            ) : isError ? (
-              <div className="text-center py-12">
-                <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-red-600 mb-2">Unable to Load Packages</h3>
-                <p className="text-gray-600 mb-4">
-                  {error?.message?.includes('404') 
-                    ? 'No subscription packages are currently available.' 
-                    : 'There was an error loading the subscription packages.'}
-                </p>
-                <Button onClick={() => window.location.reload()} variant="outline">
-                  <ArrowRight className="h-4 w-4 mr-2" />
-                  Try Again
-                </Button>
-              </div>
-            ) : (
-              <div className="relative subscription-packages-container">
-                <SubscriptionPackages 
-                  userRole="Influencer"
-                  onSelectPackage={handleSelectPackage}
-                />
-              </div>
-            )}
+            <div className="relative subscription-packages-container">
+              <SubscriptionPackages 
+                userRole="Influencer"
+                onSelectPackage={handleSelectPackage}
+              />
+            </div>
           </div>
         </section>
 
+        {/* CTA Section */}
         <section className="py-16 bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 text-white">
           <div className="container px-4 mx-auto text-center">
             <h2 className="text-3xl font-bold mb-6">Start Growing Your Influence Today!</h2>

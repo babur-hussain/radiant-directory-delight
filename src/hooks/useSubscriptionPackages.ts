@@ -1,13 +1,9 @@
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import { toast } from '@/hooks/use-toast';
 
-export const useSubscriptionPackages = () => {
-  const queryClient = useQueryClient();
-  
-  // Simple query to fetch all packages
+export const useSubscriptionPackages = (userRole?: string) => {
   const {
     data: packages = [],
     isLoading,
@@ -15,15 +11,23 @@ export const useSubscriptionPackages = () => {
     error,
     refetch
   } = useQuery({
-    queryKey: ['subscription-packages'],
+    queryKey: ['subscription-packages', userRole],
     queryFn: async () => {
-      console.log("Fetching packages from Supabase...");
+      console.log("=== Fetching packages from Supabase ===");
+      console.log("User role filter:", userRole);
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('subscription_packages')
         .select('*')
         .eq('is_active', true)
-        .order('created_at', { ascending: false });
+        .order('price', { ascending: true });
+      
+      // Apply role filter if specified
+      if (userRole && userRole !== 'all') {
+        query = query.eq('type', userRole);
+      }
+      
+      const { data, error } = await query;
       
       if (error) {
         console.error('Supabase error:', error);
@@ -33,7 +37,7 @@ export const useSubscriptionPackages = () => {
       console.log('Raw data from Supabase:', data);
       
       if (!data || data.length === 0) {
-        console.log('No packages found');
+        console.log('No packages found for role:', userRole);
         return [];
       }
       
@@ -41,17 +45,27 @@ export const useSubscriptionPackages = () => {
       const mappedPackages = data.map((pkg): ISubscriptionPackage => {
         let features: string[] = [];
         
-        // Parse features
+        // Parse features with better error handling
         if (pkg.features) {
           try {
             if (typeof pkg.features === 'string') {
-              features = JSON.parse(pkg.features);
+              // Try to parse as JSON first
+              try {
+                features = JSON.parse(pkg.features);
+              } catch {
+                // If JSON parsing fails, split by common delimiters
+                features = pkg.features
+                  .split(/[✅✔\n,]/)
+                  .map((f: string) => f.trim())
+                  .filter((f: string) => f.length > 0)
+                  .map((f: string) => f.replace(/^[•\-\*]\s*/, ''));
+              }
             } else if (Array.isArray(pkg.features)) {
               features = pkg.features;
             }
           } catch (e) {
-            console.warn('Error parsing features:', e);
-            features = [];
+            console.warn('Error parsing features for package:', pkg.title, e);
+            features = ['Package features will be updated soon'];
           }
         }
         
@@ -77,110 +91,22 @@ export const useSubscriptionPackages = () => {
       });
       
       console.log('Mapped packages:', mappedPackages);
+      console.log('Total packages found:', mappedPackages.length);
+      
       return mappedPackages;
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 2,
-    refetchOnWindowFocus: false
+    staleTime: 1000 * 60 * 2, // 2 minutes
+    retry: 3,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true
   });
-  
-  // Create or update mutation
-  const createOrUpdateMutation = useMutation({
-    mutationFn: async (packageData: ISubscriptionPackage) => {
-      const { data, error } = await supabase
-        .from('subscription_packages')
-        .upsert({
-          id: packageData.id,
-          title: packageData.title,
-          price: packageData.price,
-          monthly_price: packageData.monthlyPrice,
-          setup_fee: packageData.setupFee || 0,
-          duration_months: packageData.durationMonths || 12,
-          short_description: packageData.shortDescription || '',
-          full_description: packageData.fullDescription || '',
-          features: JSON.stringify(packageData.features || []),
-          popular: packageData.popular || false,
-          type: packageData.type,
-          terms_and_conditions: packageData.termsAndConditions || '',
-          payment_type: packageData.paymentType,
-          billing_cycle: packageData.billingCycle,
-          advance_payment_months: packageData.advancePaymentMonths || 0,
-          dashboard_sections: packageData.dashboardSections || []
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        throw new Error(`Failed to save package: ${error.message}`);
-      }
-      
-      return data;
-    },
-    onSuccess: (savedPackage) => {
-      toast({
-        title: "Success",
-        description: `Package "${savedPackage.title}" saved successfully`,
-      });
-      queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: `Failed to save package: ${error.message}`,
-        variant: "destructive"
-      });
-    }
-  });
-  
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (packageId: string) => {
-      const { error } = await supabase
-        .from('subscription_packages')
-        .delete()
-        .eq('id', packageId);
-      
-      if (error) {
-        throw new Error(`Failed to delete package: ${error.message}`);
-      }
-      
-      return packageId;
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Package deleted successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: `Failed to delete package: ${error.message}`,
-        variant: "destructive"
-      });
-    }
-  });
-  
-  const createOrUpdate = async (packageData: ISubscriptionPackage) => {
-    return await createOrUpdateMutation.mutateAsync(packageData);
-  };
-  
-  const remove = async (packageId: string) => {
-    await deleteMutation.mutateAsync(packageId);
-    return true;
-  };
 
   return {
     packages: Array.isArray(packages) ? packages : [],
     isLoading,
     isError,
     error,
-    refetch,
-    createOrUpdate,
-    remove,
-    isCreating: createOrUpdateMutation.isPending,
-    isDeleting: deleteMutation.isPending
+    refetch
   };
 };
 
