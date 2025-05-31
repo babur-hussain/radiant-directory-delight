@@ -155,6 +155,7 @@ const BusinessPage = () => {
               <div className="relative z-10">
                 <SubscriptionPackages 
                   userRole="Business" 
+                  filterByType={true}
                   onSelectPackage={handleSelectPackage}
                 />
               </div>
