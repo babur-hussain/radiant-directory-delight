@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,7 +13,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { trackReferral } from "@/services/referralService";
 import { getReferralIdFromURL, validateReferralId } from "@/utils/referral/referralUtils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Check, AlertCircle, Sparkles, UserPlus, Eye, EyeOff, Mail, Lock, User, Phone, MapPin, Building } from "lucide-react";
+import { Check, AlertCircle, Sparkles, UserPlus, Eye, EyeOff, Mail, Lock, User, Phone, MapPin, Building, Loader2 } from "lucide-react";
 
 // Define the form validation schema with stronger validation
 const formSchema = z.object({
