@@ -31,7 +31,7 @@ const HeroContent: React.FC = () => {
         India's most innovative influencer-business matchmaking platform – empowering creators and local brands to grow together.
       </p>
       
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full max-w-lg sm:max-w-none">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full max-w-lg sm:max-w-none justify-center items-center">
         <Button 
           variant="default" 
           size="lg"
