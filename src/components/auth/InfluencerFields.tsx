@@ -27,62 +27,122 @@ const InfluencerFields: React.FC<InfluencerFieldsProps> = ({ formData, onChange 
         <h4 className="font-medium text-purple-600">Influencer Information</h4>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label>Niche/Category *</Label>
-          <Select value={formData.niche || ''} onValueChange={(value) => onChange('niche', value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select your niche" />
-            </SelectTrigger>
-            <SelectContent>
-              {niches.map((niche) => (
-                <SelectItem key={niche} value={niche}>
-                  {niche}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div>
-          <Label>Followers Count</Label>
-          <Select value={formData.followersCount || ''} onValueChange={(value) => onChange('followersCount', value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select follower range" />
-            </SelectTrigger>
-            <SelectContent>
-              {followerRanges.map((range) => (
-                <SelectItem key={range} value={range}>
-                  {range}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Name - using the name from parent form */}
+      <div>
+        <Label>Full Name *</Label>
+        <Input
+          placeholder="Your full name"
+          value={formData.name || ''}
+          onChange={(e) => onChange('name', e.target.value)}
+          required
+        />
       </div>
 
+      {/* Profile Links */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="instagramHandle">Instagram Handle</Label>
+          <Label htmlFor="instagramHandle">Instagram Profile Link</Label>
           <Input
             id="instagramHandle"
-            placeholder="@yourusername"
+            placeholder="https://instagram.com/yourusername"
             value={formData.instagramHandle || ''}
             onChange={(e) => onChange('instagramHandle', e.target.value)}
           />
         </div>
         
         <div>
-          <Label htmlFor="facebookHandle">Facebook Handle</Label>
+          <Label htmlFor="youtubeHandle">YouTube Profile Link</Label>
           <Input
-            id="facebookHandle"
-            placeholder="Your Facebook profile"
-            value={formData.facebookHandle || ''}
-            onChange={(e) => onChange('facebookHandle', e.target.value)}
+            id="youtubeHandle"
+            placeholder="https://youtube.com/@yourusername"
+            value={formData.youtubeHandle || ''}
+            onChange={(e) => onChange('youtubeHandle', e.target.value)}
           />
         </div>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="facebookHandle">Facebook Profile Link</Label>
+          <Input
+            id="facebookHandle"
+            placeholder="https://facebook.com/yourusername"
+            value={formData.facebookHandle || ''}
+            onChange={(e) => onChange('facebookHandle', e.target.value)}
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="tiktokHandle">TikTok Profile Link</Label>
+          <Input
+            id="tiktokHandle"
+            placeholder="https://tiktok.com/@yourusername"
+            value={formData.tiktokHandle || ''}
+            onChange={(e) => onChange('tiktokHandle', e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Followers Count */}
+      <div>
+        <Label>Followers Count *</Label>
+        <Select value={formData.followersCount || ''} onValueChange={(value) => onChange('followersCount', value)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select your follower range" />
+          </SelectTrigger>
+          <SelectContent>
+            {followerRanges.map((range) => (
+              <SelectItem key={range} value={range}>
+                {range}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Location */}
+      <div>
+        <Label htmlFor="location">Location *</Label>
+        <Input
+          id="location"
+          placeholder="City, State/Country"
+          value={formData.location || formData.city || ''}
+          onChange={(e) => onChange('location', e.target.value)}
+          required
+        />
+      </div>
+
+      {/* Category */}
+      <div>
+        <Label>Category/Niche *</Label>
+        <Select value={formData.niche || ''} onValueChange={(value) => onChange('niche', value)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select your niche/category" />
+          </SelectTrigger>
+          <SelectContent>
+            {niches.map((niche) => (
+              <SelectItem key={niche} value={niche}>
+                {niche}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Contact Number */}
+      <div>
+        <Label htmlFor="contactNumber">Contact Number *</Label>
+        <Input
+          id="contactNumber"
+          type="tel"
+          placeholder="+1 (555) 123-4567"
+          value={formData.phone || ''}
+          onChange={(e) => onChange('phone', e.target.value)}
+          required
+        />
+      </div>
+
+      {/* Bio */}
       <div>
         <Label htmlFor="bio">Bio *</Label>
         <Textarea
@@ -91,6 +151,7 @@ const InfluencerFields: React.FC<InfluencerFieldsProps> = ({ formData, onChange 
           value={formData.bio || ''}
           onChange={(e) => onChange('bio', e.target.value)}
           rows={3}
+          required
         />
       </div>
     </div>

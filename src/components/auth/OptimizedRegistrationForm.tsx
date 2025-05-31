@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,6 +41,9 @@ interface FormData {
   followersCount?: string;
   instagramHandle?: string;
   facebookHandle?: string;
+  youtubeHandle?: string;
+  tiktokHandle?: string;
+  location?: string;
   bio?: string;
   staffRole?: string;
   employeeCode?: string;
@@ -175,8 +177,8 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
       setError('Please fill in required business information');
       return false;
     }
-    if (formData.role === 'Influencer' && (!formData.niche || !formData.bio)) {
-      setError('Please fill in required influencer information');
+    if (formData.role === 'Influencer' && (!formData.niche || !formData.bio || !formData.followersCount || !formData.phone)) {
+      setError('Please fill in all required influencer information');
       return false;
     }
     return true;
@@ -222,6 +224,9 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
           followersCount: formData.followersCount,
           instagramHandle: formData.instagramHandle,
           facebookHandle: formData.facebookHandle,
+          youtubeHandle: formData.youtubeHandle,
+          tiktokHandle: formData.tiktokHandle,
+          location: formData.location,
           bio: formData.bio,
         }),
         ...(formData.role === 'Staff' && {
