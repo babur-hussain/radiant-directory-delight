@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
@@ -12,50 +13,50 @@ export const useSubscriptionPackages = () => {
   } = useQuery({
     queryKey: ['subscription-packages'],
     queryFn: async () => {
-      console.log("Fetching subscription packages...");
+      console.log("🔍 Fetching subscription packages from Supabase...");
       
       const { data, error } = await supabase
         .from('subscription_packages')
         .select('*')
-        .eq('is_active', true)
         .order('price', { ascending: true });
       
       if (error) {
-        console.error('Database fetch error:', error);
+        console.error('❌ Supabase error:', error);
         throw new Error(`Failed to fetch packages: ${error.message}`);
       }
       
+      console.log('✅ Raw data from Supabase:', data);
+      
       if (!data || data.length === 0) {
-        console.log('No packages found in database');
+        console.log('⚠️ No packages found in database');
         return [];
       }
       
-      console.log('Raw packages from database:', data);
-      
-      // Simple mapping without complex parsing
+      // Simple mapping without complex logic
       const mappedPackages: ISubscriptionPackage[] = data.map((pkg): ISubscriptionPackage => {
-        // Parse features - keep it simple
+        // Handle features - simple approach
         let features: string[] = [];
         if (pkg.features) {
           if (typeof pkg.features === 'string') {
             try {
               features = JSON.parse(pkg.features);
             } catch {
-              // If JSON parsing fails, split by common delimiters
-              features = pkg.features.split(/[\n,]/).map(f => f.trim()).filter(f => f.length > 0);
+              // If not JSON, treat as single feature
+              features = [pkg.features];
             }
           } else if (Array.isArray(pkg.features)) {
             features = pkg.features;
           }
         }
         
+        // Default features if none exist
         if (features.length === 0) {
-          features = ['Full platform access'];
+          features = ['Access to platform'];
         }
         
         return {
-          id: pkg.id,
-          title: pkg.title || 'Subscription Package',
+          id: pkg.id || '',
+          title: pkg.title || 'Package',
           price: pkg.price || 0,
           monthlyPrice: pkg.monthly_price || pkg.price || 0,
           setupFee: pkg.setup_fee || 0,
@@ -74,7 +75,7 @@ export const useSubscriptionPackages = () => {
         };
       });
       
-      console.log('Final mapped packages:', mappedPackages);
+      console.log('✅ Mapped packages:', mappedPackages);
       return mappedPackages;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes

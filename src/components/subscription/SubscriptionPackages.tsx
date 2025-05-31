@@ -23,24 +23,34 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   const { user } = useAuth();
   const { packages, isLoading, isError, error } = useSubscriptionPackages();
 
-  console.log("SubscriptionPackages - packages:", packages);
-  console.log("SubscriptionPackages - isLoading:", isLoading);
-  console.log("SubscriptionPackages - isError:", isError);
+  console.log("📦 SubscriptionPackages component:", {
+    totalPackages: packages?.length || 0,
+    userRole,
+    filterByType,
+    isLoading,
+    isError,
+    packages
+  });
 
-  // Filter packages if needed
-  const filteredPackages = React.useMemo(() => {
+  // Filter packages based on userRole if needed
+  const displayPackages = React.useMemo(() => {
     if (!packages || packages.length === 0) {
+      console.log("⚠️ No packages to display");
       return [];
     }
 
     if (!filterByType) {
+      console.log("🔄 Showing all packages (no filter)");
       return packages;
     }
 
-    return packages.filter(pkg => pkg.type === userRole);
+    const filtered = packages.filter(pkg => pkg.type === userRole);
+    console.log(`🔄 Filtered packages for ${userRole}:`, filtered);
+    return filtered;
   }, [packages, userRole, filterByType]);
 
   const handleSelectPackage = (pkg: ISubscriptionPackage) => {
+    console.log("🎯 Package selected:", pkg.title);
     if (onSelectPackage) {
       onSelectPackage(pkg);
     }
@@ -92,7 +102,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
     );
   }
 
-  if (!filteredPackages || filteredPackages.length === 0) {
+  if (!displayPackages || displayPackages.length === 0) {
     return (
       <div className="text-center py-12">
         <div className="mb-4">
@@ -105,13 +115,16 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
             : 'No subscription packages are currently available.'
           }
         </p>
+        <p className="text-sm text-gray-500">
+          Total packages in database: {packages?.length || 0}
+        </p>
       </div>
     );
   }
 
   return (
     <div className="grid md:grid-cols-3 gap-6 max-w-7xl mx-auto">
-      {filteredPackages.map((pkg) => {
+      {displayPackages.map((pkg) => {
         const monthlyPrice = pkg.monthlyPrice || pkg.price;
         const isPopular = pkg.popular;
         
