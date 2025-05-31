@@ -323,7 +323,10 @@ const mapDbRowToPackage = (dbRow: any): ISubscriptionPackage => {
     console.warn("Error parsing dashboard_sections:", e);
   }
   
-  const mappedPackage = {
+  // Ensure type is properly cast to the union type
+  const packageType: 'Business' | 'Influencer' = dbRow.type === 'Influencer' ? 'Influencer' : 'Business';
+  
+  const mappedPackage: ISubscriptionPackage = {
     id: dbRow.id,
     title: dbRow.title || '',
     price: typeof dbRow.price === 'number' ? dbRow.price : 0,
@@ -334,7 +337,7 @@ const mapDbRowToPackage = (dbRow: any): ISubscriptionPackage => {
     fullDescription: dbRow.full_description || '',
     features: features,
     popular: !!dbRow.popular,
-    type: dbRow.type === 'Influencer' ? 'Influencer' : 'Business',
+    type: packageType,
     termsAndConditions: dbRow.terms_and_conditions || '',
     paymentType: paymentType,
     billingCycle: billingCycle,
