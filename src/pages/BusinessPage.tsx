@@ -86,7 +86,7 @@ const BusinessPage = () => {
           <div className="container px-4 mx-auto relative z-10">
             <div className="max-w-3xl mx-auto text-center">
               <h1 className="text-4xl md:text-5xl font-bold mb-6 text-gradient-blue">
-                Grow Your Business with Influencer Marketing
+                Grow as Business with Influencer Marketing
               </h1>
               <p className="text-xl text-gray-600 mb-8">
                 Connect with our network of influencers to amplify your brand message and drive meaningful business growth.

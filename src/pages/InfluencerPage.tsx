@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -81,7 +82,7 @@ const InfluencerPage = () => {
           <div className="container px-4 mx-auto relative z-10">
             <div className="max-w-3xl mx-auto text-center">
               <h1 className="text-4xl md:text-5xl font-bold mb-6 text-gradient-purple">
-                🎥 Be Seen. Be Paid. Be a Star.
+                🎥 Earn as Influencer. Be Seen. Be Paid. Be a Star.
               </h1>
               <p className="text-xl text-gray-600 mb-8">
                 Join for FREE, showcase your social power, and unlock earning opportunities from brands near you.
