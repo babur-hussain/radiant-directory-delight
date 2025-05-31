@@ -1,11 +1,22 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import SearchBar from './search/SearchBar';
 import { useNavigate } from 'react-router-dom';
 import HeroContent from './hero/HeroContent';
 
 const HeroSection: React.FC = () => {
   const navigate = useNavigate();
+  const [searchType, setSearchType] = useState<'influencers' | 'businesses' | 'both'>('both');
+  
+  const handleSearchTypeChange = (type: 'influencers' | 'businesses' | 'both') => {
+    setSearchType(type);
+    console.log('Search type changed to:', type);
+  };
+
+  const handleResultsVisibilityChange = (visible: boolean) => {
+    console.log('Results visibility changed:', visible);
+    // You can add logic here to handle search results visibility
+  };
   
   return (
     <section className="relative bg-gradient-to-b from-purple-100 to-pink-50 pt-14 sm:pt-16 md:pt-20 lg:pt-24 pb-8 sm:pb-12 md:pb-16 overflow-hidden min-h-[60vh] sm:min-h-[70vh]">
@@ -22,7 +33,12 @@ const HeroSection: React.FC = () => {
         
         <div className="mt-4 sm:mt-6 md:mt-8 w-full max-w-4xl mx-auto px-1 sm:px-2 md:px-0">
           <div className="bg-white p-2 sm:p-3 md:p-4 lg:p-6 shadow-xl rounded-lg sm:rounded-xl md:rounded-2xl">
-            <SearchBar initialQuery="" onResultsVisibilityChange={() => {}} />
+            <SearchBar 
+              initialQuery="" 
+              onResultsVisibilityChange={handleResultsVisibilityChange}
+              searchType={searchType}
+              onSearchTypeChange={handleSearchTypeChange}
+            />
           </div>
         </div>
       </div>
