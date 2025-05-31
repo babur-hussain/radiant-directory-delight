@@ -77,6 +77,32 @@ img {
   z-index: 60 !important;
 }
 
+/* Modal and dialog z-index fixes */
+[data-radix-dialog-overlay] {
+  z-index: 100 !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-radix-dialog-content] {
+  z-index: 101 !important;
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  max-height: 95vh !important;
+  overflow-y: auto !important;
+}
+
+/* Mobile modal improvements */
+@media (max-width: 640px) {
+  [data-radix-dialog-content] {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: 0 !important;
+    border-radius: 12px !important;
+  }
+}
+
 /* Custom animations */
 @keyframes fade-in {
   from {

@@ -65,22 +65,22 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden max-h-[90vh]">
-        <DialogHeader className="px-4 pt-4 pb-0">
-          <DialogTitle className="text-center text-2xl font-bold">
+      <DialogContent className="sm:max-w-[425px] w-[95vw] max-w-[95vw] sm:w-full p-0 overflow-hidden max-h-[95vh] sm:max-h-[90vh] bg-white border-0 shadow-2xl">
+        <DialogHeader className="px-4 pt-4 pb-0 bg-white">
+          <DialogTitle className="text-center text-xl sm:text-2xl font-bold text-gray-900">
             {activeTab === 'login' ? 'Welcome Back' : 'Create an Account'}
           </DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="max-h-[calc(90vh-120px)]">
-          <div className="px-4 pb-4">
+        <ScrollArea className="max-h-[calc(95vh-80px)] sm:max-h-[calc(90vh-120px)] bg-white">
+          <div className="px-4 pb-4 bg-white">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-4 bg-gray-100">
+                <TabsTrigger value="login" className="data-[state=active]:bg-white">Login</TabsTrigger>
+                <TabsTrigger value="register" className="data-[state=active]:bg-white">Register</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="login" className="space-y-4">
+              <TabsContent value="login" className="space-y-4 mt-0">
                 <SocialLoginButtons onGoogleLogin={handleGoogleLogin} />
                 
                 <div className="relative">
@@ -88,7 +88,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     <Separator className="w-full" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
+                    <span className="bg-white px-2 text-muted-foreground">
                       Or continue with
                     </span>
                   </div>
@@ -108,7 +108,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     <Separator className="w-full" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
+                    <span className="bg-white px-2 text-muted-foreground">
                       Or continue with
                     </span>
                   </div>
