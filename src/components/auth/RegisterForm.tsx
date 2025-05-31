@@ -14,13 +14,16 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { trackReferral } from "@/services/referralService";
 import { getReferralIdFromURL, validateReferralId } from "@/utils/referral/referralUtils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Check, AlertCircle, Sparkles, UserPlus } from "lucide-react";
+import { Check, AlertCircle, Sparkles, UserPlus, Eye, EyeOff, Mail, Lock, User, Phone, MapPin, Building } from "lucide-react";
 
-// Define the form validation schema with additional fields
+// Define the form validation schema with stronger validation
 const formSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }).max(50, { message: "Name must be less than 50 characters." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  password: z.string()
+    .min(8, { message: "Password must be at least 8 characters." })
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, { message: "Password must contain at least one uppercase letter, one lowercase letter, and one number." }),
+  confirmPassword: z.string().min(8, { message: "Please confirm your password." }),
   phone: z.string().optional(),
   city: z.string().optional(),
   country: z.string().optional(),
@@ -28,6 +31,9 @@ const formSchema = z.object({
   businessCategory: z.string().optional(),
   website: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
   referralCode: z.string().optional()
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -35,6 +41,8 @@ type FormData = z.infer<typeof formSchema>;
 const RegisterForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>("User");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { signup } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -50,6 +58,7 @@ const RegisterForm: React.FC = () => {
       name: "",
       email: "",
       password: "",
+      confirmPassword: "",
       phone: "",
       city: "",
       country: "",
@@ -58,6 +67,7 @@ const RegisterForm: React.FC = () => {
       website: "",
       referralCode: ""
     },
+    mode: "onChange",
   });
   
   // Get referral code from URL if present
@@ -68,10 +78,9 @@ const RegisterForm: React.FC = () => {
       form.setValue("referralCode", urlReferralCode);
       validateReferralCode(urlReferralCode);
     }
-  }, []);
+  }, [form]);
   
   const onSelectType = (type: UserRole) => {
-    // Ensure type is one of the allowed user roles
     if (type === "User" || type === "Business" || type === "Influencer") {
       setSelectedRole(type);
     }
@@ -96,11 +105,14 @@ const RegisterForm: React.FC = () => {
   };
 
   const onSubmit = async (data: FormData) => {
+    if (isLoading) return;
+    
     setIsLoading(true);
     setSignupError(null);
     
     try {
-      // Extract referral code
+      console.log('Starting registration process for:', data.email);
+      
       const refCode = data.referralCode || referralCode;
       
       // Prepare additional data based on user role
@@ -123,22 +135,36 @@ const RegisterForm: React.FC = () => {
         additionalData.referralId = refCode;
       }
       
+      console.log('Registration data prepared:', { 
+        email: data.email, 
+        role: selectedRole, 
+        hasReferral: !!refCode 
+      });
+      
       // Register the user with auth service
       const result = await signup(data.email, data.password, data.name, selectedRole, additionalData);
       
       if (!result || (result as any).error) {
-        // Handle registration error
+        const errorMsg = (result as any)?.error?.message || "Registration failed. Please try again.";
+        console.error("Registration failed:", errorMsg);
+        setSignupError(errorMsg);
+        
         toast({
           title: "Registration failed",
-          description: (result as any)?.error?.message || "Something went wrong. Please try again.",
+          description: errorMsg,
           variant: "destructive",
         });
-        console.error("Registration error:", (result as any)?.error);
-      } else if (result.id) {
+        return;
+      }
+      
+      if (result.id) {
+        console.log('Registration successful:', result.id);
+        
         // Track referral if a referral code was provided
         if (refCode) {
           try {
             await trackReferral(refCode, result.id, selectedRole);
+            console.log('Referral tracked successfully');
           } catch (error) {
             console.error("Error tracking referral:", error);
             // Don't fail the registration if referral tracking fails
@@ -147,20 +173,44 @@ const RegisterForm: React.FC = () => {
         
         toast({
           title: "Welcome aboard! 🎉",
-          description: "Your account has been created successfully.",
+          description: "Your account has been created successfully. Please check your email to verify your account.",
         });
         
+        // Clear form
+        form.reset();
+        
         // Redirect after successful registration
-        navigate("/profile");
+        setTimeout(() => {
+          navigate("/profile");
+        }, 2000);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Registration error:", error);
+      
+      let errorMessage = "Registration failed. Please try again.";
+      
+      if (error.message) {
+        const errorMsg = error.message.toLowerCase();
+        
+        if (errorMsg.includes('user already registered')) {
+          errorMessage = "An account with this email already exists. Please sign in instead.";
+        } else if (errorMsg.includes('invalid email')) {
+          errorMessage = "Please enter a valid email address.";
+        } else if (errorMsg.includes('weak password')) {
+          errorMessage = "Password is too weak. Please choose a stronger password.";
+        } else if (errorMsg.includes('network')) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setSignupError(errorMessage);
       toast({
         title: "Registration failed",
-        description: (error as Error).message || "Something went wrong. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
-      setSignupError((error as Error).message || "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -202,11 +252,15 @@ const RegisterForm: React.FC = () => {
               <FormItem>
                 <FormLabel className="text-gray-700 font-medium">Full Name *</FormLabel>
                 <FormControl>
-                  <Input 
-                    placeholder="Enter your full name" 
-                    {...field} 
-                    className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
-                  />
+                  <div className="relative group">
+                    <Input 
+                      placeholder="Enter your full name" 
+                      autoComplete="name"
+                      {...field} 
+                      className="pl-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                    />
+                    <User className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -220,12 +274,16 @@ const RegisterForm: React.FC = () => {
               <FormItem>
                 <FormLabel className="text-gray-700 font-medium">Email Address *</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="email" 
-                    placeholder="Enter your email" 
-                    {...field} 
-                    className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
-                  />
+                  <div className="relative group">
+                    <Input 
+                      type="email" 
+                      placeholder="Enter your email" 
+                      autoComplete="email"
+                      {...field} 
+                      className="pl-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                    />
+                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -235,17 +293,29 @@ const RegisterForm: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
-              name="phone"
+              name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700 font-medium">Phone Number</FormLabel>
+                  <FormLabel className="text-gray-700 font-medium">Password *</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="tel" 
-                      placeholder="Phone number" 
-                      {...field} 
-                      className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
-                    />
+                    <div className="relative group">
+                      <Input 
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Create a strong password" 
+                        autoComplete="new-password"
+                        {...field} 
+                        className="pl-12 pr-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                      />
+                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 hover:text-purple-500 transition-colors focus:outline-none"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff /> : <Eye />}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -254,17 +324,29 @@ const RegisterForm: React.FC = () => {
             
             <FormField
               control={form.control}
-              name="password"
+              name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700 font-medium">Password *</FormLabel>
+                  <FormLabel className="text-gray-700 font-medium">Confirm Password *</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="password" 
-                      placeholder="Create a password" 
-                      {...field} 
-                      className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
-                    />
+                    <div className="relative group">
+                      <Input 
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        placeholder="Confirm your password" 
+                        autoComplete="new-password"
+                        {...field} 
+                        className="pl-12 pr-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                      />
+                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 hover:text-purple-500 transition-colors focus:outline-none"
+                        tabIndex={-1}
+                      >
+                        {showConfirmPassword ? <EyeOff /> : <Eye />}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -275,16 +357,21 @@ const RegisterForm: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
-              name="city"
+              name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700 font-medium">City</FormLabel>
+                  <FormLabel className="text-gray-700 font-medium">Phone Number</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Your city" 
-                      {...field} 
-                      className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
-                    />
+                    <div className="relative group">
+                      <Input 
+                        type="tel" 
+                        placeholder="Phone number" 
+                        autoComplete="tel"
+                        {...field} 
+                        className="pl-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                      />
+                      <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -293,22 +380,48 @@ const RegisterForm: React.FC = () => {
             
             <FormField
               control={form.control}
-              name="country"
+              name="city"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700 font-medium">Country</FormLabel>
+                  <FormLabel className="text-gray-700 font-medium">City</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Your country" 
-                      {...field} 
-                      className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
-                    />
+                    <div className="relative group">
+                      <Input 
+                        placeholder="Your city" 
+                        autoComplete="address-level2"
+                        {...field} 
+                        className="pl-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                      />
+                      <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
           </div>
+          
+          <FormField
+            control={form.control}
+            name="country"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-gray-700 font-medium">Country</FormLabel>
+                <FormControl>
+                  <div className="relative group">
+                    <Input 
+                      placeholder="Your country" 
+                      autoComplete="country-name"
+                      {...field} 
+                      className="pl-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                    />
+                    <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           
           {selectedRole === "Business" && (
             <>
@@ -319,11 +432,15 @@ const RegisterForm: React.FC = () => {
                   <FormItem>
                     <FormLabel className="text-gray-700 font-medium">Business Name</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="Your business name" 
-                        {...field} 
-                        className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
-                      />
+                      <div className="relative group">
+                        <Input 
+                          placeholder="Your business name" 
+                          autoComplete="organization"
+                          {...field} 
+                          className="pl-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                        />
+                        <Building className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -358,6 +475,7 @@ const RegisterForm: React.FC = () => {
                       <FormControl>
                         <Input 
                           placeholder="https://www.example.com" 
+                          autoComplete="url"
                           {...field} 
                           className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
                         />
@@ -423,12 +541,12 @@ const RegisterForm: React.FC = () => {
           
           <Button 
             type="submit" 
-            className="w-full h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 mt-8" 
-            disabled={isLoading}
+            className="w-full h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 mt-8 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none" 
+            disabled={isLoading || !form.formState.isValid}
           >
             {isLoading ? (
               <>
-                <Sparkles className="mr-2 h-5 w-5 animate-spin" />
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Creating your account...
               </>
             ) : (

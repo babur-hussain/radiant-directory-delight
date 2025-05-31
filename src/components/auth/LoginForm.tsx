@@ -49,33 +49,51 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
   });
 
   const onSubmit = async (data: LoginFormData) => {
+    if (isSubmitting) return;
+    
     setIsSubmitting(true);
     
     try {
-      await login(data.email, data.password, data.employeeCode);
-      toast({
-        title: 'Welcome back! 🎉',
-        description: 'You have successfully signed in.',
-      });
-      onSuccess();
+      console.log('Attempting login with:', { email: data.email, hasPassword: !!data.password });
+      
+      const result = await login(data.email, data.password, data.employeeCode);
+      
+      if (result) {
+        console.log('Login successful:', result.id);
+        toast({
+          title: 'Welcome back! 🎉',
+          description: 'You have successfully signed in.',
+        });
+        onSuccess();
+      }
     } catch (error: any) {
       console.error('Login error:', error);
       
-      let errorMessage = 'Sign in failed';
+      let errorTitle = 'Sign in failed';
       let errorDescription = 'Please check your credentials and try again';
       
-      if (error.message?.includes('Invalid login credentials')) {
-        errorDescription = 'Invalid email or password';
-      } else if (error.message?.includes('Email not confirmed')) {
-        errorDescription = 'Please check your email and click the confirmation link';
-      } else if (error.message?.includes('Invalid employee code')) {
-        errorDescription = 'Invalid employee code for this account';
-      } else if (error.message) {
-        errorDescription = error.message;
+      // Handle specific error types
+      if (error.message) {
+        const errorMsg = error.message.toLowerCase();
+        
+        if (errorMsg.includes('invalid login credentials') || errorMsg.includes('invalid email or password')) {
+          errorDescription = 'Invalid email or password. Please check your credentials.';
+        } else if (errorMsg.includes('email not confirmed')) {
+          errorTitle = 'Email verification required';
+          errorDescription = 'Please check your email and click the confirmation link before signing in.';
+        } else if (errorMsg.includes('invalid employee code')) {
+          errorDescription = 'Invalid employee code for this account.';
+        } else if (errorMsg.includes('too many requests')) {
+          errorDescription = 'Too many login attempts. Please try again later.';
+        } else if (errorMsg.includes('network')) {
+          errorDescription = 'Network error. Please check your connection and try again.';
+        } else {
+          errorDescription = error.message;
+        }
       }
       
       toast({
-        title: errorMessage,
+        title: errorTitle,
         description: errorDescription,
         variant: 'destructive',
       });
@@ -84,14 +102,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
     }
   };
 
+  const handleForgotPasswordBack = () => {
+    setShowForgotPassword(false);
+  };
+
   if (showForgotPassword) {
     return (
       <div className="w-full space-y-6">
-        <div className="text-center">
-          <h3 className="text-xl font-bold text-gray-900">Reset Password</h3>
-          <p className="text-sm text-gray-600 mt-1">We'll help you get back in</p>
-        </div>
-        <ForgotPasswordForm onBackToLogin={() => setShowForgotPassword(false)} />
+        <ForgotPasswordForm onBackToLogin={handleForgotPasswordBack} />
       </div>
     );
   }
@@ -111,6 +129,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
                     <Input
                       placeholder="Enter your email"
                       type="email"
+                      autoComplete="email"
                       {...field}
                       className="pl-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 group-hover:border-gray-300"
                     />
@@ -133,6 +152,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
                     <Input
                       placeholder="Enter your password"
                       type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
                       {...field}
                       className="pl-12 pr-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 group-hover:border-gray-300"
                     />
@@ -140,7 +160,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 hover:text-purple-500 transition-colors"
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 hover:text-purple-500 transition-colors focus:outline-none"
+                      tabIndex={-1}
                     >
                       {showPassword ? <EyeOff /> : <Eye />}
                     </button>
@@ -163,6 +184,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
                 <FormControl>
                   <Input
                     placeholder="Enter employee code if applicable"
+                    autoComplete="organization"
                     {...field}
                     className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
                   />
@@ -185,8 +207,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
 
           <Button
             type="submit"
-            className="w-full h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200"
-            disabled={isSubmitting}
+            className="w-full h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            disabled={isSubmitting || !form.formState.isValid}
           >
             {isSubmitting ? (
               <>
