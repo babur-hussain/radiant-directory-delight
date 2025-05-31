@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Card,
@@ -23,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { useSubscriptionPackages, ISubscriptionPackage } from '@/hooks/useSubscriptionPackages';
+import { savePackage, deletePackage } from '@/services/packageService';
 import { CheckCircle2, AlertCircle, RefreshCw, Database, Activity, Loader2 } from 'lucide-react';
 
 interface SubscriptionPackageManagementProps {
@@ -44,7 +44,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
     paymentType: 'recurring'
   });
   const { toast } = useToast();
-  const { packages, isLoading, isError, error, refetch, createOrUpdate, remove } = useSubscriptionPackages();
+  const { packages, isLoading, isError, error, refetch } = useSubscriptionPackages();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -67,7 +67,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
     }
 
     try {
-      await createOrUpdate(newPackage as ISubscriptionPackage);
+      await savePackage(newPackage as ISubscriptionPackage);
       toast({
         title: "Success",
         description: "Subscription package added successfully.",
@@ -87,7 +87,7 @@ const SubscriptionPackageManagement: React.FC<SubscriptionPackageManagementProps
 
   const handleRemovePackage = async (id: string) => {
     try {
-      await remove(id);
+      await deletePackage(id);
       toast({
         title: "Success",
         description: "Subscription package removed successfully.",
