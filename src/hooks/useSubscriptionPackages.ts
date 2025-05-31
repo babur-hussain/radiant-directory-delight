@@ -92,7 +92,10 @@ export const useSubscriptionPackages = (userRole?: string) => {
             features = ['Full access to platform features'];
           }
           
-          const mappedPackage = {
+          // Ensure type is properly cast to the union type - fix the TypeScript error
+          const packageType: 'Business' | 'Influencer' = pkg.type && pkg.type.toLowerCase() === 'influencer' ? 'Influencer' : 'Business';
+          
+          const mappedPackage: ISubscriptionPackage = {
             id: pkg.id,
             title: pkg.title,
             price: pkg.price || 0,
@@ -103,7 +106,7 @@ export const useSubscriptionPackages = (userRole?: string) => {
             fullDescription: pkg.full_description || '',
             features: features,
             popular: pkg.popular || false,
-            type: pkg.type?.toLowerCase() === 'influencer' ? 'Influencer' : 'Business',
+            type: packageType,
             termsAndConditions: pkg.terms_and_conditions || '',
             paymentType: pkg.payment_type === 'one-time' ? 'one-time' : 'recurring',
             billingCycle: pkg.billing_cycle === 'monthly' ? 'monthly' : 'yearly',
