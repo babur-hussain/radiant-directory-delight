@@ -22,21 +22,39 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
 }) => {
   const { user } = useAuth();
   // Always fetch all packages, then filter in component if needed
-  const { packages, isLoading, isError } = useSubscriptionPackages();
+  const { packages, isLoading, isError, error } = useSubscriptionPackages();
 
-  console.log("=== SubscriptionPackages Debug ===");
+  console.log("=== SubscriptionPackages Component Debug ===");
   console.log("Raw packages from hook:", packages);
+  console.log("Packages type:", typeof packages);
+  console.log("Packages is array:", Array.isArray(packages));
+  console.log("Packages length:", packages?.length);
   console.log("User role filter:", userRole);
   console.log("Filter by type:", filterByType);
   console.log("Is loading:", isLoading);
   console.log("Is error:", isError);
+  console.log("Error details:", error);
 
   // Filter packages based on filterByType prop
   const filteredPackages = React.useMemo(() => {
-    if (!packages || packages.length === 0) {
-      console.log("No packages available to filter");
+    console.log("=== Filtering packages ===");
+    
+    if (!packages) {
+      console.log("No packages to filter - packages is null/undefined");
       return [];
     }
+
+    if (!Array.isArray(packages)) {
+      console.log("Packages is not an array:", typeof packages);
+      return [];
+    }
+
+    if (packages.length === 0) {
+      console.log("No packages available to filter - empty array");
+      return [];
+    }
+
+    console.log("Starting with packages:", packages.length);
 
     if (!filterByType) {
       console.log("Not filtering by type, showing all packages:", packages.length);
@@ -61,6 +79,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   };
 
   if (isLoading) {
+    console.log("Component showing loading state");
     return (
       <div className="grid md:grid-cols-3 gap-6 max-w-7xl mx-auto">
         {[1, 2, 3].map((i) => (
@@ -87,7 +106,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   }
 
   if (isError) {
-    console.error("Error loading packages");
+    console.error("Component showing error state");
     return (
       <div className="text-center py-12">
         <div className="mb-4">
@@ -96,6 +115,9 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
         <h3 className="text-lg font-semibold text-gray-700 mb-2">Unable to Load Packages</h3>
         <p className="text-gray-600 mb-4">
           There was an issue loading subscription packages. Please try refreshing the page.
+        </p>
+        <p className="text-sm text-red-500 mb-4">
+          Error: {error?.message || 'Unknown error'}
         </p>
         <Button 
           onClick={() => window.location.reload()} 
@@ -108,7 +130,10 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   }
 
   if (!filteredPackages || filteredPackages.length === 0) {
-    console.log("No filtered packages to display");
+    console.log("Component showing no packages state");
+    console.log("filteredPackages:", filteredPackages);
+    console.log("Original packages:", packages);
+    
     return (
       <div className="text-center py-12">
         <div className="mb-4">
@@ -121,14 +146,17 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
             : 'No subscription packages are currently available in the database.'
           }
         </p>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 mb-4">
           Please contact admin to add subscription packages or check if packages exist in the database.
         </p>
+        <div className="text-xs text-gray-400 bg-gray-100 p-2 rounded">
+          Debug: Original packages: {packages?.length || 0}, Filtered: {filteredPackages?.length || 0}
+        </div>
       </div>
     );
   }
 
-  console.log("Rendering packages:", filteredPackages.length);
+  console.log("Component rendering packages:", filteredPackages.length);
 
   return (
     <div className="grid md:grid-cols-3 gap-6 max-w-7xl mx-auto">
