@@ -1,14 +1,15 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import { getAllPackages, savePackage, deletePackage } from '@/services/packageService';
 import { toast } from '@/hooks/use-toast';
 
 export const useSubscriptionPackages = () => {
   const queryClient = useQueryClient();
   
-  // Query to fetch all packages with enhanced debugging
+  // Simple query to fetch all packages
   const {
-    data: packages,
+    data: packages = [],
     isLoading,
     isError,
     error,
@@ -16,170 +17,162 @@ export const useSubscriptionPackages = () => {
   } = useQuery({
     queryKey: ['subscription-packages'],
     queryFn: async () => {
-      console.log("=== HOOK: Starting to fetch subscription packages ===");
+      console.log("Fetching packages from Supabase...");
       
-      try {
-        const packages = await getAllPackages();
-        console.log("=== HOOK: Received packages ===", {
-          count: packages?.length || 0,
-          packages: packages
-        });
-        
-        // Validate packages structure
-        if (packages && packages.length > 0) {
-          packages.forEach((pkg, index) => {
-            console.log(`Package ${index}:`, {
-              id: pkg.id,
-              title: pkg.title,
-              type: pkg.type,
-              price: pkg.price,
-              isActive: pkg.isActive
-            });
-          });
-        }
-        
-        // Always return an array, even if empty
-        return Array.isArray(packages) ? packages : [];
-      } catch (err) {
-        console.error('=== HOOK: Error fetching subscription packages ===', err);
-        
-        // More specific error messages
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        
-        toast({
-          title: "Failed to Load Packages",
-          description: `Error: ${errorMessage}`,
-          variant: "destructive"
-        });
-        
-        // Return empty array instead of throwing to prevent infinite loading
+      const { data, error } = await supabase
+        .from('subscription_packages')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error(`Failed to fetch packages: ${error.message}`);
+      }
+      
+      console.log('Raw data from Supabase:', data);
+      
+      if (!data || data.length === 0) {
+        console.log('No packages found');
         return [];
       }
+      
+      // Map the data to our interface
+      const mappedPackages = data.map((pkg): ISubscriptionPackage => {
+        let features: string[] = [];
+        
+        // Parse features
+        if (pkg.features) {
+          try {
+            if (typeof pkg.features === 'string') {
+              features = JSON.parse(pkg.features);
+            } else if (Array.isArray(pkg.features)) {
+              features = pkg.features;
+            }
+          } catch (e) {
+            console.warn('Error parsing features:', e);
+            features = [];
+          }
+        }
+        
+        return {
+          id: pkg.id,
+          title: pkg.title,
+          price: pkg.price,
+          monthlyPrice: pkg.monthly_price || undefined,
+          setupFee: pkg.setup_fee || 0,
+          durationMonths: pkg.duration_months || 12,
+          shortDescription: pkg.short_description || '',
+          fullDescription: pkg.full_description || '',
+          features: features,
+          popular: pkg.popular || false,
+          type: pkg.type === 'Influencer' ? 'Influencer' : 'Business',
+          termsAndConditions: pkg.terms_and_conditions || '',
+          paymentType: pkg.payment_type === 'one-time' ? 'one-time' : 'recurring',
+          billingCycle: pkg.billing_cycle === 'monthly' ? 'monthly' : 'yearly',
+          advancePaymentMonths: pkg.advance_payment_months || 0,
+          dashboardSections: Array.isArray(pkg.dashboard_sections) ? pkg.dashboard_sections : [],
+          isActive: pkg.is_active !== false
+        };
+      });
+      
+      console.log('Mapped packages:', mappedPackages);
+      return mappedPackages;
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes cache
-    retry: 1, // Only retry once
-    retryDelay: 1000,
-    initialData: [],
-    refetchOnWindowFocus: false,
-    refetchOnMount: true
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 2,
+    refetchOnWindowFocus: false
   });
   
-  // Create or update mutation with proper text handling
+  // Create or update mutation
   const createOrUpdateMutation = useMutation({
     mutationFn: async (packageData: ISubscriptionPackage) => {
-      console.log("Starting save package mutation with data:", packageData);
+      const { data, error } = await supabase
+        .from('subscription_packages')
+        .upsert({
+          id: packageData.id,
+          title: packageData.title,
+          price: packageData.price,
+          monthly_price: packageData.monthlyPrice,
+          setup_fee: packageData.setupFee || 0,
+          duration_months: packageData.durationMonths || 12,
+          short_description: packageData.shortDescription || '',
+          full_description: packageData.fullDescription || '',
+          features: JSON.stringify(packageData.features || []),
+          popular: packageData.popular || false,
+          type: packageData.type,
+          terms_and_conditions: packageData.termsAndConditions || '',
+          payment_type: packageData.paymentType,
+          billing_cycle: packageData.billingCycle,
+          advance_payment_months: packageData.advancePaymentMonths || 0,
+          dashboard_sections: packageData.dashboardSections || []
+        })
+        .select()
+        .single();
       
-      if (!packageData.title) {
-        console.error("Package title is missing");
-        throw new Error("Package title is required");
+      if (error) {
+        throw new Error(`Failed to save package: ${error.message}`);
       }
       
-      // Ensure text fields are properly handled
-      const processedData: ISubscriptionPackage = {
-        ...packageData,
-        fullDescription: String(packageData.fullDescription || ''),
-        termsAndConditions: String(packageData.termsAndConditions || ''),
-        shortDescription: String(packageData.shortDescription || '')
-      };
-      
-      try {
-        console.log("Calling savePackage service function");
-        return await savePackage(processedData);
-      } catch (error) {
-        console.error("Error in save package mutation:", error);
-        throw error;
-      }
+      return data;
     },
     onSuccess: (savedPackage) => {
-      console.log("Package saved successfully:", savedPackage);
-      
       toast({
         title: "Success",
         description: `Package "${savedPackage.title}" saved successfully`,
       });
-      
-      // Invalidate and refetch
       queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
     },
     onError: (error: any) => {
-      console.error("Package save error:", error);
-      
       toast({
         title: "Error",
-        description: `Failed to save package: ${error instanceof Error ? error.message : String(error)}`,
+        description: `Failed to save package: ${error.message}`,
         variant: "destructive"
       });
     }
   });
   
-  // Delete mutation with improved error handling
+  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (packageId: string) => {
-      console.log("Starting delete package mutation for ID:", packageId);
-      if (!packageId) {
-        console.error("Package ID is missing");
-        throw new Error("Package ID is required");
+      const { error } = await supabase
+        .from('subscription_packages')
+        .delete()
+        .eq('id', packageId);
+      
+      if (error) {
+        throw new Error(`Failed to delete package: ${error.message}`);
       }
       
-      try {
-        await deletePackage(packageId);
-        return packageId;
-      } catch (error) {
-        console.error("Error in delete package mutation:", error);
-        throw error;
-      }
+      return packageId;
     },
-    onSuccess: (packageId) => {
-      console.log("Package deleted successfully:", packageId);
-      
+    onSuccess: () => {
       toast({
         title: "Success",
         description: "Package deleted successfully",
       });
-      
-      // Invalidate and refetch
       queryClient.invalidateQueries({ queryKey: ['subscription-packages'] });
     },
     onError: (error: any) => {
-      console.error("Package delete error:", error);
-      
       toast({
         title: "Error",
-        description: `Failed to delete package: ${error instanceof Error ? error.message : String(error)}`,
+        description: `Failed to delete package: ${error.message}`,
         variant: "destructive"
       });
     }
   });
   
-  // Direct function to create or update a package with better error handling
   const createOrUpdate = async (packageData: ISubscriptionPackage) => {
-    console.log("createOrUpdate function called with data:", packageData);
-    try {
-      // This will trigger the mutation and all its callbacks
-      return await createOrUpdateMutation.mutateAsync(packageData);
-    } catch (error) {
-      console.error("createOrUpdate failed:", error);
-      // Re-throw to allow callers to handle the error if needed
-      throw error;
-    }
+    return await createOrUpdateMutation.mutateAsync(packageData);
   };
   
-  // Direct function to delete a package with better error handling
   const remove = async (packageId: string) => {
-    console.log("remove function called with ID:", packageId);
-    try {
-      await deleteMutation.mutateAsync(packageId);
-      console.log("remove completed successfully");
-      return true;
-    } catch (error) {
-      console.error("remove failed:", error);
-      throw error;
-    }
+    await deleteMutation.mutateAsync(packageId);
+    return true;
   };
 
   return {
-    // Return packages with proper typing, ensuring it's always an array
-    packages: Array.isArray(packages) ? packages : [] as ISubscriptionPackage[],
+    packages: Array.isArray(packages) ? packages : [],
     isLoading,
     isError,
     error,

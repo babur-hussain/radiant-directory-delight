@@ -23,10 +23,11 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   const { packages, isLoading, isError, error } = useSubscriptionPackages();
   const navigate = useNavigate();
   
-  console.log('SubscriptionPackages - Current state:', {
+  console.log('SubscriptionPackages render:', {
     isLoading,
     isError,
-    packagesCount: packages?.length || 0,
+    packagesLength: packages?.length,
+    packages,
     userRole,
     error: error?.message
   });
@@ -56,21 +57,34 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-red-600 mb-2">Unable to Load Packages</h3>
           <p className="text-gray-600 mb-4">
-            There was an error loading the subscription packages. Please try again later.
+            Error: {error?.message || 'Unknown error occurred'}
           </p>
         </div>
       </div>
     );
   }
 
-  // Ensure packages is always an array and filter by user role
-  const safePackages = Array.isArray(packages) ? packages : [];
-  const filteredPackages = safePackages.filter(pkg => {
+  // Filter packages by user role
+  const filteredPackages = packages.filter(pkg => {
     console.log('Filtering package:', pkg.title, 'type:', pkg.type, 'userRole:', userRole);
     return pkg.type === userRole;
   });
 
-  console.log('Filtered packages:', filteredPackages.length);
+  console.log('Filtered packages for role', userRole, ':', filteredPackages);
+
+  if (filteredPackages.length === 0) {
+    return (
+      <div className="subscription-packages-container">
+        <div className="text-center py-12">
+          <div className="text-gray-500 mb-4">
+            <Sparkles className="h-12 w-12 mx-auto mb-2" />
+            <h3 className="text-lg font-semibold">No {userRole} Packages Available</h3>
+            <p className="text-sm">Packages for {userRole}s will be available soon!</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="subscription-packages-container">
@@ -146,7 +160,6 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
                     {isPopular ? <Zap className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
                     <span>Subscribe Now</span>
                   </div>
-                  {/* Animated background effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
                 </Button>
               </CardFooter>
