@@ -301,10 +301,14 @@ export type Database = {
           is_pausable: boolean | null
           is_paused: boolean | null
           is_user_cancellable: boolean | null
+          next_billing_date: string | null
           package_id: string | null
           package_name: string | null
           payment_method: string | null
           payment_type: string | null
+          razorpay_order_id: string | null
+          razorpay_subscription_id: string | null
+          recurring_amount: number | null
           signup_fee: number | null
           start_date: string
           status: string | null
@@ -328,10 +332,14 @@ export type Database = {
           is_pausable?: boolean | null
           is_paused?: boolean | null
           is_user_cancellable?: boolean | null
+          next_billing_date?: string | null
           package_id?: string | null
           package_name?: string | null
           payment_method?: string | null
           payment_type?: string | null
+          razorpay_order_id?: string | null
+          razorpay_subscription_id?: string | null
+          recurring_amount?: number | null
           signup_fee?: number | null
           start_date: string
           status?: string | null
@@ -355,10 +363,14 @@ export type Database = {
           is_pausable?: boolean | null
           is_paused?: boolean | null
           is_user_cancellable?: boolean | null
+          next_billing_date?: string | null
           package_id?: string | null
           package_name?: string | null
           payment_method?: string | null
           payment_type?: string | null
+          razorpay_order_id?: string | null
+          razorpay_subscription_id?: string | null
+          recurring_amount?: number | null
           signup_fee?: number | null
           start_date?: string
           status?: string | null
@@ -404,6 +416,7 @@ export type Database = {
           is_influencer: boolean | null
           last_login: string | null
           last_name: string | null
+          last_updated: string | null
           name: string | null
           niche: string | null
           owner_name: string | null
@@ -414,6 +427,8 @@ export type Database = {
           referral_id: string | null
           role: string | null
           subscription: string | null
+          subscription_assigned_at: string | null
+          subscription_cancelled_at: string | null
           subscription_id: string | null
           subscription_package: string | null
           subscription_status: string | null
@@ -441,6 +456,7 @@ export type Database = {
           is_influencer?: boolean | null
           last_login?: string | null
           last_name?: string | null
+          last_updated?: string | null
           name?: string | null
           niche?: string | null
           owner_name?: string | null
@@ -451,6 +467,8 @@ export type Database = {
           referral_id?: string | null
           role?: string | null
           subscription?: string | null
+          subscription_assigned_at?: string | null
+          subscription_cancelled_at?: string | null
           subscription_id?: string | null
           subscription_package?: string | null
           subscription_status?: string | null
@@ -478,6 +496,7 @@ export type Database = {
           is_influencer?: boolean | null
           last_login?: string | null
           last_name?: string | null
+          last_updated?: string | null
           name?: string | null
           niche?: string | null
           owner_name?: string | null
@@ -488,6 +507,8 @@ export type Database = {
           referral_id?: string | null
           role?: string | null
           subscription?: string | null
+          subscription_assigned_at?: string | null
+          subscription_cancelled_at?: string | null
           subscription_id?: string | null
           subscription_package?: string | null
           subscription_status?: string | null
