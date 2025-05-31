@@ -21,7 +21,7 @@ export const useSubscriptionPackages = (userRole?: string) => {
         .select('*')
         .order('price', { ascending: true });
       
-      // Remove the is_active filter to show all packages
+      // Don't filter by is_active to show all packages including inactive ones
       
       // Only apply role filter if specified and not 'all'
       if (userRole && userRole !== 'all') {
@@ -41,7 +41,7 @@ export const useSubscriptionPackages = (userRole?: string) => {
       console.log('Raw data from Supabase:', data);
       
       if (!data || data.length === 0) {
-        console.log('No packages found for role:', userRole);
+        console.log('No packages found in database');
         return [];
       }
       
@@ -71,26 +71,29 @@ export const useSubscriptionPackages = (userRole?: string) => {
             console.warn('Error parsing features for package:', pkg.title, e);
             features = ['Package features will be updated soon'];
           }
+        } else {
+          // Default features if none provided
+          features = ['Full access to platform features'];
         }
         
         return {
           id: pkg.id,
           title: pkg.title,
-          price: pkg.price,
-          monthlyPrice: pkg.monthly_price || undefined,
+          price: pkg.price || 0,
+          monthlyPrice: pkg.monthly_price || pkg.price || 0,
           setupFee: pkg.setup_fee || 0,
           durationMonths: pkg.duration_months || 12,
           shortDescription: pkg.short_description || '',
           fullDescription: pkg.full_description || '',
           features: features,
           popular: pkg.popular || false,
-          type: pkg.type === 'Influencer' ? 'Influencer' : 'Business',
+          type: pkg.type?.toLowerCase() === 'influencer' ? 'Influencer' : 'Business',
           termsAndConditions: pkg.terms_and_conditions || '',
           paymentType: pkg.payment_type === 'one-time' ? 'one-time' : 'recurring',
           billingCycle: pkg.billing_cycle === 'monthly' ? 'monthly' : 'yearly',
           advancePaymentMonths: pkg.advance_payment_months || 0,
           dashboardSections: Array.isArray(pkg.dashboard_sections) ? pkg.dashboard_sections : [],
-          isActive: pkg.is_active !== false
+          isActive: pkg.is_active !== false // Default to true if not specified
         };
       });
       

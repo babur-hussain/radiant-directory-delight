@@ -17,11 +17,11 @@ interface SubscriptionPackagesProps {
 
 const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ 
   userRole = "Business", 
-  filterByType = false, // Default to false to show all packages
+  filterByType = false,
   onSelectPackage
 }) => {
   const { user } = useAuth();
-  // Always pass undefined to fetch all packages
+  // Always fetch all packages, then filter in component if needed
   const { packages, isLoading, isError } = useSubscriptionPackages();
 
   console.log("=== SubscriptionPackages Debug ===");
@@ -31,7 +31,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   console.log("Is loading:", isLoading);
   console.log("Is error:", isError);
 
-  // Show all packages or filter by type if filterByType is true
+  // Filter packages based on filterByType prop
   const filteredPackages = React.useMemo(() => {
     if (!packages || packages.length === 0) {
       console.log("No packages available to filter");
@@ -87,7 +87,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   }
 
   if (isError) {
-    console.error("Error loading packages, but showing fallback message");
+    console.error("Error loading packages");
     return (
       <div className="text-center py-12">
         <div className="mb-4">
@@ -116,10 +116,13 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
         </div>
         <h3 className="text-lg font-semibold text-gray-700 mb-2">No Packages Available</h3>
         <p className="text-gray-600 mb-4">
-          No subscription packages are currently available in the database.
+          {filterByType 
+            ? `No subscription packages found for ${userRole} users.` 
+            : 'No subscription packages are currently available in the database.'
+          }
         </p>
         <p className="text-sm text-gray-500">
-          Please contact admin to add subscription packages.
+          Please contact admin to add subscription packages or check if packages exist in the database.
         </p>
       </div>
     );
@@ -151,7 +154,6 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
               </div>
             )}
 
-            {/* Show inactive packages with a different badge */}
             {!pkg.isActive && (
               <div className="absolute -top-3 right-4">
                 <Badge variant="secondary" className="text-xs">
@@ -178,7 +180,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
                 )}
               </div>
               <CardDescription className="mt-2 text-gray-600">
-                {pkg.shortDescription}
+                {pkg.shortDescription || 'Subscription package'}
               </CardDescription>
             </CardHeader>
 
