@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
@@ -18,8 +19,9 @@ export const useSubscriptionPackages = (userRole?: string) => {
       let query = supabase
         .from('subscription_packages')
         .select('*')
-        .eq('is_active', true)
         .order('price', { ascending: true });
+      
+      // Remove the is_active filter to show all packages
       
       // Only apply role filter if specified and not 'all'
       if (userRole && userRole !== 'all') {

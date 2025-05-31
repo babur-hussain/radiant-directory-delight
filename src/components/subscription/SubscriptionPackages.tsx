@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,8 +21,8 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   onSelectPackage
 }) => {
   const { user } = useAuth();
-  // Pass 'all' when we want to fetch all packages
-  const { packages, isLoading, isError } = useSubscriptionPackages(filterByType ? userRole : 'all');
+  // Always pass undefined to fetch all packages
+  const { packages, isLoading, isError } = useSubscriptionPackages();
 
   console.log("=== SubscriptionPackages Debug ===");
   console.log("Raw packages from hook:", packages);
@@ -30,7 +31,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   console.log("Is loading:", isLoading);
   console.log("Is error:", isError);
 
-  // Filter packages based on user role or show all if filterByType is false
+  // Show all packages or filter by type if filterByType is true
   const filteredPackages = React.useMemo(() => {
     if (!packages || packages.length === 0) {
       console.log("No packages available to filter");
@@ -115,13 +116,10 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
         </div>
         <h3 className="text-lg font-semibold text-gray-700 mb-2">No Packages Available</h3>
         <p className="text-gray-600 mb-4">
-          {filterByType 
-            ? `No subscription packages found for ${userRole} users.` 
-            : 'No subscription packages are currently available.'
-          }
+          No subscription packages are currently available in the database.
         </p>
         <p className="text-sm text-gray-500">
-          Please check back later or contact support if this issue persists.
+          Please contact admin to add subscription packages.
         </p>
       </div>
     );
@@ -149,6 +147,15 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
                 <Badge className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-1 text-sm font-semibold">
                   <Star className="h-3 w-3 mr-1" />
                   Most Popular
+                </Badge>
+              </div>
+            )}
+
+            {/* Show inactive packages with a different badge */}
+            {!pkg.isActive && (
+              <div className="absolute -top-3 right-4">
+                <Badge variant="secondary" className="text-xs">
+                  Inactive
                 </Badge>
               </div>
             )}
@@ -201,9 +208,9 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
                     ? 'bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-800 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
                     : 'bg-gray-900 hover:bg-gray-800 text-white'
                 }`}
-                disabled={!user}
+                disabled={!user || !pkg.isActive}
               >
-                {!user ? 'Login Required' : 'Choose Plan'}
+                {!user ? 'Login Required' : !pkg.isActive ? 'Not Available' : 'Choose Plan'}
               </Button>
               {!user && (
                 <p className="text-xs text-center text-gray-500 mt-2">
