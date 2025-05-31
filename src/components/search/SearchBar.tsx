@@ -1,7 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, X, Filter } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import {
@@ -205,27 +204,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
             </button>
           )}
         </div>
-        
-        {/* Mobile Filter Toggle */}
-        {isMobile && (
-          <Button
-            onClick={() => setShowFilters(!showFilters)}
-            variant="outline"
-            size="sm"
-            className="ml-2 px-3 h-10 border-gray-200 hover:bg-gray-50"
-          >
-            <Filter className="h-4 w-4" />
-          </Button>
-        )}
       </div>
 
       {/* Filters */}
-      <div className={cn(
-        "grid gap-2 sm:gap-3 transition-all duration-300",
-        isMobile ? (
-          showFilters ? "grid-cols-1 opacity-100" : "grid-cols-1 h-0 overflow-hidden opacity-0"
-        ) : "grid-cols-1 sm:grid-cols-3 opacity-100"
-      )}>
+      <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-3">
         <Select value={category} onValueChange={setCategory}>
           <SelectTrigger className="h-10 sm:h-11 text-sm bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-500">
             <SelectValue placeholder="All Categories" />
@@ -279,13 +261,17 @@ const SearchBar: React.FC<SearchBarProps> = ({
       </div>
 
       {/* Search Results */}
-      <SearchResults
-        results={searchResults}
-        isLoading={isLoading || loading}
-        visible={showResults}
-        onResultClick={handleResultClick}
-        onClose={handleCloseResults}
-      />
+      {showResults && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-2">
+          <SearchResults
+            results={searchResults}
+            isLoading={isLoading || loading}
+            visible={showResults}
+            onResultClick={handleResultClick}
+            onClose={handleCloseResults}
+          />
+        </div>
+      )}
     </div>
   );
 };
