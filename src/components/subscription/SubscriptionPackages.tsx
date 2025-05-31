@@ -16,19 +16,44 @@ interface SubscriptionPackagesProps {
 }
 
 const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({ 
-  userRole = "Influencer", 
+  userRole = "Business", 
   filterByType = true,
   onSelectPackage
 }) => {
   const { user } = useAuth();
   const { packages, isLoading, isError } = useSubscriptionPackages();
 
+  console.log("=== SubscriptionPackages Debug ===");
+  console.log("Raw packages from hook:", packages);
+  console.log("User role filter:", userRole);
+  console.log("Filter by type:", filterByType);
+  console.log("Is loading:", isLoading);
+  console.log("Is error:", isError);
+
   // Filter packages based on user role or show all if filterByType is false
-  const filteredPackages = filterByType 
-    ? packages?.filter(pkg => pkg.type === userRole) || []
-    : packages || [];
+  const filteredPackages = React.useMemo(() => {
+    if (!packages || packages.length === 0) {
+      console.log("No packages available to filter");
+      return [];
+    }
+
+    if (!filterByType) {
+      console.log("Not filtering by type, showing all packages:", packages.length);
+      return packages;
+    }
+
+    const filtered = packages.filter(pkg => {
+      const matches = pkg.type === userRole;
+      console.log(`Package ${pkg.title} (${pkg.type}) matches ${userRole}:`, matches);
+      return matches;
+    });
+    
+    console.log("Filtered packages:", filtered.length, filtered);
+    return filtered;
+  }, [packages, userRole, filterByType]);
 
   const handleSelectPackage = (pkg: ISubscriptionPackage) => {
+    console.log("Package selected:", pkg.title);
     if (onSelectPackage) {
       onSelectPackage(pkg);
     }
@@ -60,19 +85,49 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
     );
   }
 
-  if (isError || !filteredPackages.length) {
+  if (isError) {
+    console.error("Error loading packages, but showing fallback message");
+    return (
+      <div className="text-center py-12">
+        <div className="mb-4">
+          <Zap className="h-12 w-12 text-gray-400 mx-auto" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-700 mb-2">Unable to Load Packages</h3>
+        <p className="text-gray-600 mb-4">
+          There was an issue loading subscription packages. Please try refreshing the page.
+        </p>
+        <Button 
+          onClick={() => window.location.reload()} 
+          variant="outline"
+        >
+          Refresh Page
+        </Button>
+      </div>
+    );
+  }
+
+  if (!filteredPackages || filteredPackages.length === 0) {
+    console.log("No filtered packages to display");
     return (
       <div className="text-center py-12">
         <div className="mb-4">
           <Zap className="h-12 w-12 text-gray-400 mx-auto" />
         </div>
         <h3 className="text-lg font-semibold text-gray-700 mb-2">No Packages Available</h3>
-        <p className="text-gray-600">
-          {isError ? 'Failed to load subscription packages.' : 'No subscription packages found for your role.'}
+        <p className="text-gray-600 mb-4">
+          {filterByType 
+            ? `No subscription packages found for ${userRole} users.` 
+            : 'No subscription packages are currently available.'
+          }
+        </p>
+        <p className="text-sm text-gray-500">
+          Please check back later or contact support if this issue persists.
         </p>
       </div>
     );
   }
+
+  console.log("Rendering packages:", filteredPackages.length);
 
   return (
     <div className="grid md:grid-cols-3 gap-6 max-w-7xl mx-auto">

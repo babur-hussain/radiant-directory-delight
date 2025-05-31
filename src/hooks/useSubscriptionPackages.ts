@@ -22,9 +22,12 @@ export const useSubscriptionPackages = (userRole?: string) => {
         .eq('is_active', true)
         .order('price', { ascending: true });
       
-      // Apply role filter if specified
+      // Only apply role filter if specified and not 'all'
       if (userRole && userRole !== 'all') {
+        console.log("Applying role filter for:", userRole);
         query = query.eq('type', userRole);
+      } else {
+        console.log("Not applying role filter - fetching all packages");
       }
       
       const { data, error } = await query;
