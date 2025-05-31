@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { getAllPackages, savePackage, deletePackage } from '@/services/packageService';
@@ -36,15 +35,17 @@ export const useSubscriptionPackages = () => {
         return packages;
       } catch (err) {
         console.error('Error fetching subscription packages:', err);
-        // Don't throw the error, return empty array instead to prevent infinite loading
+        // Return empty array instead of throwing to prevent infinite loading
         return [];
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes cache
-    retry: 2, // Retry twice
+    retry: 1, // Reduce retry attempts
     retryDelay: 1000,
     // Set initial data to empty array to prevent undefined issues
-    initialData: []
+    initialData: [],
+    // Add this to prevent refetching on window focus
+    refetchOnWindowFocus: false
   });
   
   // Create or update mutation with proper text handling

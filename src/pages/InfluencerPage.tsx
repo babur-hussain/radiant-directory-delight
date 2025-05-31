@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Award, CheckSquare, MapPin, Star, TrendingUp, Users, Zap } from 'lucide-react';
+import { ArrowRight, Award, CheckSquare, MapPin, Star, TrendingUp, Users, Zap, AlertCircle } from 'lucide-react';
 import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
 import Loading from '@/components/ui/loading';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
@@ -12,7 +13,7 @@ import { toast } from 'sonner';
 
 const InfluencerPage = () => {
   const navigate = useNavigate();
-  const { packages, isLoading, isError } = useSubscriptionPackages();
+  const { packages, isLoading, isError, error } = useSubscriptionPackages();
   const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   
@@ -134,9 +135,18 @@ const InfluencerPage = () => {
                 <Loading size="lg" message="Loading subscription packages..." />
               </div>
             ) : isError ? (
-              <div className="text-center py-10">
-                <p className="text-red-500 mb-4">There was an error loading the subscription packages.</p>
-                <Button onClick={() => window.location.reload()}>Try Again</Button>
+              <div className="text-center py-12">
+                <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-red-600 mb-2">Unable to Load Packages</h3>
+                <p className="text-gray-600 mb-4">
+                  {error?.message?.includes('404') 
+                    ? 'No subscription packages are currently available.' 
+                    : 'There was an error loading the subscription packages.'}
+                </p>
+                <Button onClick={() => window.location.reload()} variant="outline">
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Try Again
+                </Button>
               </div>
             ) : (
               <div className="relative subscription-packages-container">
