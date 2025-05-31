@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { PaymentType, BillingCycle } from '@/models/Subscription';
@@ -10,7 +9,6 @@ import { v4 as uuidv4 } from 'uuid';
 const getAllPackages = async (): Promise<ISubscriptionPackage[]> => {
   try {
     console.log("=== STARTING getAllPackages ===");
-    console.log("Supabase URL:", supabase.supabaseUrl);
     
     // Test connection first
     const { data: connectionTest, error: connectionError } = await supabase
