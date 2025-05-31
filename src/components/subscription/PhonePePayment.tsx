@@ -1,12 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, CreditCard, Shield, CheckCircle2 } from 'lucide-react';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { createSubscription } from '@/services/subscriptionService';
+import { usePhonePePayment } from '@/hooks/usePhonePePayment';
 
 interface PhonePePaymentProps {
   selectedPackage: ISubscriptionPackage;
@@ -22,12 +22,12 @@ const PhonePePayment: React.FC<PhonePePaymentProps> = ({
   referralId
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentInitiated, setPaymentInitiated] = useState(false);
   const { user } = useAuth();
+  const { initiatePayment } = usePhonePePayment();
 
   const totalAmount = selectedPackage.price + (selectedPackage.setupFee || 0);
 
-  const simulatePayment = async () => {
+  const handlePayment = async () => {
     if (!user?.id) {
       toast({
         title: "Authentication Required",
@@ -38,63 +38,24 @@ const PhonePePayment: React.FC<PhonePePaymentProps> = ({
     }
 
     setIsProcessing(true);
-    setPaymentInitiated(true);
 
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Create mock payment response
-      const paymentResponse = {
-        success: true,
-        paymentVerified: true,
-        transactionId: `txn_${Date.now()}`,
-        merchantTransactionId: `merchant_${Date.now()}`,
-        amount: totalAmount,
-        status: 'SUCCESS',
-        method: 'PhonePe',
-        timestamp: new Date().toISOString()
-      };
-
-      // Create subscription in database
-      const subscriptionData = {
-        userId: user.id,
+      // Store payment details for success page
+      sessionStorage.setItem('phonepe_payment_details', JSON.stringify({
         packageId: selectedPackage.id,
-        packageName: selectedPackage.title,
         amount: totalAmount,
-        paymentType: selectedPackage.paymentType || 'recurring' as const,
-        billingCycle: selectedPackage.billingCycle || 'monthly' as const,
-        transactionId: paymentResponse.transactionId,
-        paymentMethod: 'PhonePe',
-        status: 'active' as const,
-        recurringAmount: selectedPackage.monthly_price || selectedPackage.price,
-        signupFee: selectedPackage.setupFee || 0
-      };
+        packageName: selectedPackage.title
+      }));
 
-      console.log('Creating subscription with data:', subscriptionData);
+      // Initiate PhonePe payment - this will redirect to PhonePe
+      await initiatePayment(selectedPackage);
       
-      const newSubscription = await createSubscription(subscriptionData);
-      
-      console.log('Subscription created successfully:', newSubscription);
-
-      // Call success callback
-      onSuccess({
-        ...paymentResponse,
-        subscription: newSubscription
-      });
-
-      toast({
-        title: "Payment Successful!",
-        description: `Your ${selectedPackage.title} subscription has been activated.`,
-      });
-
     } catch (error) {
-      console.error('Payment/Subscription creation failed:', error);
+      console.error('Payment initiation failed:', error);
+      setIsProcessing(false);
       onFailure({
         message: error instanceof Error ? error.message : 'Payment processing failed'
       });
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -140,67 +101,39 @@ const PhonePePayment: React.FC<PhonePePaymentProps> = ({
       </Card>
 
       {/* Payment Processing */}
-      {!paymentInitiated ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Shield className="h-5 w-5 mr-2 text-green-600" />
-              Secure Payment with PhonePe
-            </CardTitle>
-            <CardDescription>
-              Your payment is secured and encrypted. Click below to proceed with PhonePe payment.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={simulatePayment}
-              disabled={isProcessing}
-              className="w-full h-12 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Processing Payment...
-                </>
-              ) : (
-                <>
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Pay ₹{totalAmount.toLocaleString('en-IN')} with PhonePe
-                </>
-              )}
-            </Button>
-            <p className="text-xs text-center text-gray-500 mt-3">
-              This is a demo payment. In production, you'll be redirected to PhonePe.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
-          <CardContent className="text-center py-8">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Shield className="h-5 w-5 mr-2 text-green-600" />
+            Secure Payment with PhonePe
+          </CardTitle>
+          <CardDescription>
+            Your payment is secured and encrypted. Click below to proceed with PhonePe payment.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button 
+            onClick={handlePayment}
+            disabled={isProcessing}
+            className="w-full h-12 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold"
+          >
             {isProcessing ? (
               <>
-                <Loader2 className="h-12 w-12 animate-spin text-green-600 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-green-800 mb-2">
-                  Processing Your Payment
-                </h3>
-                <p className="text-green-700">
-                  Please wait while we activate your subscription...
-                </p>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Redirecting to PhonePe...
               </>
             ) : (
               <>
-                <CheckCircle2 className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-green-800 mb-2">
-                  Payment Successful!
-                </h3>
-                <p className="text-green-700">
-                  Your subscription has been activated.
-                </p>
+                <CreditCard className="h-4 w-4 mr-2" />
+                Pay ₹{totalAmount.toLocaleString('en-IN')} with PhonePe
               </>
             )}
-          </CardContent>
-        </Card>
-      )}
+          </Button>
+          <p className="text-xs text-center text-gray-500 mt-3">
+            You will be redirected to PhonePe for secure payment processing.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Security Notice */}
       <div className="text-center">

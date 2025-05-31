@@ -72,18 +72,21 @@ serve(async (req) => {
       
       console.log(`Payment successful for transaction: ${merchantTransactionId}`)
       
-      // Here you would typically:
-      // 1. Update the user's subscription status in your database
-      // 2. Send confirmation email
-      // 3. Log the transaction
+      // Update subscription status in database
+      const { error: updateError } = await supabase
+        .from('user_subscriptions')
+        .update({
+          status: 'active',
+          transaction_id: transactionId,
+          updated_at: new Date().toISOString()
+        })
+        .eq('transaction_id', merchantTransactionId)
       
-      // For now, we'll just log the successful payment
-      console.log('Payment completed successfully:', {
-        merchantTransactionId,
-        transactionId,
-        amount,
-        state: data.state
-      })
+      if (updateError) {
+        console.error('Failed to update subscription:', updateError)
+      } else {
+        console.log('Subscription status updated successfully')
+      }
       
       return new Response(
         JSON.stringify({ status: 'success', message: 'Payment processed' }),

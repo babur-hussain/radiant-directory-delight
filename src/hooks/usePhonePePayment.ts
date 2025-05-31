@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import { loadPhonePeScript, isPhonePeAvailable } from '@/utils/payment/phonePeLoader';
+import { loadPhonePeScript } from '@/utils/payment/phonePeLoader';
 
 export const usePhonePePayment = () => {
   const { toast } = useToast();
@@ -78,6 +78,7 @@ export const usePhonePePayment = () => {
         try {
           // Redirect to PhonePe payment URL
           if (paymentConfig.paymentUrl) {
+            console.log('Redirecting to PhonePe payment URL:', paymentConfig.paymentUrl);
             window.location.href = paymentConfig.paymentUrl;
           } else {
             throw new Error('Payment URL not received from PhonePe');

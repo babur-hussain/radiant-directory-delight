@@ -54,7 +54,7 @@ serve(async (req) => {
     
     if (!config.saltKey) {
       return new Response(
-        JSON.stringify({ error: 'PhonePe configuration not complete' }),
+        JSON.stringify({ error: 'PhonePe configuration not complete - missing salt key' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -66,7 +66,7 @@ serve(async (req) => {
     const amount = (packageData.price + (packageData.setupFee || 0)) * 100
     const merchantTransactionId = `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
     
-    // Create redirect URLs
+    // Create redirect URLs for production
     const baseUrl = req.headers.get('origin') || 'https://growbharatvyapaar.com'
     const redirectUrl = `${baseUrl}/payment-success?txnId=${merchantTransactionId}&status=SUCCESS`
     const callbackUrl = `${req.url.split('/functions/')[0]}/functions/v1/phonepe-webhook`
@@ -75,7 +75,7 @@ serve(async (req) => {
     const paymentPayload = {
       merchantId: config.merchantId,
       merchantTransactionId: merchantTransactionId,
-      merchantUserId: userId.substring(0, 36), // PhonePe has character limits
+      merchantUserId: userId.substring(0, 36),
       amount: amount,
       redirectUrl: redirectUrl,
       redirectMode: 'REDIRECT',
@@ -94,10 +94,10 @@ serve(async (req) => {
     // Generate checksum
     const checksum = await generateChecksum(payloadBase64, config.saltKey, config.saltIndex)
 
-    // Make request to PhonePe
-    const phonePeUrl = config.environment === 'PRODUCTION' 
-      ? 'https://api.phonepe.com/apis/hermes/pg/v1/pay'
-      : 'https://api-preprod.phonepe.com/apis/hermes/pg/v1/pay'
+    // Make request to PhonePe PRODUCTION API
+    const phonePeUrl = 'https://api.phonepe.com/apis/hermes/pg/v1/pay'
+
+    console.log('Making request to PhonePe production API:', phonePeUrl)
 
     const phonePeResponse = await fetch(phonePeUrl, {
       method: 'POST',
@@ -119,7 +119,7 @@ serve(async (req) => {
           success: true,
           paymentUrl: phonePeData.data.instrumentResponse.redirectInfo.url,
           merchantTransactionId: merchantTransactionId,
-          amount: amount / 100 // Convert back to rupees
+          amount: amount / 100
         }),
         { 
           status: 200, 

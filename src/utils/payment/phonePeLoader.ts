@@ -1,24 +1,14 @@
 
 // PhonePe configuration for production
-export const PHONEPE_MERCHANT_ID = 'GROWBHARATPAY'; // Replace with your actual merchant ID
+export const PHONEPE_MERCHANT_ID = 'GROWBHARATPAY';
 export const PHONEPE_ENVIRONMENT = 'PRODUCTION' as 'UAT' | 'PRODUCTION';
 
 /**
- * Load the PhonePe payment script with CORS handling
+ * Load the PhonePe payment script - for production we use redirect method
  */
 export const loadPhonePeScript = (): Promise<boolean> => {
   return new Promise((resolve) => {
-    if ((window as any).PhonePe) {
-      console.log('PhonePe already loaded');
-      resolve(true);
-      return;
-    }
-
-    console.log('Loading PhonePe script...');
-    
-    // For now, we'll skip the script loading and handle payment redirect directly
-    // This avoids CORS issues with PhonePe's script
-    console.log('PhonePe script loading skipped - using redirect method');
+    console.log('PhonePe production mode - using redirect method');
     resolve(true);
   });
 };
@@ -27,7 +17,6 @@ export const loadPhonePeScript = (): Promise<boolean> => {
  * Check if PhonePe payment gateway is available
  */
 export const isPhonePeAvailable = (): boolean => {
-  // Return true since we're using redirect method
   return true;
 };
 

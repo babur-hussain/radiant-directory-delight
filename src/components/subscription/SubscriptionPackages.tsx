@@ -78,7 +78,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
     <>
       <div className="grid md:grid-cols-3 gap-6 max-w-7xl mx-auto">
         {filteredPackages.map((pkg) => {
-          const monthlyPrice = pkg.monthly_price || pkg.price;
+          const monthlyPrice = pkg.monthlyPrice || pkg.price;
           const isPopular = pkg.popular;
           
           return (
@@ -110,14 +110,14 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
                     </span>
                     <span className="text-gray-500 ml-1">/month</span>
                   </div>
-                  {pkg.setup_fee && pkg.setup_fee > 0 && (
+                  {pkg.setupFee && pkg.setupFee > 0 && (
                     <p className="text-sm text-gray-600 mt-1">
-                      + ₹{pkg.setup_fee.toLocaleString('en-IN')} setup fee
+                      + ₹{pkg.setupFee.toLocaleString('en-IN')} setup fee
                     </p>
                   )}
                 </div>
                 <CardDescription className="mt-2 text-gray-600">
-                  {pkg.short_description}
+                  {pkg.shortDescription}
                 </CardDescription>
               </CardHeader>
 
