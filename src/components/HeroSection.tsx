@@ -1,17 +1,11 @@
 
 import React from 'react';
 import SearchBar from './search/SearchBar';
-import PopularSearchTerms from './search/PopularSearchTerms';
 import { useNavigate } from 'react-router-dom';
 import HeroContent from './hero/HeroContent';
 
 const HeroSection: React.FC = () => {
   const navigate = useNavigate();
-  
-  const handleTermClick = (term: string) => {
-    console.log("Search term clicked:", term);
-    navigate(`/businesses?search=${encodeURIComponent(term)}`);
-  };
   
   return (
     <section className="relative bg-gradient-to-b from-purple-100 to-pink-50 pt-16 md:pt-24 pb-12 md:pb-16 overflow-hidden">
@@ -29,10 +23,6 @@ const HeroSection: React.FC = () => {
         <div className="mt-4 sm:mt-6 md:mt-8 w-full max-w-4xl mx-auto">
           <div className="bg-white p-3 sm:p-4 md:p-6 shadow-xl rounded-2xl">
             <SearchBar initialQuery="" onResultsVisibilityChange={() => {}} />
-            
-            <div className="mt-3 sm:mt-4 text-center">
-              <PopularSearchTerms onTermClick={handleTermClick} />
-            </div>
           </div>
         </div>
       </div>
