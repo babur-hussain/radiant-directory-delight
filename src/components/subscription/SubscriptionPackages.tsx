@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Loader2, RefreshCw, AlertCircle, Sparkles, Zap } from 'lucide-react';
+import { Check, Loader2, AlertCircle, Sparkles, Zap } from 'lucide-react';
 import { UserRole } from '@/types/auth';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
@@ -20,7 +20,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   userRole,
   onSelectPackage
 }) => {
-  const { packages, isLoading, isError, error, refetch } = useSubscriptionPackages();
+  const { packages, isLoading, isError, error } = useSubscriptionPackages();
   const navigate = useNavigate();
   
   console.log('SubscriptionPackages - Current state:', {
@@ -41,11 +41,6 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
     }
   };
 
-  const handleRetry = () => {
-    console.log("Retrying to fetch packages...");
-    refetch();
-  };
-
   if (isLoading) {
     return (
       <div className="subscription-packages-container">
@@ -61,14 +56,8 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-red-600 mb-2">Unable to Load Packages</h3>
           <p className="text-gray-600 mb-4">
-            {error?.message?.includes('404') 
-              ? 'No subscription packages are available yet.' 
-              : error?.message || 'Failed to load subscription packages'}
+            There was an error loading the subscription packages. Please try again later.
           </p>
-          <Button onClick={handleRetry} variant="outline" className="mx-auto">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Try Again
-          </Button>
         </div>
       </div>
     );
@@ -82,42 +71,6 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   });
 
   console.log('Filtered packages:', filteredPackages.length);
-
-  if (safePackages.length === 0) {
-    return (
-      <div className="subscription-packages-container">
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="h-8 w-8 text-gray-400" />
-          </div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">No Packages Available</h3>
-          <p className="text-gray-600 mb-4">No subscription packages have been created yet. Please check back later.</p>
-          <Button onClick={handleRetry} variant="outline">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (filteredPackages.length === 0) {
-    return (
-      <div className="subscription-packages-container">
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="h-8 w-8 text-blue-500" />
-          </div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">No {userRole} Packages</h3>
-          <p className="text-gray-600 mb-4">No subscription packages are available for {userRole} users at the moment.</p>
-          <Button onClick={handleRetry} variant="outline">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="subscription-packages-container">

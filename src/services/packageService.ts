@@ -10,22 +10,11 @@ const getAllPackages = async (): Promise<ISubscriptionPackage[]> => {
   try {
     console.log("=== STARTING getAllPackages ===");
     
-    // Test connection first
-    const { data: connectionTest, error: connectionError } = await supabase
-      .from('subscription_packages')
-      .select('count', { count: 'exact', head: true });
-    
-    if (connectionError) {
-      console.error('Connection test failed:', connectionError);
-      throw new Error(`Database connection failed: ${connectionError.message}`);
-    }
-    
-    console.log('Connection test successful, package count:', connectionTest);
-    
-    // Get all packages without filtering by is_active first to see what's in the database
+    // Get all packages from the database
     const { data, error } = await supabase
       .from('subscription_packages')
       .select('*')
+      .eq('is_active', true)
       .order('created_at', { ascending: false });
     
     if (error) {
@@ -39,21 +28,18 @@ const getAllPackages = async (): Promise<ISubscriptionPackage[]> => {
     });
     
     if (!data || data.length === 0) {
-      console.log('No packages found in database - this might be the issue!');
+      console.log('No active packages found in database');
       return [];
     }
     
-    // Filter active packages and map them
-    const activePackages = data.filter(pkg => pkg.is_active !== false);
-    console.log('Active packages:', activePackages.length);
-    
-    const mappedPackages = activePackages.map(mapDbRowToPackage);
+    const mappedPackages = data.map(mapDbRowToPackage);
     console.log('Successfully mapped packages:', mappedPackages);
     
     return mappedPackages;
   } catch (error) {
     console.error('Error in getAllPackages:', error);
-    throw error;
+    // Return empty array instead of throwing to prevent UI crashes
+    return [];
   }
 };
 
@@ -67,6 +53,7 @@ const getPackagesByType = async (type: string): Promise<ISubscriptionPackage[]> 
       .from('subscription_packages')
       .select('*')
       .eq('type', type)
+      .eq('is_active', true)
       .order('price', { ascending: true });
     
     if (error) {
@@ -79,7 +66,7 @@ const getPackagesByType = async (type: string): Promise<ISubscriptionPackage[]> 
     return mappedPackages;
   } catch (error) {
     console.error(`Error in getPackagesByType:`, error);
-    throw error;
+    return [];
   }
 };
 

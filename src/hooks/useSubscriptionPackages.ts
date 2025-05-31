@@ -46,12 +46,6 @@ export const useSubscriptionPackages = () => {
         // More specific error messages
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         
-        if (errorMessage.includes('404')) {
-          console.log('Detected 404 error - packages table might not exist or be accessible');
-        } else if (errorMessage.includes('connection')) {
-          console.log('Detected connection error - database might be unreachable');
-        }
-        
         toast({
           title: "Failed to Load Packages",
           description: `Error: ${errorMessage}`,
@@ -62,12 +56,9 @@ export const useSubscriptionPackages = () => {
         return [];
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes cache
-    retry: (failureCount, error) => {
-      console.log(`Retry attempt ${failureCount} for error:`, error);
-      return failureCount < 2; // Only retry twice
-    },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: 2 * 60 * 1000, // 2 minutes cache
+    retry: 1, // Only retry once
+    retryDelay: 1000,
     initialData: [],
     refetchOnWindowFocus: false,
     refetchOnMount: true
