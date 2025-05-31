@@ -57,7 +57,7 @@ const Index = () => {
             <Button 
               onClick={() => navigate('/businesses')} 
               size="lg" 
-              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-sm sm:text-base"
+              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 hover:from-blue-700 hover:via-blue-800 hover:to-indigo-800 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-out text-sm sm:text-base px-8 py-3 rounded-xl font-semibold border-0"
             >
               Register My Business <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
@@ -108,7 +108,7 @@ const Index = () => {
             <Button 
               onClick={() => navigate('/influencers')} 
               size="lg" 
-              className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-sm sm:text-base"
+              className="w-full sm:w-auto bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 hover:from-purple-700 hover:via-pink-700 hover:to-rose-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-out text-sm sm:text-base px-8 py-3 rounded-xl font-semibold border-0"
             >
               Create My Influencer Profile <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
@@ -239,7 +239,7 @@ const Index = () => {
           <Button 
             variant="outline" 
             size="lg" 
-            className="w-full sm:w-auto bg-white text-pink-600 hover:bg-white/90 text-sm sm:text-base" 
+            className="w-full sm:w-auto bg-white/10 backdrop-blur-sm text-white border-white/30 hover:bg-white hover:text-orange-600 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-out text-sm sm:text-base px-8 py-3 rounded-xl font-semibold" 
             onClick={() => navigate('/referral')}
           >
             Join Referral Program

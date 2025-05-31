@@ -91,7 +91,10 @@ const CallToAction = () => {
                   required
                   className="flex-grow px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-smooth"
                 />
-                <Button type="submit" className="rounded-lg transition-smooth">
+                <Button 
+                  type="submit" 
+                  className="rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-out px-8 py-3 font-semibold"
+                >
                   Subscribe
                 </Button>
               </form>
@@ -106,7 +109,7 @@ const CallToAction = () => {
               </p>
               <Button 
                 variant="outline" 
-                className="w-full justify-center rounded-lg border-primary/20 text-primary hover:text-primary-foreground transition-smooth"
+                className="w-full justify-center rounded-xl border-2 border-primary/30 text-primary hover:bg-primary hover:text-white shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 ease-out px-6 py-3 font-semibold"
                 onClick={() => setIsListingFormOpen(true)}
               >
                 <Building className="mr-2 h-4 w-4" />
