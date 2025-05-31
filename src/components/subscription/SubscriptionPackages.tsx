@@ -3,12 +3,13 @@ import React from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, RefreshCw } from 'lucide-react';
 import { UserRole } from '@/types/auth';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import SubscriptionPackagesLoading from './SubscriptionPackagesLoading';
 
 export interface SubscriptionPackagesProps {
   userRole: UserRole | string;
@@ -19,11 +20,16 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   userRole,
   onSelectPackage
 }) => {
-  const { packages, isLoading, isError, error } = useSubscriptionPackages();
+  const { packages, isLoading, isError, error, refetch } = useSubscriptionPackages();
   const navigate = useNavigate();
   
-  // Filter packages by user role
-  const filteredPackages = Array.isArray(packages) ? packages.filter(pkg => pkg.type === userRole) : [];
+  console.log('SubscriptionPackages - Current state:', {
+    isLoading,
+    isError,
+    packagesCount: packages?.length || 0,
+    userRole,
+    error: error?.message
+  });
 
   const handleSelectPackage = (pkg: ISubscriptionPackage) => {
     console.log("Package selected:", pkg.title);
@@ -35,13 +41,15 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
     }
   };
 
+  const handleRetry = () => {
+    console.log("Retrying to fetch packages...");
+    refetch();
+  };
+
   if (isLoading) {
     return (
       <div className="subscription-packages-container">
-        <div className="flex justify-center items-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-3 text-lg">Loading subscription packages...</span>
-        </div>
+        <SubscriptionPackagesLoading />
       </div>
     );
   }
@@ -51,18 +59,35 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
       <div className="subscription-packages-container">
         <div className="text-center py-12">
           <h3 className="text-lg font-semibold text-red-600 mb-2">Error Loading Packages</h3>
-          <p className="text-gray-600">{error?.message || 'Failed to load subscription packages'}</p>
+          <p className="text-gray-600 mb-4">{error?.message || 'Failed to load subscription packages'}</p>
+          <Button onClick={handleRetry} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try Again
+          </Button>
         </div>
       </div>
     );
   }
 
-  if (!packages || packages.length === 0) {
+  // Ensure packages is always an array and filter by user role
+  const safePackages = Array.isArray(packages) ? packages : [];
+  const filteredPackages = safePackages.filter(pkg => {
+    console.log('Filtering package:', pkg.title, 'type:', pkg.type, 'userRole:', userRole);
+    return pkg.type === userRole;
+  });
+
+  console.log('Filtered packages:', filteredPackages.length);
+
+  if (safePackages.length === 0) {
     return (
       <div className="subscription-packages-container">
         <div className="text-center py-12">
           <h3 className="text-xl font-semibold text-gray-700 mb-2">No Packages Available</h3>
-          <p className="text-gray-600">No subscription packages have been created yet.</p>
+          <p className="text-gray-600 mb-4">No subscription packages have been created yet.</p>
+          <Button onClick={handleRetry} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
         </div>
       </div>
     );
@@ -73,7 +98,11 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
       <div className="subscription-packages-container">
         <div className="text-center py-12">
           <h3 className="text-xl font-semibold text-gray-700 mb-2">No Packages for {userRole}</h3>
-          <p className="text-gray-600">No subscription packages are available for {userRole} users at the moment.</p>
+          <p className="text-gray-600 mb-4">No subscription packages are available for {userRole} users at the moment.</p>
+          <Button onClick={handleRetry} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
         </div>
       </div>
     );
@@ -81,7 +110,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
 
   return (
     <div className="subscription-packages-container">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 animate-fade-in">
         {filteredPackages.map((pkg) => {
           const isPopular = pkg.popular;
           const isOneTime = pkg.paymentType === 'one-time';
@@ -95,7 +124,7 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
           return (
             <Card 
               key={pkg.id} 
-              className={`overflow-hidden transition-all duration-200 ${
+              className={`overflow-hidden transition-all duration-200 hover:shadow-lg ${
                 isPopular ? 'border-2 border-blue-600 shadow-md' : 'border shadow'
               }`}
             >
@@ -107,38 +136,38 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
                 </div>
               )}
               
-              <CardContent className="p-6 pt-8">
-                <div className="space-y-6">
+              <CardContent className="p-4 sm:p-6 pt-6 sm:pt-8">
+                <div className="space-y-4 sm:space-y-6">
                   <div>
-                    <h3 className="text-2xl font-bold">{pkg.title}</h3>
+                    <h3 className="text-xl sm:text-2xl font-bold mb-2">{pkg.title}</h3>
                     <div className="flex items-baseline mt-2">
-                      <span className="text-4xl font-extrabold">₹{displayPrice.toLocaleString('en-IN')}</span>
-                      <span className="text-gray-500 ml-1">{timeframe}</span>
+                      <span className="text-2xl sm:text-4xl font-extrabold">₹{displayPrice.toLocaleString('en-IN')}</span>
+                      <span className="text-gray-500 ml-1 text-sm sm:text-base">{timeframe}</span>
                     </div>
-                    <p className="text-gray-600 mt-2">{pkg.shortDescription}</p>
+                    <p className="text-gray-600 mt-2 text-sm sm:text-base">{pkg.shortDescription}</p>
                   </div>
                   
-                  <ul className="space-y-3">
+                  <ul className="space-y-2 sm:space-y-3">
                     {Array.isArray(pkg.features) && pkg.features.length > 0 ? (
                       pkg.features.slice(0, 5).map((feature, index) => (
                         <li key={index} className="flex items-start">
-                          <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-                          <span>{feature}</span>
+                          <Check className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm sm:text-base">{feature}</span>
                         </li>
                       ))
                     ) : (
                       <li className="flex items-start">
-                        <Check className="h-5 w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-                        <span>Package features will be updated soon</span>
+                        <Check className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm sm:text-base">Package features will be updated soon</span>
                       </li>
                     )}
                   </ul>
                 </div>
               </CardContent>
               
-              <CardFooter className="p-6 pt-2">
+              <CardFooter className="p-4 sm:p-6 pt-2">
                 <Button 
-                  className="w-full h-12 text-base font-medium relative z-20"
+                  className="w-full h-10 sm:h-12 text-sm sm:text-base font-medium relative z-20"
                   variant={isPopular ? 'default' : 'outline'}
                   onClick={() => handleSelectPackage(pkg)}
                   type="button"

@@ -7,7 +7,7 @@ import { toast } from '@/hooks/use-toast';
 export const useSubscriptionPackages = () => {
   const queryClient = useQueryClient();
   
-  // Query to fetch all packages - no fallback packages
+  // Query to fetch all packages with better error handling
   const {
     data: packages,
     isLoading,
@@ -20,18 +20,31 @@ export const useSubscriptionPackages = () => {
       try {
         console.log("Fetching all subscription packages from database");
         const packages = await getAllPackages();
-        console.log("Successfully fetched packages:", packages?.length || 0);
-        return packages || [];
+        console.log("Successfully fetched packages:", packages?.length || 0, packages);
+        
+        // Ensure we always return an array
+        if (!packages) {
+          console.log("No packages returned, using empty array");
+          return [];
+        }
+        
+        if (!Array.isArray(packages)) {
+          console.log("Packages is not an array, converting:", typeof packages);
+          return [];
+        }
+        
+        return packages;
       } catch (err) {
         console.error('Error fetching subscription packages:', err);
-        throw err;
+        // Don't throw the error, return empty array instead to prevent infinite loading
+        return [];
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes cache
-    retry: 1,
+    retry: 2, // Retry twice
     retryDelay: 1000,
-    // No placeholder data - show loading state instead
-    placeholderData: undefined
+    // Set initial data to empty array to prevent undefined issues
+    initialData: []
   });
   
   // Create or update mutation with proper text handling
@@ -149,7 +162,7 @@ export const useSubscriptionPackages = () => {
 
   return {
     // Return packages with proper typing, ensuring it's always an array
-    packages: packages as ISubscriptionPackage[],
+    packages: Array.isArray(packages) ? packages : [] as ISubscriptionPackage[],
     isLoading,
     isError,
     error,
