@@ -3,19 +3,41 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Award, CheckSquare, MapPin, Star, TrendingUp, Users, Zap, AlertCircle } from 'lucide-react';
+import { ArrowRight, Award, CheckSquare, MapPin, Star, TrendingUp, Users, Zap } from 'lucide-react';
 import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
-import Loading from '@/components/ui/loading';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import SubscriptionDialog from '@/components/subscription/SubscriptionDialog';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { toast } from 'sonner';
+import SubscriptionPackagesLoading from '@/components/subscription/SubscriptionPackagesLoading';
 
 const InfluencerPage = () => {
   const navigate = useNavigate();
   const { packages, isLoading, isError, error } = useSubscriptionPackages();
   const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
   const [showDialog, setShowDialog] = useState(false);
+  const [renderLoading, setRenderLoading] = useState(false);
+  
+  // Only set loading after a delay to prevent flashing
+  useEffect(() => {
+    if (isLoading) {
+      const timer = setTimeout(() => setRenderLoading(true), 500);
+      return () => clearTimeout(timer);
+    } else {
+      setRenderLoading(false);
+    }
+  }, [isLoading]);
+
+  // Filter packages to show only Influencer type
+  const influencerPackages = packages.filter(pkg => pkg.type === 'Influencer');
+  
+  useEffect(() => {
+    console.log("InfluencerPage Debug:");
+    console.log("All packages:", packages);
+    console.log("Influencer packages:", influencerPackages);
+    console.log("Is loading:", isLoading);
+    console.log("Is error:", isError);
+  }, [packages, influencerPackages, isLoading, isError]);
   
   const benefits = [
     {
@@ -63,14 +85,6 @@ const InfluencerPage = () => {
     setShowDialog(true);
     toast.success(`Selected package: ${pkg.title}`);
   };
-
-  useEffect(() => {
-    console.log("=== InfluencerPage Debug ===");
-    console.log("Packages loading:", isLoading);
-    console.log("Packages error:", isError);
-    console.log("Packages data:", packages);
-    console.log("Dialog visible:", showDialog);
-  }, [packages, isLoading, isError, showDialog]);
 
   return (
     <div className="min-h-screen">
@@ -137,13 +151,24 @@ const InfluencerPage = () => {
               </p>
             </div>
 
-            <div className="relative subscription-packages-container">
-              <SubscriptionPackages 
-                userRole="Influencer"
-                filterByType={true}
-                onSelectPackage={handleSelectPackage}
-              />
-            </div>
+            {renderLoading && isLoading ? (
+              <div className="relative z-10">
+                <SubscriptionPackagesLoading />
+              </div>
+            ) : isError ? (
+              <div className="text-center py-10">
+                <p className="text-red-500 mb-4">There was an error loading the subscription packages.</p>
+                <Button onClick={() => window.location.reload()} type="button">Try Again</Button>
+              </div>
+            ) : (
+              <div className="relative subscription-packages-container">
+                <SubscriptionPackages 
+                  userRole="Influencer"
+                  filterByType={true}
+                  onSelectPackage={handleSelectPackage}
+                />
+              </div>
+            )}
           </div>
         </section>
 

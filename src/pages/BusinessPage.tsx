@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Award, CheckSquare, Star, TrendingUp, Users, Zap } from 'lucide-react';
 import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
-import Loading from '@/components/ui/loading';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import SubscriptionDialog from '@/components/subscription/SubscriptionDialog';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
@@ -28,6 +27,17 @@ const BusinessPage = () => {
       setRenderLoading(false);
     }
   }, [isLoading]);
+
+  // Filter packages to show only Business type
+  const businessPackages = packages.filter(pkg => pkg.type === 'Business');
+  
+  useEffect(() => {
+    console.log("BusinessPage Debug:");
+    console.log("All packages:", packages);
+    console.log("Business packages:", businessPackages);
+    console.log("Is loading:", isLoading);
+    console.log("Is error:", isError);
+  }, [packages, businessPackages, isLoading, isError]);
   
   const benefits = [
     {
