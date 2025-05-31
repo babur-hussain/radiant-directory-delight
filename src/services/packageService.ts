@@ -9,40 +9,49 @@ import { v4 as uuidv4 } from 'uuid';
  */
 const getAllPackages = async (): Promise<ISubscriptionPackage[]> => {
   try {
-    console.log("Fetching all packages from Supabase");
+    console.log("=== STARTING getAllPackages ===");
+    console.log("Supabase URL:", supabase.supabaseUrl);
     
-    // First check if we can connect to Supabase
-    const { data: testConnection, error: connectionError } = await supabase
+    // Test connection first
+    const { data: connectionTest, error: connectionError } = await supabase
       .from('subscription_packages')
       .select('count', { count: 'exact', head: true });
     
     if (connectionError) {
-      console.error('Supabase connection error:', connectionError);
+      console.error('Connection test failed:', connectionError);
       throw new Error(`Database connection failed: ${connectionError.message}`);
     }
     
-    console.log('Supabase connection successful, fetching packages...');
+    console.log('Connection test successful, package count:', connectionTest);
     
+    // Get all packages without filtering by is_active first to see what's in the database
     const { data, error } = await supabase
       .from('subscription_packages')
       .select('*')
-      .eq('is_active', true)
-      .order('price', { ascending: true });
+      .order('created_at', { ascending: false });
     
     if (error) {
-      console.error('Supabase error fetching packages:', error);
+      console.error('Error fetching packages:', error);
       throw new Error(`Failed to fetch packages: ${error.message}`);
     }
     
-    console.log('Raw data from Supabase:', data);
+    console.log('Raw packages from database:', {
+      totalCount: data?.length || 0,
+      packages: data
+    });
     
     if (!data || data.length === 0) {
-      console.log('No subscription packages found in database');
+      console.log('No packages found in database - this might be the issue!');
       return [];
     }
     
-    const mappedPackages = data.map(mapDbRowToPackage);
-    console.log(`Successfully fetched ${mappedPackages.length} packages:`, mappedPackages);
+    // Filter active packages and map them
+    const activePackages = data.filter(pkg => pkg.is_active !== false);
+    console.log('Active packages:', activePackages.length);
+    
+    const mappedPackages = activePackages.map(mapDbRowToPackage);
+    console.log('Successfully mapped packages:', mappedPackages);
+    
     return mappedPackages;
   } catch (error) {
     console.error('Error in getAllPackages:', error);
@@ -239,7 +248,8 @@ const deletePackage = async (id: string): Promise<void> => {
  * Map a Supabase row to an ISubscriptionPackage object
  */
 const mapDbRowToPackage = (dbRow: any): ISubscriptionPackage => {
-  console.log('Mapping database row to package:', dbRow);
+  console.log('=== MAPPING PACKAGE ===');
+  console.log('Input dbRow:', dbRow);
   
   // Validate payment type
   const paymentType: PaymentType = dbRow.payment_type?.toLowerCase() === 'one-time' ? 'one-time' : 'recurring';
@@ -259,7 +269,6 @@ const mapDbRowToPackage = (dbRow: any): ISubscriptionPackage => {
   
   if (dbRow.features) {
     if (Array.isArray(dbRow.features)) {
-      // Already an array, use as is
       features = dbRow.features;
     } else if (typeof dbRow.features === 'string') {
       const featuresString = dbRow.features.trim();
@@ -268,37 +277,30 @@ const mapDbRowToPackage = (dbRow: any): ISubscriptionPackage => {
         features = [];
       } else {
         try {
-          // First try to parse as JSON
           const parsed = JSON.parse(featuresString);
           features = Array.isArray(parsed) ? parsed : [featuresString];
         } catch (e) {
-          // If JSON parsing fails, handle different text formats
-          console.log("JSON parsing failed, trying alternative parsing methods");
+          console.log("JSON parsing failed for features, using fallback parsing");
           
-          // Check if it contains checkmarks or bullets
           if (featuresString.includes('✅') || featuresString.includes('✔')) {
-            // Split by checkmarks and clean up
             features = featuresString
               .split(/[✅✔]/)
               .map((feature: string) => feature.trim())
               .filter((feature: string) => feature.length > 0)
-              .map((feature: string) => feature.replace(/^[•\-\*]\s*/, '').trim()); // Remove bullets
+              .map((feature: string) => feature.replace(/^[•\-\*]\s*/, '').trim());
           } else if (featuresString.includes('\n')) {
-            // Split by newlines
             features = featuresString
               .split('\n')
               .map((feature: string) => feature.trim())
               .filter((feature: string) => feature.length > 0)
-              .map((feature: string) => feature.replace(/^[•\-\*✅✔]\s*/, '').trim()); // Remove bullets and checkmarks
+              .map((feature: string) => feature.replace(/^[•\-\*✅✔]\s*/, '').trim());
           } else if (featuresString.includes(',')) {
-            // Split by commas
             features = featuresString
               .split(',')
               .map((feature: string) => feature.trim())
               .filter((feature: string) => feature.length > 0)
-              .map((feature: string) => feature.replace(/^[•\-\*✅✔]\s*/, '').trim()); // Remove bullets and checkmarks
+              .map((feature: string) => feature.replace(/^[•\-\*✅✔]\s*/, '').trim());
           } else {
-            // Single feature
             features = [featuresString.replace(/^[•\-\*✅✔]\s*/, '').trim()];
           }
         }
@@ -306,12 +308,12 @@ const mapDbRowToPackage = (dbRow: any): ISubscriptionPackage => {
     }
   }
   
-  // Clean up features to ensure they don't start with checkmarks or bullets
+  // Clean up features
   features = features.map(feature => 
     feature.replace(/^[•\-\*✅✔]\s*/, '').trim()
   ).filter(feature => feature.length > 0);
   
-  // Parse dashboard_sections from JSON string or use empty array
+  // Parse dashboard_sections
   let dashboardSections: string[] = [];
   try {
     if (typeof dbRow.dashboard_sections === 'string' && dbRow.dashboard_sections) {
@@ -343,10 +345,10 @@ const mapDbRowToPackage = (dbRow: any): ISubscriptionPackage => {
     billingCycle: billingCycle,
     advancePaymentMonths: typeof dbRow.advance_payment_months === 'number' ? dbRow.advance_payment_months : 0,
     dashboardSections: dashboardSections,
-    isActive: true
+    isActive: dbRow.is_active !== false
   };
   
-  console.log('Mapped package:', mappedPackage);
+  console.log('Mapped package result:', mappedPackage);
   return mappedPackage;
 };
 

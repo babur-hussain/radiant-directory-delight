@@ -6,7 +6,7 @@ import { toast } from '@/hooks/use-toast';
 export const useSubscriptionPackages = () => {
   const queryClient = useQueryClient();
   
-  // Query to fetch all packages with better error handling
+  // Query to fetch all packages with enhanced debugging
   const {
     data: packages,
     isLoading,
@@ -16,32 +16,59 @@ export const useSubscriptionPackages = () => {
   } = useQuery({
     queryKey: ['subscription-packages'],
     queryFn: async () => {
-      console.log("Starting to fetch subscription packages...");
+      console.log("=== HOOK: Starting to fetch subscription packages ===");
       
       try {
         const packages = await getAllPackages();
-        console.log("Hook received packages:", packages?.length || 0, packages);
+        console.log("=== HOOK: Received packages ===", {
+          count: packages?.length || 0,
+          packages: packages
+        });
+        
+        // Validate packages structure
+        if (packages && packages.length > 0) {
+          packages.forEach((pkg, index) => {
+            console.log(`Package ${index}:`, {
+              id: pkg.id,
+              title: pkg.title,
+              type: pkg.type,
+              price: pkg.price,
+              isActive: pkg.isActive
+            });
+          });
+        }
         
         // Always return an array, even if empty
         return Array.isArray(packages) ? packages : [];
       } catch (err) {
-        console.error('Hook error fetching subscription packages:', err);
+        console.error('=== HOOK: Error fetching subscription packages ===', err);
         
-        // Show user-friendly error message
+        // More specific error messages
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        
+        if (errorMessage.includes('404')) {
+          console.log('Detected 404 error - packages table might not exist or be accessible');
+        } else if (errorMessage.includes('connection')) {
+          console.log('Detected connection error - database might be unreachable');
+        }
+        
         toast({
-          title: "Connection Error",
-          description: "Failed to load subscription packages. Please check your internet connection.",
+          title: "Failed to Load Packages",
+          description: `Error: ${errorMessage}`,
           variant: "destructive"
         });
         
-        // Don't throw the error, return empty array to prevent infinite loading
+        // Return empty array instead of throwing to prevent infinite loading
         return [];
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes cache
-    retry: 2, // Retry twice on failure
-    retryDelay: 2000, // Wait 2 seconds between retries
-    initialData: [], // Start with empty array
+    retry: (failureCount, error) => {
+      console.log(`Retry attempt ${failureCount} for error:`, error);
+      return failureCount < 2; // Only retry twice
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    initialData: [],
     refetchOnWindowFocus: false,
     refetchOnMount: true
   });
