@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole } from '@/types/auth';
 import { fetchUserByUid } from '@/lib/supabase/userUtils';
@@ -206,13 +205,17 @@ export const loginWithEmail = async (
   }
 };
 
-// Login with Google
+// Login with Google - Fixed for mobile
 export const loginWithGoogle = async (): Promise<void> => {
   try {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
       }
     });
 

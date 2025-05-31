@@ -55,51 +55,59 @@ const Header: React.FC = () => {
   return (
     <>
       <header className={`main-header fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/95 backdrop-blur-sm shadow-md' : 'bg-transparent'}`}>
-        <div className="container mx-auto h-16 flex items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2" onClick={closeMobileMenu}>
-              <div className="bg-purple-600 rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-white font-bold">G</div>
-              <span className="text-lg md:text-2xl font-bold text-gray-900">
+        <div className="container mx-auto h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4 md:px-6">
+          <div className="flex items-center min-w-0">
+            <Link to="/" className="flex items-center space-x-1.5 sm:space-x-2 min-w-0" onClick={closeMobileMenu}>
+              <div className="bg-purple-600 rounded-full w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 flex items-center justify-center text-white font-bold text-xs sm:text-sm md:text-base flex-shrink-0">G</div>
+              <span className="text-sm sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 truncate">
                 Grow Bharat
               </span>
             </Link>
           </div>
 
-          <HeaderLinks />
+          {!isMobile && <HeaderLinks />}
           
-          <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-3 flex-shrink-0">
             {loading ? (
-              <div className="flex items-center space-x-2">
-                <div className="h-9 sm:h-10 w-16 sm:w-20 bg-gray-200 animate-pulse rounded-full"></div>
-                {!isMobile && <div className="h-9 sm:h-10 w-24 bg-gray-200 animate-pulse rounded-full"></div>}
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <div className="h-8 sm:h-9 md:h-10 w-12 sm:w-16 md:w-20 bg-gray-200 animate-pulse rounded-full"></div>
+                {!isMobile && <div className="h-8 sm:h-9 md:h-10 w-16 sm:w-20 md:w-24 bg-gray-200 animate-pulse rounded-full"></div>}
               </div>
             ) : isAuthenticated && user ? (
               <UserMenu />
             ) : (
               <>
-                <Button variant="outline" className="rounded-full text-sm px-3 py-1 h-9 sm:h-10 sm:px-4 sm:py-2" onClick={handleLoginClick}>
+                <Button 
+                  variant="outline" 
+                  className="rounded-full text-xs sm:text-sm px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 h-7 sm:h-8 md:h-9 lg:h-10" 
+                  onClick={handleLoginClick}
+                >
                   Login
                 </Button>
-                <Button variant="gradient" className="hidden sm:flex rounded-full text-sm px-3 py-1 h-9 sm:h-10 sm:px-4 sm:py-2" onClick={handleRegisterClick}>
+                <Button 
+                  variant="gradient" 
+                  className="hidden xs:flex rounded-full text-xs sm:text-sm px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 h-7 sm:h-8 md:h-9 lg:h-10" 
+                  onClick={handleRegisterClick}
+                >
                   Register
                 </Button>
               </>
             )}
-          </div>
 
-          <button
-            className="md:hidden flex items-center justify-center w-10 h-10 z-50 tap-highlight-transparent"
-            onClick={toggleMobileMenu}
-            aria-label="Toggle mobile menu"
-            aria-expanded={mobileMenuOpen}
-            type="button"
-          >
-            {mobileMenuOpen ? (
-              <X className="h-6 w-6 text-gray-700" />
-            ) : (
-              <Menu className="h-6 w-6 text-gray-700" />
-            )}
-          </button>
+            <button
+              className="md:hidden flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 z-50 tap-highlight-transparent ml-1"
+              onClick={toggleMobileMenu}
+              aria-label="Toggle mobile menu"
+              aria-expanded={mobileMenuOpen}
+              type="button"
+            >
+              {mobileMenuOpen ? (
+                <X className="h-5 w-5 sm:h-6 sm:w-6 text-gray-700" />
+              ) : (
+                <Menu className="h-5 w-5 sm:h-6 sm:w-6 text-gray-700" />
+              )}
+            </button>
+          </div>
         </div>
       </header>
 

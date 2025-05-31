@@ -1,412 +1,201 @@
-import { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, ChevronDown, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
-import { businessesData } from '@/data/businessesData';
-import SearchResults, { BusinessResult } from '../SearchResults';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
-const locations = [
-  'Madhya Pradesh',
-  'Andhra Pradesh',
-  'Arunachal Pradesh',
-  'Assam',
-  'Bihar',
-  'Chhattisgarh',
-  'Goa',
-  'Gujarat',
-  'Haryana',
-  'Himachal Pradesh',
-  'Jharkhand',
-  'Karnataka',
-  'Kerala',
-  'Maharashtra',
-  'Manipur',
-  'Meghalaya',
-  'Mizoram',
-  'Nagaland',
-  'Odisha',
-  'Punjab',
-  'Rajasthan',
-  'Sikkim',
-  'Tamil Nadu',
-  'Telangana',
-  'Tripura',
-  'Uttar Pradesh',
-  'Uttarakhand',
-  'West Bengal'
-];
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, X, Filter } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SearchBarProps {
   initialQuery?: string;
-  onResultsVisibilityChange?: (isVisible: boolean) => void;
+  onResultsVisibilityChange?: (visible: boolean) => void;
+  className?: string;
 }
 
-const SearchBar = ({ 
-  initialQuery = '', 
-  onResultsVisibilityChange 
-}: SearchBarProps) => {
-  const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [location, setLocation] = useState('Madhya Pradesh');
-  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<BusinessResult[]>([]);
-  const [allBusinesses, setAllBusinesses] = useState<BusinessResult[]>([]);
-  const searchContainerRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const locationDropdownRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
+const SearchBar: React.FC<SearchBarProps> = ({
+  initialQuery = '',
+  onResultsVisibilityChange,
+  className
+}) => {
+  const [query, setQuery] = useState(initialQuery);
+  const [category, setCategory] = useState('all');
+  const [city, setCity] = useState('all');
+  const [followers, setFollowers] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
 
-  // Load all businesses on component mount
-  useEffect(() => {
-    const fetchBusinesses = async () => {
-      try {
-        // First try to fetch from Supabase
-        const { data: supabaseData, error } = await supabase
-          .from('businesses')
-          .select('*');
-        
-        if (error) {
-          console.error("Error fetching from Supabase:", error);
-          throw error;
-        }
-        
-        // If Supabase data exists and has items, use that
-        if (supabaseData && supabaseData.length > 0) {
-          console.log("Loaded businesses from Supabase:", supabaseData.length);
-          
-          // Extract location from address if possible, or use a default
-          const formattedBusinesses = supabaseData.map(business => {
-            // Try to extract state/location from address
-            let extractedLocation = '';
-            if (business.address) {
-              // Check if the address contains any of our known locations
-              const addressLower = business.address.toLowerCase();
-              const foundLocation = locations.find(loc => 
-                addressLower.includes(loc.toLowerCase())
-              );
-              
-              if (foundLocation) {
-                extractedLocation = foundLocation;
-              }
-            }
-            
-            return {
-              id: business.id,
-              name: business.name || "Unnamed Business",
-              category: business.category || "Uncategorized",
-              address: business.address || "No address",
-              location: extractedLocation || "Madhya Pradesh", // Default if not found
-              rating: typeof business.rating === 'number' ? business.rating : 0,
-              reviews: typeof business.reviews === 'number' ? business.reviews : 0,
-              image: business.image || "",
-              description: business.description || "No description",
-              tags: Array.isArray(business.tags) ? business.tags : [],
-              featured: !!business.featured
-            };
-          });
-          
-          setAllBusinesses(formattedBusinesses);
-        } else {
-          // Fallback to local data if Supabase is empty
-          console.log("No Supabase data, using local businessesData instead");
-          
-          if (Array.isArray(businessesData) && businessesData.length > 0) {
-            const formattedBusinesses = businessesData.map(business => ({
-              id: business.id,
-              name: business.name || "Unnamed Business",
-              category: business.category || "Uncategorized",
-              address: business.address || "No address",
-              location: business.location || "Madhya Pradesh", // Use location from local data or default
-              rating: typeof business.rating === 'number' ? business.rating : 0,
-              reviews: typeof business.reviews === 'number' ? business.reviews : 0,
-              image: business.image || "",
-              description: business.description || "No description",
-              tags: Array.isArray(business.tags) ? business.tags : [],
-              featured: !!business.featured
-            }));
-            
-            setAllBusinesses(formattedBusinesses);
-          } else {
-            console.warn("No businesses found in local data");
-            setAllBusinesses([]);
-          }
-        }
-      } catch (err) {
-        console.error("Error loading businesses:", err);
-        toast({
-          title: "Error Loading Businesses",
-          description: "There was a problem loading the business data. Using fallback data.",
-          variant: "destructive"
-        });
-        
-        // Use local data as fallback
-        if (Array.isArray(businessesData)) {
-          const formattedBusinesses = businessesData.map(business => ({
-            id: business.id,
-            name: business.name || "Unnamed Business",
-            category: business.category || "Uncategorized",
-            address: business.address || "No address",
-            location: business.location || "Madhya Pradesh", // Use location from local data or default
-            rating: typeof business.rating === 'number' ? business.rating : 0,
-            reviews: typeof business.reviews === 'number' ? business.reviews : 0,
-            image: business.image || "",
-            description: business.description || "No description",
-            tags: Array.isArray(business.tags) ? business.tags : [],
-            featured: !!business.featured
-          }));
-          
-          setAllBusinesses(formattedBusinesses);
-        }
-      }
-    };
-    
-    fetchBusinesses();
-  }, [toast]);
+  const categories = [
+    { value: 'all', label: 'All Categories' },
+    { value: 'music-dance', label: '🎤 Music & Dance' },
+    { value: 'entertainment-comedy', label: '🎭 Entertainment & Comedy' },
+    { value: 'gaming-tech', label: '🎮 Gaming & Tech' },
+    { value: 'fitness-health', label: '🏋️ Fitness & Health' },
+    { value: 'fashion-lifestyle', label: '👗 Fashion & Lifestyle' },
+    { value: 'food-travel', label: '🍽️ Food & Travel' },
+    { value: 'beauty-makeup', label: '💄 Beauty & Makeup' },
+    { value: 'business-finance', label: '💼 Business & Finance' },
+    { value: 'education-knowledge', label: '📚 Education & Knowledge' },
+    { value: 'art-photography', label: '🎨 Art & Photography' }
+  ];
 
-  useEffect(() => {
-    if (initialQuery) {
-      setSearchQuery(initialQuery);
-    }
-  }, [initialQuery]);
+  const cities = [
+    { value: 'all', label: 'All Cities' },
+    { value: 'jaipur', label: 'Jaipur' },
+    { value: 'delhi', label: 'Delhi' },
+    { value: 'mumbai', label: 'Mumbai' },
+    { value: 'faridabad', label: 'Faridabad' },
+    { value: 'bangalore', label: 'Bangalore' },
+    { value: 'pune', label: 'Pune' },
+    { value: 'hyderabad', label: 'Hyderabad' },
+    { value: 'chennai', label: 'Chennai' }
+  ];
 
-  useEffect(() => {
-    if (onResultsVisibilityChange) {
-      onResultsVisibilityChange(showResults);
-    }
-  }, [showResults, onResultsVisibilityChange]);
-
-  useEffect(() => {
-    const delaySearch = setTimeout(() => {
-      if (searchQuery.trim()) {
-        setIsSearching(true);
-        
-        setTimeout(() => {
-          try {
-            if (!Array.isArray(allBusinesses)) {
-              console.error("Business data is not available:", allBusinesses);
-              toast({
-                title: "Data Error",
-                description: "Could not load business data. Please try again.",
-                variant: "destructive"
-              });
-              setIsSearching(false);
-              return;
-            }
-            
-            console.log("Searching for:", searchQuery, "in", allBusinesses.length, "businesses");
-            
-            const queryLower = searchQuery.toLowerCase();
-            const results = allBusinesses.filter(business => {
-              // Safely check each property
-              const nameMatch = business.name?.toLowerCase().includes(queryLower) || false;
-              const categoryMatch = business.category?.toLowerCase().includes(queryLower) || false;
-              const descriptionMatch = business.description?.toLowerCase().includes(queryLower) || false;
-              let tagMatch = false;
-              
-              if (Array.isArray(business.tags)) {
-                tagMatch = business.tags.some(tag => 
-                  typeof tag === 'string' && tag.toLowerCase().includes(queryLower)
-                );
-              }
-              
-              return nameMatch || categoryMatch || descriptionMatch || tagMatch;
-            });
-            
-            console.log("Search results:", results.length);
-            setSearchResults(results);
-            setShowResults(true);
-          } catch (error) {
-            console.error("Search error:", error);
-            toast({
-              title: "Search Error",
-              description: "There was a problem with your search. Please try again.",
-              variant: "destructive"
-            });
-          } finally {
-            setIsSearching(false);
-          }
-        }, 300);
-      } else {
-        setSearchResults([]);
-        setShowResults(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(delaySearch);
-  }, [searchQuery, toast, allBusinesses]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (locationDropdownRef.current && 
-          !locationDropdownRef.current.contains(event.target as Node) &&
-          !searchContainerRef.current?.querySelector('.location-selector')?.contains(event.target as Node)) {
-        setShowLocationDropdown(false);
-      }
-      
-      // Handle clicks outside search results
-      if (searchContainerRef.current && 
-          !searchContainerRef.current.contains(event.target as Node)) {
-        const resultsElement = document.querySelector('.search-results-container');
-        if (resultsElement && !resultsElement.contains(event.target as Node)) {
-          setShowResults(false);
-        }
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    
-    const handleEscKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setShowLocationDropdown(false);
-        setShowResults(false);
-      }
-    };
-    
-    document.addEventListener('keydown', handleEscKey);
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscKey);
-    };
-  }, []);
+  const followerRanges = [
+    { value: 'all', label: 'Followers' },
+    { value: '1k-10k', label: '1K - 10K' },
+    { value: '10k-50k', label: '10K - 50K' },
+    { value: '50k-100k', label: '50K - 100K' },
+    { value: '100k-500k', label: '100K - 500K' },
+    { value: '500k-1m', label: '500K - 1M' },
+    { value: '1m+', label: '1M+' }
+  ];
 
   const handleSearch = () => {
-    if (searchQuery.trim()) {
-      console.log("Navigating to businesses with query:", searchQuery);
-      navigate(`/businesses?search=${encodeURIComponent(searchQuery)}&location=${encodeURIComponent(location)}`);
-      setShowResults(false);
-    } else {
-      if (searchInputRef.current) {
-        searchInputRef.current.focus();
-        toast({
-          title: "Enter Search Term",
-          description: "Please enter what you're looking for.",
-        });
-      }
+    console.log('Searching with:', { query, category, city, followers });
+    if (onResultsVisibilityChange) {
+      onResultsVisibilityChange(true);
     }
   };
 
-  const handleResultClick = (id: number) => {
-    console.log("Business clicked:", id);
-    setShowResults(false);
-    navigate(`/business?id=${id}`);
-  };
-
-  const handleClearSearch = () => {
-    setSearchQuery('');
-    setSearchResults([]);
-    setShowResults(false);
-    if (searchInputRef.current) {
-      searchInputRef.current.focus();
+  const clearSearch = () => {
+    setQuery('');
+    setCategory('all');
+    setCity('all');
+    setFollowers('all');
+    if (onResultsVisibilityChange) {
+      onResultsVisibilityChange(false);
     }
   };
 
-  const handleFocus = () => {
-    if (searchQuery.trim()) {
-      setShowResults(true);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
   };
 
-  const toggleLocationDropdown = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShowLocationDropdown(!showLocationDropdown);
-  };
-
   return (
-    <div ref={searchContainerRef} className="relative z-20">
-      <div className="bg-white rounded-xl overflow-hidden transition-all duration-300 shadow-md">
-        <div className="flex flex-col md:flex-row">
-          <div className="relative flex-grow border-b md:border-b-0 md:border-r border-gray-100">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              ref={searchInputRef}
-              type="text"
-              className="block w-full pl-12 pr-10 py-4 focus:ring-0 focus:outline-none text-gray-700 placeholder-gray-500"
-              placeholder="Search for businesses, services..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={handleFocus}
-              onKeyDown={handleKeyDown}
-            />
-            {searchQuery && (
-              <button
-                className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                onClick={handleClearSearch}
-                aria-label="Clear search"
-              >
-                <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-              </button>
-            )}
-          </div>
-
-          <div className="relative">
-            <div
-              className="location-selector flex items-center w-full md:w-52 px-4 py-4 cursor-pointer"
-              onClick={toggleLocationDropdown}
+    <div className={cn("w-full space-y-3 sm:space-y-4", className)}>
+      {/* Main Search Input */}
+      <div className="relative flex items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
+          <Input
+            ref={inputRef}
+            type="text"
+            placeholder="Search creators, niches, or keywords..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyPress={handleKeyPress}
+            className="pl-10 pr-10 py-2.5 sm:py-3 text-sm sm:text-base h-10 sm:h-12 bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-lg sm:rounded-xl"
+          />
+          {query && (
+            <button
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <MapPin className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0" />
-              <span className="text-gray-700 truncate">{location}</span>
-              <ChevronDown className={`h-4 w-4 text-gray-400 ml-auto transition-transform duration-200 ${showLocationDropdown ? 'rotate-180' : ''}`} />
-            </div>
-
-            <div
-              ref={locationDropdownRef}
-              className={cn(
-                "absolute z-50 mt-1 w-full md:min-w-52 bg-white shadow-lg rounded-md py-1 transition-all duration-200 border border-gray-100 max-h-64 overflow-y-auto",
-                showLocationDropdown ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
-              )}
-            >
-              {locations.map((loc) => (
-                <div
-                  key={loc}
-                  className={cn(
-                    "px-4 py-2 hover:bg-gray-50 cursor-pointer text-gray-700 text-sm",
-                    location === loc && "bg-primary/10 text-primary"
-                  )}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setLocation(loc);
-                    setShowLocationDropdown(false);
-                  }}
-                >
-                  {loc}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <Button
-            className="m-3 md:m-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full"
-            size="lg"
-            onClick={handleSearch}
-          >
-            Search
-          </Button>
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
+        
+        {/* Mobile Filter Toggle */}
+        {isMobile && (
+          <Button
+            onClick={() => setShowFilters(!showFilters)}
+            variant="outline"
+            size="sm"
+            className="ml-2 px-3 h-10 border-gray-200 hover:bg-gray-50"
+          >
+            <Filter className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
-      <div className="relative">
-        <SearchResults 
-          results={searchResults}
-          isLoading={isSearching}
-          visible={showResults}
-          onResultClick={handleResultClick}
-          onClose={() => setShowResults(false)}
-        />
+      {/* Filters */}
+      <div className={cn(
+        "grid gap-2 sm:gap-3 transition-all duration-300",
+        isMobile ? (
+          showFilters ? "grid-cols-1 opacity-100" : "grid-cols-1 h-0 overflow-hidden opacity-0"
+        ) : "grid-cols-1 sm:grid-cols-3 opacity-100"
+      )}>
+        <Select value={category} onValueChange={setCategory}>
+          <SelectTrigger className="h-10 sm:h-11 text-sm bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-500">
+            <SelectValue placeholder="All Categories" />
+          </SelectTrigger>
+          <SelectContent className="bg-white border border-gray-200 shadow-lg max-h-60 overflow-y-auto z-50">
+            {categories.map((cat) => (
+              <SelectItem 
+                key={cat.value} 
+                value={cat.value}
+                className="hover:bg-gray-50 focus:bg-gray-50 text-sm py-2"
+              >
+                {cat.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={city} onValueChange={setCity}>
+          <SelectTrigger className="h-10 sm:h-11 text-sm bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-500">
+            <SelectValue placeholder="All Cities" />
+          </SelectTrigger>
+          <SelectContent className="bg-white border border-gray-200 shadow-lg max-h-60 overflow-y-auto z-50">
+            {cities.map((cityItem) => (
+              <SelectItem 
+                key={cityItem.value} 
+                value={cityItem.value}
+                className="hover:bg-gray-50 focus:bg-gray-50 text-sm py-2"
+              >
+                {cityItem.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={followers} onValueChange={setFollowers}>
+          <SelectTrigger className="h-10 sm:h-11 text-sm bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-500">
+            <SelectValue placeholder="Followers" />
+          </SelectTrigger>
+          <SelectContent className="bg-white border border-gray-200 shadow-lg max-h-60 overflow-y-auto z-50">
+            {followerRanges.map((range) => (
+              <SelectItem 
+                key={range.value} 
+                value={range.value}
+                className="hover:bg-gray-50 focus:bg-gray-50 text-sm py-2"
+              >
+                {range.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
+      {/* Search Button */}
+      <Button 
+        onClick={handleSearch}
+        className="w-full h-10 sm:h-12 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-lg sm:rounded-xl text-sm sm:text-base transition-all duration-300 shadow-lg hover:shadow-xl"
+      >
+        <Search className="h-4 w-4 mr-2" />
+        Search Creators
+      </Button>
     </div>
   );
 };

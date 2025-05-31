@@ -25,6 +25,9 @@ body {
   /* Prevent horizontal scroll on mobile */
   overflow-x: hidden;
   -webkit-text-size-adjust: 100%;
+  /* Prevent iOS zoom on input focus */
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Ensure responsive images */
@@ -36,9 +39,42 @@ img {
 /* Mobile-first responsive utilities */
 @media (max-width: 640px) {
   .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
   }
+  
+  /* Fix select dropdown z-index on mobile */
+  [role="combobox"] {
+    z-index: 60;
+  }
+  
+  /* Improve touch targets on mobile */
+  button, a, input, select {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Prevent zoom on input focus */
+  input, select, textarea {
+    font-size: 16px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 375px) {
+  .container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+/* Fix for dropdown z-index issues */
+[data-radix-popper-content-wrapper] {
+  z-index: 60 !important;
+}
+
+.radix-select-content {
+  z-index: 60 !important;
 }
 
 /* Custom animations */
@@ -194,15 +230,22 @@ button, a, input, select {
   }
 }
 
-/* Mobile touch improvements */
+/* Mobile-specific improvements */
 @media (max-width: 768px) {
+  /* Improve touch targets */
   button {
-    min-height: 44px; /* iOS recommended touch target */
+    min-height: 44px;
     min-width: 44px;
   }
   
+  /* Prevent zoom on iOS */
   input, select, textarea {
-    font-size: 16px; /* Prevent zoom on iOS */
+    font-size: 16px;
+  }
+  
+  /* Fix modal positioning on mobile */
+  .fixed {
+    position: fixed !important;
   }
 }
 
@@ -217,4 +260,17 @@ button, a, input, select {
   h1 { font-size: clamp(1.5rem, 5vw, 2.5rem); }
   h2 { font-size: clamp(1.25rem, 4vw, 2rem); }
   h3 { font-size: clamp(1.1rem, 3vw, 1.5rem); }
+}
+
+/* Mobile-specific utility classes */
+@media (max-width: 640px) {
+  .xs\:flex { display: flex; }
+  .xs\:hidden { display: none; }
+  .xs\:block { display: block; }
+  .xs\:text-xs { font-size: 0.75rem; }
+  .xs\:text-sm { font-size: 0.875rem; }
+  .xs\:px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+  .xs\:py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+  .xs\:h-7 { height: 1.75rem; }
+  .xs\:w-7 { width: 1.75rem; }
 }
