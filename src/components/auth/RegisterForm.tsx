@@ -14,8 +14,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { trackReferral } from "@/services/referralService";
 import { getReferralIdFromURL, validateReferralId } from "@/utils/referral/referralUtils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Check, AlertCircle } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Check, AlertCircle, Sparkles, UserPlus } from "lucide-react";
 
 // Define the form validation schema with additional fields
 const formSchema = z.object({
@@ -147,8 +146,8 @@ const RegisterForm: React.FC = () => {
         }
         
         toast({
-          title: "Registration successful",
-          description: "Your account has been created.",
+          title: "Welcome aboard! 🎉",
+          description: "Your account has been created successfully.",
         });
         
         // Redirect after successful registration
@@ -181,29 +180,33 @@ const RegisterForm: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <RegisterTypeSelector 
         onSelectType={onSelectType}
         selectedType={selectedRole}
       />
       
       {signupError && (
-        <Alert variant="destructive" className="text-sm">
+        <Alert variant="destructive" className="text-sm rounded-xl border-red-200 bg-red-50">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{signupError}</AlertDescription>
         </Alert>
       )}
       
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
           <FormField
             control={form.control}
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Full Name *</FormLabel>
+                <FormLabel className="text-gray-700 font-medium">Full Name *</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter your full name" {...field} />
+                  <Input 
+                    placeholder="Enter your full name" 
+                    {...field} 
+                    className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -215,24 +218,34 @@ const RegisterForm: React.FC = () => {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email *</FormLabel>
+                <FormLabel className="text-gray-700 font-medium">Email Address *</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="Enter your email" {...field} />
+                  <Input 
+                    type="email" 
+                    placeholder="Enter your email" 
+                    {...field} 
+                    className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
+                  <FormLabel className="text-gray-700 font-medium">Phone Number</FormLabel>
                   <FormControl>
-                    <Input type="tel" placeholder="Phone number" {...field} />
+                    <Input 
+                      type="tel" 
+                      placeholder="Phone number" 
+                      {...field} 
+                      className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -244,9 +257,14 @@ const RegisterForm: React.FC = () => {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password *</FormLabel>
+                  <FormLabel className="text-gray-700 font-medium">Password *</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Create a password" {...field} />
+                    <Input 
+                      type="password" 
+                      placeholder="Create a password" 
+                      {...field} 
+                      className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -254,15 +272,19 @@ const RegisterForm: React.FC = () => {
             />
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="city"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>City</FormLabel>
+                  <FormLabel className="text-gray-700 font-medium">City</FormLabel>
                   <FormControl>
-                    <Input placeholder="Your city" {...field} />
+                    <Input 
+                      placeholder="Your city" 
+                      {...field} 
+                      className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -274,9 +296,13 @@ const RegisterForm: React.FC = () => {
               name="country"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Country</FormLabel>
+                  <FormLabel className="text-gray-700 font-medium">Country</FormLabel>
                   <FormControl>
-                    <Input placeholder="Your country" {...field} />
+                    <Input 
+                      placeholder="Your country" 
+                      {...field} 
+                      className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -291,24 +317,32 @@ const RegisterForm: React.FC = () => {
                 name="businessName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Business Name</FormLabel>
+                    <FormLabel className="text-gray-700 font-medium">Business Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Your business name" {...field} />
+                      <Input 
+                        placeholder="Your business name" 
+                        {...field} 
+                        className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="businessCategory"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Business Category</FormLabel>
+                      <FormLabel className="text-gray-700 font-medium">Business Category</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Restaurant, Retail, etc." {...field} />
+                        <Input 
+                          placeholder="e.g. Restaurant, Retail, etc." 
+                          {...field} 
+                          className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -320,9 +354,13 @@ const RegisterForm: React.FC = () => {
                   name="website"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Website</FormLabel>
+                      <FormLabel className="text-gray-700 font-medium">Website</FormLabel>
                       <FormControl>
-                        <Input placeholder="https://www.example.com" {...field} />
+                        <Input 
+                          placeholder="https://www.example.com" 
+                          {...field} 
+                          className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -337,9 +375,9 @@ const RegisterForm: React.FC = () => {
             name="referralCode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="flex items-center gap-1">
+                <FormLabel className="flex items-center gap-1 text-gray-700 font-medium">
                   Referral Code 
-                  <span className="text-xs text-muted-foreground">(Optional)</span>
+                  <span className="text-xs text-gray-500">(Optional)</span>
                 </FormLabel>
                 <FormControl>
                   <div className="relative">
@@ -350,41 +388,56 @@ const RegisterForm: React.FC = () => {
                         field.onChange(e);
                         handleReferralCodeChange(e);
                       }}
-                      className={
+                      className={`h-12 border-2 rounded-xl bg-white/80 backdrop-blur-sm pr-12 transition-all duration-200 hover:border-gray-300 ${
                         isValidReferral === true
-                          ? "border-green-500 focus:ring-green-500"
+                          ? "border-green-400 focus:border-green-500 focus:ring-4 focus:ring-green-100"
                           : isValidReferral === false
-                          ? "border-red-500 focus:ring-red-500"
-                          : ""
-                      }
+                          ? "border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-100"
+                          : "border-gray-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100"
+                      }`}
                     />
                     {isValidReferral === true && (
-                      <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-500" />
+                      <Check className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-green-500" />
                     )}
                     {isValidReferral === false && (
-                      <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-red-500" />
+                      <AlertCircle className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-red-500" />
                     )}
                   </div>
                 </FormControl>
                 {referralCode && isValidReferral !== null && !referralChecking && (
-                  <Alert className={`mt-1 p-2 ${isValidReferral ? "bg-green-50" : "bg-red-50"}`}>
-                    <AlertDescription className={`text-xs ${isValidReferral ? "text-green-600" : "text-red-600"}`}>
+                  <Alert className={`mt-2 p-3 rounded-xl border-2 ${isValidReferral ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
+                    <AlertDescription className={`text-sm font-medium ${isValidReferral ? "text-green-700" : "text-red-700"}`}>
                       {isValidReferral 
-                        ? "Valid referral code!" 
-                        : "Invalid referral code. Please check and try again."}
+                        ? "✅ Valid referral code! You'll get special benefits." 
+                        : "❌ Invalid referral code. Please check and try again."}
                     </AlertDescription>
                   </Alert>
                 )}
                 {referralChecking && (
-                  <div className="text-xs text-muted-foreground mt-1">Validating referral code...</div>
+                  <div className="text-sm text-purple-600 mt-2 font-medium">🔍 Validating referral code...</div>
                 )}
                 <FormMessage />
               </FormItem>
             )}
           />
           
-          <Button type="submit" className="w-full mt-6" disabled={isLoading}>
-            {isLoading ? "Creating Account..." : "Create Account"}
+          <Button 
+            type="submit" 
+            className="w-full h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 mt-8" 
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Sparkles className="mr-2 h-5 w-5 animate-spin" />
+                Creating your account...
+              </>
+            ) : (
+              <>
+                <UserPlus className="mr-2 h-5 w-5" />
+                Create Account
+                <Sparkles className="ml-2 h-5 w-5" />
+              </>
+            )}
           </Button>
         </form>
       </Form>

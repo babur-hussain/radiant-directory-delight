@@ -65,56 +65,82 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] w-[95vw] max-w-[95vw] sm:w-full p-0 overflow-hidden max-h-[95vh] sm:max-h-[90vh] bg-white border-0 shadow-2xl">
-        <DialogHeader className="px-4 pt-4 pb-0 bg-white">
-          <DialogTitle className="text-center text-xl sm:text-2xl font-bold text-gray-900">
-            {activeTab === 'login' ? 'Welcome Back' : 'Create an Account'}
+      <DialogContent className="sm:max-w-[480px] w-[95vw] max-w-[95vw] sm:w-full p-0 overflow-hidden max-h-[95vh] sm:max-h-[90vh] bg-gradient-to-br from-white via-purple-50/30 to-blue-50/30 border-0 shadow-2xl backdrop-blur-sm">
+        {/* Decorative background elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-xl"></div>
+          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-tr from-blue-400/20 to-indigo-400/20 rounded-full blur-xl"></div>
+        </div>
+        
+        <DialogHeader className="px-6 pt-8 pb-2 bg-transparent relative z-10">
+          <DialogTitle className="text-center text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            {activeTab === 'login' ? 'Welcome Back!' : 'Join Our Community'}
           </DialogTitle>
+          <p className="text-center text-gray-600 text-sm mt-2">
+            {activeTab === 'login' 
+              ? 'Sign in to your account to continue' 
+              : 'Create your account and start your journey'
+            }
+          </p>
         </DialogHeader>
         
-        <ScrollArea className="max-h-[calc(95vh-80px)] sm:max-h-[calc(90vh-120px)] bg-white">
-          <div className="px-4 pb-4 bg-white">
+        <ScrollArea className="max-h-[calc(95vh-120px)] sm:max-h-[calc(90vh-160px)] relative z-10">
+          <div className="px-6 pb-8">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4 bg-gray-100">
-                <TabsTrigger value="login" className="data-[state=active]:bg-white">Login</TabsTrigger>
-                <TabsTrigger value="register" className="data-[state=active]:bg-white">Register</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-white/60 backdrop-blur-sm border border-white/20 shadow-lg rounded-xl p-1">
+                <TabsTrigger 
+                  value="login" 
+                  className="data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-md data-[state=active]:font-semibold rounded-lg transition-all duration-200"
+                >
+                  Sign In
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="register" 
+                  className="data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-md data-[state=active]:font-semibold rounded-lg transition-all duration-200"
+                >
+                  Sign Up
+                </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="login" className="space-y-4 mt-0">
-                <SocialLoginButtons onGoogleLogin={handleGoogleLogin} />
-                
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <Separator className="w-full" />
+              <TabsContent value="login" className="space-y-6 mt-0">
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
+                  <SocialLoginButtons onGoogleLogin={handleGoogleLogin} />
+                  
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <Separator className="w-full bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-white px-4 py-1 text-gray-500 font-medium rounded-full shadow-sm">
+                        Or continue with email
+                      </span>
+                    </div>
                   </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-white px-2 text-muted-foreground">
-                      Or continue with
-                    </span>
-                  </div>
+                  
+                  <LoginForm 
+                    onSuccess={handleAuthSuccess}
+                    onSwitchToRegister={handleSwitchToRegister}
+                  />
                 </div>
-                
-                <LoginForm 
-                  onSuccess={handleAuthSuccess}
-                  onSwitchToRegister={handleSwitchToRegister}
-                />
               </TabsContent>
               
-              <TabsContent value="register" className="space-y-4 mt-0 pt-0">
-                <SocialLoginButtons onGoogleLogin={handleGoogleLogin} />
-                
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <Separator className="w-full" />
+              <TabsContent value="register" className="space-y-6 mt-0">
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
+                  <SocialLoginButtons onGoogleLogin={handleGoogleLogin} />
+                  
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <Separator className="w-full bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-white px-4 py-1 text-gray-500 font-medium rounded-full shadow-sm">
+                        Or create account with email
+                      </span>
+                    </div>
                   </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-white px-2 text-muted-foreground">
-                      Or continue with
-                    </span>
-                  </div>
+                  
+                  <RegisterForm />
                 </div>
-                
-                <RegisterForm />
               </TabsContent>
             </Tabs>
           </div>
