@@ -8,11 +8,14 @@ import { getActiveUserSubscription } from "@/services/subscriptionService";
 import SubscriptionPackages from "@/components/subscription/SubscriptionPackages";
 import Layout from "@/components/layout/Layout";
 import { Loader2, Crown, CheckCircle2 } from "lucide-react";
+import { useSubscriptionPackages } from "@/hooks/useSubscriptionPackages";
+import SubscriptionPackagesLoading from "@/components/subscription/SubscriptionPackagesLoading";
 
 const SubscriptionPage = () => {
   const { user, isAuthenticated } = useAuth();
   const [subscription, setSubscription] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { packages, isLoading: packagesLoading, isError } = useSubscriptionPackages();
 
   useEffect(() => {
     const fetchSubscription = async () => {
@@ -44,80 +47,113 @@ const SubscriptionPage = () => {
             Choose Your Plan
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Unlock your potential as an influencer with our comprehensive subscription plans. 
-            Get connected with local businesses and expand your reach.
+            Unlock your potential with our comprehensive subscription plans. 
+            Get connected with opportunities and expand your reach.
           </p>
         </div>
 
-        {/* Active Subscription Banner */}
-        {isLoading ? (
-          <Card className="max-w-2xl mx-auto mb-12 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
-            <CardContent className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin mr-3" />
-              <span>Checking your subscription status...</span>
-            </CardContent>
-          </Card>
-        ) : subscription && subscription.status === "active" ? (
-          <Card className="max-w-2xl mx-auto mb-12 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
-            <CardHeader>
-              <div className="flex items-center">
-                <CheckCircle2 className="h-6 w-6 text-green-600 mr-3" />
-                <CardTitle className="text-green-800">Active Subscription</CardTitle>
-              </div>
-              <CardDescription className="text-green-700">
-                You have an active subscription plan.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Plan:</span>
-                  <Badge className="bg-green-600 text-white">
-                    {subscription.packageName}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Amount:</span>
-                  <span>₹{subscription.amount?.toLocaleString('en-IN')}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Valid Until:</span>
-                  <span>
-                    {new Date(subscription.endDate).toLocaleDateString("en-IN", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline" onClick={() => window.history.back()}>
-                Go Back
-              </Button>
-              <Button onClick={() => window.location.href = "/dashboard"}>
-                Go to Dashboard
-              </Button>
-            </CardFooter>
-          </Card>
-        ) : null}
-
-        {/* Subscription Plans */}
-        {(!subscription || subscription.status !== "active") && (
-          <div className="space-y-8">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                Influencer Subscription Plans
-              </h2>
-              <p className="text-gray-600 max-w-2xl mx-auto">
-                Choose the plan that best fits your needs and start connecting with businesses in your area.
-              </p>
-            </div>
-            
-            <SubscriptionPackages userRole="Influencer" filterByType={true} />
-          </div>
+        {/* Active Subscription Banner - Only for authenticated users */}
+        {isAuthenticated && (
+          <>
+            {isLoading ? (
+              <Card className="max-w-2xl mx-auto mb-12 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+                <CardContent className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin mr-3" />
+                  <span>Checking your subscription status...</span>
+                </CardContent>
+              </Card>
+            ) : subscription && subscription.status === "active" ? (
+              <Card className="max-w-2xl mx-auto mb-12 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+                <CardHeader>
+                  <div className="flex items-center">
+                    <CheckCircle2 className="h-6 w-6 text-green-600 mr-3" />
+                    <CardTitle className="text-green-800">Active Subscription</CardTitle>
+                  </div>
+                  <CardDescription className="text-green-700">
+                    You have an active subscription plan.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">Plan:</span>
+                      <Badge className="bg-green-600 text-white">
+                        {subscription.packageName}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">Amount:</span>
+                      <span>₹{subscription.amount?.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">Valid Until:</span>
+                      <span>
+                        {new Date(subscription.endDate).toLocaleDateString("en-IN", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button variant="outline" onClick={() => window.history.back()}>
+                    Go Back
+                  </Button>
+                  <Button onClick={() => window.location.href = "/dashboard"}>
+                    Go to Dashboard
+                  </Button>
+                </CardFooter>
+              </Card>
+            ) : null}
+          </>
         )}
+
+        {/* All Subscription Plans - Show all packages */}
+        <div className="space-y-8">
+          {/* Business Plans Section */}
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Business Plans
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto mb-8">
+              Grow your business with our comprehensive marketing solutions and connect with top influencers.
+            </p>
+            
+            {packagesLoading ? (
+              <SubscriptionPackagesLoading />
+            ) : isError ? (
+              <div className="text-center py-10">
+                <p className="text-red-500 mb-4">There was an error loading the subscription packages.</p>
+                <Button onClick={() => window.location.reload()} type="button">Try Again</Button>
+              </div>
+            ) : (
+              <SubscriptionPackages userRole="Business" filterByType={true} />
+            )}
+          </div>
+
+          {/* Influencer Plans Section */}
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Influencer Plans
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto mb-8">
+              Start your influencer journey and connect with businesses in your area.
+            </p>
+            
+            {packagesLoading ? (
+              <SubscriptionPackagesLoading />
+            ) : isError ? (
+              <div className="text-center py-10">
+                <p className="text-red-500 mb-4">There was an error loading the subscription packages.</p>
+                <Button onClick={() => window.location.reload()} type="button">Try Again</Button>
+              </div>
+            ) : (
+              <SubscriptionPackages userRole="Influencer" filterByType={true} />
+            )}
+          </div>
+        </div>
 
         {/* Benefits Section */}
         <div className="mt-16 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-8">
@@ -132,7 +168,7 @@ const SubscriptionPage = () => {
                 </div>
                 <h4 className="font-semibold mb-2">Local Business Connections</h4>
                 <p className="text-gray-600 text-sm">
-                  Connect with businesses in your area based on your subscription radius.
+                  Connect with businesses and influencers in your area based on your subscription radius.
                 </p>
               </div>
               <div className="text-center">

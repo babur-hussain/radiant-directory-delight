@@ -1,4 +1,3 @@
-
 import React, { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -238,6 +237,11 @@ export const router = createBrowserRouter([
             element: <ProtectedRoute roles={["Influencer", "Admin"]}>
               <Suspense fallback={<LoadingComponent />}><InfluencerDashboardPage /></Suspense>
             </ProtectedRoute>
+          },
+          // Add the missing subscription routes
+          {
+            path: "subscription",
+            element: <Suspense fallback={<LoadingComponent />}><SubscriptionPage /></Suspense>
           },
           {
             path: "subscriptions",
