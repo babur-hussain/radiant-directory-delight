@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import ForgotPasswordForm from './ForgotPasswordForm';
 
 const loginSchema = z.object({
@@ -108,35 +108,35 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
 
   if (showForgotPassword) {
     return (
-      <div className="w-full space-y-6">
+      <div className="w-full space-y-4">
         <ForgotPasswordForm onBackToLogin={handleForgotPasswordBack} />
       </div>
     );
   }
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-4">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             control={form.control}
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-gray-700 font-medium">Email Address</FormLabel>
+                <FormLabel className="text-gray-700 font-medium text-sm">Email Address</FormLabel>
                 <FormControl>
-                  <div className="relative group">
+                  <div className="relative">
                     <Input
                       placeholder="Enter your email"
                       type="email"
                       autoComplete="email"
                       {...field}
-                      className="pl-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 group-hover:border-gray-300"
+                      className="pl-10 h-11 border border-gray-300 rounded-lg bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
                     />
-                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   </div>
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
@@ -146,28 +146,28 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-gray-700 font-medium">Password</FormLabel>
+                <FormLabel className="text-gray-700 font-medium text-sm">Password</FormLabel>
                 <FormControl>
-                  <div className="relative group">
+                  <div className="relative">
                     <Input
                       placeholder="Enter your password"
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="current-password"
                       {...field}
-                      className="pl-12 pr-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 group-hover:border-gray-300"
+                      className="pl-10 pr-10 h-11 border border-gray-300 rounded-lg bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
                     />
-                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 hover:text-purple-500 transition-colors focus:outline-none"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
                       tabIndex={-1}
                     >
                       {showPassword ? <EyeOff /> : <Eye />}
                     </button>
                   </div>
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
@@ -177,19 +177,18 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
             name="employeeCode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-gray-700 font-medium">
-                  Employee Code 
-                  <span className="text-xs text-gray-500 ml-1">(Optional)</span>
+                <FormLabel className="text-gray-700 font-medium text-sm">
+                  Employee Code <span className="text-xs text-gray-500">(Optional)</span>
                 </FormLabel>
                 <FormControl>
                   <Input
                     placeholder="Enter employee code if applicable"
                     autoComplete="organization"
                     {...field}
-                    className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                    className="h-11 border border-gray-300 rounded-lg bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
                   />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
@@ -199,7 +198,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
               type="button"
               variant="link"
               onClick={() => setShowForgotPassword(true)}
-              className="p-0 h-auto text-sm text-purple-600 hover:text-purple-700 font-medium"
+              className="p-0 h-auto text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
               Forgot your password?
             </Button>
@@ -207,31 +206,27 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
 
           <Button
             type="submit"
-            className="w-full h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm hover:shadow-md transform hover:scale-[1.01] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             disabled={isSubmitting || !form.formState.isValid}
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Signing you in...
               </>
             ) : (
-              <>
-                <Sparkles className="mr-2 h-5 w-5" />
-                Sign In
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </>
+              'Sign In'
             )}
           </Button>
 
-          <div className="text-center pt-4">
+          <div className="text-center pt-3">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
               <Button
                 type="button"
                 variant="link"
                 onClick={onSwitchToRegister}
-                className="p-0 h-auto font-semibold text-purple-600 hover:text-purple-700"
+                className="p-0 h-auto font-medium text-blue-600 hover:text-blue-700"
               >
                 Create one now
               </Button>

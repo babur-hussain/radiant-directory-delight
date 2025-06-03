@@ -65,18 +65,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px] w-[95vw] max-w-[95vw] sm:w-full p-0 overflow-hidden h-[95vh] sm:h-auto sm:max-h-[90vh] bg-gradient-to-br from-white via-purple-50/30 to-blue-50/30 border-0 shadow-2xl backdrop-blur-sm flex flex-col">
-        {/* Decorative background elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-xl"></div>
-          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-tr from-blue-400/20 to-indigo-400/20 rounded-full blur-xl"></div>
-        </div>
-        
-        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-8 pb-2 bg-transparent relative z-10 flex-shrink-0">
-          <DialogTitle className="text-center text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+      <DialogContent className="max-w-md w-[95vw] sm:w-full p-0 max-h-[95vh] bg-white border shadow-2xl flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
+          <DialogTitle className="text-center text-2xl font-bold text-gray-900">
             {activeTab === 'login' ? 'Welcome Back!' : 'Join Our Community'}
           </DialogTitle>
-          <p className="text-center text-gray-600 text-xs sm:text-sm mt-1 sm:mt-2">
+          <p className="text-center text-gray-600 text-sm mt-2">
             {activeTab === 'login' 
               ? 'Sign in to your account to continue' 
               : 'Create your account and start your journey'
@@ -84,35 +78,35 @@ const AuthModal: React.FC<AuthModalProps> = ({
           </p>
         </DialogHeader>
         
-        <div className="flex-1 overflow-hidden relative z-10">
-          <ScrollArea className="h-full">
-            <div className="px-4 sm:px-6 pb-4 sm:pb-8">
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full max-h-[calc(95vh-140px)]">
+            <div className="px-6 pb-6">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6 bg-white/60 backdrop-blur-sm border border-white/20 shadow-lg rounded-xl p-1">
+                <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100 p-1 rounded-lg">
                   <TabsTrigger 
                     value="login" 
-                    className="data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-md data-[state=active]:font-semibold rounded-lg transition-all duration-200 text-sm sm:text-base"
+                    className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm rounded-md transition-all duration-200"
                   >
                     Sign In
                   </TabsTrigger>
                   <TabsTrigger 
                     value="register" 
-                    className="data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-md data-[state=active]:font-semibold rounded-lg transition-all duration-200 text-sm sm:text-base"
+                    className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm rounded-md transition-all duration-200"
                   >
                     Sign Up
                   </TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="login" className="space-y-4 sm:space-y-6 mt-0">
-                  <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-xl border border-white/20">
+                <TabsContent value="login" className="space-y-6 mt-0">
+                  <div className="bg-gray-50 rounded-xl p-6">
                     <SocialLoginButtons onGoogleLogin={handleGoogleLogin} />
                     
-                    <div className="relative my-4 sm:my-6">
+                    <div className="relative my-6">
                       <div className="absolute inset-0 flex items-center">
-                        <Separator className="w-full bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+                        <Separator className="w-full" />
                       </div>
                       <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-white px-4 py-1 text-gray-500 font-medium rounded-full shadow-sm">
+                        <span className="bg-gray-50 px-4 py-1 text-gray-500 font-medium">
                           Or continue with email
                         </span>
                       </div>
@@ -125,16 +119,16 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                 </TabsContent>
                 
-                <TabsContent value="register" className="space-y-4 sm:space-y-6 mt-0">
-                  <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-xl border border-white/20">
+                <TabsContent value="register" className="space-y-6 mt-0">
+                  <div className="bg-gray-50 rounded-xl p-6">
                     <SocialLoginButtons onGoogleLogin={handleGoogleLogin} />
                     
-                    <div className="relative my-4 sm:my-6">
+                    <div className="relative my-6">
                       <div className="absolute inset-0 flex items-center">
-                        <Separator className="w-full bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+                        <Separator className="w-full" />
                       </div>
                       <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-white px-4 py-1 text-gray-500 font-medium rounded-full shadow-sm">
+                        <span className="bg-gray-50 px-4 py-1 text-gray-500 font-medium">
                           Or create account with email
                         </span>
                       </div>

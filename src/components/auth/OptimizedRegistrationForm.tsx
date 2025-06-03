@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ import StaffFields from './StaffFields';
 import ReferralField from './ReferralField';
 import FormStepIndicator from './FormStepIndicator';
 import ResponsiveContainer from '../ResponsiveContainer';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface RegistrationFormProps {
   onSuccess?: () => void;
@@ -54,7 +56,6 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const scrollableRef = useRef<HTMLDivElement>(null);
   
   const [formData, setFormData] = useState<FormData>({
     role: 'User' as UserRole,
@@ -76,67 +77,6 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
       setFormData(prev => ({ ...prev, referralCode: urlReferralCode }));
     }
   }, []);
-
-  // Smooth scroll and keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (!scrollableRef.current) return;
-      
-      const scrollAmount = 50;
-      
-      switch (event.key) {
-        case 'ArrowDown':
-          event.preventDefault();
-          scrollableRef.current.scrollBy({
-            top: scrollAmount,
-            behavior: 'smooth'
-          });
-          break;
-        case 'ArrowUp':
-          event.preventDefault();
-          scrollableRef.current.scrollBy({
-            top: -scrollAmount,
-            behavior: 'smooth'
-          });
-          break;
-        case 'PageDown':
-          event.preventDefault();
-          scrollableRef.current.scrollBy({
-            top: scrollableRef.current.clientHeight,
-            behavior: 'smooth'
-          });
-          break;
-        case 'PageUp':
-          event.preventDefault();
-          scrollableRef.current.scrollBy({
-            top: -scrollableRef.current.clientHeight,
-            behavior: 'smooth'
-          });
-          break;
-      }
-    };
-
-    if (scrollableRef.current) {
-      scrollableRef.current.addEventListener('keydown', handleKeyDown);
-      scrollableRef.current.setAttribute('tabindex', '0');
-    }
-
-    return () => {
-      if (scrollableRef.current) {
-        scrollableRef.current.removeEventListener('keydown', handleKeyDown);
-      }
-    };
-  }, []);
-
-  // Auto-scroll to top when step changes
-  useEffect(() => {
-    if (scrollableRef.current) {
-      scrollableRef.current.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-    }
-  }, [step]);
 
   const updateFormData = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -298,7 +238,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
                 value={formData.name}
                 onChange={(e) => updateFormData('name', e.target.value)}
                 required
-                className="mt-1"
+                className="mt-1 h-11"
               />
             </div>
             
@@ -311,7 +251,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
                 value={formData.email}
                 onChange={(e) => updateFormData('email', e.target.value)}
                 required
-                className="mt-1"
+                className="mt-1 h-11"
               />
             </div>
             
@@ -325,7 +265,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
                   value={formData.password}
                   onChange={(e) => updateFormData('password', e.target.value)}
                   required
-                  className="mt-1"
+                  className="mt-1 h-11"
                 />
               </div>
               
@@ -338,7 +278,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
                   value={formData.confirmPassword}
                   onChange={(e) => updateFormData('confirmPassword', e.target.value)}
                   required
-                  className="mt-1"
+                  className="mt-1 h-11"
                 />
               </div>
             </div>
@@ -352,7 +292,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
                   placeholder="Your phone number"
                   value={formData.phone}
                   onChange={(e) => updateFormData('phone', e.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-11"
                 />
               </div>
               
@@ -363,7 +303,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
                   placeholder="Your city"
                   value={formData.city}
                   onChange={(e) => updateFormData('city', e.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-11"
                 />
               </div>
             </div>
@@ -404,11 +344,11 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
   };
 
   return (
-    <ResponsiveContainer maxWidth="2xl" className="h-[90vh] max-h-[800px]">
-      <Card className="w-full h-full flex flex-col bg-white shadow-lg">
-        <CardHeader className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-4 border-b bg-gray-50">
-          <CardTitle className="text-center text-lg sm:text-xl">Create Your Account</CardTitle>
-          <CardDescription className="text-center text-sm">
+    <ResponsiveContainer maxWidth="2xl" className="max-h-[90vh]">
+      <Card className="w-full max-w-lg mx-auto bg-white shadow-xl border-0 flex flex-col max-h-[90vh]">
+        <CardHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b bg-white">
+          <CardTitle className="text-center text-xl font-bold text-gray-900">Create Your Account</CardTitle>
+          <CardDescription className="text-center text-sm text-gray-600">
             Step {step} of 3 - {stepLabels[step - 1]}
           </CardDescription>
           
@@ -419,30 +359,22 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
           />
         </CardHeader>
         
-        <CardContent 
-          ref={scrollableRef}
-          className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 focus:outline-none scroll-smooth"
-          style={{ 
-            scrollBehavior: 'smooth',
-            scrollbarWidth: 'thin',
-            scrollbarColor: '#CBD5E0 #F7FAFC'
-          }}
-        >
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          
-          <div className="space-y-4 pb-6">
-            {renderStep()}
-          </div>
-          
-          <div className="h-8"></div>
+        <CardContent className="flex-1 overflow-hidden p-0">
+          <ScrollArea className="h-full max-h-[50vh] px-6 py-4">
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
+            <div className="space-y-4 pb-4">
+              {renderStep()}
+            </div>
+          </ScrollArea>
         </CardContent>
         
-        <CardFooter className="flex-shrink-0 flex flex-col space-y-4 border-t pt-4 px-4 sm:px-6 pb-4 sm:pb-6 bg-gray-50">
+        <CardFooter className="flex-shrink-0 flex flex-col space-y-4 border-t pt-4 px-6 pb-6 bg-white">
           <div className="flex justify-between w-full">
             {step > 1 && (
               <Button 
@@ -462,7 +394,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
                   type="button" 
                   onClick={handleNext}
                   disabled={isLoading}
-                  className="px-8"
+                  className="px-8 bg-blue-600 hover:bg-blue-700"
                 >
                   Next
                 </Button>
@@ -471,7 +403,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
                   type="button" 
                   onClick={handleSubmit}
                   disabled={isLoading}
-                  className="px-8"
+                  className="px-8 bg-blue-600 hover:bg-blue-700"
                 >
                   {isLoading ? 'Creating Account...' : 'Create Account'}
                 </Button>
@@ -486,7 +418,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Or</span>
+                  <span className="bg-white px-2 text-gray-500">Or</span>
                 </div>
               </div>
               
@@ -512,10 +444,6 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
             >
               Sign In
             </button>
-          </div>
-          
-          <div className="text-center text-xs text-gray-400">
-            Use ↑↓ arrow keys or Page Up/Down to scroll
           </div>
         </CardFooter>
       </Card>
