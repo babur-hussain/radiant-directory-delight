@@ -8,7 +8,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import SocialLoginButtons from './SocialLoginButtons';
 import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AuthModalProps {
   open: boolean;
@@ -65,8 +64,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md w-[95vw] sm:w-full p-0 max-h-[90vh] bg-white border shadow-2xl">
-        <div className="flex flex-col h-full max-h-[90vh]">
+      <DialogContent className="max-w-md w-[95vw] sm:w-full p-0 h-[90vh] bg-white border shadow-2xl overflow-hidden">
+        <div className="flex flex-col h-full">
           <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0 border-b bg-white">
             <DialogTitle className="text-center text-2xl font-bold text-gray-900">
               {activeTab === 'login' ? 'Welcome Back!' : 'Join Our Community'}
@@ -79,68 +78,66 @@ const AuthModal: React.FC<AuthModalProps> = ({
             </p>
           </DialogHeader>
           
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <ScrollArea className="h-full">
-              <div className="px-6 py-6">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100 p-1 rounded-lg">
-                    <TabsTrigger 
-                      value="login" 
-                      className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm rounded-md transition-all duration-200"
-                    >
-                      Sign In
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="register" 
-                      className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm rounded-md transition-all duration-200"
-                    >
-                      Sign Up
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="login" className="space-y-6 mt-0">
-                    <div className="bg-gray-50 rounded-xl p-6">
-                      <SocialLoginButtons onGoogleLogin={handleGoogleLogin} />
-                      
-                      <div className="relative my-6">
-                        <div className="absolute inset-0 flex items-center">
-                          <Separator className="w-full" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-gray-50 px-4 py-1 text-gray-500 font-medium">
-                            Or continue with email
-                          </span>
-                        </div>
+          <div className="flex-1 overflow-y-auto">
+            <div className="px-6 py-6">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100 p-1 rounded-lg">
+                  <TabsTrigger 
+                    value="login" 
+                    className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm rounded-md transition-all duration-200"
+                  >
+                    Sign In
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="register" 
+                    className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm rounded-md transition-all duration-200"
+                  >
+                    Sign Up
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="login" className="space-y-6 mt-0">
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <SocialLoginButtons onGoogleLogin={handleGoogleLogin} />
+                    
+                    <div className="relative my-6">
+                      <div className="absolute inset-0 flex items-center">
+                        <Separator className="w-full" />
                       </div>
-                      
-                      <LoginForm 
-                        onSuccess={handleAuthSuccess}
-                        onSwitchToRegister={handleSwitchToRegister}
-                      />
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="register" className="space-y-6 mt-0">
-                    <div className="bg-gray-50 rounded-xl p-6">
-                      <SocialLoginButtons onGoogleLogin={handleGoogleLogin} />
-                      
-                      <div className="relative my-6">
-                        <div className="absolute inset-0 flex items-center">
-                          <Separator className="w-full" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-gray-50 px-4 py-1 text-gray-500 font-medium">
-                            Or create account with email
-                          </span>
-                        </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-gray-50 px-4 py-1 text-gray-500 font-medium">
+                          Or continue with email
+                        </span>
                       </div>
-                      
-                      <RegisterForm />
                     </div>
-                  </TabsContent>
-                </Tabs>
-              </div>
-            </ScrollArea>
+                    
+                    <LoginForm 
+                      onSuccess={handleAuthSuccess}
+                      onSwitchToRegister={handleSwitchToRegister}
+                    />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="register" className="space-y-6 mt-0">
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <SocialLoginButtons onGoogleLogin={handleGoogleLogin} />
+                    
+                    <div className="relative my-6">
+                      <div className="absolute inset-0 flex items-center">
+                        <Separator className="w-full" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-gray-50 px-4 py-1 text-gray-500 font-medium">
+                          Or create account with email
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <RegisterForm />
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
           </div>
         </div>
       </DialogContent>

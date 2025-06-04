@@ -209,7 +209,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
     switch (step) {
       case 1:
         return (
-          <div className="space-y-6 pb-4">
+          <div className="space-y-6">
             <div className="text-center py-2">
               <h4 className="font-medium text-gray-700">Choose Your Account Type</h4>
               <p className="text-sm text-gray-500 mt-1">Select the option that best describes you</p>
@@ -223,7 +223,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
       
       case 2:
         return (
-          <div className="space-y-4 pb-4">
+          <div className="space-y-4">
             <div className="text-center py-2">
               <h4 className="font-medium text-gray-700">Basic Information</h4>
               <p className="text-sm text-gray-500 mt-1">Tell us about yourself</p>
@@ -311,7 +311,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
       
       case 3:
         return (
-          <div className="space-y-6 pb-4">
+          <div className="space-y-6">
             <div className="text-center py-2">
               <h4 className="font-medium text-gray-700">Additional Details</h4>
               <p className="text-sm text-gray-500 mt-1">Complete your profile</p>
@@ -343,7 +343,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
   };
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-4 min-h-0">
       <FormStepIndicator
         currentStep={step}
         totalSteps={3}
@@ -357,7 +357,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
         </Alert>
       )}
       
-      <div className="space-y-4">
+      <div className="space-y-4 min-h-0">
         {renderStep()}
       </div>
       
@@ -405,7 +405,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">Or</span>
+                <span className="bg-gray-50 px-2 text-gray-500">Or</span>
               </div>
             </div>
             
