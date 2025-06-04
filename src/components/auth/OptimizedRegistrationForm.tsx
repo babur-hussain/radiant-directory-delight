@@ -343,7 +343,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
   };
 
   return (
-    <div className="w-full space-y-4 min-h-0">
+    <div className="w-full">
       <FormStepIndicator
         currentStep={step}
         totalSteps={3}
@@ -357,7 +357,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
         </Alert>
       )}
       
-      <div className="space-y-4 min-h-0">
+      <div className="space-y-4 mb-6">
         {renderStep()}
       </div>
       
