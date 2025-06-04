@@ -17,7 +17,6 @@ import StaffFields from './StaffFields';
 import ReferralField from './ReferralField';
 import FormStepIndicator from './FormStepIndicator';
 import ResponsiveContainer from '../ResponsiveContainer';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface RegistrationFormProps {
   onSuccess?: () => void;
@@ -210,7 +209,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
     switch (step) {
       case 1:
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 pb-4">
             <div className="text-center py-2">
               <h4 className="font-medium text-gray-700">Choose Your Account Type</h4>
               <p className="text-sm text-gray-500 mt-1">Select the option that best describes you</p>
@@ -224,7 +223,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
       
       case 2:
         return (
-          <div className="space-y-4">
+          <div className="space-y-4 pb-4">
             <div className="text-center py-2">
               <h4 className="font-medium text-gray-700">Basic Information</h4>
               <p className="text-sm text-gray-500 mt-1">Tell us about yourself</p>
@@ -312,7 +311,7 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
       
       case 3:
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 pb-4">
             <div className="text-center py-2">
               <h4 className="font-medium text-gray-700">Additional Details</h4>
               <p className="text-sm text-gray-500 mt-1">Complete your profile</p>
@@ -344,110 +343,97 @@ const OptimizedRegistrationForm: React.FC<RegistrationFormProps> = ({ onSuccess,
   };
 
   return (
-    <ResponsiveContainer maxWidth="2xl" className="max-h-[90vh]">
-      <Card className="w-full max-w-lg mx-auto bg-white shadow-xl border-0 flex flex-col max-h-[90vh]">
-        <CardHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b bg-white">
-          <CardTitle className="text-center text-xl font-bold text-gray-900">Create Your Account</CardTitle>
-          <CardDescription className="text-center text-sm text-gray-600">
-            Step {step} of 3 - {stepLabels[step - 1]}
-          </CardDescription>
-          
-          <FormStepIndicator
-            currentStep={step}
-            totalSteps={3}
-            stepLabels={stepLabels}
-          />
-        </CardHeader>
-        
-        <CardContent className="flex-1 overflow-hidden p-0">
-          <ScrollArea className="h-full max-h-[50vh] px-6 py-4">
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            
-            <div className="space-y-4 pb-4">
-              {renderStep()}
-            </div>
-          </ScrollArea>
-        </CardContent>
-        
-        <CardFooter className="flex-shrink-0 flex flex-col space-y-4 border-t pt-4 px-6 pb-6 bg-white">
-          <div className="flex justify-between w-full">
-            {step > 1 && (
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={handleBack}
-                disabled={isLoading}
-                className="px-6"
-              >
-                Back
-              </Button>
-            )}
-            
-            <div className="flex-1 flex justify-end">
-              {step < 3 ? (
-                <Button 
-                  type="button" 
-                  onClick={handleNext}
-                  disabled={isLoading}
-                  className="px-8 bg-blue-600 hover:bg-blue-700"
-                >
-                  Next
-                </Button>
-              ) : (
-                <Button 
-                  type="button" 
-                  onClick={handleSubmit}
-                  disabled={isLoading}
-                  className="px-8 bg-blue-600 hover:bg-blue-700"
-                >
-                  {isLoading ? 'Creating Account...' : 'Create Account'}
-                </Button>
-              )}
-            </div>
-          </div>
-          
-          {step === 1 && (
-            <>
-              <div className="relative w-full">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-gray-500">Or</span>
-                </div>
-              </div>
-              
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full" 
-                onClick={handleGoogleSignup}
-                disabled={isLoading}
-              >
-                <Chrome className="mr-2 h-4 w-4" />
-                Continue with Google
-              </Button>
-            </>
+    <div className="w-full space-y-4">
+      <FormStepIndicator
+        currentStep={step}
+        totalSteps={3}
+        stepLabels={stepLabels}
+      />
+      
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      <div className="space-y-4">
+        {renderStep()}
+      </div>
+      
+      <div className="flex flex-col space-y-4 pt-4 border-t">
+        <div className="flex justify-between w-full">
+          {step > 1 && (
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleBack}
+              disabled={isLoading}
+              className="px-6"
+            >
+              Back
+            </Button>
           )}
           
-          <div className="text-center text-sm text-gray-600">
-            Already have an account?{' '}
-            <button 
-              type="button"
-              onClick={onSwitchToLogin}
-              className="text-blue-600 hover:underline font-medium"
-            >
-              Sign In
-            </button>
+          <div className="flex-1 flex justify-end">
+            {step < 3 ? (
+              <Button 
+                type="button" 
+                onClick={handleNext}
+                disabled={isLoading}
+                className="px-8 bg-blue-600 hover:bg-blue-700"
+              >
+                Next
+              </Button>
+            ) : (
+              <Button 
+                type="button" 
+                onClick={handleSubmit}
+                disabled={isLoading}
+                className="px-8 bg-blue-600 hover:bg-blue-700"
+              >
+                {isLoading ? 'Creating Account...' : 'Create Account'}
+              </Button>
+            )}
           </div>
-        </CardFooter>
-      </Card>
-    </ResponsiveContainer>
+        </div>
+        
+        {step === 1 && (
+          <>
+            <div className="relative w-full">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-500">Or</span>
+              </div>
+            </div>
+            
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full" 
+              onClick={handleGoogleSignup}
+              disabled={isLoading}
+            >
+              <Chrome className="mr-2 h-4 w-4" />
+              Continue with Google
+            </Button>
+          </>
+        )}
+        
+        <div className="text-center text-sm text-gray-600">
+          Already have an account?{' '}
+          <button 
+            type="button"
+            onClick={onSwitchToLogin}
+            className="text-blue-600 hover:underline font-medium"
+          >
+            Sign In
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
