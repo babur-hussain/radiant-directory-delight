@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Camera, Users, Handshake, Building2 } from 'lucide-react';
@@ -41,16 +40,11 @@ const CollageFromStorage: React.FC = () => {
       console.log('Found files:', files);
 
       if (files && files.length > 0) {
-        // Filter for image files and get public URLs
+        // Filter for actual files (not folders) and get public URLs
         const imageFiles = files.filter(file => {
-          if (!file.name || file.name.startsWith('.')) return false;
-          
-          const fileName = file.name.toLowerCase();
-          // Check for common image extensions or image-related keywords
-          return fileName.match(/\.(jpg|jpeg|png|gif|webp|bmp|tiff|svg)$/) ||
-                 fileName.includes('image') ||
-                 fileName.includes('photo') ||
-                 fileName.includes('pic');
+          // Skip folders and system files
+          if (!file.name || file.name.startsWith('.') || !file.id) return false;
+          return true; // Accept all files since the bucket is specifically for images
         });
 
         console.log('Filtered image files:', imageFiles);
@@ -74,7 +68,7 @@ const CollageFromStorage: React.FC = () => {
           console.log('Final image URLs:', imageUrls);
           setImages(imageUrls);
         } else {
-          console.log('No image files found in bucket');
+          console.log('No valid files found in bucket');
           setImages([]);
         }
       } else {
