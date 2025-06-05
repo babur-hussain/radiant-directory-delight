@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Camera, Users, Handshake, Building2 } from 'lucide-react';
@@ -18,6 +19,8 @@ const CollageFromStorage: React.FC = () => {
 
   const fetchImagesFromStorage = async () => {
     try {
+      console.log('Fetching images from collageimages bucket...');
+      
       // List all files in the collageimages bucket
       const { data: files, error } = await supabase.storage
         .from('collageimages')
@@ -32,7 +35,9 @@ const CollageFromStorage: React.FC = () => {
         return;
       }
 
-      if (files) {
+      console.log('Found files:', files);
+
+      if (files && files.length > 0) {
         // Get public URLs for each image
         const imagePromises = files
           .filter(file => file.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/))
@@ -40,6 +45,8 @@ const CollageFromStorage: React.FC = () => {
             const { data } = supabase.storage
               .from('collageimages')
               .getPublicUrl(file.name);
+            
+            console.log('Public URL for', file.name, ':', data.publicUrl);
             
             return {
               name: file.name,
@@ -49,7 +56,10 @@ const CollageFromStorage: React.FC = () => {
           });
 
         const imageUrls = await Promise.all(imagePromises);
+        console.log('Final image URLs:', imageUrls);
         setImages(imageUrls);
+      } else {
+        console.log('No files found in bucket');
       }
     } catch (error) {
       console.error('Error fetching images from storage:', error);
@@ -76,6 +86,7 @@ const CollageFromStorage: React.FC = () => {
     );
   }
 
+  // Show a default message when no images are available
   if (images.length === 0) {
     return (
       <section className="py-16 bg-gradient-to-br from-gray-50 to-blue-50">
@@ -84,9 +95,45 @@ const CollageFromStorage: React.FC = () => {
             <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800">
               Real Connections, Real Results
             </h2>
-            <p className="text-lg text-gray-600">
-              Upload images to the collageimages bucket to see them displayed here.
+            <p className="text-lg text-gray-600 mb-8 max-w-3xl mx-auto">
+              See how GROW BHARAT VYAPAAR brings businesses and influencers together across India. 
+              Upload images to see our successful collaborations and partnerships in action.
             </p>
+            
+            <div className="flex flex-wrap justify-center gap-6 mb-8">
+              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
+                <Building2 className="h-5 w-5 text-blue-600" />
+                <span className="text-sm font-medium">500+ Businesses</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
+                <Users className="h-5 w-5 text-purple-600" />
+                <span className="text-sm font-medium">1000+ Influencers</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
+                <Handshake className="h-5 w-5 text-green-600" />
+                <span className="text-sm font-medium">2500+ Collaborations</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
+                <Camera className="h-5 w-5 text-orange-600" />
+                <span className="text-sm font-medium">Live Partnerships</span>
+              </div>
+            </div>
+            
+            {/* Placeholder grid when no images */}
+            <div className="max-w-6xl mx-auto">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-[400px] md:h-[600px]">
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <div 
+                    key={index} 
+                    className={`bg-gray-200 rounded-xl shadow-lg flex items-center justify-center ${
+                      index === 0 ? 'md:col-span-2 md:row-span-2' : ''
+                    }`}
+                  >
+                    <Camera className="h-12 w-12 text-gray-400" />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
