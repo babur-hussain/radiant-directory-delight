@@ -12,6 +12,7 @@ interface StorageImage {
 const CollageFromStorage: React.FC = () => {
   const [images, setImages] = useState<StorageImage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchImagesFromStorage();
@@ -19,11 +20,12 @@ const CollageFromStorage: React.FC = () => {
 
   const fetchImagesFromStorage = async () => {
     try {
-      console.log('Fetching images from collageimages bucket...');
+      console.log('Fetching images from collage-photos bucket...');
+      setError(null);
       
-      // List all files in the collageimages bucket
+      // List all files in the collage-photos bucket
       const { data: files, error } = await supabase.storage
-        .from('collageimages')
+        .from('collage-photos')
         .list('', {
           limit: 20,
           sortBy: { column: 'name', order: 'asc' }
@@ -31,6 +33,7 @@ const CollageFromStorage: React.FC = () => {
 
       if (error) {
         console.error('Error fetching images:', error);
+        setError(`Error fetching images: ${error.message}`);
         setLoading(false);
         return;
       }
@@ -38,18 +41,24 @@ const CollageFromStorage: React.FC = () => {
       console.log('Found files:', files);
 
       if (files && files.length > 0) {
-        // Get public URLs for each image file (including all files, not just filtered ones)
-        const imagePromises = files
-          .filter(file => 
-            file.name && 
-            !file.name.startsWith('.') && 
-            (file.name.toLowerCase().includes('image') || 
-             file.name.toLowerCase().includes('whatsapp') ||
-             file.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/))
-          )
-          .map(async (file) => {
+        // Filter for image files and get public URLs
+        const imageFiles = files.filter(file => {
+          if (!file.name || file.name.startsWith('.')) return false;
+          
+          const fileName = file.name.toLowerCase();
+          // Check for common image extensions or image-related keywords
+          return fileName.match(/\.(jpg|jpeg|png|gif|webp|bmp|tiff|svg)$/) ||
+                 fileName.includes('image') ||
+                 fileName.includes('photo') ||
+                 fileName.includes('pic');
+        });
+
+        console.log('Filtered image files:', imageFiles);
+
+        if (imageFiles.length > 0) {
+          const imagePromises = imageFiles.map(async (file) => {
             const { data } = supabase.storage
-              .from('collageimages')
+              .from('collage-photos')
               .getPublicUrl(file.name);
             
             console.log('Public URL for', file.name, ':', data.publicUrl);
@@ -61,14 +70,20 @@ const CollageFromStorage: React.FC = () => {
             };
           });
 
-        const imageUrls = await Promise.all(imagePromises);
-        console.log('Final image URLs:', imageUrls);
-        setImages(imageUrls);
+          const imageUrls = await Promise.all(imagePromises);
+          console.log('Final image URLs:', imageUrls);
+          setImages(imageUrls);
+        } else {
+          console.log('No image files found in bucket');
+          setImages([]);
+        }
       } else {
         console.log('No files found in bucket');
+        setImages([]);
       }
     } catch (error) {
       console.error('Error fetching images from storage:', error);
+      setError(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -92,7 +107,28 @@ const CollageFromStorage: React.FC = () => {
     );
   }
 
-  // Show a default message when no images are available
+  // Show error if there's an issue
+  if (error) {
+    return (
+      <section className="py-16 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800">
+              Real Connections, Real Results
+            </h2>
+            <p className="text-lg text-red-600 mb-8 max-w-3xl mx-auto">
+              {error}
+            </p>
+            <p className="text-gray-600">
+              Please upload images to the "collage-photos" bucket to see them displayed here.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Show default message when no images are available
   if (images.length === 0) {
     return (
       <section className="py-16 bg-gradient-to-br from-gray-50 to-blue-50">
@@ -103,7 +139,7 @@ const CollageFromStorage: React.FC = () => {
             </h2>
             <p className="text-lg text-gray-600 mb-8 max-w-3xl mx-auto">
               See how GROW BHARAT VYAPAAR brings businesses and influencers together across India. 
-              Upload images to see our successful collaborations and partnerships in action.
+              Upload images to the "collage-photos" bucket to see our successful collaborations and partnerships in action.
             </p>
             
             <div className="flex flex-wrap justify-center gap-6 mb-8">
@@ -195,6 +231,9 @@ const CollageFromStorage: React.FC = () => {
                         console.error('Failed to load image:', image.url);
                         e.currentTarget.style.display = 'none';
                       }}
+                      onLoad={() => {
+                        console.log('Successfully loaded image:', image.url);
+                      }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <div className="absolute bottom-4 left-4 text-white">
@@ -215,6 +254,9 @@ const CollageFromStorage: React.FC = () => {
                     onError={(e) => {
                       console.error('Failed to load image:', image.url);
                       e.currentTarget.style.display = 'none';
+                    }}
+                    onLoad={() => {
+                      console.log('Successfully loaded image:', image.url);
                     }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -238,6 +280,9 @@ const CollageFromStorage: React.FC = () => {
                   onError={(e) => {
                     console.error('Failed to load image:', image.url);
                     e.currentTarget.style.display = 'none';
+                  }}
+                  onLoad={() => {
+                    console.log('Successfully loaded image:', image.url);
                   }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
