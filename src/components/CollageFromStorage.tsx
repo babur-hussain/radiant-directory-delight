@@ -38,9 +38,15 @@ const CollageFromStorage: React.FC = () => {
       console.log('Found files:', files);
 
       if (files && files.length > 0) {
-        // Get public URLs for each image
+        // Get public URLs for each image file (including all files, not just filtered ones)
         const imagePromises = files
-          .filter(file => file.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/))
+          .filter(file => 
+            file.name && 
+            !file.name.startsWith('.') && 
+            (file.name.toLowerCase().includes('image') || 
+             file.name.toLowerCase().includes('whatsapp') ||
+             file.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/))
+          )
           .map(async (file) => {
             const { data } = supabase.storage
               .from('collageimages')
