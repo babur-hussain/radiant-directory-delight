@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +11,12 @@ const AuthCallbackPage = () => {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
+        // Get the hash fragment from the URL
+        const hash = window.location.hash;
+        if (!hash) {
+          throw new Error('No hash fragment found in URL');
+        }
+
         // Handle the OAuth callback
         const { data, error } = await supabase.auth.getSession();
         
