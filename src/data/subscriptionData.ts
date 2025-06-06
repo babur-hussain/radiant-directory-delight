@@ -18,7 +18,7 @@ export interface SubscriptionPackage {
   dashboardSections?: string[];
 }
 
-// Empty arrays - no dummy data
+// Remove all hardcoded packages - only use real packages from database
 export const businessPackages: SubscriptionPackage[] = [];
 export const influencerPackages: SubscriptionPackage[] = [];
 

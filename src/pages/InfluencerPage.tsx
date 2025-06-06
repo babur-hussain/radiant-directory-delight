@@ -141,7 +141,7 @@ const InfluencerPage = () => {
           </div>
         </section>
 
-        {/* Subscription Packages Section */}
+        {/* Real Subscription Packages Section - Only from Database */}
         <section id="subscription-packages" className="py-20 bg-gray-50">
           <div className="container px-4 mx-auto">
             <div className="text-center mb-16">

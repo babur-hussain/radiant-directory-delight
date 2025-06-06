@@ -1,12 +1,17 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Star, Users, DollarSign, BarChart3, Search, Building2, Package, Wrench, Factory, ShoppingCart, Crown, Globe, Layers, CheckCircle, Phone, MapPin, Eye } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
+import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
+import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
+import SubscriptionPackagesLoading from '@/components/subscription/SubscriptionPackagesLoading';
 
 const BusinessPage = () => {
   const [selectedSector, setSelectedSector] = useState<'influencer' | 'google' | null>(null);
+  const { packages, isLoading, isError } = useSubscriptionPackages();
 
   const businessCategories = [
     { 
@@ -136,7 +141,6 @@ const BusinessPage = () => {
       <Layout>
         <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
           <div className="container mx-auto px-4 py-8">
-            {/* Back Button */}
             <Button 
               variant="outline" 
               onClick={() => setSelectedSector(null)}
@@ -145,13 +149,11 @@ const BusinessPage = () => {
               ← Back to Main Sectors
             </Button>
 
-            {/* Header Message */}
             <div className="text-center mb-12">
               <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
                 Best influencer marketing solution is here now
               </h1>
               
-              {/* Service Description */}
               <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg p-6 mb-8 max-w-4xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="text-center">
@@ -172,7 +174,6 @@ const BusinessPage = () => {
                 </div>
               </div>
 
-              {/* Bold Statement */}
               <div className="bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-lg p-6 mb-12">
                 <h2 className="text-xl md:text-2xl font-bold">
                   We connect 5 lakh+ influencers with 30K+ businesses<br />
@@ -181,7 +182,6 @@ const BusinessPage = () => {
               </div>
             </div>
 
-            {/* Find Influencer Categories */}
             <div className="mb-12">
               <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-gray-900">
                 Find Influencer in One Click
@@ -209,7 +209,6 @@ const BusinessPage = () => {
               </div>
             </div>
 
-            {/* Testimonials Section */}
             <div className="mb-12">
               <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-gray-900">
                 Success Stories from Our Business Partners
@@ -247,7 +246,27 @@ const BusinessPage = () => {
               </div>
             </div>
 
-            {/* CTA Section */}
+            {/* Real Influencer Packages from Database */}
+            <div className="mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-gray-900">
+                Choose Your Influencer Marketing Package
+              </h2>
+              
+              {isLoading ? (
+                <SubscriptionPackagesLoading />
+              ) : isError ? (
+                <div className="text-center py-10">
+                  <p className="text-red-500 mb-4">There was an error loading the packages.</p>
+                  <Button onClick={() => window.location.reload()} type="button">Try Again</Button>
+                </div>
+              ) : (
+                <SubscriptionPackages 
+                  userRole="Business"
+                  filterByType={true}
+                />
+              )}
+            </div>
+
             <div className="text-center">
               <Button size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 rounded-xl">
                 Start Your Influencer Campaign Now
@@ -272,9 +291,7 @@ const BusinessPage = () => {
               ← Back to Main Sectors
             </Button>
             
-            {/* Hero Section with Images */}
             <div className="text-center mb-12">
-              {/* Sales Team Photo and Business Owners Collage */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                 <div className="relative">
                   <img 
@@ -316,7 +333,6 @@ const BusinessPage = () => {
                 </div>
               </div>
 
-              {/* Main Headlines */}
               <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4">
                 List your business on Google top only in <span className="text-green-600">₹999</span>
               </h1>
@@ -324,7 +340,6 @@ const BusinessPage = () => {
                 This is no more expensive anymore
               </p>
               
-              {/* Success Statement */}
               <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-lg p-6 mb-12 max-w-3xl mx-auto">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
                   We've helped 25K+ businesses boost their sales through Google Listings
@@ -346,7 +361,6 @@ const BusinessPage = () => {
               </div>
             </div>
 
-            {/* Customer Testimonials */}
             <div className="mb-12">
               <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-gray-900">
                 What Our Customers Say
@@ -384,42 +398,27 @@ const BusinessPage = () => {
               </div>
             </div>
 
-            {/* Pricing Package */}
-            <div className="max-w-md mx-auto mb-12">
-              <Card className="border-2 border-green-500 shadow-2xl">
-                <CardHeader className="text-center bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-t-lg">
-                  <CardTitle className="text-2xl font-bold">Google Top Listing</CardTitle>
-                  <div className="text-4xl font-bold mt-2">₹999</div>
-                  <p className="text-sm opacity-90">One-time payment</p>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-3">
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                      <span className="text-gray-700">Increased Online Visibility</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                      <span className="text-gray-700">Verified Business Listing</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                      <span className="text-gray-700">Enhanced Customer Reach</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                      <span className="text-gray-700">Local Search Optimization</span>
-                    </div>
-                  </div>
-                  
-                  <Button className="w-full mt-6 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold py-3 rounded-xl">
-                    Get Google Listed Now
-                  </Button>
-                </CardContent>
-              </Card>
+            {/* Real Google Listing Packages from Database */}
+            <div className="mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-gray-900">
+                Google Listing Packages
+              </h2>
+              
+              {isLoading ? (
+                <SubscriptionPackagesLoading />
+              ) : isError ? (
+                <div className="text-center py-10">
+                  <p className="text-red-500 mb-4">There was an error loading the packages.</p>
+                  <Button onClick={() => window.location.reload()} type="button">Try Again</Button>
+                </div>
+              ) : (
+                <SubscriptionPackages 
+                  userRole="Business"
+                  filterByType={true}
+                />
+              )}
             </div>
 
-            {/* Additional CTA */}
             <div className="text-center">
               <p className="text-gray-600 mb-4">Ready to dominate local search results?</p>
               <Button variant="outline" size="lg" className="border-2 border-green-300 hover:bg-green-50">
@@ -432,12 +431,11 @@ const BusinessPage = () => {
     );
   }
 
-  // Main Sectors View
+  // Main Sectors View - also updated to show real packages
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-b from-purple-50 via-blue-50 to-white">
         <div className="container mx-auto px-4 py-12">
-          {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
               Grow as a <span className="text-gradient-purple">Business</span>
@@ -447,9 +445,7 @@ const BusinessPage = () => {
             </p>
           </div>
 
-          {/* Two Main Sectors */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
-            {/* Find Influencer Sector */}
             <Card 
               className="cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-purple-200 hover:border-purple-400"
               onClick={() => setSelectedSector('influencer')}
@@ -490,7 +486,6 @@ const BusinessPage = () => {
               </CardContent>
             </Card>
 
-            {/* Google Listing Sector */}
             <Card 
               className="cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-blue-200 hover:border-blue-400"
               onClick={() => setSelectedSector('google')}
@@ -532,7 +527,27 @@ const BusinessPage = () => {
             </Card>
           </div>
 
-          {/* Bottom CTA */}
+          {/* Show real packages on main view as well */}
+          <div className="mt-16">
+            <h2 className="text-3xl font-bold text-center mb-8 text-gray-900">
+              Our Business Growth Packages
+            </h2>
+            
+            {isLoading ? (
+              <SubscriptionPackagesLoading />
+            ) : isError ? (
+              <div className="text-center py-10">
+                <p className="text-red-500 mb-4">There was an error loading the packages.</p>
+                <Button onClick={() => window.location.reload()} type="button">Try Again</Button>
+              </div>
+            ) : (
+              <SubscriptionPackages 
+                userRole="Business"
+                filterByType={true}
+              />
+            )}
+          </div>
+
           <div className="text-center mt-16">
             <p className="text-gray-600 mb-4">Ready to start growing your business?</p>
             <Button variant="outline" size="lg" className="border-2 border-purple-300 hover:bg-purple-50">

@@ -110,7 +110,7 @@ const SubscriptionPage = () => {
           </>
         )}
 
-        {/* All Subscription Plans - Show all packages */}
+        {/* All Real Subscription Plans from Database - Show all packages */}
         <div className="space-y-8">
           {/* Business Plans Section */}
           <div className="text-center mb-8">
