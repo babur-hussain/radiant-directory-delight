@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,7 +25,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const { isAuthenticated, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
-  // Close modal and redirect if user becomes authenticated
   useEffect(() => {
     if (isAuthenticated && open) {
       onOpenChange(false);
