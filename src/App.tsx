@@ -26,16 +26,14 @@ function App() {
   console.log('App component rendering...');
   
   return (
-    <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <Toaster />
-        <AuthProvider>
-          <PopupAdProvider>
-            <AppRoutes />
-          </PopupAdProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <Toaster />
+      <AuthProvider>
+        <PopupAdProvider>
+          <AppRoutes />
+        </PopupAdProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

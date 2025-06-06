@@ -18,4 +18,8 @@ const root = ReactDOM.createRoot(rootElement);
 
 console.log('Rendering App...');
 
-root.render(<App />);
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
