@@ -1,0 +1,93 @@
+
+// Firestore Rules - Latest Version
+// Copy and paste these rules in your Firebase Console > Firestore Database > Rules tab
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if the current user is the owner of the resource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Check if the current user is an admin - improved and more permissive check
+    function isAdmin() {
+      return isAuthenticated() && (
+        // Check admin collection reference
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        // Check isAdmin flag in user document - more permissive check
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+        // Check role field also
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "Admin"
+      );
+    }
+    
+    // Business listings - public read, admin write
+    match /businesses/{businessId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isAdmin();
+    }
+    
+    // Subscription packages - public read, admin write
+    match /subscriptionPackages/{packageId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isAdmin();
+    }
+    
+    // User profiles - read by any authenticated user, write access more permissive for admins
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      // Any authenticated admin can update any user
+      allow update, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow delete: if isAuthenticated() && isAdmin();
+      
+      // User subscriptions subcollection - very permissive to fix the issue
+      match /subscriptions/{subscriptionId} {
+        allow read: if isAuthenticated();
+        // Any authenticated user can write to subscriptions collections
+        allow create, update, delete, write: if isAuthenticated();
+      }
+    }
+    
+    // Direct subscriptions collection - fully permissive for authenticated users
+    match /subscriptions/{subscriptionId} {
+      allow read: if isAuthenticated();
+      // Explicitly allow all authenticated users to create/update subscriptions
+      allow create, update, write: if isAuthenticated();
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+    
+    // Admins collection - read by authenticated users, write by admins
+    match /admins/{adminId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isAdmin();
+    }
+    
+    // Categories and locations - public read, admin write
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isAdmin();
+    }
+    
+    match /locations/{locationId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isAdmin();
+    }
+    
+    // Admin-only collections
+    match /adminSettings/{document=**} {
+      allow read, write: if isAuthenticated() && isAdmin();
+    }
+    
+    // Fallback rule - deny access by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
