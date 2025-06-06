@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Star, Users, DollarSign, BarChart3, Search, Building2, Package, Wrench, Factory, ShoppingCart, Crown, Globe, Layers } from 'lucide-react';
+import { Star, Users, DollarSign, BarChart3, Search, Building2, Package, Wrench, Factory, ShoppingCart, Crown, Globe, Layers, CheckCircle, Phone, MapPin, Eye } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 
 const BusinessPage = () => {
@@ -86,6 +85,49 @@ const BusinessPage = () => {
       rating: 5,
       review: "Dashboard monitoring helped us track every campaign. Best investment for our beauty business!",
       avatar: "/lovable-uploads/9b04922c-cd5c-4fa5-b632-190ceef7f974.png"
+    }
+  ];
+
+  const googleListingTestimonials = [
+    {
+      name: "Gitesh Khandelwal",
+      business: "Khandelwal Traders",
+      location: "Jaipur",
+      rating: 5,
+      review: "Literally unexpected! Mind-blowing results, keep it up.",
+      avatar: "/lovable-uploads/76f9acff-1106-4a0a-8ae3-29972438ab36.png"
+    },
+    {
+      name: "Ritu Awasthi",
+      business: "Ritu's Boutique",
+      location: "Lucknow",
+      rating: 5,
+      review: "I listed my boutique and started getting calls within a week. Super effective!",
+      avatar: "/lovable-uploads/b95dd1d1-6f76-42f3-a9cf-8d448b702150.png"
+    },
+    {
+      name: "Ankit Sharma",
+      business: "Sharma General Store",
+      location: "Bhopal",
+      rating: 5,
+      review: "सच में गूगल लिस्टिंग से मेरी दुकान की बिक्री बहुत बढ़ गई। धन्यवाद!",
+      avatar: "/lovable-uploads/4cbcb3a6-c304-440a-b500-c1d16d70b1a1.png"
+    },
+    {
+      name: "Meera Reddy",
+      business: "Reddy Sweets",
+      location: "Hyderabad",
+      rating: 5,
+      review: "Now I'm doing good business! Getting leads daily from Google. Worth every rupee.",
+      avatar: "/lovable-uploads/9b04922c-cd5c-4fa5-b632-190ceef7f974.png"
+    },
+    {
+      name: "Vikram Singh",
+      business: "Singh Auto Parts",
+      location: "Chandigarh",
+      rating: 5,
+      review: "Google listing changed everything for my business. Getting customers from all over the city now!",
+      avatar: "/lovable-uploads/0c2cba8d-5522-4895-938c-2c2e97bd317c.png"
     }
   ];
 
@@ -230,26 +272,159 @@ const BusinessPage = () => {
               ← Back to Main Sectors
             </Button>
             
-            <div className="text-center">
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                Google Listing Services
+            {/* Hero Section with Images */}
+            <div className="text-center mb-12">
+              {/* Sales Team Photo and Business Owners Collage */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div className="relative">
+                  <img 
+                    src="/lovable-uploads/0c2cba8d-5522-4895-938c-2c2e97bd317c.png" 
+                    alt="Sales Team"
+                    className="w-full h-64 object-cover rounded-lg shadow-lg"
+                  />
+                  <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2">
+                    <p className="text-sm font-semibold text-gray-800">Our Expert Sales Team</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <img 
+                    src="/lovable-uploads/76f9acff-1106-4a0a-8ae3-29972438ab36.png" 
+                    alt="Business Owner 1"
+                    className="w-full h-30 object-cover rounded-lg"
+                  />
+                  <img 
+                    src="/lovable-uploads/b95dd1d1-6f76-42f3-a9cf-8d448b702150.png" 
+                    alt="Business Owner 2"
+                    className="w-full h-30 object-cover rounded-lg"
+                  />
+                  <img 
+                    src="/lovable-uploads/4cbcb3a6-c304-440a-b500-c1d16d70b1a1.png" 
+                    alt="Business Owner 3"
+                    className="w-full h-30 object-cover rounded-lg"
+                  />
+                  <img 
+                    src="/lovable-uploads/9b04922c-cd5c-4fa5-b632-190ceef7f974.png" 
+                    alt="Business Owner 4"
+                    className="w-full h-30 object-cover rounded-lg"
+                  />
+                  <div className="col-span-2 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg flex items-center justify-center p-4">
+                    <p className="text-sm font-medium text-center">
+                      Indian Family Business Owners<br />
+                      <span className="text-xs">Successfully Listed on Google</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Headlines */}
+              <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4">
+                List your business on Google top only in <span className="text-green-600">₹999</span>
               </h1>
-              <p className="text-lg text-gray-600 mb-8">
-                Get your business listed on Google and increase your online visibility
+              <p className="text-xl text-gray-600 mb-6">
+                This is no more expensive anymore
               </p>
               
-              <Card className="max-w-2xl mx-auto">
-                <CardContent className="p-8">
-                  <Building2 className="h-16 w-16 text-blue-600 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-4">Google My Business Setup</h3>
-                  <p className="text-gray-600 mb-6">
-                    We'll help you create and optimize your Google My Business listing to attract more local customers.
-                  </p>
-                  <Button className="bg-blue-600 hover:bg-blue-700">
-                    Get Started with Google Listing
+              {/* Success Statement */}
+              <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-lg p-6 mb-12 max-w-3xl mx-auto">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  We've helped 25K+ businesses boost their sales through Google Listings
+                </h2>
+                <div className="flex items-center justify-center space-x-8 mt-4">
+                  <div className="text-center">
+                    <Building2 className="h-8 w-8 text-blue-600 mx-auto mb-1" />
+                    <p className="text-sm font-medium">25K+ Businesses</p>
+                  </div>
+                  <div className="text-center">
+                    <Star className="h-8 w-8 text-yellow-500 mx-auto mb-1" />
+                    <p className="text-sm font-medium">Top Rankings</p>
+                  </div>
+                  <div className="text-center">
+                    <BarChart3 className="h-8 w-8 text-green-600 mx-auto mb-1" />
+                    <p className="text-sm font-medium">Increased Sales</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Customer Testimonials */}
+            <div className="mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-gray-900">
+                What Our Customers Say
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {googleListingTestimonials.map((testimonial, index) => (
+                  <Card key={index} className="bg-white shadow-lg hover:shadow-xl transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start space-x-4">
+                        <img 
+                          src={testimonial.avatar} 
+                          alt={testimonial.name}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <h4 className="font-semibold text-gray-900">{testimonial.name}</h4>
+                              <p className="text-sm text-gray-600">{testimonial.business}</p>
+                              <p className="text-xs text-gray-500">{testimonial.location}</p>
+                            </div>
+                            <div className="flex items-center">
+                              {[...Array(testimonial.rating)].map((_, i) => (
+                                <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-700 italic">"{testimonial.review}"</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Pricing Package */}
+            <div className="max-w-md mx-auto mb-12">
+              <Card className="border-2 border-green-500 shadow-2xl">
+                <CardHeader className="text-center bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-t-lg">
+                  <CardTitle className="text-2xl font-bold">Google Top Listing</CardTitle>
+                  <div className="text-4xl font-bold mt-2">₹999</div>
+                  <p className="text-sm opacity-90">One-time payment</p>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span className="text-gray-700">Increased Online Visibility</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span className="text-gray-700">Verified Business Listing</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span className="text-gray-700">Enhanced Customer Reach</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span className="text-gray-700">Local Search Optimization</span>
+                    </div>
+                  </div>
+                  
+                  <Button className="w-full mt-6 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold py-3 rounded-xl">
+                    Get Google Listed Now
                   </Button>
                 </CardContent>
               </Card>
+            </div>
+
+            {/* Additional CTA */}
+            <div className="text-center">
+              <p className="text-gray-600 mb-4">Ready to dominate local search results?</p>
+              <Button variant="outline" size="lg" className="border-2 border-green-300 hover:bg-green-50">
+                Talk to Our Google Listing Expert
+              </Button>
             </div>
           </div>
         </div>
