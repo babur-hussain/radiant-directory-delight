@@ -44,8 +44,16 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
       return packages;
     }
 
-    const filtered = packages.filter(pkg => pkg.type === userRole);
+    const filtered = packages.filter(pkg => {
+      // Ensure we're comparing the correct type
+      const packageType = pkg.type;
+      const matches = packageType === userRole;
+      console.log(`🔍 Package "${pkg.title}" (type: ${packageType}) matches ${userRole}:`, matches);
+      return matches;
+    });
+    
     console.log(`🔄 Filtered packages for ${userRole}:`, filtered);
+    console.log(`📊 Found ${filtered.length} ${userRole} packages out of ${packages.length} total packages`);
     return filtered;
   }, [packages, userRole, filterByType]);
 
@@ -117,6 +125,9 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
         </p>
         <p className="text-sm text-gray-500">
           Total packages in database: {packages?.length || 0}
+        </p>
+        <p className="text-sm text-gray-500">
+          Package types: {packages?.map(p => p.type).join(', ')}
         </p>
       </div>
     );

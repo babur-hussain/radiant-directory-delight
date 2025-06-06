@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +11,9 @@ import SubscriptionPackagesLoading from '@/components/subscription/SubscriptionP
 const BusinessPage = () => {
   const [selectedSector, setSelectedSector] = useState<'influencer' | 'google' | null>(null);
   const { packages, isLoading, isError } = useSubscriptionPackages();
+
+  // Filter packages to show only Business type
+  const businessPackages = packages.filter(pkg => pkg.type === 'Business');
 
   const businessCategories = [
     { 
@@ -246,7 +248,7 @@ const BusinessPage = () => {
               </div>
             </div>
 
-            {/* Real Influencer Packages from Database */}
+            {/* Business Packages Only for Influencer Marketing */}
             <div className="mb-12">
               <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-gray-900">
                 Choose Your Influencer Marketing Package
@@ -398,7 +400,7 @@ const BusinessPage = () => {
               </div>
             </div>
 
-            {/* Real Google Listing Packages from Database */}
+            {/* Business Packages Only for Google Listing */}
             <div className="mb-12">
               <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-gray-900">
                 Google Listing Packages
@@ -431,7 +433,7 @@ const BusinessPage = () => {
     );
   }
 
-  // Main Sectors View - also updated to show real packages
+  // Main Sectors View - Show Business packages only
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-b from-purple-50 via-blue-50 to-white">
@@ -527,7 +529,7 @@ const BusinessPage = () => {
             </Card>
           </div>
 
-          {/* Show real packages on main view as well */}
+          {/* Show Business packages only on main view */}
           <div className="mt-16">
             <h2 className="text-3xl font-bold text-center mb-8 text-gray-900">
               Our Business Growth Packages

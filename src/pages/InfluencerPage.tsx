@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -141,7 +140,7 @@ const InfluencerPage = () => {
           </div>
         </section>
 
-        {/* Real Subscription Packages Section - Only from Database */}
+        {/* Real Influencer Subscription Packages Section - Only from Database */}
         <section id="subscription-packages" className="py-20 bg-gray-50">
           <div className="container px-4 mx-auto">
             <div className="text-center mb-16">
