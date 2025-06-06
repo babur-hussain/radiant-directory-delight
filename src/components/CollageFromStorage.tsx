@@ -19,14 +19,13 @@ const CollageFromStorage: React.FC = () => {
 
   const fetchImagesFromStorage = async () => {
     try {
-      console.log('Fetching images from collage-photos bucket...');
+      console.log('Fetching ALL images from collage-photos bucket...');
       setError(null);
       
-      // List all files in the collage-photos bucket
+      // List ALL files in the collage-photos bucket (removed limit)
       const { data: files, error } = await supabase.storage
         .from('collage-photos')
         .list('', {
-          limit: 20,
           sortBy: { column: 'name', order: 'asc' }
         });
 
@@ -48,6 +47,7 @@ const CollageFromStorage: React.FC = () => {
         });
 
         console.log('Filtered image files:', imageFiles);
+        console.log('Total images found:', imageFiles.length);
 
         if (imageFiles.length > 0) {
           const imagePromises = imageFiles.map(async (file) => {
@@ -66,6 +66,7 @@ const CollageFromStorage: React.FC = () => {
 
           const imageUrls = await Promise.all(imagePromises);
           console.log('Final image URLs:', imageUrls);
+          console.log('Total images to display:', imageUrls.length);
           setImages(imageUrls);
         } else {
           console.log('No valid files found in bucket');
@@ -183,9 +184,12 @@ const CollageFromStorage: React.FC = () => {
           <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800">
             Real Connections, Real Results
           </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-8">
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-4">
             See how GROW BHARAT VYAPAAR brings businesses and influencers together across India. 
             These photos showcase our successful collaborations and partnerships in action.
+          </p>
+          <p className="text-sm text-blue-600 font-medium mb-8">
+            Displaying {images.length} collaboration{images.length !== 1 ? 's' : ''} from our gallery
           </p>
           
           <div className="flex flex-wrap justify-center gap-6 mb-8">
@@ -208,15 +212,15 @@ const CollageFromStorage: React.FC = () => {
           </div>
         </div>
         
-        {/* Photo Collage Grid */}
+        {/* Photo Collage Grid - Display ALL images */}
         <div className="max-w-6xl mx-auto">
           {/* Desktop Grid Layout */}
-          <div className="hidden md:grid grid-cols-4 grid-rows-3 gap-4 h-[600px]">
-            {images.slice(0, 8).map((image, index) => {
-              // First image takes 2x2 space
+          <div className="hidden md:grid grid-cols-4 gap-4">
+            {images.map((image, index) => {
+              // First image takes 2x2 space for featured display
               if (index === 0) {
                 return (
-                  <div key={image.name} className="col-span-2 row-span-2 relative group overflow-hidden rounded-2xl shadow-lg">
+                  <div key={image.name} className="col-span-2 row-span-2 relative group overflow-hidden rounded-2xl shadow-lg h-96">
                     <img 
                       src={image.url} 
                       alt={image.alt}
@@ -240,7 +244,7 @@ const CollageFromStorage: React.FC = () => {
               
               // Other images take regular 1x1 space
               return (
-                <div key={image.name} className="relative group overflow-hidden rounded-xl shadow-lg">
+                <div key={image.name} className="relative group overflow-hidden rounded-xl shadow-lg h-48">
                   <img 
                     src={image.url} 
                     alt={image.alt}
@@ -263,9 +267,9 @@ const CollageFromStorage: React.FC = () => {
             })}
           </div>
           
-          {/* Mobile Grid Layout */}
+          {/* Mobile Grid Layout - Display ALL images */}
           <div className="md:hidden grid grid-cols-2 gap-3">
-            {images.slice(0, 8).map((image, index) => (
+            {images.map((image, index) => (
               <div key={image.name} className="relative group overflow-hidden rounded-xl shadow-lg aspect-square">
                 <img 
                   src={image.url} 
