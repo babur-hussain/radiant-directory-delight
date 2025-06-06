@@ -1,4 +1,5 @@
 
+import React from "react";
 import { useToast as useToastHook, toast as toastFunction } from "@/hooks/use-toast";
 
 // Re-export the hooks with any customization if needed
