@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Camera, Users, Handshake, Building2 } from 'lucide-react';
@@ -22,7 +23,7 @@ const CollageFromStorage: React.FC = () => {
       console.log('Fetching ALL images from collage-photos bucket...');
       setError(null);
       
-      // List ALL files in the collage-photos bucket (removed limit)
+      // List ALL files in the collage-photos bucket
       const { data: files, error } = await supabase.storage
         .from('collage-photos')
         .list('', {
@@ -212,15 +213,15 @@ const CollageFromStorage: React.FC = () => {
           </div>
         </div>
         
-        {/* Photo Collage Grid - Display ALL images */}
-        <div className="max-w-6xl mx-auto">
-          {/* Desktop Grid Layout */}
-          <div className="hidden md:grid grid-cols-4 gap-4">
+        {/* Photo Collage Grid - Display ALL images with smaller sizes */}
+        <div className="max-w-7xl mx-auto">
+          {/* Desktop Grid Layout - Smaller photos */}
+          <div className="hidden md:grid grid-cols-6 gap-3">
             {images.map((image, index) => {
               // First image takes 2x2 space for featured display
               if (index === 0) {
                 return (
-                  <div key={image.name} className="col-span-2 row-span-2 relative group overflow-hidden rounded-2xl shadow-lg h-96">
+                  <div key={image.name} className="col-span-2 row-span-2 relative group overflow-hidden rounded-lg shadow-md h-48">
                     <img 
                       src={image.url} 
                       alt={image.alt}
@@ -234,8 +235,8 @@ const CollageFromStorage: React.FC = () => {
                       }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="absolute bottom-4 left-4 text-white">
-                        <p className="text-sm font-medium">Featured Partnership</p>
+                      <div className="absolute bottom-2 left-2 text-white">
+                        <p className="text-xs font-medium">Featured Partnership</p>
                       </div>
                     </div>
                   </div>
@@ -244,7 +245,7 @@ const CollageFromStorage: React.FC = () => {
               
               // Other images take regular 1x1 space
               return (
-                <div key={image.name} className="relative group overflow-hidden rounded-xl shadow-lg h-48">
+                <div key={image.name} className="relative group overflow-hidden rounded-lg shadow-md h-24">
                   <img 
                     src={image.url} 
                     alt={image.alt}
@@ -258,8 +259,8 @@ const CollageFromStorage: React.FC = () => {
                     }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="absolute bottom-2 left-2 text-white">
-                      <p className="text-xs font-medium">Business Visit</p>
+                    <div className="absolute bottom-1 left-1 text-white">
+                      <p className="text-xs font-medium">Partnership</p>
                     </div>
                   </div>
                 </div>
@@ -267,10 +268,10 @@ const CollageFromStorage: React.FC = () => {
             })}
           </div>
           
-          {/* Mobile Grid Layout - Display ALL images */}
-          <div className="md:hidden grid grid-cols-2 gap-3">
+          {/* Mobile Grid Layout - Display ALL images with smaller sizes */}
+          <div className="md:hidden grid grid-cols-3 gap-2">
             {images.map((image, index) => (
-              <div key={image.name} className="relative group overflow-hidden rounded-xl shadow-lg aspect-square">
+              <div key={image.name} className="relative group overflow-hidden rounded-lg shadow-md aspect-square">
                 <img 
                   src={image.url} 
                   alt={image.alt}
@@ -284,8 +285,8 @@ const CollageFromStorage: React.FC = () => {
                   }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="absolute bottom-2 left-2 text-white">
-                    <p className="text-xs font-medium">Business Visit</p>
+                  <div className="absolute bottom-1 left-1 text-white">
+                    <p className="text-xs font-medium">Visit</p>
                   </div>
                 </div>
               </div>
