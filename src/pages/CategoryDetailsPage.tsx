@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
-import { fetchBusinessesByCategory } from '@/api/services/businessAPI';
+import { supabase } from '@/integrations/supabase/client';
 import { Business } from '@/lib/csv/types';
 import BusinessGrid from '@/components/businesses/BusinessGrid';
 import Loading from '@/components/ui/loading';
@@ -36,6 +36,14 @@ const CategoryDetailsPage = () => {
       'Repair': 'Quick and reliable repair services',
       'Entertainment': 'Find fun activities and events',
       'Fitness': 'Achieve your fitness goals',
+      'Technology': 'Latest tech solutions and services',
+      'Home Services': 'Professional home improvement services',
+      'Legal': 'Expert legal advice and representation',
+      'Financial': 'Trusted financial services and advice',
+      'Pet Services': 'Care for your beloved pets',
+      'Travel': 'Plan your perfect getaway',
+      'Events': 'Make your celebrations memorable',
+      'Consulting': 'Professional business consulting services'
     };
     
     return taglines[category] || `Discover the best ${category} businesses`;
@@ -50,16 +58,40 @@ const CategoryDetailsPage = () => {
       if (!categoryName) return;
       
       setLoading(true);
+      setError(null);
+      
       try {
-        // Convert category name from URL format (e.g., "real-estate") to proper format (e.g., "Real Estate")
-        const properCategoryName = formattedCategoryName;
+        console.log('Fetching businesses for category:', formattedCategoryName);
         
-        // Fetch businesses for this category
-        const data = await fetchBusinessesByCategory(properCategoryName);
+        // Fetch businesses for this category from Supabase
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('*')
+          .eq('category', formattedCategoryName)
+          .order('name', { ascending: true });
         
-        // Convert the hours property from JSON to Record<string, any> if needed
+        if (error) {
+          console.error('Error fetching businesses:', error);
+          throw error;
+        }
+        
+        console.log('Fetched businesses data:', data);
+        
+        // Convert the data to match our Business type
         const processedData = data?.map(business => ({
-          ...business,
+          id: business.id,
+          name: business.name || '',
+          category: business.category || '',
+          address: business.address || '',
+          phone: business.phone || '',
+          description: business.description || '',
+          email: business.email || '',
+          website: business.website || '',
+          rating: business.rating || 0,
+          reviews: business.reviews || 0,
+          image: business.image || '',
+          featured: business.featured || false,
+          tags: business.tags || [],
           hours: typeof business.hours === 'string' 
             ? JSON.parse(business.hours) 
             : (business.hours || {})
@@ -109,6 +141,12 @@ const CategoryDetailsPage = () => {
             <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
               {getTagline(formattedCategoryName)}
             </p>
+            
+            {!loading && (
+              <p className="text-sm text-gray-500 mt-4">
+                Found {businesses.length} business{businesses.length !== 1 ? 'es' : ''} in {formattedCategoryName}
+              </p>
+            )}
           </motion.div>
           
           {loading ? (
@@ -140,7 +178,7 @@ const CategoryDetailsPage = () => {
               {businesses.length === 0 && !loading && (
                 <div className="text-center py-12">
                   <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                    No businesses found in this category
+                    No businesses found in {formattedCategoryName}
                   </h3>
                   <p className="text-gray-500">
                     Please check back later or explore other categories

@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CategoryFilterProps {
   categories: string[];
@@ -9,27 +10,58 @@ interface CategoryFilterProps {
 }
 
 const CategoryFilter = ({ categories, visibleCategory, setVisibleCategory }: CategoryFilterProps) => {
-  const [allCategories, setAllCategories] = useState<string[]>(categories);
+  const [allCategories, setAllCategories] = useState<string[]>([]);
   
-  // Add custom categories from localStorage if they exist
   useEffect(() => {
-    const storedCategories = localStorage.getItem("businessCategories");
-    if (storedCategories) {
-      const customCategories = JSON.parse(storedCategories).map((cat: { name: string }) => cat.name);
-      const combined = [...new Set([...categories, ...customCategories])].filter(Boolean);
-      setAllCategories(combined);
-    } else {
-      setAllCategories(categories);
-    }
+    const fetchCategories = async () => {
+      try {
+        // Fetch unique categories from the businesses table
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('category')
+          .not('category', 'is', null)
+          .not('category', 'eq', '');
+        
+        if (error) {
+          console.error('Error fetching categories:', error);
+          // Fallback to provided categories if database fetch fails
+          setAllCategories(categories.filter(Boolean));
+          return;
+        }
+        
+        // Extract unique categories
+        const uniqueCategories = Array.from(
+          new Set(data.map(item => item.category).filter(Boolean))
+        ).sort();
+        
+        console.log('Fetched categories from database:', uniqueCategories);
+        
+        // Combine with any additional categories from props and localStorage
+        const storedCategories = localStorage.getItem("businessCategories");
+        let customCategories: string[] = [];
+        
+        if (storedCategories) {
+          try {
+            customCategories = JSON.parse(storedCategories).map((cat: { name: string }) => cat.name);
+          } catch (e) {
+            console.error('Error parsing stored categories:', e);
+          }
+        }
+        
+        const combined = [...new Set([...uniqueCategories, ...categories, ...customCategories])].filter(Boolean);
+        setAllCategories(combined);
+      } catch (err) {
+        console.error('Unexpected error fetching categories:', err);
+        // Fallback to provided categories
+        setAllCategories(categories.filter(Boolean));
+      }
+    };
+    
+    fetchCategories();
     
     // Listen for changes to categories
     const handleCategoriesChanged = () => {
-      const updatedStored = localStorage.getItem("businessCategories");
-      if (updatedStored) {
-        const updated = JSON.parse(updatedStored).map((cat: { name: string }) => cat.name);
-        const combined = [...new Set([...categories, ...updated])].filter(Boolean);
-        setAllCategories(combined);
-      }
+      fetchCategories();
     };
     
     window.addEventListener("categoriesChanged", handleCategoriesChanged);

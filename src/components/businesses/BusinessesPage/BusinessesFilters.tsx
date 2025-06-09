@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { 
   Select, 
   SelectContent, 
@@ -8,6 +8,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BusinessesFiltersProps {
   categories: string[];
@@ -34,6 +35,41 @@ const BusinessesFilters: React.FC<BusinessesFiltersProps> = ({
   featuredOnly,
   setFeaturedOnly
 }) => {
+  const [dbCategories, setDbCategories] = useState<string[]>([]);
+  
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        // Fetch unique categories from the businesses table
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('category')
+          .not('category', 'is', null)
+          .not('category', 'eq', '');
+        
+        if (error) {
+          console.error('Error fetching categories:', error);
+          setDbCategories(categories);
+          return;
+        }
+        
+        // Extract unique categories
+        const uniqueCategories = Array.from(
+          new Set(data.map(item => item.category).filter(Boolean))
+        ).sort();
+        
+        // Combine with provided categories
+        const combined = [...new Set([...uniqueCategories, ...categories])].filter(Boolean);
+        setDbCategories(combined);
+      } catch (err) {
+        console.error('Unexpected error fetching categories:', err);
+        setDbCategories(categories);
+      }
+    };
+    
+    fetchCategories();
+  }, [categories]);
+  
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
       <h3 className="font-medium text-lg mb-4">Filters</h3>
@@ -47,7 +83,7 @@ const BusinessesFilters: React.FC<BusinessesFiltersProps> = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">All Categories</SelectItem>
-              {categories.map(category => (
+              {dbCategories.map(category => (
                 <SelectItem key={category} value={category}>
                   {category}
                 </SelectItem>
