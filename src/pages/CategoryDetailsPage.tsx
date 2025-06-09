@@ -15,6 +15,7 @@ const CategoryDetailsPage = () => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [matchedCategories, setMatchedCategories] = useState<string[]>([]);
   
   // Get formatted category name with proper capitalization
   const formattedCategoryName = categoryName
@@ -49,6 +50,52 @@ const CategoryDetailsPage = () => {
     return taglines[category] || `Discover the best ${category} businesses`;
   };
   
+  // Function to get related categories based on keywords
+  const getRelatedCategories = (searchCategory: string): string[] => {
+    const categoryRelations: Record<string, string[]> = {
+      'food': ['restaurants', 'dining', 'cafe', 'catering', 'food service', 'bakery', 'pizza', 'fast food'],
+      'restaurant': ['restaurants', 'dining', 'cafe', 'catering', 'food service', 'bakery', 'pizza', 'fast food'],
+      'dining': ['restaurants', 'dining', 'cafe', 'catering', 'food service', 'bakery', 'pizza', 'fast food'],
+      'hotel': ['hotels', 'accommodation', 'lodging', 'resort', 'motel', 'inn', 'hospitality'],
+      'shop': ['shopping', 'retail', 'store', 'market', 'boutique', 'mall'],
+      'shopping': ['shopping', 'retail', 'store', 'market', 'boutique', 'mall'],
+      'health': ['healthcare', 'medical', 'clinic', 'hospital', 'wellness', 'fitness', 'pharmacy'],
+      'medical': ['healthcare', 'medical', 'clinic', 'hospital', 'wellness', 'pharmacy'],
+      'car': ['automotive', 'auto', 'vehicle', 'garage', 'repair', 'service'],
+      'auto': ['automotive', 'auto', 'vehicle', 'garage', 'repair', 'service'],
+      'beauty': ['beauty', 'salon', 'spa', 'cosmetic', 'hair', 'nail', 'massage'],
+      'salon': ['beauty', 'salon', 'spa', 'cosmetic', 'hair', 'nail', 'massage'],
+      'tech': ['technology', 'IT', 'computer', 'software', 'digital', 'electronics'],
+      'technology': ['technology', 'IT', 'computer', 'software', 'digital', 'electronics'],
+      'fitness': ['fitness', 'gym', 'sport', 'exercise', 'training', 'wellness', 'health'],
+      'gym': ['fitness', 'gym', 'sport', 'exercise', 'training', 'wellness'],
+      'education': ['education', 'school', 'training', 'course', 'learning', 'academy', 'institute'],
+      'school': ['education', 'school', 'training', 'course', 'learning', 'academy', 'institute'],
+      'entertainment': ['entertainment', 'event', 'party', 'music', 'show', 'venue', 'recreation'],
+      'event': ['entertainment', 'event', 'party', 'music', 'show', 'venue', 'recreation'],
+      'repair': ['repair', 'service', 'maintenance', 'fix', 'restoration'],
+      'service': ['service', 'repair', 'maintenance', 'professional', 'consulting'],
+      'home': ['home services', 'household', 'cleaning', 'maintenance', 'repair', 'construction'],
+      'house': ['home services', 'household', 'cleaning', 'maintenance', 'repair', 'construction'],
+      'legal': ['legal', 'law', 'attorney', 'lawyer', 'court', 'advice'],
+      'law': ['legal', 'law', 'attorney', 'lawyer', 'court', 'advice'],
+      'finance': ['financial', 'banking', 'investment', 'insurance', 'accounting', 'money'],
+      'financial': ['financial', 'banking', 'investment', 'insurance', 'accounting', 'money'],
+      'pet': ['pet services', 'animal', 'veterinary', 'grooming', 'care'],
+      'animal': ['pet services', 'animal', 'veterinary', 'grooming', 'care'],
+      'travel': ['travel', 'tourism', 'tour', 'vacation', 'trip', 'booking'],
+      'tourism': ['travel', 'tourism', 'tour', 'vacation', 'trip', 'booking']
+    };
+    
+    const lowerSearch = searchCategory.toLowerCase();
+    for (const [key, values] of Object.entries(categoryRelations)) {
+      if (lowerSearch.includes(key) || values.some(v => lowerSearch.includes(v))) {
+        return values;
+      }
+    }
+    return [];
+  };
+  
   const resetFilters = () => {
     // This function is required by BusinessGrid but doesn't need implementation here
   };
@@ -66,42 +113,66 @@ const CategoryDetailsPage = () => {
       try {
         console.log('Fetching businesses for category:', formattedCategoryName);
         
-        // First try exact match
-        let { data, error } = await supabase
+        // Get all businesses first to analyze categories
+        const { data: allBusinesses, error: fetchError } = await supabase
           .from('businesses')
           .select('*')
-          .eq('category', formattedCategoryName)
           .order('name', { ascending: true });
         
-        // If no exact match, try case-insensitive search
-        if (!error && (!data || data.length === 0)) {
-          console.log('No exact match, trying case-insensitive search...');
-          ({ data, error } = await supabase
-            .from('businesses')
-            .select('*')
-            .ilike('category', `%${formattedCategoryName}%`)
-            .order('name', { ascending: true }));
+        if (fetchError) {
+          console.error('Error fetching businesses:', fetchError);
+          throw fetchError;
         }
         
-        // If still no match, try with URL format
-        if (!error && (!data || data.length === 0)) {
-          console.log('Trying with URL format search...');
-          ({ data, error } = await supabase
-            .from('businesses')
-            .select('*')
-            .ilike('category', `%${categoryName?.replace('-', ' ')}%`)
-            .order('name', { ascending: true }));
+        console.log('Total businesses fetched:', allBusinesses?.length || 0);
+        
+        if (!allBusinesses || allBusinesses.length === 0) {
+          setBusinesses([]);
+          setMatchedCategories([]);
+          setLoading(false);
+          return;
         }
         
-        if (error) {
-          console.error('Error fetching businesses:', error);
-          throw error;
-        }
+        // Get related category keywords
+        const relatedCategories = getRelatedCategories(formattedCategoryName);
+        const searchTerms = [
+          formattedCategoryName,
+          categoryName?.replace('-', ' '),
+          ...relatedCategories
+        ].filter(Boolean);
         
-        console.log('Fetched businesses data:', data);
+        console.log('Search terms:', searchTerms);
+        
+        // Filter businesses based on fuzzy category matching
+        const matchingBusinesses = allBusinesses.filter(business => {
+          if (!business.category) return false;
+          
+          const businessCategory = business.category.toLowerCase();
+          const searchCategory = formattedCategoryName.toLowerCase();
+          
+          // Exact match
+          if (businessCategory === searchCategory) return true;
+          
+          // Partial match
+          if (businessCategory.includes(searchCategory) || searchCategory.includes(businessCategory)) return true;
+          
+          // Check against related categories
+          return searchTerms.some(term => {
+            const lowerTerm = term.toLowerCase();
+            return businessCategory.includes(lowerTerm) || lowerTerm.includes(businessCategory);
+          });
+        });
+        
+        console.log('Matching businesses found:', matchingBusinesses.length);
+        
+        // Get unique matched categories
+        const uniqueCategories = Array.from(new Set(
+          matchingBusinesses.map(b => b.category).filter(Boolean)
+        ));
+        setMatchedCategories(uniqueCategories);
         
         // Convert the data to match our Business type
-        const processedData = data?.map(business => ({
+        const processedData = matchingBusinesses.map(business => ({
           id: business.id,
           name: business.name || '',
           category: business.category || '',
@@ -120,7 +191,7 @@ const CategoryDetailsPage = () => {
             : (business.hours || {})
         })) as Business[];
         
-        setBusinesses(processedData || []);
+        setBusinesses(processedData);
       } catch (err) {
         console.error('Error fetching businesses:', err);
         setError('Failed to load businesses. Please try again later.');
@@ -166,9 +237,17 @@ const CategoryDetailsPage = () => {
             </p>
             
             {!loading && (
-              <p className="text-sm text-gray-500 mt-4">
-                Found {businesses.length} business{businesses.length !== 1 ? 'es' : ''} in {formattedCategoryName}
-              </p>
+              <div className="mt-4">
+                <p className="text-sm text-gray-500">
+                  Found {businesses.length} business{businesses.length !== 1 ? 'es' : ''} in {formattedCategoryName}
+                  {matchedCategories.length > 1 && ' and related categories'}
+                </p>
+                {matchedCategories.length > 1 && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Including: {matchedCategories.join(', ')}
+                  </p>
+                )}
+              </div>
             )}
           </motion.div>
           
@@ -201,11 +280,17 @@ const CategoryDetailsPage = () => {
               {businesses.length === 0 && !loading && (
                 <div className="text-center py-12">
                   <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                    No businesses found in {formattedCategoryName}
+                    No businesses found for "{formattedCategoryName}"
                   </h3>
-                  <p className="text-gray-500">
-                    Please check back later or explore other categories
+                  <p className="text-gray-500 mb-4">
+                    We couldn't find any businesses matching this category. Try exploring other categories or check back later.
                   </p>
+                  <button 
+                    onClick={() => window.history.back()} 
+                    className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+                  >
+                    Go Back
+                  </button>
                 </div>
               )}
             </motion.div>
