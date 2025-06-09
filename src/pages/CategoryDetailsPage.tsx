@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -47,53 +46,162 @@ const CategoryDetailsPage = () => {
       'Consulting': 'Professional business consulting services'
     };
     
-    return taglines[category] || `Discover the best ${category} businesses`;
+    return taglines[category] || `Discover the best ${category.toLowerCase()} businesses`;
   };
   
-  // Function to get related categories based on keywords
+  // Enhanced function to get related categories with comprehensive mapping
   const getRelatedCategories = (searchCategory: string): string[] => {
     const categoryRelations: Record<string, string[]> = {
-      'food': ['restaurants', 'dining', 'cafe', 'catering', 'food service', 'bakery', 'pizza', 'fast food'],
-      'restaurant': ['restaurants', 'dining', 'cafe', 'catering', 'food service', 'bakery', 'pizza', 'fast food'],
-      'dining': ['restaurants', 'dining', 'cafe', 'catering', 'food service', 'bakery', 'pizza', 'fast food'],
-      'hotel': ['hotels', 'accommodation', 'lodging', 'resort', 'motel', 'inn', 'hospitality'],
-      'shop': ['shopping', 'retail', 'store', 'market', 'boutique', 'mall'],
-      'shopping': ['shopping', 'retail', 'store', 'market', 'boutique', 'mall'],
-      'health': ['healthcare', 'medical', 'clinic', 'hospital', 'wellness', 'fitness', 'pharmacy'],
-      'medical': ['healthcare', 'medical', 'clinic', 'hospital', 'wellness', 'pharmacy'],
-      'car': ['automotive', 'auto', 'vehicle', 'garage', 'repair', 'service'],
-      'auto': ['automotive', 'auto', 'vehicle', 'garage', 'repair', 'service'],
-      'beauty': ['beauty', 'salon', 'spa', 'cosmetic', 'hair', 'nail', 'massage'],
-      'salon': ['beauty', 'salon', 'spa', 'cosmetic', 'hair', 'nail', 'massage'],
-      'tech': ['technology', 'IT', 'computer', 'software', 'digital', 'electronics'],
-      'technology': ['technology', 'IT', 'computer', 'software', 'digital', 'electronics'],
-      'fitness': ['fitness', 'gym', 'sport', 'exercise', 'training', 'wellness', 'health'],
-      'gym': ['fitness', 'gym', 'sport', 'exercise', 'training', 'wellness'],
-      'education': ['education', 'school', 'training', 'course', 'learning', 'academy', 'institute'],
-      'school': ['education', 'school', 'training', 'course', 'learning', 'academy', 'institute'],
-      'entertainment': ['entertainment', 'event', 'party', 'music', 'show', 'venue', 'recreation'],
-      'event': ['entertainment', 'event', 'party', 'music', 'show', 'venue', 'recreation'],
-      'repair': ['repair', 'service', 'maintenance', 'fix', 'restoration'],
-      'service': ['service', 'repair', 'maintenance', 'professional', 'consulting'],
-      'home': ['home services', 'household', 'cleaning', 'maintenance', 'repair', 'construction'],
-      'house': ['home services', 'household', 'cleaning', 'maintenance', 'repair', 'construction'],
-      'legal': ['legal', 'law', 'attorney', 'lawyer', 'court', 'advice'],
-      'law': ['legal', 'law', 'attorney', 'lawyer', 'court', 'advice'],
-      'finance': ['financial', 'banking', 'investment', 'insurance', 'accounting', 'money'],
-      'financial': ['financial', 'banking', 'investment', 'insurance', 'accounting', 'money'],
-      'pet': ['pet services', 'animal', 'veterinary', 'grooming', 'care'],
-      'animal': ['pet services', 'animal', 'veterinary', 'grooming', 'care'],
-      'travel': ['travel', 'tourism', 'tour', 'vacation', 'trip', 'booking'],
-      'tourism': ['travel', 'tourism', 'tour', 'vacation', 'trip', 'booking']
+      // Food & Dining
+      'food': ['restaurant', 'fast food', 'indian restaurant', 'asian', 'vegetarian', 'biryani', 'breakfast', 'dhaba', 'chicken', 'pizza', 'ice cream', 'north indian', 'punjabi', 'cafe', 'coffee shop', 'snack bar', 'italian', 'pizza takeout', 'salad', 'bakery and cake shop', 'cake shop', 'sweet shop', 'chocolate shop'],
+      'restaurant': ['indian restaurant', 'asian', 'vegetarian', 'north indian', 'punjabi', 'dhaba', 'fast food', 'cafe', 'wok restaurant', 'italian'],
+      'dining': ['restaurant', 'fast food', 'indian restaurant', 'cafe', 'coffee shop', 'dhaba', 'biryani', 'pizza'],
+      'cafe': ['coffee shop', 'restaurant', 'snack bar', 'breakfast'],
+      
+      // Shopping & Retail
+      'shopping': ['clothing store', 'store', 'hypermarket', 'shopping mall', 'gift shop', 'stationery store', 'electronics store', 'furniture store', 'shoe store', 'book store', 'grocery store'],
+      'store': ['clothing store', 'electronics store', 'grocery store', 'furniture store', 'shoe store', 'book store', 'stationery store', 'gift shop', 'general store'],
+      'clothing': ['clothing store', 'clothing wholesaler', 'men\'s clothing store', 'women\'s clothing store', 'children\'s clothing store', 'baby clothing store', 'youth clothing store', 'plus size clothing store', 'designer clothing store', 'saree shop', 'bridal shop', 'tuxedo shop'],
+      
+      // Education
+      'education': ['school', 'coaching center', 'library', 'education center', 'cbse school', 'computer training school', 'government school', 'middle school', 'elementary school', 'preschool', 'kindergarten school', 'private educational institution', 'tutoring service', 'civil examinations academy', 'software training institute', 'dance school'],
+      'school': ['cbse school', 'government school', 'middle school', 'elementary school', 'preschool', 'kindergarten school', 'computer training school', 'private educational institution'],
+      
+      // Healthcare
+      'healthcare': ['hospital', 'medical clinic', 'medical center', 'private hospital', 'children\'s hospital', 'pharmacy', 'medical supply store', 'eye care', 'dialysis center', 'pediatrician', 'obstetrician-gynecologist', 'gynecologist'],
+      'medical': ['hospital', 'medical clinic', 'medical center', 'pharmacy', 'medical supply store', 'pediatrician', 'gynecologist'],
+      'hospital': ['private hospital', 'children\'s hospital', 'medical center', 'medical clinic'],
+      
+      // Automotive
+      'automotive': ['car dealer', 'auto repair', 'vehicle dealer', 'truck dealer', 'used car dealer', 'renault dealer', 'suzuki dealer', 'ford dealer', 'motor vehicle dealer', 'motorcycle shop', 'auto parts store', 'car stereo store', 'car repair and maintenance service', 'truck repair shop', 'auto dent removal service station', 'electric motor scooter dealer', 'auto accessories', 'car wash'],
+      'car': ['car dealer', 'auto repair', 'used car dealer', 'renault dealer', 'suzuki dealer', 'ford dealer', 'car stereo store', 'car repair and maintenance service', 'car wash'],
+      'auto': ['auto repair', 'auto parts store', 'auto accessories', 'auto dent removal service station'],
+      
+      // Beauty & Wellness
+      'beauty': ['beauty parlour', 'hair salon', 'hairdresser', 'nail salon', 'make-up artist', 'mehndi designer', 'beautician', 'barber shop', 'massage spa'],
+      'salon': ['beauty parlour', 'hair salon', 'nail salon', 'barber shop'],
+      'spa': ['massage spa', 'beauty parlour'],
+      
+      // Technology
+      'technology': ['computer store', 'electronics store', 'mobile phone repair shop', 'computer repair service', 'computer support and services', 'software company', 'software training institute', 'internet cafe', 'cell phone store'],
+      'computer': ['computer store', 'computer repair service', 'computer training school', 'computer support and services'],
+      'electronics': ['electronics store', 'electronics accessories wholesaler', 'electronics wholesaler', 'electrical products wholesaler', 'electrical supply store'],
+      
+      // Fitness & Sports
+      'fitness': ['fitness center', 'gym', 'sports complex', 'sports nutrition store', 'weight loss service'],
+      'gym': ['fitness center', 'sports complex', 'weight loss service'],
+      'sports': ['sporting goods store', 'sports complex', 'sports nutrition store', 'sports accessories wholesaler'],
+      
+      // Home & Construction
+      'home': ['furniture store', 'home goods store', 'hardware store', 'tile store', 'bathroom supply store', 'kitchen supply store', 'curtain supplier and maker', 'building materials store', 'plywood supplier', 'countertop store', 'furniture maker', 'interior decorator', 'carpenter'],
+      'furniture': ['furniture store', 'furniture maker', 'home goods store', 'mattress store'],
+      'hardware': ['hardware store', 'building materials store', 'tile store', 'plywood supplier'],
+      
+      // Wholesale & Manufacturing
+      'wholesale': ['clothing wholesaler', 'stationery wholesaler', 'electronics accessories wholesaler', 'agricultural product wholesaler', 'disposable items shop', 'oil wholesaler', 'sports accessories wholesaler', 'battery wholesaler', 'electrical products wholesaler', 'fmcg goods wholesaler', 'electronics wholesaler', 'footwear wholesaler', 'wholesale bakery', 'vegetable wholesale market', 'wholesale market', 'clothing wholesale market place'],
+      'wholesaler': ['clothing wholesaler', 'stationery wholesaler', 'electronics accessories wholesaler', 'agricultural product wholesaler', 'oil wholesaler', 'sports accessories wholesaler', 'battery wholesaler', 'electrical products wholesaler', 'fmcg goods wholesaler', 'electronics wholesaler', 'footwear wholesaler'],
+      
+      // Services
+      'service': ['printing services', 'chauffeur service', 'computer repair service', 'car repair and maintenance service', 'weight loss service', 'wedding service', 'photography service', 'tutoring service'],
+      'repair': ['auto repair', 'computer repair service', 'mobile phone repair shop', 'car repair and maintenance service', 'truck repair shop'],
+      
+      // Events & Entertainment
+      'wedding': ['wedding services', 'wedding service', 'bridal shop', 'banquet hall', 'event venue', 'tuxedo shop', 'jewelry designer'],
+      'event': ['wedding services', 'banquet hall', 'event venue', 'photography service'],
+      
+      // Hospitality
+      'hotel': ['lodging', 'boys\' hostel'],
+      'accommodation': ['hotel', 'lodging', 'boys\' hostel'],
+      
+      // Others
+      'grocery': ['grocery store', 'indian grocery store', 'asian grocery store', 'general store', 'fruit & vegetable store', 'produce market', 'dairy store'],
+      'jewelry': ['jeweler', 'jewelry designer'],
+      'stationery': ['stationery store', 'stationery wholesaler', 'pen store'],
+      'baby': ['baby clothing store', 'baby store', 'children\'s clothing store', 'children\'s hospital', 'kindergarten school']
     };
     
     const lowerSearch = searchCategory.toLowerCase();
+    const relatedCategories: Set<string> = new Set();
+    
+    // Direct keyword matching
     for (const [key, values] of Object.entries(categoryRelations)) {
-      if (lowerSearch.includes(key) || values.some(v => lowerSearch.includes(v))) {
-        return values;
+      if (lowerSearch.includes(key) || values.some(v => lowerSearch.includes(v.toLowerCase()))) {
+        values.forEach(category => relatedCategories.add(category));
+        relatedCategories.add(key);
       }
     }
-    return [];
+    
+    // Add partial matches for common keywords
+    const keywords = lowerSearch.split(/\s+|[-_]/);
+    keywords.forEach(keyword => {
+      for (const [key, values] of Object.entries(categoryRelations)) {
+        if (key.includes(keyword) || values.some(v => v.toLowerCase().includes(keyword))) {
+          values.forEach(category => relatedCategories.add(category));
+        }
+      }
+    });
+    
+    return Array.from(relatedCategories);
+  };
+  
+  // Enhanced fuzzy matching function
+  const isRelatedCategory = (businessCategory: string, searchTerms: string[]): boolean => {
+    const lowerBusinessCategory = businessCategory.toLowerCase();
+    
+    return searchTerms.some(term => {
+      const lowerTerm = term.toLowerCase();
+      
+      // Exact match
+      if (lowerBusinessCategory === lowerTerm) return true;
+      
+      // Contains match
+      if (lowerBusinessCategory.includes(lowerTerm) || lowerTerm.includes(lowerBusinessCategory)) return true;
+      
+      // Word-based matching
+      const businessWords = lowerBusinessCategory.split(/\s+|[-_']/);
+      const termWords = lowerTerm.split(/\s+|[-_']/);
+      
+      // Check if any business words match any term words
+      const hasWordMatch = businessWords.some(bWord => 
+        termWords.some(tWord => 
+          bWord === tWord || 
+          bWord.includes(tWord) || 
+          tWord.includes(bWord) ||
+          (bWord.length > 3 && tWord.length > 3 && 
+           (bWord.startsWith(tWord.substring(0, 3)) || tWord.startsWith(bWord.substring(0, 3))))
+        )
+      );
+      
+      if (hasWordMatch) return true;
+      
+      // Levenshtein distance for similar spellings
+      const distance = getLevenshteinDistance(lowerBusinessCategory, lowerTerm);
+      const maxLength = Math.max(lowerBusinessCategory.length, lowerTerm.length);
+      const similarity = 1 - (distance / maxLength);
+      
+      return similarity > 0.7; // 70% similarity threshold
+    });
+  };
+  
+  // Levenshtein distance function for fuzzy matching
+  const getLevenshteinDistance = (str1: string, str2: string): number => {
+    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+    
+    for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
+    for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+    
+    for (let j = 1; j <= str2.length; j++) {
+      for (let i = 1; i <= str1.length; i++) {
+        const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1,
+          matrix[j - 1][i] + 1,
+          matrix[j - 1][i - 1] + indicator
+        );
+      }
+    }
+    
+    return matrix[str2.length][str1.length];
   };
   
   const resetFilters = () => {
@@ -113,7 +221,7 @@ const CategoryDetailsPage = () => {
       try {
         console.log('Fetching businesses for category:', formattedCategoryName);
         
-        // Get all businesses first to analyze categories
+        // Get all businesses first
         const { data: allBusinesses, error: fetchError } = await supabase
           .from('businesses')
           .select('*')
@@ -137,30 +245,16 @@ const CategoryDetailsPage = () => {
         const relatedCategories = getRelatedCategories(formattedCategoryName);
         const searchTerms = [
           formattedCategoryName,
-          categoryName?.replace('-', ' '),
+          categoryName?.replace(/-/g, ' '),
           ...relatedCategories
         ].filter(Boolean);
         
         console.log('Search terms:', searchTerms);
         
-        // Filter businesses based on fuzzy category matching
+        // Filter businesses based on enhanced fuzzy category matching
         const matchingBusinesses = allBusinesses.filter(business => {
           if (!business.category) return false;
-          
-          const businessCategory = business.category.toLowerCase();
-          const searchCategory = formattedCategoryName.toLowerCase();
-          
-          // Exact match
-          if (businessCategory === searchCategory) return true;
-          
-          // Partial match
-          if (businessCategory.includes(searchCategory) || searchCategory.includes(businessCategory)) return true;
-          
-          // Check against related categories
-          return searchTerms.some(term => {
-            const lowerTerm = term.toLowerCase();
-            return businessCategory.includes(lowerTerm) || lowerTerm.includes(businessCategory);
-          });
+          return isRelatedCategory(business.category, searchTerms);
         });
         
         console.log('Matching businesses found:', matchingBusinesses.length);
@@ -244,7 +338,7 @@ const CategoryDetailsPage = () => {
                 </p>
                 {matchedCategories.length > 1 && (
                   <p className="text-xs text-gray-400 mt-1">
-                    Including: {matchedCategories.join(', ')}
+                    Including: {matchedCategories.slice(0, 5).join(', ')}{matchedCategories.length > 5 ? ` and ${matchedCategories.length - 5} more` : ''}
                   </p>
                 )}
               </div>
