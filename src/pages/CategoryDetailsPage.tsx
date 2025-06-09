@@ -24,8 +24,8 @@ const CategoryDetailsPage = () => {
   // Get tagline based on category
   const getTagline = (category: string) => {
     const taglines: Record<string, string> = {
-      'Restaurants': 'Discover the best dining experiences in your area',
       'Hotels': 'Find comfortable stays for your next trip',
+      'Restaurants': 'Discover the best dining experiences in your area',
       'Shopping': 'Explore the finest shopping destinations',
       'Healthcare': 'Your health is our priority',
       'Education': 'Quality education for a brighter future',
@@ -55,7 +55,10 @@ const CategoryDetailsPage = () => {
   
   useEffect(() => {
     const loadBusinesses = async () => {
-      if (!categoryName) return;
+      if (!categoryName) {
+        setLoading(false);
+        return;
+      }
       
       setLoading(true);
       setError(null);
@@ -63,12 +66,32 @@ const CategoryDetailsPage = () => {
       try {
         console.log('Fetching businesses for category:', formattedCategoryName);
         
-        // Fetch businesses for this category from Supabase
-        const { data, error } = await supabase
+        // First try exact match
+        let { data, error } = await supabase
           .from('businesses')
           .select('*')
           .eq('category', formattedCategoryName)
           .order('name', { ascending: true });
+        
+        // If no exact match, try case-insensitive search
+        if (!error && (!data || data.length === 0)) {
+          console.log('No exact match, trying case-insensitive search...');
+          ({ data, error } = await supabase
+            .from('businesses')
+            .select('*')
+            .ilike('category', `%${formattedCategoryName}%`)
+            .order('name', { ascending: true }));
+        }
+        
+        // If still no match, try with URL format
+        if (!error && (!data || data.length === 0)) {
+          console.log('Trying with URL format search...');
+          ({ data, error } = await supabase
+            .from('businesses')
+            .select('*')
+            .ilike('category', `%${categoryName?.replace('-', ' ')}%`)
+            .order('name', { ascending: true }));
+        }
         
         if (error) {
           console.error('Error fetching businesses:', error);
