@@ -113,6 +113,7 @@ const AdminLoginPage = lazy(() => import("@/pages/AdminLoginPage"));
 
 // Import PaymentSuccessPage
 const PaymentSuccessPage = lazy(() => import("@/pages/PaymentSuccessPage"));
+const TermsAndConditionsPage = lazy(() => import("@/pages/TermsAndConditionsPage"));
 
 export const router = createBrowserRouter([
   {
@@ -264,7 +265,11 @@ export const router = createBrowserRouter([
           {
             path: "*",
             element: <NotFound />
-          }
+          },
+          { 
+            path: "terms-and-conditions", 
+            element: <Suspense fallback={<LoadingComponent />}><TermsAndConditionsPage /></Suspense>
+          },
         ],
       },
       // Admin routes - these should be outside the main Layout

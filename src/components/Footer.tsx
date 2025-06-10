@@ -64,6 +64,11 @@ const Footer = () => {
                   Contact Us
                 </Link>
               </li>
+              <li>
+                <Link to="/terms-and-conditions" className="text-sm text-gray-500 hover:text-primary transition-smooth">
+                  Terms & Conditions
+                </Link>
+              </li>
             </ul>
           </div>
 
