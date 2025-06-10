@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -14,7 +15,6 @@ const CategoryDetailsPage = () => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [matchedCategories, setMatchedCategories] = useState<string[]>([]);
   
   // Get formatted category name with proper capitalization
   const formattedCategoryName = categoryName
@@ -49,159 +49,78 @@ const CategoryDetailsPage = () => {
     return taglines[category] || `Discover the best ${category.toLowerCase()} businesses`;
   };
   
-  // Enhanced function to get related categories with comprehensive mapping
-  const getRelatedCategories = (searchCategory: string): string[] => {
-    const categoryRelations: Record<string, string[]> = {
-      // Food & Dining
-      'food': ['restaurant', 'fast food', 'indian restaurant', 'asian', 'vegetarian', 'biryani', 'breakfast', 'dhaba', 'chicken', 'pizza', 'ice cream', 'north indian', 'punjabi', 'cafe', 'coffee shop', 'snack bar', 'italian', 'pizza takeout', 'salad', 'bakery and cake shop', 'cake shop', 'sweet shop', 'chocolate shop'],
-      'restaurant': ['indian restaurant', 'asian', 'vegetarian', 'north indian', 'punjabi', 'dhaba', 'fast food', 'cafe', 'wok restaurant', 'italian'],
-      'dining': ['restaurant', 'fast food', 'indian restaurant', 'cafe', 'coffee shop', 'dhaba', 'biryani', 'pizza'],
-      'cafe': ['coffee shop', 'restaurant', 'snack bar', 'breakfast'],
-      
-      // Shopping & Retail
-      'shopping': ['clothing store', 'store', 'hypermarket', 'shopping mall', 'gift shop', 'stationery store', 'electronics store', 'furniture store', 'shoe store', 'book store', 'grocery store'],
-      'store': ['clothing store', 'electronics store', 'grocery store', 'furniture store', 'shoe store', 'book store', 'stationery store', 'gift shop', 'general store'],
-      'clothing': ['clothing store', 'clothing wholesaler', 'men\'s clothing store', 'women\'s clothing store', 'children\'s clothing store', 'baby clothing store', 'youth clothing store', 'plus size clothing store', 'designer clothing store', 'saree shop', 'bridal shop', 'tuxedo shop'],
-      
-      // Education
-      'education': ['school', 'coaching center', 'library', 'education center', 'cbse school', 'computer training school', 'government school', 'middle school', 'elementary school', 'preschool', 'kindergarten school', 'private educational institution', 'tutoring service', 'civil examinations academy', 'software training institute', 'dance school'],
-      'school': ['cbse school', 'government school', 'middle school', 'elementary school', 'preschool', 'kindergarten school', 'computer training school', 'private educational institution'],
-      
-      // Healthcare
-      'healthcare': ['hospital', 'medical clinic', 'medical center', 'private hospital', 'children\'s hospital', 'pharmacy', 'medical supply store', 'eye care', 'dialysis center', 'pediatrician', 'obstetrician-gynecologist', 'gynecologist'],
-      'medical': ['hospital', 'medical clinic', 'medical center', 'pharmacy', 'medical supply store', 'pediatrician', 'gynecologist'],
-      'hospital': ['private hospital', 'children\'s hospital', 'medical center', 'medical clinic'],
-      
-      // Automotive
-      'automotive': ['car dealer', 'auto repair', 'vehicle dealer', 'truck dealer', 'used car dealer', 'renault dealer', 'suzuki dealer', 'ford dealer', 'motor vehicle dealer', 'motorcycle shop', 'auto parts store', 'car stereo store', 'car repair and maintenance service', 'truck repair shop', 'auto dent removal service station', 'electric motor scooter dealer', 'auto accessories', 'car wash'],
-      'car': ['car dealer', 'auto repair', 'used car dealer', 'renault dealer', 'suzuki dealer', 'ford dealer', 'car stereo store', 'car repair and maintenance service', 'car wash'],
-      'auto': ['auto repair', 'auto parts store', 'auto accessories', 'auto dent removal service station'],
-      
-      // Beauty & Wellness
-      'beauty': ['beauty parlour', 'hair salon', 'hairdresser', 'nail salon', 'make-up artist', 'mehndi designer', 'beautician', 'barber shop', 'massage spa'],
-      'salon': ['beauty parlour', 'hair salon', 'nail salon', 'barber shop'],
-      'spa': ['massage spa', 'beauty parlour'],
-      
-      // Technology
-      'technology': ['computer store', 'electronics store', 'mobile phone repair shop', 'computer repair service', 'computer support and services', 'software company', 'software training institute', 'internet cafe', 'cell phone store'],
-      'computer': ['computer store', 'computer repair service', 'computer training school', 'computer support and services'],
-      'electronics': ['electronics store', 'electronics accessories wholesaler', 'electronics wholesaler', 'electrical products wholesaler', 'electrical supply store'],
-      
-      // Fitness & Sports
-      'fitness': ['fitness center', 'gym', 'sports complex', 'sports nutrition store', 'weight loss service'],
-      'gym': ['fitness center', 'sports complex', 'weight loss service'],
-      'sports': ['sporting goods store', 'sports complex', 'sports nutrition store', 'sports accessories wholesaler'],
-      
-      // Home & Construction
-      'home': ['furniture store', 'home goods store', 'hardware store', 'tile store', 'bathroom supply store', 'kitchen supply store', 'curtain supplier and maker', 'building materials store', 'plywood supplier', 'countertop store', 'furniture maker', 'interior decorator', 'carpenter'],
-      'furniture': ['furniture store', 'furniture maker', 'home goods store', 'mattress store'],
-      'hardware': ['hardware store', 'building materials store', 'tile store', 'plywood supplier'],
-      
-      // Wholesale & Manufacturing
-      'wholesale': ['clothing wholesaler', 'stationery wholesaler', 'electronics accessories wholesaler', 'agricultural product wholesaler', 'disposable items shop', 'oil wholesaler', 'sports accessories wholesaler', 'battery wholesaler', 'electrical products wholesaler', 'fmcg goods wholesaler', 'electronics wholesaler', 'footwear wholesaler', 'wholesale bakery', 'vegetable wholesale market', 'wholesale market', 'clothing wholesale market place'],
-      'wholesaler': ['clothing wholesaler', 'stationery wholesaler', 'electronics accessories wholesaler', 'agricultural product wholesaler', 'oil wholesaler', 'sports accessories wholesaler', 'battery wholesaler', 'electrical products wholesaler', 'fmcg goods wholesaler', 'electronics wholesaler', 'footwear wholesaler'],
-      
-      // Services
-      'service': ['printing services', 'chauffeur service', 'computer repair service', 'car repair and maintenance service', 'weight loss service', 'wedding service', 'photography service', 'tutoring service'],
-      'repair': ['auto repair', 'computer repair service', 'mobile phone repair shop', 'car repair and maintenance service', 'truck repair shop'],
-      
-      // Events & Entertainment
-      'wedding': ['wedding services', 'wedding service', 'bridal shop', 'banquet hall', 'event venue', 'tuxedo shop', 'jewelry designer'],
-      'event': ['wedding services', 'banquet hall', 'event venue', 'photography service'],
-      
-      // Hospitality
-      'hotel': ['lodging', 'boys\' hostel'],
-      'accommodation': ['hotel', 'lodging', 'boys\' hostel'],
-      
-      // Others
-      'grocery': ['grocery store', 'indian grocery store', 'asian grocery store', 'general store', 'fruit & vegetable store', 'produce market', 'dairy store'],
-      'jewelry': ['jeweler', 'jewelry designer'],
-      'stationery': ['stationery store', 'stationery wholesaler', 'pen store'],
-      'baby': ['baby clothing store', 'baby store', 'children\'s clothing store', 'children\'s hospital', 'kindergarten school']
-    };
+  // Comprehensive category matching function
+  const isMatchingCategory = (businessCategory: string, searchCategory: string): boolean => {
+    if (!businessCategory || !searchCategory) return false;
     
-    const lowerSearch = searchCategory.toLowerCase();
-    const relatedCategories: Set<string> = new Set();
+    const business = businessCategory.toLowerCase().trim();
+    const search = searchCategory.toLowerCase().trim();
     
-    // Direct keyword matching
-    for (const [key, values] of Object.entries(categoryRelations)) {
-      if (lowerSearch.includes(key) || values.some(v => lowerSearch.includes(v.toLowerCase()))) {
-        values.forEach(category => relatedCategories.add(category));
-        relatedCategories.add(key);
-      }
-    }
+    // Exact match
+    if (business === search) return true;
     
-    // Add partial matches for common keywords
-    const keywords = lowerSearch.split(/\s+|[-_]/);
-    keywords.forEach(keyword => {
-      for (const [key, values] of Object.entries(categoryRelations)) {
-        if (key.includes(keyword) || values.some(v => v.toLowerCase().includes(keyword))) {
-          values.forEach(category => relatedCategories.add(category));
+    // Remove common suffixes/prefixes for better matching
+    const cleanBusiness = business
+      .replace(/\b(store|shop|service|services|center|centre|dealer|supplier|wholesaler)\b/g, '')
+      .trim();
+    const cleanSearch = search
+      .replace(/\b(store|shop|service|services|center|centre|dealer|supplier|wholesaler)\b/g, '')
+      .trim();
+    
+    if (cleanBusiness === cleanSearch) return true;
+    
+    // Contains match
+    if (business.includes(search) || search.includes(business)) return true;
+    if (cleanBusiness.includes(cleanSearch) || cleanSearch.includes(cleanBusiness)) return true;
+    
+    // Word-based matching
+    const businessWords = business.split(/\s+|[-_']/);
+    const searchWords = search.split(/\s+|[-_']/);
+    
+    // Check if any significant words match
+    const significantBusinessWords = businessWords.filter(word => word.length > 2);
+    const significantSearchWords = searchWords.filter(word => word.length > 2);
+    
+    for (const bWord of significantBusinessWords) {
+      for (const sWord of significantSearchWords) {
+        if (bWord === sWord || bWord.includes(sWord) || sWord.includes(bWord)) {
+          return true;
         }
       }
-    });
+    }
     
-    return Array.from(relatedCategories);
-  };
-  
-  // Enhanced fuzzy matching function
-  const isRelatedCategory = (businessCategory: string, searchTerms: string[]): boolean => {
-    const lowerBusinessCategory = businessCategory.toLowerCase();
+    // Category-specific matching rules
+    const categoryMappings: Record<string, string[]> = {
+      'restaurant': ['food', 'dining', 'indian restaurant', 'asian', 'north indian', 'punjabi', 'dhaba', 'vegetarian', 'italian', 'cafe', 'coffee shop'],
+      'food': ['restaurant', 'fast food', 'indian restaurant', 'asian', 'vegetarian', 'biryani', 'breakfast', 'dhaba', 'chicken', 'pizza', 'ice cream', 'cafe', 'coffee shop'],
+      'clothing': ['clothing store', 'men\'s clothing', 'women\'s clothing', 'children\'s clothing', 'baby clothing', 'youth clothing', 'plus size clothing', 'designer clothing', 'saree shop', 'bridal shop'],
+      'education': ['school', 'coaching center', 'library', 'education center', 'cbse school', 'computer training', 'government school', 'middle school', 'elementary school', 'preschool', 'kindergarten'],
+      'medical': ['hospital', 'medical clinic', 'medical center', 'pharmacy', 'medical supply', 'eye care', 'dialysis center', 'pediatrician', 'gynecologist'],
+      'automotive': ['car dealer', 'auto repair', 'vehicle dealer', 'truck dealer', 'used car dealer', 'renault dealer', 'suzuki dealer', 'ford dealer', 'motorcycle shop', 'auto parts'],
+      'beauty': ['beauty parlour', 'hair salon', 'hairdresser', 'nail salon', 'make-up artist', 'mehndi designer', 'beautician', 'barber shop', 'massage spa'],
+      'electronics': ['electronics store', 'computer store', 'mobile phone repair', 'computer repair', 'cell phone store', 'electronics accessories'],
+      'grocery': ['grocery store', 'indian grocery', 'asian grocery', 'general store', 'fruit vegetable', 'produce market', 'dairy store'],
+      'furniture': ['furniture store', 'furniture maker', 'home goods', 'mattress store'],
+      'jewelry': ['jeweler', 'jewelry designer'],
+      'fitness': ['fitness center', 'gym', 'sports complex', 'sports nutrition'],
+      'wholesale': ['wholesaler', 'clothing wholesaler', 'stationery wholesaler', 'electronics wholesaler', 'agricultural wholesaler']
+    };
     
-    return searchTerms.some(term => {
-      const lowerTerm = term.toLowerCase();
-      
-      // Exact match
-      if (lowerBusinessCategory === lowerTerm) return true;
-      
-      // Contains match
-      if (lowerBusinessCategory.includes(lowerTerm) || lowerTerm.includes(lowerBusinessCategory)) return true;
-      
-      // Word-based matching
-      const businessWords = lowerBusinessCategory.split(/\s+|[-_']/);
-      const termWords = lowerTerm.split(/\s+|[-_']/);
-      
-      // Check if any business words match any term words
-      const hasWordMatch = businessWords.some(bWord => 
-        termWords.some(tWord => 
-          bWord === tWord || 
-          bWord.includes(tWord) || 
-          tWord.includes(bWord) ||
-          (bWord.length > 3 && tWord.length > 3 && 
-           (bWord.startsWith(tWord.substring(0, 3)) || tWord.startsWith(bWord.substring(0, 3))))
-        )
-      );
-      
-      if (hasWordMatch) return true;
-      
-      // Levenshtein distance for similar spellings
-      const distance = getLevenshteinDistance(lowerBusinessCategory, lowerTerm);
-      const maxLength = Math.max(lowerBusinessCategory.length, lowerTerm.length);
-      const similarity = 1 - (distance / maxLength);
-      
-      return similarity > 0.7; // 70% similarity threshold
-    });
-  };
-  
-  // Levenshtein distance function for fuzzy matching
-  const getLevenshteinDistance = (str1: string, str2: string): number => {
-    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
-    
-    for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
-    for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
-    
-    for (let j = 1; j <= str2.length; j++) {
-      for (let i = 1; i <= str1.length; i++) {
-        const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
-        matrix[j][i] = Math.min(
-          matrix[j][i - 1] + 1,
-          matrix[j - 1][i] + 1,
-          matrix[j - 1][i - 1] + indicator
-        );
+    // Check category mappings
+    for (const [key, values] of Object.entries(categoryMappings)) {
+      if (search.includes(key) || cleanSearch.includes(key)) {
+        if (values.some(v => business.includes(v) || cleanBusiness.includes(v))) {
+          return true;
+        }
+      }
+      if (business.includes(key) || cleanBusiness.includes(key)) {
+        if (values.some(v => search.includes(v) || cleanSearch.includes(v))) {
+          return true;
+        }
       }
     }
     
-    return matrix[str2.length][str1.length];
+    return false;
   };
   
   const resetFilters = () => {
@@ -236,34 +155,32 @@ const CategoryDetailsPage = () => {
         
         if (!allBusinesses || allBusinesses.length === 0) {
           setBusinesses([]);
-          setMatchedCategories([]);
           setLoading(false);
           return;
         }
         
-        // Get related category keywords
-        const relatedCategories = getRelatedCategories(formattedCategoryName);
+        // Filter businesses based on category matching
         const searchTerms = [
           formattedCategoryName,
           categoryName?.replace(/-/g, ' '),
-          ...relatedCategories
+          categoryName?.replace(/-/g, '')
         ].filter(Boolean);
         
         console.log('Search terms:', searchTerms);
         
-        // Filter businesses based on enhanced fuzzy category matching
         const matchingBusinesses = allBusinesses.filter(business => {
           if (!business.category) return false;
-          return isRelatedCategory(business.category, searchTerms);
+          
+          return searchTerms.some(term => 
+            isMatchingCategory(business.category, term)
+          );
         });
         
         console.log('Matching businesses found:', matchingBusinesses.length);
-        
-        // Get unique matched categories
-        const uniqueCategories = Array.from(new Set(
-          matchingBusinesses.map(b => b.category).filter(Boolean)
-        ));
-        setMatchedCategories(uniqueCategories);
+        console.log('Sample matches:', matchingBusinesses.slice(0, 3).map(b => ({
+          name: b.name,
+          category: b.category
+        })));
         
         // Convert the data to match our Business type
         const processedData = matchingBusinesses.map(business => ({
@@ -334,13 +251,7 @@ const CategoryDetailsPage = () => {
               <div className="mt-4">
                 <p className="text-sm text-gray-500">
                   Found {businesses.length} business{businesses.length !== 1 ? 'es' : ''} in {formattedCategoryName}
-                  {matchedCategories.length > 1 && ' and related categories'}
                 </p>
-                {matchedCategories.length > 1 && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    Including: {matchedCategories.slice(0, 5).join(', ')}{matchedCategories.length > 5 ? ` and ${matchedCategories.length - 5} more` : ''}
-                  </p>
-                )}
               </div>
             )}
           </motion.div>
