@@ -5,13 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Mail, Phone, MapPin } from 'lucide-react';
+
 const ContactPage = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle form submission
     console.log('Contact form submitted');
   };
-  return <div className="min-h-screen bg-gray-50 py-12">
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-12">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Contact <span className="text-brand-orange">Us</span></h1>
@@ -104,6 +107,8 @@ const ContactPage = () => {
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default ContactPage;

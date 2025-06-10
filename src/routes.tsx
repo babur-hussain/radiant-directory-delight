@@ -147,8 +147,8 @@ export const router = createBrowserRouter([
             element: <Suspense fallback={<LoadingComponent />}><CategoriesPage /></Suspense> 
           },
           { 
-            path: "category/:id", 
-            element: <Suspense fallback={<LoadingComponent />}><CategoryDetailsPage /></Suspense> 
+            path: "category/:categoryName",
+            element: <Suspense fallback={<LoadingComponent />}><CategoryDetailsPage /></Suspense>
           },
           { 
             path: "influencers", 

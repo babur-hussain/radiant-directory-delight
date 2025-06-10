@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -9,6 +8,7 @@ import Loading from '@/components/ui/loading';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { getCategoryIcon, getCategoryColor } from '@/lib/category-utils';
+import { categorySlugToName } from '@/utils/categorySlugToName';
 
 const CategoryDetailsPage = () => {
   const { categoryName } = useParams<{ categoryName: string }>();
@@ -16,10 +16,18 @@ const CategoryDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Get formatted category name with proper capitalization
-  const formattedCategoryName = categoryName
-    ? categoryName.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-    : '';
+  // Robust mapping logic
+  const mappedCategoryName =
+    (categoryName && categorySlugToName[categoryName]) ||
+    (categoryName
+      ? categoryName
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ')
+      : 'Unknown Category');
+  
+  console.log('categoryName from URL:', categoryName);
+  console.log('mappedCategoryName:', mappedCategoryName);
   
   // Get tagline based on category
   const getTagline = (category: string) => {
@@ -172,7 +180,7 @@ const CategoryDetailsPage = () => {
   
   useEffect(() => {
     const loadBusinesses = async () => {
-      if (!categoryName) {
+      if (!mappedCategoryName) {
         setLoading(false);
         return;
       }
@@ -183,7 +191,7 @@ const CategoryDetailsPage = () => {
       try {
         console.log('=== FETCHING BUSINESSES FROM SUPABASE ===');
         console.log('Category from URL:', categoryName);
-        console.log('Formatted category:', formattedCategoryName);
+        console.log('Formatted category:', mappedCategoryName);
         
         // Fetch all businesses from Supabase
         const { data: allBusinesses, error: fetchError } = await supabase
@@ -212,11 +220,11 @@ const CategoryDetailsPage = () => {
         
         // Create search variations
         const searchVariations = [
-          formattedCategoryName.toLowerCase(),
+          mappedCategoryName.toLowerCase(),
           categoryName?.replace(/-/g, ' ').toLowerCase(),
           categoryName?.replace(/-/g, '').toLowerCase(),
-          formattedCategoryName.replace(/s$/, '').toLowerCase(), // singular
-          (formattedCategoryName + 's').toLowerCase(), // plural
+          mappedCategoryName.replace(/s$/, '').toLowerCase(), // singular
+          (mappedCategoryName + 's').toLowerCase(), // plural
         ].filter(Boolean).filter((term, index, arr) => arr.indexOf(term) === index);
         
         console.log('Search variations:', searchVariations);
@@ -272,11 +280,11 @@ const CategoryDetailsPage = () => {
     };
     
     loadBusinesses();
-  }, [categoryName, formattedCategoryName]);
+  }, [categoryName, mappedCategoryName]);
   
   // Get icon and color for the category
-  const IconComponent = getCategoryIcon(formattedCategoryName);
-  const colorClass = getCategoryColor(formattedCategoryName);
+  const IconComponent = getCategoryIcon(mappedCategoryName);
+  const colorClass = getCategoryColor(mappedCategoryName);
   
   return (
     <Layout>
@@ -298,19 +306,19 @@ const CategoryDetailsPage = () => {
             )}
             
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-              {formattedCategoryName} Businesses
+              {mappedCategoryName} Businesses
             </h1>
             
             <div className="w-20 h-1 bg-primary mx-auto mb-6"></div>
             
             <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
-              {getTagline(formattedCategoryName)}
+              {getTagline(mappedCategoryName)}
             </p>
             
             {!loading && (
               <div className="mt-4">
                 <p className="text-sm text-gray-500">
-                  Found {businesses.length} business{businesses.length !== 1 ? 'es' : ''} in {formattedCategoryName}
+                  Found {businesses.length} business{businesses.length !== 1 ? 'es' : ''} in {mappedCategoryName}
                 </p>
               </div>
             )}
@@ -318,7 +326,7 @@ const CategoryDetailsPage = () => {
           
           {loading ? (
             <div className="flex flex-col justify-center items-center py-20">
-              <Loading size="lg" message={`Loading ${formattedCategoryName} businesses...`} />
+              <Loading size="lg" message={`Loading ${mappedCategoryName} businesses...`} />
             </div>
           ) : error ? (
             <div className="text-center py-16">
@@ -345,7 +353,7 @@ const CategoryDetailsPage = () => {
               {businesses.length === 0 && !loading && (
                 <div className="text-center py-12">
                   <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                    No businesses found for "{formattedCategoryName}"
+                    No businesses found for "{mappedCategoryName}"
                   </h3>
                   <p className="text-gray-500 mb-4">
                     We couldn't find any businesses matching this category. Try exploring other categories or check back later.
