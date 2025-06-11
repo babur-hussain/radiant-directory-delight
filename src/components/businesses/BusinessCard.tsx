@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Star, MapPin, Phone, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import BusinessImage from '@/components/BusinessImage';
