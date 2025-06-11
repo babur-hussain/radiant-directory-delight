@@ -69,6 +69,16 @@ const Footer = () => {
                   Terms & Conditions
                 </Link>
               </li>
+              <li>
+                <Link to="/privacy-policy" className="text-sm text-gray-500 hover:text-primary transition-smooth">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/refund-cancellation-policy" className="text-sm text-gray-500 hover:text-primary transition-smooth">
+                  Refund & Cancellation Policy
+                </Link>
+              </li>
             </ul>
           </div>
 
