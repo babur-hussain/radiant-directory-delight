@@ -114,8 +114,6 @@ const AdminLoginPage = lazy(() => import("@/pages/AdminLoginPage"));
 // Import PaymentSuccessPage
 const PaymentSuccessPage = lazy(() => import("@/pages/PaymentSuccessPage"));
 const TermsAndConditionsPage = lazy(() => import("@/pages/TermsAndConditionsPage"));
-const PrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicyPage"));
-const RefundCancellationPolicyPage = lazy(() => import("@/pages/RefundCancellationPolicyPage"));
 
 export const router = createBrowserRouter([
   {
@@ -271,14 +269,6 @@ export const router = createBrowserRouter([
           { 
             path: "terms-and-conditions", 
             element: <Suspense fallback={<LoadingComponent />}><TermsAndConditionsPage /></Suspense>
-          },
-          { 
-            path: "privacy-policy", 
-            element: <Suspense fallback={<LoadingComponent />}><PrivacyPolicyPage /></Suspense>
-          },
-          { 
-            path: "refund-cancellation-policy", 
-            element: <Suspense fallback={<LoadingComponent />}><RefundCancellationPolicyPage /></Suspense>
           },
         ],
       },

@@ -51,7 +51,7 @@ const TermsAndConditionsPage: React.FC = () => {
             </li>
             
             <li className="text-gray-700">
-              <span className="font-semibold">Refund Policy:</span> If you cancel your package within 48 hours, you will receive a refund of the package amount minus the registration fee. If you cancel after 48 hours, no refund will be provided. If the refund is approved, it will be credited to the original payment mode within 7-10 working days.
+              <span className="font-semibold">Refund Policy:</span> If you cancel your package within 48 hours, you will receive a refund of the package amount minus the registration fee. If you cancel after 48 hours, no refund will be provided.
             </li>
             
             <li className="text-gray-700">
