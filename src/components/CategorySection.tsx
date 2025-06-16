@@ -1,4 +1,3 @@
-
 import { Link } from 'react-router-dom';
 import { 
   Utensils, Hotel, ShoppingBag, Stethoscope, 
@@ -11,7 +10,7 @@ const categories = [
   { name: 'Restaurants', icon: Utensils, color: 'bg-red-50 text-red-500' },
   { name: 'Hotels', icon: Hotel, color: 'bg-blue-50 text-blue-500' },
   { name: 'Shopping', icon: ShoppingBag, color: 'bg-purple-50 text-purple-500' },
-  { name: 'Healthcare', icon: Stethoscope, color: 'bg-green-50 text-green-500' },
+  // { name: 'Healthcare', icon: Stethoscope, color: 'bg-green-50 text-green-500' },
   { name: 'Education', icon: GraduationCap, color: 'bg-yellow-50 text-yellow-500' },
   { name: 'Automotive', icon: Car, color: 'bg-gray-50 text-gray-500' },
   { name: 'Professional', icon: Briefcase, color: 'bg-indigo-50 text-indigo-500' },
