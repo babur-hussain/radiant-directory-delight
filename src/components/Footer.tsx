@@ -64,9 +64,38 @@ const Footer = () => {
                   Contact Us
                 </Link>
               </li>
+            </ul>
+          </div>
+
+          {/* Policies */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 tracking-wider uppercase">
+              Policies
+            </h3>
+            <ul className="mt-4 space-y-2">
               <li>
                 <Link to="/terms-and-conditions" className="text-sm text-gray-500 hover:text-primary transition-smooth">
                   Terms & Conditions
+                </Link>
+              </li>
+              <li>
+                <Link to="/privacy-policy" className="text-sm text-gray-500 hover:text-primary transition-smooth">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/refund-cancellation-policy" className="text-sm text-gray-500 hover:text-primary transition-smooth">
+                  Refund & Cancellation
+                </Link>
+              </li>
+              <li>
+                <Link to="/shipping-policy" className="text-sm text-gray-500 hover:text-primary transition-smooth">
+                  Shipping Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/return-policy" className="text-sm text-gray-500 hover:text-primary transition-smooth">
+                  Return Policy
                 </Link>
               </li>
             </ul>
