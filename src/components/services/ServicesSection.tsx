@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ServiceCard from './ServiceCard';
 import { Users, BarChart3, Link, Star, TrendingUp, MessageSquare } from 'lucide-react';
@@ -25,6 +24,7 @@ const ServicesSection = () => {
         'Results tracking and reporting'
       ]
     },
+    /*
     {
       title: 'Affiliate Programs',
       description: 'Develop performance-based marketing programs that drive conversions and sales.',
@@ -35,6 +35,7 @@ const ServicesSection = () => {
         'Commission structure optimization'
       ]
     },
+    */
     {
       title: 'Event Promotions',
       description: 'Leverage influencer partnerships to boost attendance and engagement at your events.',

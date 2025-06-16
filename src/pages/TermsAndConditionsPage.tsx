@@ -8,60 +8,95 @@ const TermsAndConditionsPage: React.FC = () => {
           Terms and Conditions
         </h1>
 
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-primary mb-4">
-            Payment Integration Terms and Conditions
-          </h2>
-          
-          <ol className="list-decimal pl-6 space-y-4">
-            <li className="text-gray-700">
-              <span className="font-semibold">Payment Gateway:</span> Payments can be made through our website's payment gateway.
-            </li>
+        <div className="space-y-8">
+          <section>
+            <p className="text-gray-700 mb-4">
+              Welcome to our platform! These Terms and Conditions govern your use of our website and services. By accessing or using our platform, you agree to be bound by these terms. Please read them carefully.
+            </p>
+            <p className="text-gray-700">
+              This platform is owned and operated by <span className="font-semibold text-primary">NIHAL SURYAWANSHI</span>.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-primary mb-4">
+              1. Payment and Subscription Terms
+            </h2>
             
-            <li className="text-gray-700">
-              <span className="font-semibold">Package Purchase:</span> By purchasing our package, you agree to use our services.
-            </li>
-            
-            <li className="text-gray-700">
-              <span className="font-semibold">Cancellation Process:</span> If you wish to cancel your package, you must notify us within 48 hours.
-            </li>
-            
-            <li className="text-gray-700">
-              <span className="font-semibold">Cancellation Fee:</span> If you cancel your package, your registration fee will be deducted, regardless of the cancellation timeframe.
-            </li>
-            
-            <li className="text-gray-700">
-              <span className="font-semibold">Subscription Fee:</span> If you do not cancel your package, your subscription fee will be deducted every month, which includes the package amount, maintenance cost, but excludes the registration cost (as it is a one-time deduction).
-            </li>
-            
-            <li className="text-gray-700">
-              <span className="font-semibold">Maintenance Fee:</span> Your maintenance fee will be deducted every month, as part of the subscription fee.
-            </li>
-            
-            <li className="text-gray-700">
-              <span className="font-semibold">Subscription Period:</span> Your subscription period will be for a limited time of one (1) year from the date of purchase.
-            </li>
-            
-            <li className="text-gray-700">
-              <span className="font-semibold">Payment Terms:</span> The package amount will be divided into monthly installments of ₹999 (or other package amounts) and will be automatically deducted from your payment method every month.
-            </li>
-            
-            <li className="text-gray-700">
-              <span className="font-semibold">Cancellation Policy:</span> You can cancel your package within 48 hours of purchase. If you cancel after 48 hours, you will be required to pay the full package amount for the remaining term.
-            </li>
-            
-            <li className="text-gray-700">
-              <span className="font-semibold">Refund Policy:</span> If you cancel your package within 48 hours, you will receive a refund of the package amount minus the registration fee. If you cancel after 48 hours, no refund will be provided.
-            </li>
-            
-            <li className="text-gray-700">
-              <span className="font-semibold">Automatic Payment:</span> By purchasing our package, you authorize us to automatically deduct the monthly installment from your payment method every month.
-            </li>
-            
-            <li className="text-gray-700">
-              <span className="font-semibold">Dispute Resolution:</span> Any disputes will be resolved according to our website's terms and conditions.
-            </li>
-          </ol>
+            <ol className="list-decimal pl-6 space-y-4">
+              <li className="text-gray-700">
+                <span className="font-semibold">Payment Gateway:</span> All payments for our services are processed securely through our designated payment gateway.
+              </li>
+              
+              <li className="text-gray-700">
+                <span className="font-semibold">Package Purchase:</span> By purchasing any package or subscription from our platform, you agree to be bound by these terms and the specific terms related to that package.
+              </li>
+              
+              <li className="text-gray-700">
+                <span className="font-semibold">Subscription Fees:</span> For recurring packages, your subscription fee (including package amount and maintenance cost) will be automatically deducted monthly. The registration cost is a one-time deduction.
+              </li>
+              
+              <li className="text-gray-700">
+                <span className="font-semibold">Subscription Period:</span> The standard subscription period for our packages is one (1) year from the date of purchase, unless otherwise specified.
+              </li>
+              
+              <li className="text-gray-700">
+                <span className="font-semibold">Automatic Payment Authorization:</span> By subscribing, you authorize us to automatically deduct the agreed-upon monthly installments from your chosen payment method.
+              </li>
+            </ol>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-primary mb-4">
+              2. Cancellation and Refunds
+            </h2>
+            <ol className="list-decimal pl-6 space-y-4">
+              <li className="text-gray-700">
+                <span className="font-semibold">Cancellation Window:</span> You may cancel your package within 48 hours of the initial purchase for a partial refund.
+              </li>
+              
+              <li className="text-gray-700">
+                <span className="font-semibold">Cancellation Fee:</span> If you cancel within 48 hours, your initial registration fee is non-refundable and will be deducted from any refund amount.
+              </li>
+              
+              <li className="text-gray-700">
+                <span className="font-semibold">Post-48 Hour Cancellation:</span> Cancellations made after 48 hours of purchase are not eligible for any refund. You will be liable for the full package amount for the remaining term.
+              </li>
+              
+              <li className="text-gray-700">
+                <span className="font-semibold">Refund Processing:</span> Approved refunds will be processed and credited to your original payment method within 7-10 working days.
+              </li>
+            </ol>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-primary mb-4">
+              3. Dispute Resolution
+            </h2>
+            <p className="text-gray-700">
+              Any disputes arising from the use of our services or these Terms and Conditions will be resolved in accordance with the laws and jurisdiction applicable to the location of our operations.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-primary mb-4">
+              4. Contact Information
+            </h2>
+            <div className="mt-2 space-y-2 text-gray-700">
+              <p>
+                For any questions or concerns regarding these Terms and Conditions, please contact us:
+              </p>
+              <p>
+                Owner Name: <span className="font-semibold">NIHAL SURYAWANSHI</span>
+              </p>
+              <p>
+                Email: <a href="mailto:growbharatvyapaar@gmail.com" className="text-primary hover:underline">growbharatvyapaar@gmail.com</a>
+              </p>
+              <p>
+                Phone: <a href="tel:+916232571406" className="text-primary hover:underline">+91 62325 71406</a>
+              </p>
+            </div>
+          </section>
         </div>
       </div>
     </div>
