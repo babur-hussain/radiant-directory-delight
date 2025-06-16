@@ -45,9 +45,9 @@ const RefundCancellationPolicyPage: React.FC = () => {
               4. Refund Terms
             </h2>
             <ul className="list-disc pl-6 space-y-2 text-gray-700">
+              <li>If the refund is approved, it will be credited to the original payment mode within 7-10 working days.</li>
               <li>Cancellation within 48 hours: Refund = Package amount - Registration fee</li>
               <li>Cancellation after 48 hours: No refund</li>
-              <li>If the refund is approved, it will be credited to the original payment mode within 7-10 working days.</li>
             </ul>
           </section>
 
