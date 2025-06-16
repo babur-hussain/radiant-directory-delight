@@ -112,11 +112,11 @@ const Footer = () => {
                   Shopping
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <Link to="/category/healthcare" className="text-sm text-gray-500 hover:text-primary transition-smooth">
                   Healthcare
                 </Link>
-              </li>
+              </li> */}
               <li>
                 <Link to="/category/education" className="text-sm text-gray-500 hover:text-primary transition-smooth">
                   Education
