@@ -88,16 +88,6 @@ const Footer = () => {
                   Refund & Cancellation
                 </Link>
               </li>
-              <li>
-                <Link to="/shipping-policy" className="text-sm text-gray-500 hover:text-primary transition-smooth">
-                  Shipping Policy
-                </Link>
-              </li>
-              <li>
-                <Link to="/return-policy" className="text-sm text-gray-500 hover:text-primary transition-smooth">
-                  Return Policy
-                </Link>
-              </li>
             </ul>
           </div>
 

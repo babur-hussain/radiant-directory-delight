@@ -115,8 +115,6 @@ const AdminLoginPage = lazy(() => import("@/pages/AdminLoginPage"));
 const PaymentSuccessPage = lazy(() => import("@/pages/PaymentSuccessPage"));
 const TermsAndConditionsPage = lazy(() => import("@/pages/TermsAndConditionsPage"));
 const PrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicyPage"));
-const ShippingPolicyPage = lazy(() => import("@/pages/ShippingPolicyPage"));
-const ReturnPolicyPage = lazy(() => import("@/pages/ReturnPolicyPage"));
 const RefundCancellationPolicyPage = lazy(() => import("@/pages/RefundCancellationPolicyPage"));
 
 export const router = createBrowserRouter([
@@ -273,14 +271,6 @@ export const router = createBrowserRouter([
           { 
             path: "privacy-policy", 
             element: <Suspense fallback={<LoadingComponent />}><PrivacyPolicyPage /></Suspense>
-          },
-          { 
-            path: "shipping-policy", 
-            element: <Suspense fallback={<LoadingComponent />}><ShippingPolicyPage /></Suspense>
-          },
-          { 
-            path: "return-policy", 
-            element: <Suspense fallback={<LoadingComponent />}><ReturnPolicyPage /></Suspense>
           },
           { 
             path: "refund-cancellation-policy", 
