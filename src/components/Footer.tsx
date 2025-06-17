@@ -40,28 +40,28 @@ const Footer = () => {
             </h3>
             <ul className="mt-4 space-y-2">
               <li>
+                <Link to="/" className="text-sm text-gray-500 hover:text-primary transition-smooth">
+                  Home
+                </Link>
+              </li>
+              {/* <li>
                 <Link to="/categories" className="text-sm text-gray-500 hover:text-primary transition-smooth">
                   Categories
                 </Link>
-              </li>
+              </li> */}
               <li>
                 <Link to="/businesses" className="text-sm text-gray-500 hover:text-primary transition-smooth">
-                  Browse Businesses
+                  Businesses
                 </Link>
               </li>
               <li>
-                <Link to="/add-business" className="text-sm text-gray-500 hover:text-primary transition-smooth">
-                  Add Your Business
+                <Link to="/influencers" className="text-sm text-gray-500 hover:text-primary transition-smooth">
+                  Influencers
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="text-sm text-gray-500 hover:text-primary transition-smooth">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="text-sm text-gray-500 hover:text-primary transition-smooth">
-                  Contact Us
+                <Link to="/blog" className="text-sm text-gray-500 hover:text-primary transition-smooth">
+                  Blog
                 </Link>
               </li>
             </ul>
