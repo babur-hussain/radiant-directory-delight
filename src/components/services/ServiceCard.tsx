@@ -1,12 +1,20 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LucideIcon } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface ServiceCardProps {
   title: string;
   description: string;
+  fullDescription?: string;
   icon: LucideIcon;
   bulletPoints?: string[];
   linkText?: string;
@@ -16,11 +24,14 @@ interface ServiceCardProps {
 const ServiceCard: React.FC<ServiceCardProps> = ({
   title,
   description,
+  fullDescription,
   icon: Icon,
   bulletPoints = [],
   linkText = "Learn More",
   linkHref = "#",
 }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   // Create array of vibrant colors for cards
   const bgColors = [
     'bg-gradient-to-br from-brand-purple/10 to-brand-pink/5',
@@ -66,11 +77,22 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
             ))}
           </ul>
         )}
-        <Button variant="link" className="p-0" asChild>
-          <a href={linkHref} className="text-brand-blue hover:text-brand-purple">
-            {linkText}
-          </a>
-        </Button>
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogTrigger asChild>
+            <Button variant="link" className="p-0 text-brand-blue hover:text-brand-purple">
+              {linkText}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>{title}</DialogTitle>
+              <DialogDescription>
+                {fullDescription || description}
+              </DialogDescription>
+            </DialogHeader>
+            <Button onClick={() => setIsModalOpen(false)}>Close</Button>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
