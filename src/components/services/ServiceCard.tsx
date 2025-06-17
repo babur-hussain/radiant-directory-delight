@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 
 interface ServiceCardProps {
@@ -83,14 +84,16 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
               {linkText}
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{title}</DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="whitespace-pre-wrap text-gray-700 mt-2">
                 {fullDescription || description}
               </DialogDescription>
             </DialogHeader>
-            <Button onClick={() => setIsModalOpen(false)}>Close</Button>
+            <DialogFooter>
+              <Button onClick={() => setIsModalOpen(false)}>Close</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </CardContent>

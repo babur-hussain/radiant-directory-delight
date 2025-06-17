@@ -42,7 +42,7 @@ const ServicesSection = () => {
     {
       title: 'Event Promotions',
       description: 'Leverage influencer partnerships to boost attendance and engagement at your events.',
-      fullDescription: 'Maximize your event's reach and impact with our Event Promotions service. We leverage powerful influencer partnerships to generate pre-event buzz, coordinate engaging live coverage during the event, and ensure extensive post-event content amplification. This strategy significantly boosts attendance, enhances engagement, and creates lasting impressions for your events.',
+      fullDescription: 'Maximize your event\'s reach and impact with our Event Promotions service. We leverage powerful influencer partnerships to generate pre-event buzz, coordinate engaging live coverage during the event, and ensure extensive post-event content amplification. This strategy significantly boosts attendance, enhances engagement, and creates lasting impressions for your events.',
       icon: Star,
       bulletPoints: [
         'Pre-event buzz generation',
@@ -64,7 +64,7 @@ const ServicesSection = () => {
     {
       title: 'Testimonials & PR Outreach',
       description: 'Build credibility and trust through strategic testimonials and public relations.',
-      fullDescription: 'Enhance your brand's credibility and build lasting trust with our Testimonials & PR Outreach service. We specialize in effective testimonial collection and curation, strategic media outreach to build strong relationships with key publications, and proactive crisis management preparation. This ensures your brand's narrative is consistently positive and resilient.',
+      fullDescription: 'Enhance your brand\'s credibility and build lasting trust with our Testimonials & PR Outreach service. We specialize in effective testimonial collection and curation, strategic media outreach to build strong relationships with key publications, and proactive crisis management preparation. This ensures your brand\'s narrative is consistently positive and resilient.',
       icon: MessageSquare,
       bulletPoints: [
         'Testimonial collection and curation',
