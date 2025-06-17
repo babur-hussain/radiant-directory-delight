@@ -91,8 +91,8 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Categories */}
-          <div>
+          {/* Top Categories Section */}
+          {/* <div>
             <h3 className="text-sm font-semibold text-gray-900 tracking-wider uppercase">
               Top Categories
             </h3>
@@ -112,18 +112,13 @@ const Footer = () => {
                   Shopping
                 </Link>
               </li>
-              {/* <li>
-                <Link to="/category/healthcare" className="text-sm text-gray-500 hover:text-primary transition-smooth">
-                  Healthcare
-                </Link>
-              </li> */}
               <li>
                 <Link to="/category/education" className="text-sm text-gray-500 hover:text-primary transition-smooth">
                   Education
                 </Link>
               </li>
             </ul>
-          </div>
+          </div> */}
 
           {/* Contact Info */}
           <div>
