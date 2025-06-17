@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -49,7 +48,7 @@ const featuredCollaborations = [
     date: 'August 2023',
     category: 'E-commerce',
     tags: ['Handicrafts', 'Artisans', 'Home Decor'],
-    coverImage: 'https://images.unsplash.com/photo-1606722590362-544aa8dc6a6a?w=600&h=300&fit=crop',
+    coverImage: 'https://placehold.co/600x300?text=Handicrafts',
     stats: {
       reach: '750K',
       engagement: '4.3%',
