@@ -48,7 +48,7 @@ const featuredCollaborations = [
     date: 'August 2023',
     category: 'E-commerce',
     tags: ['Handicrafts', 'Artisans', 'Home Decor'],
-    coverImage: 'https://placehold.co/600x300?text=Handicrafts',
+    coverImage: 'https://media.istockphoto.com/id/1214656431/photo/colorful-indian-handicarft-art.jpg?s=612x612&w=0&k=20&c=wLNvASN1uWuxiM0YsReU5-inEuw70lvlofiB7W82gHg=',
     stats: {
       reach: '750K',
       engagement: '4.3%',

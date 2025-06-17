@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -121,7 +120,7 @@ const CollaborationCard: React.FC<CollaborationCardProps> = ({
       </CardContent>
       
       <CardFooter>
-        <Button variant="outline" className="w-full">View Details</Button>
+        {/* <Button variant="outline" className="w-full">View Details</Button> */}
       </CardFooter>
     </Card>
   );
