@@ -42,10 +42,11 @@ const getPhonePeConfig = (): PhonePeConfig => {
 }
 
 // PhonePe API endpoint and path
-const PHONEPE_API_PATH = '/apis/hermes/pg/v1/pay'; // Update this if PhonePe provides a new path
-const PHONEPE_API_URL = `https://api.phonepe.com${PHONEPE_API_PATH}`;
-// For UAT testing, use:
-// const PHONEPE_API_URL = `https://api-preprod.phonepe.com${PHONEPE_API_PATH}`;
+const IS_PROD = true; // Set to false for UAT
+const PHONEPE_API_PATH = IS_PROD ? '/apis/hermes/pg/v1/pay' : '/apis/hermes/pg/v1/pay'; // Update if UAT path differs
+const PHONEPE_API_URL = IS_PROD
+  ? `https://api.phonepe.com${PHONEPE_API_PATH}`
+  : `https://api-preprod.phonepe.com${PHONEPE_API_PATH}`;
 
 // Unicode-safe base64 encoding
 const encodeBase64 = (str: string) => btoa(unescape(encodeURIComponent(str)));
@@ -68,25 +69,20 @@ serve(async (req) => {
   try {
     const { packageData, customerData, userId, referralId, enableAutoPay } = await req.json()
 
+    // Validate all required fields
     if (!packageData || !customerData || !userId) {
+      console.error('Missing required parameters', { packageData, customerData, userId });
       return new Response(
-        JSON.stringify({ error: 'Missing required parameters' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        JSON.stringify({ error: 'Missing required parameters', details: { packageData, customerData, userId } }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     const config = getPhonePeConfig()
-    
     if (!config.saltKey) {
       return new Response(
         JSON.stringify({ error: 'PhonePe configuration not complete - missing salt key' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -102,59 +98,57 @@ serve(async (req) => {
     // Prepare PhonePe payload
     const paymentPayload = {
       merchantId: config.merchantId,
-      merchantTransactionId: merchantTransactionId,
+      merchantTransactionId,
       merchantUserId: userId.substring(0, 36),
-      amount: amount,
-      redirectUrl: redirectUrl,
+      amount,
+      redirectUrl,
       redirectMode: 'REDIRECT',
-      callbackUrl: callbackUrl,
-      paymentInstrument: {
-        type: 'PAY_PAGE'
-      }
+      callbackUrl,
+      paymentInstrument: { type: 'PAY_PAGE' }
     }
-
-    console.log('PhonePe Payment Payload:', paymentPayload)
 
     // Encode payload to base64 (Unicode-safe)
     const payloadString = JSON.stringify(paymentPayload)
     const payloadBase64 = encodeBase64(payloadString)
-    
-    // Generate checksum
     const checksum = await generateChecksum(payloadBase64, config.saltKey, config.saltIndex)
 
-    // Make request to PhonePe API (configurable for PROD/UAT)
-    console.log('Making request to PhonePe API:', PHONEPE_API_URL)
+    // Log all request details for debugging
+    console.log('PhonePe Request:', {
+      url: PHONEPE_API_URL,
+      headers: { 'Content-Type': 'application/json', 'X-VERIFY': checksum },
+      payload: paymentPayload,
+      payloadBase64,
+      checksum
+    });
 
+    // Make request to PhonePe API
     const phonePeResponse = await fetch(PHONEPE_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-VERIFY': checksum
       },
-      body: JSON.stringify({
-        request: payloadBase64
-      })
+      body: JSON.stringify({ request: payloadBase64 })
     })
 
+    const phonePeData = await phonePeResponse.json().catch(() => ({}));
     if (!phonePeResponse.ok) {
+      // Log full error details
       console.error('PhonePe API error:', {
         status: phonePeResponse.status,
-        statusText: phonePeResponse.statusText
+        statusText: phonePeResponse.statusText,
+        response: phonePeData
       });
       return new Response(
-        JSON.stringify({ 
-          error: 'Payment initiation failed', 
-          details: `PhonePe API error: ${phonePeResponse.status} ${phonePeResponse.statusText}` 
+        JSON.stringify({
+          error: 'Payment initiation failed',
+          details: phonePeData,
+          status: phonePeResponse.status,
+          statusText: phonePeResponse.statusText
         }),
-        { 
-          status: phonePeResponse.status, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        { status: phonePeResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-
-    const phonePeData = await phonePeResponse.json()
-    console.log('PhonePe Response:', phonePeData)
 
     if (phonePeData.success && phonePeData.data?.instrumentResponse?.redirectInfo?.url) {
       // Store transaction details in database
@@ -211,10 +205,7 @@ serve(async (req) => {
     console.error('PhonePe integration error:', error)
     return new Response(
       JSON.stringify({ error: 'Internal server error', details: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
