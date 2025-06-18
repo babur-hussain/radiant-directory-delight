@@ -14,12 +14,25 @@ interface PhonePeConfig {
 }
 
 const getPhonePeConfig = (): PhonePeConfig => {
-  return {
-    merchantId: Deno.env.get('PHONEPE_MERCHANT_ID') || 'SU2506172305345029940130',
-    saltKey: Deno.env.get('PHONEPE_CLIENT_SECRET') || 'f50c1d91-57d7-4fb1-9364-ee8e6ec5b609',
-    saltIndex: Deno.env.get('PHONEPE_SALT_INDEX') || '1',
+  const config = {
+    merchantId: Deno.env.get('PHONEPE_MERCHANT_ID'),
+    saltKey: Deno.env.get('PHONEPE_SALT_KEY'),
+    saltIndex: '1',
     environment: 'PRODUCTION'
   }
+
+  console.log('PhonePe Config:', {
+    merchantId: config.merchantId ? 'Set' : 'Not Set',
+    saltKey: config.saltKey ? 'Set' : 'Not Set',
+    saltIndex: config.saltIndex,
+    environment: config.environment
+  })
+
+  if (!config.merchantId || !config.saltKey) {
+    throw new Error('Missing required PhonePe configuration')
+  }
+
+  return config
 }
 
 const generateChecksum = async (payload: string, saltKey: string, saltIndex: string): Promise<string> => {
