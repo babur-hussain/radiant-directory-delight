@@ -109,10 +109,49 @@ serve(async (req) => {
       })
     })
 
+    if (!phonePeResponse.ok) {
+      console.error('PhonePe API error:', {
+        status: phonePeResponse.status,
+        statusText: phonePeResponse.statusText
+      });
+      return new Response(
+        JSON.stringify({ 
+          error: 'Payment initiation failed', 
+          details: `PhonePe API error: ${phonePeResponse.status} ${phonePeResponse.statusText}` 
+        }),
+        { 
+          status: phonePeResponse.status, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
     const phonePeData = await phonePeResponse.json()
     console.log('PhonePe Response:', phonePeData)
 
     if (phonePeData.success && phonePeData.data?.instrumentResponse?.redirectInfo?.url) {
+      // Store transaction details in database
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      )
+
+      const { error: dbError } = await supabase
+        .from('user_subscriptions')
+        .insert({
+          user_id: userId,
+          package_id: packageData.id,
+          transaction_id: merchantTransactionId,
+          amount: amount / 100,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+
+      if (dbError) {
+        console.error('Failed to store transaction:', dbError)
+      }
+
       return new Response(
         JSON.stringify({
           success: true,

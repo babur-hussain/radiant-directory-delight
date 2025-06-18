@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,12 +9,19 @@ import Layout from "@/components/layout/Layout";
 import { Loader2, Crown, CheckCircle2 } from "lucide-react";
 import { useSubscriptionPackages } from "@/hooks/useSubscriptionPackages";
 import SubscriptionPackagesLoading from "@/components/subscription/SubscriptionPackagesLoading";
+import { useNavigate } from "react-router-dom";
+import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
 
 const SubscriptionPage = () => {
   const { user, isAuthenticated } = useAuth();
   const [subscription, setSubscription] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { packages, isLoading: packagesLoading, isError } = useSubscriptionPackages();
+  const navigate = useNavigate();
+
+  const handleSelectPackage = (pkg: ISubscriptionPackage) => {
+    navigate(`/subscription/${pkg.id}`);
+  };
 
   useEffect(() => {
     const fetchSubscription = async () => {
@@ -129,7 +135,11 @@ const SubscriptionPage = () => {
                 <Button onClick={() => window.location.reload()} type="button">Try Again</Button>
               </div>
             ) : (
-              <SubscriptionPackages userRole="Business" filterByType={true} />
+              <SubscriptionPackages 
+                userRole="Business" 
+                filterByType={true} 
+                onSelectPackage={handleSelectPackage}
+              />
             )}
           </div>
 
@@ -150,7 +160,11 @@ const SubscriptionPage = () => {
                 <Button onClick={() => window.location.reload()} type="button">Try Again</Button>
               </div>
             ) : (
-              <SubscriptionPackages userRole="Influencer" filterByType={true} />
+              <SubscriptionPackages 
+                userRole="Influencer" 
+                filterByType={true} 
+                onSelectPackage={handleSelectPackage}
+              />
             )}
           </div>
         </div>

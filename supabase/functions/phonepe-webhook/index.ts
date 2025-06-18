@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -72,24 +71,71 @@ serve(async (req) => {
       
       console.log(`Payment successful for transaction: ${merchantTransactionId}`)
       
+      // Get the subscription details
+      const { data: subscription, error: fetchError } = await supabase
+        .from('user_subscriptions')
+        .select('*')
+        .eq('transaction_id', merchantTransactionId)
+        .single()
+
+      if (fetchError) {
+        console.error('Failed to fetch subscription:', fetchError)
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch subscription details' }),
+          { status: 500, headers: corsHeaders }
+        )
+      }
+
+      if (!subscription) {
+        console.error('Subscription not found for transaction:', merchantTransactionId)
+        return new Response(
+          JSON.stringify({ error: 'Subscription not found' }),
+          { status: 404, headers: corsHeaders }
+        )
+      }
+
       // Update subscription status in database
       const { error: updateError } = await supabase
         .from('user_subscriptions')
         .update({
           status: 'active',
           transaction_id: transactionId,
+          payment_id: data.paymentId,
           updated_at: new Date().toISOString()
         })
         .eq('transaction_id', merchantTransactionId)
       
       if (updateError) {
         console.error('Failed to update subscription:', updateError)
-      } else {
-        console.log('Subscription status updated successfully')
+        return new Response(
+          JSON.stringify({ error: 'Failed to update subscription status' }),
+          { status: 500, headers: corsHeaders }
+        )
+      }
+
+      // Update user's subscription status
+      const { error: userUpdateError } = await supabase
+        .from('users')
+        .update({
+          subscription_status: 'active',
+          subscription_id: subscription.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', subscription.user_id)
+
+      if (userUpdateError) {
+        console.error('Failed to update user subscription status:', userUpdateError)
       }
       
+      console.log('Subscription status updated successfully')
+      
       return new Response(
-        JSON.stringify({ status: 'success', message: 'Payment processed' }),
+        JSON.stringify({ 
+          status: 'success', 
+          message: 'Payment processed successfully',
+          transactionId,
+          amount
+        }),
         { 
           status: 200, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -98,8 +144,27 @@ serve(async (req) => {
     } else {
       console.log('Payment failed or pending:', { success, message, state: data?.state })
       
+      // Update subscription status to failed
+      if (data?.merchantTransactionId) {
+        const { error: updateError } = await supabase
+          .from('user_subscriptions')
+          .update({
+            status: 'failed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('transaction_id', data.merchantTransactionId)
+
+        if (updateError) {
+          console.error('Failed to update failed subscription status:', updateError)
+        }
+      }
+      
       return new Response(
-        JSON.stringify({ status: 'failed', message: message || 'Payment failed' }),
+        JSON.stringify({ 
+          status: 'failed', 
+          message: message || 'Payment failed',
+          state: data?.state
+        }),
         { 
           status: 200, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -110,7 +175,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('PhonePe webhook error:', error)
     return new Response(
-      JSON.stringify({ error: 'Webhook processing failed' }),
+      JSON.stringify({ 
+        error: 'Webhook processing failed',
+        details: error.message 
+      }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
