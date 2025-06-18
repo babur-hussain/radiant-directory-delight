@@ -131,14 +131,16 @@ serve(async (req) => {
       body: JSON.stringify({ request: payloadBase64 })
     })
 
-    const phonePeData = await phonePeResponse.json().catch(() => ({}));
+    // Improved error logging: log raw response
+    const rawText = await phonePeResponse.text();
+    let phonePeData = {};
+    try {
+      phonePeData = JSON.parse(rawText);
+    } catch (_) {
+      phonePeData = { raw: rawText };
+    }
     if (!phonePeResponse.ok) {
-      // Log full error details
-      console.error('PhonePe API error:', {
-        status: phonePeResponse.status,
-        statusText: phonePeResponse.statusText,
-        response: phonePeData
-      });
+      console.error('PhonePe API Error Response:', phonePeData);
       return new Response(
         JSON.stringify({
           error: 'Payment initiation failed',
@@ -150,7 +152,8 @@ serve(async (req) => {
       )
     }
 
-    if (phonePeData.success && phonePeData.data?.instrumentResponse?.redirectInfo?.url) {
+    // Use optional chaining and default values to avoid property errors
+    if ((phonePeData as any)?.success && (phonePeData as any)?.data?.instrumentResponse?.redirectInfo?.url) {
       // Store transaction details in database
       const supabase = createClient(
         // @ts-expect-error Deno.env
@@ -178,7 +181,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          paymentUrl: phonePeData.data.instrumentResponse.redirectInfo.url,
+          paymentUrl: (phonePeData as any).data.instrumentResponse.redirectInfo.url,
           merchantTransactionId: merchantTransactionId,
           amount: amount / 100
         }),
@@ -192,7 +195,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: 'Payment initiation failed', 
-          details: phonePeData.message || 'Unknown error' 
+          details: (phonePeData as any).message || 'Unknown error' 
         }),
         { 
           status: 400, 
