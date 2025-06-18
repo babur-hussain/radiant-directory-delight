@@ -65,8 +65,8 @@ serve(async (req) => {
     const amount = (packageData.price + (packageData.setupFee || 0)) * 100
     const merchantTransactionId = `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
     
-    // Use production base URL for redirect and callback
-    const baseUrl = 'https://growbharatvyapaar.com'; // Always use live domain
+    // Always use production base URL for redirect and callback
+    const baseUrl = 'https://growbharatvyapaar.com';
     const redirectUrl = `${baseUrl}/payment-success?txnId=${merchantTransactionId}&status=SUCCESS`;
     const callbackUrl = `${baseUrl}/api/phonepe-webhook`;
 
