@@ -1,9 +1,9 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 import { loadPhonePeScript } from '@/utils/payment/phonePeLoader';
+import { supabase } from '@/integrations/supabase/client';
 
 export const usePhonePePayment = () => {
   const { toast } = useToast();
@@ -46,15 +46,9 @@ export const usePhonePePayment = () => {
       const totalAmount = (packageData.price || 0) + (packageData.setupFee || 0);
       console.log(`Processing PhonePe payment with amount: ${totalAmount} rupees`);
 
-      // Call the PhonePe integration edge function
-      const supabaseUrl = 'https://kyjdfhajtdqhdoijzmgk.supabase.co';
-      const response = await fetch(`${supabaseUrl}/functions/v1/phonepe-integration`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5amRmaGFqdGRxaGRvaWp6bWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1MDM0MzYsImV4cCI6MjA1ODA3OTQzNn0.c4zxQzkX6UPpTXB8fQUWU_FV0M0jCbEe1ThzDfUYlYY`
-        },
-        body: JSON.stringify({
+      // Call the PhonePe integration edge function using Supabase client
+      const { data: paymentConfig, error: paymentError } = await supabase.functions.invoke('phonepe-integration', {
+        body: {
           packageData,
           customerData: {
             custId: user.uid,
@@ -64,15 +58,16 @@ export const usePhonePePayment = () => {
           },
           userId: user.uid,
           enableAutoPay: packageData.paymentType === 'recurring'
-        })
+        }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to initialize PhonePe payment');
+      if (paymentError) {
+        throw new Error(paymentError.message || 'Failed to initialize PhonePe payment');
       }
 
-      const paymentConfig = await response.json();
+      if (!paymentConfig) {
+        throw new Error('No payment configuration received');
+      }
       
       return new Promise((resolve, reject) => {
         try {
