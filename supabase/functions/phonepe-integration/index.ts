@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -16,8 +15,8 @@ interface PhonePeConfig {
 
 const getPhonePeConfig = (): PhonePeConfig => {
   return {
-    merchantId: Deno.env.get('PHONEPE_MERCHANT_ID') || 'GROWBHARATPAY',
-    saltKey: Deno.env.get('PHONEPE_SALT_KEY') || '',
+    merchantId: Deno.env.get('PHONEPE_MERCHANT_ID') || 'SU2506172305345029940130',
+    saltKey: Deno.env.get('PHONEPE_CLIENT_SECRET') || 'f50c1d91-57d7-4fb1-9364-ee8e6ec5b609',
     saltIndex: Deno.env.get('PHONEPE_SALT_INDEX') || '1',
     environment: 'PRODUCTION'
   }

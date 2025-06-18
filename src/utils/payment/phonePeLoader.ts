@@ -1,6 +1,6 @@
-
 // PhonePe configuration for production
-export const PHONEPE_MERCHANT_ID = 'GROWBHARATPAY';
+export const PHONEPE_MERCHANT_ID = 'SU2506172305345029940130';
+export const PHONEPE_CLIENT_SECRET = 'f50c1d91-57d7-4fb1-9364-ee8e6ec5b609';
 export const PHONEPE_ENVIRONMENT = 'PRODUCTION' as 'UAT' | 'PRODUCTION';
 
 /**
@@ -32,4 +32,11 @@ export const getPhonePeMerchantId = (): string => {
  */
 export const getPhonePeEnvironment = (): string => {
   return PHONEPE_ENVIRONMENT;
+};
+
+/**
+ * Get PhonePe client secret
+ */
+export const getPhonePeClientSecret = (): string => {
+  return PHONEPE_CLIENT_SECRET;
 };
