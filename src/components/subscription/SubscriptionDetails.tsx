@@ -11,7 +11,7 @@ import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { useSubscription } from "@/hooks";
 import { useToast } from "@/hooks/use-toast";
-import PhonePePayment from "./PhonePePayment";
+import InstamojoPayment from "./InstamojoPayment";
 
 const SubscriptionDetails = () => {
   const { packageId } = useParams();
@@ -165,7 +165,7 @@ const SubscriptionDetails = () => {
                 <p className="mt-4 text-center">Processing your payment...</p>
               </div>
             ) : (
-              <PhonePePayment 
+              <InstamojoPayment 
                 selectedPackage={selectedPackage!}
                 onSuccess={handlePaymentSuccess}
                 onFailure={handlePaymentFailure}
@@ -311,7 +311,7 @@ const SubscriptionDetails = () => {
             {isOneTimePackage ? "Proceed to Payment" : "Proceed to Payment"}
           </Button>
           <p className="text-xs mt-2 text-center text-muted-foreground">
-            All payments are processed securely via PhonePe
+            All payments are processed securely via Instamojo
           </p>
         </CardFooter>
       </Card>

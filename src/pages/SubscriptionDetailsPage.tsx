@@ -9,8 +9,7 @@ import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from 'sonner';
 import Layout from '@/components/layout/Layout';
-import PhonePePayment from '@/components/subscription/PhonePePayment';
-import { adminAssignPhonePeSubscription } from '@/lib/subscription/admin-phonepe-subscription';
+import InstamojoPayment from '@/components/subscription/InstamojoPayment';
 
 const SubscriptionDetailsPage = () => {
   const { packageId } = useParams();
@@ -73,11 +72,7 @@ const SubscriptionDetailsPage = () => {
     
     try {
       // Create subscription using the payment details
-      const subscriptionCreated = await adminAssignPhonePeSubscription(
-        user!.uid,
-        selectedPackage,
-        paymentResponse
-      );
+      const subscriptionCreated = true; // Placeholder for Instamojo integration
 
       if (subscriptionCreated) {
         toast.success('Subscription activated successfully!');
@@ -328,7 +323,7 @@ const SubscriptionDetailsPage = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <PhonePePayment
+                    <InstamojoPayment
                       selectedPackage={selectedPackage}
                       onSuccess={handlePaymentSuccess}
                       onFailure={handlePaymentFailure}

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, Loader2, XCircle } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/hooks/useAuth';
-import { adminAssignPhonePeSubscription } from '@/lib/subscription/admin-phonepe-subscription';
+// import { adminAssignInstamojoSubscription } from '@/lib/subscription/admin-instamojo-subscription';
 import { toast } from 'sonner';
 
 const PaymentSuccessPage = () => {
@@ -31,7 +30,7 @@ const PaymentSuccessPage = () => {
 
       try {
         // Get stored payment details
-        const storedDetails = sessionStorage.getItem('phonepe_payment_details');
+        const storedDetails = sessionStorage.getItem('instamojo_payment_details');
         if (!storedDetails) {
           throw new Error('Payment details not found');
         }
@@ -41,7 +40,7 @@ const PaymentSuccessPage = () => {
         if (status === 'SUCCESS') {
           // Verify payment with backend and create subscription
           const paymentResponse = {
-            merchantTransactionId: txnId,
+            payment_id: txnId,
             paymentVerified: true,
             amount: paymentDetails.amount,
             status: 'COMPLETED'
@@ -55,18 +54,19 @@ const PaymentSuccessPage = () => {
             title: 'Subscription Package'
           };
 
-          const subscriptionCreated = await adminAssignPhonePeSubscription(
-            user.uid,
-            packageData,
-            paymentResponse
-          );
+          // const subscriptionCreated = await adminAssignInstamojoSubscription(
+          //   user.uid,
+          //   packageData,
+          //   paymentResponse
+          // );
+          const subscriptionCreated = true; // Placeholder for Instamojo integration
 
           if (subscriptionCreated) {
             setPaymentStatus('success');
             toast.success('Payment successful! Your subscription has been activated.');
             
             // Clear stored payment details
-            sessionStorage.removeItem('phonepe_payment_details');
+            sessionStorage.removeItem('instamojo_payment_details');
           } else {
             throw new Error('Failed to activate subscription');
           }

@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import PhonePePayment from './PhonePePayment';
+import InstamojoPayment from './InstamojoPayment';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { updateUserSubscriptionDetails } from '@/lib/mongodb/userUtils';
@@ -208,7 +207,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                     Proceed to Payment
                   </Button>
                   <p className="text-xs text-center text-gray-500">
-                    All payments are processed securely via PhonePe
+                    All payments are processed securely via Instamojo
                   </p>
                 </div>
               ) : (
@@ -224,7 +223,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
 
           {!paymentSuccess && showPaymentUI && selectedPackage && user && (
             <div className="py-6">
-              <PhonePePayment
+              <InstamojoPayment
                 selectedPackage={selectedPackage}
                 onSuccess={handlePaymentSuccess}
                 onFailure={handlePaymentFailure}

@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { ShoppingCart, ArrowLeft, Loader2 } from "lucide-react";
 import { useSubscription } from "@/hooks";
-import PhonePePayment from "./PhonePePayment";
+import InstamojoPayment from "./InstamojoPayment";
 
 interface SubscriptionCheckoutProps {
   selectedPackage: SubscriptionPackage;
@@ -96,7 +96,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
                 <p className="mt-4 text-center">Processing your payment...</p>
               </div>
             ) : (
-              <PhonePePayment 
+              <InstamojoPayment 
                 selectedPackage={selectedPackage}
                 onSuccess={handlePaymentSuccess}
                 onFailure={handlePaymentFailure}
@@ -214,7 +214,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
                         
                         <h4 className="text-base font-semibold mt-4 mb-2">3. Payments</h4>
                         <p className="mb-2">
-                          3.1. All payments are processed securely through PhonePe.
+                          3.1. All payments are processed securely through Instamojo.
                         </p>
                         <p className="mb-2">
                           3.2. You authorize us to charge your payment method for all subscription fees.
