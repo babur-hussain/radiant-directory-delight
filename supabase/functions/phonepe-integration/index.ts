@@ -27,11 +27,13 @@ const getPhonePeConfig = (): PhonePeConfig => {
     environment: 'PRODUCTION' as string // Back to production
   }
 
-  console.log('PhonePe Config:', {
-    merchantId: config.merchantId ? 'Set' : 'Not Set',
-    saltKey: config.saltKey ? 'Set' : 'Not Set',
+  console.log('PhonePe Config Details:', {
+    merchantId: config.merchantId ? `${config.merchantId.substring(0, 10)}...` : 'Not Set',
+    saltKey: config.saltKey ? `${config.saltKey.substring(0, 10)}...` : 'Not Set',
     saltIndex: config.saltIndex,
-    environment: config.environment
+    environment: config.environment,
+    merchantIdLength: config.merchantId?.length || 0,
+    saltKeyLength: config.saltKey?.length || 0
   })
 
   if (!config.merchantId || !config.saltKey) {
