@@ -41,9 +41,9 @@ const getPhonePeConfig = (): PhonePeConfig => {
   return config
 }
 
-// PhonePe API endpoint and path
+// PhonePe API endpoints according to official documentation
 const IS_PROD = true; // Set to false for UAT
-const PHONEPE_API_PATH = IS_PROD ? '/apis/hermes/pg/v1/pay' : '/apis/hermes/pg/v1/pay'; // Update if UAT path differs
+const PHONEPE_API_PATH = '/apis/hermes/pg/v1/pay';
 const PHONEPE_API_URL = IS_PROD
   ? `https://api.phonepe.com${PHONEPE_API_PATH}`
   : `https://api-preprod.phonepe.com${PHONEPE_API_PATH}`;
@@ -51,14 +51,27 @@ const PHONEPE_API_URL = IS_PROD
 // Unicode-safe base64 encoding
 const encodeBase64 = (str: string) => btoa(unescape(encodeURIComponent(str)));
 
+// Generate checksum according to PhonePe documentation
 const generateChecksum = async (payload: string, saltKey: string, saltIndex: string): Promise<string> => {
-  // Use the API path variable for checksum
-  const encoder = new TextEncoder();
-  const data = encoder.encode(payload + PHONEPE_API_PATH + saltKey);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex + '###' + saltIndex;
+  try {
+    // Create the string to hash: payload + /apis/hermes/pg/v1/pay + saltKey
+    const stringToHash = payload + PHONEPE_API_PATH + saltKey;
+    
+    // Convert to Uint8Array for SHA-256
+    const encoder = new TextEncoder();
+    const data = encoder.encode(stringToHash);
+    
+    // Generate SHA-256 hash
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    // Return hash + ### + saltIndex
+    return hashHex + '###' + saltIndex;
+  } catch (error) {
+    console.error('Error generating checksum:', error);
+    throw new Error('Failed to generate checksum');
+  }
 }
 
 serve(async (req) => {
@@ -86,8 +99,8 @@ serve(async (req) => {
       )
     }
 
-    // Calculate amount in paise (multiply by 100)
-    const amount = (packageData.price + (packageData.setupFee || 0)) * 100
+    // Calculate amount in paise (multiply by 100) - PhonePe expects amount in paise
+    const amount = Math.round((packageData.price + (packageData.setupFee || 0)) * 100)
     const merchantTransactionId = `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
     
     // Always use production base URL for redirect and callback
@@ -95,16 +108,18 @@ serve(async (req) => {
     const redirectUrl = `${baseUrl}/payment-success?txnId=${merchantTransactionId}&status=SUCCESS`;
     const callbackUrl = `${baseUrl}/api/phonepe-webhook`;
 
-    // Prepare PhonePe payload
+    // Prepare PhonePe payload according to official documentation
     const paymentPayload = {
       merchantId: config.merchantId,
-      merchantTransactionId,
-      merchantUserId: userId.substring(0, 36),
-      amount,
-      redirectUrl,
+      merchantTransactionId: merchantTransactionId,
+      merchantUserId: userId.substring(0, 36), // PhonePe expects max 36 characters
+      amount: amount,
+      redirectUrl: redirectUrl,
       redirectMode: 'REDIRECT',
-      callbackUrl,
-      paymentInstrument: { type: 'PAY_PAGE' }
+      callbackUrl: callbackUrl,
+      paymentInstrument: {
+        type: 'PAY_PAGE'
+      }
     }
 
     // Encode payload to base64 (Unicode-safe)
@@ -113,15 +128,18 @@ serve(async (req) => {
     const checksum = await generateChecksum(payloadBase64, config.saltKey, config.saltIndex)
 
     // Log all request details for debugging
-    console.log('PhonePe Request:', {
+    console.log('PhonePe Request Details:', {
       url: PHONEPE_API_URL,
-      headers: { 'Content-Type': 'application/json', 'X-VERIFY': checksum },
-      payload: paymentPayload,
-      payloadBase64,
-      checksum
+      merchantId: config.merchantId,
+      merchantTransactionId: merchantTransactionId,
+      amount: amount,
+      redirectUrl: redirectUrl,
+      callbackUrl: callbackUrl,
+      payloadBase64: payloadBase64.substring(0, 100) + '...', // Log first 100 chars
+      checksum: checksum.substring(0, 50) + '...' // Log first 50 chars
     });
 
-    // Make request to PhonePe API
+    // Make request to PhonePe API with proper headers
     const phonePeResponse = await fetch(PHONEPE_API_URL, {
       method: 'POST',
       headers: {
@@ -131,16 +149,24 @@ serve(async (req) => {
       body: JSON.stringify({ request: payloadBase64 })
     })
 
-    // Improved error logging: log raw response
-    const rawText = await phonePeResponse.text();
+    // Get response text first
+    const responseText = await phonePeResponse.text();
+    console.log('PhonePe Raw Response:', responseText);
+
     let phonePeData = {};
     try {
-      phonePeData = JSON.parse(rawText);
-    } catch (_) {
-      phonePeData = { raw: rawText };
+      phonePeData = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse PhonePe response:', parseError);
+      phonePeData = { raw: responseText };
     }
+
     if (!phonePeResponse.ok) {
-      console.error('PhonePe API Error Response:', phonePeData);
+      console.error('PhonePe API Error Response:', {
+        status: phonePeResponse.status,
+        statusText: phonePeResponse.statusText,
+        data: phonePeData
+      });
       return new Response(
         JSON.stringify({
           error: 'Payment initiation failed',
@@ -152,8 +178,12 @@ serve(async (req) => {
       )
     }
 
-    // Use optional chaining and default values to avoid property errors
+    // Check for successful response and extract payment URL
     if ((phonePeData as any)?.success && (phonePeData as any)?.data?.instrumentResponse?.redirectInfo?.url) {
+      const paymentUrl = (phonePeData as any).data.instrumentResponse.redirectInfo.url;
+      
+      console.log('PhonePe Payment URL generated:', paymentUrl);
+
       // Store transaction details in database
       const supabase = createClient(
         // @ts-expect-error Deno.env
@@ -181,7 +211,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          paymentUrl: (phonePeData as any).data.instrumentResponse.redirectInfo.url,
+          paymentUrl: paymentUrl,
           merchantTransactionId: merchantTransactionId,
           amount: amount / 100
         }),
@@ -191,11 +221,12 @@ serve(async (req) => {
         }
       )
     } else {
-      console.error('PhonePe payment initiation failed:', phonePeData)
+      console.error('PhonePe payment initiation failed - invalid response structure:', phonePeData)
       return new Response(
         JSON.stringify({ 
           error: 'Payment initiation failed', 
-          details: (phonePeData as any).message || 'Unknown error' 
+          details: (phonePeData as any).message || 'Invalid response structure from PhonePe',
+          response: phonePeData
         }),
         { 
           status: 400, 

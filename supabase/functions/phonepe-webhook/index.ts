@@ -9,14 +9,29 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
+// Verify checksum according to PhonePe documentation
 const verifyChecksum = async (response: string, saltKey: string, saltIndex: string): Promise<boolean> => {
   try {
+    // Extract the received checksum (before ###)
     const [receivedChecksum] = response.split('###')
+    
+    // Create the string to hash: response + saltKey
+    const stringToHash = response + saltKey
+    
+    // Convert to Uint8Array for SHA-256
     const encoder = new TextEncoder()
-    const data = encoder.encode(response + saltKey)
+    const data = encoder.encode(stringToHash)
+    
+    // Generate SHA-256 hash
     const hashBuffer = await crypto.subtle.digest('SHA-256', data)
     const hashArray = Array.from(new Uint8Array(hashBuffer))
     const computedChecksum = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    
+    console.log('Checksum verification:', {
+      receivedChecksum: receivedChecksum.substring(0, 20) + '...',
+      computedChecksum: computedChecksum.substring(0, 20) + '...',
+      isValid: receivedChecksum === computedChecksum
+    })
     
     return receivedChecksum === computedChecksum
   } catch (error) {
@@ -43,25 +58,31 @@ serve(async (req) => {
     }
 
     const body = await req.json()
-    console.log('PhonePe Webhook received:', body)
+    console.log('PhonePe Webhook received:', JSON.stringify(body, null, 2))
 
     // Extract the response and verify checksum
     const xVerify = req.headers.get('X-VERIFY')
     if (!xVerify) {
       console.error('Missing X-VERIFY header')
-      return new Response('Invalid request', { status: 400, headers: corsHeaders })
+      return new Response('Invalid request - missing X-VERIFY header', { status: 400, headers: corsHeaders })
     }
 
     // Verify the checksum
     const isValidChecksum = await verifyChecksum(body.response, saltKey, saltIndex)
     if (!isValidChecksum) {
-      console.error('Invalid checksum')
+      console.error('Invalid checksum received')
       return new Response('Invalid checksum', { status: 400, headers: corsHeaders })
     }
 
-    // Decode the response
-    const decodedResponse = JSON.parse(atob(body.response))
-    console.log('Decoded PhonePe response:', decodedResponse)
+    // Decode the response from base64
+    let decodedResponse;
+    try {
+      decodedResponse = JSON.parse(atob(body.response))
+      console.log('Decoded PhonePe response:', JSON.stringify(decodedResponse, null, 2))
+    } catch (decodeError) {
+      console.error('Failed to decode PhonePe response:', decodeError)
+      return new Response('Invalid response format', { status: 400, headers: corsHeaders })
+    }
 
     const { success, data, message } = decodedResponse
 
@@ -82,7 +103,7 @@ serve(async (req) => {
         console.error('Failed to fetch subscription:', fetchError)
         return new Response(
           JSON.stringify({ error: 'Failed to fetch subscription details' }),
-          { status: 500, headers: corsHeaders }
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
@@ -90,7 +111,7 @@ serve(async (req) => {
         console.error('Subscription not found for transaction:', merchantTransactionId)
         return new Response(
           JSON.stringify({ error: 'Subscription not found' }),
-          { status: 404, headers: corsHeaders }
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
@@ -109,7 +130,7 @@ serve(async (req) => {
         console.error('Failed to update subscription:', updateError)
         return new Response(
           JSON.stringify({ error: 'Failed to update subscription status' }),
-          { status: 500, headers: corsHeaders }
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
