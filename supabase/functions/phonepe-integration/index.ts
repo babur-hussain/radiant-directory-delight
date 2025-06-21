@@ -24,7 +24,7 @@ const getPhonePeConfig = (): PhonePeConfig => {
     // @ts-expect-error Deno.env
     saltKey: Deno.env.get('PHONEPE_SALT_KEY'),
     saltIndex: '1',
-    environment: 'PRODUCTION' as string
+    environment: 'UAT' as string // Temporarily set to UAT for testing
   }
 
   console.log('PhonePe Config:', {
@@ -42,11 +42,17 @@ const getPhonePeConfig = (): PhonePeConfig => {
 }
 
 // PhonePe API endpoints according to official documentation
-const IS_PROD = true; // Set to false for UAT
+// For production: https://api.phonepe.com/apis/hermes/pg/v1/pay
+// For UAT: https://api-preprod.phonepe.com/apis/hermes/pg/v1/pay
+// Temporarily set to UAT for testing
+const IS_PROD = false; // Set to false for UAT testing
 const PHONEPE_API_PATH = '/apis/hermes/pg/v1/pay';
 const PHONEPE_API_URL = IS_PROD
   ? `https://api.phonepe.com${PHONEPE_API_PATH}`
   : `https://api-preprod.phonepe.com${PHONEPE_API_PATH}`;
+
+console.log(`PhonePe Environment: ${IS_PROD ? 'PRODUCTION' : 'UAT'}`);
+console.log(`PhonePe API URL: ${PHONEPE_API_URL}`);
 
 // Unicode-safe base64 encoding
 const encodeBase64 = (str: string) => btoa(unescape(encodeURIComponent(str)));
@@ -103,8 +109,8 @@ serve(async (req) => {
     const amount = Math.round((packageData.price + (packageData.setupFee || 0)) * 100)
     const merchantTransactionId = `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
     
-    // Always use production base URL for redirect and callback
-    const baseUrl = 'https://growbharatvyapaar.com';
+    // Use appropriate base URL based on environment
+    const baseUrl = IS_PROD ? 'https://growbharatvyapaar.com' : 'http://localhost:3000';
     const redirectUrl = `${baseUrl}/payment-success?txnId=${merchantTransactionId}&status=SUCCESS`;
     const callbackUrl = `${baseUrl}/api/phonepe-webhook`;
 
@@ -129,6 +135,7 @@ serve(async (req) => {
 
     // Log all request details for debugging
     console.log('PhonePe Request Details:', {
+      environment: IS_PROD ? 'PRODUCTION' : 'UAT',
       url: PHONEPE_API_URL,
       merchantId: config.merchantId,
       merchantTransactionId: merchantTransactionId,
@@ -167,6 +174,32 @@ serve(async (req) => {
         statusText: phonePeResponse.statusText,
         data: phonePeData
       });
+
+      // Handle specific error cases
+      if (phonePeResponse.status === 404) {
+        return new Response(
+          JSON.stringify({
+            error: 'PhonePe API endpoint not found or merchant not configured',
+            details: {
+              message: 'The PhonePe API endpoint returned 404. This could mean:',
+              possibleCauses: [
+                'Merchant ID is not properly configured in PhonePe dashboard',
+                'Merchant account is not activated for production',
+                'API endpoint URL is incorrect',
+                'Merchant is not whitelisted for the API'
+              ],
+              merchantId: config.merchantId,
+              environment: IS_PROD ? 'PRODUCTION' : 'UAT',
+              apiUrl: PHONEPE_API_URL,
+              suggestion: IS_PROD ? 'Try switching to UAT environment first for testing' : 'Check UAT merchant configuration'
+            },
+            status: phonePeResponse.status,
+            statusText: phonePeResponse.statusText
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
       return new Response(
         JSON.stringify({
           error: 'Payment initiation failed',
