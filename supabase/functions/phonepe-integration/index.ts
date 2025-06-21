@@ -24,7 +24,7 @@ const getPhonePeConfig = (): PhonePeConfig => {
     // @ts-expect-error Deno.env
     saltKey: Deno.env.get('PHONEPE_SALT_KEY'),
     saltIndex: '1',
-    environment: 'UAT' as string // Temporarily set to UAT for testing
+    environment: 'PRODUCTION' as string // Back to production
   }
 
   console.log('PhonePe Config:', {
@@ -44,8 +44,8 @@ const getPhonePeConfig = (): PhonePeConfig => {
 // PhonePe API endpoints according to official documentation
 // For production: https://api.phonepe.com/apis/hermes/pg/v1/pay
 // For UAT: https://api-preprod.phonepe.com/apis/hermes/pg/v1/pay
-// Temporarily set to UAT for testing
-const IS_PROD = false; // Set to false for UAT testing
+// Back to production mode
+const IS_PROD = true; // Production mode
 const PHONEPE_API_PATH = '/apis/hermes/pg/v1/pay';
 const PHONEPE_API_URL = IS_PROD
   ? `https://api.phonepe.com${PHONEPE_API_PATH}`
@@ -109,8 +109,8 @@ serve(async (req) => {
     const amount = Math.round((packageData.price + (packageData.setupFee || 0)) * 100)
     const merchantTransactionId = `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
     
-    // Use appropriate base URL based on environment
-    const baseUrl = IS_PROD ? 'https://growbharatvyapaar.com' : 'http://localhost:3000';
+    // Use production base URL
+    const baseUrl = 'https://growbharatvyapaar.com';
     const redirectUrl = `${baseUrl}/payment-success?txnId=${merchantTransactionId}&status=SUCCESS`;
     const callbackUrl = `${baseUrl}/api/phonepe-webhook`;
 
@@ -191,7 +191,7 @@ serve(async (req) => {
               merchantId: config.merchantId,
               environment: IS_PROD ? 'PRODUCTION' : 'UAT',
               apiUrl: PHONEPE_API_URL,
-              suggestion: IS_PROD ? 'Try switching to UAT environment first for testing' : 'Check UAT merchant configuration'
+              suggestion: IS_PROD ? 'Check production merchant configuration' : 'Check UAT merchant configuration'
             },
             status: phonePeResponse.status,
             statusText: phonePeResponse.statusText
