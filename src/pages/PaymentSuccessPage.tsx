@@ -7,6 +7,7 @@ import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/hooks/useAuth';
 // import { adminAssignInstamojoSubscription } from '@/lib/subscription/admin-instamojo-subscription';
 import { toast } from 'sonner';
+import { createSubscription } from '@/services/subscriptionService';
 
 const PaymentSuccessPage = () => {
   const [searchParams] = useSearchParams();
@@ -36,30 +37,37 @@ const PaymentSuccessPage = () => {
         }
         const paymentDetails = JSON.parse(storedDetails);
         if (status === 'SUCCESS') {
-          // TODO: Verify payment with PayU backend and create subscription
-          const paymentResponse = {
-            payment_id: txnId,
-            paymentVerified: true,
-            amount: paymentDetails.amount,
-            status: 'COMPLETED'
-          };
-          // Placeholder for PayU integration
-          const subscriptionCreated = true;
-          if (subscriptionCreated) {
+          // Create subscription in Supabase
+          try {
+            await createSubscription({
+              userId: user.id || user.uid,
+              packageId: paymentDetails.packageId,
+              packageName: paymentDetails.packageName,
+              amount: paymentDetails.amount,
+              transactionId: txnId,
+              paymentMethod: 'payu',
+              paymentType: 'one-time', // or infer from package if available
+              billingCycle: 'monthly', // or infer from package if available
+            });
             setPaymentStatus('success');
             toast.success('Payment successful! Your subscription has been activated.');
             sessionStorage.removeItem('payu_payment_details');
-          } else {
-            throw new Error('Failed to activate subscription');
+          } catch (subError) {
+            setPaymentStatus('failed');
+            setError('Payment succeeded but failed to activate subscription. Please contact support or retry.');
+            sessionStorage.setItem('payu_payment_error', 'Failed to activate subscription after payment.');
+            return;
           }
         } else {
           setPaymentStatus('failed');
           setError('Payment was not successful');
+          sessionStorage.setItem('payu_payment_error', 'Payment was not successful.');
         }
       } catch (error) {
         console.error('Error processing payment:', error);
         setPaymentStatus('failed');
         setError(error instanceof Error ? error.message : 'Unknown error occurred');
+        sessionStorage.setItem('payu_payment_error', error instanceof Error ? error.message : 'Unknown error occurred');
       } finally {
         setIsProcessing(false);
       }
@@ -113,7 +121,7 @@ const PaymentSuccessPage = () => {
                 </Button>
               )}
               {paymentStatus === 'failed' && (
-                <Button onClick={() => navigate('/subscription')} variant="outline">
+                <Button onClick={() => navigate('/payment-retry')} variant="outline">
                   Try Again
                 </Button>
               )}
