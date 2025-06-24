@@ -31,6 +31,11 @@ export default function handler(req, res) {
     udf3 = '',
     udf4 = '',
     udf5 = '',
+    udf6 = '',
+    udf7 = '',
+    udf8 = '',
+    udf9 = '',
+    udf10 = '',
   } = req.body || {};
 
   // Validate required fields
@@ -57,11 +62,38 @@ export default function handler(req, res) {
     udf3,
     udf4,
     udf5,
-    '', '', '', '', '', // udf6-udf10 (empty)
+    udf6,
+    udf7,
+    udf8,
+    udf9,
+    udf10,
     salt
   ].join('|');
 
   const hash = crypto.createHash('sha512').update(hashString).digest('hex');
 
-  return res.status(200).json({ hash });
+  // Return all required PayU fields for form submission
+  return res.status(200).json({
+    payuBaseUrl: "https://secure.payu.in/_payment",
+    key,
+    txnid,
+    amount,
+    productinfo,
+    firstname,
+    email,
+    phone,
+    surl,
+    furl,
+    udf1,
+    udf2,
+    udf3,
+    udf4,
+    udf5,
+    udf6,
+    udf7,
+    udf8,
+    udf9,
+    udf10,
+    hash
+  });
 } 
