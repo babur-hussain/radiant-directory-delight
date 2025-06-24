@@ -30,43 +30,25 @@ const PaymentSuccessPage = () => {
 
       try {
         // Get stored payment details
-        const storedDetails = sessionStorage.getItem('instamojo_payment_details');
+        const storedDetails = sessionStorage.getItem('payu_payment_details');
         if (!storedDetails) {
           throw new Error('Payment details not found');
         }
-        
         const paymentDetails = JSON.parse(storedDetails);
-        
         if (status === 'SUCCESS') {
-          // Verify payment with backend and create subscription
+          // TODO: Verify payment with PayU backend and create subscription
           const paymentResponse = {
             payment_id: txnId,
             paymentVerified: true,
             amount: paymentDetails.amount,
             status: 'COMPLETED'
           };
-
-          // Get package details from stored data
-          const packageData = {
-            id: paymentDetails.packageId,
-            price: paymentDetails.amount,
-            setupFee: 0,
-            title: 'Subscription Package'
-          };
-
-          // const subscriptionCreated = await adminAssignInstamojoSubscription(
-          //   user.uid,
-          //   packageData,
-          //   paymentResponse
-          // );
-          const subscriptionCreated = true; // Placeholder for Instamojo integration
-
+          // Placeholder for PayU integration
+          const subscriptionCreated = true;
           if (subscriptionCreated) {
             setPaymentStatus('success');
             toast.success('Payment successful! Your subscription has been activated.');
-            
-            // Clear stored payment details
-            sessionStorage.removeItem('instamojo_payment_details');
+            sessionStorage.removeItem('payu_payment_details');
           } else {
             throw new Error('Failed to activate subscription');
           }

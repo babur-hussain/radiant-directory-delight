@@ -11,7 +11,6 @@ import { fetchSubscriptionPackages } from "@/lib/firebase-utils";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { useSubscription } from "@/hooks";
 import { useToast } from "@/hooks/use-toast";
-import InstamojoPayment from "./InstamojoPayment";
 
 const SubscriptionDetails = () => {
   const { packageId } = useParams();
@@ -165,11 +164,7 @@ const SubscriptionDetails = () => {
                 <p className="mt-4 text-center">Processing your payment...</p>
               </div>
             ) : (
-              <InstamojoPayment 
-                selectedPackage={selectedPackage!}
-                onSuccess={handlePaymentSuccess}
-                onFailure={handlePaymentFailure}
-              />
+              <p>Payment placeholder</p>
             )}
           </CardContent>
         </Card>

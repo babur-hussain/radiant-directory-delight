@@ -3,13 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
-import InstamojoPayment from './InstamojoPayment';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { updateUserSubscriptionDetails } from '@/lib/mongodb/userUtils';
 import { getUserByReferralId, recordReferral } from '@/services/referralService';
 import { getReferralIdFromURL } from '@/utils/referral/referralUtils';
 import { Check, Sparkles } from 'lucide-react';
+import PayUPayment from './PayUPayment';
 
 interface SubscriptionDialogProps {
   isOpen: boolean;
@@ -223,21 +223,14 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
 
           {!paymentSuccess && showPaymentUI && selectedPackage && user && (
             <div className="py-6">
-              <InstamojoPayment
+              <PayUPayment
                 selectedPackage={selectedPackage}
+                user={user}
                 onSuccess={handlePaymentSuccess}
                 onFailure={handlePaymentFailure}
-                referralId={referrerId}
               />
               <div className="mt-4 text-center">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowPaymentUI(false)} 
-                  disabled={isProcessing}
-                  className="w-full"
-                >
-                  Back to Summary
-                </Button>
+                <Button onClick={() => setShowPaymentUI(false)} variant="outline">Back to Summary</Button>
               </div>
             </div>
           )}

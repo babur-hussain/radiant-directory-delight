@@ -9,7 +9,6 @@ import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from 'sonner';
 import Layout from '@/components/layout/Layout';
-import InstamojoPayment from '@/components/subscription/InstamojoPayment';
 
 const SubscriptionDetailsPage = () => {
   const { packageId } = useParams();
@@ -61,23 +60,16 @@ const SubscriptionDetailsPage = () => {
 
   const handlePaymentSuccess = async (paymentResponse: any) => {
     console.log('Payment successful, processing subscription:', paymentResponse);
-    
-    // Validate payment response before processing
     if (!paymentResponse.paymentVerified) {
       toast.error('Payment verification failed. Please contact support.');
       return;
     }
-
     setIsProcessing(true);
-    
     try {
-      // Create subscription using the payment details
-      const subscriptionCreated = true; // Placeholder for Instamojo integration
-
+      // TODO: Create subscription using PayU payment details
+      const subscriptionCreated = true; // Placeholder for PayU integration
       if (subscriptionCreated) {
         toast.success('Subscription activated successfully!');
-        
-        // Redirect to dashboard or subscription page
         setTimeout(() => {
           navigate('/subscription');
         }, 2000);
@@ -323,12 +315,7 @@ const SubscriptionDetailsPage = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <InstamojoPayment
-                      selectedPackage={selectedPackage}
-                      onSuccess={handlePaymentSuccess}
-                      onFailure={handlePaymentFailure}
-                    />
-                    
+                    {/* Placeholder for PayUPayment */}
                     <Button 
                       onClick={() => setShowPayment(false)} 
                       variant="outline" 

@@ -23,7 +23,7 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
       // Prepare payment data
       const txnid = 'txn_' + Date.now();
       const paymentData = {
-        key: process.env.REACT_APP_PAYU_KEY || 'YOUR_LIVE_MERCHANT_KEY',
+        key: 'i0514X',
         amount: selectedPackage.price + (selectedPackage.setupFee || 0),
         productinfo: 'Influencer Starter Package',
         firstname: user.name || 'Customer',

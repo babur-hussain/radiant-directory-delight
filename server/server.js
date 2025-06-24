@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import { connectToMongoDB } from './mongodb-connector.js';
@@ -9,6 +8,7 @@ import SubscriptionPackage from './models/SubscriptionPackage.js';
 import SubscriptionSettings from './models/SubscriptionSettings.js';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
+import { generatePayUHash, getPayUMerchantKey, buildPayUParams } from './payu.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -636,6 +636,85 @@ app.post('/api/direct-insert', async (req, res) => {
       success: false,
       error: error.message
     });
+  }
+});
+
+// --- PayU Payment APIs ---
+// Generate hash for PayU payment (secure, server-side)
+app.post('/api/payu/generate-hash', (req, res) => {
+  try {
+    const params = req.body;
+    if (!params || !params.txnid || !params.amount || !params.productinfo || !params.firstname || !params.email) {
+      return res.status(400).json({ error: 'Missing required payment parameters' });
+    }
+    const hash = generatePayUHash({
+      key: getPayUMerchantKey(),
+      txnid: params.txnid,
+      amount: params.amount,
+      productinfo: params.productinfo,
+      firstname: params.firstname,
+      email: params.email,
+      udf1: params.udf1,
+      udf2: params.udf2,
+      udf3: params.udf3,
+      udf4: params.udf4,
+      udf5: params.udf5,
+      udf6: params.udf6,
+      udf7: params.udf7,
+      udf8: params.udf8,
+      udf9: params.udf9,
+      udf10: params.udf10
+    });
+    res.json({ hash });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Initiate PayU payment (returns required params for frontend form submission)
+app.post('/api/payu/initiate-payment', (req, res) => {
+  try {
+    const { amount, productinfo, firstname, email, phone, surl, furl, txnid, ...rest } = req.body;
+    if (!amount || !productinfo || !firstname || !email || !phone || !surl || !furl || !txnid) {
+      return res.status(400).json({ error: 'Missing required payment parameters' });
+    }
+    const key = getPayUMerchantKey();
+    const params = {
+      key: String(key),
+      txnid: String(txnid),
+      amount: String(amount),
+      productinfo: String(productinfo),
+      firstname: String(firstname),
+      email: String(email),
+      phone: String(phone),
+      surl: String(surl),
+      furl: String(furl),
+      udf1: String(rest.udf1 || ''),
+      udf2: String(rest.udf2 || ''),
+      udf3: String(rest.udf3 || ''),
+      udf4: String(rest.udf4 || ''),
+      udf5: String(rest.udf5 || ''),
+      udf6: String(rest.udf6 || ''),
+      udf7: String(rest.udf7 || ''),
+      udf8: String(rest.udf8 || ''),
+      udf9: String(rest.udf9 || ''),
+      udf10: String(rest.udf10 || ''),
+    };
+    // Log and sanitize all params before hashing
+    console.log('PayU params for hash:', params);
+    Object.keys(params).forEach(key => {
+      if (typeof params[key] === 'object') {
+        params[key] = '';
+      }
+    });
+    const hash = generatePayUHash(params);
+    const payuParams = buildPayUParams({ ...params, hash });
+    res.json({
+      ...payuParams,
+      payuBaseUrl: 'https://secure.payu.in/_payment' // LIVE PayU endpoint
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

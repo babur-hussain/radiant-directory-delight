@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,16 +23,14 @@ const PaymentErrorFallback: React.FC<PaymentErrorFallbackProps> = ({
                          error.includes('connection') || 
                          error.includes('timeout');
   
-  const isRazorpayError = error.includes('Razorpay') || 
-                          error.includes('payment gateway') || 
-                          error.includes('checkout');
+  const isPayUError = error.toLowerCase().includes('payu') || error.toLowerCase().includes('payment gateway') || error.toLowerCase().includes('checkout');
   
   const getErrorMessage = () => {
     if (isServerError) {
       return "Our server is having trouble processing your payment.";
     } else if (isNetworkError) {
       return "There seems to be a network issue. Please check your internet connection.";
-    } else if (isRazorpayError) {
+    } else if (isPayUError) {
       return "The payment gateway is currently unavailable. Please try again later.";
     } else {
       return error || "An unknown error occurred";
@@ -45,7 +42,7 @@ const PaymentErrorFallback: React.FC<PaymentErrorFallbackProps> = ({
       return "Please try again in a few moments or contact customer support.";
     } else if (isNetworkError) {
       return "Make sure you're connected to the internet and refresh the page.";
-    } else if (isRazorpayError) {
+    } else if (isPayUError) {
       return "You can try refreshing the page or trying again later.";
     } else {
       return "Please try again or use a different payment method.";

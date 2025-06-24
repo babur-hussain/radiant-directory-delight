@@ -7,7 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
 import { ShoppingCart, ArrowLeft, Loader2 } from "lucide-react";
 import { useSubscription } from "@/hooks";
-import InstamojoPayment from "./InstamojoPayment";
+import PayUPayment from './PayUPayment';
+import { useAuth } from '@/hooks/useAuth';
 
 interface SubscriptionCheckoutProps {
   selectedPackage: SubscriptionPackage;
@@ -20,6 +21,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
   const [showPaymentUI, setShowPaymentUI] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
   
   // Calculate total price including setup fee
   const totalPrice = selectedPackage.price + (selectedPackage.setupFee || 0);
@@ -96,8 +98,9 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
                 <p className="mt-4 text-center">Processing your payment...</p>
               </div>
             ) : (
-              <InstamojoPayment 
+              <PayUPayment
                 selectedPackage={selectedPackage}
+                user={user}
                 onSuccess={handlePaymentSuccess}
                 onFailure={handlePaymentFailure}
               />

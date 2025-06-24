@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import SubscriptionManagement from '@/components/admin/SubscriptionManagement';
@@ -48,70 +47,6 @@ const AdminSubscriptionsPage = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-500">Package management functionality will be implemented here.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>PhonePe Configuration</CardTitle>
-                <CardDescription>Configure PhonePe payment gateway settings for production</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="merchantId">Merchant ID</Label>
-                    <Input
-                      id="merchantId"
-                      value={phonePeSettings.merchantId}
-                      onChange={(e) => setPhonePeSettings({...phonePeSettings, merchantId: e.target.value})}
-                      placeholder="Enter PhonePe Merchant ID"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="saltKey">Salt Key</Label>
-                    <Input
-                      id="saltKey"
-                      type="password"
-                      value={phonePeSettings.saltKey}
-                      onChange={(e) => setPhonePeSettings({...phonePeSettings, saltKey: e.target.value})}
-                      placeholder="Enter PhonePe Salt Key"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="saltIndex">Salt Index</Label>
-                    <Input
-                      id="saltIndex"
-                      value={phonePeSettings.saltIndex}
-                      onChange={(e) => setPhonePeSettings({...phonePeSettings, saltIndex: e.target.value})}
-                      placeholder="Enter PhonePe Salt Index"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="environment">Environment</Label>
-                    <select
-                      id="environment"
-                      value={phonePeSettings.environment}
-                      onChange={(e) => setPhonePeSettings({...phonePeSettings, environment: e.target.value})}
-                      className="w-full p-2 border border-gray-300 rounded-md"
-                    >
-                      <option value="UAT">UAT (Testing)</option>
-                      <option value="PRODUCTION">Production</option>
-                    </select>
-                  </div>
-                </div>
-                <Button onClick={handleSavePhonePeSettings}>
-                  Save PhonePe Settings
-                </Button>
-                <div className="mt-4 p-4 bg-blue-50 rounded-md">
-                  <p className="text-blue-700 text-sm">
-                    <strong>Note:</strong> These settings need to be configured in the Supabase Edge Function secrets for production use.
-                    Required secrets: PHONEPE_MERCHANT_ID, PHONEPE_SALT_KEY, PHONEPE_SALT_INDEX
-                  </p>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
