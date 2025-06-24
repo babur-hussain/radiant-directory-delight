@@ -1,6 +1,6 @@
 import React from 'react';
 import HeroSection from '@/components/HeroSection';
-// import CategorySection from '@/components/CategorySection';
+import CategorySection from '@/components/CategorySection';
 import FeaturedBusinesses from '@/components/FeaturedBusinesses';
 import FeaturedInfluencers from '@/components/FeaturedInfluencers';
 import TopInfluencers from '@/components/TopInfluencers';
@@ -96,7 +96,7 @@ const Index = () => {
         </div>
       </section>
       
-      {/* <CategorySection /> */}
+      <CategorySection />
       <ServicesSection />
       <VideoReelsSection />
       

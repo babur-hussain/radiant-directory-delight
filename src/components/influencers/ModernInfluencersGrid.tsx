@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -291,35 +290,18 @@ const ModernInfluencersGrid: React.FC = () => {
                   key={`${influencer.id}-${index}`}
                   className="flex-shrink-0 w-80 group cursor-pointer transform transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/25 border-0 bg-white/90 backdrop-blur-sm overflow-hidden"
                 >
-                  <div className="relative h-40 bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 overflow-hidden">
-                    {influencer.cover_image && (
-                      <img
-                        src={influencer.cover_image}
-                        alt={`${influencer.name}'s cover`}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                    <Badge className="absolute top-4 right-4 bg-yellow-400 text-yellow-900 border-0">
-                      <Star className="w-3 h-3 mr-1 fill-current" />
-                      Featured
-                    </Badge>
-                    <div className="absolute bottom-4 left-4">
-                      <div className="w-16 h-16 rounded-full border-4 border-white overflow-hidden shadow-xl">
-                        <img
-                          src={influencer.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(influencer.name)}&size=64&background=7c3aed&color=fff`}
-                          alt={influencer.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
+                  <CardContent className="pt-6 pb-6">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-xl font-bold group-hover:text-purple-600 transition-colors">
+                        {influencer.name}
+                      </h3>
+                      {influencer.featured && (
+                        <Badge className="bg-yellow-400 text-yellow-900 border-0">
+                          <Star className="w-3 h-3 mr-1 fill-current" />
+                          Featured
+                        </Badge>
+                      )}
                     </div>
-                  </div>
-                  
-                  <CardContent className="pt-8 pb-6">
-                    <h3 className="text-xl font-bold mb-2 group-hover:text-purple-600 transition-colors">
-                      {influencer.name}
-                    </h3>
-                    
                     <div className="flex items-center gap-2 mb-3">
                       <Badge variant="secondary" className="bg-purple-100 text-purple-700">
                         {influencer.niche}
@@ -329,7 +311,6 @@ const ModernInfluencersGrid: React.FC = () => {
                         {influencer.location?.split(',')[0]}
                       </div>
                     </div>
-
                     <div className="grid grid-cols-2 gap-3 mb-4">
                       <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg text-center">
                         <Users className="w-4 h-4 text-blue-600 mx-auto mb-1" />
@@ -342,8 +323,7 @@ const ModernInfluencersGrid: React.FC = () => {
                         <p className="text-xs text-green-600">Engagement</p>
                       </div>
                     </div>
-
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         {influencer.instagram_handle && (
                           <a href={`https://instagram.com/${influencer.instagram_handle}`} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-pink-100 text-pink-600 hover:bg-pink-200 transition-colors">
@@ -360,6 +340,24 @@ const ModernInfluencersGrid: React.FC = () => {
                         Connect
                       </Button>
                     </div>
+                    <div className="my-4 h-1 w-16 mx-auto rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 opacity-60"></div>
+                    <p className="text-gray-600 text-sm mb-2 line-clamp-2 text-center">
+                      {influencer.bio}
+                    </p>
+                    {influencer.tags && influencer.tags.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1 justify-center">
+                        {influencer.tags.slice(0, 3).map((tag, tagIndex) => (
+                          <Badge key={tagIndex} variant="outline" className="text-xs bg-white/50">
+                            {tag}
+                          </Badge>
+                        ))}
+                        {influencer.tags.length > 3 && (
+                          <Badge variant="outline" className="text-xs bg-white/50">
+                            +{influencer.tags.length - 3}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -386,40 +384,19 @@ const ModernInfluencersGrid: React.FC = () => {
                     className="group cursor-pointer transform transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/25 border-0 bg-white/90 backdrop-blur-sm overflow-hidden animate-fade-in"
                     style={{ animationDelay: `${1.2 + categoryIndex * 0.2 + index * 0.1}s` }}
                   >
-                    <div className="relative h-48 bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 overflow-hidden">
-                      {influencer.cover_image && (
-                        <img
-                          src={influencer.cover_image}
-                          alt={`${influencer.name}'s cover`}
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                      
-                      {influencer.featured && (
-                        <Badge className="absolute top-4 right-4 bg-yellow-400 text-yellow-900 border-0">
-                          <Crown className="w-3 h-3 mr-1" />
-                          Featured
-                        </Badge>
-                      )}
-                      
-                      <div className="absolute bottom-4 left-4">
-                        <div className="w-20 h-20 rounded-full border-4 border-white overflow-hidden shadow-xl transition-transform duration-500 group-hover:scale-110">
-                          <img
-                            src={influencer.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(influencer.name)}&size=80&background=7c3aed&color=fff`}
-                            alt={influencer.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
+                    <CardContent className="pt-6 pb-6">
+                      <div className="flex justify-between items-center mb-2">
+                        <h3 className="text-xl font-bold group-hover:text-blue-600 transition-colors">
+                          {influencer.name}
+                        </h3>
+                        {influencer.featured && (
+                          <Badge className="bg-yellow-400 text-yellow-900 border-0">
+                            <Star className="w-3 h-3 mr-1" />
+                            Featured
+                          </Badge>
+                        )}
                       </div>
-                    </div>
-                    
-                    <CardContent className="pt-8 pb-6">
-                      <h3 className="text-xl font-bold mb-2 group-hover:text-blue-600 transition-colors">
-                        {influencer.name}
-                      </h3>
-                      
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2 mb-3">
                         <Badge variant="secondary" className="bg-blue-100 text-blue-700">
                           {influencer.niche}
                         </Badge>
@@ -428,12 +405,7 @@ const ModernInfluencersGrid: React.FC = () => {
                           {influencer.location?.split(',')[0]}
                         </div>
                       </div>
-
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                        {influencer.bio}
-                      </p>
-
-                      <div className="grid grid-cols-3 gap-2 mb-4">
+                      <div className="grid grid-cols-2 gap-3 mb-4">
                         <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg text-center">
                           <Users className="w-4 h-4 text-blue-600 mx-auto mb-1" />
                           <p className="font-bold text-blue-800 text-sm">{formatFollowers(influencer.followers_count)}</p>
@@ -444,22 +416,16 @@ const ModernInfluencersGrid: React.FC = () => {
                           <p className="font-bold text-green-800 text-sm">{influencer.engagement_rate}%</p>
                           <p className="text-xs text-green-600">Engagement</p>
                         </div>
-                        <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-3 rounded-lg text-center">
-                          <Star className="w-4 h-4 text-yellow-600 mx-auto mb-1" />
-                          <p className="font-bold text-yellow-800 text-sm">{influencer.rating}</p>
-                          <p className="text-xs text-yellow-600">Rating</p>
-                        </div>
                       </div>
-
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           {influencer.instagram_handle && (
-                            <a href={`https://instagram.com/${influencer.instagram_handle}`} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-pink-100 text-pink-600 hover:bg-pink-200 transition-all duration-300 hover:scale-110">
+                            <a href={`https://instagram.com/${influencer.instagram_handle}`} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-pink-100 text-pink-600 hover:bg-pink-200 transition-colors">
                               <Instagram className="w-4 h-4" />
                             </a>
                           )}
                           {influencer.youtube_handle && (
-                            <a href={`https://youtube.com/@${influencer.youtube_handle}`} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-all duration-300 hover:scale-110">
+                            <a href={`https://youtube.com/@${influencer.youtube_handle}`} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors">
                               <Youtube className="w-4 h-4" />
                             </a>
                           )}
@@ -468,9 +434,12 @@ const ModernInfluencersGrid: React.FC = () => {
                           Connect
                         </Button>
                       </div>
-
+                      <div className="my-4 h-1 w-16 mx-auto rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 opacity-60"></div>
+                      <p className="text-gray-600 text-sm mb-2 line-clamp-2">
+                        {influencer.bio}
+                      </p>
                       {influencer.tags && influencer.tags.length > 0 && (
-                        <div className="mt-4 flex flex-wrap gap-1">
+                        <div className="mt-2 flex flex-wrap gap-1">
                           {influencer.tags.slice(0, 3).map((tag, tagIndex) => (
                             <Badge key={tagIndex} variant="outline" className="text-xs bg-white/50">
                               {tag}

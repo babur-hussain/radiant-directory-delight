@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -127,57 +126,23 @@ const TopInfluencers: React.FC = () => {
                 </div>
               )}
 
-              {/* Cover area with 3D effect */}
-              <div className="relative h-48 bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 overflow-hidden">
-                {influencer.cover_image ? (
-                  <img
-                    src={influencer.cover_image}
-                    alt={`${influencer.name}'s cover`}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-purple-400 via-pink-500 to-red-500"></div>
-                )}
-                <div className="absolute inset-0 bg-black/20"></div>
-              </div>
-              
-              {/* Profile image with 3D hover effect */}
-              <div className="flex justify-center">
-                <div className="relative -mt-12 z-10">
-                  <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden shadow-xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">
-                    <img
-                      src={influencer.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(influencer.name)}&size=96&background=7c3aed&color=fff`}
-                      alt={influencer.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  {influencer.priority > 8 && (
-                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
-                      <Crown className="h-3 w-3 text-yellow-800" />
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <CardContent className="pt-4 pb-6 px-6 text-center relative z-10">
+              {/* Remove cover area and profile image, everything in CardContent */}
+              <CardContent className="pt-6 pb-6 text-center relative z-10">
                 <h3 className="text-xl font-bold mb-2 group-hover:text-purple-600 transition-colors">
                   {influencer.name}
                 </h3>
-                
                 {influencer.niche && (
                   <Badge variant="secondary" className="mb-3 bg-purple-100 text-purple-700 border-purple-200">
                     {influencer.niche}
                   </Badge>
                 )}
-
                 {influencer.location && (
                   <div className="flex items-center justify-center text-gray-500 text-sm mb-3">
                     <MapPin className="h-3 w-3 mr-1" />
                     {influencer.location}
                   </div>
                 )}
-                
-                {/* Stats with 3D cards */}
+                {/* Stats */}
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg transform transition-transform hover:scale-105">
                     <div className="flex items-center justify-center mb-1">
@@ -194,8 +159,7 @@ const TopInfluencers: React.FC = () => {
                     <p className="text-xs text-green-600">Engagement</p>
                   </div>
                 </div>
-                
-                {/* Social links with hover effects */}
+                {/* Social links */}
                 <div className="flex justify-center space-x-2 mb-4">
                   {[
                     { handle: influencer.instagram_handle, platform: 'instagram', color: 'text-pink-600 hover:text-pink-700', url: `https://instagram.com/${influencer.instagram_handle}` },
@@ -203,7 +167,7 @@ const TopInfluencers: React.FC = () => {
                     { handle: influencer.facebook_handle, platform: 'facebook', color: 'text-blue-600 hover:text-blue-700', url: `https://facebook.com/${influencer.facebook_handle}` },
                     { handle: influencer.twitter_handle, platform: 'twitter', color: 'text-blue-400 hover:text-blue-500', url: `https://twitter.com/${influencer.twitter_handle}` },
                     { handle: influencer.linkedin_handle, platform: 'linkedin', color: 'text-blue-700 hover:text-blue-800', url: `https://linkedin.com/in/${influencer.linkedin_handle}` },
-                  ].filter(social => social.handle).slice(0, 4).map((social, idx) => (
+                  ].filter(social => social.handle).map((social, idx) => (
                     <a 
                       key={idx}
                       href={social.url} 
@@ -215,52 +179,30 @@ const TopInfluencers: React.FC = () => {
                     </a>
                   ))}
                 </div>
-                
-                {/* Rating */}
-                {influencer.rating && influencer.rating > 0 && (
-                  <div className="flex items-center justify-center mb-4">
-                    <div className="flex items-center bg-yellow-50 px-3 py-1 rounded-full">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`h-3 w-3 ${
-                            i < Math.floor(influencer.rating || 0)
-                              ? 'text-yellow-400 fill-current'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      ))}
-                      <span className="ml-2 text-sm font-medium text-gray-700">
-                        {influencer.rating}
-                      </span>
-                    </div>
-                  </div>
+                {/* Divider */}
+                <div className="my-4 h-1 w-16 mx-auto rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 opacity-60"></div>
+                {/* Bio and tags (if available) */}
+                {influencer.bio && (
+                  <p className="text-gray-600 text-sm mb-2 line-clamp-2 text-center">{influencer.bio}</p>
                 )}
-                
-                {/* Tags */}
                 {influencer.tags && influencer.tags.length > 0 && (
-                  <div className="mb-4">
-                    <div className="flex flex-wrap justify-center gap-1">
-                      {influencer.tags.slice(0, 2).map((tag, index) => (
-                        <Badge key={index} variant="outline" className="text-xs bg-white/50">
-                          {tag}
-                        </Badge>
-                      ))}
-                      {influencer.tags.length > 2 && (
-                        <Badge variant="outline" className="text-xs bg-white/50">
-                          +{influencer.tags.length - 2}
-                        </Badge>
-                      )}
-                    </div>
+                  <div className="mt-2 flex flex-wrap gap-1 justify-center">
+                    {influencer.tags.slice(0, 3).map((tag, tagIndex) => (
+                      <Badge key={tagIndex} variant="outline" className="text-xs bg-white/50">
+                        {tag}
+                      </Badge>
+                    ))}
+                    {influencer.tags.length > 3 && (
+                      <Badge variant="outline" className="text-xs bg-white/50">
+                        +{influencer.tags.length - 3}
+                      </Badge>
+                    )}
                   </div>
                 )}
-                
-                {/* CTA Button with 3D effect */}
+                {/* CTA Button */}
                 <Button 
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                  style={{
-                    boxShadow: '0 10px 20px rgba(139, 69, 19, 0.3)',
-                  }}
+                  className="w-full mt-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                  onClick={() => navigate(`/influencer/${influencer.id}`)}
                 >
                   Connect with {influencer.name.split(' ')[0]}
                 </Button>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -268,55 +267,19 @@ const InfluencersGrid: React.FC = () => {
                 )}
               </div>
 
-              {/* Cover area */}
-              <div className={`relative ${viewMode === 'list' ? 'w-64' : 'h-48'} bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 overflow-hidden`}>
-                {influencer.cover_image ? (
-                  <img
-                    src={influencer.cover_image}
-                    alt={`${influencer.name}'s cover`}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-purple-400 via-pink-500 to-red-500"></div>
-                )}
-                <div className="absolute inset-0 bg-black/20"></div>
-                
-                {/* Profile image overlay for list view */}
-                {viewMode === 'list' && (
-                  <div className="absolute bottom-4 left-4">
-                    <div className="w-16 h-16 rounded-full border-4 border-white overflow-hidden shadow-xl">
-                      <img
-                        src={influencer.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(influencer.name)}&size=64&background=7c3aed&color=fff`}
-                        alt={influencer.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              {/* Profile image for grid view */}
-              {viewMode === 'grid' && (
-                <div className="flex justify-center">
-                  <div className="relative -mt-12 z-10">
-                    <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden shadow-xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">
-                      <img
-                        src={influencer.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(influencer.name)}&size=96&background=7c3aed&color=fff`}
-                        alt={influencer.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-              
+              {/* Remove cover area entirely, everything in CardContent */}
               <CardContent className={`${viewMode === 'grid' ? 'pt-4' : 'pt-6'} pb-6 px-6 ${viewMode === 'list' ? 'flex-1' : 'text-center'} relative z-10`}>
                 <div className={viewMode === 'list' ? 'flex justify-between items-start' : ''}>
                   <div className={viewMode === 'list' ? 'flex-1' : ''}>
-                    <h3 className={`text-xl font-bold mb-2 group-hover:text-purple-600 transition-colors ${viewMode === 'list' ? 'text-left' : ''}`}>
-                      {influencer.name}
-                    </h3>
-                    
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className={`text-xl font-bold group-hover:text-purple-600 transition-colors ${viewMode === 'list' ? 'text-left' : ''}`}>{influencer.name}</h3>
+                      {influencer.featured && (
+                        <Badge className="bg-yellow-400 text-yellow-900 border-0">
+                          <Star className="h-3 w-3 mr-1 fill-current" />
+                          Featured
+                        </Badge>
+                      )}
+                    </div>
                     <div className={`flex ${viewMode === 'list' ? 'justify-start space-x-4' : 'justify-center'} items-center mb-3`}>
                       {influencer.niche && (
                         <Badge variant="secondary" className="bg-purple-100 text-purple-700 border-purple-200">
@@ -330,13 +293,9 @@ const InfluencersGrid: React.FC = () => {
                         </div>
                       )}
                     </div>
-
-                    {/* Bio for list view */}
                     {viewMode === 'list' && influencer.bio && (
                       <p className="text-gray-600 text-sm mb-3 line-clamp-2">{influencer.bio}</p>
                     )}
-                    
-                    {/* Stats */}
                     <div className={`grid ${viewMode === 'list' ? 'grid-cols-3' : 'grid-cols-2'} gap-3 mb-4`}>
                       <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg transform transition-transform hover:scale-105">
                         <div className="flex items-center justify-center mb-1">
@@ -363,9 +322,7 @@ const InfluencersGrid: React.FC = () => {
                       )}
                     </div>
                   </div>
-
                   <div className={viewMode === 'list' ? 'ml-6' : ''}>
-                    {/* Social links */}
                     <div className={`flex ${viewMode === 'list' ? 'flex-col space-y-2' : 'justify-center space-x-2'} mb-4`}>
                       {[
                         { handle: influencer.instagram_handle, platform: 'instagram', color: 'text-pink-600 hover:text-pink-700', url: `https://instagram.com/${influencer.instagram_handle}` },
@@ -385,8 +342,6 @@ const InfluencersGrid: React.FC = () => {
                         </a>
                       ))}
                     </div>
-                    
-                    {/* CTA Button */}
                     <Button 
                       className={`${viewMode === 'list' ? 'w-auto' : 'w-full'} bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105`}
                     >
@@ -394,8 +349,6 @@ const InfluencersGrid: React.FC = () => {
                     </Button>
                   </div>
                 </div>
-
-                {/* Tags for grid view */}
                 {viewMode === 'grid' && influencer.tags && influencer.tags.length > 0 && (
                   <div className="mt-4">
                     <div className="flex flex-wrap justify-center gap-1">
@@ -411,6 +364,10 @@ const InfluencersGrid: React.FC = () => {
                       )}
                     </div>
                   </div>
+                )}
+                <div className="my-4 h-1 w-16 mx-auto rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 opacity-60"></div>
+                {viewMode === 'grid' && influencer.bio && (
+                  <p className="text-gray-600 text-sm mb-2 line-clamp-2 text-center">{influencer.bio}</p>
                 )}
               </CardContent>
             </Card>
