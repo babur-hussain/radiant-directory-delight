@@ -20,14 +20,14 @@ module.exports = (req, res) => {
     productinfo,
     firstname,
     email,
-    phone,
-    surl,
-    furl,
     udf1 = '',
     udf2 = '',
     udf3 = '',
     udf4 = '',
     udf5 = '',
+    surl,
+    furl,
+    phone = '',
   } = req.body || {};
 
   if (!key || !txnid || !amount || !productinfo || !firstname || !email || !surl || !furl) {
@@ -36,7 +36,7 @@ module.exports = (req, res) => {
 
   const salt = process.env.PAYU_SALT || "YOUR_LIVE_SALT";
 
-  // Official PayU merchant-hosted hash formula: sha512(key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt)
+  // Exact PayU merchant-hosted hash formula
   const hashString = [
     key, txnid, amount, productinfo, firstname, email,
     udf1, udf2, udf3, udf4, udf5,
@@ -46,6 +46,7 @@ module.exports = (req, res) => {
 
   const hash = crypto.createHash('sha512').update(hashString).digest('hex');
 
+  // Only return the required fields for PayU form submission
   return res.status(200).json({
     payuBaseUrl: "https://secure.payu.in/_payment",
     key: String(key),
