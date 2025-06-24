@@ -39,7 +39,7 @@ module.exports = (req, res) => {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  const salt = process.env.PAYU_SALT || "YOUR_LIVE_SALT";
+  const salt = process.env.PAYU_SALT || "vbUDAmcCKBw9FizOXa3saBvIXMqW1gn9";
 
   const hashString = [
     key,
