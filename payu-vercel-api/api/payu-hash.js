@@ -1,9 +1,67 @@
 import crypto from "crypto";
 
 export default function handler(req, res) {
+  // Robust CORS headers for all scenarios
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.status(200).end();
-  return res.status(200).json({ ok: true });
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS,PATCH,DELETE,PUT");
+  res.setHeader("Access-Control-Allow-Headers", "X-CSRF-Token, X-Requested-With, Accept, Content-Type, Authorization");
+
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  // Parse body (Vercel Node.js API automatically parses JSON)
+  const {
+    key,
+    txnid,
+    amount,
+    productinfo,
+    firstname,
+    email,
+    phone,
+    surl,
+    furl,
+    udf1 = '',
+    udf2 = '',
+    udf3 = '',
+    udf4 = '',
+    udf5 = '',
+  } = req.body || {};
+
+  // Validate required fields
+  if (!key || !txnid || !amount || !productinfo || !firstname || !email || !phone || !surl || !furl) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  // Use your actual salt here or from env
+  const salt = process.env.PAYU_SALT || "YOUR_LIVE_SALT";
+
+  // Construct hash string as per PayU docs
+  const hashString = [
+    key,
+    txnid,
+    amount,
+    productinfo,
+    firstname,
+    email,
+    phone,
+    surl,
+    furl,
+    udf1,
+    udf2,
+    udf3,
+    udf4,
+    udf5,
+    '', '', '', '', '', // udf6-udf10 (empty)
+    salt
+  ].join('|');
+
+  const hash = crypto.createHash('sha512').update(hashString).digest('hex');
+
+  return res.status(200).json({ hash });
 } 
