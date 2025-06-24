@@ -35,7 +35,7 @@ module.exports = (req, res) => {
     udf10 = '',
   } = req.body || {};
 
-  if (!key || !txnid || !amount || !productinfo || !firstname || !email || !phone || !surl || !furl) {
+  if (!key || !txnid || !amount || !productinfo || !firstname || !email || !surl || !furl) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
@@ -48,9 +48,6 @@ module.exports = (req, res) => {
     productinfo,
     firstname,
     email,
-    phone,
-    surl,
-    furl,
     udf1,
     udf2,
     udf3,
