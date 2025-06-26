@@ -286,7 +286,7 @@ export const router = createBrowserRouter([
           // Catch-all route for this path level
           {
             path: "*",
-            element: <NotFound />
+            element: <Navigate to="/" replace />
           },
         ],
       },
@@ -388,7 +388,7 @@ export const router = createBrowserRouter([
       // Catch-all route at the end to handle 404s
       {
         path: "*",
-        element: <Layout><NotFound /></Layout>
+        element: <Navigate to="/" replace />
       }
     ],
   },
