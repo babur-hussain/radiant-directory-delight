@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -166,13 +165,21 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
                   <span className="text-4xl font-bold text-gray-900">
                     ₹{monthlyPrice.toLocaleString('en-IN')}
                   </span>
-                  <span className="text-gray-500 ml-1">/month</span>
                 </div>
+                {/*
+                {pkg.durationMonths && (
+                  <div className="text-sm text-gray-500">
+                    {pkg.durationMonths}
+                  </div>
+                )}
+                */}
+                {/*
                 {pkg.setupFee && pkg.setupFee > 0 && (
                   <p className="text-sm text-gray-600 mt-1">
                     + ₹{pkg.setupFee.toLocaleString('en-IN')} setup fee
                   </p>
                 )}
+                */}
               </div>
               <CardDescription className="mt-2 text-gray-600">
                 {pkg.shortDescription || 'Subscription package'}

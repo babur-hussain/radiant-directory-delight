@@ -7,10 +7,13 @@ import Layout from '@/components/layout/Layout';
 import SubscriptionPackages from '@/components/subscription/SubscriptionPackages';
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import SubscriptionPackagesLoading from '@/components/subscription/SubscriptionPackagesLoading';
+import SubscriptionDialog from '@/components/subscription/SubscriptionDialog';
 
 const BusinessPage = () => {
   const [selectedSector, setSelectedSector] = useState<'influencer' | 'google' | null>(null);
   const { packages, isLoading, isError } = useSubscriptionPackages();
+  const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
+  const [showDialog, setShowDialog] = useState(false);
 
   // Filter packages to show only Business type
   const businessPackages = packages.filter(pkg => pkg.type === 'Business');
@@ -43,7 +46,7 @@ const BusinessPage = () => {
     { 
       icon: Crown, 
       title: "Franchise Business", 
-      hindi: "फ्रेंचाइज़ आधारित व्यवसाय",
+      hindi: "फ्रेंचाइ़ आधारित व्यवसाय",
       description: "Franchise operations, licensed businesses"
     },
     { 
@@ -137,6 +140,11 @@ const BusinessPage = () => {
       avatar: "/lovable-uploads/0c2cba8d-5522-4895-938c-2c2e97bd317c.png"
     }
   ];
+
+  const handleSelectPackage = (pkg: ISubscriptionPackage) => {
+    setSelectedPackage(pkg);
+    setShowDialog(true);
+  };
 
   if (selectedSector === 'influencer') {
     return (
@@ -265,6 +273,7 @@ const BusinessPage = () => {
                 <SubscriptionPackages 
                   userRole="Business"
                   filterByType={true}
+                  onSelectPackage={handleSelectPackage}
                 />
               )}
             </div>
@@ -276,6 +285,11 @@ const BusinessPage = () => {
             </div>
           </div>
         </div>
+        <SubscriptionDialog 
+          isOpen={showDialog}
+          setIsOpen={setShowDialog}
+          selectedPackage={selectedPackage}
+        />
       </Layout>
     );
   }
@@ -417,6 +431,7 @@ const BusinessPage = () => {
                 <SubscriptionPackages 
                   userRole="Business"
                   filterByType={true}
+                  onSelectPackage={handleSelectPackage}
                 />
               )}
             </div>
@@ -429,6 +444,11 @@ const BusinessPage = () => {
             </div>
           </div>
         </div>
+        <SubscriptionDialog 
+          isOpen={showDialog}
+          setIsOpen={setShowDialog}
+          selectedPackage={selectedPackage}
+        />
       </Layout>
     );
   }
@@ -546,6 +566,7 @@ const BusinessPage = () => {
               <SubscriptionPackages 
                 userRole="Business"
                 filterByType={true}
+                onSelectPackage={handleSelectPackage}
               />
             )}
           </div>
@@ -557,6 +578,11 @@ const BusinessPage = () => {
             </Button>
           </div>
         </div>
+        <SubscriptionDialog 
+          isOpen={showDialog}
+          setIsOpen={setShowDialog}
+          selectedPackage={selectedPackage}
+        />
       </div>
     </Layout>
   );
