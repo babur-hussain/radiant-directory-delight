@@ -148,7 +148,7 @@ const BusinessPage = () => {
 
   if (selectedSector === 'influencer') {
     return (
-      <Layout>
+      <>
         <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
           <div className="container mx-auto px-4 py-8">
             <Button 
@@ -290,13 +290,13 @@ const BusinessPage = () => {
           setIsOpen={setShowDialog}
           selectedPackage={selectedPackage}
         />
-      </Layout>
+      </>
     );
   }
 
   if (selectedSector === 'google') {
     return (
-      <Layout>
+      <>
         <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
           <div className="container mx-auto px-4 py-8">
             <Button 
@@ -449,13 +449,13 @@ const BusinessPage = () => {
           setIsOpen={setShowDialog}
           selectedPackage={selectedPackage}
         />
-      </Layout>
+      </>
     );
   }
 
   // Main Sectors View - Show Business packages only
   return (
-    <Layout>
+    <>
       <div className="min-h-screen bg-gradient-to-b from-purple-50 via-blue-50 to-white">
         <div className="container mx-auto px-4 py-12">
           <div className="text-center mb-12">
@@ -578,13 +578,13 @@ const BusinessPage = () => {
             </Button>
           </div>
         </div>
-        <SubscriptionDialog 
-          isOpen={showDialog}
-          setIsOpen={setShowDialog}
-          selectedPackage={selectedPackage}
-        />
       </div>
-    </Layout>
+      <SubscriptionDialog 
+        isOpen={showDialog}
+        setIsOpen={setShowDialog}
+        selectedPackage={selectedPackage}
+      />
+    </>
   );
 };
 
