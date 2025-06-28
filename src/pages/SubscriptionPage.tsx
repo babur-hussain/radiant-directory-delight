@@ -5,22 +5,32 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { getActiveUserSubscription } from "@/services/subscriptionService";
 import SubscriptionPackages from "@/components/subscription/SubscriptionPackages";
+import SubscriptionDialog from "@/components/subscription/SubscriptionDialog";
 import Layout from "@/components/layout/Layout";
 import { Loader2, Crown, CheckCircle2 } from "lucide-react";
 import { useSubscriptionPackages } from "@/hooks/useSubscriptionPackages";
 import SubscriptionPackagesLoading from "@/components/subscription/SubscriptionPackagesLoading";
-import { useNavigate } from "react-router-dom";
 import { ISubscriptionPackage } from "@/models/SubscriptionPackage";
+
+interface Subscription {
+  id: string;
+  packageName: string;
+  amount: number;
+  endDate: string;
+  status: string;
+}
 
 const SubscriptionPage = () => {
   const { user, isAuthenticated } = useAuth();
-  const [subscription, setSubscription] = useState<any>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { packages, isLoading: packagesLoading, isError } = useSubscriptionPackages();
-  const navigate = useNavigate();
+  const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
+  const [showDialog, setShowDialog] = useState(false);
 
   const handleSelectPackage = (pkg: ISubscriptionPackage) => {
-    navigate(`/subscription/${pkg.id}`);
+    setSelectedPackage(pkg);
+    setShowDialog(true);
   };
 
   useEffect(() => {
@@ -207,6 +217,11 @@ const SubscriptionPage = () => {
           </div>
         </div>
       </div>
+      <SubscriptionDialog 
+        isOpen={showDialog}
+        setIsOpen={setShowDialog}
+        selectedPackage={selectedPackage}
+      />
     </Layout>
   );
 };
