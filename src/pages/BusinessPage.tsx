@@ -8,12 +8,17 @@ import SubscriptionPackages from '@/components/subscription/SubscriptionPackages
 import { useSubscriptionPackages } from '@/hooks/useSubscriptionPackages';
 import SubscriptionPackagesLoading from '@/components/subscription/SubscriptionPackagesLoading';
 import SubscriptionDialog from '@/components/subscription/SubscriptionDialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
 
 const BusinessPage = () => {
   const [selectedSector, setSelectedSector] = useState<'influencer' | 'google' | null>(null);
   const { packages, isLoading, isError } = useSubscriptionPackages();
   const [selectedPackage, setSelectedPackage] = useState<ISubscriptionPackage | null>(null);
   const [showDialog, setShowDialog] = useState(false);
+  const [businessDialogOpen, setBusinessDialogOpen] = useState(false);
+  const [businessForm, setBusinessForm] = useState({ business_name: '', contact: '', location: '', category: '' });
+  const [businessFormStatus, setBusinessFormStatus] = useState<{ success: boolean; message: string } | null>(null);
 
   // Filter packages to show only Business type
   const businessPackages = packages.filter(pkg => pkg.type === 'Business');
@@ -144,6 +149,33 @@ const BusinessPage = () => {
   const handleSelectPackage = (pkg: ISubscriptionPackage) => {
     setSelectedPackage(pkg);
     setShowDialog(true);
+  };
+
+  const handleBusinessFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBusinessForm({ ...businessForm, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmitBusinessForm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusinessFormStatus(null);
+    try {
+      const { error } = await supabase.from('business_applications').insert([{
+        business_name: businessForm.business_name,
+        contact: businessForm.contact,
+        location: businessForm.location,
+        category: businessForm.category,
+        created_at: new Date().toISOString(),
+      }]);
+      if (error) throw error;
+      setBusinessFormStatus({ success: true, message: 'Your business application has been submitted successfully.' });
+      setBusinessForm({ business_name: '', contact: '', location: '', category: '' });
+      setTimeout(() => {
+        setBusinessDialogOpen(false);
+        setBusinessFormStatus(null);
+      }, 4000);
+    } catch (err) {
+      setBusinessFormStatus({ success: false, message: 'Submission failed. Please try again.' });
+    }
   };
 
   if (selectedSector === 'influencer') {
@@ -455,7 +487,65 @@ const BusinessPage = () => {
 
   // Main Sectors View - Show Business packages only
   return (
-    <>
+    <Layout>
+      {/* Business Application Section */}
+      <section className="relative py-20 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 overflow-hidden">
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-purple-200 rounded-full opacity-20 blur-3xl"></div>
+        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-pink-200 rounded-full opacity-20 blur-3xl"></div>
+        <div className="container mx-auto px-4 relative z-10 flex flex-col items-center">
+          <h2 className="text-4xl md:text-5xl font-extrabold text-center mb-2 bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">Register Your Business & get Connected with Lakhs of Influencers</h2>
+          <p className="text-lg text-gray-600 mb-6 text-center max-w-2xl">Join our platform and connect with India's largest influencer network. Submit your business details to get started!</p>
+          <Dialog open={businessDialogOpen} onOpenChange={setBusinessDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                className="w-full max-w-xs bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-lg font-semibold py-3 rounded-xl shadow-lg mb-4"
+                onClick={() => setBusinessDialogOpen(true)}
+              >
+                Register Your Business
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg w-full p-0 bg-transparent border-0 shadow-none">
+              <div className="relative bg-white rounded-2xl shadow-2xl border-0 overflow-hidden max-h-[90vh] w-full flex flex-col" style={{ boxShadow: '0 8px 32px 0 rgba(99,102,241,0.15)' }}>
+                {/* Gradient Accent Bar */}
+                <div className="h-2 w-full bg-gradient-to-r from-purple-500 via-blue-400 to-pink-400" />
+                <div className="p-8 overflow-y-auto flex-1">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-bold">Business Listing Form</DialogTitle>
+                    <DialogDescription>Fill out your business details to join our platform.</DialogDescription>
+                  </DialogHeader>
+                  <form className="space-y-5 mt-2" onSubmit={handleSubmitBusinessForm}>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Your Business Name</label>
+                      <input type="text" name="business_name" value={businessForm.business_name} onChange={handleBusinessFormChange} required placeholder="e.g. Sharma Fashion House" className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 bg-white" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number or Email</label>
+                      <input type="text" name="contact" value={businessForm.contact} onChange={handleBusinessFormChange} required placeholder="e.g. 9876543210 or info@yourbusiness.com" className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 bg-white" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">City & State</label>
+                      <input type="text" name="location" value={businessForm.location} onChange={handleBusinessFormChange} required placeholder="e.g. Mumbai, Maharashtra" className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 bg-white" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Business Category (e.g. Fashion, Tech, Food)</label>
+                      <input type="text" name="category" value={businessForm.category} onChange={handleBusinessFormChange} required placeholder="e.g. Fashion, Tech, Food" className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 bg-white" />
+                    </div>
+                    <DialogFooter>
+                      <Button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-lg font-semibold py-2 rounded-lg">Submit</Button>
+                    </DialogFooter>
+                    {businessFormStatus && (
+                      <div className={`flex items-center justify-center gap-2 text-center text-sm mt-2 ${businessFormStatus.success ? 'text-green-600' : 'text-red-600'}`}>
+                        {businessFormStatus.success ? <span>✅</span> : <span>⚠️</span>}
+                        {businessFormStatus.message}
+                      </div>
+                    )}
+                  </form>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </section>
       <div className="min-h-screen bg-gradient-to-b from-purple-50 via-blue-50 to-white">
         <div className="container mx-auto px-4 py-12">
           <div className="text-center mb-12">
@@ -584,7 +674,7 @@ const BusinessPage = () => {
         setIsOpen={setShowDialog}
         selectedPackage={selectedPackage}
       />
-    </>
+    </Layout>
   );
 };
 

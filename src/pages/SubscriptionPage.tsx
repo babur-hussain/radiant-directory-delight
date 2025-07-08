@@ -52,7 +52,7 @@ const SubscriptionPage = () => {
   }, [isAuthenticated, user]);
 
   return (
-    <Layout>
+    <>
       <div className="container mx-auto px-4 py-12">
         {/* Header Section */}
         <div className="text-center mb-12">
@@ -222,7 +222,7 @@ const SubscriptionPage = () => {
         setIsOpen={setShowDialog}
         selectedPackage={selectedPackage}
       />
-    </Layout>
+    </>
   );
 };
 

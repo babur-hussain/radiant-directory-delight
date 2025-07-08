@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Star, Users, TrendingUp, Instagram, Youtube, MapPin, Search, Filter, Crown, Heart, CheckCircle, Globe } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface Influencer {
   id: number;
@@ -46,6 +47,9 @@ const ModernInfluencersGrid: React.FC = () => {
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [sortBy, setSortBy] = useState('followers');
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
+  const [form, setForm] = useState({ name: '', profile_link: '', address: '', mobile: '', followers: '', category: '' });
+  const [formStatus, setFormStatus] = useState<{ success: boolean; message: string } | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchInfluencers();
@@ -140,6 +144,35 @@ const ModernInfluencersGrid: React.FC = () => {
     return count.toString();
   };
 
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmitInfluencerForm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormStatus(null);
+    try {
+      const { error } = await supabase.from('influencer_applications').insert([{
+        name: form.name,
+        profile_link: form.profile_link,
+        location: form.address,
+        phone: form.mobile,
+        followers_count: Number(form.followers),
+        category: form.category,
+        created_at: new Date().toISOString(),
+      }]);
+      if (error) throw error;
+      setFormStatus({ success: true, message: 'Your profile has been submitted successfully.' });
+      setForm({ name: '', profile_link: '', address: '', mobile: '', followers: '', category: '' });
+      setTimeout(() => {
+        setDialogOpen(false);
+        setFormStatus(null);
+      }, 4000);
+    } catch (err) {
+      setFormStatus({ success: false, message: 'Submission failed. Please try again.' });
+    }
+  };
+
   const categories = [...new Set(influencers.map(i => i.category).filter(Boolean))];
   const locations = [...new Set(influencers.map(i => i.location?.split(',')[0]).filter(Boolean))];
 
@@ -174,13 +207,13 @@ const ModernInfluencersGrid: React.FC = () => {
         <div className="relative container mx-auto px-4 py-20">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in">
-              Find Your Perfect
+              Become a Verified
               <span className="block bg-gradient-to-r from-yellow-300 to-orange-400 bg-clip-text text-transparent">
                 Influencer
               </span>
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-blue-100 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              Connect with India's top creators across entertainment, fashion, gaming, and more
+              Start Earning Through Local Brand Collaborations
             </p>
             <div className="flex flex-wrap justify-center gap-4 animate-fade-in" style={{ animationDelay: '0.4s' }}>
               <Badge className="bg-yellow-400 text-yellow-900 text-lg px-4 py-2">
@@ -199,6 +232,110 @@ const ModernInfluencersGrid: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Influencer Listing Section - Redesigned */}
+      <section className="relative py-20 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 overflow-hidden">
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-purple-200 rounded-full opacity-20 blur-3xl"></div>
+        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-pink-200 rounded-full opacity-20 blur-3xl"></div>
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="flex flex-col lg:flex-row items-center gap-12">
+            {/* Form Column */}
+            <div className="w-full lg:w-1/2 bg-white/90 rounded-3xl shadow-2xl p-10 flex flex-col items-center border border-blue-100">
+              <h2 className="text-4xl md:text-5xl font-extrabold text-center mb-2 bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">Get Listed as an Influencer</h2>
+              <p className="text-lg text-gray-600 mb-6 text-center">Join our network and connect with top brands. Submit your profile to get discovered!</p>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-lg font-semibold py-3 rounded-xl shadow-lg mb-4"
+                    onClick={() => setDialogOpen(true)}
+                  >
+                    Get Listed Now
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-lg w-full p-0 bg-transparent border-0 shadow-none">
+                  <div className="relative bg-white rounded-2xl shadow-2xl border-0 overflow-hidden max-h-[90vh] w-full flex flex-col" style={{ boxShadow: '0 8px 32px 0 rgba(99,102,241,0.15)' }}>
+                    {/* Gradient Accent Bar */}
+                    <div className="h-2 w-full bg-gradient-to-r from-purple-500 via-blue-400 to-pink-400" />
+                    <div className="p-8 overflow-y-auto flex-1">
+                      <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold">Influencer Listing Form</DialogTitle>
+                        <DialogDescription>Fill out your details to join our platform.</DialogDescription>
+                      </DialogHeader>
+                      <form className="space-y-5 mt-2" onSubmit={handleSubmitInfluencerForm}>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                          <input type="text" name="name" value={form.name} onChange={handleFormChange} required placeholder="e.g. Priya Sharma" className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 bg-white" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Social Profile Link</label>
+                          <input type="url" name="profile_link" value={form.profile_link} onChange={handleFormChange} required placeholder="e.g. https://instagram.com/yourprofile" className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 bg-white" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">City & State</label>
+                          <input type="text" name="address" value={form.address} onChange={handleFormChange} required placeholder="e.g. Mumbai, Maharashtra" className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 bg-white" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                          <input type="tel" name="mobile" value={form.mobile} onChange={handleFormChange} required placeholder="e.g. 9876543210" className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 bg-white" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Follower Count</label>
+                          <input type="number" name="followers" value={form.followers} onChange={handleFormChange} required placeholder="e.g. 12000" className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 bg-white" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Main Category</label>
+                          <input type="text" name="category" value={form.category} onChange={handleFormChange} required placeholder="e.g. Fashion, Tech, Food" className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 bg-white" />
+                        </div>
+                        <DialogFooter>
+                          <Button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-lg font-semibold py-2 rounded-lg">Submit</Button>
+                        </DialogFooter>
+                        {formStatus && (
+                          <div className={`flex items-center justify-center gap-2 text-center text-sm mt-2 ${formStatus.success ? 'text-green-600' : 'text-red-600'}`}>
+                            {formStatus.success ? <span>✅</span> : <span>⚠️</span>}
+                            {formStatus.message}
+                          </div>
+                        )}
+                      </form>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            {/* Cards Column */}
+            <div className="w-full lg:w-1/2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                {filteredInfluencers.slice(0, 4).map((influencer, index) => (
+                  <Card key={influencer.id} className="group relative overflow-hidden transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/25 cursor-pointer border-0 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl">
+                    <CardContent className="pt-6 pb-6 px-6 text-center relative z-10">
+                      <h3 className="text-xl font-bold group-hover:text-purple-600 transition-colors mb-2">{influencer.name}</h3>
+                      <div className="flex justify-center items-center gap-2 mb-3">
+                        <Badge variant="secondary" className="bg-purple-100 text-purple-700 border-purple-200">{influencer.niche}</Badge>
+                        <div className="flex items-center text-gray-500 text-sm">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          {influencer.location}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg">
+                          <Users className="h-4 w-4 text-blue-600 mx-auto mb-1" />
+                          <p className="font-bold text-blue-800">{formatFollowers(influencer.followers_count || 0)}</p>
+                          <p className="text-xs text-blue-600">Followers</p>
+                        </div>
+                        <div className="bg-gradient-to-br from-green-50 to-green-100 p-3 rounded-lg">
+                          <TrendingUp className="h-4 w-4 text-green-600 mx-auto mb-1" />
+                          <p className="font-bold text-green-800">{influencer.engagement_rate || 0}%</p>
+                          <p className="text-xs text-green-600">Engagement</p>
+                        </div>
+                      </div>
+                      <Button size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 w-full mt-2">View Profile</Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="container mx-auto px-4 py-12">
         {/* Search and Filters */}
