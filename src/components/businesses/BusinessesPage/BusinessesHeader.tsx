@@ -73,7 +73,6 @@ const BusinessesHeader: React.FC<BusinessesHeaderProps> = ({
     <div className="bg-white rounded-xl shadow-md p-6 mb-12">
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-grow">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Search businesses by name, description or tags..."
             value={searchQuery}
