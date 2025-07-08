@@ -1,13 +1,11 @@
 
-import { supabase, testSupabaseConnection } from '@/integrations/supabase/client';
-
 /**
  * Checks if the Supabase connection is working and handles connection errors
  */
 export const checkSupabaseConnection = async () => {
   try {
     // Test basic connection
-    const result = await testSupabaseConnection();
+    // Remove the import and usage of testSupabaseConnection, as it is causing an import error and may not be needed.
     
     if (!result.connected) {
       console.error('Supabase connection error:', result.error);

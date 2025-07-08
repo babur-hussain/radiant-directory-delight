@@ -9,16 +9,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 const AdminSubscriptionsPage = () => {
-  const [phonePeSettings, setPhonePeSettings] = useState({
-    merchantId: '',
-    saltKey: '',
-    saltIndex: '1',
-    environment: 'PRODUCTION'
-  });
-
-  const handleSavePhonePeSettings = () => {
-    toast.success('PhonePe settings saved successfully');
-  };
+  // Remove all code related to PhonePe, including state, handlers, and UI for PhonePe settings.
 
   return (
     <AdminLayout>
