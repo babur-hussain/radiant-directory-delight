@@ -300,3 +300,15 @@ button, a, input, select {
   .xs\:h-7 { height: 1.75rem; }
   .xs\:w-7 { width: 1.75rem; }
 }
+
+.icon-btn {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

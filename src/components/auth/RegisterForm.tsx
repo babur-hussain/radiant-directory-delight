@@ -229,7 +229,7 @@ const RegisterForm: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-2xl mx-auto sm:max-w-full sm:px-2">
       <RegisterTypeSelector 
         onSelectType={onSelectType}
         selectedType={selectedRole}
@@ -249,16 +249,16 @@ const RegisterForm: React.FC = () => {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-gray-700 font-medium">Full Name *</FormLabel>
+                <FormLabel className="text-gray-700 font-medium sm:text-base">Full Name *</FormLabel>
                 <FormControl>
-                  <div className="relative group">
-                    <Input 
-                      placeholder="Enter your full name" 
+                  <div className="flex items-center w-full gap-2">
+                    <input
+                      placeholder="Enter your full name"
                       autoComplete="name"
-                      {...field} 
-                      className="pl-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                      {...field}
+                      className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300 w-full text-base sm:text-sm sm:h-10"
                     />
-                    <User className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                    <User className="text-gray-400 ml-2" />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -271,18 +271,15 @@ const RegisterForm: React.FC = () => {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-gray-700 font-medium">Email Address *</FormLabel>
+                <FormLabel className="text-gray-700 font-medium sm:text-base">Email Address *</FormLabel>
                 <FormControl>
-                  <div className="relative group">
-                    <Input 
-                      type="email" 
-                      placeholder="Enter your email" 
-                      autoComplete="email"
-                      {...field} 
-                      className="pl-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
-                    />
-                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
-                  </div>
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    autoComplete="email"
+                    {...field}
+                    className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300 w-full text-base sm:text-sm sm:h-10"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -295,22 +292,22 @@ const RegisterForm: React.FC = () => {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700 font-medium">Password *</FormLabel>
+                  <FormLabel className="text-gray-700 font-medium sm:text-base">Password *</FormLabel>
                   <FormControl>
-                    <div className="relative group">
-                      <Input 
+                    <div className="flex items-center w-full gap-2">
+                      <input
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="Create a strong password" 
+                        placeholder="Create a strong password"
                         autoComplete="new-password"
-                        {...field} 
-                        className="pl-12 pr-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                        {...field}
+                        className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300 w-full text-base sm:text-sm sm:h-10"
                       />
-                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 hover:text-purple-500 transition-colors focus:outline-none"
+                        className="icon-btn text-gray-400 hover:text-purple-500 transition-colors focus:outline-none ml-2"
                         tabIndex={-1}
+                        aria-label="Toggle password visibility"
                       >
                         {showPassword ? <EyeOff /> : <Eye />}
                       </button>
@@ -326,22 +323,22 @@ const RegisterForm: React.FC = () => {
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700 font-medium">Confirm Password *</FormLabel>
+                  <FormLabel className="text-gray-700 font-medium sm:text-base">Confirm Password *</FormLabel>
                   <FormControl>
-                    <div className="relative group">
-                      <Input 
+                    <div className="flex items-center w-full gap-2">
+                      <input
                         type={showConfirmPassword ? 'text' : 'password'}
-                        placeholder="Confirm your password" 
+                        placeholder="Confirm your password"
                         autoComplete="new-password"
-                        {...field} 
-                        className="pl-12 pr-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                        {...field}
+                        className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300 w-full text-base sm:text-sm sm:h-10"
                       />
-                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 hover:text-purple-500 transition-colors focus:outline-none"
+                        className="icon-btn text-gray-400 hover:text-purple-500 transition-colors focus:outline-none ml-2"
                         tabIndex={-1}
+                        aria-label="Toggle password visibility"
                       >
                         {showConfirmPassword ? <EyeOff /> : <Eye />}
                       </button>
@@ -359,17 +356,17 @@ const RegisterForm: React.FC = () => {
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700 font-medium">Phone Number</FormLabel>
+                  <FormLabel className="text-gray-700 font-medium sm:text-base">Phone Number</FormLabel>
                   <FormControl>
-                    <div className="relative group">
-                      <Input 
-                        type="tel" 
-                        placeholder="Phone number" 
+                    <div className="flex items-center w-full gap-2">
+                      <input
+                        type="tel"
+                        placeholder="Phone number"
                         autoComplete="tel"
-                        {...field} 
-                        className="pl-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                        {...field}
+                        className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300 w-full text-base sm:text-sm sm:h-10"
                       />
-                      <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                      <Phone className="text-gray-400 ml-2" />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -382,16 +379,16 @@ const RegisterForm: React.FC = () => {
               name="city"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700 font-medium">City</FormLabel>
+                  <FormLabel className="text-gray-700 font-medium sm:text-base">City</FormLabel>
                   <FormControl>
-                    <div className="relative group">
-                      <Input 
-                        placeholder="Your city" 
+                    <div className="flex items-center w-full gap-2">
+                      <input
+                        placeholder="Your city"
                         autoComplete="address-level2"
-                        {...field} 
-                        className="pl-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                        {...field}
+                        className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300 w-full text-base sm:text-sm sm:h-10"
                       />
-                      <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                      <MapPin className="text-gray-400 ml-2" />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -405,16 +402,16 @@ const RegisterForm: React.FC = () => {
             name="country"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-gray-700 font-medium">Country</FormLabel>
+                <FormLabel className="text-gray-700 font-medium sm:text-base">Country</FormLabel>
                 <FormControl>
-                  <div className="relative group">
-                    <Input 
-                      placeholder="Your country" 
+                  <div className="flex items-center w-full gap-2">
+                    <input
+                      placeholder="Your country"
                       autoComplete="country-name"
-                      {...field} 
-                      className="pl-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                      {...field}
+                      className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300 w-full text-base sm:text-sm sm:h-10"
                     />
-                    <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                    <MapPin className="text-gray-400 ml-2" />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -429,16 +426,16 @@ const RegisterForm: React.FC = () => {
                 name="businessName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">Business Name</FormLabel>
+                    <FormLabel className="text-gray-700 font-medium sm:text-base">Business Name</FormLabel>
                     <FormControl>
-                      <div className="relative group">
-                        <Input 
-                          placeholder="Your business name" 
+                      <div className="flex items-center w-full gap-2">
+                        <input
+                          placeholder="Your business name"
                           autoComplete="organization"
-                          {...field} 
-                          className="pl-12 h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                          {...field}
+                          className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300 w-full text-base sm:text-sm sm:h-10"
                         />
-                        <Building className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                        <Building className="text-gray-400 ml-2" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -452,12 +449,12 @@ const RegisterForm: React.FC = () => {
                   name="businessCategory"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">Business Category</FormLabel>
+                      <FormLabel className="text-gray-700 font-medium sm:text-base">Business Category</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="e.g. Restaurant, Retail, etc." 
                           {...field} 
-                          className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                          className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300 w-full text-base sm:text-sm sm:h-10"
                         />
                       </FormControl>
                       <FormMessage />
@@ -470,13 +467,13 @@ const RegisterForm: React.FC = () => {
                   name="website"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">Website</FormLabel>
+                      <FormLabel className="text-gray-700 font-medium sm:text-base">Website</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="https://www.example.com" 
                           autoComplete="url"
                           {...field} 
-                          className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300"
+                          className="h-12 border-2 border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 hover:border-gray-300 w-full text-base sm:text-sm sm:h-10"
                         />
                       </FormControl>
                       <FormMessage />
@@ -492,9 +489,9 @@ const RegisterForm: React.FC = () => {
             name="referralCode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="flex items-center gap-1 text-gray-700 font-medium">
+                <FormLabel className="flex items-center gap-1 text-gray-700 font-medium sm:text-base">
                   Referral Code 
-                  <span className="text-xs text-gray-500">(Optional)</span>
+                  <span className="text-xs text-gray-500 sm:text-sm">(Optional)</span>
                 </FormLabel>
                 <FormControl>
                   <div className="relative">
@@ -505,7 +502,7 @@ const RegisterForm: React.FC = () => {
                         field.onChange(e);
                         handleReferralCodeChange(e);
                       }}
-                      className={`h-12 border-2 rounded-xl bg-white/80 backdrop-blur-sm pr-12 transition-all duration-200 hover:border-gray-300 ${
+                      className={`h-12 border-2 rounded-xl bg-white/80 backdrop-blur-sm pr-12 transition-all duration-200 hover:border-gray-300 w-full text-base sm:text-sm sm:h-10 ${
                         isValidReferral === true
                           ? "border-green-400 focus:border-green-500 focus:ring-4 focus:ring-green-100"
                           : isValidReferral === false
@@ -514,10 +511,10 @@ const RegisterForm: React.FC = () => {
                       }`}
                     />
                     {isValidReferral === true && (
-                      <Check className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-green-500" />
+                      <Check className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-green-500 sm:h-4 sm:w-4" />
                     )}
                     {isValidReferral === false && (
-                      <AlertCircle className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-red-500" />
+                      <AlertCircle className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-red-500 sm:h-4 sm:w-4" />
                     )}
                   </div>
                 </FormControl>
@@ -531,7 +528,7 @@ const RegisterForm: React.FC = () => {
                   </Alert>
                 )}
                 {referralChecking && (
-                  <div className="text-sm text-purple-600 mt-2 font-medium">🔍 Validating referral code...</div>
+                  <div className="text-sm text-purple-600 mt-2 font-medium sm:text-base">🔍 Validating referral code...</div>
                 )}
                 <FormMessage />
               </FormItem>

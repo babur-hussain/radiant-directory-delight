@@ -25,6 +25,18 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
   const { isAuthenticated, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const [modalTop, setModalTop] = useState(80); // default fallback
+
+  useEffect(() => {
+    function updateModalTop() {
+      const header = document.querySelector('.main-header');
+      const headerHeight = header ? header.offsetHeight : 64;
+      setModalTop(headerHeight + 16); // 16px gap
+    }
+    updateModalTop();
+    window.addEventListener('resize', updateModalTop);
+    return () => window.removeEventListener('resize', updateModalTop);
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated && open) {
@@ -63,7 +75,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md w-[95vw] sm:w-full p-0 max-h-[95vh] bg-white border shadow-2xl overflow-hidden flex flex-col">
+      <DialogContent
+        style={{
+          top: `${modalTop}px`,
+          transform: 'translate(-50%, 0)', // Remove vertical centering
+        }}
+        className="max-w-md w-[95vw] sm:w-full p-0 max-h-[95vh] bg-white border shadow-2xl overflow-hidden flex flex-col"
+      >
         <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0 border-b bg-white">
           <DialogTitle className="text-center text-2xl font-bold text-gray-900">
             {activeTab === 'login' ? 'Welcome Back!' : 'Join Our Community'}

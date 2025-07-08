@@ -115,7 +115,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
   }
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full max-w-md mx-auto space-y-4 sm:max-w-full sm:px-2">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
@@ -123,18 +123,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-gray-700 font-medium text-sm">Email Address</FormLabel>
+                <FormLabel className="text-gray-700 font-medium text-sm sm:text-base">Email Address</FormLabel>
                 <FormControl>
-                  <div className="relative">
-                    <Input
-                      placeholder="Enter your email"
-                      type="email"
-                      autoComplete="email"
-                      {...field}
-                      className="pl-10 h-11 border border-gray-300 rounded-lg bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
-                    />
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  </div>
+                  <input
+                    placeholder="Enter your email"
+                    type="email"
+                    autoComplete="email"
+                    {...field}
+                    className="h-11 border border-gray-300 rounded-lg bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 w-full text-base sm:text-sm sm:h-10"
+                  />
                 </FormControl>
                 <FormMessage className="text-xs" />
               </FormItem>
@@ -146,22 +143,22 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-gray-700 font-medium text-sm">Password</FormLabel>
+                <FormLabel className="text-gray-700 font-medium text-sm sm:text-base">Password</FormLabel>
                 <FormControl>
-                  <div className="relative">
-                    <Input
+                  <div className="flex items-center w-full gap-2">
+                    <input
                       placeholder="Enter your password"
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="current-password"
                       {...field}
-                      className="pl-10 pr-10 h-11 border border-gray-300 rounded-lg bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
+                      className="h-11 border border-gray-300 rounded-lg bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 w-full text-base sm:text-sm sm:h-10"
                     />
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
+                      className="icon-btn text-gray-400 hover:text-gray-600 transition-colors focus:outline-none ml-2"
                       tabIndex={-1}
+                      aria-label="Toggle password visibility"
                     >
                       {showPassword ? <EyeOff /> : <Eye />}
                     </button>
@@ -177,7 +174,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
             name="employeeCode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-gray-700 font-medium text-sm">
+                <FormLabel className="text-gray-700 font-medium text-sm sm:text-base">
                   Employee Code <span className="text-xs text-gray-500">(Optional)</span>
                 </FormLabel>
                 <FormControl>
@@ -185,7 +182,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
                     placeholder="Enter employee code if applicable"
                     autoComplete="organization"
                     {...field}
-                    className="h-11 border border-gray-300 rounded-lg bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
+                    className="h-11 border border-gray-300 rounded-lg bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 w-full text-base sm:text-sm sm:h-10"
                   />
                 </FormControl>
                 <FormMessage className="text-xs" />
@@ -206,7 +203,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
 
           <Button
             type="submit"
-            className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm hover:shadow-md transform hover:scale-[1.01] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm hover:shadow-md transform hover:scale-[1.01] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none sm:h-10"
             disabled={isSubmitting || !form.formState.isValid}
           >
             {isSubmitting ? (
