@@ -342,7 +342,6 @@ const ModernInfluencersGrid: React.FC = () => {
         <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 mb-12 border border-white/20 animate-fade-in" style={{ animationDelay: '0.6s' }}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="relative lg:col-span-2">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <Input
                 type="text"
                 placeholder="Search creators, niches, or keywords..."
