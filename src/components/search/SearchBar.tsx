@@ -41,6 +41,17 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
+  const [isSmallScreen, setIsSmallScreen] = useState(
+    typeof window !== 'undefined' ? window.innerWidth <= 600 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSmallScreen(window.innerWidth <= 600);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Get business data for search results
   const { loading, filteredBusinesses } = useBusinessPageData(query);
@@ -185,15 +196,16 @@ const SearchBar: React.FC<SearchBarProps> = ({
       {/* Main Search Input */}
       <div className="relative flex items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 sm:h-5 sm:w-5" />
           <Input
             ref={inputRef}
             type="text"
-            placeholder="Search influencers, businesses, services, or keywords..."
+            placeholder={isSmallScreen ? '        Search...' : '       Search influencers, businesses, services, or keywords...'}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyPress={handleKeyPress}
-            className="pl-10 pr-10 py-2.5 sm:py-3 text-sm sm:text-base h-10 sm:h-12 bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-lg sm:rounded-xl"
+            className="pl-16 pr-10 py-2.5 sm:py-3 text-sm sm:text-base h-10 sm:h-12 bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-lg sm:rounded-xl w-full max-w-full truncate text-ellipsis overflow-hidden min-w-0"
+            style={{ fontSize: 'clamp(14px, 4vw, 16px)' }}
           />
           {query && (
             <button
