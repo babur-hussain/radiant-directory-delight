@@ -4,23 +4,19 @@
  */
 export const checkSupabaseConnection = async () => {
   try {
-    // Test basic connection
-    // Remove the import and usage of testSupabaseConnection, as it is causing an import error and may not be needed.
+    // For now, we'll do a basic check by trying to get the current session
+    // This is a simple way to test if Supabase is configured correctly
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data, error } = await supabase.auth.getSession();
     
-    if (!result.connected) {
-      console.error('Supabase connection error:', result.error);
-      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL || 'Not set');
-      
-      // Log minimal info about the key without exposing it
-      const keyInfo = import.meta.env.VITE_SUPABASE_ANON_KEY 
-        ? 'Set (length: ' + import.meta.env.VITE_SUPABASE_ANON_KEY.length + ')'
-        : 'Not set';
-      console.log('Supabase Key status:', keyInfo);
+    if (error) {
+      console.error('Supabase connection error:', error);
+      console.log('Supabase URL:', 'https://kyjdfhajtdqhdoijzmgk.supabase.co');
       
       return { 
         connected: false, 
-        error: result.error,
-        details: 'Check your environment variables and Supabase project settings'
+        error: error.message,
+        details: 'Check your Supabase project settings and configuration'
       };
     }
     

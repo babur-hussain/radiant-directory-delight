@@ -1,16 +1,11 @@
-import React, { useState } from 'react';
+
+import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import SubscriptionManagement from '@/components/admin/SubscriptionManagement';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
 
 const AdminSubscriptionsPage = () => {
-  // Remove all code related to PhonePe, including state, handlers, and UI for PhonePe settings.
-
   return (
     <AdminLayout>
       <div className="container mx-auto px-4 py-8">
@@ -38,6 +33,18 @@ const AdminSubscriptionsPage = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-500">Package management functionality will be implemented here.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Payment Settings</CardTitle>
+                <CardDescription>Configure payment gateway settings</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-500">Payment settings will be configured here.</p>
               </CardContent>
             </Card>
           </TabsContent>
