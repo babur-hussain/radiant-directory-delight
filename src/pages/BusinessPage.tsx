@@ -10,6 +10,7 @@ import SubscriptionPackagesLoading from '@/components/subscription/SubscriptionP
 import SubscriptionDialog from '@/components/subscription/SubscriptionDialog';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
+import { ISubscriptionPackage } from '@/models/SubscriptionPackage';
 
 const BusinessPage = () => {
   const [selectedSector, setSelectedSector] = useState<'influencer' | 'google' | null>(null);
