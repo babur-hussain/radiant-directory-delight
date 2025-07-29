@@ -114,27 +114,10 @@ const SubscriptionDetails = () => {
     );
   }
 
+  // Redirect to subscription page if there's an error or no package found
   if (error || !selectedPackage) {
-    return (
-      <div className="container mx-auto px-4 py-10">
-        <Card>
-          <CardHeader>
-            <CardTitle>Package Not Found</CardTitle>
-            <CardDescription>
-              The subscription package you're looking for could not be found.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>Please return to the subscription page and select a valid package.</p>
-          </CardContent>
-          <CardFooter>
-            <Button onClick={() => navigate("/subscription")}>
-              Back to Subscription Plans
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    );
+    navigate("/subscription");
+    return null; // Return null while redirecting
   }
 
   if (showPaymentUI) {

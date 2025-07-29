@@ -58,6 +58,13 @@ const SubscriptionDetailsPage = () => {
     }
   }, [packages, packageId, navigate]);
 
+  // Redirect to subscription page if there's an error or no package found
+  useEffect(() => {
+    if (!isLoading && (isError || (!selectedPackage && packages && packages.length > 0))) {
+      navigate('/subscription');
+    }
+  }, [isLoading, isError, selectedPackage, packages, navigate]);
+
   const handlePaymentSuccess = async (paymentResponse: any) => {
     console.log('Payment successful, processing subscription:', paymentResponse);
     if (!paymentResponse.paymentVerified) {
@@ -109,23 +116,24 @@ const SubscriptionDetailsPage = () => {
     );
   }
 
-  if (isError || !selectedPackage) {
-    return (
-      <Layout>
-        <div className="container mx-auto px-4 py-12">
-          <div className="text-center">
-            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Package Not Found</h2>
-            <p className="text-gray-600 mb-4">The requested subscription package could not be found.</p>
-            <Button onClick={() => navigate('/subscription')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Packages
-            </Button>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  // Remove the error page rendering and let the redirect handle it
+  // if (isError || !selectedPackage) {
+  //   return (
+  //     <Layout>
+  //       <div className="container mx-auto px-4 py-12">
+  //         <div className="text-center">
+  //           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+  //           <h2 className="text-xl font-semibold mb-2">Package Not Found</h2>
+  //           <p className="text-gray-600 mb-4">The requested subscription package could not be found.</p>
+  //           <Button onClick={() => navigate('/subscription')}>
+  //             <ArrowLeft className="h-4 w-4 mr-2" />
+  //             Back to Packages
+  //           </Button>
+  //         </div>
+  //       </div>
+  //     </Layout>
+  //   );
+  // }
 
   // Show success message if processing subscription
   if (isProcessing) {
