@@ -116,24 +116,10 @@ const SubscriptionDetailsPage = () => {
     );
   }
 
-  // Remove the error page rendering and let the redirect handle it
-  // if (isError || !selectedPackage) {
-  //   return (
-  //     <Layout>
-  //       <div className="container mx-auto px-4 py-12">
-  //         <div className="text-center">
-  //           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-  //           <h2 className="text-xl font-semibold mb-2">Package Not Found</h2>
-  //           <p className="text-gray-600 mb-4">The requested subscription package could not be found.</p>
-  //           <Button onClick={() => navigate('/subscription')}>
-  //             <ArrowLeft className="h-4 w-4 mr-2" />
-  //             Back to Packages
-  //           </Button>
-  //         </div>
-  //       </div>
-  //     </Layout>
-  //   );
-  // }
+  // Return null if no package is selected (while redirecting)
+  if (!selectedPackage) {
+    return null;
+  }
 
   // Show success message if processing subscription
   if (isProcessing) {
@@ -185,6 +171,9 @@ const SubscriptionDetailsPage = () => {
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Back to Subscriptions
                   </Button>
+                  <Button onClick={() => navigate('/dashboard')}>
+                    Go to Dashboard
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -194,12 +183,16 @@ const SubscriptionDetailsPage = () => {
     );
   }
 
-  const isOneTime = selectedPackage.paymentType === 'one-time';
-  const timeframe = isOneTime ? 'total' : `/${selectedPackage.billingCycle || 'yearly'}`;
-  const displayPrice = selectedPackage.billingCycle === 'monthly' && selectedPackage.monthlyPrice 
+  const timeframe = selectedPackage.billingCycle === 'monthly' 
+    ? '/month' 
+    : selectedPackage.billingCycle === 'yearly' 
+    ? '/year' 
+    : '';
+  const displayPrice = selectedPackage.billingCycle === 'monthly' 
     ? selectedPackage.monthlyPrice 
     : selectedPackage.price;
   const totalAmount = selectedPackage.price + (selectedPackage.setupFee || 0);
+  const isOneTime = selectedPackage.paymentType === 'one-time';
 
   return (
     <Layout>

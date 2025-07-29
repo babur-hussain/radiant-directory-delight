@@ -155,6 +155,11 @@ const SubscriptionDetails = () => {
     );
   }
 
+  // Add null check before accessing selectedPackage properties
+  if (!selectedPackage) {
+    return null;
+  }
+
   const isOneTimePackage = selectedPackage.paymentType === "one-time";
   const totalPrice = selectedPackage.price + (selectedPackage.setupFee || 0);
 
