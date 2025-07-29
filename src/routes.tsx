@@ -113,6 +113,7 @@ const AdminLoginPage = lazy(() => import("@/pages/AdminLoginPage"));
 
 // Import PaymentSuccessPage
 const PaymentSuccessPage = lazy(() => import("@/pages/PaymentSuccessPage"));
+const PaymentFailurePage = lazy(() => import("@/pages/PaymentFailurePage"));
 const TermsAndConditionsPage = lazy(() => import("@/pages/TermsAndConditionsPage"));
 const PrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicyPage"));
 const RefundCancellationPolicyPage = lazy(() => import("@/pages/RefundCancellationPolicyPage"));
@@ -201,6 +202,11 @@ export const router = createBrowserRouter([
           { 
             path: "payment-success", 
             element: <Suspense fallback={<LoadingComponent />}><PaymentSuccessPage /></Suspense>
+          },
+          // Add PaymentFailurePage route
+          { 
+            path: "payment-failure", 
+            element: <Suspense fallback={<LoadingComponent />}><PaymentFailurePage /></Suspense>
           },
           // Add PaymentRetryPage route
           { 
