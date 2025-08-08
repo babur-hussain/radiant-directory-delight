@@ -109,24 +109,15 @@ export const getSubscriptionById = async (id: string): Promise<Subscription | nu
 
 export const createSubscription = async (subscription: Partial<Subscription>): Promise<Subscription> => {
   try {
-    if (!subscription.userId || !subscription.packageId) {
-      throw new Error('userId and packageId are required');
-    }
-    
-    const id = subscription.id || nanoid();
-    const now = new Date().toISOString();
+    const now = new Date();
     const isOneTime = subscription.paymentType === 'one-time';
     
-    // Calculate end date based on duration and billing cycle
-    const startDate = new Date();
-    const endDate = new Date(startDate);
-    
+    // Calculate end date based on payment type
+    const endDate = new Date(now);
     if (isOneTime) {
-      // For one-time payments, set duration based on package
       const durationMonths = subscription.durationMonths || 12;
       endDate.setMonth(endDate.getMonth() + durationMonths);
     } else {
-      // For recurring payments, set based on billing cycle
       const billingCycle = subscription.billingCycle || 'monthly';
       if (billingCycle === 'monthly') {
         endDate.setMonth(endDate.getMonth() + 1);
@@ -135,49 +126,61 @@ export const createSubscription = async (subscription: Partial<Subscription>): P
       }
     }
     
-    // Calculate next billing date for recurring subscriptions
+    // Calculate next billing date for recurring payments
     let nextBillingDate = null;
     if (!isOneTime) {
-      const nextBilling = new Date(startDate);
-      if (subscription.billingCycle === 'monthly') {
-        nextBilling.setMonth(nextBilling.getMonth() + 1);
+      nextBillingDate = new Date(now);
+      const billingCycle = subscription.billingCycle || 'monthly';
+      if (billingCycle === 'monthly') {
+        nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
       } else {
-        nextBilling.setFullYear(nextBilling.getFullYear() + 1);
+        nextBillingDate.setFullYear(nextBillingDate.getFullYear() + 1);
       }
-      nextBillingDate = nextBilling.toISOString();
     }
     
-    const subscriptionData = toSupabase({
-      id,
-      userId: subscription.userId,
-      packageId: subscription.packageId,
-      packageName: subscription.packageName || '',
-      amount: subscription.amount || 0,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      status: subscription.status || 'active',
-      paymentMethod: subscription.paymentMethod || 'payu',
-      transactionId: subscription.transactionId,
-      paymentType: subscription.paymentType || 'recurring',
-      billingCycle: subscription.billingCycle || 'monthly',
-      recurringAmount: subscription.recurringAmount || subscription.amount,
-      signupFee: subscription.signupFee || 0,
-      razorpaySubscriptionId: subscription.razorpaySubscriptionId,
-      razorpayOrderId: subscription.razorpayOrderId,
-      isPaused: false,
-      isPausable: isOneTime ? false : true,
-      isUserCancellable: isOneTime ? false : true,
-      assignedBy: subscription.assignedBy || 'system',
-      assignedAt: now,
-      actualStartDate: startDate.toISOString(),
-      nextBillingDate: nextBillingDate,
-      createdAt: now,
-      updatedAt: now
+    const subscriptionData = {
+      id: subscription.id || nanoid(),
+      user_id: subscription.userId,
+      package_id: subscription.packageId,
+      package_name: subscription.packageName,
+      amount: subscription.amount,
+      start_date: now.toISOString(),
+      end_date: endDate.toISOString(),
+      status: 'active',
+      payment_method: 'payu',
+      payment_type: subscription.paymentType || 'recurring',
+      billing_cycle: subscription.billingCycle,
+      signup_fee: subscription.signupFee || 0,
+      recurring_amount: subscription.recurringAmount,
+      advance_payment_months: subscription.advancePaymentMonths || 0,
+      next_billing_date: nextBillingDate?.toISOString() || null,
+      created_at: now.toISOString(),
+      updated_at: now.toISOString()
+    };
+    
+    const { data, error } = await supabase.from('subscriptions').insert(subscriptionData).select().single();
+    
+    if (error) throw error;
+    
+    return fromSupabase(data);
+  } catch (error) {
+    console.error('Error creating subscription:', error);
+    throw error;
+  }
+};
+
+export const updateSubscription = async (subscriptionId: string, updates: Partial<Subscription>): Promise<Subscription> => {
+  try {
+    const now = new Date();
+    const updateData = toSupabase({
+      ...updates,
+      updatedAt: now.toISOString()
     });
     
     const { data, error } = await supabase
       .from('subscriptions')
-      .insert(subscriptionData)
+      .update(updateData)
+      .eq('id', subscriptionId)
       .select()
       .single();
     
@@ -185,7 +188,7 @@ export const createSubscription = async (subscription: Partial<Subscription>): P
     
     return fromSupabase(data);
   } catch (error) {
-    console.error('Error creating subscription:', error);
+    console.error('Error updating subscription:', error);
     throw error;
   }
 };
