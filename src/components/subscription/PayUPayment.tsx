@@ -34,14 +34,23 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
     setError(null);
 
     try {
-      // Prepare payment data
+      // Prepare payment data with enhanced subscription information
       const txnid = 'txn_' + Date.now();
       const totalAmount = selectedPackage.price + (selectedPackage.setupFee || 0);
+      
+      // Determine payment description based on package type
+      let productInfo = selectedPackage.title || 'Subscription Package';
+      if (selectedPackage.paymentType === 'recurring') {
+        const billingCycle = selectedPackage.billingCycle === 'monthly' ? 'Monthly' : 'Yearly';
+        productInfo = `${selectedPackage.title} - ${billingCycle} Subscription`;
+      } else {
+        productInfo = `${selectedPackage.title} - One-time Payment`;
+      }
       
       const paymentData = {
         key: 'i0514X',
         amount: totalAmount,
-        productinfo: selectedPackage.title || 'Influencer Starter Package',
+        productinfo: productInfo,
         firstname: user.name || 'Customer',
         email: user.email,
         phone: user.phone || '9999999999',
@@ -49,13 +58,13 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
         udf1: String(user.id || user.uid || ''),
         udf2: selectedPackage.id || '',
         udf3: selectedPackage.title || '',
-        udf4: '',
-        udf5: '',
-        udf6: '',
-        udf7: '',
-        udf8: '',
-        udf9: '',
-        udf10: '',
+        udf4: selectedPackage.paymentType || 'recurring',
+        udf5: selectedPackage.billingCycle || '',
+        udf6: selectedPackage.type || '',
+        udf7: selectedPackage.setupFee?.toString() || '0',
+        udf8: selectedPackage.durationMonths?.toString() || '12',
+        udf9: selectedPackage.advancePaymentMonths?.toString() || '0',
+        udf10: selectedPackage.monthlyPrice?.toString() || '0',
         surl: `${window.location.origin}/payment-success`,
         furl: `${window.location.origin}/payment-failure`,
       };
@@ -63,7 +72,7 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
       // Call backend to get PayU params and hash
       const payuParams = await initiatePayUPayment(paymentData);
       
-      // Store payment details for success/failure pages
+      // Store enhanced payment details for success/failure pages
       sessionStorage.setItem('payu_payment_details', JSON.stringify({
         packageId: selectedPackage.id,
         amount: totalAmount,
@@ -71,6 +80,14 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
         txnid,
         userEmail: user.email,
         userName: user.name,
+        paymentType: selectedPackage.paymentType,
+        billingCycle: selectedPackage.billingCycle,
+        packageType: selectedPackage.type,
+        setupFee: selectedPackage.setupFee || 0,
+        durationMonths: selectedPackage.durationMonths || 12,
+        advancePaymentMonths: selectedPackage.advancePaymentMonths || 0,
+        monthlyPrice: selectedPackage.monthlyPrice || 0,
+        isSubscription: selectedPackage.paymentType === 'recurring'
       }));
 
       // Dynamically create and submit form to PayU

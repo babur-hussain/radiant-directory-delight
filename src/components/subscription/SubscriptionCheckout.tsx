@@ -5,10 +5,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { SubscriptionPackage } from "@/data/subscriptionData";
-import { ShoppingCart, ArrowLeft, Loader2 } from "lucide-react";
+import { ShoppingCart, ArrowLeft, Loader2, Check } from "lucide-react";
 import { useSubscription } from "@/hooks";
 import PayUPayment from './PayUPayment';
 import { useAuth } from '@/hooks/useAuth';
+import { Badge } from "@/components/ui/badge";
 
 interface SubscriptionCheckoutProps {
   selectedPackage: SubscriptionPackage;
@@ -112,6 +113,60 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
   }
   
   const isOneTimePackage = selectedPackage.paymentType === 'one-time';
+  const isMonthlySubscription = selectedPackage.paymentType === 'recurring' && selectedPackage.billingCycle === 'monthly';
+  const isYearlySubscription = selectedPackage.paymentType === 'recurring' && selectedPackage.billingCycle === 'yearly';
+  
+  const calculateInitialPayment = () => {
+    const setupFee = selectedPackage.setupFee || 0;
+    const advanceMonths = selectedPackage.advancePaymentMonths || 0;
+    
+    if (isOneTimePackage) {
+      return selectedPackage.price + setupFee;
+    } else if (isMonthlySubscription) {
+      return setupFee + (selectedPackage.monthlyPrice * advanceMonths);
+    } else if (isYearlySubscription) {
+      return setupFee + (advanceMonths > 0 ? selectedPackage.price : 0);
+    }
+    return selectedPackage.price + setupFee;
+  };
+  
+  const calculateRecurringAmount = () => {
+    if (isOneTimePackage) return 0;
+    if (isMonthlySubscription) return selectedPackage.monthlyPrice;
+    if (isYearlySubscription) return selectedPackage.price;
+    return 0;
+  };
+  
+  const calculateTotalFirstYear = () => {
+    const setupFee = selectedPackage.setupFee || 0;
+    
+    if (isOneTimePackage) {
+      return selectedPackage.price + setupFee;
+    } else if (isMonthlySubscription) {
+      return setupFee + (selectedPackage.monthlyPrice * 12);
+    } else if (isYearlySubscription) {
+      return setupFee + selectedPackage.price;
+    }
+    return selectedPackage.price + setupFee;
+  };
+  
+  const getPaymentTypeDescription = () => {
+    if (isOneTimePackage) return 'One-time Payment';
+    if (isMonthlySubscription) return 'Monthly Subscription';
+    if (isYearlySubscription) return 'Yearly Subscription';
+    return 'Recurring Subscription';
+  };
+  
+  const getBillingCycleDescription = () => {
+    if (isOneTimePackage) return 'Lifetime Access';
+    if (isMonthlySubscription) return 'Billed Monthly';
+    if (isYearlySubscription) return 'Billed Yearly';
+    return 'Recurring Billing';
+  };
+  
+  const initialPayment = calculateInitialPayment();
+  const recurringAmount = calculateRecurringAmount();
+  const totalFirstYear = calculateTotalFirstYear();
   
   return (
     <div className="max-w-2xl mx-auto subscription-checkout-container">
@@ -126,44 +181,118 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
           <CardDescription>Review your subscription plan before proceeding</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pb-24 sm:pb-6">
+          {/* Package Summary */}
           <div className="border rounded-md p-4">
             <div className="flex justify-between mb-2">
               <h3 className="font-medium">{selectedPackage.title}</h3>
-              <span className="font-bold">₹{totalPrice}</span>
+              <Badge variant={isOneTimePackage ? "default" : "secondary"}>
+                {getPaymentTypeDescription()}
+              </Badge>
             </div>
-            <p className="text-sm text-muted-foreground">{selectedPackage.shortDescription}</p>
+            <p className="text-sm text-muted-foreground mb-3">{selectedPackage.shortDescription}</p>
+            
+            {/* Subscription Details */}
+            <div className="bg-gray-50 rounded-md p-3 mt-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="font-medium text-gray-600">Payment Type:</span>
+                  <div className="text-gray-800 font-medium">{getPaymentTypeDescription()}</div>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-600">Billing Cycle:</span>
+                  <div className="text-gray-800 font-medium">{getBillingCycleDescription()}</div>
+                </div>
+                {selectedPackage.durationMonths > 0 && (
+                  <div>
+                    <span className="font-medium text-gray-600">Duration:</span>
+                    <div className="text-gray-800 font-medium">
+                      {selectedPackage.durationMonths === 0 ? 'Lifetime' : `${selectedPackage.durationMonths} months`}
+                    </div>
+                  </div>
+                )}
+                {selectedPackage.advancePaymentMonths > 0 && (
+                  <div>
+                    <span className="font-medium text-gray-600">Advance Payment:</span>
+                    <div className="text-gray-800 font-medium">
+                      {selectedPackage.advancePaymentMonths} months
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           
+          {/* Pricing Breakdown */}
           <div className="space-y-4">
-            <h3 className="font-medium">Payment Details</h3>
+            <h3 className="font-medium">Pricing Breakdown</h3>
             <div className="space-y-2 text-sm">
               {selectedPackage.setupFee > 0 && (
                 <div className="flex justify-between">
-                  <span>One-time setup fee</span>
-                  <span>₹{selectedPackage.setupFee}</span>
+                  <span>Setup Fee</span>
+                  <span>₹{selectedPackage.setupFee.toLocaleString('en-IN')}</span>
                 </div>
               )}
-              <div className="flex justify-between">
-                <span>{isOneTimePackage ? 'Base price' : 'Annual subscription'}</span>
-                <span>₹{selectedPackage.price}</span>
-              </div>
+              
               {isOneTimePackage ? (
-                <div className="border-t pt-2 flex justify-between font-medium">
-                  <span>Total payment</span>
-                  <span>₹{totalPrice}</span>
+                <div className="flex justify-between">
+                  <span>Package Price</span>
+                  <span>₹{selectedPackage.price.toLocaleString('en-IN')}</span>
+                </div>
+              ) : isMonthlySubscription ? (
+                <>
+                  <div className="flex justify-between">
+                    <span>Monthly Price</span>
+                    <span>₹{selectedPackage.monthlyPrice?.toLocaleString('en-IN')}</span>
+                  </div>
+                  {selectedPackage.advancePaymentMonths > 0 && (
+                    <div className="flex justify-between">
+                      <span>Advance Payment ({selectedPackage.advancePaymentMonths} months)</span>
+                      <span>₹{(selectedPackage.monthlyPrice * selectedPackage.advancePaymentMonths).toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
+                </>
+              ) : isYearlySubscription ? (
+                <div className="flex justify-between">
+                  <span>Yearly Price</span>
+                  <span>₹{selectedPackage.price.toLocaleString('en-IN')}</span>
                 </div>
               ) : (
+                <div className="flex justify-between">
+                  <span>Package Price</span>
+                  <span>₹{selectedPackage.price.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+              
+              <div className="border-t pt-2 flex justify-between font-medium">
+                <span>Initial Payment</span>
+                <span>₹{initialPayment.toLocaleString('en-IN')}</span>
+              </div>
+              
+              {!isOneTimePackage && (
                 <>
-                  <div className="border-t pt-2 flex justify-between font-medium">
-                    <span>Initial payment</span>
-                    <span>₹{selectedPackage.setupFee || 0}</span>
+                  <div className="flex justify-between text-blue-600">
+                    <span>Recurring Amount</span>
+                    <span>₹{recurringAmount.toLocaleString('en-IN')}/{isMonthlySubscription ? 'month' : 'year'}</span>
                   </div>
-                  <div className="flex justify-between font-medium">
-                    <span>Annual recurring payment</span>
-                    <span>₹{selectedPackage.price}</span>
+                  <div className="border-t pt-2 flex justify-between font-semibold text-purple-600">
+                    <span>First Year Total</span>
+                    <span>₹{totalFirstYear.toLocaleString('en-IN')}</span>
                   </div>
                 </>
               )}
+            </div>
+          </div>
+          
+          {/* Features */}
+          <div className="space-y-4">
+            <h3 className="font-medium">What's Included</h3>
+            <div className="space-y-2">
+              {selectedPackage.features.map((feature, index) => (
+                <div key={index} className="flex items-start">
+                  <Check className="h-4 w-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">{feature}</span>
+                </div>
+              ))}
             </div>
           </div>
           

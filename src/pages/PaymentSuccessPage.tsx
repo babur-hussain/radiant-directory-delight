@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader2, XCircle, Star, Zap, Shield, Users, RefreshCw } from 'lucide-react';
+import { CheckCircle, Loader2, XCircle, Star, Zap, Shield, Users, RefreshCw, Calendar } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/hooks/useAuth';
 // import { adminAssignInstamojoSubscription } from '@/lib/subscription/admin-instamojo-subscription';
@@ -34,10 +34,47 @@ const PaymentSuccessPage = () => {
       try {
         // Get stored payment details
         const storedDetails = sessionStorage.getItem('payu_payment_details');
-        if (!storedDetails) {
-          throw new Error('Payment details not found');
-        }
-        const paymentDetails = JSON.parse(storedDetails);
+        const paymentDetails = storedDetails ? JSON.parse(storedDetails) : null;
+        const isSubscription = paymentDetails?.isSubscription || paymentDetails?.paymentType === 'recurring';
+        const billingCycle = paymentDetails?.billingCycle;
+        const packageType = paymentDetails?.packageType;
+        const setupFee = paymentDetails?.setupFee || 0;
+        const durationMonths = paymentDetails?.durationMonths || 12;
+        const advancePaymentMonths = paymentDetails?.advancePaymentMonths || 0;
+        const monthlyPrice = paymentDetails?.monthlyPrice || 0;
+
+        const getPaymentTypeDescription = () => {
+          if (isSubscription) {
+            if (billingCycle === 'monthly') {
+              return 'Monthly Subscription';
+            } else if (billingCycle === 'yearly') {
+              return 'Yearly Subscription';
+            }
+            return 'Recurring Subscription';
+          }
+          return 'One-time Payment';
+        };
+
+        const getNextBillingInfo = () => {
+          if (!isSubscription) return null;
+          
+          const now = new Date();
+          let nextBillingDate = new Date(now);
+          
+          if (billingCycle === 'monthly') {
+            nextBillingDate.setMonth(now.getMonth() + 1);
+          } else if (billingCycle === 'yearly') {
+            nextBillingDate.setFullYear(now.getFullYear() + 1);
+          }
+          
+          return {
+            date: nextBillingDate.toLocaleDateString(),
+            amount: billingCycle === 'monthly' ? monthlyPrice : paymentDetails?.amount
+          };
+        };
+
+        const nextBillingInfo = getNextBillingInfo();
+
         setPackageDetails(paymentDetails);
         
         if (status === 'SUCCESS') {
@@ -131,6 +168,60 @@ const PaymentSuccessPage = () => {
                   <p className="text-green-700 mb-4">
                     Thank you for your payment! Your subscription has been activated and you now have access to all premium features.
                   </p>
+                  
+                  {/* Subscription Details */}
+                  <div className="bg-white rounded-lg p-4 mb-4">
+                    <h4 className="font-semibold text-gray-800 mb-3">Subscription Details</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium text-gray-600">Payment Type:</span>
+                        <div className="text-gray-800 font-medium">
+                          {getPaymentTypeDescription()}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-600">Package Type:</span>
+                        <div className="text-gray-800 font-medium capitalize">
+                          {packageType || 'Standard'}
+                        </div>
+                      </div>
+                      {isSubscription && billingCycle && (
+                        <>
+                          <div>
+                            <span className="font-medium text-gray-600">Billing Cycle:</span>
+                            <div className="text-gray-800 font-medium capitalize">
+                              {billingCycle}
+                            </div>
+                          </div>
+                          {nextBillingInfo && (
+                            <div>
+                              <span className="font-medium text-gray-600">Next Billing:</span>
+                              <div className="text-gray-800 font-medium">
+                                {nextBillingInfo.date}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      {setupFee > 0 && (
+                        <div>
+                          <span className="font-medium text-gray-600">Setup Fee:</span>
+                          <div className="text-gray-800 font-medium">
+                            ₹{setupFee.toLocaleString('en-IN')}
+                          </div>
+                        </div>
+                      )}
+                      {durationMonths > 0 && (
+                        <div>
+                          <span className="font-medium text-gray-600">Duration:</span>
+                          <div className="text-gray-800 font-medium">
+                            {durationMonths === 0 ? 'Lifetime' : `${durationMonths} months`}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                     <div className="flex items-center text-green-700">
                       <Shield className="h-4 w-4 mr-2" />
@@ -142,67 +233,104 @@ const PaymentSuccessPage = () => {
                     </div>
                     <div className="flex items-center text-green-700">
                       <Zap className="h-4 w-4 mr-2" />
-                      <span className="text-sm">Enhanced Features</span>
+                      <span className="text-sm">Instant Activation</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Package Details */}
-                {packageDetails && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                    <div className="flex items-center mb-4">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center">
                       {getPackageIcon()}
-                      <h3 className="text-xl font-semibold text-blue-800 ml-3">
-                        Package Details
-                      </h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-blue-700">
-                      <div>
-                        <p className="font-medium">Package Name:</p>
-                        <p className="text-lg">{packageDetails.packageName}</p>
-                      </div>
-                      <div>
-                        <p className="font-medium">Amount Paid:</p>
-                        <p className="text-lg">₹{packageDetails.amount}</p>
-                      </div>
-                      <div>
-                        <p className="font-medium">Transaction ID:</p>
-                        <p className="text-sm font-mono">{packageDetails.txnid}</p>
-                      </div>
-                      <div>
-                        <p className="font-medium">Status:</p>
-                        <p className="text-green-600 font-medium">Active</p>
+                      <div className="ml-3">
+                        <CardTitle>{packageDetails?.packageName}</CardTitle>
+                        <CardDescription>
+                          Transaction ID: {packageDetails?.transactionId || 'N/A'}
+                        </CardDescription>
                       </div>
                     </div>
-                  </div>
-                )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">Amount Paid:</span>
+                        <span className="text-lg font-bold text-green-600">
+                          ₹{packageDetails?.amount?.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      
+                      {isSubscription && nextBillingInfo && (
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">Next Billing Amount:</span>
+                          <span className="text-lg font-bold text-blue-600">
+                            ₹{nextBillingInfo.amount?.toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      )}
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">Payment Method:</span>
+                        <span className="text-gray-600">PayU Gateway</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">Payment Date:</span>
+                        <span className="text-gray-600">
+                          {new Date().toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
                 {/* Next Steps */}
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
-                  <h3 className="text-xl font-semibold text-purple-800 mb-4">
-                    What's Next?
-                  </h3>
-                  <div className="space-y-3 text-purple-700">
-                    <div className="flex items-start">
-                      <div className="bg-purple-200 rounded-full p-1 mr-3 mt-0.5">
-                        <span className="text-purple-800 text-xs font-bold">1</span>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>What's Next?</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-start">
+                        <div className="bg-blue-100 rounded-full p-2 mr-3">
+                          <CheckCircle className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium">Access Your Dashboard</h4>
+                          <p className="text-sm text-gray-600">
+                            Explore your new features and manage your subscription from your personalized dashboard.
+                          </p>
+                        </div>
                       </div>
-                      <p>Explore your dashboard to access all premium features</p>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="bg-purple-200 rounded-full p-1 mr-3 mt-0.5">
-                        <span className="text-purple-800 text-xs font-bold">2</span>
+                      
+                      <div className="flex items-start">
+                        <div className="bg-green-100 rounded-full p-2 mr-3">
+                          <Users className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium">Connect with {packageType === 'Business' ? 'Influencers' : 'Businesses'}</h4>
+                          <p className="text-sm text-gray-600">
+                            Start exploring and connecting with {packageType === 'Business' ? 'influencers' : 'businesses'} in your area.
+                          </p>
+                        </div>
                       </div>
-                      <p>Complete your profile to get maximum benefits</p>
+                      
+                      {isSubscription && (
+                        <div className="flex items-start">
+                          <div className="bg-purple-100 rounded-full p-2 mr-3">
+                            <Calendar className="h-4 w-4 text-purple-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium">Manage Your Subscription</h4>
+                            <p className="text-sm text-gray-600">
+                              View your subscription details, billing history, and manage your recurring payments.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-start">
-                      <div className="bg-purple-200 rounded-full p-1 mr-3 mt-0.5">
-                        <span className="text-purple-800 text-xs font-bold">3</span>
-                      </div>
-                      <p>Start connecting with businesses and growing your network</p>
-                    </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               </>
             )}
             
