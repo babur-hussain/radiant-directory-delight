@@ -15,13 +15,21 @@ export const initiatePayUPayment = async (paymentData) => {
       const errorText = await response.text();
       
       // Handle rate limiting specifically
-      if (response.status === 429 || errorText.toLowerCase().includes('too many requests')) {
+      if (response.status === 429 || 
+          errorText.toLowerCase().includes('too many requests') || 
+          errorText.toLowerCase().includes('rate limit') ||
+          errorText.toLowerCase().includes('rate exceeded')) {
         throw new Error('Too many requests. Please wait 60 seconds before trying again.');
       }
       
       // Handle other errors
       if (response.status >= 500) {
         throw new Error('Payment service temporarily unavailable. Please try again later.');
+      }
+      
+      // Handle specific PayU errors
+      if (errorText.toLowerCase().includes('invalid') || errorText.toLowerCase().includes('failed')) {
+        throw new Error(`Payment initiation failed: ${errorText}`);
       }
       
       throw new Error(`Payment initiation failed: ${errorText || response.statusText}`);

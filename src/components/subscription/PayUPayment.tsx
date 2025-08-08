@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, CreditCard, RefreshCw } from 'lucide-react';
+import { Loader2, AlertTriangle, CreditCard, RefreshCw, Clock } from 'lucide-react';
 import { initiatePayUPayment } from '@/api/services/payuAPI';
 import { toast } from 'sonner';
 
@@ -16,6 +16,25 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [lastAttempt, setLastAttempt] = useState<number>(0);
+  const [countdown, setCountdown] = useState<number>(0);
+  const [isRateLimited, setIsRateLimited] = useState(false);
+
+  // Countdown timer for rate limiting
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (countdown > 0) {
+      interval = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            setIsRateLimited(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [countdown]);
 
   const handlePayU = async () => {
     if (!user) {
@@ -36,6 +55,8 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
     const now = Date.now();
     if (retryCount > 0 && (now - lastAttempt) < 60000) {
       const remainingTime = Math.ceil((60000 - (now - lastAttempt)) / 1000);
+      setCountdown(remainingTime);
+      setIsRateLimited(true);
       toast.error(`Please wait ${remainingTime} seconds before trying again`);
       return;
     }
@@ -43,6 +64,7 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
     setIsProcessing(true);
     setError(null);
     setLastAttempt(now);
+    setIsRateLimited(false);
 
     try {
       // Prepare payment data with enhanced subscription information
@@ -81,8 +103,34 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
         udf10: selectedPackage.monthlyPrice?.toString() || '0',
       };
 
-      // Call backend to get PayU params and hash
-      const payuParams = await initiatePayUPayment(paymentData);
+      // Call backend to get PayU params and hash with retry logic
+      let payuParams;
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (attempts < maxAttempts) {
+        try {
+          payuParams = await initiatePayUPayment(paymentData);
+          break;
+        } catch (error) {
+          attempts++;
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          
+          if (errorMessage.toLowerCase().includes('too many requests') || 
+              errorMessage.toLowerCase().includes('rate limit') ||
+              errorMessage.toLowerCase().includes('rate exceeded')) {
+            if (attempts >= maxAttempts) {
+              throw new Error('Too many requests. Please wait 60 seconds before trying again.');
+            }
+            // Wait before retrying (exponential backoff)
+            const waitTime = Math.min(1000 * Math.pow(2, attempts - 1), 5000);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue;
+          } else {
+            throw error;
+          }
+        }
+      }
       
       // Store enhanced payment details for success/failure pages
       sessionStorage.setItem('payu_payment_details', JSON.stringify({
@@ -141,9 +189,13 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
       }
 
       // Check for rate limiting error
-      if (errorMessage.toLowerCase().includes('too many requests') || errorMessage.toLowerCase().includes('rate limit')) {
+      if (errorMessage.toLowerCase().includes('too many requests') || 
+          errorMessage.toLowerCase().includes('rate limit') ||
+          errorMessage.toLowerCase().includes('rate exceeded')) {
         errorMessage = 'Too many payment requests. Please wait 60 seconds before trying again.';
         setRetryCount(prev => prev + 1);
+        setCountdown(60);
+        setIsRateLimited(true);
       }
 
       // Store error details for failure page
@@ -156,6 +208,7 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
         timestamp: new Date().toISOString(),
       };
       
+      setError(errorMessage);
       onFailure(failureError);
       toast.error(errorMessage);
     } finally {
@@ -164,6 +217,10 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
   };
 
   const handleRetry = () => {
+    if (countdown > 0) {
+      toast.error(`Please wait ${countdown} seconds before trying again`);
+      return;
+    }
     setError(null);
     handlePayU();
   };
@@ -174,20 +231,27 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-center">
             <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
-            <div>
+            <div className="flex-1">
               <h3 className="text-sm font-medium text-red-800">Payment Error</h3>
               <p className="text-sm text-red-700 mt-1">{error}</p>
               {error.toLowerCase().includes('too many requests') && (
                 <div className="mt-2">
-                  <Button 
-                    onClick={handleRetry} 
-                    variant="outline" 
-                    size="sm"
-                    className="text-red-700 border-red-300 hover:bg-red-50"
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Retry Payment
-                  </Button>
+                  {countdown > 0 ? (
+                    <div className="flex items-center text-sm text-red-600">
+                      <Clock className="h-4 w-4 mr-2" />
+                      Please wait {countdown} seconds before retrying
+                    </div>
+                  ) : (
+                    <Button 
+                      onClick={handleRetry} 
+                      variant="outline" 
+                      size="sm"
+                      className="text-red-700 border-red-300 hover:bg-red-50"
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Retry Payment
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
@@ -212,13 +276,18 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
 
       <Button
         onClick={handlePayU}
-        disabled={isProcessing}
+        disabled={isProcessing || isRateLimited}
         className="w-full h-12 bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-700 hover:via-violet-700 hover:to-indigo-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
       >
         {isProcessing ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             Processing Payment...
+          </>
+        ) : isRateLimited ? (
+          <>
+            <Clock className="h-4 w-4 mr-2" />
+            Please wait {countdown} seconds
           </>
         ) : (
           <>
