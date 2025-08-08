@@ -80,20 +80,50 @@ const PaymentSuccessPage = () => {
         if (status === 'SUCCESS') {
           // Create subscription in Supabase
           try {
-            const subscription = await createSubscription({
-              userId: user.id || user.uid,
-              packageId: paymentDetails.packageId,
-              packageName: paymentDetails.packageName,
-              amount: paymentDetails.amount,
-              transactionId: txnId,
-              paymentMethod: 'payu',
-              paymentType: 'one-time', // or infer from package if available
-              billingCycle: 'monthly', // or infer from package if available
-            });
-            setSubscriptionDetails(subscription);
-            setPaymentStatus('success');
-            toast.success('Payment successful! Your subscription has been activated.');
-            sessionStorage.removeItem('payu_payment_details');
+            // Check if this is a recurring payment
+            const isRecurringPayment = sessionStorage.getItem('payu_recurring_payment');
+            
+            if (isRecurringPayment) {
+              // Handle recurring payment
+              const recurringData = JSON.parse(isRecurringPayment);
+              const { updateSubscriptionAfterRecurringPayment } = await import('@/services/subscriptionService');
+              
+              const success = await updateSubscriptionAfterRecurringPayment(recurringData.subscriptionId);
+              
+              if (success) {
+                setPaymentStatus('success');
+                toast.success('Recurring payment successful! Your subscription has been extended.');
+                sessionStorage.removeItem('payu_recurring_payment');
+              } else {
+                setPaymentStatus('failed');
+                setError('Payment succeeded but failed to update subscription. Please contact support.');
+                sessionStorage.setItem('payu_payment_error', 'Failed to update subscription after recurring payment.');
+                return;
+              }
+            } else {
+              // Handle new subscription creation
+              const subscription = await createSubscription({
+                userId: user.id || user.uid,
+                packageId: paymentDetails.packageId,
+                packageName: paymentDetails.packageName,
+                amount: paymentDetails.amount,
+                transactionId: txnId,
+                paymentMethod: 'payu',
+                paymentType: paymentDetails.paymentType || 'recurring',
+                billingCycle: paymentDetails.billingCycle || 'monthly',
+                recurringAmount: paymentDetails.isSubscription ? 
+                  (paymentDetails.billingCycle === 'monthly' ? paymentDetails.monthlyPrice : paymentDetails.amount) : 
+                  undefined,
+                signupFee: paymentDetails.setupFee || 0,
+                durationMonths: paymentDetails.durationMonths || 12,
+                advancePaymentMonths: paymentDetails.advancePaymentMonths || 0
+              });
+              
+              setSubscriptionDetails(subscription);
+              setPaymentStatus('success');
+              toast.success('Payment successful! Your subscription has been activated.');
+              sessionStorage.removeItem('payu_payment_details');
+            }
           } catch (subError) {
             setPaymentStatus('failed');
             setError('Payment succeeded but failed to activate subscription. Please contact support or retry.');

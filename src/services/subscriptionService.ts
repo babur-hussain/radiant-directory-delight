@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
 import { Subscription, PaymentType, BillingCycle } from '@/models/Subscription';
+import { initiatePayUPayment } from '@/api/services/payuAPI';
 
 const fromSupabase = (data: any): Subscription => {
   return {
@@ -37,36 +38,73 @@ const fromSupabase = (data: any): Subscription => {
   };
 };
 
-const toSupabase = (data: Partial<Subscription>): any => {
+const toSupabase = (subscription: Partial<Subscription>): any => {
   return {
-    id: data.id,
-    user_id: data.userId,
-    package_id: data.packageId,
-    package_name: data.packageName || '',
-    amount: data.amount || 0,
-    start_date: data.startDate || new Date().toISOString(),
-    end_date: data.endDate || new Date().toISOString(),
-    status: data.status || 'active',
-    payment_method: data.paymentMethod,
-    transaction_id: data.transactionId,
-    cancelled_at: data.cancelledAt,
-    cancel_reason: data.cancelReason,
-    payment_type: data.paymentType,
-    billing_cycle: data.billingCycle,
-    signup_fee: data.signupFee,
-    recurring_amount: data.recurringAmount,
-    razorpay_subscription_id: data.razorpaySubscriptionId,
-    is_paused: data.isPaused,
-    is_pausable: data.isPausable,
-    is_user_cancellable: data.isUserCancellable,
-    assigned_by: data.assignedBy,
-    assigned_at: data.assignedAt,
-    advance_payment_months: data.advancePaymentMonths,
-    actual_start_date: data.actualStartDate,
-    invoice_ids: data.invoiceIds,
-    next_billing_date: data.nextBillingDate,
-    razorpay_order_id: data.razorpayOrderId
+    id: subscription.id,
+    user_id: subscription.userId,
+    package_id: subscription.packageId,
+    package_name: subscription.packageName,
+    amount: subscription.amount,
+    start_date: subscription.startDate,
+    end_date: subscription.endDate,
+    status: subscription.status,
+    payment_method: subscription.paymentMethod,
+    transaction_id: subscription.transactionId,
+    payment_type: subscription.paymentType,
+    billing_cycle: subscription.billingCycle,
+    signup_fee: subscription.signupFee,
+    recurring_amount: subscription.recurringAmount,
+    razorpay_subscription_id: subscription.razorpaySubscriptionId,
+    created_at: subscription.createdAt,
+    updated_at: subscription.updatedAt,
+    is_paused: subscription.isPaused,
+    is_pausable: subscription.isPausable,
+    is_user_cancellable: subscription.isUserCancellable,
+    assigned_by: subscription.assignedBy,
+    assigned_at: subscription.assignedAt,
+    advance_payment_months: subscription.advancePaymentMonths,
+    actual_start_date: subscription.actualStartDate,
+    invoice_ids: subscription.invoiceIds,
+    next_billing_date: subscription.nextBillingDate,
+    razorpay_order_id: subscription.razorpayOrderId
   };
+};
+
+// Enhanced subscription service with autopay support
+export const getSubscriptions = async (userId?: string): Promise<Subscription[]> => {
+  try {
+    let query = supabase.from('subscriptions').select('*');
+    
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    
+    return data ? data.map(fromSupabase) : [];
+  } catch (error) {
+    console.error('Error getting subscriptions:', error);
+    return [];
+  }
+};
+
+export const getSubscriptionById = async (id: string): Promise<Subscription | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) throw error;
+    
+    return data ? fromSupabase(data) : null;
+  } catch (error) {
+    console.error('Error getting subscription:', error);
+    return null;
+  }
 };
 
 export const createSubscription = async (subscription: Partial<Subscription>): Promise<Subscription> => {
@@ -79,13 +117,36 @@ export const createSubscription = async (subscription: Partial<Subscription>): P
     const now = new Date().toISOString();
     const isOneTime = subscription.paymentType === 'one-time';
     
-    // Calculate end date based on duration
+    // Calculate end date based on duration and billing cycle
     const startDate = new Date();
     const endDate = new Date(startDate);
-    const durationMonths = subscription.billingCycle === 'monthly' ? 1 : 12;
-    endDate.setMonth(endDate.getMonth() + durationMonths);
     
-    // For one-time payments, set as non-cancellable and non-pausable
+    if (isOneTime) {
+      // For one-time payments, set duration based on package
+      const durationMonths = subscription.durationMonths || 12;
+      endDate.setMonth(endDate.getMonth() + durationMonths);
+    } else {
+      // For recurring payments, set based on billing cycle
+      const billingCycle = subscription.billingCycle || 'monthly';
+      if (billingCycle === 'monthly') {
+        endDate.setMonth(endDate.getMonth() + 1);
+      } else {
+        endDate.setFullYear(endDate.getFullYear() + 1);
+      }
+    }
+    
+    // Calculate next billing date for recurring subscriptions
+    let nextBillingDate = null;
+    if (!isOneTime) {
+      const nextBilling = new Date(startDate);
+      if (subscription.billingCycle === 'monthly') {
+        nextBilling.setMonth(nextBilling.getMonth() + 1);
+      } else {
+        nextBilling.setFullYear(nextBilling.getFullYear() + 1);
+      }
+      nextBillingDate = nextBilling.toISOString();
+    }
+    
     const subscriptionData = toSupabase({
       id,
       userId: subscription.userId,
@@ -95,7 +156,7 @@ export const createSubscription = async (subscription: Partial<Subscription>): P
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       status: subscription.status || 'active',
-      paymentMethod: subscription.paymentMethod || 'razorpay',
+      paymentMethod: subscription.paymentMethod || 'payu',
       transactionId: subscription.transactionId,
       paymentType: subscription.paymentType || 'recurring',
       billingCycle: subscription.billingCycle || 'monthly',
@@ -109,165 +170,271 @@ export const createSubscription = async (subscription: Partial<Subscription>): P
       assignedBy: subscription.assignedBy || 'system',
       assignedAt: now,
       actualStartDate: startDate.toISOString(),
-      nextBillingDate: subscription.billingCycle === 'monthly' ? endDate.toISOString() : null,
+      nextBillingDate: nextBillingDate,
       createdAt: now,
       updatedAt: now
     });
     
-    // Insert subscription record
-    const { data: subData, error: subError } = await supabase
-      .from('user_subscriptions')
-      .insert([subscriptionData])
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .insert(subscriptionData)
       .select()
       .single();
     
-    if (subError) throw subError;
+    if (error) throw error;
     
-    // Update user profile with subscription details
-    const { error: userError } = await supabase
-      .from('users')
-      .update({
-        subscription_id: id,
-        subscription_status: 'active',
-        subscription_package: subscription.packageId,
-        subscription_assigned_at: now,
-        last_updated: now
-      })
-      .eq('id', subscription.userId);
-    
-    if (userError) {
-      console.error('Error updating user profile:', userError);
-      // Don't throw here, subscription is created successfully
-    }
-    
-    return fromSupabase(subData);
+    return fromSupabase(data);
   } catch (error) {
     console.error('Error creating subscription:', error);
     throw error;
   }
 };
 
-export const getActiveUserSubscription = async (userId: string): Promise<Subscription | null> => {
+// Autopay system for recurring subscriptions
+export const processRecurringPayment = async (subscription: Subscription, user: any): Promise<boolean> => {
   try {
-    const { data, error } = await supabase
-      .from('user_subscriptions')
+    if (subscription.paymentType !== 'recurring') {
+      console.log('Not a recurring subscription, skipping autopay');
+      return false;
+    }
+    
+    const now = new Date();
+    const nextBilling = subscription.nextBillingDate ? new Date(subscription.nextBillingDate) : null;
+    
+    if (!nextBilling || now < nextBilling) {
+      console.log('Not time for recurring payment yet');
+      return false;
+    }
+    
+    console.log('Processing recurring payment for subscription:', subscription.id);
+    
+    // Get package details
+    const { data: packageData, error: packageError } = await supabase
+      .from('subscription_packages')
       .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .eq('id', subscription.packageId)
+      .single();
     
-    if (error) throw error;
+    if (packageError || !packageData) {
+      console.error('Package not found for recurring payment');
+      return false;
+    }
     
-    return data ? fromSupabase(data) : null;
-  } catch (error) {
-    console.error(`Error getting active subscription for user ${userId}:`, error);
-    return null;
-  }
-};
-
-export const getUserSubscriptions = async (userId: string): Promise<Subscription[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('user_subscriptions')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    // Calculate recurring amount
+    const recurringAmount = packageData.billing_cycle === 'monthly' 
+      ? packageData.monthly_price 
+      : packageData.price;
     
-    if (error) throw error;
+    // Initiate PayU payment for recurring charge
+    const txnid = 'recurring_' + Date.now();
+    const paymentData = {
+      key: 'i0514X',
+      amount: recurringAmount,
+      productinfo: `${packageData.title} - Recurring Payment`,
+      firstname: user.name || 'Customer',
+      email: user.email,
+      phone: user.phone || '9999999999',
+      txnid,
+      udf1: String(user.id || user.uid || ''),
+      udf2: subscription.packageId,
+      udf3: packageData.title,
+      udf4: 'recurring',
+      udf5: packageData.billing_cycle,
+      udf6: 'autopay',
+      udf7: '0', // No setup fee for recurring
+      udf8: '1', // Duration for this billing cycle
+      udf9: '0', // No advance payment
+      udf10: packageData.monthly_price?.toString() || '0',
+      surl: `${window.location.origin}/payment-success`,
+      furl: `${window.location.origin}/payment-failure`,
+    };
     
-    return data ? data.map(fromSupabase) : [];
-  } catch (error) {
-    console.error(`Error getting subscriptions for user ${userId}:`, error);
-    return [];
-  }
-};
-
-export const updateSubscription = async (id: string, subscription: Partial<Subscription>): Promise<Subscription | null> => {
-  try {
-    const data = toSupabase({
-      ...subscription,
-      updatedAt: new Date().toISOString()
+    // Call PayU API
+    const payuParams = await initiatePayUPayment(paymentData);
+    
+    // Store payment details
+    sessionStorage.setItem('payu_recurring_payment', JSON.stringify({
+      subscriptionId: subscription.id,
+      packageId: subscription.packageId,
+      amount: recurringAmount,
+      txnid,
+      userEmail: user.email,
+      userName: user.name,
+      isRecurring: true
+    }));
+    
+    // Submit payment form
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = payuParams.payuBaseUrl;
+    
+    Object.entries(payuParams).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = String(value);
+        form.appendChild(input);
+      }
     });
     
-    const { data: result, error } = await supabase
-      .from('user_subscriptions')
-      .update(data)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    
-    // Update user profile if status changed
-    if (subscription.status) {
-      await supabase
-        .from('users')
-        .update({
-          subscription_status: subscription.status,
-          last_updated: new Date().toISOString(),
-          ...(subscription.status === 'cancelled' && {
-            subscription_cancelled_at: new Date().toISOString()
-          })
-        })
-        .eq('id', result.user_id);
-    }
-    
-    return fromSupabase(result);
-  } catch (error) {
-    console.error('Error updating subscription:', error);
-    return null;
-  }
-};
-
-export const cancelSubscription = async (id: string, reason: string = 'user_cancelled'): Promise<boolean> => {
-  try {
-    // First check if this subscription can be cancelled
-    const { data: subData, error: subError } = await supabase
-      .from('user_subscriptions')
-      .select('payment_type, is_user_cancellable, user_id')
-      .eq('id', id)
-      .single();
-    
-    if (subError) throw subError;
-    
-    // Block cancellation for one-time payments or if explicitly marked as not user-cancellable
-    if (subData?.payment_type === 'one-time' || subData?.is_user_cancellable === false) {
-      console.log("Cancellation prevented for subscription", id, "- one-time payment or not user-cancellable");
-      throw new Error('This subscription cannot be cancelled.');
-    }
-    
-    const now = new Date().toISOString();
-    
-    const { data, error } = await supabase
-      .from('user_subscriptions')
-      .update({
-        status: 'cancelled',
-        cancelled_at: now,
-        cancel_reason: reason,
-        updated_at: now
-      })
-      .eq('id', id)
-      .select();
-    
-    if (error) throw error;
-    
-    // Update user profile
-    if (data && data.length > 0) {
-      await supabase
-        .from('users')
-        .update({
-          subscription_status: 'cancelled',
-          subscription_cancelled_at: now,
-          last_updated: now
-        })
-        .eq('id', subData.user_id);
-    }
+    document.body.appendChild(form);
+    form.submit();
     
     return true;
   } catch (error) {
-    console.error(`Error cancelling subscription ${id}:`, error);
+    console.error('Error processing recurring payment:', error);
+    return false;
+  }
+};
+
+// Update subscription after successful recurring payment
+export const updateSubscriptionAfterRecurringPayment = async (subscriptionId: string): Promise<boolean> => {
+  try {
+    const subscription = await getSubscriptionById(subscriptionId);
+    if (!subscription) {
+      console.error('Subscription not found for update');
+      return false;
+    }
+    
+    const now = new Date();
+    const newEndDate = new Date(subscription.endDate);
+    const newNextBilling = new Date(subscription.nextBillingDate || subscription.endDate);
+    
+    // Extend subscription based on billing cycle
+    if (subscription.billingCycle === 'monthly') {
+      newEndDate.setMonth(newEndDate.getMonth() + 1);
+      newNextBilling.setMonth(newNextBilling.getMonth() + 1);
+    } else {
+      newEndDate.setFullYear(newEndDate.getFullYear() + 1);
+      newNextBilling.setFullYear(newNextBilling.getFullYear() + 1);
+    }
+    
+    // Update subscription
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({
+        end_date: newEndDate.toISOString(),
+        next_billing_date: newNextBilling.toISOString(),
+        updated_at: now.toISOString()
+      })
+      .eq('id', subscriptionId);
+    
+    if (error) throw error;
+    
+    console.log('Subscription updated after recurring payment');
+    return true;
+  } catch (error) {
+    console.error('Error updating subscription after recurring payment:', error);
+    return false;
+  }
+};
+
+// Check for subscriptions that need recurring payments
+export const checkRecurringPayments = async (): Promise<void> => {
+  try {
+    const now = new Date();
+    const { data: subscriptions, error } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('payment_type', 'recurring')
+      .eq('status', 'active')
+      .not('next_billing_date', 'is', null)
+      .lte('next_billing_date', now.toISOString());
+    
+    if (error) throw error;
+    
+    console.log(`Found ${subscriptions?.length || 0} subscriptions needing recurring payments`);
+    
+    for (const subscriptionData of subscriptions || []) {
+      const subscription = fromSupabase(subscriptionData);
+      
+      // Get user data
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', subscription.userId)
+        .single();
+      
+      if (userError || !userData) {
+        console.error('User not found for recurring payment:', subscription.userId);
+        continue;
+      }
+      
+      // Process recurring payment
+      await processRecurringPayment(subscription, userData);
+    }
+  } catch (error) {
+    console.error('Error checking recurring payments:', error);
+  }
+};
+
+// Cancel subscription
+export const cancelSubscription = async (subscriptionId: string, reason?: string): Promise<boolean> => {
+  try {
+    const now = new Date().toISOString();
+    
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({
+        status: 'cancelled',
+        cancelled_at: now,
+        cancel_reason: reason || 'User cancelled',
+        updated_at: now
+      })
+      .eq('id', subscriptionId);
+    
+    if (error) throw error;
+    
+    return true;
+  } catch (error) {
+    console.error('Error cancelling subscription:', error);
+    return false;
+  }
+};
+
+// Pause subscription
+export const pauseSubscription = async (subscriptionId: string): Promise<boolean> => {
+  try {
+    const now = new Date().toISOString();
+    
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({
+        is_paused: true,
+        paused_at: now,
+        updated_at: now
+      })
+      .eq('id', subscriptionId);
+    
+    if (error) throw error;
+    
+    return true;
+  } catch (error) {
+    console.error('Error pausing subscription:', error);
+    return false;
+  }
+};
+
+// Resume subscription
+export const resumeSubscription = async (subscriptionId: string): Promise<boolean> => {
+  try {
+    const now = new Date().toISOString();
+    
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({
+        is_paused: false,
+        resumed_at: now,
+        updated_at: now
+      })
+      .eq('id', subscriptionId);
+    
+    if (error) throw error;
+    
+    return true;
+  } catch (error) {
+    console.error('Error resuming subscription:', error);
     return false;
   }
 };
