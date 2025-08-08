@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
-import { getActiveUserSubscription } from "@/services/subscriptionService";
+import { getSubscriptions } from "@/services/subscriptionService";
 import SubscriptionPackages from "@/components/subscription/SubscriptionPackages";
 import SubscriptionDialog from "@/components/subscription/SubscriptionDialog";
 import Layout from "@/components/layout/Layout";
@@ -38,8 +38,23 @@ const SubscriptionPage = () => {
       if (isAuthenticated && user?.id) {
         try {
           setIsLoading(true);
-          const activeSubscription = await getActiveUserSubscription(user.id);
-          setSubscription(activeSubscription);
+          const userSubscriptions = await getSubscriptions(user.id);
+          // Get the most recent active subscription
+          const activeSubscription = userSubscriptions
+            .filter(sub => sub.status === 'active')
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] || null;
+          
+          if (activeSubscription) {
+            setSubscription({
+              id: activeSubscription.id,
+              packageName: activeSubscription.packageName,
+              amount: activeSubscription.amount,
+              endDate: activeSubscription.endDate,
+              status: activeSubscription.status
+            });
+          } else {
+            setSubscription(null);
+          }
         } catch (error) {
           console.error("Error fetching subscription:", error);
         } finally {

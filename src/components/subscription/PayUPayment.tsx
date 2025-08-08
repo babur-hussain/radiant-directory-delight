@@ -58,7 +58,6 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
         phone: user?.phone || '',
         surl: `${window.location.origin}/payment-success`,
         furl: `${window.location.origin}/`,
-        hash: hash,
         udf1: user?.id || '',
         udf2: selectedPackage.id,
         udf3: selectedPackage.type,
