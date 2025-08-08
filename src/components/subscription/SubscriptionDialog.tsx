@@ -116,6 +116,36 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
 
   const totalAmount = selectedPackage ? selectedPackage.price + (selectedPackage.setupFee || 0) : 0;
 
+  // Calculate the correct display amount based on billing cycle
+  const getDisplayAmount = () => {
+    if (!selectedPackage) return 0;
+    
+    if (selectedPackage.paymentType === 'one-time') {
+      return selectedPackage.price + (selectedPackage.setupFee || 0);
+    } else if (selectedPackage.billingCycle === 'monthly') {
+      return selectedPackage.monthlyPrice || selectedPackage.price;
+    } else {
+      return selectedPackage.price;
+    }
+  };
+
+  const getBillingCycleText = () => {
+    if (!selectedPackage) return '';
+    
+    if (selectedPackage.paymentType === 'one-time') {
+      return 'total';
+    } else if (selectedPackage.billingCycle === 'monthly') {
+      return '/month';
+    } else if (selectedPackage.billingCycle === 'yearly') {
+      return '/year';
+    } else {
+      return '/yearly';
+    }
+  };
+
+  const displayAmount = getDisplayAmount();
+  const billingCycleText = getBillingCycleText();
+
   return (
     <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-2xl rounded-lg z-[9999]">
@@ -141,9 +171,9 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
                 <div className="text-center">
                   <h3 className="font-semibold text-lg text-purple-800 mb-2">{selectedPackage.title}</h3>
                   <div className="flex items-center justify-center space-x-2 mb-2">
-                    <span className="text-3xl font-bold text-purple-700">₹{totalAmount.toLocaleString('en-IN')}</span>
+                    <span className="text-3xl font-bold text-purple-700">₹{displayAmount.toLocaleString('en-IN')}</span>
                     <span className="text-sm text-purple-600">
-                      {selectedPackage.paymentType === 'one-time' ? 'total' : `/${selectedPackage.billingCycle || 'yearly'}`}
+                      {billingCycleText}
                     </span>
                   </div>
                   {selectedPackage.setupFee > 0 && (

@@ -123,7 +123,8 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
     if (isOneTimePackage) {
       return selectedPackage.price + setupFee;
     } else if (isMonthlySubscription) {
-      return setupFee + (selectedPackage.monthlyPrice * advanceMonths);
+      // For monthly subscriptions, initial payment is setup fee + first month
+      return setupFee + (selectedPackage.monthlyPrice || selectedPackage.price);
     } else if (isYearlySubscription) {
       return setupFee + (advanceMonths > 0 ? selectedPackage.price : 0);
     }
@@ -132,7 +133,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
   
   const calculateRecurringAmount = () => {
     if (isOneTimePackage) return 0;
-    if (isMonthlySubscription) return selectedPackage.monthlyPrice;
+    if (isMonthlySubscription) return selectedPackage.monthlyPrice || selectedPackage.price;
     if (isYearlySubscription) return selectedPackage.price;
     return 0;
   };
@@ -143,7 +144,9 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
     if (isOneTimePackage) {
       return selectedPackage.price + setupFee;
     } else if (isMonthlySubscription) {
-      return setupFee + (selectedPackage.monthlyPrice * 12);
+      // For monthly subscriptions: setup fee + 12 monthly payments
+      const monthlyPrice = selectedPackage.monthlyPrice || selectedPackage.price;
+      return setupFee + (monthlyPrice * 12);
     } else if (isYearlySubscription) {
       return setupFee + selectedPackage.price;
     }
@@ -242,12 +245,12 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({ sele
                 <>
                   <div className="flex justify-between">
                     <span>Monthly Price</span>
-                    <span>₹{selectedPackage.monthlyPrice?.toLocaleString('en-IN')}</span>
+                    <span>₹{(selectedPackage.monthlyPrice || selectedPackage.price).toLocaleString('en-IN')}</span>
                   </div>
                   {selectedPackage.advancePaymentMonths > 0 && (
                     <div className="flex justify-between">
                       <span>Advance Payment ({selectedPackage.advancePaymentMonths} months)</span>
-                      <span>₹{(selectedPackage.monthlyPrice * selectedPackage.advancePaymentMonths).toLocaleString('en-IN')}</span>
+                      <span>₹{((selectedPackage.monthlyPrice || selectedPackage.price) * selectedPackage.advancePaymentMonths).toLocaleString('en-IN')}</span>
                     </div>
                   )}
                 </>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, CreditCard } from 'lucide-react';
+import { Loader2, AlertTriangle, CreditCard, RefreshCw } from 'lucide-react';
 import { initiatePayUPayment } from '@/api/services/payuAPI';
 import { toast } from 'sonner';
 
@@ -14,6 +14,8 @@ interface PayUPaymentProps {
 const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSuccess, onFailure }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [lastAttempt, setLastAttempt] = useState<number>(0);
 
   const handlePayU = async () => {
     if (!user) {
@@ -30,12 +32,21 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
       return;
     }
 
+    // Check for rate limiting - wait at least 60 seconds between attempts
+    const now = Date.now();
+    if (retryCount > 0 && (now - lastAttempt) < 60000) {
+      const remainingTime = Math.ceil((60000 - (now - lastAttempt)) / 1000);
+      toast.error(`Please wait ${remainingTime} seconds before trying again`);
+      return;
+    }
+
     setIsProcessing(true);
     setError(null);
+    setLastAttempt(now);
 
     try {
       // Prepare payment data with enhanced subscription information
-      const txnid = 'txn_' + Date.now();
+      const txnid = 'txn_' + Date.now() + '_' + retryCount;
       const totalAmount = selectedPackage.price + (selectedPackage.setupFee || 0);
       
       // Determine payment description based on package type
@@ -129,6 +140,12 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
         errorDetails = (error as any).message;
       }
 
+      // Check for rate limiting error
+      if (errorMessage.toLowerCase().includes('too many requests') || errorMessage.toLowerCase().includes('rate limit')) {
+        errorMessage = 'Too many payment requests. Please wait 60 seconds before trying again.';
+        setRetryCount(prev => prev + 1);
+      }
+
       // Store error details for failure page
       sessionStorage.setItem('payu_payment_error', errorDetails);
       
@@ -152,50 +169,68 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-4 space-y-4">
+    <div className="space-y-4">
       {error && (
-        <div className="w-full bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-          <div className="flex items-center mb-2">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
             <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
-            <h3 className="font-semibold text-red-800">Payment Error</h3>
+            <div>
+              <h3 className="text-sm font-medium text-red-800">Payment Error</h3>
+              <p className="text-sm text-red-700 mt-1">{error}</p>
+              {error.toLowerCase().includes('too many requests') && (
+                <div className="mt-2">
+                  <Button 
+                    onClick={handleRetry} 
+                    variant="outline" 
+                    size="sm"
+                    className="text-red-700 border-red-300 hover:bg-red-50"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Retry Payment
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-          <p className="text-red-700 text-sm mb-3">{error}</p>
-          <Button 
-            onClick={handleRetry} 
-            variant="outline" 
-            size="sm"
-            className="text-red-700 border-red-300 hover:bg-red-100"
-          >
-            Try Again
-          </Button>
         </div>
       )}
 
-      <div className="w-full">
-        <Button 
-          onClick={handlePayU} 
-          disabled={isProcessing} 
-          className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
-        >
-          {isProcessing ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              Processing...
-            </>
-          ) : (
-            <>
-              <CreditCard className="h-4 w-4 mr-2" />
-              Pay ₹{selectedPackage.price + (selectedPackage.setupFee || 0)} with PayU
-            </>
-          )}
-        </Button>
-        
-        <div className="mt-3 text-center">
-          <p className="text-xs text-gray-500">
-            Secure payment powered by PayU • All transactions are encrypted
-          </p>
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-center">
+          <CreditCard className="h-5 w-5 text-blue-600 mr-2" />
+          <div>
+            <h3 className="text-sm font-medium text-blue-800">Payment Summary</h3>
+            <p className="text-sm text-blue-700 mt-1">
+              Amount: ₹{(selectedPackage.price + (selectedPackage.setupFee || 0)).toLocaleString('en-IN')}
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              Package: {selectedPackage.title}
+            </p>
+          </div>
         </div>
       </div>
+
+      <Button
+        onClick={handlePayU}
+        disabled={isProcessing}
+        className="w-full h-12 bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-700 hover:via-violet-700 hover:to-indigo-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+      >
+        {isProcessing ? (
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Processing Payment...
+          </>
+        ) : (
+          <>
+            <CreditCard className="h-4 w-4 mr-2" />
+            Proceed to PayU Payment
+          </>
+        )}
+      </Button>
+
+      <p className="text-xs text-center text-gray-500">
+        You will be redirected to PayU's secure payment gateway
+      </p>
     </div>
   );
 };

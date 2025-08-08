@@ -223,49 +223,73 @@ export const processRecurringPayment = async (subscription: Subscription, user: 
       return false;
     }
     
-    // Calculate recurring amount
-    const recurringAmount = packageData.billing_cycle === 'monthly' 
-      ? packageData.monthly_price 
-      : packageData.price;
+    // Calculate recurring amount based on billing cycle
+    let recurringAmount = 0;
+    if (packageData.billing_cycle === 'monthly') {
+      recurringAmount = packageData.monthly_price || packageData.price;
+    } else {
+      recurringAmount = packageData.price;
+    }
+    
+    // Add setup fee for first payment if applicable
+    const isFirstPayment = !subscription.actualStartDate;
+    const totalAmount = isFirstPayment ? recurringAmount + (packageData.setup_fee || 0) : recurringAmount;
     
     // Initiate PayU payment for recurring charge
-    const txnid = 'recurring_' + Date.now();
+    const txnid = 'recurring_' + Date.now() + '_' + subscription.id;
     const paymentData = {
       key: 'JPMALL',
       salt: 'HnM0HqM1',
       txnid: txnid,
-      amount: recurringAmount,
-      productinfo: `Recurring Payment - ${packageData.title}`,
+      amount: totalAmount,
+      productinfo: `Recurring Payment - ${packageData.title} (${packageData.billing_cycle || 'monthly'})`,
       firstname: user.name || 'User',
       email: user.email,
       phone: user.phone || '',
       surl: `${window.location.origin}/payment-success`,
       furl: `${window.location.origin}/`,
-      hash: hash,
       udf1: user.id,
       udf2: packageData.id,
       udf3: 'recurring_payment',
       udf4: subscription.paymentType,
-      udf5: subscription.billingCycle,
+      udf5: subscription.billingCycle || packageData.billing_cycle,
       udf6: packageData.type,
-      udf7: packageData.setupFee?.toString() || '0',
-      udf8: packageData.durationMonths?.toString() || '12',
-      udf9: packageData.advancePaymentMonths?.toString() || '0',
-      udf10: packageData.monthlyPrice?.toString() || '0',
+      udf7: packageData.setup_fee?.toString() || '0',
+      udf8: packageData.duration_months?.toString() || '12',
+      udf9: packageData.advance_payment_months?.toString() || '0',
+      udf10: packageData.monthly_price?.toString() || '0',
     };
     
-    // Call PayU API
-    const payuParams = await initiatePayUPayment(paymentData);
+    // Call PayU API with retry logic
+    let payuParams;
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      try {
+        payuParams = await initiatePayUPayment(paymentData);
+        break;
+      } catch (error) {
+        retryCount++;
+        if (retryCount >= maxRetries) {
+          throw error;
+        }
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      }
+    }
     
     // Store payment details
     sessionStorage.setItem('payu_recurring_payment', JSON.stringify({
       subscriptionId: subscription.id,
       packageId: subscription.packageId,
-      amount: recurringAmount,
+      amount: totalAmount,
       txnid,
       userEmail: user.email,
       userName: user.name,
-      isRecurring: true
+      isRecurring: true,
+      billingCycle: subscription.billingCycle || packageData.billing_cycle,
+      isFirstPayment
     }));
     
     // Submit payment form
