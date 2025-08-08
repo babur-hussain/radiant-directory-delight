@@ -4,8 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Subscription, PaymentType, BillingCycle, SubscriptionStatus, ISubscriptionPackage } from '@/models/Subscription';
 import { 
   createSubscription, 
-  getActiveUserSubscription, 
-  getUserSubscriptions, 
+  getSubscriptions, 
   updateSubscription, 
   cancelSubscription 
 } from '@/services/subscriptionService';
@@ -32,10 +31,15 @@ export const useSubscription = (userId?: string | null) => {
     
     try {
       setLoading(true);
-      const userSubscription = await getActiveUserSubscription(userIdToUse);
-      setSubscription(userSubscription);
+      const userSubscriptions = await getSubscriptions(userIdToUse);
+      // Get the most recent active subscription
+      const activeSubscription = userSubscriptions
+        .filter(sub => sub.status === 'active')
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] || null;
+      
+      setSubscription(activeSubscription);
       setError(null);
-      return { success: true, data: userSubscription };
+      return { success: true, data: activeSubscription };
     } catch (e) {
       console.error('Error fetching subscription:', e);
       const errorMessage = e instanceof Error ? e.message : 'Failed to fetch subscription';
@@ -184,7 +188,10 @@ export const useSubscription = (userId?: string | null) => {
       const userIdToUse = userId || userId;
       if (!userIdToUse) return [];
       
-      const userSubscription = await getActiveUserSubscription(userIdToUse);
+      const userSubscriptions = await getSubscriptions(userIdToUse);
+      const userSubscription = userSubscriptions
+        .filter(sub => sub.status === 'active')
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] || null;
       
       if (!userSubscription) return [];
       

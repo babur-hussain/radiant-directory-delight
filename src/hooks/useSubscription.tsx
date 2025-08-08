@@ -4,8 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import { 
-  getActiveUserSubscription, 
-  getUserSubscriptions, 
+  getSubscriptions, 
   createSubscription,
   updateSubscription,
   cancelSubscription 
@@ -24,7 +23,13 @@ export const useSubscription = (userId?: string) => {
     refetch: refetchActive
   } = useQuery({
     queryKey: ['activeSubscription', currentUserId],
-    queryFn: () => currentUserId ? getActiveUserSubscription(currentUserId) : null,
+    queryFn: async () => {
+      if (!currentUserId) return null;
+      const subscriptions = await getSubscriptions(currentUserId);
+      return subscriptions
+        .filter(sub => sub.status === 'active')
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] || null;
+    },
     enabled: !!currentUserId,
   });
 
@@ -36,7 +41,7 @@ export const useSubscription = (userId?: string) => {
     refetch: refetchAll
   } = useQuery({
     queryKey: ['userSubscriptions', currentUserId],
-    queryFn: () => currentUserId ? getUserSubscriptions(currentUserId) : [],
+    queryFn: () => currentUserId ? getSubscriptions(currentUserId) : [],
     enabled: !!currentUserId,
   });
 
@@ -105,7 +110,7 @@ export const useSubscription = (userId?: string) => {
   // Helper function to fetch user subscription (for backward compatibility)
   const fetchUserSubscription = async (userId: string) => {
     try {
-      const subscription = await getActiveUserSubscription(userId);
+      const subscription = await getSubscriptions(userId);
       return {
         success: true,
         data: subscription
