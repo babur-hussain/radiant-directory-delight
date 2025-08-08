@@ -158,7 +158,16 @@ const Index = () => {
                   )}
                   <h3 className="font-bold text-base sm:text-lg mb-2">{pkg.title}</h3>
                   <div className="text-2xl sm:text-3xl font-bold mb-1">
-                    ₹{pkg.monthlyPrice || pkg.price}<span className="text-sm font-normal text-gray-500">/month</span>
+                    ₹{(pkg.billingCycle === 'monthly' ? (pkg.monthlyPrice || pkg.price) : pkg.price).toLocaleString('en-IN')}
+                    <span className="text-sm font-normal text-gray-500">
+                      {pkg.paymentType === 'one-time' 
+                        ? '' 
+                        : pkg.billingCycle === 'monthly' 
+                          ? '/month' 
+                          : pkg.billingCycle === 'yearly' 
+                            ? '/year' 
+                            : '/month'}
+                    </span>
                   </div>
                   <p className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base">{pkg.shortDescription}</p>
                   <ul className="mb-4 space-y-2 text-sm sm:text-base">

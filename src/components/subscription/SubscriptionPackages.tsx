@@ -135,7 +135,31 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
   return (
     <div className="grid md:grid-cols-3 gap-6 max-w-7xl mx-auto">
       {displayPackages.map((pkg) => {
-        const monthlyPrice = pkg.monthlyPrice || pkg.price;
+        // Calculate the correct display price based on billing cycle
+        const getDisplayPrice = () => {
+          if (pkg.paymentType === 'one-time') {
+            return pkg.price;
+          } else if (pkg.billingCycle === 'monthly') {
+            return pkg.monthlyPrice || pkg.price;
+          } else {
+            return pkg.price;
+          }
+        };
+
+        const getBillingCycleText = () => {
+          if (pkg.paymentType === 'one-time') {
+            return '';
+          } else if (pkg.billingCycle === 'monthly') {
+            return '/month';
+          } else if (pkg.billingCycle === 'yearly') {
+            return '/year';
+          } else {
+            return '/year';
+          }
+        };
+
+        const displayPrice = getDisplayPrice();
+        const billingCycleText = getBillingCycleText();
         const isPopular = pkg.popular;
         
         return (
@@ -163,23 +187,19 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
               <div className="mt-2">
                 <div className="flex items-center justify-center">
                   <span className="text-4xl font-bold text-gray-900">
-                    ₹{monthlyPrice.toLocaleString('en-IN')}
+                    ₹{displayPrice.toLocaleString('en-IN')}
                   </span>
+                  {billingCycleText && (
+                    <span className="text-lg text-gray-600 ml-1">
+                      {billingCycleText}
+                    </span>
+                  )}
                 </div>
-                {/*
-                {pkg.durationMonths && (
-                  <div className="text-sm text-gray-500">
-                    {pkg.durationMonths}
-                  </div>
-                )}
-                */}
-                {/*
                 {pkg.setupFee && pkg.setupFee > 0 && (
                   <p className="text-sm text-gray-600 mt-1">
                     + ₹{pkg.setupFee.toLocaleString('en-IN')} setup fee
                   </p>
                 )}
-                */}
               </div>
               <CardDescription className="mt-2 text-gray-600">
                 {pkg.shortDescription || 'Subscription package'}
