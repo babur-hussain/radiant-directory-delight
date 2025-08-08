@@ -48,16 +48,20 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
       }
       
       const paymentData = {
-        key: 'i0514X',
+        key: 'JPMALL',
+        salt: 'HnM0HqM1',
+        txnid: txnid,
         amount: totalAmount,
         productinfo: productInfo,
-        firstname: user.name || 'Customer',
-        email: user.email,
-        phone: user.phone || '9999999999',
-        txnid,
-        udf1: String(user.id || user.uid || ''),
-        udf2: selectedPackage.id || '',
-        udf3: selectedPackage.title || '',
+        firstname: user?.name || 'User',
+        email: user?.email || '',
+        phone: user?.phone || '',
+        surl: `${window.location.origin}/payment-success`,
+        furl: `${window.location.origin}/`,
+        hash: hash,
+        udf1: user?.id || '',
+        udf2: selectedPackage.id,
+        udf3: selectedPackage.type,
         udf4: selectedPackage.paymentType || 'recurring',
         udf5: selectedPackage.billingCycle || '',
         udf6: selectedPackage.type || '',
@@ -65,8 +69,6 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
         udf8: selectedPackage.durationMonths?.toString() || '12',
         udf9: selectedPackage.advancePaymentMonths?.toString() || '0',
         udf10: selectedPackage.monthlyPrice?.toString() || '0',
-        surl: `${window.location.origin}/payment-success`,
-        furl: `${window.location.origin}/payment-failure`,
       };
 
       // Call backend to get PayU params and hash

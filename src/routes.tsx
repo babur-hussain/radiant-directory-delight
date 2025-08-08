@@ -203,10 +203,10 @@ export const router = createBrowserRouter([
             path: "payment-success", 
             element: <Suspense fallback={<LoadingComponent />}><PaymentSuccessPage /></Suspense>
           },
-          // Add PaymentFailurePage route
+          // Redirect payment-failure to homepage
           { 
             path: "payment-failure", 
-            element: <Suspense fallback={<LoadingComponent />}><PaymentFailurePage /></Suspense>
+            element: <Navigate to="/" replace />
           },
           // Add PaymentRetryPage route
           { 

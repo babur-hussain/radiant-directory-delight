@@ -228,25 +228,27 @@ export const processRecurringPayment = async (subscription: Subscription, user: 
     // Initiate PayU payment for recurring charge
     const txnid = 'recurring_' + Date.now();
     const paymentData = {
-      key: 'i0514X',
+      key: 'JPMALL',
+      salt: 'HnM0HqM1',
+      txnid: txnid,
       amount: recurringAmount,
-      productinfo: `${packageData.title} - Recurring Payment`,
-      firstname: user.name || 'Customer',
+      productinfo: `Recurring Payment - ${packageData.title}`,
+      firstname: user.name || 'User',
       email: user.email,
-      phone: user.phone || '9999999999',
-      txnid,
-      udf1: String(user.id || user.uid || ''),
-      udf2: subscription.packageId,
-      udf3: packageData.title,
-      udf4: 'recurring',
-      udf5: packageData.billing_cycle,
-      udf6: 'autopay',
-      udf7: '0', // No setup fee for recurring
-      udf8: '1', // Duration for this billing cycle
-      udf9: '0', // No advance payment
-      udf10: packageData.monthly_price?.toString() || '0',
+      phone: user.phone || '',
       surl: `${window.location.origin}/payment-success`,
-      furl: `${window.location.origin}/payment-failure`,
+      furl: `${window.location.origin}/`,
+      hash: hash,
+      udf1: user.id,
+      udf2: packageData.id,
+      udf3: 'recurring_payment',
+      udf4: subscription.paymentType,
+      udf5: subscription.billingCycle,
+      udf6: packageData.type,
+      udf7: packageData.setupFee?.toString() || '0',
+      udf8: packageData.durationMonths?.toString() || '12',
+      udf9: packageData.advancePaymentMonths?.toString() || '0',
+      udf10: packageData.monthlyPrice?.toString() || '0',
     };
     
     // Call PayU API
