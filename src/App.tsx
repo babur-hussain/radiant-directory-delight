@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import AppRoutes from './AppRoutes';
 import { AuthProvider } from './providers/AuthProvider';
@@ -12,20 +11,18 @@ import './services/autopayService';
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <PopupAdProvider>
-          <div className="App">
-            <AppRoutes />
-            <Toaster 
-              position="top-right"
-              richColors
-              closeButton
-            />
-          </div>
-        </PopupAdProvider>
-      </AuthProvider>
-    </Router>
+    <AuthProvider>
+      <PopupAdProvider>
+        <div className="App">
+          <AppRoutes />
+          <Toaster 
+            position="top-right"
+            richColors
+            closeButton
+          />
+        </div>
+      </PopupAdProvider>
+    </AuthProvider>
   );
 }
 

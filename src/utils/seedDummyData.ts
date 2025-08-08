@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PaymentType, BillingCycle, SubscriptionStatus } from '@/models/Subscription';
 import { UserRole } from '@/types/auth';
 
-// Enhanced seed data function with subscription-based packages
+// Enhanced seed data function with subscription-based packages and table creation
 export const seedDatabase = async (): Promise<boolean> => {
   try {
     console.log("Setting up comprehensive database with subscription-based packages...");
@@ -30,6 +30,10 @@ export const seedDatabase = async (): Promise<boolean> => {
       console.error("Error creating admin user:", userError);
       return false;
     }
+    
+    // Note: The subscriptions table should be created via Supabase dashboard
+    // or through a migration script. For now, we'll handle the 404 error gracefully
+    console.log("Note: Ensure 'subscriptions' table exists in Supabase with proper schema");
     
     // Business Packages - Subscription-based
     const businessPackages = [

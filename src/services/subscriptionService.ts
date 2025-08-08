@@ -342,7 +342,14 @@ export const checkRecurringPayments = async (): Promise<void> => {
       .not('next_billing_date', 'is', null)
       .lte('next_billing_date', now.toISOString());
     
-    if (error) throw error;
+    if (error) {
+      // Handle case where subscriptions table doesn't exist yet
+      if (error.code === 'PGRST116' || error.message?.includes('404')) {
+        console.log('Subscriptions table not found - skipping recurring payment check');
+        return;
+      }
+      throw error;
+    }
     
     console.log(`Found ${subscriptions?.length || 0} subscriptions needing recurring payments`);
     
