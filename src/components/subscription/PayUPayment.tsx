@@ -102,8 +102,8 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
         productInfo = `${selectedPackage.title} - One-time Payment`;
       }
       
-      // Build SI (Standing Instruction) details for Pay & Subscribe (Hosted) when recurring and duration > 1
-      const isAutopay = selectedPackage.paymentType === 'recurring' && (selectedPackage.durationMonths || 0) > 1;
+      // Build SI (Standing Instruction) details for Pay & Subscribe (Hosted) for ALL recurring packages
+      const isAutopay = selectedPackage.paymentType === 'recurring';
       const recurringAmount = selectedPackage.billingCycle === 'monthly'
         ? (selectedPackage.monthlyPrice || selectedPackage.price)
         : selectedPackage.price;

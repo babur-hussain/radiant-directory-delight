@@ -132,10 +132,11 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({
   const getBillingCycleText = () => {
     if (!selectedPackage) return '';
     if (selectedPackage.paymentType === 'one-time') return 'total';
-    const months = selectedPackage.durationMonths || (selectedPackage.billingCycle === 'yearly' ? 12 : 1);
-    if (months === 1) return '/month';
-    if (months === 12) return '/year';
-    return `/${months} months`;
+    // Prefer explicit billingCycle for display
+    if (selectedPackage.billingCycle === 'monthly') return '/month';
+    if (selectedPackage.billingCycle === 'yearly') return '/year';
+    const months = selectedPackage.durationMonths || 1;
+    return months === 1 ? '/month' : months === 12 ? '/year' : `/${months} months`;
   };
 
   const displayAmount = getDisplayAmount();
