@@ -66,8 +66,8 @@ module.exports = (req, res) => {
     }
   }
   
-  // PayU hash formula: sha512(key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||SALT)
-  // Note: PayU expects only udf1-udf5, then empty strings for udf6-udf10
+  // PayU hash formula: sha512(key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5|udf6|udf7|udf8|udf9|udf10|SALT)
+  // Based on PayU's example, all UDF fields should be included in the hash calculation
   const hashString = [
     key,
     txnid,
@@ -80,11 +80,11 @@ module.exports = (req, res) => {
     udf3 || '',
     udf4 || '',
     udf5 || '',
-    '', // udf6 - empty string as per PayU formula
-    '', // udf7 - empty string as per PayU formula
-    '', // udf8 - empty string as per PayU formula
-    '', // udf9 - empty string as per PayU formula
-    '', // udf10 - empty string as per PayU formula
+    udf6 || '',
+    udf7 || '',
+    udf8 || '',
+    udf9 || '',
+    udf10 || '',
     salt
   ].join('|');
 
@@ -92,21 +92,17 @@ module.exports = (req, res) => {
   console.log('Hash String:', hashString);
   console.log('Hash String Length:', hashString.length);
 
-  // Generate both v1 and v2 hashes as expected by PayU
-  const hashV1 = crypto.createHash('sha512').update(hashString).digest('hex');
+  // Generate hash as expected by PayU
+  const hashValue = crypto.createHash('sha512').update(hashString).digest('hex');
   
-  // For v2, some implementations use a different approach - let's try the same hash for now
-  // If this doesn't work, we may need to adjust based on PayU's specific requirements
-  const hashV2 = crypto.createHash('sha512').update(hashString + '|' + salt).digest('hex');
-  
-  // Return hash in the format PayU expects: {"v1":"hash1","v2":"hash2"}
+  // Return hash in the format PayU expects: {"v1":"hash","v2":"hash"}
+  // Note: PayU expects "v1" not "v" for the first hash
   const hash = JSON.stringify({
-    v1: hashV1,
-    v2: hashV2
+    v1: hashValue,
+    v2: hashValue
   });
 
-  console.log('Generated Hash V1:', hashV1);
-  console.log('Generated Hash V2:', hashV2);
+  console.log('Generated Hash Value:', hashValue);
   console.log('Final Hash JSON:', hash);
 
   return res.status(200).json({
