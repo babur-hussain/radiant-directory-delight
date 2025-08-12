@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 // import { adminAssignInstamojoSubscription } from '@/lib/subscription/admin-instamojo-subscription';
 import { toast } from 'sonner';
 import { createSubscription } from '@/services/subscriptionService';
+import { recordPurchase } from '@/services/purchaseService';
 
 const PaymentSuccessPage = () => {
   const [searchParams] = useSearchParams();
@@ -117,6 +118,22 @@ const PaymentSuccessPage = () => {
                 signupFee: paymentDetails.setupFee || 0,
                 durationMonths: paymentDetails.durationMonths || 12,
                 advancePaymentMonths: paymentDetails.advancePaymentMonths || 0
+              });
+
+              // Also store purchase record for user purchases history (no refunds supported)
+              await recordPurchase({
+                userId: user.id || user.uid,
+                packageId: paymentDetails.packageId,
+                packageName: paymentDetails.packageName,
+                amount: paymentDetails.amount,
+                transactionId: txnId,
+                status: 'success',
+                gateway: 'payu',
+                refundStatus: 'none',
+                metadata: {
+                  billingCycle: paymentDetails.billingCycle,
+                  isSubscription: paymentDetails.isSubscription,
+                }
               });
               
               setSubscriptionDetails(subscription);

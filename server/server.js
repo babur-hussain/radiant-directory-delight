@@ -1,16 +1,10 @@
 import express from 'express';
 import cors from 'cors';
-import { connectToMongoDB } from './mongodb-connector.js';
-import User from './models/User.js';
-import Business from './models/Business.js';
-import Subscription from './models/Subscription.js';
-import SubscriptionPackage from './models/SubscriptionPackage.js';
-import SubscriptionSettings from './models/SubscriptionSettings.js';
+// Mongo related imports kept but we won't use them for writes (per instruction)
 import crypto from 'crypto';
-import mongoose from 'mongoose';
 import { generatePayUHash, getPayUMerchantKey, buildPayUParams } from './payu.js';
 import { createPayuPlan, createPayuSubscription, verifyWebhook, parseMandateWebhook } from './payuSubscriptions.js';
-import Subscription from './models/Subscription.js';
+// Remove Mongo models usage
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -37,18 +31,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Connect to MongoDB on startup
-connectToMongoDB()
-  .then(connected => {
-    if (connected) {
-      console.log('✅ Connected to MongoDB on startup');
-    } else {
-      console.error('❌ Failed to connect to MongoDB on startup');
-    }
-  })
-  .catch(err => {
-    console.error('❌ MongoDB connection error:', err);
-  });
+// Skipping MongoDB connection as per new requirement: use Supabase/Vercel only
 
 // Test connection with collection info
 app.get('/api/test-connection', async (req, res) => {
@@ -58,33 +41,7 @@ app.get('/api/test-connection', async (req, res) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
   try {
-    const connected = await connectToMongoDB();
-    
-    // Additional collection test
-    let collectionInfo = {};
-    if (connected) {
-      try {
-        const db = mongoose.connection.db;
-        const collections = await db.listCollections().toArray();
-        collectionInfo = {
-          databaseName: mongoose.connection.name,
-          collections: collections.map(c => c.name)
-        };
-      } catch (collErr) {
-        console.error('Error fetching collections:', collErr);
-      }
-    }
-    
-    res.status(200).json({ 
-      success: connected,
-      message: connected ? 'Connected to MongoDB' : 'Failed to connect to MongoDB',
-      connectionInfo: {
-        host: mongoose.connection.host,
-        database: mongoose.connection.name,
-        readyState: mongoose.connection.readyState
-      },
-      ...collectionInfo
-    });
+    res.status(200).json({ success: true, message: 'Server is up' });
   } catch (error) {
     console.error('Error testing MongoDB connection:', error);
     res.status(500).json({ 
@@ -756,15 +713,7 @@ app.post('/api/payu/subscriptions/mandate/callback', express.raw({ type: '*/*' }
     if (!verifyWebhook(req)) return res.status(401).end();
     const { event, status, umrn, referenceId } = parseMandateWebhook(req);
     console.log('PayU mandate webhook:', { event, status, umrn, referenceId });
-    if (referenceId) {
-      // Update subscription by referenceId if found
-      const update = {
-        updatedAt: new Date(),
-      };
-      if (umrn) update.umrn = umrn;
-      if (status) update.status = status === 'ACTIVE' || status === 'active' ? 'active' : status.toLowerCase();
-      await Subscription.findOneAndUpdate({ id: referenceId }, update, { new: true });
-    }
+    // Supabase-managed; no Mongo updates here
     res.status(200).end();
   } catch (e) {
     res.status(500).json({ error: e.message });
