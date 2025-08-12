@@ -72,7 +72,8 @@ export function generatePayUHash(params) {
   const v2Str = buildRequestHashString({ ...base, salt: PAYU_SALT_V2 });
   const v1 = crypto.createHash('sha512').update(v1Str, 'utf-8').digest('hex');
   const v2 = crypto.createHash('sha512').update(v2Str, 'utf-8').digest('hex');
-  return JSON.stringify({ v1, v2 });
+  // Only return v2 to prevent illegal character parsing by gateway
+  return v2;
 }
 
 /**

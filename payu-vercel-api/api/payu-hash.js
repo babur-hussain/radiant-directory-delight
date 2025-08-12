@@ -107,8 +107,8 @@ module.exports = (req, res) => {
   const v1 = crypto.createHash('sha512').update(hashStringV1, 'utf-8').digest('hex');
   const v2 = crypto.createHash('sha512').update(hashStringV2, 'utf-8').digest('hex');
 
-  // Compose JSON string as expected by PayU
-  const hash = JSON.stringify({ v1, v2 });
+  // Prefer sending v2 hex directly to avoid illegal character issues with JSON in some accounts
+  const hash = v2;
 
   // Minimal debug in non-production
   if (isTestEnv) {
@@ -139,6 +139,8 @@ module.exports = (req, res) => {
     udf9: udf9 || '',
     udf10: udf10 || '',
     salt_index: String(saltIndex),
-    hash
+    hash,
+    // Provide salt_index for v2
+    salt_index: String(saltIndex)
   });
 };

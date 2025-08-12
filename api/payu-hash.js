@@ -126,7 +126,8 @@ export default function handler(req, res) {
 
   const v1 = crypto.createHash('sha512').update(hashStringV1, 'utf-8').digest('hex');
   const v2 = crypto.createHash('sha512').update(hashStringV2, 'utf-8').digest('hex');
-  const hash = JSON.stringify({ v1, v2 });
+  // Send only v2 hex to avoid illegal character issues in some accounts
+  const hash = v2;
 
   return res.status(200).json({
     ...params,
