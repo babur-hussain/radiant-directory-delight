@@ -2,13 +2,28 @@ import { api } from '../core/apiService';
 
 const VERCEL_PAYU_API_URL = 'https://payu-vercel-api-grow-bharat-vyapaars-projects.vercel.app/api/payu-hash';
 
+let lastClientRequest = 0;
+
 // Initiate PayU payment (returns all required params for frontend form submission)
 export const initiatePayUPayment = async (paymentData) => {
   try {
+    // Client-side throttle: 1 request every 3 seconds
+    const now = Date.now();
+    if (now - lastClientRequest < 3000) {
+      throw new Error('Please wait a few seconds before trying again.');
+    }
+    lastClientRequest = now;
+
+    // Do not send key/salt from client; backend will inject securely
+    const {
+      key, salt, // strip if present
+      ...safePayload
+    } = paymentData || {};
+
     const response = await fetch(VERCEL_PAYU_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(paymentData),
+      body: JSON.stringify(safePayload),
     });
     
     if (!response.ok) {

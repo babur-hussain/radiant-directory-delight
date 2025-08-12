@@ -103,8 +103,7 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
       }
       
       const paymentData = {
-        key: 'JPMALL',
-        salt: 'HnM0HqM1',
+        // key and salt are injected on server
         txnid: txnid,
         amount: totalAmount,
         productinfo: productInfo,

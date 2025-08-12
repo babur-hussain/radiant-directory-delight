@@ -1,5 +1,8 @@
 const crypto = require("crypto");
 
+// Simple in-memory rate limit (per function instance)
+let lastRequestTime = 0;
+
 module.exports = (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -14,7 +17,6 @@ module.exports = (req, res) => {
   }
 
   const {
-    key,
     txnid,
     amount,
     productinfo,
@@ -35,11 +37,21 @@ module.exports = (req, res) => {
     furl,
   } = req.body || {};
 
-  if (!key || !txnid || !amount || !productinfo || !firstname || !email || !surl || !furl) {
+  if (!txnid || !amount || !productinfo || !firstname || !email || !surl || !furl) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
+  // Apply instance-level throttle: 1 request per 3 seconds
+  const now = Date.now();
+  if (now - lastRequestTime < 3000) {
+    return res.status(429).json({ error: "Rate limit exceeded. Please try again in a few seconds." });
+  }
+  lastRequestTime = now;
+
+  // Use server-side credentials
+  const key = process.env.PAYU_KEY || "JPM7Hr12"; // Do NOT rely on client-provided key
   const salt = process.env.PAYU_SALT || "vbUDAmcCKBw9FizOXa3saBvIXMqW1gn9";
+  const env = (process.env.PAYU_ENV || "test").toLowerCase();
 
   const hashString = [
     key,
@@ -64,7 +76,7 @@ module.exports = (req, res) => {
   const hash = crypto.createHash('sha512').update(hashString).digest('hex');
 
   return res.status(200).json({
-    payuBaseUrl: "https://secure.payu.in/_payment",
+    payuBaseUrl: env === 'prod' || env === 'production' ? "https://secure.payu.in/_payment" : "https://test.payu.in/_payment",
     key,
     txnid,
     amount,
