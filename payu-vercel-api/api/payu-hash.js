@@ -88,7 +88,26 @@ module.exports = (req, res) => {
     salt
   ].join('|');
 
-  const hash = crypto.createHash('sha512').update(hashString).digest('hex');
+  // Debug: Log the hash string for verification
+  console.log('Hash String:', hashString);
+  console.log('Hash String Length:', hashString.length);
+
+  // Generate both v1 and v2 hashes as expected by PayU
+  const hashV1 = crypto.createHash('sha512').update(hashString).digest('hex');
+  
+  // For v2, some implementations use a different approach - let's try the same hash for now
+  // If this doesn't work, we may need to adjust based on PayU's specific requirements
+  const hashV2 = crypto.createHash('sha512').update(hashString + '|' + salt).digest('hex');
+  
+  // Return hash in the format PayU expects: {"v1":"hash1","v2":"hash2"}
+  const hash = JSON.stringify({
+    v1: hashV1,
+    v2: hashV2
+  });
+
+  console.log('Generated Hash V1:', hashV1);
+  console.log('Generated Hash V2:', hashV2);
+  console.log('Final Hash JSON:', hash);
 
   return res.status(200).json({
     payuBaseUrl: isTestEnv ? "https://test.payu.in/_payment" : "https://secure.payu.in/_payment",
