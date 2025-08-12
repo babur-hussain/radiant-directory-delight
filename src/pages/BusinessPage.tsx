@@ -488,6 +488,7 @@ const BusinessPage = () => {
 
   // Main Sectors View - Show Business packages only (Layout provided by router)
   return (
+    <>
       {/* Business Application Section */}
       <section className="relative py-20 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 overflow-hidden">
         <div className="absolute -top-32 -left-32 w-96 h-96 bg-purple-200 rounded-full opacity-20 blur-3xl"></div>
@@ -674,6 +675,7 @@ const BusinessPage = () => {
         setIsOpen={setShowDialog}
         selectedPackage={selectedPackage}
       />
+    </>
   );
 };
 
