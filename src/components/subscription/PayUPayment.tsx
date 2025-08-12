@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, CreditCard, RefreshCw, Clock, Queue } from 'lucide-react';
+import { Loader2, AlertTriangle, CreditCard, RefreshCw, Clock, List } from 'lucide-react';
 import { paymentQueue } from '@/services/paymentQueue';
 import PaymentFallback from './PaymentFallback';
 import { toast } from 'sonner';
@@ -296,7 +296,7 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
       {isInQueue && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center">
-            <Queue className="h-5 w-5 text-blue-600 mr-2" />
+            <List className="h-5 w-5 text-blue-600 mr-2" />
             <div className="flex-1">
               <h3 className="text-sm font-medium text-blue-800">Payment in Queue</h3>
               <p className="text-sm text-blue-700 mt-1">
@@ -343,7 +343,7 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
             </>
           ) : isInQueue ? (
             <>
-              <Queue className="h-4 w-4 mr-2" />
+              <List className="h-4 w-4 mr-2" />
               Payment in Queue...
             </>
           ) : (
