@@ -66,8 +66,8 @@ module.exports = (req, res) => {
     }
   }
   
-  // PayU hash formula: sha512(key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5|udf6|udf7|udf8|udf9|udf10|SALT)
-  // Based on PayU's example, all UDF fields should be included in the hash calculation
+  // PayU hash formula: sha512(key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||SALT)
+  // According to PayU's error message, udf6-udf10 should be empty strings in the hash calculation
   const hashString = [
     key,
     txnid,
@@ -80,11 +80,11 @@ module.exports = (req, res) => {
     udf3 || '',
     udf4 || '',
     udf5 || '',
-    udf6 || '',
-    udf7 || '',
-    udf8 || '',
-    udf9 || '',
-    udf10 || '',
+    '', // udf6 - empty string as per PayU formula
+    '', // udf7 - empty string as per PayU formula
+    '', // udf8 - empty string as per PayU formula
+    '', // udf9 - empty string as per PayU formula
+    '', // udf10 - empty string as per PayU formula
     salt
   ].join('|');
 

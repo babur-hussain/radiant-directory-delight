@@ -117,7 +117,7 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
         udf3: selectedPackage.type,
         udf4: selectedPackage.paymentType || 'recurring',
         udf5: selectedPackage.billingCycle || '',
-        udf6: selectedPackage.type || '',
+        udf6: selectedPackage.type || '', // Additional type info
         udf7: selectedPackage.setupFee?.toString() || '0',
         udf8: selectedPackage.durationMonths?.toString() || '12',
         udf9: selectedPackage.advancePaymentMonths?.toString() || '0',
