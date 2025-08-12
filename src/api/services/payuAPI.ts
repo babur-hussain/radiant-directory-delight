@@ -1,6 +1,10 @@
 import { api } from '../core/apiService';
 
-const VERCEL_PAYU_API_URL = 'https://payu-vercel-api-grow-bharat-vyapaars-projects.vercel.app/api/payu-hash';
+// Allow overriding the PayU hash endpoint via environment variable for production
+const VERCEL_PAYU_API_URL =
+  (import.meta as any)?.env?.VITE_PAYU_API_URL ||
+  (typeof process !== 'undefined' && (process as any)?.env?.VITE_PAYU_API_URL) ||
+  'https://payu-vercel-api-grow-bharat-vyapaars-projects.vercel.app/api/payu-hash';
 
 let lastClientRequest = 0;
 

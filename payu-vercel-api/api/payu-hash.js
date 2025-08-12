@@ -1,5 +1,32 @@
 const crypto = require("crypto");
 
+// Simple in-memory rate limit (per function instance)
+let lastRequestTime = 0;
+
+// Helper to build the canonical hash string in PayU's required order
+function buildRequestHashString({ key, txnid, amount, productinfo, firstname, email, udf1, udf2, udf3, udf4, udf5, udf6, udf7, udf8, udf9, udf10, salt }) {
+  const parts = [
+    String(key),
+    String(txnid),
+    String(amount),
+    String(productinfo),
+    String(firstname),
+    String(email),
+    String(udf1 || ''),
+    String(udf2 || ''),
+    String(udf3 || ''),
+    String(udf4 || ''),
+    String(udf5 || ''),
+    String(udf6 || ''),
+    String(udf7 || ''),
+    String(udf8 || ''),
+    String(udf9 || ''),
+    String(udf10 || ''),
+    String(salt)
+  ];
+  return parts.join('|').trim();
+}
+
 module.exports = (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -25,6 +52,7 @@ module.exports = (req, res) => {
     udf3 = '',
     udf4 = '',
     udf5 = '',
+    // Note: udf6-udf10 are intentionally NOT used in request hash
     udf6 = '',
     udf7 = '',
     udf8 = '',
@@ -45,65 +73,49 @@ module.exports = (req, res) => {
   }
   lastRequestTime = now;
 
-  // Environment detection
-  const env = (process.env.PAYU_ENV || "test").toLowerCase();
-  const isTestEnv = env === 'test' || env === 'development' || process.env.NODE_ENV === 'development';
-  
-  // Use appropriate credentials based on environment
-  let key, salt;
-  
+  // Environment detection (default to production)
+  const env = (process.env.PAYU_ENV || process.env.NODE_ENV || "production").toLowerCase();
+  let isTestEnv = env === 'test' || env === 'development';
+
+  // Use appropriate credentials based on environment, with safe fallbacks to LIVE values
+  let key, saltV1, saltV2, saltIndex;
+
   if (isTestEnv) {
-    // Test environment credentials
-    key = process.env.PAYU_TEST_KEY || "gtKFFx";
-    salt = process.env.PAYU_TEST_SALT || "eCwWELxi";
+    key = process.env.PAYU_TEST_KEY || 'gtKFFx';
+    saltV1 = process.env.PAYU_TEST_SALT_V1 || '4R38IvwiV57FwVpsgOvTXBdLE4tHUXFW';
+    saltV2 = process.env.PAYU_TEST_SALT_V2 || process.env.PAYU_TEST_SALT || 'eCwWELxi';
+    saltIndex = process.env.PAYU_TEST_SALT_INDEX || '1';
   } else {
-    // Production environment credentials
-    key = process.env.PAYU_KEY;
-    salt = process.env.PAYU_SALT;
-    
-    if (!key || !salt) {
-      return res.status(500).json({ error: "Production PayU credentials not configured" });
-    }
+    // Production: prefer env; fallback to provided live credentials if missing
+    key = process.env.PAYU_KEY || 'i0514X';
+    saltV1 = process.env.PAYU_SALT_V1 || process.env.PAYU_SALT || 'vbUDAmcCKBw9FizOXa3saBvIXMqW1gn9';
+    saltV2 = process.env.PAYU_SALT_V2 || process.env.PAYU_SALT || 'Mn2t0YCJqlt8DokqT6flbIGujez9Hbos';
+    saltIndex = process.env.PAYU_SALT_INDEX || '1';
   }
-  
-  // PayU hash formula: sha512(key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||SALT)
-  // According to PayU's error message, udf6-udf10 should be empty strings in the hash calculation
-  const hashString = [
-    key,
-    txnid,
-    amount,
-    productinfo,
-    firstname,
-    email,
-    udf1 || '',
-    udf2 || '',
-    udf3 || '',
-    udf4 || '',
-    udf5 || '',
-    '', // udf6 - empty string as per PayU formula
-    '', // udf7 - empty string as per PayU formula
-    '', // udf8 - empty string as per PayU formula
-    '', // udf9 - empty string as per PayU formula
-    '', // udf10 - empty string as per PayU formula
-    salt
-  ].join('|');
 
-  // Debug: Log the hash string for verification
-  console.log('Hash String:', hashString);
-  console.log('Hash String Length:', hashString.length);
+  // If the selected key matches the LIVE key, force production mode for PayU URL
+  if (key === 'i0514X') {
+    isTestEnv = false;
+  }
 
-  // Generate hash as expected by PayU
-  const hashValue = crypto.createHash('sha512').update(hashString).digest('hex');
-  
-  // Return hash in the format PayU expects: {"v1":"hash","v2":"hash"}
-  // Note: PayU expects "v1" not "v" for the first hash
-  const hash = JSON.stringify({
-    v1: hashValue,
-    v2: hashValue
-  });
+  // Build v1 and v2 request hash strings
+  const baseParams = { key, txnid, amount, productinfo, firstname, email, udf1, udf2, udf3, udf4, udf5, udf6, udf7, udf8, udf9, udf10 };
+  const hashStringV1 = buildRequestHashString({ ...baseParams, salt: saltV1 });
+  const hashStringV2 = buildRequestHashString({ ...baseParams, salt: saltV2 });
 
-  console.log('Generated Hash Value:', hashValue);
-  console.log('Final Hash JSON:', hash);
+  // Generate hashes
+  const v1 = crypto.createHash('sha512').update(hashStringV1, 'utf-8').digest('hex');
+  const v2 = crypto.createHash('sha512').update(hashStringV2, 'utf-8').digest('hex');
+
+  // Compose JSON string as expected by PayU
+  const hash = JSON.stringify({ v1, v2 });
+
+  // Minimal debug in non-production
+  if (isTestEnv) {
+    console.log('PayU hash V1 string:', hashStringV1);
+    console.log('PayU hash V2 string:', hashStringV2);
+    console.log('PayU hash values:', { v1, v2 });
+  }
 
   return res.status(200).json({
     payuBaseUrl: isTestEnv ? "https://test.payu.in/_payment" : "https://secure.payu.in/_payment",
@@ -126,9 +138,7 @@ module.exports = (req, res) => {
     udf8: udf8 || '',
     udf9: udf9 || '',
     udf10: udf10 || '',
+    salt_index: String(saltIndex),
     hash
   });
 };
-
-// Simple in-memory rate limit (per function instance)
-let lastRequestTime = 0;
