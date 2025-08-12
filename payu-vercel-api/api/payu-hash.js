@@ -1,8 +1,5 @@
 const crypto = require("crypto");
 
-// Simple in-memory rate limit (per function instance)
-let lastRequestTime = 0;
-
 module.exports = (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -48,14 +45,29 @@ module.exports = (req, res) => {
   }
   lastRequestTime = now;
 
-  // Use server-side credentials - for test environment, use test credentials
+  // Environment detection
   const env = (process.env.PAYU_ENV || "test").toLowerCase();
   const isTestEnv = env === 'test' || env === 'development' || process.env.NODE_ENV === 'development';
   
-  // Use test credentials for test environment, production for production
-  const key = isTestEnv ? (process.env.PAYU_TEST_KEY || "gtKFFx") : (process.env.PAYU_KEY || "JPM7Hr12");
-  const salt = isTestEnv ? (process.env.PAYU_TEST_SALT || "eCwWELxi") : (process.env.PAYU_SALT || "vbUDAmcCKBw9FizOXa3saBvIXMqW1gn9");
+  // Use appropriate credentials based on environment
+  let key, salt;
   
+  if (isTestEnv) {
+    // Test environment credentials
+    key = process.env.PAYU_TEST_KEY || "gtKFFx";
+    salt = process.env.PAYU_TEST_SALT || "eCwWELxi";
+  } else {
+    // Production environment credentials
+    key = process.env.PAYU_KEY;
+    salt = process.env.PAYU_SALT;
+    
+    if (!key || !salt) {
+      return res.status(500).json({ error: "Production PayU credentials not configured" });
+    }
+  }
+  
+  // PayU hash formula: sha512(key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5|udf6|udf7|udf8|udf9|udf10|SALT)
+  // All UDFs must be strings, empty strings for undefined values
   const hashString = [
     key,
     txnid,
@@ -63,17 +75,16 @@ module.exports = (req, res) => {
     productinfo,
     firstname,
     email,
-    phone,
-    udf1,
-    udf2,
-    udf3,
-    udf4,
-    udf5,
-    udf6,
-    udf7,
-    udf8,
-    udf9,
-    udf10,
+    udf1 || '',
+    udf2 || '',
+    udf3 || '',
+    udf4 || '',
+    udf5 || '',
+    udf6 || '',
+    udf7 || '',
+    udf8 || '',
+    udf9 || '',
+    udf10 || '',
     salt
   ].join('|');
 
@@ -90,16 +101,19 @@ module.exports = (req, res) => {
     phone,
     surl,
     furl,
-    udf1,
-    udf2,
-    udf3,
-    udf4,
-    udf5,
-    udf6,
-    udf7,
-    udf8,
-    udf9,
-    udf10,
+    udf1: udf1 || '',
+    udf2: udf2 || '',
+    udf3: udf3 || '',
+    udf4: udf4 || '',
+    udf5: udf5 || '',
+    udf6: udf6 || '',
+    udf7: udf7 || '',
+    udf8: udf8 || '',
+    udf9: udf9 || '',
+    udf10: udf10 || '',
     hash
   });
 };
+
+// Simple in-memory rate limit (per function instance)
+let lastRequestTime = 0;
