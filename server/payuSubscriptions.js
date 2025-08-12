@@ -92,4 +92,21 @@ export function verifyWebhook(req) {
   return true;
 }
 
-
+// Parse webhook and extract mandate/subscription info
+export function parseMandateWebhook(req) {
+  try {
+    const raw = req.body;
+    const payload = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    // PayU sends various event types; normalize the essentials we need
+    const event = payload?.event || payload?.type || '';
+    const data = payload?.data || payload?.payload || payload;
+    const mandate = data?.mandate || data?.subscription || data;
+    const status = mandate?.status || data?.status || payload?.status || 'unknown';
+    const umrn = mandate?.umrn || mandate?.umrnNumber || data?.umrn || null;
+    const referenceId = mandate?.referenceId || mandate?.merchantReferenceId || data?.referenceId || null;
+    const customer = mandate?.customer || data?.customer || {};
+    return { event, status, umrn, referenceId, customer, raw: payload };
+  } catch (e) {
+    return { event: 'unknown', status: 'unknown', umrn: null, referenceId: null, customer: {}, raw: {} };
+  }
+}

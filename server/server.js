@@ -9,7 +9,8 @@ import SubscriptionSettings from './models/SubscriptionSettings.js';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { generatePayUHash, getPayUMerchantKey, buildPayUParams } from './payu.js';
-import { createPayuPlan, createPayuSubscription, verifyWebhook } from './payuSubscriptions.js';
+import { createPayuPlan, createPayuSubscription, verifyWebhook, parseMandateWebhook } from './payuSubscriptions.js';
+import Subscription from './models/Subscription.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -753,7 +754,17 @@ app.post('/api/payu/subscriptions/create', async (req, res) => {
 app.post('/api/payu/subscriptions/mandate/callback', express.raw({ type: '*/*' }), async (req, res) => {
   try {
     if (!verifyWebhook(req)) return res.status(401).end();
-    // TODO: parse payload, update subscription status, set next_billing_date in DB
+    const { event, status, umrn, referenceId } = parseMandateWebhook(req);
+    console.log('PayU mandate webhook:', { event, status, umrn, referenceId });
+    if (referenceId) {
+      // Update subscription by referenceId if found
+      const update = {
+        updatedAt: new Date(),
+      };
+      if (umrn) update.umrn = umrn;
+      if (status) update.status = status === 'ACTIVE' || status === 'active' ? 'active' : status.toLowerCase();
+      await Subscription.findOneAndUpdate({ id: referenceId }, update, { new: true });
+    }
     res.status(200).end();
   } catch (e) {
     res.status(500).json({ error: e.message });
