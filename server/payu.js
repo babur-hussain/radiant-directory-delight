@@ -99,6 +99,9 @@ export function buildPayUParams(params) {
     furl: params.furl,
     hash: params.hash,
     salt_index: String(process.env.PAYU_SALT_INDEX || process.env.PAYU_TEST_SALT_INDEX || '1'),
+    // Pass-through optional Standing Instruction fields for Pay & Subscribe flow
+    ...(params.si ? { si: String(params.si) } : {}),
+    ...(params.si_details ? { si_details: String(params.si_details) } : {}),
     udf1: params.udf1,
     udf2: params.udf2,
     udf3: params.udf3,

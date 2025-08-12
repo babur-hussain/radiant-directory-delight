@@ -675,7 +675,7 @@ app.post('/api/payu/generate-hash', (req, res) => {
 // Initiate PayU payment (returns required params for frontend form submission)
 app.post('/api/payu/initiate-payment', (req, res) => {
   try {
-    const { amount, productinfo, firstname, email, phone, surl, furl, txnid, ...rest } = req.body;
+    const { amount, productinfo, firstname, email, phone, surl, furl, txnid, si, si_details, ...rest } = req.body;
     if (!amount || !productinfo || !firstname || !email || !phone || !surl || !furl || !txnid) {
       return res.status(400).json({ error: 'Missing required payment parameters' });
     }
@@ -690,6 +690,9 @@ app.post('/api/payu/initiate-payment', (req, res) => {
       phone: String(phone),
       surl: String(surl),
       furl: String(furl),
+      // pass-through SI fields (not part of hash)
+      ...(si ? { si: String(si) } : {}),
+      ...(si_details ? { si_details: String(si_details) } : {}),
       udf1: String(rest.udf1 || ''),
       udf2: String(rest.udf2 || ''),
       udf3: String(rest.udf3 || ''),
@@ -705,6 +708,7 @@ app.post('/api/payu/initiate-payment', (req, res) => {
     console.log('PayU params for hash:', params);
     Object.keys(params).forEach(key => {
       if (typeof params[key] === 'object') {
+        // Only clean object-typed UDFs; keep si_details String as-is
         params[key] = '';
       }
     });
