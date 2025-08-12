@@ -48,11 +48,14 @@ module.exports = (req, res) => {
   }
   lastRequestTime = now;
 
-  // Use server-side credentials
-  const key = process.env.PAYU_KEY || "JPM7Hr12"; // Do NOT rely on client-provided key
-  const salt = process.env.PAYU_SALT || "vbUDAmcCKBw9FizOXa3saBvIXMqW1gn9";
+  // Use server-side credentials - for test environment, use test credentials
   const env = (process.env.PAYU_ENV || "test").toLowerCase();
-
+  const isTestEnv = env === 'test' || env === 'development' || process.env.NODE_ENV === 'development';
+  
+  // Use test credentials for test environment, production for production
+  const key = isTestEnv ? (process.env.PAYU_TEST_KEY || "gtKFFx") : (process.env.PAYU_KEY || "JPM7Hr12");
+  const salt = isTestEnv ? (process.env.PAYU_TEST_SALT || "eCwWELxi") : (process.env.PAYU_SALT || "vbUDAmcCKBw9FizOXa3saBvIXMqW1gn9");
+  
   const hashString = [
     key,
     txnid,
@@ -60,6 +63,7 @@ module.exports = (req, res) => {
     productinfo,
     firstname,
     email,
+    phone,
     udf1,
     udf2,
     udf3,
@@ -76,7 +80,7 @@ module.exports = (req, res) => {
   const hash = crypto.createHash('sha512').update(hashString).digest('hex');
 
   return res.status(200).json({
-    payuBaseUrl: env === 'prod' || env === 'production' ? "https://secure.payu.in/_payment" : "https://test.payu.in/_payment",
+    payuBaseUrl: isTestEnv ? "https://test.payu.in/_payment" : "https://secure.payu.in/_payment",
     key,
     txnid,
     amount,
