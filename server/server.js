@@ -9,6 +9,7 @@ import SubscriptionSettings from './models/SubscriptionSettings.js';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { generatePayUHash, getPayUMerchantKey, buildPayUParams } from './payu.js';
+import { createPayuPlan, createPayuSubscription, verifyWebhook } from './payuSubscriptions.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -715,6 +716,39 @@ app.post('/api/payu/initiate-payment', (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// --- PayU Subscriptions (non-breaking: separate routes) ---
+app.post('/api/payu/subscriptions/create-plan', async (req, res) => {
+  try {
+    const { name, amount, intervalMonths } = req.body || {};
+    if (!name || !amount || !intervalMonths) return res.status(400).json({ error: 'name, amount, intervalMonths required' });
+    const plan = await createPayuPlan({ name, amount, intervalMonths });
+    res.json(plan);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/payu/subscriptions/create', async (req, res) => {
+  try {
+    const { planId, customer, startTimeUtc, referenceId } = req.body || {};
+    if (!planId) return res.status(400).json({ error: 'planId required' });
+    const sub = await createPayuSubscription({ planId, customer, startTimeUtc, referenceId });
+    res.json(sub);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/payu/subscriptions/mandate/callback', express.raw({ type: '*/*' }), async (req, res) => {
+  try {
+    if (!verifyWebhook(req)) return res.status(401).end();
+    // TODO: parse payload, update subscription status, set next_billing_date in DB
+    res.status(200).end();
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 

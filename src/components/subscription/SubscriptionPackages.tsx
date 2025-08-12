@@ -147,15 +147,11 @@ const SubscriptionPackages: React.FC<SubscriptionPackagesProps> = ({
         };
 
         const getBillingCycleText = () => {
-          if (pkg.paymentType === 'one-time') {
-            return '';
-          } else if (pkg.billingCycle === 'monthly') {
-            return '/month';
-          } else if (pkg.billingCycle === 'yearly') {
-            return '/year';
-          } else {
-            return '/year';
-          }
+          if (pkg.paymentType === 'one-time') return '';
+          const months = pkg.durationMonths || (pkg.billingCycle === 'yearly' ? 12 : 1);
+          if (months === 1) return '/month';
+          if (months === 12) return '/year';
+          return `/${months} months`;
         };
 
         const displayPrice = getDisplayPrice();

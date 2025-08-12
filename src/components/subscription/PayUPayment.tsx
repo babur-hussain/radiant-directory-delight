@@ -102,6 +102,24 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
         productInfo = `${selectedPackage.title} - One-time Payment`;
       }
       
+      // Build SI (Standing Instruction) details for Pay & Subscribe (Hosted) when recurring and duration > 1
+      const isAutopay = selectedPackage.paymentType === 'recurring' && (selectedPackage.durationMonths || 0) > 1;
+      const recurringAmount = selectedPackage.billingCycle === 'monthly'
+        ? (selectedPackage.monthlyPrice || selectedPackage.price)
+        : selectedPackage.price;
+      const toIsoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + (selectedPackage.durationMonths || 12));
+      const siDetails = isAutopay ? JSON.stringify({
+        billingAmount: Number(recurringAmount).toFixed(2),
+        billingCurrency: 'INR',
+        billingCycle: 'MONTHLY',
+        billingInterval: 1,
+        paymentStartDate: toIsoDate(startDate),
+        paymentEndDate: toIsoDate(endDate),
+      }) : undefined;
+
       const paymentData = {
         // key and salt are injected on server
         txnid: txnid,
@@ -112,6 +130,7 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
         phone: user?.phone || '',
         surl: `${window.location.origin}/payment-success`,
         furl: `${window.location.origin}/`,
+        ...(isAutopay ? { si: 4, si_details: siDetails } : {}),
         udf1: user?.id || '',
         udf2: selectedPackage.id,
         udf3: selectedPackage.type,

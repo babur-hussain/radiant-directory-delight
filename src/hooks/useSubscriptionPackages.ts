@@ -66,7 +66,15 @@ export const useSubscriptionPackages = () => {
           type: pkg.type === 'Influencer' ? 'Influencer' : 'Business',
           termsAndConditions: pkg.terms_and_conditions || '',
           paymentType: pkg.payment_type === 'one-time' ? 'one-time' : 'recurring',
-          billingCycle: pkg.billing_cycle === 'monthly' ? 'monthly' : 'yearly',
+          billingCycle: (() => {
+            const raw = pkg.billing_cycle;
+            const dur = pkg.duration_months;
+            if (raw === 'monthly' || raw === '1' || raw === 1) return 'monthly';
+            if (raw === 'yearly' || raw === '12' || raw === 12) return 'yearly';
+            if (dur === 1) return 'monthly';
+            if (dur === 12) return 'yearly';
+            return 'monthly';
+          })(),
           advancePaymentMonths: pkg.advance_payment_months || 0,
           dashboardSections: Array.isArray(pkg.dashboard_sections) ? pkg.dashboard_sections : [],
           isActive: pkg.is_active !== false

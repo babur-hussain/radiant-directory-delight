@@ -86,14 +86,20 @@ const SubscriptionPackagesTable: React.FC<SubscriptionPackagesTableProps> = ({
                 <TableCell>
                   <div className="font-medium">
                     {formatCurrency(pkg.price)}
-                    {pkg.paymentType === 'recurring' && pkg.billingCycle === 'yearly' && (
-                      <span className="text-xs ml-1">/year</span>
+                    {pkg.paymentType === 'recurring' && (
+                      <span className="text-xs ml-1">
+                        {(pkg.durationMonths || (pkg.billingCycle === 'yearly' ? 12 : 1)) === 1
+                          ? '/month'
+                          : (pkg.durationMonths || 12) === 12
+                            ? '/year'
+                            : `/${pkg.durationMonths} months`}
+                      </span>
                     )}
                   </div>
                   
                   {pkg.paymentType === 'recurring' && (
                     <div className="text-xs space-y-1 mt-1">
-                      {pkg.monthlyPrice > 0 && pkg.billingCycle === 'monthly' && (
+                      {pkg.monthlyPrice > 0 && (pkg.durationMonths || (pkg.billingCycle === 'yearly' ? 12 : 1)) === 1 && (
                         <div>{formatCurrency(pkg.monthlyPrice)}/month</div>
                       )}
                       {pkg.setupFee > 0 && (

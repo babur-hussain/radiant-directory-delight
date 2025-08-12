@@ -160,13 +160,13 @@ const Index = () => {
                   <div className="text-2xl sm:text-3xl font-bold mb-1">
                     ₹{(pkg.billingCycle === 'monthly' ? (pkg.monthlyPrice || pkg.price) : pkg.price).toLocaleString('en-IN')}
                     <span className="text-sm font-normal text-gray-500">
-                      {pkg.paymentType === 'one-time' 
-                        ? '' 
-                        : pkg.billingCycle === 'monthly' 
-                          ? '/month' 
-                          : pkg.billingCycle === 'yearly' 
-                            ? '/year' 
-                            : '/month'}
+                      {pkg.paymentType === 'one-time' ? '' : (
+                        (pkg.durationMonths || (pkg.billingCycle === 'yearly' ? 12 : 1)) === 1
+                          ? '/month'
+                          : (pkg.durationMonths || 12) === 12
+                            ? '/year'
+                            : `/${pkg.durationMonths} months`
+                      )}
                     </span>
                   </div>
                   <p className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base">{pkg.shortDescription}</p>
