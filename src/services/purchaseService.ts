@@ -34,6 +34,22 @@ export async function recordPurchase(p: PurchaseRecord): Promise<void> {
     created_at: nowIso,
   };
 
+  // Prefer RPC for idempotent writes (unique on transaction_id)
+  try {
+    const { error } = await supabase.rpc('upsert_user_purchase', {
+      p_user_id: row.user_id,
+      p_package_id: row.package_id,
+      p_package_name: row.package_name,
+      p_amount: row.amount,
+      p_transaction_id: row.transaction_id,
+      p_status: row.status,
+      p_gateway: row.gateway,
+      p_refund_status: row.refund_status,
+      p_metadata: row.metadata
+    });
+    if (!error) return;
+  } catch {}
+
   // Try preferred table names in order; ignore if table missing
   const candidateTables = ['user_purchases', 'subscription_payments', 'payments'];
   for (const table of candidateTables) {
