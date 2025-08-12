@@ -714,6 +714,10 @@ app.post('/api/payu/initiate-payment', (req, res) => {
     });
     const hash = generatePayUHash(params);
     const payuParams = buildPayUParams({ ...params, hash });
+    // Log a minimal view (without hash) to verify SI fields reach PayU
+    const debugOut = { ...payuParams };
+    delete debugOut.hash;
+    console.log('Returning PayU form params:', debugOut);
     res.json({
       ...payuParams,
       payuBaseUrl: 'https://secure.payu.in/_payment' // LIVE PayU endpoint

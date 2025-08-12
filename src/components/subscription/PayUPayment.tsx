@@ -107,6 +107,7 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
       const recurringAmount = selectedPackage.billingCycle === 'monthly'
         ? (selectedPackage.monthlyPrice || selectedPackage.price)
         : selectedPackage.price;
+      const amountToCharge = isAutopay ? recurringAmount : totalAmount;
       const toIsoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       const startDate = new Date();
       const endDate = new Date(startDate);
@@ -123,7 +124,7 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
       const paymentData = {
         // key and salt are injected on server
         txnid: txnid,
-        amount: totalAmount,
+        amount: amountToCharge,
         productinfo: productInfo,
         firstname: user?.name || 'User',
         email: user?.email || '',

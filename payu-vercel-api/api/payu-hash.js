@@ -47,6 +47,8 @@ module.exports = (req, res) => {
     firstname,
     email,
     phone = '',
+    si,
+    si_details,
     udf1 = '',
     udf2 = '',
     udf3 = '',
@@ -128,6 +130,8 @@ module.exports = (req, res) => {
     phone,
     surl,
     furl,
+    ...(si ? { si: String(si) } : {}),
+    ...(si_details ? { si_details: String(si_details) } : {}),
     udf1: udf1 || '',
     udf2: udf2 || '',
     udf3: udf3 || '',
@@ -139,8 +143,6 @@ module.exports = (req, res) => {
     udf9: udf9 || '',
     udf10: udf10 || '',
     salt_index: String(saltIndex),
-    hash,
-    // Provide salt_index for v2
-    salt_index: String(saltIndex)
+    hash
   });
 };
