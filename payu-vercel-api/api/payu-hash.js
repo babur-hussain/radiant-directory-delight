@@ -109,7 +109,7 @@ module.exports = (req, res) => {
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 120);
-  const amt = Number(amount).toFixed(2);
+  const amt = Number(String(amount).replace(/[^0-9.]/g, '') || '0').toFixed(2);
   const pinfo = normalizeAscii(productinfo);
   const baseParams = { key, txnid, amount: amt, productinfo: pinfo, firstname, email, udf1, udf2, udf3, udf4, udf5, udf6, udf7, udf8, udf9, udf10 };
   const hashStringV1 = buildRequestHashString({ ...baseParams, salt: saltV1 });

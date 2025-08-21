@@ -91,7 +91,15 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
     try {
       // Prepare payment data with enhanced subscription information
       const txnid = 'txn_' + Date.now() + '_' + retryCount;
-      const totalAmount = selectedPackage.price + (selectedPackage.setupFee || 0);
+      const toNumber = (v: any) => {
+        if (typeof v === 'number') return v;
+        const n = Number(String(v).replace(/[^0-9.]/g, ''));
+        return isNaN(n) ? 0 : n;
+      };
+      const priceNum = toNumber(selectedPackage.price);
+      const setupFeeNum = toNumber(selectedPackage.setupFee || 0);
+      const monthlyNum = toNumber(selectedPackage.monthlyPrice || selectedPackage.price);
+      const totalAmount = priceNum + setupFeeNum;
       
       // Determine payment description based on package type
       let productInfo = selectedPackage.title || 'Subscription Package';
@@ -105,8 +113,8 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
       // Build SI (Standing Instruction) details for Pay & Subscribe (Hosted) for ALL recurring packages
       const isAutopay = selectedPackage.paymentType === 'recurring';
       const recurringAmount = selectedPackage.billingCycle === 'monthly'
-        ? (selectedPackage.monthlyPrice || selectedPackage.price)
-        : selectedPackage.price;
+        ? monthlyNum
+        : priceNum;
       const amountToCharge = isAutopay ? recurringAmount : totalAmount;
       const amountString = Number(amountToCharge).toFixed(2);
 

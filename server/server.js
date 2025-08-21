@@ -645,7 +645,7 @@ app.post('/api/payu/initiate-payment', (req, res) => {
       .replace(/\s+/g, ' ')
       .trim()
       .slice(0, 120);
-    const amt = Number(amount).toFixed(2);
+    const amt = Number(String(amount).replace(/[^0-9.]/g, '') || '0').toFixed(2);
     const pinfo = normalizeAscii(productinfo);
     const params = {
       key: String(key),
