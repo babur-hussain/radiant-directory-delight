@@ -660,11 +660,11 @@ app.post('/api/payu/initiate-payment', (req, res) => {
       // pass-through SI fields (not part of hash)
       ...(si ? { si: String(si) } : {}),
       ...(si_details ? { si_details: String(si_details) } : {}),
-      udf1: String(rest.udf1 || ''),
-      udf2: String(rest.udf2 || ''),
-      udf3: String(rest.udf3 || ''),
-      udf4: String(rest.udf4 || ''),
-      udf5: String(rest.udf5 || ''),
+      udf1: '',
+      udf2: '',
+      udf3: '',
+      udf4: '',
+      udf5: '',
       // Force udf6-udf10 empty to match hashing formula expectation
       udf6: '',
       udf7: '',

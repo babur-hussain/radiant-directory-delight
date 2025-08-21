@@ -151,11 +151,12 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
         surl: `${window.location.origin}/payment-success`,
         furl: `${window.location.origin}/`,
         ...(isAutopay ? { si: 4, si_details: siDetails } : {}),
-        udf1: user?.id || '',
-        udf2: selectedPackage.id,
-        udf3: selectedPackage.type,
-        udf4: selectedPackage.paymentType || 'recurring',
-        udf5: selectedPackage.billingCycle || '',
+        // Keep udf1-udf5 empty to avoid hash mismatches across packages
+        udf1: '',
+        udf2: '',
+        udf3: '',
+        udf4: '',
+        udf5: '',
         // Keep udf6-udf10 empty to match working packages hashing behavior
         udf6: '',
         udf7: '',

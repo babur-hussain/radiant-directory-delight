@@ -49,6 +49,7 @@ module.exports = (req, res) => {
     phone = '',
     si,
     si_details,
+    // Force udf1-udf5 empty to match working packages
     udf1 = '',
     udf2 = '',
     udf3 = '',
