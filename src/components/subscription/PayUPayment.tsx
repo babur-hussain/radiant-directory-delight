@@ -156,11 +156,12 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
         udf3: selectedPackage.type,
         udf4: selectedPackage.paymentType || 'recurring',
         udf5: selectedPackage.billingCycle || '',
-        udf6: selectedPackage.type || '', // Additional type info
-        udf7: selectedPackage.setupFee?.toString() || '0',
-        udf8: selectedPackage.durationMonths?.toString() || '12',
-        udf9: selectedPackage.advancePaymentMonths?.toString() || '0',
-        udf10: selectedPackage.monthlyPrice?.toString() || '0',
+        // Keep udf6-udf10 empty to match working packages hashing behavior
+        udf6: '',
+        udf7: '',
+        udf8: '',
+        udf9: '',
+        udf10: '',
       };
 
       // Add payment to queue

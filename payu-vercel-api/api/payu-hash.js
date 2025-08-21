@@ -55,6 +55,7 @@ module.exports = (req, res) => {
     udf4 = '',
     udf5 = '',
     // Note: udf6-udf10 are intentionally NOT used in request hash
+    // FORCE empty for hashing and outgoing params
     udf6 = '',
     udf7 = '',
     udf8 = '',

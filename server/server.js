@@ -665,11 +665,12 @@ app.post('/api/payu/initiate-payment', (req, res) => {
       udf3: String(rest.udf3 || ''),
       udf4: String(rest.udf4 || ''),
       udf5: String(rest.udf5 || ''),
-      udf6: String(rest.udf6 || ''),
-      udf7: String(rest.udf7 || ''),
-      udf8: String(rest.udf8 || ''),
-      udf9: String(rest.udf9 || ''),
-      udf10: String(rest.udf10 || ''),
+      // Force udf6-udf10 empty to match hashing formula expectation
+      udf6: '',
+      udf7: '',
+      udf8: '',
+      udf9: '',
+      udf10: '',
     };
     // Log and sanitize all params before hashing
     console.log('PayU params for hash:', params);
