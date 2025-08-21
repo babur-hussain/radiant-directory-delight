@@ -638,11 +638,20 @@ app.post('/api/payu/initiate-payment', (req, res) => {
       return res.status(400).json({ error: 'Missing required payment parameters' });
     }
     const key = getPayUMerchantKey();
+    const normalizeAscii = (s) => String(s || '')
+      .replace(/[\u2000-\u206F\u2E00-\u2E7F\u00A0-\u00BF]/g, ' ')
+      .replace(/[\u20B9\uFE0F]/g, '')
+      .replace(/[^\x20-\x7E]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 120);
+    const amt = Number(amount).toFixed(2);
+    const pinfo = normalizeAscii(productinfo);
     const params = {
       key: String(key),
       txnid: String(txnid),
-      amount: String(amount),
-      productinfo: String(productinfo),
+      amount: String(amt),
+      productinfo: String(pinfo),
       firstname: String(firstname),
       email: String(email),
       phone: String(phone),

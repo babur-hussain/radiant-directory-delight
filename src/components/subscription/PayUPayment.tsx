@@ -108,6 +108,17 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
         ? (selectedPackage.monthlyPrice || selectedPackage.price)
         : selectedPackage.price;
       const amountToCharge = isAutopay ? recurringAmount : totalAmount;
+      const amountString = Number(amountToCharge).toFixed(2);
+
+      const normalizeProductInfo = (s: string) =>
+        s
+          .replace(/[\u2000-\u206F\u2E00-\u2E7F\u00A0-\u00BF]/g, ' ') // punctuation ranges & nbsp
+          .replace(/[\u20B9\uFE0F]/g, '') // remove rupee sign/variation selectors
+          .replace(/[^\x20-\x7E]/g, '') // strip non-ascii
+          .replace(/\s+/g, ' ') // collapse spaces
+          .trim()
+          .slice(0, 120);
+      const safeProductInfo = normalizeProductInfo(productInfo);
       const toIsoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       const startDate = new Date();
       const endDate = new Date(startDate);
@@ -124,8 +135,8 @@ const PayUPayment: React.FC<PayUPaymentProps> = ({ selectedPackage, user, onSucc
       const paymentData = {
         // key and salt are injected on server
         txnid: txnid,
-        amount: amountToCharge,
-        productinfo: productInfo,
+        amount: amountString,
+        productinfo: safeProductInfo,
         firstname: user?.name || 'User',
         email: user?.email || '',
         phone: user?.phone || '',

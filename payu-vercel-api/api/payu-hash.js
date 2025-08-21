@@ -101,7 +101,17 @@ module.exports = (req, res) => {
   }
 
   // Build v1 and v2 request hash strings
-  const baseParams = { key, txnid, amount, productinfo, firstname, email, udf1, udf2, udf3, udf4, udf5, udf6, udf7, udf8, udf9, udf10 };
+  // Normalize inputs exactly like working packages: amount as 2-decimals string, ascii-safe productinfo
+  const normalizeAscii = (s) => String(s || '')
+    .replace(/[\u2000-\u206F\u2E00-\u2E7F\u00A0-\u00BF]/g, ' ')
+    .replace(/[\u20B9\uFE0F]/g, '')
+    .replace(/[^\x20-\x7E]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120);
+  const amt = Number(amount).toFixed(2);
+  const pinfo = normalizeAscii(productinfo);
+  const baseParams = { key, txnid, amount: amt, productinfo: pinfo, firstname, email, udf1, udf2, udf3, udf4, udf5, udf6, udf7, udf8, udf9, udf10 };
   const hashStringV1 = buildRequestHashString({ ...baseParams, salt: saltV1 });
   const hashStringV2 = buildRequestHashString({ ...baseParams, salt: saltV2 });
 
@@ -123,8 +133,8 @@ module.exports = (req, res) => {
     payuBaseUrl: isTestEnv ? "https://test.payu.in/_payment" : "https://secure.payu.in/_payment",
     key,
     txnid,
-    amount,
-    productinfo,
+    amount: amt,
+    productinfo: pinfo,
     firstname,
     email,
     phone,
