@@ -200,7 +200,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           <Input
             ref={inputRef}
             type="text"
-            placeholder={isSmallScreen ? '        Ask any question...' : '       Ask any question...'}
+            placeholder={isSmallScreen ? '        Search...' : '       Search influencers, businesses, services, or keywords...'}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyPress={handleKeyPress}
